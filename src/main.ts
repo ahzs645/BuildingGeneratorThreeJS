@@ -46,9 +46,11 @@ ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// Blender is Z-up: build everything in Blender space inside a rotated root
+// Blender is Z-up: build everything in Blender space inside a rotated root.
+// rotation.z (Blender up axis) spins the whole building 180°; with the default XYZ
+// Euler order it is applied before the -90° X tilt, so it reads as a world-Y turn.
 const root = new Group();
-root.rotation.x = -Math.PI / 2;
+root.rotation.set(-Math.PI / 2, 0, Math.PI);
 scene.add(root);
 
 const kit = new Kit();
