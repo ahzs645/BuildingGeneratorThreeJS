@@ -79,6 +79,8 @@ export class Kit {
   private manifest!: Manifest;
   private warned = new Set<string>();
   private mirrorCache = new Map<BufferGeometry, BufferGeometry>();
+  /** the from-scratch materials (building / floor / glass), set during load() */
+  materials!: Record<string, Material>;
 
   /**
    * Geometry with the X-mirror baked in (negated positions/normals/tangents,
@@ -143,6 +145,7 @@ export class Kit {
     // replace GLB-embedded materials with the from-scratch ones (matched by name;
     // Blender exports "building", "floor", "glass")
     const materials = buildMaterials();
+    this.materials = materials;
     const fallback = materials.building;
     gltf.scene.traverse(o => {
       const mesh = o as Mesh;

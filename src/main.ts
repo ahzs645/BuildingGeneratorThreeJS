@@ -11,9 +11,17 @@ import { Kit } from "./kit";
 import { Environment, type Bounds } from "./environment";
 import { CinematicCamera, type PresetName } from "./cinematicCamera";
 import { PostFX } from "./postfx";
+import { createSnow } from "./snow";
+import { createSnowAccumUniforms, applySnowAccumulation } from "./snowAccum";
 
 const app = document.getElementById("app")!;
-const renderer = new WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+// logarithmicDepthBuffer spreads depth precision so near-coplanar surfaces (posters
+// on walls, glass in frames, awnings flush to the facade) stop z-fighting
+const renderer = new WebGLRenderer({
+  antialias: true,
+  powerPreference: "high-performance",
+  logarithmicDepthBuffer: true,
+});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = ACESFilmicToneMapping;
@@ -23,7 +31,9 @@ app.appendChild(renderer.domElement);
 
 const scene = new Scene();
 
-const camera = new PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 2000);
+// tight near/far ratio = far more usable depth precision (building is ~15u, orbit
+// distance is clamped to [3, 120] below), which kills most of the z-fighting
+const camera = new PerspectiveCamera(40, innerWidth / innerHeight, 0.5, 600);
 camera.position.set(12, 7, 14);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -56,6 +66,25 @@ scene.add(root);
 const kit = new Kit();
 const params: BuildingParams = defaultParams();
 let building: Group | null = null;
+
+// ---- snow: falling flakes (world space) + accumulation on the building ----
+const snowShared = { uTime: { value: 0 }, uWind: { value: new Vector3(2, 0, 1) } };
+const accumU = createSnowAccumUniforms(snowShared.uTime);
+const snow = createSnow({ camera, shared: snowShared });
+snow.mesh.visible = false;
+scene.add(snow.mesh);
+
+const snowState = { enabled: false, density: 0.5 };
+const wind = { strength: 2, direction: 20 };
+function applyWind(): void {
+  const a = (wind.direction * Math.PI) / 180;
+  snowShared.uWind.value.set(Math.cos(a) * wind.strength, 0, Math.sin(a) * wind.strength);
+}
+applyWind();
+function applySnowEnabled(v: boolean): void {
+  snow.mesh.visible = v;
+  accumU.uSnowEnabled.value = v ? 1 : 0;
+}
 
 const shellMat = new MeshStandardMaterial({ color: 0x8d8577, roughness: 0.9 });
 
@@ -191,6 +220,37 @@ cam.add(cinePrefs, "letterbox").name("letterbox").onChange(applyLetterbox);
 env.addGui(gui);
 post.addGui(gui);
 
+// ---- snow GUI (one master toggle, ported params from SnowSystemThreeJS) ----
+const fSnow = gui.addFolder("snow");
+fSnow.add(snowState, "enabled").name("enabled").onChange(applySnowEnabled);
+const fFall = fSnow.addFolder("snowfall");
+fFall.add(snowState, "density", 0, 1, 0.01).name("density").onChange((v: number) => snow.setDensity(v));
+fFall.add(snow.uniforms.uSpeed, "value", 0.5, 12, 0.1).name("fall speed");
+fFall.add(snow.uniforms.uSize, "value", 0.01, 0.25, 0.001).name("flake size");
+fFall.add(snow.uniforms.uSway, "value", 0, 3, 0.01).name("sway");
+fFall.add(snow.uniforms.uOpacity, "value", 0, 1, 0.01).name("opacity");
+fFall.addColor({ c: "#ffffff" }, "c").name("color").onChange((v: string) => snow.uniforms.uColor.value.set(v));
+fFall.add(snow.uniforms.uVolume.value, "y", 10, 80, 1).name("fall height");
+fFall.add(wind, "strength", 0, 25, 0.1).name("wind").onChange(applyWind);
+fFall.add(wind, "direction", 0, 360, 1).name("wind dir").onChange(applyWind);
+fFall.close();
+const fAccum = fSnow.addFolder("accumulation");
+fAccum.add(accumU.uSnowCoverage, "value", 0, 1, 0.01).name("coverage");
+fAccum.add(accumU.uSnowThickness, "value", 0, 0.3, 0.001).name("thickness");
+fAccum.add(accumU.uSnowScale, "value", 0.1, 4, 0.01).name("patch scale");
+fAccum.add(accumU.uSnowEdge, "value", 0.01, 0.4, 0.005).name("patch softness");
+fAccum.add(accumU.uSnowSeed.value, "x", -50, 50, 0.1).name("seed x");
+fAccum.add(accumU.uSnowSeed.value, "y", -50, 50, 0.1).name("seed y");
+fAccum.add(accumU.uSnowFlatThreshold, "value", 0, 1, 0.01).name("flatness");
+fAccum.addColor({ c: "#eaf1ff" }, "c").name("color").onChange((v: string) => accumU.uSnowColor.value.set(v));
+fAccum.add(accumU.uSnowRoughness, "value", 0.3, 1, 0.01).name("roughness");
+fAccum.add(accumU.uSnowBump, "value", 0, 1.5, 0.01).name("relief strength");
+fAccum.add(accumU.uSnowBumpScale, "value", 0.5, 8, 0.05).name("relief scale");
+fAccum.add(accumU.uSnowSparkle, "value", 0, 1, 0.01).name("sparkle");
+fAccum.add(accumU.uSnowSparkleScale, "value", 30, 300, 1).name("sparkle density");
+fAccum.close();
+fSnow.close();
+
 const dims = gui.addFolder("dimensions");
 dims.add(params, "floor", 3, 14, 1);
 dims.add(params, "length", 2, 16, 1);
@@ -241,6 +301,11 @@ devWindow.__shot = name => cine.snap(name);
   applyDebugLighting();
   regenerate();
 };
+(devWindow as { __snow?: (on: boolean) => void }).__snow = on => {
+  snowState.enabled = on;
+  applySnowEnabled(on);
+  gui.controllersRecursive().forEach(c => c.updateDisplay());
+};
 devWindow.__setEnv = s => {
   Object.assign(env.settings, s);
   gui.controllersRecursive().forEach(c => c.updateDisplay());
@@ -250,6 +315,9 @@ devWindow.__setEnv = s => {
 
 kit.load("/assets/kit.glb", "/assets/kit_manifest.json").then(() => {
   document.getElementById("loading")?.remove();
+  // inject snow accumulation into the opaque building materials (starts disabled)
+  applySnowAccumulation(kit.materials.building, accumU);
+  applySnowAccumulation(kit.materials.floor, accumU);
   regenerate();
   cine.snap("hero");
 }).catch(err => {
@@ -270,5 +338,9 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.1);
   cine.update(dt);
   env.tick();
+  if (snowState.enabled) {
+    snowShared.uTime.value += dt; // drives flake fall + sparkle twinkle
+    snow.update();
+  }
   post.render();
 });
