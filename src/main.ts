@@ -177,6 +177,17 @@ cine.onUserInteract = () => {
   orbitCtrl.updateDisplay();
 };
 
+// cinematic letterbox bars (styled in index.html)
+const barTop = document.getElementById("bar-top") as HTMLElement | null;
+const barBottom = document.getElementById("bar-bottom") as HTMLElement | null;
+const cinePrefs = { letterbox: false };
+function applyLetterbox(): void {
+  const h = cinePrefs.letterbox ? "7vh" : "0";
+  if (barTop) barTop.style.height = h;
+  if (barBottom) barBottom.style.height = h;
+}
+cam.add(cinePrefs, "letterbox").name("letterbox").onChange(applyLetterbox);
+
 env.addGui(gui);
 post.addGui(gui);
 
