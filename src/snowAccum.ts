@@ -1,22 +1,21 @@
 /**
  * Snow accumulation — ported from SnowSystemThreeJS's model "makeSnowy" shader and
- * adapted for this project:
- *   - the building is drawn with InstancedMesh, so the world normal/position must
- *     fold in `instanceMatrix` (the original assumed a plain non-instanced GLB);
- *   - the building lives in a Blender Z-up root that is rotated into world Y-up, so
- *     accumulation keys off the WORLD normal/position (true "up" and top-down patches)
- *     rather than model space;
- *   - a single `uSnowEnabled` (0/1) uniform toggles the whole effect so one compiled
- *     program serves both states.
+ * restructured as a separate SNOW SHELL layer:
+ *   - the building's own materials/geometry are never touched — a second instanced
+ *     pass shares the same geometry + instanceMatrix buffers (no extra GPU memory)
+ *     and only IT gets extruded along the normals;
+ *   - fragments outside the accumulation mask are discarded, so the shell only shows
+ *     as a snow cap on upward faces;
+ *   - the building is drawn with InstancedMesh, so world normal/position fold in
+ *     `instanceMatrix`, and accumulation keys off WORLD up (the building root is a
+ *     Blender Z-up group rotated into world Y-up).
  *
- * Upward faces grow a displaced snow layer and get capped matte snow-white with drift
- * shading and ice-crystal sparkle. `uTime` is shared with the falling snow.
+ * `uTime` is shared with the falling snow so the sparkle twinkles in lockstep.
  */
-import { Color, Vector2, Material } from "three";
+import { Color, Vector2, DoubleSide, MeshStandardMaterial } from "three";
 
 export interface SnowAccumUniforms {
   uTime: { value: number };
-  uSnowEnabled: { value: number };
   uSnowSeed: { value: Vector2 };
   uSnowScale: { value: number };
   uSnowCoverage: { value: number };
@@ -34,7 +33,6 @@ export interface SnowAccumUniforms {
 export function createSnowAccumUniforms(uTime: { value: number }): SnowAccumUniforms {
   return {
     uTime,
-    uSnowEnabled: { value: 0 },
     uSnowSeed: { value: new Vector2(3.0, 7.0) },
     uSnowScale: { value: 0.6 },        // coverage noise frequency (world units)
     uSnowCoverage: { value: 0.7 },     // 0 = bare, 1 = fully capped
@@ -54,7 +52,6 @@ const SNOW_GLSL = /* glsl */ `
 varying vec3 vSnowWorldN;
 varying vec3 vSnowWorldP;
 uniform float uTime;
-uniform float uSnowEnabled;
 uniform vec2  uSnowSeed;
 uniform float uSnowScale;
 uniform float uSnowCoverage;
@@ -122,9 +119,25 @@ vec3 snowReliefNormal(vec2 worldXZ) {
 }
 `;
 
-/** Inject the accumulation shader into a MeshStandardMaterial. */
-export function applySnowAccumulation(material: Material, u: SnowAccumUniforms): void {
-  material.onBeforeCompile = shader => {
+/**
+ * The snow-shell material: applied to a duplicate instanced pass that shares the
+ * building's geometry. Extrudes along the surface normal by thickness × accumulation
+ * and discards every fragment outside the snow mask — the base building underneath
+ * renders with its original, untouched geometry and materials.
+ */
+export function createSnowShellMaterial(u: SnowAccumUniforms): MeshStandardMaterial {
+  const mat = new MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.85,
+    metalness: 0,
+    side: DoubleSide,
+    // wins the depth tie against the base surface where thickness tapers to zero
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1,
+  });
+
+  mat.onBeforeCompile = shader => {
     Object.assign(shader.uniforms, u);
 
     shader.vertexShader = shader.vertexShader
@@ -151,7 +164,7 @@ export function applySnowAccumulation(material: Material, u: SnowAccumUniforms):
         vec3 snowWN = snowNMat * objectNormal;
         float snowMs = max(length(snowWN), 1e-4);
         float snowAccumV = snowAccumAt(snowWN / snowMs, vSnowWorldP.xz);
-        transformed += normalize(objectNormal) * (uSnowThickness * uSnowEnabled * snowAccumV / snowMs);`,
+        transformed += normalize(objectNormal) * (uSnowThickness * snowAccumV / snowMs);`,
       );
 
     shader.fragmentShader = shader.fragmentShader
@@ -160,34 +173,28 @@ export function applySnowAccumulation(material: Material, u: SnowAccumUniforms):
         "#include <map_fragment>",
         `#include <map_fragment>
         vec3 snowWn = normalize(vSnowWorldN);
-        float snowAmt = snowAccumAt(snowWn, vSnowWorldP.xz) * uSnowEnabled;
+        float snowAmt = snowAccumAt(snowWn, vSnowWorldP.xz);
+        if (snowAmt < 0.12) discard; // shell only exists where snow settled
         float snowShade = 0.85 + 0.15 * (snowFbm(vSnowWorldP.xz * uSnowBumpScale * 2.0) * 0.5 + 0.5);
-        vec3 snowCol = uSnowColor * snowShade;
         float snowSp = snowHash21(floor(vSnowWorldP.xz * uSnowSparkleScale));
         float snowTwinkle = 0.5 + 0.5 * sin(uTime * 3.0 + snowSp * 30.0);
         float snowSparkle = step(0.985, snowSp) * snowTwinkle * uSnowSparkle;
-        snowCol += snowSparkle;
-        diffuseColor.rgb = mix(diffuseColor.rgb, snowCol, snowAmt);`,
+        diffuseColor.rgb = uSnowColor * snowShade + snowSparkle;`,
       )
       .replace(
         "#include <roughnessmap_fragment>",
         `#include <roughnessmap_fragment>
-        roughnessFactor = mix(roughnessFactor, uSnowRoughness, snowAmt);
-        roughnessFactor = mix(roughnessFactor, 0.08, snowSparkle * snowAmt);`,
-      )
-      .replace(
-        "#include <metalnessmap_fragment>",
-        `#include <metalnessmap_fragment>
-        metalnessFactor = mix(metalnessFactor, 0.0, snowAmt);`,
+        roughnessFactor = uSnowRoughness;
+        roughnessFactor = mix(roughnessFactor, 0.08, snowSparkle);`,
       )
       .replace(
         "#include <normal_fragment_maps>",
         `#include <normal_fragment_maps>
         vec3 snowN = snowReliefNormal(vSnowWorldP.xz);
         vec3 snowView = normalize((viewMatrix * vec4(snowN, 0.0)).xyz);
-        normal = normalize(mix(normal, snowView, snowAmt));`,
+        normal = normalize(mix(normal, snowView, clamp(snowAmt * 1.5, 0.0, 1.0)));`,
       );
   };
-  material.customProgramCacheKey = () => "snow-accum-v1";
-  material.needsUpdate = true;
+  mat.customProgramCacheKey = () => "snow-shell-v1";
+  return mat;
 }

@@ -81,6 +81,9 @@ export class Kit {
   private mirrorCache = new Map<BufferGeometry, BufferGeometry>();
   /** the from-scratch materials (building / floor / glass), set during load() */
   materials!: Record<string, Material>;
+  /** when set, buildGroup adds a snow-shell pass (child group "snowShell") that
+   *  shares geometry + instanceMatrix with the opaque meshes — zero extra memory */
+  snowShellMaterial: Material | null = null;
 
   /**
    * Geometry with the X-mirror baked in (negated positions/normals/tangents,
@@ -170,6 +173,12 @@ export class Kit {
       list.push(pl.matrix);
     }
 
+    // separate layer of duplicated (buffer-shared) meshes that the snow shader
+    // extrudes — the base building geometry stays untouched
+    const snowLayer = new Group();
+    snowLayer.name = "snowShell";
+    snowLayer.visible = false;
+
     const tmp = new Matrix4();
     for (const [key, matrices] of byPart) {
       const part = this.parts.get(key);
@@ -208,9 +217,21 @@ export class Kit {
           for (let i = 0; i < list.length; i++) im.setMatrixAt(i, list[i]);
           im.instanceMatrix.needsUpdate = true;
           group.add(im);
+
+          // snow shell pass for opaque kit materials: same geometry, SAME
+          // instanceMatrix buffer — only the vertex shader extrudes it
+          if (this.snowShellMaterial &&
+              (mesh.material === this.materials.building || mesh.material === this.materials.floor)) {
+            const shell = new InstancedMesh(geom, this.snowShellMaterial, list.length);
+            shell.instanceMatrix = im.instanceMatrix;
+            shell.castShadow = false;
+            shell.receiveShadow = true;
+            snowLayer.add(shell);
+          }
         }
       });
     }
+    if (snowLayer.children.length) group.add(snowLayer);
     return group;
   }
 }

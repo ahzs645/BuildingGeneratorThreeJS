@@ -12,7 +12,7 @@ import { Environment, type Bounds } from "./environment";
 import { CinematicCamera, type PresetName } from "./cinematicCamera";
 import { PostFX } from "./postfx";
 import { createSnow } from "./snow";
-import { createSnowAccumUniforms, applySnowAccumulation } from "./snowAccum";
+import { createSnowAccumUniforms, createSnowShellMaterial } from "./snowAccum";
 
 const app = document.getElementById("app")!;
 // logarithmicDepthBuffer spreads depth precision so near-coplanar surfaces (posters
@@ -54,6 +54,7 @@ const ground = new Mesh(
 );
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
+ground.visible = false; // ground plane hidden for now
 scene.add(ground);
 
 // Blender is Z-up: build everything in Blender space inside a rotated root.
@@ -67,9 +68,10 @@ const kit = new Kit();
 const params: BuildingParams = defaultParams();
 let building: Group | null = null;
 
-// ---- snow: falling flakes (world space) + accumulation on the building ----
+// ---- snow: falling flakes (world space) + accumulation shell on the building ----
 const snowShared = { uTime: { value: 0 }, uWind: { value: new Vector3(2, 0, 1) } };
 const accumU = createSnowAccumUniforms(snowShared.uTime);
+kit.snowShellMaterial = createSnowShellMaterial(accumU);
 const snow = createSnow({ camera, shared: snowShared });
 snow.mesh.visible = false;
 scene.add(snow.mesh);
@@ -83,7 +85,8 @@ function applyWind(): void {
 applyWind();
 function applySnowEnabled(v: boolean): void {
   snow.mesh.visible = v;
-  accumU.uSnowEnabled.value = v ? 1 : 0;
+  const shell = building?.getObjectByName("snowShell");
+  if (shell) shell.visible = v;
 }
 
 const shellMat = new MeshStandardMaterial({ color: 0x8d8577, roughness: 0.9 });
@@ -180,6 +183,7 @@ function regenerate(): void {
     : kit.buildGroup(generateBuilding(params, kit));
   applyDebugMaterials(building);
   root.add(building);
+  applySnowEnabled(snowState.enabled); // new snowShell group starts hidden
   env.frame(getBounds());
 }
 
@@ -315,9 +319,6 @@ devWindow.__setEnv = s => {
 
 kit.load("/assets/kit.glb", "/assets/kit_manifest.json").then(() => {
   document.getElementById("loading")?.remove();
-  // inject snow accumulation into the opaque building materials (starts disabled)
-  applySnowAccumulation(kit.materials.building, accumU);
-  applySnowAccumulation(kit.materials.floor, accumU);
   regenerate();
   cine.snap("hero");
 }).catch(err => {
