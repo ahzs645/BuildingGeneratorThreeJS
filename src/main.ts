@@ -514,7 +514,7 @@ fCam.add(cine, "letterbox").name("Letterbox").onChange(applyLetterbox);
 const dofParams = { enabled: false };
 const fDof = fCine.addFolder("Depth of Field");
 fDof.add(dofParams, "enabled").name("Enable DoF").onChange((v: boolean) => (post.bokeh.enabled = v));
-fDof.add(post.bokehUniforms["focus"], "value", 1, 40, 0.1).name("Focus Distance").onChange(showFocusPlane);
+fDof.add(post.bokehUniforms["focus"], "value", 0, 2, 0.01).name("Focus Distance").onChange(showFocusPlane);
 fDof.add(post.bokehUniforms["aperture"], "value", 0, 0.004, 0.00005).name("Aperture");
 fDof.add(post.bokehUniforms["maxblur"], "value", 0, 0.02, 0.0005).name("Max Blur");
 
