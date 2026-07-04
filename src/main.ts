@@ -14,6 +14,8 @@ import { Environment, type Bounds } from "./environment";
 import { PostFX } from "./postfx";
 import { createSnow } from "./snow";
 import { createSnowAccumUniforms, createSnowShellMaterial } from "./snowAccum";
+import { createRain } from "./rain";
+import { createWetUniforms, applyWet } from "./wet";
 
 const app = document.getElementById("app")!;
 // logarithmicDepthBuffer spreads depth precision so near-coplanar surfaces (posters
@@ -88,6 +90,27 @@ function applySnowEnabled(v: boolean): void {
   snow.mesh.visible = v;
   const shell = building?.getObjectByName("snowShell");
   if (shell) shell.visible = v;
+}
+
+// ---- rain: falling streaks (world space) + in-place wet accumulation on the ----
+// building materials (no shell geometry — the wet shader is injected straight into
+// the building/floor materials via onBeforeCompile, keyed off WORLD up)
+const rainShared = { uTime: { value: 0 }, uWind: { value: new Vector3(3, 0, 1) }, uLightning: { value: 0 } };
+const wetU = createWetUniforms(rainShared.uTime, rainShared.uWind);
+const rain = createRain({ camera, shared: rainShared });
+rain.mesh.visible = false;
+scene.add(rain.mesh);
+
+const rainState = { enabled: false, density: 0.4 };
+const rainWind = { strength: 3, direction: 20 };
+function applyRainWind(): void {
+  const a = (rainWind.direction * Math.PI) / 180;
+  rainShared.uWind.value.set(Math.cos(a) * rainWind.strength, 0, Math.sin(a) * rainWind.strength);
+}
+applyRainWind();
+function applyRainEnabled(v: boolean): void {
+  rain.mesh.visible = v;
+  wetU.uWet.value = v ? 1 : 0; // master gate: building dries out when rain is off
 }
 
 /** world-space bounds of the current building, for camera framing + shadow fitting */
@@ -390,6 +413,42 @@ fAccum.add(accumU.uSnowSparkleScale, "value", 30, 300, 1).name("sparkle density"
 fAccum.close();
 fSnow.close();
 
+// ---- rain GUI (master toggle, ported from RainSystemThreeJS) ----
+const fRain = gui.addFolder("rain");
+fRain.add(rainState, "enabled").name("enabled").onChange(applyRainEnabled);
+const fRainfall = fRain.addFolder("rainfall");
+fRainfall.add(rainState, "density", 0, 1, 0.01).name("density").onChange((v: number) => rain.setDensity(v));
+fRainfall.add(rain.uniforms.uSpeed, "value", 2, 60, 0.5).name("fall speed");
+fRainfall.add(rain.uniforms.uLength, "value", 0.2, 4, 0.01).name("streak length");
+fRainfall.add(rain.uniforms.uWidth, "value", 0.002, 0.05, 0.001).name("streak width");
+fRainfall.add(rain.uniforms.uOpacity, "value", 0, 1, 0.01).name("opacity");
+fRainfall.addColor({ c: "#b4b8bf" }, "c").name("color").onChange((v: string) => rain.uniforms.uColor.value.set(v));
+fRainfall.add(rain.uniforms.uVolume.value, "y", 10, 80, 1).name("fall height");
+fRainfall.add(rainWind, "strength", 0, 25, 0.1).name("wind").onChange(applyRainWind);
+fRainfall.add(rainWind, "direction", 0, 360, 1).name("wind dir").onChange(applyRainWind);
+fRainfall.close();
+const fWet = fRain.addFolder("wetness");
+fWet.add(wetU.uPuddleCoverage, "value", 0, 1, 0.01).name("coverage");
+fWet.add(wetU.uPuddleScale, "value", 0.02, 2, 0.01).name("mask scale");
+fWet.add(wetU.uPuddleEdge, "value", 0.001, 0.4, 0.001).name("mask softness");
+fWet.add(wetU.uPuddleSeed.value, "x", -50, 50, 0.1).name("seed x").listen();
+fWet.add(wetU.uPuddleSeed.value, "y", -50, 50, 0.1).name("seed y").listen();
+fWet.add({ randomize: () => wetU.uPuddleSeed.value.set((Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100) },
+  "randomize").name("🎲 randomize seed");
+fWet.add(wetU.uWetness, "value", 0, 1, 0.01).name("surface wetness");
+fWet.add(wetU.uWaterDarkness, "value", 0, 1, 0.01).name("wet darkness");
+fWet.add(wetU.uPuddleRoughness, "value", 0, 0.5, 0.001).name("reflection roughness");
+fWet.add(wetU.uDropletAmount, "value", 0, 1, 0.01).name("droplet beading");
+fWet.add(wetU.uDropletScale, "value", 2, 40, 0.5).name("droplet density");
+fWet.add(wetU.uTopPuddle, "value", 0, 1, 0.01).name("top puddles");
+fWet.add(wetU.uFlatThreshold, "value", 0.2, 0.99, 0.01).name("flatness");
+fWet.add(wetU.uRainRipple, "value", 0, 0.3, 0.001).name("ripple strength");
+fWet.add(wetU.uRippleScale, "value", 1, 20, 0.1).name("ripple scale");
+fWet.add(wetU.uRippleSpeed, "value", 0, 4, 0.01).name("ripple speed");
+fWet.add(wetU.uRippleDensity, "value", 0, 1, 0.01).name("ripple density");
+fWet.close();
+fRain.close();
+
 // --- 🎬 Cinematic (last in the list): Camera / Depth of Field / Effects ---
 const fCine = gui.addFolder("🎬 cinematic");
 const fCam = fCine.addFolder("Camera");
@@ -457,6 +516,11 @@ devWindow.__setEnv = s => {
 
 kit.load("/assets/kit.glb", "/assets/kit_manifest.json").then(() => {
   document.getElementById("loading")?.remove();
+  // inject the wet-surface shader into the building materials once (inert while
+  // uWet = 0; the rain toggle raises it to 1). No shell geometry — it lives in the
+  // building/floor materials themselves.
+  applyWet(kit.materials.building, wetU);
+  applyWet(kit.materials.floor, wetU);
   regenerate();
   // fixed 3/4 framing (snow-system style: fixed camera + OrbitControls)
   camera.position.set(9, 5.5, 11);
@@ -483,6 +547,10 @@ renderer.setAnimationLoop(() => {
   if (snowState.enabled) {
     snowShared.uTime.value += dt; // drives flake fall + sparkle twinkle
     snow.update();
+  }
+  if (rainState.enabled) {
+    rainShared.uTime.value += dt; // drives streak fall + puddle ripples
+    rain.update();
   }
   updateFocusPlane(dt);
   updateInspect();
