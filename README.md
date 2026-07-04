@@ -2,6 +2,7 @@
 
 A procedural Hong Kong building generator for Three.js, ported from a Blender
 geometry-nodes setup (`procedural-hong-kong-building/source/procedural_building.blend`).
+Original model URL : https://sketchfab.com/3d-models/procedural-hong-kong-building-528a732e84c44fd49c4726f341014a23
 
 The original 592-node "build system" node group was reverse-engineered into a
 TypeScript placement algorithm ([docs/BUILD_SYSTEM.md](docs/BUILD_SYSTEM.md)); the
