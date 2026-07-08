@@ -35,13 +35,24 @@ const grid = new THREE.GridHelper(400, 40, 0x2a3340, 0x161b21);
 scene.add(grid);
 
 // Material palette keyed by the .blend material name the VM assigns per face.
+// Base colors taken from the dump's Principled BSDF/Emission nodes:
+//   '3D' = blue bins, '3D.004' = red highlight, 'emit*' = white glow, 'mat' = body gray.
 function materialFor(name: string | null): THREE.Material {
   const n = (name ?? "").toLowerCase();
-  if (n.includes("emit") || n.includes("red")) {
-    return new THREE.MeshStandardMaterial({ color: 0xff2b2b, emissive: 0x7a0000, emissiveIntensity: 1.4, roughness: 0.5 });
+  if (n === "3d.004" || n.includes("red")) {
+    return new THREE.MeshStandardMaterial({ color: 0xff2b2b, emissive: 0x7a0000, emissiveIntensity: 1.2, roughness: 0.5 });
+  }
+  if (n === "3d") {
+    return new THREE.MeshStandardMaterial({ color: 0x0838ff, roughness: 0.45, metalness: 0.05 });
+  }
+  if (n.startsWith("emit")) {
+    return new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xbfc8d4, emissiveIntensity: 0.6, roughness: 0.7 });
   }
   if (n.includes("chrome") || n.includes("metal")) {
     return new THREE.MeshStandardMaterial({ color: 0xcfd6dd, metalness: 0.9, roughness: 0.2 });
+  }
+  if (n.includes("bed")) {
+    return new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.85, metalness: 0.0 });
   }
   return new THREE.MeshStandardMaterial({ color: 0x8d97a3, metalness: 0.05, roughness: 0.6 });
 }

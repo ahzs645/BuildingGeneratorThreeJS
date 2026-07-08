@@ -1,6 +1,6 @@
 // Scalar / vector / boolean field-math handlers.
 import { Field, fieldMap, Vec3, Elem, asNum, asVec3, vadd, vsub, vmul, vscale, vdot, vcross, vlen, vnorm } from "../core";
-import { reg, EvalAPI, SockVal } from "../registry";
+import { reg, EvalAPI } from "../registry";
 
 const num = (e: Elem) => asNum(e);
 
@@ -171,12 +171,21 @@ reg("ShaderNodeMix", (api) => {
   let fac = api.field("Factor_Float");
   if (fac.isConst && fac.value === 0) fac = api.field("Factor"); // fallback socket name
   const lerp = (t: number, a: number, b: number) => a + (clampF ? Math.max(0, Math.min(1, t)) : t) * (b - a);
-  if (dt === "VECTOR") {
-    const a = api.field("A_Vector"), b = api.field("B_Vector");
-    return { Result: fieldMap([fac, a, b], (t, x, y) => { const u = asVec3(x), v = asVec3(y), tt = num(t); return [lerp(tt, u[0], v[0]), lerp(tt, u[1], v[1]), lerp(tt, u[2], v[2])] as Vec3; }) };
+  const out = (result: Field) => ({
+    Result: result,
+    Result_Float: result,
+    Result_Vector: result,
+    Result_Color: result,
+    Result_Rotation: result,
+  });
+  if (dt === "VECTOR" || dt === "RGBA" || dt === "ROTATION") {
+    const aName = dt === "RGBA" ? "A_Color" : dt === "ROTATION" ? "A_Rotation" : "A_Vector";
+    const bName = dt === "RGBA" ? "B_Color" : dt === "ROTATION" ? "B_Rotation" : "B_Vector";
+    const a = api.field(aName), b = api.field(bName);
+    return out(fieldMap([fac, a, b], (t, x, y) => { const u = asVec3(x), v = asVec3(y), tt = num(t); return [lerp(tt, u[0], v[0]), lerp(tt, u[1], v[1]), lerp(tt, u[2], v[2])] as Vec3; }));
   }
   const a = api.field("A_Float"), b = api.field("B_Float");
-  return { Result: fieldMap([fac, a, b], (t, x, y) => lerp(num(t), num(x), num(y))) };
+  return out(fieldMap([fac, a, b], (t, x, y) => lerp(num(t), num(x), num(y))));
 });
 
 // ---- Constant / input nodes ----------------------------------------------
@@ -194,7 +203,25 @@ function outDefault(api: EvalAPI, name: string): any {
 
 // ---- Switch (any type) ----------------------------------------------------
 reg("GeometryNodeSwitch", (api) => {
-  const on = api.bool("Switch");
-  const picked: SockVal = on ? api.input("True") : api.input("False");
-  return { Output: picked };
+  const sw = api.field("Switch");
+  const on = (v: Elem) => asNum(v) > 0;
+  if (sw.isConst) return { Output: api.input(on(sw.value) ? "True" : "False") };
+  if (api.prop<string>("input_type", "") === "GEOMETRY") return { Output: api.input("False") };
+  const falseVal = api.input("False");
+  const trueVal = api.input("True");
+  if (falseVal instanceof Field || trueVal instanceof Field) {
+    const f = falseVal instanceof Field ? falseVal : Field.of(0);
+    const t = trueVal instanceof Field ? trueVal : Field.of(0);
+    return {
+      Output: Field.make((ctx) => {
+        const sArr = sw.array(ctx);
+        const fArr = f.array(ctx);
+        const tArr = t.array(ctx);
+        const out: Elem[] = new Array(ctx.size);
+        for (let i = 0; i < ctx.size; i++) out[i] = on(sArr[i] ?? 0) ? tArr[i] ?? 0 : fArr[i] ?? 0;
+        return out;
+      }),
+    };
+  }
+  return { Output: falseVal };
 });

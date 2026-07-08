@@ -213,7 +213,24 @@ export function transformPoint(p: Vec3, pos: Vec3, rot: Vec3, scl: Vec3): Vec3 {
 const zeroLike = (e: Elem | undefined): Elem => (Array.isArray(e) ? [0, 0, 0] : 0);
 
 // Merge mesh b into a, offsetting vertex indices; preserves materials + attributes.
+// Unique undirected edge keys in buildTopology's enumeration order
+// (face-derived first-seen, then explicit wires) so EDGE attr data stays aligned.
+const ekeyG = (x: number, y: number) => (x < y ? `${x}_${y}` : `${y}_${x}`);
+function canonicalEdgeKeys(m: Mesh): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const add = (k: string) => { if (!seen.has(k)) { seen.add(k); out.push(k); } };
+  for (const f of m.faces) for (let i = 0; i < f.length; i++) add(ekeyG(f[i], f[(i + 1) % f.length]));
+  for (const [x, y] of m.edges) add(ekeyG(x, y));
+  return out;
+}
+
 export function mergeMeshInto(a: Mesh, b: Mesh): void {
+  // Canonical edge maps must be taken before mutation for the EDGE-attr reconcile.
+  const hasEdgeAttr = (m: Mesh) => [...m.attributes.values()].some((x) => x.domain === "EDGE");
+  const needEdge = hasEdgeAttr(a) || hasEdgeAttr(b);
+  const aEdgeIdx = needEdge ? new Map(canonicalEdgeKeys(a).map((k, i) => [k, i])) : null;
+  const bEdgeIdx = needEdge ? new Map(canonicalEdgeKeys(b).map((k, i) => [k, i])) : null;
   const baseV = a.positions.length;
   const baseF = a.faces.length;
   for (const p of b.positions) a.positions.push([...p] as Vec3);
@@ -223,8 +240,8 @@ export function mergeMeshInto(a: Mesh, b: Mesh): void {
     a.faces.push(b.faces[fi].map((vi) => vi + baseV));
     a.faceMaterial.push(slotMap[b.faceMaterial[fi] ?? 0] ?? 0);
   }
-  // reconcile POINT + FACE attributes across the union of names
-  const reconcile = (domain: "POINT" | "FACE", baseCount: number, addCount: number) => {
+  // reconcile POINT + FACE (+ EDGE when present) attributes across the union of names
+  const reconcile = (domain: "POINT" | "FACE" | "EDGE", baseCount: number, addCount: number) => {
     const names = new Set<string>();
     for (const [k, x] of a.attributes) if (x.domain === domain) names.add(k);
     for (const [k, x] of b.attributes) if (x.domain === domain) names.add(k);
@@ -239,6 +256,34 @@ export function mergeMeshInto(a: Mesh, b: Mesh): void {
   };
   reconcile("POINT", baseV, b.positions.length);
   reconcile("FACE", baseF, b.faces.length);
+  // EDGE attrs can't just concatenate: buildTopology enumerates ALL face-derived
+  // edges before ANY loose wires, so when A has loose edges the joined order
+  // interleaves. Map each joined canonical edge back to its source explicitly.
+  if (needEdge && aEdgeIdx && bEdgeIdx) {
+    const joined = canonicalEdgeKeys(a); // after mutation
+    // a joined edge belongs to B iff both endpoints are >= baseV
+    const srcOf = joined.map((k) => {
+      const [u, v] = k.split("_").map(Number);
+      if (u >= baseV && v >= baseV) {
+        const bi = bEdgeIdx.get(ekeyG(u - baseV, v - baseV));
+        return bi === undefined ? null : { from: "b" as const, i: bi };
+      }
+      const ai = aEdgeIdx.get(k);
+      return ai === undefined ? null : { from: "a" as const, i: ai };
+    });
+    const names = new Set<string>();
+    for (const [k, x] of a.attributes) if (x.domain === "EDGE") names.add(k);
+    for (const [k, x] of b.attributes) if (x.domain === "EDGE") names.add(k);
+    for (const name of names) {
+      const aa = a.attributes.get(name);
+      const ba = b.attributes.get(name);
+      const dflt = zeroLike(aa?.data[0] ?? ba?.data[0]);
+      const data = srcOf.map((s) =>
+        s === null ? dflt : s.from === "a" ? aa?.data[s.i] ?? dflt : ba?.data[s.i] ?? dflt
+      );
+      a.attributes.set(name, { domain: "EDGE", data });
+    }
+  }
 }
 
 // Realize instances into the mesh (bakes transforms, merges geometry, propagates

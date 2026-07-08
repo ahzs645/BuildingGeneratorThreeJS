@@ -1,32 +1,52 @@
 // Field-plumbing nodes: sample-at-index, evaluate-on-domain, align-euler.
-import { Field, Vec3, Elem, asNum, asVec3, vnorm, vcross, vdot } from "../core";
+import { Field, Vec3, Elem, Domain, asNum, asVec3, vnorm, vcross, vdot } from "../core";
 import { reg } from "../registry";
 
-// Value sampled at another element's index (both resolved on the consumer domain).
+const DOMAINS = new Set<Domain>(["POINT", "EDGE", "FACE", "CORNER", "CURVE", "INSTANCE"]);
+
+// Value sampled at another element's index. The index is evaluated on the
+// consumer context; the value is evaluated on the node's declared source domain.
 reg("GeometryNodeFieldAtIndex", (api) => {
+  const domainProp = api.prop<string>("domain", "POINT");
+  const domain: Domain = DOMAINS.has(domainProp as Domain) ? (domainProp as Domain) : "POINT";
   const idx = api.field("Index");
   const val = api.field("Value");
   return {
     Value: Field.make((ctx) => {
       const iArr = idx.array(ctx);
-      const vArr = val.array(ctx);
+      const srcCtx = ctx.domain === domain ? ctx : ctx.fork?.(domain) ?? ctx;
+      const vArr = val.array(srcCtx);
       const out: Elem[] = new Array(ctx.size);
       for (let i = 0; i < ctx.size; i++) {
-        const j = Math.max(0, Math.min(vArr.length - 1, Math.round(asNum(iArr[i] ?? 0))));
-        out[i] = vArr[j] ?? 0;
+        const j = Math.round(asNum(iArr[i] ?? 0));
+        out[i] = j >= 0 && j < vArr.length ? vArr[j] ?? 0 : 0;
       }
       return out;
     }),
   };
 });
 
-// Evaluate on Domain: MVP treats it as identity (same-domain read-through).
+// Evaluate on Domain (a.k.a. Interpolate Domain): resolve the value field on the
+// node's declared domain, then interpolate onto the consumer's domain. The
+// distinction matters: e.g. Normal on POINT (smooth vertex normals) vs CORNER
+// (face-split) is how the solidify angle compensation is computed.
 reg(["GeometryNodeFieldOnDomain", "GeometryNodeAttributeDomainSize"], (api) => {
   // AttributeDomainSize returns counts; we don't track them precisely -> 0s.
   if (api.node.type === "GeometryNodeAttributeDomainSize") {
     return { "Point Count": Field.of(0), "Edge Count": Field.of(0), "Face Count": Field.of(0), "Face Corner Count": Field.of(0) };
   }
-  return { Value: api.field("Value") };
+  const domainProp = api.prop<string>("domain", "POINT");
+  const target: Domain = DOMAINS.has(domainProp as Domain) ? (domainProp as Domain) : "POINT";
+  const val = api.field("Value");
+  return {
+    Value: Field.make((ctx) => {
+      if (ctx.domain === target || !ctx.fork || !ctx.toDomain) return val.array(ctx);
+      const srcArr = val.array(ctx.fork(target));
+      const out: Elem[] = new Array(ctx.size);
+      for (let i = 0; i < ctx.size; i++) out[i] = ctx.toDomain(target, srcArr, i) ?? 0;
+      return out;
+    }),
+  };
 });
 
 // ---- Align Euler to Vector ------------------------------------------------

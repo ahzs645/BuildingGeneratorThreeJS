@@ -57,6 +57,18 @@ export const REGISTRY = new Map<string, Handler>();
 // Tracks node types that were requested but had no handler (coverage reporting).
 export const MISSING = new Map<string, number>();
 
+// Dump-level context (scene objects) so nodes like Object Info can materialize
+// referenced objects. Set by runGenerator before evaluation.
+export interface DumpObject {
+  name: string;
+  location?: number[];
+  rotation?: number[];
+  scale?: number[];
+  materials?: string[];
+  mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][] };
+}
+export const DUMP_CONTEXT: { objects: DumpObject[] } = { objects: [] };
+
 export function reg(types: string | string[], handler: Handler): void {
   for (const t of Array.isArray(types) ? types : [types]) REGISTRY.set(t, handler);
 }

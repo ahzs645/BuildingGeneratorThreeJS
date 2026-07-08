@@ -2,7 +2,7 @@
 // built against our EvalAPI directly — no graph machinery needed).
 // Run: npx tsx tools/gnvm-nodetest.ts
 import { Field, Vec3 } from "../src/gnvm/core";
-import { Geometry } from "../src/gnvm/geometry";
+import { Geometry, Mesh } from "../src/gnvm/geometry";
 import { EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
 import { makeFieldCtx } from "../src/gnvm/evaluator";
 import "../src/gnvm/index"; // registers all handlers
@@ -108,6 +108,97 @@ function check(label: string, cond: boolean, detail = "") {
   const grid = runNode("GeometryNodeMeshGrid", { "Size X": 2, "Size Y": 2, "Vertices X": 2, "Vertices Y": 2 }).Mesh as Geometry;
   const moved = runNode("GeometryNodeSetPosition", { Geometry: grid, Selection: true, Position: [0, 0, 0], Offset: [0, 0, 5] }, {}, ["Offset"]).Geometry as Geometry;
   check("SetPosition offset z+5", moved.mesh!.positions.every((p) => Math.abs(p[2] - 5) < 1e-6));
+}
+
+// (H) Switch: linked numeric fields convert to bool with Blender's >0 rule
+{
+  const sw = Field.perElem((i) => i - 1);
+  const out = runNode("GeometryNodeSwitch", { Switch: sw, False: 10, True: 20 }, { input_type: "FLOAT" }).Output as Field;
+  const arr = out.array({ size: 3, domain: "POINT" });
+  check("Switch field uses >0 truthiness", approx(arr as number[], [10, 10, 20]));
+}
+
+// (I) Mix RGBA: dumped graphs link the active output as Result_Color
+{
+  const mixed = runNode("ShaderNodeMix", { Factor_Float: 0.25, A_Color: [0, 0, 0], B_Color: [4, 8, 12] }, { data_type: "RGBA" }).Result_Color as Field;
+  check("Mix RGBA exposes Result_Color", approx(mixed.value as number[], [1, 2, 3]));
+}
+
+// (J) FieldAtIndex samples Value on its declared source domain, not the consumer domain
+{
+  const value = Field.perElem((i) => i * 10);
+  const index = Field.perElem((i) => i + 1);
+  const out = runNode("GeometryNodeFieldAtIndex", { Value: value, Index: index }, { domain: "POINT" }).Value as Field;
+  const arr = out.array({
+    size: 2,
+    domain: "FACE",
+    fork: (domain) => ({ size: domain === "POINT" ? 4 : 2, domain }),
+  });
+  check("FieldAtIndex samples source domain", approx(arr as number[], [10, 20]));
+}
+
+// (K) MeshToCurve carries FACE attrs to curve POINT attrs for captured factors
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]];
+  m.faces = [[0, 1, 2, 3]];
+  m.faceMaterial = [0];
+  m.attributes.set("split", { domain: "FACE", data: [[0.25, 0.75, 0]] });
+  const g = new Geometry();
+  g.mesh = m;
+  const c = runNode("GeometryNodeMeshToCurve", { Mesh: g }).Curve as Geometry;
+  const carried = c.curveAttributes.get("split")?.data ?? [];
+  check("MeshToCurve maps FACE attr to curve points", carried.length === 4 && carried.every((v) => approx(v as number[], [0.25, 0.75, 0])));
+}
+
+// (L) MergeByDistance welds duplicated quad seams and carries attrs/materials
+{
+  const m = new Mesh();
+  m.positions = [
+    [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
+    [1, 0, 0], [2, 0, 0], [2, 1, 0], [1, 1, 0],
+  ];
+  m.faces = [[0, 1, 2, 3], [4, 5, 6, 7]];
+  m.edges = [[1, 4], [4, 7], [1, 2], [5, 6]];
+  m.faceMaterial = [1, 2];
+  m.materialSlots = [null, "left", "right"];
+  m.attributes.set("pid", { domain: "POINT", data: [0, 1, 2, 3, 4, 5, 6, 7] });
+  m.attributes.set("fid", { domain: "FACE", data: [100, 200] });
+  m.attributes.set("cid", { domain: "CORNER", data: [10, 11, 12, 13, 20, 21, 22, 23] });
+  const g = new Geometry();
+  g.mesh = m;
+  const out = runNode("GeometryNodeMergeByDistance", { Geometry: g, Selection: true, Distance: 1e-4, Mode: "All" }).Geometry as Geometry;
+  const om = out.mesh!;
+  const edgeKeys = om.edges.map(([a, b]) => (a < b ? `${a}_${b}` : `${b}_${a}`)).sort();
+  check("MergeByDistance welds two quad seam verts", om.positions.length === 6 && om.faces.length === 2, `got ${om.positions.length}v/${om.faces.length}f`);
+  check("MergeByDistance carries POINT attrs from first reps", approx(om.attributes.get("pid")!.data as number[], [0, 1, 2, 3, 5, 6]));
+  check("MergeByDistance carries FACE attrs/materials", approx(om.attributes.get("fid")!.data as number[], [100, 200]) && approx(om.faceMaterial, [1, 2]));
+  check("MergeByDistance carries CORNER attrs and remaps edges", approx(om.attributes.get("cid")!.data as number[], [10, 11, 12, 13, 20, 21, 22, 23]) && edgeKeys.join(",") === "1_2,4_5");
+  check("MergeByDistance preserves material slots", JSON.stringify(om.materialSlots) === JSON.stringify([null, "left", "right"]));
+}
+
+// (M) MergeByDistance selection=false vertices do not participate in welding
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [0, 0, 0]];
+  m.edges = [[0, 1]];
+  const g = new Geometry();
+  g.mesh = m;
+  const sel = Field.perElem((i) => (i === 0 ? 1 : 0));
+  const out = runNode("GeometryNodeMergeByDistance", { Geometry: g, Selection: sel, Distance: 1e-4, Mode: "All" }).Geometry as Geometry;
+  check("MergeByDistance leaves unselected coincident verts separate", out.mesh!.positions.length === 2 && out.mesh!.edges.length === 1);
+}
+
+// (N) MergeByDistance checks neighboring hash cells
+{
+  const d = 1e-5;
+  const m = new Mesh();
+  m.positions = [[0.49 * d, 0, 0], [1.01 * d, 0, 0]];
+  const g = new Geometry();
+  g.mesh = m;
+  const out = runNode("GeometryNodeMergeByDistance", { Geometry: g, Selection: true, Distance: d, Mode: "All" }).Geometry as Geometry;
+  const crossesCell = Math.floor(m.positions[0][0] / d) !== Math.floor(m.positions[1][0] / d);
+  check("MergeByDistance merges cross-cell pair within distance", crossesCell && out.mesh!.positions.length === 1, `got ${out.mesh!.positions.length} verts`);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

@@ -41,6 +41,11 @@ export const asNum = (e: Elem): number => (isVec3(e) ? e[0] : e);
 export interface FieldCtx {
   size: number; // number of elements in the target domain
   domain: Domain;
+  // Same geometry evaluated on another domain, for nodes like Field at Index.
+  fork?: (domain: Domain) => FieldCtx;
+  // Map element i of this ctx's domain from an array resolved on another domain
+  // (Blender's implicit attribute interpolation).
+  toDomain?: (src: Domain, arr: (Elem | undefined)[], i: number) => Elem | undefined;
   // Per-element intrinsic accessors, supplied by the geometry being evaluated.
   position?: (i: number) => Vec3;
   normal?: (i: number) => Vec3;

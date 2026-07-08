@@ -235,25 +235,40 @@ function meshEdgesToCurvesInternal(mesh: Mesh, selected?: (vi: number) => boolea
   const out: { spline: Spline; verts: number[] }[] = [];
   const visitedEdge = new Set<string>();
   const ek = (a: number, b: number) => (a < b ? `${a}_${b}` : `${b}_${a}`);
+  // Blender Mesh to Curve semantics: splines break at "poles" (valence != 2).
+  // Walk pole-to-pole open chains first, then what remains are pure cycles.
+  const isPole = (v: number) => (adj.get(v)?.size ?? 0) !== 2;
+  const walk = (start: number, next: number): number[] => {
+    const chain = [start];
+    let prev = start, cur = next;
+    visitedEdge.add(ek(prev, cur));
+    chain.push(cur);
+    while (cur !== start && !isPole(cur)) {
+      const nbrs = [...(adj.get(cur) ?? [])].filter((x) => x !== prev && !visitedEdge.has(ek(cur, x)));
+      if (!nbrs.length) break;
+      const nxt = nbrs[0];
+      visitedEdge.add(ek(cur, nxt));
+      prev = cur; cur = nxt;
+      if (cur === start) break;
+      chain.push(cur);
+    }
+    return chain;
+  };
+  const emit = (chain: number[], cyclic: boolean) =>
+    out.push({ spline: { points: chain.map((vi) => [...mesh.positions[vi]] as Vec3), cyclic }, verts: chain });
+  for (const [start] of adj) {
+    if (!isPole(start)) continue;
+    for (const nb of adj.get(start)!) {
+      if (visitedEdge.has(ek(start, nb))) continue;
+      emit(walk(start, nb), false);
+    }
+  }
+  // remaining unvisited edges belong to valence-2 cycles
   for (const [start] of adj) {
     for (const nb of adj.get(start)!) {
       if (visitedEdge.has(ek(start, nb))) continue;
-      // walk a chain
-      const chain = [start];
-      let prev = start, cur = nb;
-      visitedEdge.add(ek(prev, cur));
-      chain.push(cur);
-      while (true) {
-        const nbrs = [...(adj.get(cur) ?? [])].filter((x) => x !== prev && !visitedEdge.has(ek(cur, x)));
-        if (!nbrs.length) break;
-        const nxt = nbrs[0];
-        visitedEdge.add(ek(cur, nxt));
-        prev = cur; cur = nxt;
-        if (cur === start) break;
-        chain.push(cur);
-      }
-      const cyclic = cur === start && chain.length > 2;
-      out.push({ spline: { points: chain.map((vi) => [...mesh.positions[vi]] as Vec3), cyclic }, verts: chain });
+      const chain = walk(start, nb);
+      emit(chain, chain.length > 2);
     }
   }
   return out;

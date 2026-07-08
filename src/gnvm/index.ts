@@ -1,7 +1,7 @@
 // Public entry point for the geometry-nodes VM.
 import { Evaluator, Program } from "./evaluator";
 import { Geometry, toTriSoup, TriSoup } from "./geometry";
-import { MISSING, REGISTRY } from "./registry";
+import { DUMP_CONTEXT, MISSING, REGISTRY } from "./registry";
 
 // Registering the handler modules populates the REGISTRY.
 import "./nodes/math";
@@ -46,6 +46,7 @@ export function findModifierGroup(dump: Dump, objectName?: string): { group: str
 
 export function runGenerator(dump: Dump, opts: { object?: string; overrides?: Record<string, any> } = {}): RunResult {
   MISSING.clear();
+  DUMP_CONTEXT.objects = (dump.objects ?? []) as any;
   const found = findModifierGroup(dump, opts.object);
   if (!found) throw new Error("no geometry-nodes modifier found in dump");
   const ev = new Evaluator(dump.node_groups);

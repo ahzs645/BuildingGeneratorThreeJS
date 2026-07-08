@@ -1,8 +1,8 @@
 // Curve subsystem handlers: primitives, resample, fillet, sweep-to-mesh, fill.
-import { Field, Vec3 } from "../core";
+import { Field, Vec3, Elem } from "../core";
 import { Geometry, Mesh, Spline } from "../geometry";
 import { reg } from "../registry";
-import { resampleSpline, filletSpline, sweep, fillCurves, meshEdgesToChains } from "../curves";
+import { resampleSpline, filletSpline, sweep, fillCurves, meshEdgesToChains, splineLength } from "../curves";
 
 function curveGeo(splines: Spline[]): Geometry {
   const g = new Geometry();
@@ -38,10 +38,21 @@ reg("GeometryNodeCurvePrimitiveLine", (api) => {
 // ---- resample / fillet ----------------------------------------------------
 reg("GeometryNodeResampleCurve", (api) => {
   const g = api.geo("Curve");
-  const mode = api.prop<string>("mode", "COUNT");
+  // Blender 4+/5 exposes the mode as a menu input socket; older dumps use a prop.
+  const menu = api.str("Mode").toUpperCase().replace(/[^A-Z]/g, "");
+  const mode = menu || api.prop<string>("mode", "COUNT");
   const count = api.num("Count") || 10;
+  const length = api.num("Length") || 0.1;
   const out = new Geometry();
-  out.curves = g.curves.map((s) => (mode === "EVALUATED" ? { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic } : resampleSpline(s, count)));
+  out.curves = g.curves.map((s) => {
+    if (mode === "EVALUATED") return { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
+    if (mode === "LENGTH") {
+      // segments of ~`length`: n = max(1, round(total/length)) segments
+      const n = Math.max(1, Math.round(splineLength(s) / Math.max(1e-9, length)));
+      return resampleSpline(s, s.cyclic ? n : n + 1);
+    }
+    return resampleSpline(s, count);
+  });
   return { Curve: out };
 });
 
@@ -93,7 +104,10 @@ reg("GeometryNodeCurveToMesh", (api) => {
 
 reg("GeometryNodeFillCurve", (api) => {
   const g = api.geo("Curve");
-  const mode = (api.prop<string>("mode", "TRIANGLES") as "NGONS" | "TRIANGLES");
+  // Blender 4+/5 exposes the mode as a menu input socket ("N-gons"/"Triangles");
+  // older dumps carry it as a `mode` prop.
+  const menu = api.str("Mode").toUpperCase().replace(/[^A-Z]/g, "");
+  const mode = (menu === "NGONS" || menu === "TRIANGLES" ? menu : api.prop<string>("mode", "TRIANGLES")) as "NGONS" | "TRIANGLES";
   const out = new Geometry();
   out.mesh = fillCurves(g.curves, mode);
   return { Mesh: out };
@@ -113,8 +127,34 @@ reg("GeometryNodeMeshToCurve", (api) => {
     for (const c of chains) for (const vi of c.verts) data.push(a.data[vi]);
     out.curveAttributes.set(name, { domain: "POINT", data });
   }
+  // FACE attributes captured before Mesh to Curve are sampled onto the emitted
+  // control points. The subdivision graph stores its X/Y split factors this way.
+  const faceAttrs = [...g.mesh.attributes].filter(([, a]) => a.domain === "FACE");
+  if (faceAttrs.length) {
+    const pointFaces: number[][] = g.mesh.positions.map(() => []);
+    for (let fi = 0; fi < g.mesh.faces.length; fi++) for (const vi of g.mesh.faces[fi]) pointFaces[vi]?.push(fi);
+    for (const [name, a] of faceAttrs) {
+      const data: Elem[] = [];
+      for (const c of chains) for (const vi of c.verts) data.push(avgElems(pointFaces[vi]?.map((fi) => a.data[fi])));
+      out.curveAttributes.set(name, { domain: "POINT", data });
+    }
+  }
   return { Curve: out };
 });
+
+function avgElems(vals: (Elem | undefined)[] | undefined): Elem {
+  if (!vals?.length) return 0;
+  const first = vals.find((v) => v !== undefined);
+  if (Array.isArray(first)) {
+    const acc: Vec3 = [0, 0, 0];
+    let n = 0;
+    for (const v of vals) if (Array.isArray(v)) { acc[0] += v[0]; acc[1] += v[1]; acc[2] += v[2]; n++; }
+    return n ? [acc[0] / n, acc[1] / n, acc[2] / n] : [0, 0, 0];
+  }
+  let s = 0, n = 0;
+  for (const v of vals) if (typeof v === "number") { s += v; n++; }
+  return n ? s / n : 0;
+}
 
 // ---- curve field inputs (light) ------------------------------------------
 reg("GeometryNodeSplineParameter", () => ({

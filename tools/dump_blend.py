@@ -106,6 +106,17 @@ for obj in bpy.data.objects:
          "visible": not obj.hide_render, "modifiers": [], "materials": [m.name for m in obj.data.materials] if obj.type == "MESH" and obj.data else []}
     if obj.type == "MESH" and obj.data:
         o["mesh_stats"] = {"verts": len(obj.data.vertices), "faces": len(obj.data.polygons)}
+        # Embed small plain meshes (no GN modifier) so GeometryNodeObjectInfo can
+        # materialize referenced objects (e.g. the bin generator's 'printbed').
+        has_gn = any(m.type == "NODES" for m in obj.modifiers)
+        if not has_gn and len(obj.data.vertices) <= 10000:
+            me = obj.data
+            o["mesh"] = {
+                "verts": [[round(v.co.x, 6), round(v.co.y, 6), round(v.co.z, 6)] for v in me.vertices],
+                "faces": [list(p.vertices) for p in me.polygons],
+                "face_materials": [p.material_index for p in me.polygons],
+                "edges": [[e.vertices[0], e.vertices[1]] for e in me.edges if e.is_loose],
+            }
     for mod in obj.modifiers:
         m = {"name": mod.name, "type": mod.type}
         if mod.type == "NODES" and mod.node_group:

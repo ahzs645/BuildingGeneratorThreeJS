@@ -2,8 +2,38 @@
 import { Field, Vec3, asVec3, asNum, vadd } from "../core";
 import { Geometry, Mesh, InstanceRef, mergeMeshInto, realizeInstances, transformPoint } from "../geometry";
 import { meshCube, meshGrid, meshCircle, meshLine } from "../primitives";
-import { reg, EvalAPI } from "../registry";
+import { reg, EvalAPI, DUMP_CONTEXT } from "../registry";
 import { makeFieldCtx } from "../evaluator";
+
+// ---- object info ------------------------------------------------------------
+// Materializes a referenced scene object from the dump's embedded plain meshes
+// (dump_blend.py exports them for non-GN objects, e.g. the bin's 'printbed').
+reg("GeometryNodeObjectInfo", (api) => {
+  const ref = api.ref("Object");
+  const obj = DUMP_CONTEXT.objects.find((o) => o.name === ref?.name);
+  const out = new Geometry();
+  if (obj?.mesh) {
+    const m = new Mesh();
+    m.positions = obj.mesh.verts.map((p) => [p[0], p[1], p[2]] as Vec3);
+    m.faces = obj.mesh.faces.map((f) => [...f]);
+    m.faceMaterial = obj.mesh.face_materials ? [...obj.mesh.face_materials] : m.faces.map(() => 0);
+    m.materialSlots = obj.materials?.length ? [...obj.materials] : [null];
+    m.edges = (obj.mesh.edges ?? []).map((e) => [...e] as [number, number]);
+    if (api.prop<string>("transform_space", "ORIGINAL") === "RELATIVE") {
+      const loc = (obj.location ?? [0, 0, 0]) as Vec3;
+      const rot = (obj.rotation ?? [0, 0, 0]) as Vec3;
+      const scl = (obj.scale ?? [1, 1, 1]) as Vec3;
+      m.positions = m.positions.map((p) => transformPoint(p, loc, rot, scl));
+    }
+    out.mesh = m;
+  }
+  return {
+    Geometry: out,
+    Location: Field.of(((obj?.location ?? [0, 0, 0]) as Vec3)),
+    Rotation: Field.of(((obj?.rotation ?? [0, 0, 0]) as Vec3)),
+    Scale: Field.of(((obj?.scale ?? [1, 1, 1]) as Vec3)),
+  };
+});
 
 // ---- primitives -----------------------------------------------------------
 reg("GeometryNodeMeshCube", (api) => ({
