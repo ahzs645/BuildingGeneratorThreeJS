@@ -145,8 +145,9 @@ export function splineFrames(pts: Vec3[], cyclic: boolean): { tangent: Vec3; nor
   return frames;
 }
 
-// Sweep a profile spline along a rail spline -> mesh.
-export function sweep(rail: Spline, profile: Spline, fillCaps: boolean): Mesh {
+// Sweep a profile spline along a rail spline -> mesh. `scales` (optional) is a
+// per-rail-point profile scale (Blender's Curve to Mesh "Scale" / curve radius).
+export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?: number[]): Mesh {
   const mesh = new Mesh();
   const rp = rail.points;
   const pp = profile.points;
@@ -157,8 +158,9 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean): Mesh {
   // place profile at each rail point (profile local: x->binormal, y->normal)
   for (let i = 0; i < nr; i++) {
     const { normal, binormal } = frames[i];
+    const s = scales?.[i] ?? 1;
     for (let j = 0; j < np; j++) {
-      const px = pp[j][0], py = pp[j][1];
+      const px = pp[j][0] * s, py = pp[j][1] * s;
       mesh.positions.push(vadd(rp[i], vadd(vscale(binormal, px), vscale(normal, py))));
     }
   }

@@ -1,7 +1,8 @@
 // Curve subsystem handlers: primitives, resample, fillet, sweep-to-mesh, fill.
-import { Field, Vec3, Elem } from "../core";
+import { Field, Vec3, Elem, asNum } from "../core";
 import { Geometry, Mesh, Spline } from "../geometry";
 import { reg } from "../registry";
+import { makeFieldCtx } from "../evaluator";
 import { resampleSpline, filletSpline, sweep, fillCurves, meshEdgesToChains, splineLength } from "../curves";
 
 function curveGeo(splines: Spline[]): Geometry {
@@ -81,11 +82,27 @@ reg("GeometryNodeCurveToMesh", (api) => {
   const rail = api.geo("Curve");
   const prof = api.geo("Profile Curve");
   const caps = api.bool("Fill Caps");
+  // Blender 5 "Scale": per-rail-point profile scale (the curve radius mechanism).
+  // Resolved on the rail's flattened POINT domain; unlinked non-1 constants apply
+  // uniformly. Requires NamedAttribute.Exists to be real — the handle drives this
+  // with Switch(Exists("radius") ? radius : 1).
+  const scaleLinked = api.node.inputs.find((s) => s.identifier === "Scale")?.linked ?? false;
+  let scaleArr: number[] | null = null;
+  if (scaleLinked) {
+    const ctx = makeFieldCtx(rail, "POINT");
+    scaleArr = api.field("Scale").array(ctx).map((v) => asNum(v ?? 1));
+  } else {
+    const u = api.num("Scale");
+    if (u && u !== 1) scaleArr = rail.curves.flatMap((s) => s.points.map(() => u));
+  }
   const out = new Geometry();
   const mesh = new Mesh();
   mesh.materialSlots = [null];
   const profiles = prof.curves;
+  let flatBase = 0;
   for (const r of rail.curves) {
+    const scales = scaleArr ? scaleArr.slice(flatBase, flatBase + r.points.length) : undefined;
+    flatBase += r.points.length;
     if (!profiles.length) {
       // no profile: emit the rail as an edge-only wire
       const base = mesh.positions.length;
@@ -95,7 +112,7 @@ reg("GeometryNodeCurveToMesh", (api) => {
       continue;
     }
     for (const p of profiles) {
-      const sm = sweep(r, p, caps);
+      const sm = sweep(r, p, caps, scales);
       const base = mesh.positions.length;
       for (const pos of sm.positions) mesh.positions.push(pos);
       for (let fi = 0; fi < sm.faces.length; fi++) { mesh.faces.push(sm.faces[fi].map((v) => v + base)); mesh.faceMaterial.push(0); }

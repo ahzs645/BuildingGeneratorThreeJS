@@ -18,7 +18,10 @@ reg("GeometryNodeInputNamedAttribute", (api) => {
   const name = api.str("Name");
   return {
     Attribute: Field.perElem((i, ctx) => (ctx.attr ? (ctx.attr(name, i) ?? 0) : 0)),
-    Exists: Field.of(1),
+    // Exists must reflect real attribute presence: the handle's Curve-to-Mesh
+    // Scale is Switch(Exists("radius") ? radius : 1) — a hardcoded true would
+    // resolve the absent attribute to 0 and collapse the sweep.
+    Exists: Field.perElem((i, ctx) => (ctx.attr && ctx.attr(name, i) !== undefined ? 1 : 0)),
   };
 });
 
