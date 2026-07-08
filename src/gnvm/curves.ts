@@ -186,29 +186,395 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?:
   return mesh;
 }
 
-// Fill each cyclic spline with an ngon (fan) face -> mesh.
+// Fill cyclic splines with planar even-odd containment. Simple no-hole loops
+// intentionally use the old emit path so existing isolated fills stay identical.
 export function fillCurves(curves: Spline[], mode: "NGONS" | "TRIANGLES"): Mesh {
   const mesh = new Mesh();
-  for (const s of curves) {
-    if (s.points.length < 3) continue;
-    const base = mesh.positions.length;
-    for (const p of s.points) mesh.positions.push([...p] as Vec3);
-    const n = s.points.length;
-    if (mode === "TRIANGLES") {
-      // fan from centroid for robustness on concave-ish shapes
-      let c: Vec3 = [0, 0, 0];
-      for (const p of s.points) c = vadd(c, p);
-      c = vscale(c, 1 / n);
-      const ci = mesh.positions.length;
-      mesh.positions.push(c);
-      for (let i = 0; i < n; i++) { mesh.faces.push([ci, base + i, base + ((i + 1) % n)]); mesh.faceMaterial.push(0); }
-    } else {
-      mesh.faces.push(Array.from({ length: n }, (_, i) => base + i));
-      mesh.faceMaterial.push(0);
-    }
+  const plane = fillPlane(curves);
+  if (!plane) {
+    mesh.materialSlots = [null];
+    return mesh;
+  }
+  const loops = fillLoops(curves, plane);
+  classifyFillLoops(loops);
+  for (let li = 0; li < loops.length; li++) {
+    const loop = loops[li];
+    if (loop.depth % 2 !== 0) continue;
+    const holes = loops.filter((h) => h.parent === li && h.depth === loop.depth + 1);
+    if (!holes.length) emitSimpleFill(mesh, loop.points, mode);
+    else emitHoledFill(mesh, loop, holes);
   }
   mesh.materialSlots = [null];
   return mesh;
+}
+
+type Vec2 = [number, number];
+
+type FillPlane = {
+  origin: Vec3;
+  normal: Vec3;
+  u: Vec3;
+  v: Vec3;
+};
+
+type FillLoop = {
+  points: Vec3[];
+  points2: Vec2[];
+  area: number;
+  absArea: number;
+  depth: number;
+  parent: number;
+};
+
+type PolyRef = {
+  p: Vec2;
+  vi: number;
+};
+
+const FILL_EPS = 1e-9;
+
+function emitSimpleFill(mesh: Mesh, points: Vec3[], mode: "NGONS" | "TRIANGLES") {
+  const base = mesh.positions.length;
+  for (const p of points) mesh.positions.push([...p] as Vec3);
+  const n = points.length;
+  if (mode === "TRIANGLES") {
+    // fan from centroid for robustness on concave-ish shapes
+    let c: Vec3 = [0, 0, 0];
+    for (const p of points) c = vadd(c, p);
+    c = vscale(c, 1 / n);
+    const ci = mesh.positions.length;
+    mesh.positions.push(c);
+    for (let i = 0; i < n; i++) { mesh.faces.push([ci, base + i, base + ((i + 1) % n)]); mesh.faceMaterial.push(0); }
+  } else {
+    mesh.faces.push(Array.from({ length: n }, (_, i) => base + i));
+    mesh.faceMaterial.push(0);
+  }
+}
+
+function fillPlane(curves: Spline[]): FillPlane | null {
+  let origin: Vec3 | null = null;
+  let firstNormal: Vec3 | null = null;
+  let normalSum: Vec3 = [0, 0, 0];
+  for (const s of curves) {
+    if (!s.cyclic || s.points.length < 3) continue;
+    const n = newellNormal(s.points);
+    if (vlen(n) <= FILL_EPS) continue;
+    if (!origin) origin = averagePoint(s.points);
+    if (!firstNormal) firstNormal = n;
+    const aligned = vdot(n, firstNormal) < 0 ? vscale(n, -1) : n;
+    normalSum = vadd(normalSum, aligned);
+  }
+  if (!origin || !firstNormal) return null;
+  const normal = vlen(normalSum) > FILL_EPS ? vnorm(normalSum) : vnorm(firstNormal);
+  const ref: Vec3 = Math.abs(normal[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+  const u = vnorm(vsub(ref, vscale(normal, vdot(ref, normal))));
+  const v = vnorm(vcross(normal, u));
+  return { origin, normal, u, v };
+}
+
+function fillLoops(curves: Spline[], plane: FillPlane): FillLoop[] {
+  const loops: FillLoop[] = [];
+  for (const s of curves) {
+    if (!s.cyclic || s.points.length < 3) continue;
+    const points2 = s.points.map((p) => projectFillPoint(p, plane));
+    const area = signedArea2(points2);
+    const absArea = Math.abs(area);
+    if (absArea <= FILL_EPS) continue;
+    loops.push({
+      points: s.points,
+      points2,
+      area,
+      absArea,
+      depth: 0,
+      parent: -1,
+    });
+  }
+  return loops;
+}
+
+function classifyFillLoops(loops: FillLoop[]) {
+  for (let i = 0; i < loops.length; i++) {
+    let depth = 0;
+    let parent = -1;
+    let parentArea = Infinity;
+    for (let j = 0; j < loops.length; j++) {
+      if (i === j || loops[j].absArea <= loops[i].absArea + FILL_EPS) continue;
+      if (!loopContainsLoop(loops[j], loops[i])) continue;
+      depth++;
+      if (loops[j].absArea < parentArea) {
+        parentArea = loops[j].absArea;
+        parent = j;
+      }
+    }
+    loops[i].depth = depth;
+    loops[i].parent = parent;
+  }
+}
+
+function emitHoledFill(mesh: Mesh, outer: FillLoop, holes: FillLoop[]) {
+  const baseByLoop = new Map<FillLoop, number>();
+  const addLoop = (loop: FillLoop) => {
+    const base = mesh.positions.length;
+    baseByLoop.set(loop, base);
+    for (const p of loop.points) mesh.positions.push([...p] as Vec3);
+  };
+  addLoop(outer);
+  for (const h of holes) addLoop(h);
+
+  let ring = orientedRefs(outer, baseByLoop.get(outer)!, true);
+  const holeRefs = holes
+    .map((h) => orientedRefs(h, baseByLoop.get(h)!, false))
+    .sort((a, b) => rightmostX(b) - rightmostX(a));
+  for (const hole of holeRefs) ring = bridgeHole(ring, hole, holeRefs);
+  const tris = earClip(ring);
+  for (const f of tris) {
+    mesh.faces.push(f);
+    mesh.faceMaterial.push(0);
+  }
+}
+
+function orientedRefs(loop: FillLoop, base: number, ccw: boolean): PolyRef[] {
+  const reverse = ccw ? loop.area < 0 : loop.area > 0;
+  const refs: PolyRef[] = [];
+  for (let k = 0; k < loop.points.length; k++) {
+    const i = reverse ? loop.points.length - 1 - k : k;
+    refs.push({ p: loop.points2[i], vi: base + i });
+  }
+  return refs;
+}
+
+function bridgeHole(ring: PolyRef[], hole: PolyRef[], allHoles: PolyRef[][]): PolyRef[] {
+  const bridge = findBridge(ring, hole, allHoles);
+  if (!bridge) return ring;
+  const out: PolyRef[] = [];
+  for (let i = 0; i <= bridge.ring; i++) out.push(ring[i]);
+  for (let k = 0; k <= hole.length; k++) out.push(hole[(bridge.hole + k) % hole.length]);
+  out.push(ring[bridge.ring]);
+  for (let i = bridge.ring + 1; i < ring.length; i++) out.push(ring[i]);
+  return out;
+}
+
+function findBridge(ring: PolyRef[], hole: PolyRef[], allHoles: PolyRef[][]): { ring: number; hole: number } | null {
+  const holeOrder = hole.map((_, i) => i).sort((a, b) => {
+    const dx = hole[b].p[0] - hole[a].p[0];
+    return Math.abs(dx) > FILL_EPS ? dx : hole[a].p[1] - hole[b].p[1];
+  });
+  let best: { ring: number; hole: number; d2: number } | null = null;
+  for (const hi of holeOrder) {
+    for (let ri = 0; ri < ring.length; ri++) {
+      if (!visibleBridge(ring[ri], hole[hi], ring, allHoles, hole)) continue;
+      const d2 = dist2(ring[ri].p, hole[hi].p);
+      if (!best || d2 < best.d2) best = { ring: ri, hole: hi, d2 };
+    }
+    if (best) break;
+  }
+  return best ? { ring: best.ring, hole: best.hole } : null;
+}
+
+function visibleBridge(a: PolyRef, b: PolyRef, ring: PolyRef[], allHoles: PolyRef[][], activeHole: PolyRef[]): boolean {
+  if (same2(a.p, b.p)) return false;
+  if (segmentHitsRing(a.p, b.p, ring, a.p)) return false;
+  for (const h of allHoles) {
+    const allowed = h === activeHole ? b.p : null;
+    if (segmentHitsRing(a.p, b.p, h, allowed)) return false;
+  }
+  return true;
+}
+
+function segmentHitsRing(a: Vec2, b: Vec2, ring: PolyRef[], allowed: Vec2 | null): boolean {
+  for (let i = 0; i < ring.length; i++) {
+    const c = ring[i].p;
+    const d = ring[(i + 1) % ring.length].p;
+    if (allowed && (same2(c, allowed) || same2(d, allowed))) continue;
+    if (segmentsIntersect(a, b, c, d)) return true;
+  }
+  return false;
+}
+
+function earClip(poly: PolyRef[]): number[][] {
+  const faces: number[][] = [];
+  let verts = cleanPoly(poly);
+  if (verts.length < 3) return faces;
+  if (signedAreaRefs(verts) < 0) verts = [...verts].reverse();
+  let guard = verts.length * verts.length;
+  while (verts.length > 3 && guard-- > 0) {
+    let clipped = false;
+    for (let i = 0; i < verts.length; i++) {
+      const pi = (i - 1 + verts.length) % verts.length;
+      const ni = (i + 1) % verts.length;
+      const a = verts[pi], b = verts[i], c = verts[ni];
+      if (cross2(a.p, b.p, c.p) <= FILL_EPS) continue;
+      if (diagonalBlocked(a.p, c.p, verts, pi, i, ni)) continue;
+      if (earContainsPoint(a.p, b.p, c.p, verts, pi, i, ni)) continue;
+      if (new Set([a.vi, b.vi, c.vi]).size === 3) faces.push([a.vi, b.vi, c.vi]);
+      verts.splice(i, 1);
+      clipped = true;
+      break;
+    }
+    if (!clipped && !dropDegenerateVertex(verts)) break;
+  }
+  if (verts.length === 3 && cross2(verts[0].p, verts[1].p, verts[2].p) > FILL_EPS && new Set(verts.map((v) => v.vi)).size === 3) {
+    faces.push([verts[0].vi, verts[1].vi, verts[2].vi]);
+  }
+  return faces;
+}
+
+function cleanPoly(poly: PolyRef[]): PolyRef[] {
+  const out: PolyRef[] = [];
+  for (const p of poly) {
+    if (!out.length || !same2(out[out.length - 1].p, p.p)) out.push(p);
+  }
+  if (out.length > 1 && same2(out[0].p, out[out.length - 1].p)) out.pop();
+  return out;
+}
+
+function dropDegenerateVertex(verts: PolyRef[]): boolean {
+  for (let i = 0; i < verts.length; i++) {
+    const a = verts[(i - 1 + verts.length) % verts.length].p;
+    const b = verts[i].p;
+    const c = verts[(i + 1) % verts.length].p;
+    if (same2(a, b) || same2(b, c) || Math.abs(cross2(a, b, c)) <= FILL_EPS) {
+      verts.splice(i, 1);
+      return true;
+    }
+  }
+  return false;
+}
+
+function diagonalBlocked(a: Vec2, b: Vec2, verts: PolyRef[], pi: number, i: number, ni: number): boolean {
+  for (let j = 0; j < verts.length; j++) {
+    const j2 = (j + 1) % verts.length;
+    if (j === pi || j === i || j2 === i || j2 === ni) continue;
+    const c = verts[j].p;
+    const d = verts[j2].p;
+    if (same2(c, a) || same2(c, b) || same2(d, a) || same2(d, b)) continue;
+    if (segmentsIntersect(a, b, c, d)) return true;
+  }
+  return false;
+}
+
+function earContainsPoint(a: Vec2, b: Vec2, c: Vec2, verts: PolyRef[], ai: number, bi: number, ci: number): boolean {
+  for (let i = 0; i < verts.length; i++) {
+    if (i === ai || i === bi || i === ci) continue;
+    const p = verts[i].p;
+    if (same2(p, a) || same2(p, b) || same2(p, c)) continue;
+    if (pointInTriStrict(p, a, b, c)) return true;
+  }
+  return false;
+}
+
+function loopContainsLoop(outer: FillLoop, inner: FillLoop): boolean {
+  for (const p of inner.points2) {
+    const r = pointInPolygon(p, outer.points2);
+    if (r > 0) return true;
+    if (r < 0) return false;
+  }
+  return pointInPolygon(avg2(inner.points2), outer.points2) > 0;
+}
+
+function pointInPolygon(p: Vec2, poly: Vec2[]): number {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[j];
+    const b = poly[i];
+    if (pointOnSegment(p, a, b)) return 0;
+    const crosses = (a[1] > p[1]) !== (b[1] > p[1]);
+    if (!crosses) continue;
+    const x = a[0] + ((p[1] - a[1]) * (b[0] - a[0])) / (b[1] - a[1]);
+    if (p[0] < x - FILL_EPS) inside = !inside;
+    else if (Math.abs(p[0] - x) <= FILL_EPS) return 0;
+  }
+  return inside ? 1 : -1;
+}
+
+function pointInTriStrict(p: Vec2, a: Vec2, b: Vec2, c: Vec2): boolean {
+  return cross2(a, b, p) > FILL_EPS && cross2(b, c, p) > FILL_EPS && cross2(c, a, p) > FILL_EPS;
+}
+
+function pointOnSegment(p: Vec2, a: Vec2, b: Vec2): boolean {
+  return Math.abs(cross2(a, b, p)) <= FILL_EPS &&
+    p[0] >= Math.min(a[0], b[0]) - FILL_EPS && p[0] <= Math.max(a[0], b[0]) + FILL_EPS &&
+    p[1] >= Math.min(a[1], b[1]) - FILL_EPS && p[1] <= Math.max(a[1], b[1]) + FILL_EPS;
+}
+
+function segmentsIntersect(a: Vec2, b: Vec2, c: Vec2, d: Vec2): boolean {
+  const o1 = cross2(a, b, c);
+  const o2 = cross2(a, b, d);
+  const o3 = cross2(c, d, a);
+  const o4 = cross2(c, d, b);
+  if (Math.abs(o1) <= FILL_EPS && pointOnSegment(c, a, b)) return true;
+  if (Math.abs(o2) <= FILL_EPS && pointOnSegment(d, a, b)) return true;
+  if (Math.abs(o3) <= FILL_EPS && pointOnSegment(a, c, d)) return true;
+  if (Math.abs(o4) <= FILL_EPS && pointOnSegment(b, c, d)) return true;
+  return (o1 > FILL_EPS) !== (o2 > FILL_EPS) && (o3 > FILL_EPS) !== (o4 > FILL_EPS);
+}
+
+function newellNormal(points: Vec3[]): Vec3 {
+  let n: Vec3 = [0, 0, 0];
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    n = [
+      n[0] + (a[1] - b[1]) * (a[2] + b[2]),
+      n[1] + (a[2] - b[2]) * (a[0] + b[0]),
+      n[2] + (a[0] - b[0]) * (a[1] + b[1]),
+    ];
+  }
+  return n;
+}
+
+function averagePoint(points: Vec3[]): Vec3 {
+  let c: Vec3 = [0, 0, 0];
+  for (const p of points) c = vadd(c, p);
+  return vscale(c, 1 / points.length);
+}
+
+function projectFillPoint(p: Vec3, plane: FillPlane): Vec2 {
+  const d = vsub(p, plane.origin);
+  return [vdot(d, plane.u), vdot(d, plane.v)];
+}
+
+function signedArea2(points: Vec2[]): number {
+  let a = 0;
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    const q = points[(i + 1) % points.length];
+    a += p[0] * q[1] - q[0] * p[1];
+  }
+  return a * 0.5;
+}
+
+function signedAreaRefs(points: PolyRef[]): number {
+  let a = 0;
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i].p;
+    const q = points[(i + 1) % points.length].p;
+    a += p[0] * q[1] - q[0] * p[1];
+  }
+  return a * 0.5;
+}
+
+function avg2(points: Vec2[]): Vec2 {
+  let x = 0, y = 0;
+  for (const p of points) { x += p[0]; y += p[1]; }
+  return [x / points.length, y / points.length];
+}
+
+function cross2(a: Vec2, b: Vec2, c: Vec2): number {
+  return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+}
+
+function same2(a: Vec2, b: Vec2): boolean {
+  return Math.abs(a[0] - b[0]) <= FILL_EPS && Math.abs(a[1] - b[1]) <= FILL_EPS;
+}
+
+function dist2(a: Vec2, b: Vec2): number {
+  const dx = a[0] - b[0], dy = a[1] - b[1];
+  return dx * dx + dy * dy;
+}
+
+function rightmostX(points: PolyRef[]): number {
+  return Math.max(...points.map((p) => p.p[0]));
 }
 
 // Chain a mesh's edges into poly splines, returning the source vertex index per

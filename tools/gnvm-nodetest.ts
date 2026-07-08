@@ -45,12 +45,27 @@ function runNode(type: string, inputs: Record<string, Input>, props: Record<stri
 const curve = (points: Vec3[], cyclic: boolean): Geometry =>
   Object.assign(new Geometry(), { curves: [{ points, cyclic }] });
 
+const curves = (items: { points: Vec3[]; cyclic: boolean }[]): Geometry =>
+  Object.assign(new Geometry(), { curves: items });
+
 // ---- assertions -----------------------------------------------------------
 let pass = 0, fail = 0;
 const approx = (a: number[], b: number[], eps = 1e-4) => a.length === b.length && a.every((x, i) => Math.abs(x - b[i]) < eps);
 function check(label: string, cond: boolean, detail = "") {
   console.log(`${cond ? "PASS" : "FAIL"}  ${label}${cond ? "" : "   " + detail}`);
   cond ? pass++ : fail++;
+}
+
+function meshSignedAreaXY(m: Mesh): number {
+  let area = 0;
+  for (const f of m.faces) {
+    for (let i = 0; i < f.length; i++) {
+      const p = m.positions[f[i]];
+      const q = m.positions[f[(i + 1) % f.length]];
+      area += p[0] * q[1] - q[0] * p[1];
+    }
+  }
+  return area * 0.5;
 }
 
 // (A) CurveCircle: res=4, r=1 -> 4 pts, cyclic, +X start, CCW (Blender-correct)
@@ -103,6 +118,37 @@ function check(label: string, cond: boolean, detail = "") {
   check("FillCurve NGON triangle -> 1 face", g.mesh!.faces.length === 1 && g.mesh!.positions.length === 3);
 }
 
+// (F2) FillCurve NGONS: single simple loop keeps exact ngon vertex order
+{
+  const pts: Vec3[] = [[-2, -1, 0], [2, -1, 0], [2, 1, 0], [-2, 1, 0]];
+  const g = runNode("GeometryNodeFillCurve", { Curve: curve(pts, true) }, { mode: "NGONS" }).Mesh as Geometry;
+  const m = g.mesh!;
+  check("FillCurve NGON single loop keeps one ngon", m.faces.length === 1 && m.positions.length === 4);
+  check("FillCurve NGON single loop preserves vertex order", JSON.stringify(m.faces[0]) === JSON.stringify([0, 1, 2, 3]) && m.positions.every((p, i) => approx(p, pts[i])));
+}
+
+// (F3) FillCurve nested squares: inner loop is a hole and ring triangulates
+{
+  const outer: Vec3[] = [[-2, -2, 0], [2, -2, 0], [2, 2, 0], [-2, 2, 0]];
+  const inner: Vec3[] = [[-1, -1, 0], [1, -1, 0], [1, 1, 0], [-1, 1, 0]];
+  const g = runNode("GeometryNodeFillCurve", { Curve: curves([{ points: outer, cyclic: true }, { points: inner, cyclic: true }]) }, { mode: "TRIANGLES" }).Mesh as Geometry;
+  const m = g.mesh!;
+  check("FillCurve nested squares -> original loop verts only", m.positions.length === 8, `got ${m.positions.length}`);
+  check("FillCurve nested squares -> triangles only", m.faces.length > 0 && m.faces.every((f) => f.length === 3));
+  check("FillCurve nested squares area subtracts hole", Math.abs(meshSignedAreaXY(m) - 12) < 1e-6, `area=${meshSignedAreaXY(m)}`);
+}
+
+// (F4) FillCurve three-level nesting: middle is a hole, inner is an island
+{
+  const outer: Vec3[] = [[-3, -3, 0], [3, -3, 0], [3, 3, 0], [-3, 3, 0]];
+  const middle: Vec3[] = [[-2, -2, 0], [2, -2, 0], [2, 2, 0], [-2, 2, 0]];
+  const inner: Vec3[] = [[-1, -1, 0], [1, -1, 0], [1, 1, 0], [-1, 1, 0]];
+  const g = runNode("GeometryNodeFillCurve", { Curve: curves([{ points: outer, cyclic: true }, { points: middle, cyclic: true }, { points: inner, cyclic: true }]) }, { mode: "TRIANGLES" }).Mesh as Geometry;
+  const m = g.mesh!;
+  check("FillCurve three-level nesting -> triangles only", m.faces.length > 0 && m.faces.every((f) => f.length === 3));
+  check("FillCurve three-level nesting keeps inner island", Math.abs(meshSignedAreaXY(m) - 24) < 1e-6, `area=${meshSignedAreaXY(m)}`);
+}
+
 // (G) SetPosition with linked offset moves points
 {
   const grid = runNode("GeometryNodeMeshGrid", { "Size X": 2, "Size Y": 2, "Vertices X": 2, "Vertices Y": 2 }).Mesh as Geometry;
@@ -122,6 +168,54 @@ function check(label: string, cond: boolean, detail = "") {
 {
   const mixed = runNode("ShaderNodeMix", { Factor_Float: 0.25, A_Color: [0, 0, 0], B_Color: [4, 8, 12] }, { data_type: "RGBA" }).Result_Color as Field;
   check("Mix RGBA exposes Result_Color", approx(mixed.value as number[], [1, 2, 3]));
+}
+
+// (I2) MenuSwitch: string menu selects the matching enum item
+{
+  const out = runNode(
+    "GeometryNodeMenuSwitch",
+    { Menu: "Beta", Item_0: 10, Item_1: 20 },
+    { data_type: "FLOAT", enum_items: [{ name: "Alpha" }, { name: "Beta" }] },
+  ).Output as Field;
+  check("MenuSwitch picks enum string item", out.value === 20, `got ${out.value}`);
+}
+
+// (I3) VectorRotate: axis-angle 90deg around +Z
+{
+  const out = runNode("ShaderNodeVectorRotate", { Vector: [1, 0, 0], Center: [0, 0, 0], Axis: [0, 0, 1], Angle: Math.PI / 2, Rotation: [0, 0, 0] }, { rotation_type: "AXIS_ANGLE", invert: false }).Vector as Field;
+  check("VectorRotate axis-angle z90", approx(out.value as number[], [0, 1, 0]));
+}
+
+// (I4) TrimCurve: factor range interpolates endpoints on a straight segment
+{
+  const out = runNode("GeometryNodeTrimCurve", { Curve: curve([[0, 0, 0], [4, 0, 0]], false), Start: 0.25, End: 0.75, Start_001: 0, End_001: 1 }, { mode: "FACTOR" }).Curve as Geometry;
+  const pts = out.curves[0].points;
+  check("TrimCurve factor keeps two interpolated endpoints", pts.length === 2 && approx(pts[0], [1, 0, 0]) && approx(pts[1], [3, 0, 0]), JSON.stringify(pts));
+}
+
+// (I5) ScaleElements: one selected quad scales as an island about its center
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]];
+  m.faces = [[0, 1, 2, 3]];
+  m.faceMaterial = [0];
+  const g = new Geometry();
+  g.mesh = m;
+  const out = runNode("GeometryNodeScaleElements", { Geometry: g, Selection: true, Scale: 2, Center: [0, 0, 0], "Scale Mode": "Uniform", Axis: [1, 0, 0] }, { domain: "FACE" }).Geometry as Geometry;
+  const p = out.mesh!.positions;
+  check("ScaleElements quad scale 2 about center", approx(p[0], [-0.5, -0.5, 0]) && approx(p[2], [1.5, 1.5, 0]), JSON.stringify(p));
+}
+
+// (I6) AttributeStatistic: scalar mean/min/max on a known POINT attribute
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [1, 0, 0], [2, 0, 0]];
+  m.attributes.set("a", { domain: "POINT", data: [2, 4, 8] });
+  const g = new Geometry();
+  g.mesh = m;
+  const attr = Field.perElem((i, ctx) => ctx.attr?.("a", i) ?? 0);
+  const out = runNode("GeometryNodeAttributeStatistic", { Geometry: g, Selection: true, Attribute: attr }, { domain: "POINT", data_type: "FLOAT" });
+  check("AttributeStatistic mean/min/max", (out.Mean as Field).value === 14 / 3 && (out.Min as Field).value === 2 && (out.Max as Field).value === 8);
 }
 
 // (J) FieldAtIndex samples Value on its declared source domain, not the consumer domain

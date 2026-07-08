@@ -25,6 +25,8 @@ export interface RawNode {
   outputs: RawOutput[];
   props?: Record<string, any>;
   group?: string;
+  // Repeat/simulation zones: name of the paired output node (on the input node).
+  paired_output?: string;
 }
 
 // Datablock reference (material/object/image) as dumped.

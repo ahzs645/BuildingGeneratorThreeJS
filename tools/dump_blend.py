@@ -58,6 +58,10 @@ def dump_node(node):
         d["props"] = props
     if node.bl_idname == "GeometryNodeGroup" and node.node_tree:
         d["group"] = node.node_tree.name
+    # Repeat/simulation zones: record the paired output node so the evaluator can
+    # tie RepeatInput to its RepeatOutput without guessing.
+    if hasattr(node, "paired_output") and node.paired_output:
+        d["paired_output"] = node.paired_output.name
     return d
 
 def dump_tree(tree):
@@ -106,10 +110,10 @@ for obj in bpy.data.objects:
          "visible": not obj.hide_render, "modifiers": [], "materials": [m.name for m in obj.data.materials] if obj.type == "MESH" and obj.data else []}
     if obj.type == "MESH" and obj.data:
         o["mesh_stats"] = {"verts": len(obj.data.vertices), "faces": len(obj.data.polygons)}
-        # Embed small plain meshes (no GN modifier) so GeometryNodeObjectInfo can
-        # materialize referenced objects (e.g. the bin generator's 'printbed').
-        has_gn = any(m.type == "NODES" for m in obj.modifiers)
-        if not has_gn and len(obj.data.vertices) <= 10000:
+        # Embed small BASE meshes (pre-modifier obj.data): ObjectInfo materializes
+        # referenced objects (e.g. 'printbed'), and GN modifiers need the object's
+        # own mesh bound to their Geometry input (e.g. the bubble vase's seed).
+        if len(obj.data.vertices) <= 10000:
             me = obj.data
             o["mesh"] = {
                 "verts": [[round(v.co.x, 6), round(v.co.y, 6), round(v.co.z, 6)] for v in me.vertices],

@@ -176,6 +176,13 @@ function avgElems(vals: (Elem | undefined)[] | undefined): Elem {
   return n ? s / n : 0;
 }
 
+reg("GeometryNodeCurveLength", (api) => {
+  const g = api.geo("Curve");
+  let L = 0;
+  for (const s of g.curves) L += splineLength(s);
+  return { Length: Field.of(L) };
+});
+
 // ---- curve field inputs (light) ------------------------------------------
 reg("GeometryNodeSplineParameter", () => ({
   Factor: Field.perElem((i, ctx) => (ctx.splineFactor ? ctx.splineFactor(i) : 0)),
