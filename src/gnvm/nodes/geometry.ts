@@ -71,17 +71,24 @@ reg(["GeometryNodeTransform", "GeometryNodeTransformGeometry"], (api) => {
 // ---- set position ---------------------------------------------------------
 reg("GeometryNodeSetPosition", (api) => {
   const g = api.geo("Geometry").clone();
-  if (!g.mesh) return { Geometry: g };
+  if (!g.mesh && !g.curves.length) return { Geometry: g };
   const ctx = makeFieldCtx(g, "POINT");
   const sel = api.field("Selection").array(ctx);
   const off = api.field("Offset").array(ctx);
   const posLinked = api.node.inputs.find((s) => s.identifier === "Position")?.linked;
   const posArr = posLinked ? api.field("Position").array(ctx) : null;
-  g.mesh.positions = g.mesh.positions.map((p, i) => {
+  const move = (p: Vec3, i: number): Vec3 => {
     if (!asNum(sel[i] ?? 1)) return p;
     const base = posArr ? asVec3(posArr[i]) : p;
     return vadd(base, asVec3(off[i] ?? [0, 0, 0]));
-  });
+  };
+  if (g.mesh) {
+    g.mesh.positions = g.mesh.positions.map(move);
+  } else {
+    // curve geometry: the ctx flattens control points in spline order
+    let i = 0;
+    g.curves = g.curves.map((s) => ({ cyclic: s.cyclic, points: s.points.map((p) => move(p, i++)) }));
+  }
   return { Geometry: g };
 });
 
@@ -176,6 +183,38 @@ reg("GeometryNodeCaptureAttribute", (api) => {
   return {
     Geometry: g,
     Attribute: Field.perElem((i, ctx) => (ctx.attr ? (ctx.attr(name, i) ?? 0) : 0)),
+  };
+});
+
+// ---- geometry proximity ----------------------------------------------------
+// POINTS mode: distance from each source element to the nearest target point.
+// An unlinked "Source Position" means Blender's implicit position field.
+reg("GeometryNodeProximity", (api) => {
+  const target = api.geo("Target");
+  const pts: Vec3[] = target.mesh ? target.mesh.positions : target.curves.flatMap((s) => s.points);
+  const posLinked = api.node.inputs.find((s) => s.identifier === "Source Position")?.linked;
+  const posF = posLinked ? api.field("Source Position") : null;
+  const nearest = (p: Vec3): { d: number; q: Vec3 } => {
+    let best = Infinity;
+    let bq: Vec3 = [0, 0, 0];
+    for (const q of pts) {
+      const d = (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2;
+      if (d < best) { best = d; bq = q; }
+    }
+    return { d: Math.sqrt(best), q: bq };
+  };
+  const sample = (ctx: import("../core").FieldCtx, i: number, arr: import("../core").Elem[] | null): Vec3 =>
+    arr ? asVec3(arr[i] ?? [0, 0, 0]) : ctx.position?.(i) ?? [0, 0, 0];
+  return {
+    Position: Field.make((ctx) => {
+      const arr = posF ? posF.array(ctx) : null;
+      return Array.from({ length: ctx.size }, (_, i) => (pts.length ? nearest(sample(ctx, i, arr)).q : [0, 0, 0]));
+    }),
+    Distance: Field.make((ctx) => {
+      const arr = posF ? posF.array(ctx) : null;
+      return Array.from({ length: ctx.size }, (_, i) => (pts.length ? nearest(sample(ctx, i, arr)).d : 0));
+    }),
+    "Is Valid": Field.of(pts.length ? 1 : 0),
   };
 });
 

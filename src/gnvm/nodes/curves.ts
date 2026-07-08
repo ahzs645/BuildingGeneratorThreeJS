@@ -14,7 +14,10 @@ function curveGeo(splines: Spline[]): Geometry {
 reg("GeometryNodeCurvePrimitiveQuadrilateral", (api) => {
   const w = (api.num("Width") || 1) / 2;
   const h = (api.num("Height") || 1) / 2;
-  const pts: Vec3[] = [[-w, -h, 0], [w, -h, 0], [w, h, 0], [-w, h, 0]];
+  // Blender's rectangle mode starts on the positive-height edge. Edge index 0
+  // must be the +Y side for downstream EDGE Index selections (the drawer handle
+  // deletes edge 0 to open its rail on the back side).
+  const pts: Vec3[] = [[w, h, 0], [-w, h, 0], [-w, -h, 0], [w, -h, 0]];
   return { Curve: curveGeo([{ points: pts, cyclic: true }]) };
 });
 

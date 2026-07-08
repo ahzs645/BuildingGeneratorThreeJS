@@ -22,8 +22,10 @@ controls.enableDamping = true;
 controls.autoRotate = true;
 controls.autoRotateSpeed = 0.7;
 
-scene.add(new THREE.HemisphereLight(0xdfeaff, 0x20242a, 1.2));
-const key = new THREE.DirectionalLight(0xffffff, 2.4);
+// Keep the key light gentle: the bin floors face +Z and wash out to gray under
+// a hot top light + ACES, hiding the blue material the graph assigns them.
+scene.add(new THREE.HemisphereLight(0xdfeaff, 0x20242a, 0.9));
+const key = new THREE.DirectionalLight(0xffffff, 1.5);
 key.position.set(3, 6, 4);
 scene.add(key);
 const rim = new THREE.DirectionalLight(0x88b0ff, 1.0);

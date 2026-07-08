@@ -53,12 +53,7 @@ export class Mesh {
 
   // Smooth per-vertex normals (area-weighted from face normals).
   vertexNormals(): Vec3[] {
-    const acc: Vec3[] = this.positions.map(() => [0, 0, 0]);
-    for (let fi = 0; fi < this.faces.length; fi++) {
-      const n = this.faceNormal(fi);
-      for (const vi of this.faces[fi]) acc[vi] = vadd(acc[vi], n);
-    }
-    return acc.map((n) => vnorm(n));
+    return vertexNormalsOf(this);
   }
 
   ensureMaterialSlot(name: string | null): number {
@@ -137,7 +132,143 @@ export interface Topology {
   pointFaces: number[][]; // faces incident to each vertex (for domain interpolation)
 }
 
+// Mutation-safety audit, 2026-07-08:
+// src/gnvm construction paths mutate fresh Mesh instances before any derived
+// query. The current query-then-mutate handlers are SetPosition (positions
+// assignment), DeleteGeometry EDGE (edges assignment), FlipFaces (face-row
+// reverse), and mergeMeshInto's EDGE-attribute reconciliation (canonical keys
+// before append). Cache validation records array identities/counts plus face
+// and loose-edge order stamps, so assignments, appends, and the audited face
+// reverse invalidate without turning hot mesh arrays into accessor/proxy arrays.
+// The audit found no in-place Vec3 coordinate writes; if those are added later
+// they must assign a fresh positions array or explicitly invalidate the cache.
+interface TopologyCacheMeta {
+  positions: Vec3[];
+  faces: number[][];
+  edges: [number, number][];
+  positionCount: number;
+  faceCount: number;
+  edgeCount: number;
+  stamp: number;
+}
+
+interface VertexNormalsCacheMeta {
+  positions: Vec3[];
+  faces: number[][];
+  positionCount: number;
+  faceCount: number;
+  stamp: number;
+}
+
+const topologyCache = new WeakMap<Mesh, Topology>();
+const topologyCacheMeta = new WeakMap<Mesh, TopologyCacheMeta>();
+const vertexNormalsCache = new WeakMap<Mesh, Vec3[]>();
+const vertexNormalsCacheMeta = new WeakMap<Mesh, VertexNormalsCacheMeta>();
+
+function invalidatePositionCache(mesh: Mesh): void {
+  topologyCache.delete(mesh);
+  topologyCacheMeta.delete(mesh);
+  vertexNormalsCache.delete(mesh);
+  vertexNormalsCacheMeta.delete(mesh);
+}
+
+function mixStamp(h: number, n: number): number {
+  return Math.imul(h ^ (n | 0), 16777619) >>> 0;
+}
+
+function faceOrderStamp(mesh: Mesh): number {
+  let h = 2166136261;
+  h = mixStamp(h, mesh.faces.length);
+  for (const f of mesh.faces) {
+    h = mixStamp(h, f.length);
+    for (const vi of f) h = mixStamp(h, vi);
+  }
+  return h;
+}
+
+function topologyOrderStamp(mesh: Mesh): number {
+  let h = faceOrderStamp(mesh);
+  h = mixStamp(h, mesh.positions.length);
+  h = mixStamp(h, mesh.edges.length);
+  for (const [a, b] of mesh.edges) {
+    h = mixStamp(h, a);
+    h = mixStamp(h, b);
+  }
+  return h;
+}
+
+function computeVertexNormals(mesh: Mesh): Vec3[] {
+  const acc: Vec3[] = mesh.positions.map(() => [0, 0, 0]);
+  for (let fi = 0; fi < mesh.faces.length; fi++) {
+    const n = mesh.faceNormal(fi);
+    for (const vi of mesh.faces[fi]) acc[vi] = vadd(acc[vi], n);
+  }
+  return acc.map((n) => vnorm(n));
+}
+
+function vertexNormalsOf(mesh: Mesh): Vec3[] {
+  const cached = vertexNormalsCache.get(mesh);
+  const meta = vertexNormalsCacheMeta.get(mesh);
+  if (
+    cached &&
+    meta &&
+    meta.positions === mesh.positions &&
+    meta.faces === mesh.faces &&
+    meta.positionCount === mesh.positions.length &&
+    meta.faceCount === mesh.faces.length
+  ) {
+    const stamp = faceOrderStamp(mesh);
+    if (meta.stamp === stamp) return cached;
+  }
+  const stamp = faceOrderStamp(mesh);
+  const normals = computeVertexNormals(mesh);
+  vertexNormalsCache.set(mesh, normals);
+  vertexNormalsCacheMeta.set(mesh, {
+    positions: mesh.positions,
+    faces: mesh.faces,
+    positionCount: mesh.positions.length,
+    faceCount: mesh.faces.length,
+    stamp,
+  });
+  return normals;
+}
+
+export function topologyOf(mesh: Mesh): Topology {
+  const cached = topologyCache.get(mesh);
+  const meta = topologyCacheMeta.get(mesh);
+  if (
+    cached &&
+    meta &&
+    meta.positions === mesh.positions &&
+    meta.faces === mesh.faces &&
+    meta.edges === mesh.edges &&
+    meta.positionCount === mesh.positions.length &&
+    meta.faceCount === mesh.faces.length &&
+    meta.edgeCount === mesh.edges.length
+  ) {
+    const stamp = topologyOrderStamp(mesh);
+    if (meta.stamp === stamp) return cached;
+  }
+  const stamp = topologyOrderStamp(mesh);
+  const topo = computeTopology(mesh);
+  topologyCache.set(mesh, topo);
+  topologyCacheMeta.set(mesh, {
+    positions: mesh.positions,
+    faces: mesh.faces,
+    edges: mesh.edges,
+    positionCount: mesh.positions.length,
+    faceCount: mesh.faces.length,
+    edgeCount: mesh.edges.length,
+    stamp,
+  });
+  return topo;
+}
+
 export function buildTopology(mesh: Mesh): Topology {
+  return topologyOf(mesh);
+}
+
+function computeTopology(mesh: Mesh): Topology {
   const ekey = (a: number, b: number) => (a < b ? `${a}_${b}` : `${b}_${a}`);
   const emap = new Map<string, { verts: [number, number]; faces: number[] }>();
   const addFaceEdge = (a: number, b: number, fi: number) => {
@@ -217,12 +348,9 @@ const zeroLike = (e: Elem | undefined): Elem => (Array.isArray(e) ? [0, 0, 0] : 
 // (face-derived first-seen, then explicit wires) so EDGE attr data stays aligned.
 const ekeyG = (x: number, y: number) => (x < y ? `${x}_${y}` : `${y}_${x}`);
 function canonicalEdgeKeys(m: Mesh): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  const add = (k: string) => { if (!seen.has(k)) { seen.add(k); out.push(k); } };
-  for (const f of m.faces) for (let i = 0; i < f.length; i++) add(ekeyG(f[i], f[(i + 1) % f.length]));
-  for (const [x, y] of m.edges) add(ekeyG(x, y));
-  return out;
+  // computeTopology inserts unique edges in the same order this function needs:
+  // face-derived first-seen edges, followed by explicit loose edges.
+  return topologyOf(m).edges.map((e) => ekeyG(e.verts[0], e.verts[1]));
 }
 
 export function mergeMeshInto(a: Mesh, b: Mesh): void {
@@ -240,6 +368,7 @@ export function mergeMeshInto(a: Mesh, b: Mesh): void {
     a.faces.push(b.faces[fi].map((vi) => vi + baseV));
     a.faceMaterial.push(slotMap[b.faceMaterial[fi] ?? 0] ?? 0);
   }
+  invalidatePositionCache(a);
   // reconcile POINT + FACE (+ EDGE when present) attributes across the union of names
   const reconcile = (domain: "POINT" | "FACE" | "EDGE", baseCount: number, addCount: number) => {
     const names = new Set<string>();

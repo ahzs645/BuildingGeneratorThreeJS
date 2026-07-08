@@ -2,7 +2,7 @@
 // built against our EvalAPI directly — no graph machinery needed).
 // Run: npx tsx tools/gnvm-nodetest.ts
 import { Field, Vec3 } from "../src/gnvm/core";
-import { Geometry, Mesh } from "../src/gnvm/geometry";
+import { Geometry, Mesh, topologyOf } from "../src/gnvm/geometry";
 import { EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
 import { makeFieldCtx } from "../src/gnvm/evaluator";
 import "../src/gnvm/index"; // registers all handlers
@@ -199,6 +199,21 @@ function check(label: string, cond: boolean, detail = "") {
   const out = runNode("GeometryNodeMergeByDistance", { Geometry: g, Selection: true, Distance: d, Mode: "All" }).Geometry as Geometry;
   const crossesCell = Math.floor(m.positions[0][0] / d) !== Math.floor(m.positions[1][0] / d);
   check("MergeByDistance merges cross-cell pair within distance", crossesCell && out.mesh!.positions.length === 1, `got ${out.mesh!.positions.length} verts`);
+}
+
+// (O) Derived topology is cached per Mesh instance and invalidated by clone mutation
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]];
+  m.faces = [[0, 1, 2, 3]];
+  const t1 = topologyOf(m);
+  const t2 = topologyOf(m);
+  const c = m.clone();
+  const ct1 = topologyOf(c);
+  c.faces = [...c.faces, [0, 2, 3]];
+  const ct2 = topologyOf(c);
+  check("topologyOf returns same object for same mesh", t1 === t2);
+  check("mutated clone gets fresh topology", ct1 !== ct2 && t1 !== ct2 && ct2.edges.length === 5, `edges=${ct2.edges.length}`);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

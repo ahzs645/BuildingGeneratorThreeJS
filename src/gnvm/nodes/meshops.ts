@@ -72,17 +72,20 @@ reg("GeometryNodeDeleteGeometry", (api) => {
   const g = api.geo("Geometry").clone();
   if (!g.mesh) return { Geometry: g };
   const domain = api.prop<string>("domain", "POINT");
+  // Blender's float->bool conversion is `> 0` (e.g. Map Range feeding a Selection
+  // uses -0.02 as its false sentinel; plain truthiness would treat it as selected).
+  const on = (v: Elem | undefined) => asNum(v ?? 0) > 0;
   if (domain === "FACE") {
     const ctx = makeFieldCtx(g, "FACE");
     const sel = api.field("Selection").array(ctx);
-    g.mesh = keepFaces(g.mesh, (fi) => !asNum(sel[fi] ?? 0));
+    g.mesh = keepFaces(g.mesh, (fi) => !on(sel[fi]));
   } else if (domain === "EDGE") {
     // drop selected edges, plus faces using them (selection resolved per-edge)
     const ctx = makeFieldCtx(g, "EDGE");
     const sel = api.field("Selection").array(ctx);
     const edges = buildTopology(g.mesh).edges;
     const dead = new Set<string>();
-    for (let ei = 0; ei < edges.length; ei++) if (asNum(sel[ei] ?? 0)) dead.add(ekey(edges[ei].verts[0], edges[ei].verts[1]));
+    for (let ei = 0; ei < edges.length; ei++) if (on(sel[ei])) dead.add(ekey(edges[ei].verts[0], edges[ei].verts[1]));
     const faceDead = (f: number[]) => {
       for (let i = 0; i < f.length; i++) if (dead.has(ekey(f[i], f[(i + 1) % f.length]))) return true;
       return false;
@@ -95,7 +98,7 @@ reg("GeometryNodeDeleteGeometry", (api) => {
     const ctx = makeFieldCtx(g, "POINT");
     const sel = api.field("Selection").array(ctx);
     const dead = new Set<number>();
-    for (let i = 0; i < g.mesh.positions.length; i++) if (asNum(sel[i] ?? 0)) dead.add(i);
+    for (let i = 0; i < g.mesh.positions.length; i++) if (on(sel[i])) dead.add(i);
     g.mesh = keepFaces(g.mesh, (fi) => !g.mesh!.faces[fi].some((v) => dead.has(v)));
   }
   return { Geometry: g };
