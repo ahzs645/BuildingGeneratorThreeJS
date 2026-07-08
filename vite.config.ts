@@ -8,6 +8,8 @@ export default defineConfig({
         main: "index.html", // landing / studio home
         building: "building.html", // Hong Kong building (hand-ported)
         dojo: "dojo-viewer.html", // baked bin (GLB)
+        binstudio: "bin-studio.html", // interactive baked-bin variants
+        binlive: "bin-live.html", // live Blender-backed bin (full params)
         gnvm: "gnvm-viewer.html", // live geometry-nodes VM
       },
     },

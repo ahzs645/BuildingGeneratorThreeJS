@@ -1,0 +1,114 @@
+{
+ "object": "Procedural Drawer",
+ "axis": "Bin Select",
+ "variants": [
+  {
+   "id": "sel0",
+   "label": "Bin Select 0",
+   "params": {
+    "Bin Select": 0
+   },
+   "file": "bin_sel0.glb",
+   "bytes": 5114072
+  },
+  {
+   "id": "sel1",
+   "label": "Bin Select 1",
+   "params": {
+    "Bin Select": 1
+   },
+   "file": "bin_sel1.glb",
+   "bytes": 5157176
+  },
+  {
+   "id": "sel2",
+   "label": "Bin Select 2",
+   "params": {
+    "Bin Select": 2
+   },
+   "file": "bin_sel2.glb",
+   "bytes": 4911608
+  },
+  {
+   "id": "sel3",
+   "label": "Bin Select 3",
+   "params": {
+    "Bin Select": 3
+   },
+   "file": "bin_sel3.glb",
+   "bytes": 5117176
+  },
+  {
+   "id": "sel4",
+   "label": "Bin Select 4",
+   "params": {
+    "Bin Select": 4
+   },
+   "file": "bin_sel4.glb",
+   "bytes": 5057372
+  },
+  {
+   "id": "sel5",
+   "label": "Bin Select 5",
+   "params": {
+    "Bin Select": 5
+   },
+   "file": "bin_sel5.glb",
+   "bytes": 5109052
+  },
+  {
+   "id": "sel6",
+   "label": "Bin Select 6",
+   "params": {
+    "Bin Select": 6
+   },
+   "file": "bin_sel6.glb",
+   "bytes": 5099256
+  },
+  {
+   "id": "sel7",
+   "label": "Bin Select 7",
+   "params": {
+    "Bin Select": 7
+   },
+   "file": "bin_sel7.glb",
+   "bytes": 5090652
+  },
+  {
+   "id": "sel8",
+   "label": "Bin Select 8",
+   "params": {
+    "Bin Select": 8
+   },
+   "file": "bin_sel8.glb",
+   "bytes": 5085528
+  },
+  {
+   "id": "sel9",
+   "label": "Bin Select 9",
+   "params": {
+    "Bin Select": 9
+   },
+   "file": "bin_sel9.glb",
+   "bytes": 5120056
+  },
+  {
+   "id": "sel10",
+   "label": "Bin Select 10",
+   "params": {
+    "Bin Select": 10
+   },
+   "file": "bin_sel10.glb",
+   "bytes": 5133876
+  },
+  {
+   "id": "sel11",
+   "label": "Bin Select 11",
+   "params": {
+    "Bin Select": 11
+   },
+   "file": "bin_sel11.glb",
+   "bytes": 5070680
+  }
+ ]
+}

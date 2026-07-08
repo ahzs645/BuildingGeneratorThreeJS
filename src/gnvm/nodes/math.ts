@@ -100,7 +100,10 @@ reg("FunctionNodeCompare", (api) => {
   const aKey = dt === "INT" ? "A_INT" : "A";
   const bKey = dt === "INT" ? "B_INT" : "B";
   const a = api.field(aKey), b = api.field(bKey), eps = api.field("Epsilon");
-  const cmp = (x: number, y: number, e: number) => {
+  // INT sockets round incoming floats to integers (Blender's implicit conversion).
+  const conv = dt === "INT" ? Math.round : (v: number) => v;
+  const cmp = (x0: number, y0: number, e: number) => {
+    const x = conv(x0), y = conv(y0);
     switch (op) {
       case "LESS_THAN": return x < y;
       case "LESS_EQUAL": return x <= y;

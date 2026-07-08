@@ -167,8 +167,14 @@ reg("GeometryNodeExtrudeMesh", (api) => {
   const out = new Mesh();
   out.positions = mesh.positions.map((p) => [...p] as Vec3);
   out.materialSlots = [...mesh.materialSlots];
+  // Attribute provenance: source vertex per out-vertex, source face per out-face.
+  // Lets Captured/Stored attributes survive the extrude — the inset-floor trick
+  // captures the face center as a FACE attribute, then reads it back on the
+  // extruded top faces to pull each corner inward. Dropping it collapsed the cells.
+  const srcVert: number[] = mesh.positions.map((_, i) => i);
+  const srcFace: number[] = [];
   // keep unselected faces
-  for (let fi = 0; fi < mesh.faces.length; fi++) if (!selMask[fi]) { out.faces.push([...mesh.faces[fi]]); out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0); }
+  for (let fi = 0; fi < mesh.faces.length; fi++) if (!selMask[fi]) { out.faces.push([...mesh.faces[fi]]); out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0); srcFace.push(fi); }
   const topFaceIdx: number[] = [];
 
   const deltaFor = (v: number, avgNormal: Vec3): Vec3 =>
@@ -181,6 +187,7 @@ reg("GeometryNodeExtrudeMesh", (api) => {
       const nv = f.map((v) => {
         const idx = out.positions.length;
         out.positions.push(vadd(mesh.positions[v], deltaFor(v, n)));
+        srcVert.push(v);
         return idx;
       });
       // side walls on every edge (individual)
@@ -188,10 +195,12 @@ reg("GeometryNodeExtrudeMesh", (api) => {
         const a = i, b = (i + 1) % f.length;
         out.faces.push([f[a], f[b], nv[b], nv[a]]);
         out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
+        srcFace.push(fi);
       }
       topFaceIdx.push(out.faces.length);
       out.faces.push(nv);
       out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
+      srcFace.push(fi);
     }
   } else {
     // Region extrude: shared new verts, walls only on boundary edges.
@@ -216,6 +225,7 @@ reg("GeometryNodeExtrudeMesh", (api) => {
     for (const v of vertSet) {
       const idx = out.positions.length;
       out.positions.push(vadd(mesh.positions[v], deltaFor(v, normAcc.get(v)!)));
+      srcVert.push(v);
       newIdx.set(v, idx);
     }
     for (const fi of selFaces) {
@@ -225,14 +235,21 @@ reg("GeometryNodeExtrudeMesh", (api) => {
         if (edgeCount.get(ekey(a, b))!.n === 1) {
           out.faces.push([a, b, newIdx.get(b)!, newIdx.get(a)!]);
           out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
+          srcFace.push(fi);
         }
       }
       topFaceIdx.push(out.faces.length);
       out.faces.push(f.map((v) => newIdx.get(v)!));
       out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
+      srcFace.push(fi);
     }
   }
 
+  // Carry POINT/FACE attributes through the extrude via the provenance maps.
+  for (const [name, a] of mesh.attributes) {
+    if (a.domain === "POINT") out.attributes.set(name, { domain: "POINT", data: out.positions.map((_, i) => a.data[srcVert[i]]) });
+    else if (a.domain === "FACE") out.attributes.set(name, { domain: "FACE", data: srcFace.map((fi) => a.data[fi]) });
+  }
   g.mesh = out;
   const topSet = new Set(topFaceIdx);
   return {
@@ -242,8 +259,39 @@ reg("GeometryNodeExtrudeMesh", (api) => {
   };
 });
 
-// ---- Split Edges / Subdivide (light) --------------------------------------
-reg("GeometryNodeSplitEdges", (api) => ({ Mesh: api.geo("Mesh") }));
+// ---- Split Edges ----------------------------------------------------------
+// Split all selected edges. The bin subdivision uses Selection=all, which fully
+// unwelds every face (each face gets its own copy of its vertices).
+reg("GeometryNodeSplitEdges", (api) => {
+  const g = api.geo("Mesh").clone();
+  if (!g.mesh) return { Mesh: g };
+  const m = g.mesh;
+  const ctx = makeFieldCtx(g, "EDGE");
+  const selArr = api.field("Selection").array(ctx);
+  const allSelected = selArr.length === 0 || selArr.every((s) => asNum(s ?? 1));
+  if (!allSelected) return { Mesh: g }; // partial edge splits: leave as-is (rare)
+  const nm = new Mesh();
+  nm.materialSlots = [...m.materialSlots];
+  // carry POINT attributes by duplicating the source vertex's value
+  const pointAttrNames = [...m.attributes].filter(([, a]) => a.domain === "POINT").map(([k]) => k);
+  const newPointAttrs = new Map<string, Elem[]>();
+  for (const name of pointAttrNames) newPointAttrs.set(name, []);
+  for (let fi = 0; fi < m.faces.length; fi++) {
+    const f = m.faces[fi];
+    const base = nm.positions.length;
+    for (const vi of f) {
+      nm.positions.push([...m.positions[vi]] as Vec3);
+      for (const name of pointAttrNames) newPointAttrs.get(name)!.push(m.attributes.get(name)!.data[vi]);
+    }
+    nm.faces.push(f.map((_, k) => base + k));
+    nm.faceMaterial.push(m.faceMaterial[fi] ?? 0);
+  }
+  for (const [name, data] of newPointAttrs) nm.attributes.set(name, { domain: "POINT", data });
+  // carry FACE attributes unchanged (same face count/order)
+  for (const [name, a] of m.attributes) if (a.domain === "FACE") nm.attributes.set(name, { domain: "FACE", data: [...a.data] });
+  g.mesh = nm;
+  return { Mesh: g };
+});
 
 reg("GeometryNodeSubdivideMesh", (api) => {
   const g = api.geo("Mesh").clone();

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dojo Bin — Live (Blender-backed)</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; overflow: hidden; background: #0b0d10; }
+      #app { width: 100vw; height: 100vh; display: block; }
+      #hud {
+        position: fixed; left: 16px; top: 14px; z-index: 10; max-width: 74ch;
+        font: 12px/1.6 ui-monospace, Menlo, monospace; color: #9fb4c7;
+        letter-spacing: .03em; pointer-events: none; text-shadow: 0 1px 2px #000;
+      }
+      #hud b { color: #eaf2f8; text-transform: uppercase; }
+      #hud .ok { color: #9fe0a4; } #hud .warn { color: #ffcf8f; } #hud .err { color: #ff9a9a; }
+      #busy {
+        position: fixed; right: 16px; bottom: 16px; z-index: 20;
+        font: 600 11px/1 ui-monospace, monospace; letter-spacing: 0.08em; text-transform: uppercase;
+        color: #0b0d10; background: #8fcfff; padding: 8px 12px; border-radius: 999px; opacity: 0;
+        transition: opacity 0.15s;
+      }
+      #busy.on { opacity: 0.95; }
+      #home {
+        position: fixed; left: 16px; bottom: 14px; z-index: 20;
+        font: 600 11px/1 ui-monospace, Menlo, monospace; letter-spacing: 0.1em; text-transform: uppercase;
+        color: #9fb4c7; text-decoration: none; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 999px; background: rgba(11,13,16,0.6);
+      }
+      #home:hover { color: #eaf2f8; border-color: rgba(143,207,255,0.5); }
+    </style>
+  </head>
+  <body>
+    <canvas id="app"></canvas>
+    <a id="home" href="/">← studio</a>
+    <div id="busy">baking…</div>
+    <div id="hud"><b>Dojo Bin · Live</b> · every slider re-bakes in Blender (100% fidelity) · <span id="stat">connecting…</span></div>
+    <script type="module" src="/src/bin-live.ts"></script>
+  </body>
+</html>
