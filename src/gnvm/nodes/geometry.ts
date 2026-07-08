@@ -73,7 +73,19 @@ reg("GeometryNodeSetPosition", (api) => {
   const g = api.geo("Geometry").clone();
   if (!g.mesh && !g.curves.length) return { Geometry: g };
   const ctx = makeFieldCtx(g, "POINT");
-  const sel = api.field("Selection").array(ctx);
+  // Selection chains built entirely from FACE/EDGE-domain masks evaluate on
+  // their source domain and convert ONCE at the end (Blender's order) —
+  // per-leaf conversion turns NOT(mask) into "not touching any", wrongly
+  // excluding boundary verts (the vase's outer-shell mask lost its rim).
+  const selF = api.field("Selection");
+  let sel: import("../core").Elem[];
+  if (g.mesh && selF.srcDomain && selF.srcDomain !== "POINT" && ctx.toDomain) {
+    const srcCtx = makeFieldCtx(g, selF.srcDomain);
+    const srcArr = selF.array(srcCtx);
+    sel = Array.from({ length: ctx.size }, (_, i) => ctx.toDomain!(selF.srcDomain!, srcArr, i) ?? 0);
+  } else {
+    sel = selF.array(ctx);
+  }
   const off = api.field("Offset").array(ctx);
   const posLinked = api.node.inputs.find((s) => s.identifier === "Position")?.linked;
   const posArr = posLinked ? api.field("Position").array(ctx) : null;
@@ -182,7 +194,9 @@ reg("GeometryNodeCaptureAttribute", (api) => {
   }
   return {
     Geometry: g,
-    Attribute: Field.perElem((i, ctx) => (ctx.attr ? (ctx.attr(name, i) ?? 0) : 0)),
+    // tagged with the capture domain so boolean chains over face captures can
+    // be evaluated on FACE and converted once at the consumer (Blender order)
+    Attribute: Field.perElem((i, ctx) => (ctx.attr ? (ctx.attr(name, i) ?? 0) : 0)).tagged(domain),
   };
 });
 

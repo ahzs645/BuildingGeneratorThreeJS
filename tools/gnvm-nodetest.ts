@@ -48,6 +48,47 @@ const curve = (points: Vec3[], cyclic: boolean): Geometry =>
 const curves = (items: { points: Vec3[]; cyclic: boolean }[]): Geometry =>
   Object.assign(new Geometry(), { curves: items });
 
+const box = (min: Vec3, max: Vec3): Geometry => {
+  const m = new Mesh();
+  const [x0, y0, z0] = min;
+  const [x1, y1, z1] = max;
+  m.positions = [
+    [x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0],
+    [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1],
+  ];
+  m.faces = [
+    [0, 1, 2, 3], [4, 7, 6, 5], [0, 4, 5, 1],
+    [1, 5, 6, 2], [2, 6, 7, 3], [3, 7, 4, 0],
+  ];
+  m.faceMaterial = m.faces.map(() => 0);
+  m.materialSlots = [null];
+  const g = new Geometry();
+  g.mesh = m;
+  return g;
+};
+
+const openCylinder = (segments: number, zs: number[], radius: number): Geometry => {
+  const m = new Mesh();
+  for (const z of zs) {
+    for (let i = 0; i < segments; i++) {
+      const a = (i / segments) * Math.PI * 2;
+      m.positions.push([Math.cos(a) * radius, Math.sin(a) * radius, z]);
+    }
+  }
+  for (let r = 0; r + 1 < zs.length; r++) {
+    const base = r * segments;
+    const next = (r + 1) * segments;
+    for (let i = 0; i < segments; i++) {
+      m.faces.push([base + i, base + ((i + 1) % segments), next + ((i + 1) % segments), next + i]);
+      m.faceMaterial.push(0);
+    }
+  }
+  m.materialSlots = [null];
+  const g = new Geometry();
+  g.mesh = m;
+  return g;
+};
+
 // ---- assertions -----------------------------------------------------------
 let pass = 0, fail = 0;
 const approx = (a: number[], b: number[], eps = 1e-4) => a.length === b.length && a.every((x, i) => Math.abs(x - b[i]) < eps);
@@ -308,6 +349,27 @@ function meshSignedAreaXY(m: Mesh): number {
   const ct2 = topologyOf(c);
   check("topologyOf returns same object for same mesh", t1 === t2);
   check("mutated clone gets fresh topology", ct1 !== ct2 && t1 !== ct2 && ct2.edges.length === 5, `edges=${ct2.edges.length}`);
+}
+
+// (P) MeshBoolean box clip caps the dominant cut plane of an open shell
+{
+  const cyl = openCylinder(12, [-2, -1, 0.5, 1.5], 1);
+  const clipped = runNode(
+    "GeometryNodeMeshBoolean",
+    { "Mesh 1": cyl, "Mesh 2": box([-2, -2, 0], [2, 2, 2]) },
+    { operation: "INTERSECT" },
+  ).Mesh as Geometry;
+  const m = clipped.mesh!;
+  const sideFacesAfterDrop = 12;
+  const boundaryNearCut = topologyOf(m).edges.filter((e) =>
+    e.faces.length === 1 &&
+    e.verts.every((vi) => Math.abs(m.positions[vi][2]) < 1e-6)
+  );
+  const capFaces = m.faces.filter((f) =>
+    f.length >= 3 && f.every((vi) => Math.abs(m.positions[vi][2]) < 1e-6)
+  );
+  check("MeshBoolean box clip adds cap face", m.faces.length > sideFacesAfterDrop && capFaces.length > 0, `got ${m.faces.length} faces, ${capFaces.length} caps`);
+  check("MeshBoolean box clip has no cut-plane boundary edges", boundaryNearCut.length === 0, `boundary=${boundaryNearCut.length}`);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

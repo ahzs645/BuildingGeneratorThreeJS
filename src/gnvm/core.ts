@@ -65,6 +65,13 @@ export interface FieldCtx {
 }
 
 export class Field {
+  // Source-domain tag for anonymous masks (CaptureAttribute outputs, extrude
+  // Top/Side). Blender evaluates a boolean chain of FACE attributes ON the face
+  // domain and converts only the FINAL mask to the consumer domain; converting
+  // each leaf first excludes boundary verts (NOT(anyAdjacent) != noneAdjacent).
+  // Tags propagate through fieldMap when all non-const inputs agree.
+  srcDomain?: Domain;
+
   private constructor(
     public readonly fn: (ctx: FieldCtx) => Elem[],
     public readonly constant?: Elem,
@@ -84,6 +91,11 @@ export class Field {
       for (let i = 0; i < ctx.size; i++) out[i] = fn(i, ctx);
       return out;
     });
+  }
+
+  tagged(domain: Domain): Field {
+    this.srcDomain = domain;
+    return this;
   }
 
   get isConst(): boolean {
@@ -113,10 +125,17 @@ export function fieldMap(inputs: Field[], op: (...vals: Elem[]) => Elem): Field 
   if (inputs.every((f) => f.isConst)) {
     return Field.of(op(...inputs.map((f) => f.value)));
   }
-  return Field.make((ctx) => {
+  const out = Field.make((ctx) => {
     const arrs = inputs.map((f) => f.array(ctx));
-    const out: Elem[] = new Array(ctx.size);
-    for (let i = 0; i < ctx.size; i++) out[i] = op(...arrs.map((a) => a[i]));
-    return out;
+    const res: Elem[] = new Array(ctx.size);
+    for (let i = 0; i < ctx.size; i++) res[i] = op(...arrs.map((a) => a[i]));
+    return res;
   });
+  // propagate the source-domain tag when every varying input agrees
+  const domains = new Set(inputs.filter((f) => !f.isConst).map((f) => f.srcDomain));
+  if (domains.size === 1) {
+    const d = [...domains][0];
+    if (d) out.srcDomain = d;
+  }
+  return out;
 }

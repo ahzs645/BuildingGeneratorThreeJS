@@ -19,7 +19,7 @@ import {
   vnorm,
 } from "../core";
 import { Geometry, Mesh, mergeMeshInto, rotateEulerXYZ, Spline, buildTopology } from "../geometry";
-import { splineLength, splineSegments } from "../curves";
+import { fillCurves, meshEdgesToChains, splineLength, splineSegments } from "../curves";
 import { makeFieldCtx } from "../evaluator";
 import { reg, EvalAPI } from "../registry";
 
@@ -443,23 +443,249 @@ function joinedMesh(parts: Geometry[]): Geometry {
   return out;
 }
 
+// Detect an axis-aligned cuboid: 8 verts whose coords are each min or max.
+function axisBox(g: Geometry): { min: Vec3; max: Vec3 } | null {
+  const m = g.mesh;
+  if (!m || m.positions.length !== 8 || m.faces.length !== 6) return null;
+  const min: Vec3 = [Infinity, Infinity, Infinity];
+  const max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const p of m.positions)
+    for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], p[k]); max[k] = Math.max(max[k], p[k]); }
+  const eps = Math.max(1e-6, 1e-4 * Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]));
+  for (const p of m.positions)
+    for (let k = 0; k < 3; k++)
+      if (Math.abs(p[k] - min[k]) > eps && Math.abs(p[k] - max[k]) > eps) return null;
+  return { min, max };
+}
+
+// Face-level box clip (no face splitting): overshoots by at most one face ring
+// at the box boundary, which beats a whole-geometry passthrough.
+function clipToBox(g: Geometry, box: { min: Vec3; max: Vec3 }, keepInside: boolean): Geometry {
+  const out = g.clone();
+  const m = out.mesh;
+  if (!m) return out;
+  const eps = 1e-5;
+  const inside = (p: Vec3) =>
+    p[0] >= box.min[0] - eps && p[0] <= box.max[0] + eps &&
+    p[1] >= box.min[1] - eps && p[1] <= box.max[1] + eps &&
+    p[2] >= box.min[2] - eps && p[2] <= box.max[2] + eps;
+  const flags = m.positions.map(inside);
+  // Intersect keeps fully-contained faces, then caps the cut ring. Difference
+  // keeps any face with outside support so subtractive clips do not erase whole
+  // face rings beyond the cutter.
+  const keepFace = m.faces.map((f) =>
+    keepInside ? f.every((v) => flags[v]) : f.some((v) => !flags[v])
+  );
+  if (keepFace.every(Boolean)) return out;
+  const clipped = keepFacesLocal(m, (fi) => {
+    return keepFace[fi];
+  });
+  capBoxClip(clipped, m, keepFace, box);
+  out.mesh = clipped;
+  return out;
+}
+
+type BoxPlane = { axis: 0 | 1 | 2; coord: number };
+
+function boxPlanes(box: { min: Vec3; max: Vec3 }): BoxPlane[] {
+  return [
+    { axis: 0, coord: box.min[0] },
+    { axis: 0, coord: box.max[0] },
+    { axis: 1, coord: box.min[1] },
+    { axis: 1, coord: box.max[1] },
+    { axis: 2, coord: box.min[2] },
+    { axis: 2, coord: box.max[2] },
+  ];
+}
+
+function meshDiag(m: Mesh): number {
+  const min: Vec3 = [Infinity, Infinity, Infinity];
+  const max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const p of m.positions) for (let k = 0; k < 3; k++) {
+    min[k] = Math.min(min[k], p[k]);
+    max[k] = Math.max(max[k], p[k]);
+  }
+  return Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
+}
+
+function dominantClipPlane(m: Mesh, edges: [number, number][], box: { min: Vec3; max: Vec3 }): BoxPlane | null {
+  if (!edges.length) return null;
+  const planes = boxPlanes(box);
+  const band = Math.max(1e-5, meshDiag(m) * 0.25);
+  const scores = planes.map(() => 0);
+  const distSums = planes.map(() => 0);
+  for (const [a, b] of edges) {
+    for (const vi of [a, b]) {
+      const p = m.positions[vi];
+      for (let pi = 0; pi < planes.length; pi++) {
+        const d = Math.abs(p[planes[pi].axis] - planes[pi].coord);
+        distSums[pi] += d;
+        if (d <= band) scores[pi]++;
+      }
+    }
+  }
+  let best = 0;
+  for (let i = 1; i < planes.length; i++) {
+    if (scores[i] > scores[best] || (scores[i] === scores[best] && distSums[i] < distSums[best])) best = i;
+  }
+  return planes[best];
+}
+
+function pointKey(p: Vec3): string {
+  return p.map((v) => Math.round(v * 1e6)).join("_");
+}
+
+function capBoxClip(clipped: Mesh, source: Mesh, keepFace: boolean[], box: { min: Vec3; max: Vec3 }): void {
+  const droppedVerts = new Set<number>();
+  for (let fi = 0; fi < source.faces.length; fi++) {
+    if (keepFace[fi]) continue;
+    for (const vi of source.faces[fi]) droppedVerts.add(vi);
+  }
+  if (!droppedVerts.size) return;
+
+  const topo = buildTopology(clipped);
+  const candidates: { edge: [number, number]; face: number }[] = [];
+  for (const e of topo.edges) {
+    if (e.faces.length !== 1) continue;
+    const [a, b] = e.verts;
+    if (!droppedVerts.has(a) || !droppedVerts.has(b)) continue;
+    candidates.push({ edge: [a, b], face: e.faces[0] });
+  }
+  const plane = dominantClipPlane(clipped, candidates.map((c) => c.edge), box);
+  if (!plane) return;
+
+  const band = Math.max(1e-5, meshDiag(clipped) * 0.25);
+  const active = candidates.filter(({ edge: [a, b] }) =>
+    Math.abs(clipped.positions[a][plane.axis] - plane.coord) <= band &&
+    Math.abs(clipped.positions[b][plane.axis] - plane.coord) <= band
+  );
+  if (!active.length) return;
+
+  const boundary = new Mesh();
+  boundary.positions = clipped.positions.map((p) => [...p] as Vec3);
+  boundary.edges = active.map((c) => c.edge);
+  const loops = meshEdgesToChains(boundary)
+    .filter((c) => c.spline.cyclic && c.verts.length >= 3);
+  if (!loops.length) return;
+
+  const adjacentFaces = active.map((c) => c.face);
+  const materialCounts = new Map<number, number>();
+  for (const fi of adjacentFaces) {
+    const mat = clipped.faceMaterial[fi] ?? 0;
+    materialCounts.set(mat, (materialCounts.get(mat) ?? 0) + 1);
+  }
+  let capMaterial = clipped.faceMaterial[adjacentFaces[0]] ?? 0;
+  for (const [mat, count] of materialCounts) {
+    if (count > (materialCounts.get(capMaterial) ?? 0)) capMaterial = mat;
+  }
+  const attrSourceFace = adjacentFaces[0];
+
+  const projectedBySource = new Map<number, number>();
+  const projectedKeyToVert = new Map<string, number>();
+  const projectVert = (vi: number): number => {
+    const found = projectedBySource.get(vi);
+    if (found !== undefined) return found;
+    const p = [...clipped.positions[vi]] as Vec3;
+    p[plane.axis] = plane.coord;
+    const idx = clipped.positions.length;
+    clipped.positions.push(p);
+    projectedBySource.set(vi, idx);
+    projectedKeyToVert.set(pointKey(p), idx);
+    return idx;
+  };
+
+  const loopSplines: Spline[] = [];
+  const boundaryVerts = new Set<number>();
+  for (const loop of loops) {
+    const pts: Vec3[] = [];
+    for (const vi of loop.verts) {
+      boundaryVerts.add(vi);
+      const pvi = projectVert(vi);
+      pts.push([...clipped.positions[pvi]] as Vec3);
+    }
+    loopSplines.push({ points: pts, cyclic: true });
+  }
+
+  const originalFaceCount = clipped.faces.length;
+  clipped.faces = clipped.faces.map((f) => f.map((vi) => boundaryVerts.has(vi) ? projectVert(vi) : vi));
+
+  for (const [name, a] of clipped.attributes) {
+    if (a.domain === "POINT") {
+      const data = [...a.data];
+      for (const [src, dst] of projectedBySource) data[dst] = a.data[src] ?? 0;
+      clipped.attributes.set(name, { domain: "POINT", data });
+    }
+  }
+
+  const cap = fillCurves(loopSplines, "NGONS");
+  if (!cap.faces.length) return;
+  const remapCapVert = (vi: number): number | null => {
+    const p = cap.positions[vi];
+    return projectedKeyToVert.get(pointKey(p)) ?? null;
+  };
+  const newFaces: number[][] = [];
+  for (const f of cap.faces) {
+    const remapped = f.map(remapCapVert);
+    if (remapped.every((vi): vi is number => vi !== null)) newFaces.push(remapped);
+  }
+  if (!newFaces.length) return;
+
+  for (const f of newFaces) {
+    clipped.faces.push(f);
+    clipped.faceMaterial.push(capMaterial);
+  }
+  for (const [name, a] of clipped.attributes) {
+    if (a.domain !== "FACE") continue;
+    const data = [...a.data];
+    while (data.length < originalFaceCount) data.push(0);
+    for (let i = 0; i < newFaces.length; i++) data.push(a.data[attrSourceFace] ?? 0);
+    clipped.attributes.set(name, { domain: "FACE", data });
+  }
+}
+
+// local face filter (mirrors meshops.keepFaces without cross-file coupling)
+function keepFacesLocal(mesh: Mesh, keep: (fi: number) => boolean): Mesh {
+  const out = mesh.clone();
+  const faces: number[][] = [];
+  const fmat: number[] = [];
+  const faceAttrs = new Map<string, Elem[]>();
+  for (const [k, a] of mesh.attributes) if (a.domain === "FACE") faceAttrs.set(k, []);
+  const kept: number[] = [];
+  for (let fi = 0; fi < mesh.faces.length; fi++) {
+    if (!keep(fi)) continue;
+    faces.push([...mesh.faces[fi]]);
+    fmat.push(mesh.faceMaterial[fi] ?? 0);
+    kept.push(fi);
+  }
+  for (const [k, arr] of faceAttrs) {
+    const a = mesh.attributes.get(k)!;
+    for (const fi of kept) arr.push(a.data[fi]);
+    out.attributes.set(k, { domain: "FACE", data: arr });
+  }
+  out.faces = faces;
+  out.faceMaterial = fmat;
+  return out;
+}
+
 reg("GeometryNodeMeshBoolean", (api) => {
   const op = api.prop<string>("operation", "DIFFERENCE");
   const mesh1 = api.geo("Mesh 1");
   const mesh2s = api.geoInputs("Mesh 2");
   let mesh: Geometry;
+  const boxes = mesh2s.map(axisBox).filter((b): b is { min: Vec3; max: Vec3 } => !!b);
+  const box = boxes.length === 1 ? boxes[0] : null;
   if (op === "UNION") {
     mesh = joinedMesh([mesh1, ...mesh2s]);
   } else if (op === "INTERSECT") {
-    // Approximation: intersect is typically an outer clip (vase ∩ bounds-box),
-    // so the main geometry is by far the better passthrough — returning the
-    // cutter rendered the bubble vase as its own clip box.
-    mesh = mesh1.mesh || mesh1.curves.length || mesh1.instances.length
-      ? mesh1.clone()
-      : (mesh2s[0]?.clone() ?? new Geometry());
+    // Axis-aligned box cutters get a real face-level clip with cap support;
+    // otherwise pass the main geometry through (outer-clip assumption).
+    mesh = box && mesh1.mesh
+      ? clipToBox(mesh1, box, true)
+      : mesh1.mesh || mesh1.curves.length || mesh1.instances.length
+        ? mesh1.clone()
+        : (mesh2s[0]?.clone() ?? new Geometry());
   } else {
-    // Approximation: difference preserves the main geometry unchanged.
-    mesh = mesh1.clone();
+    mesh = box && mesh1.mesh ? clipToBox(mesh1, box, false) : mesh1.clone();
   }
   return { Mesh: mesh, "Intersecting Edges": Field.of(0) };
 });

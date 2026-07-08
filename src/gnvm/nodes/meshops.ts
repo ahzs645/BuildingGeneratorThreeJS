@@ -307,7 +307,7 @@ reg("GeometryNodeMergeByDistance", (api) => {
 // domain interpolation (FACE->POINT = any adjacent face, like Blender).
 let extrudeSeq = 0;
 function faceMaskField(name: string): Field {
-  return Field.perElem((i, ctx) => (asNum((ctx.attr?.(name, i) ?? 0) as Elem) > 0 ? 1 : 0));
+  return Field.perElem((i, ctx) => (asNum((ctx.attr?.(name, i) ?? 0) as Elem) > 0 ? 1 : 0)).tagged("FACE");
 }
 // A new extrude makes earlier extrudes' Top/Side masks stale; carrying them
 // forward made repeat-zone lathes accumulate hundreds of attributes (every
@@ -408,12 +408,50 @@ reg("GeometryNodeExtrudeMesh", (api) => {
     out.attributes.set(sideName, { domain: "FACE", data: out.faces.map((_, i) => (sideSet.has(i) ? 1 : 0)) });
     return {
       Mesh: g,
-      Top: Field.perElem((i, ctx) => (asNum((ctx.attr?.(topName, i) ?? 0) as Elem) > 0 ? 1 : 0)),
+      Top: Field.perElem((i, ctx) => (asNum((ctx.attr?.(topName, i) ?? 0) as Elem) > 0 ? 1 : 0)).tagged("EDGE"),
       Side: faceMaskField(sideName),
     };
   }
+  if (mode === "VERTICES") {
+    // Vertex extrude: duplicate each selected vert offset by the Offset field
+    // (Blender uses vertex normals when unlinked — zero for wires) and connect
+    // with a new edge. The bubble vase's profile grows its floor segment here.
+    const pctx0 = makeFieldCtx(g, "POINT");
+    const selArr = api.field("Selection").array(pctx0);
+    const offArr = offsetLinked ? api.field("Offset").array(pctx0) : null;
+    const vnorms = mesh.faces.length ? mesh.vertexNormals() : null;
+    const out = mesh.clone();
+    const srcVert: number[] = mesh.positions.map((_, i) => i);
+    const newVerts: number[] = [];
+    for (let v = 0; v < mesh.positions.length; v++) {
+      if (!(asNum(selArr[v] ?? 1) > 0)) continue;
+      const delta = offArr
+        ? vscale(asVec3(offArr[v] ?? [0, 0, 0]), scale)
+        : vnorms
+          ? vscale(vnorms[v], scale)
+          : ([0, 0, 0] as Vec3);
+      const nv = out.positions.length;
+      out.positions.push(vadd(mesh.positions[v], delta));
+      srcVert.push(v);
+      out.edges.push([v, nv]);
+      newVerts.push(nv);
+    }
+    for (const [name, a] of mesh.attributes) {
+      if (isStaleExtrudeMask(name)) { out.attributes.delete(name); continue; }
+      if (a.domain === "POINT") out.attributes.set(name, { domain: "POINT", data: out.positions.map((_, i) => a.data[srcVert[i]]) });
+    }
+    g.mesh = out;
+    const topName = `__extrude_top_${extrudeSeq}`;
+    extrudeSeq++;
+    const newSet = new Set(newVerts);
+    out.attributes.set(topName, { domain: "POINT", data: out.positions.map((_, i) => (newSet.has(i) ? 1 : 0)) });
+    return {
+      Mesh: g,
+      Top: Field.perElem((i, ctx) => (asNum((ctx.attr?.(topName, i) ?? 0) as Elem) > 0 ? 1 : 0)).tagged("POINT"),
+      Side: Field.of(0),
+    };
+  }
   if (mode !== "FACES") {
-    // VERTICES extrude: not needed for the bin; leave geometry unchanged.
     return { Mesh: g, Top: Field.of(0), Side: Field.of(0) };
   }
 
