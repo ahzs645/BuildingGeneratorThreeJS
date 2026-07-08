@@ -155,11 +155,9 @@ function pointTopologyField(kind: "VERTEX" | "FACE"): Field {
       for (let ei = 0; ei < edgeCtx.size; ei++) {
         const [a, b] = edgeCtx.edgeVerts(ei);
         const faceCount = edgeCtx.edgeFaceCount?.(ei) ?? 0;
-        // Loose-wire adjacency is deliberately ignored for now. The bubble dump
-        // feeds this into an unimplemented Repeat Zone; counting loose edges
-        // makes the evaluator's passthrough fallback recurse into exponential
-        // edge extrudes. Surface edges still provide the needed topology signal.
-        if (faceCount <= 0) continue;
+        // Loose-wire edges count toward vertex adjacency (Blender semantics).
+        // They were skipped while Repeat Zones were unimplemented; the Spin
+        // lathe's boundary-point selection needs them on pure wires.
         if (a >= 0 && a < pointCtx.size) {
           counts[a]++;
           faceApprox[a] += faceCount / 2;
@@ -453,9 +451,12 @@ reg("GeometryNodeMeshBoolean", (api) => {
   if (op === "UNION") {
     mesh = joinedMesh([mesh1, ...mesh2s]);
   } else if (op === "INTERSECT") {
-    // Approximation: keep the cutter/input mesh flowing rather than attempting
-    // exact CSG in this lightweight VM.
-    mesh = mesh2s.length > 1 ? joinedMesh(mesh2s) : (mesh2s[0]?.clone() ?? new Geometry());
+    // Approximation: intersect is typically an outer clip (vase ∩ bounds-box),
+    // so the main geometry is by far the better passthrough — returning the
+    // cutter rendered the bubble vase as its own clip box.
+    mesh = mesh1.mesh || mesh1.curves.length || mesh1.instances.length
+      ? mesh1.clone()
+      : (mesh2s[0]?.clone() ?? new Geometry());
   } else {
     // Approximation: difference preserves the main geometry unchanged.
     mesh = mesh1.clone();

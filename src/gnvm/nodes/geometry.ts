@@ -189,17 +189,52 @@ reg("GeometryNodeCaptureAttribute", (api) => {
 // ---- geometry proximity ----------------------------------------------------
 // POINTS mode: distance from each source element to the nearest target point.
 // An unlinked "Source Position" means Blender's implicit position field.
+// Instanced targets are realized (the bubble vase probes 58 instanced spheres);
+// lookups go through a uniform grid — brute force is O(n·m) at vase scale.
 reg("GeometryNodeProximity", (api) => {
-  const target = api.geo("Target");
+  let target = api.geo("Target");
+  if (target.instances.length) target = realizeInstances(target);
   const pts: Vec3[] = target.mesh ? target.mesh.positions : target.curves.flatMap((s) => s.points);
   const posLinked = api.node.inputs.find((s) => s.identifier === "Source Position")?.linked;
   const posF = posLinked ? api.field("Source Position") : null;
+  // uniform-grid spatial index over the target points
+  const mn: Vec3 = [Infinity, Infinity, Infinity];
+  const mx: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const p of pts) for (let k = 0; k < 3; k++) { if (p[k] < mn[k]) mn[k] = p[k]; if (p[k] > mx[k]) mx[k] = p[k]; }
+  const diag = pts.length ? Math.hypot(mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]) : 1;
+  const cell = Math.max(1e-6, diag / Math.max(4, Math.cbrt(pts.length) * 2));
+  const grid = new Map<string, number[]>();
+  const ck = (x: number, y: number, z: number) => `${x}_${y}_${z}`;
+  const cc = (p: Vec3) => [Math.floor(p[0] / cell), Math.floor(p[1] / cell), Math.floor(p[2] / cell)] as const;
+  for (let i = 0; i < pts.length; i++) {
+    const [x, y, z] = cc(pts[i]);
+    const k = ck(x, y, z);
+    const b = grid.get(k);
+    if (b) b.push(i); else grid.set(k, [i]);
+  }
   const nearest = (p: Vec3): { d: number; q: Vec3 } => {
+    if (!pts.length) return { d: 0, q: [0, 0, 0] };
+    const [cx, cy, cz] = cc(p);
     let best = Infinity;
-    let bq: Vec3 = [0, 0, 0];
-    for (const q of pts) {
-      const d = (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2;
-      if (d < best) { best = d; bq = q; }
+    let bq: Vec3 = pts[0];
+    // expand shells until a hit, then one extra ring to catch closer diagonals
+    for (let r = 0; r < 64; r++) {
+      let found = false;
+      for (let dx = -r; dx <= r; dx++)
+        for (let dy = -r; dy <= r; dy++)
+          for (let dz = -r; dz <= r; dz++) {
+            if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue; // shell only
+            const b = grid.get(ck(cx + dx, cy + dy, cz + dz));
+            if (!b) continue;
+            found = true;
+            for (const i of b) {
+              const q = pts[i];
+              const d = (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2;
+              if (d < best) { best = d; bq = q; }
+            }
+          }
+      if (best !== Infinity && (found || r > 0) && Math.sqrt(best) <= (r) * cell) break;
+      if (r === 63) break;
     }
     return { d: Math.sqrt(best), q: bq };
   };
@@ -222,9 +257,22 @@ reg("GeometryNodeProximity", (api) => {
 reg("GeometryNodeBoundBox", (api) => {
   const g = api.geo("Geometry");
   let min: Vec3 = [Infinity, Infinity, Infinity], max: Vec3 = [-Infinity, -Infinity, -Infinity];
-  const pts = g.mesh?.positions ?? [];
-  for (const p of pts) for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], p[k]); max[k] = Math.max(max[k], p[k]); }
-  if (!pts.length) { min = [0, 0, 0]; max = [0, 0, 0]; }
+  // Blender's bbox spans all components: mesh verts, curve control points, and
+  // instances. Curve-only geometry returned a zero box, which zeroed the bubble
+  // vase's whole density chain (bbox dim -> resample count = 0).
+  let count = 0;
+  const eat = (p: Vec3) => {
+    count++;
+    for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], p[k]); max[k] = Math.max(max[k], p[k]); }
+  };
+  for (const p of g.mesh?.positions ?? []) eat(p);
+  for (const s of g.curves) for (const p of s.points) eat(p);
+  for (const inst of g.instances) {
+    const child = inst.geometry;
+    for (const p of child.mesh?.positions ?? []) eat(transformPoint(p, inst.position, inst.rotation, inst.scale));
+    for (const s of child.curves) for (const p of s.points) eat(transformPoint(p, inst.position, inst.rotation, inst.scale));
+  }
+  if (!count) { min = [0, 0, 0]; max = [0, 0, 0]; }
   const size: Vec3 = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
   const center: Vec3 = [(max[0] + min[0]) / 2, (max[1] + min[1]) / 2, (max[2] + min[2]) / 2];
   const box = meshCube(size, 2, 2, 2);

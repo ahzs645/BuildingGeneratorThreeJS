@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GN-VM · Vase Compare (Blender truth vs VM)</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; overflow: hidden; background: #0b0d10; }
+      #app { width: 100vw; height: 100vh; display: block; }
+      #hud {
+        position: fixed; left: 16px; top: 14px; z-index: 10; max-width: 76ch;
+        font: 12px/1.6 ui-monospace, Menlo, monospace; color: #9fb4c7;
+        letter-spacing: .03em; pointer-events: none; text-shadow: 0 1px 2px #000;
+      }
+      #hud b { color: #eaf2f8; text-transform: uppercase; }
+      #hud .truth { color: #ff9d9d; }
+      #hud .vm { color: #8fcfff; }
+      #home {
+        position: fixed; left: 16px; bottom: 14px; z-index: 20;
+        font: 600 11px/1 ui-monospace, Menlo, monospace; letter-spacing: 0.1em; text-transform: uppercase;
+        color: #9fb4c7; text-decoration: none; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 999px; background: rgba(11,13,16,0.6); backdrop-filter: blur(6px);
+      }
+      #home:hover { color: #eaf2f8; border-color: rgba(143,207,255,0.5); }
+    </style>
+  </head>
+  <body>
+    <canvas id="app"></canvas>
+    <a id="home" href="/">← studio</a>
+    <div id="hud">
+      <b>Vase compare</b> · <span class="truth">red wire = Blender truth</span> · <span class="vm">blue solid = GN-VM</span>
+      · keys: 1 truth, 2 vm, 3 both · <span id="stat">loading…</span>
+    </div>
+    <script type="module" src="/src/vase-compare.ts"></script>
+  </body>
+</html>

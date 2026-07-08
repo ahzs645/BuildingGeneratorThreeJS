@@ -420,21 +420,29 @@ export function mergeMeshInto(a: Mesh, b: Mesh): void {
 export function realizeInstances(g: Geometry): Geometry {
   const out = new Geometry();
   const mesh = g.mesh ? g.mesh.clone() : new Mesh();
+  // base curves pass through; instanced curves get appended transformed below
+  out.curves = g.curves.map((s) => ({ cyclic: s.cyclic, points: s.points.map((p) => [...p] as Vec3) }));
+  for (const [k, a] of g.curveAttributes) out.curveAttributes.set(k, { domain: a.domain, data: [...a.data] });
   for (const inst of g.instances) {
     const rg = realizeInstances(inst.geometry); // recursive
-    if (!rg.mesh) continue;
-    const tm = rg.mesh.clone();
-    tm.positions = tm.positions.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale));
-    const baseV = mesh.positions.length;
-    mergeMeshInto(mesh, tm); // carries the instance geometry's own attributes
-    if (inst.attributes && inst.attributes.size) {
-      for (const [name, val] of inst.attributes) {
-        let a = mesh.attributes.get(name);
-        if (!a) { a = { domain: "POINT", data: [] }; mesh.attributes.set(name, a); }
-        while (a.data.length < mesh.positions.length) a.data.push(zeroLike(val));
-        for (let k = baseV; k < mesh.positions.length; k++) a.data[k] = val;
+    if (rg.mesh) {
+      const tm = rg.mesh.clone();
+      tm.positions = tm.positions.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale));
+      const baseV = mesh.positions.length;
+      mergeMeshInto(mesh, tm); // carries the instance geometry's own attributes
+      if (inst.attributes && inst.attributes.size) {
+        for (const [name, val] of inst.attributes) {
+          let a = mesh.attributes.get(name);
+          if (!a) { a = { domain: "POINT", data: [] }; mesh.attributes.set(name, a); }
+          while (a.data.length < mesh.positions.length) a.data.push(zeroLike(val));
+          for (let k = baseV; k < mesh.positions.length; k++) a.data[k] = val;
+        }
       }
     }
+    // Curve-only payloads must survive realize — the bubble vase's proximity
+    // target is 58 instanced curves; `if (!rg.mesh) continue` emptied the field.
+    for (const s of rg.curves)
+      out.curves.push({ cyclic: s.cyclic, points: s.points.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale)) });
   }
   out.mesh = mesh;
   return out;

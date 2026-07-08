@@ -29,6 +29,7 @@ const MATH: Record<string, (a: number, b: number, c: number) => number> = {
   TRUNCATE: (a) => Math.trunc(a),
   FRACT: (a) => a - Math.floor(a),
   MODULO: (a, b) => (b === 0 ? 0 : a % b),
+  FLOORED_MODULO: (a, b) => (b === 0 ? 0 : a - b * Math.floor(a / b)),
   WRAP: (a, b, c) => (b - c === 0 ? c : a - (b - c) * Math.floor((a - c) / (b - c))),
   SNAP: (a, b) => (b === 0 ? 0 : Math.floor(a / b) * b),
   PINGPONG: (a, b) => (b === 0 ? 0 : b - Math.abs(((((a - b) % (2 * b)) + 2 * b) % (2 * b)) - b)),

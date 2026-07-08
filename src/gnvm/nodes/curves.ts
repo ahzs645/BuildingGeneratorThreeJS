@@ -45,9 +45,12 @@ reg("GeometryNodeResampleCurve", (api) => {
   // Blender 4+/5 exposes the mode as a menu input socket; older dumps use a prop.
   const menu = api.str("Mode").toUpperCase().replace(/[^A-Z]/g, "");
   const mode = menu || api.prop<string>("mode", "COUNT");
-  const count = api.num("Count") || 10;
+  // Blender's implicit float->int socket conversion rounds (148.6 -> 149).
+  const count = Math.round(api.num("Count")) || 10;
   const length = api.num("Length") || 0.1;
-  const out = new Geometry();
+  // Preserve untouched components — dropping instances erased the bubble vase's
+  // 58-instance proximity target.
+  const out = g.clone();
   out.curves = g.curves.map((s) => {
     if (mode === "EVALUATED") return { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
     if (mode === "LENGTH") {
@@ -57,6 +60,8 @@ reg("GeometryNodeResampleCurve", (api) => {
     }
     return resampleSpline(s, count);
   });
+  // control-point counts changed -> per-point curve attributes no longer align
+  if (out.curvePointCount() !== g.curvePointCount()) out.curveAttributes.clear();
   return { Curve: out };
 });
 

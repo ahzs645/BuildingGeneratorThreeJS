@@ -122,6 +122,38 @@ reg("GeometryNodeDeleteGeometry", (api) => {
 });
 
 // ---- Separate Geometry ----------------------------------------------------
+// Keep exactly the selected points (isolated survivors included — Blender keeps
+// them), remapping edges (both endpoints must survive), faces (all verts must
+// survive), and POINT/FACE attributes.
+function keepPointsMesh(mesh: Mesh, keep: (vi: number) => boolean): Mesh {
+  const remap = new Map<number, number>();
+  const out = new Mesh();
+  out.materialSlots = [...mesh.materialSlots];
+  for (let i = 0; i < mesh.positions.length; i++)
+    if (keep(i)) { remap.set(i, out.positions.length); out.positions.push([...mesh.positions[i]] as Vec3); }
+  out.edges = mesh.edges
+    .filter(([a, b]) => remap.has(a) && remap.has(b))
+    .map(([a, b]) => [remap.get(a)!, remap.get(b)!] as [number, number]);
+  const keptFace: number[] = [];
+  for (let fi = 0; fi < mesh.faces.length; fi++) {
+    const f = mesh.faces[fi];
+    if (!f.every((v) => remap.has(v))) continue;
+    out.faces.push(f.map((v) => remap.get(v)!));
+    out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
+    keptFace.push(fi);
+  }
+  for (const [name, a] of mesh.attributes) {
+    if (a.domain === "POINT") {
+      const data: Elem[] = [];
+      for (let i = 0; i < mesh.positions.length; i++) if (remap.has(i)) data.push(a.data[i]);
+      out.attributes.set(name, { domain: "POINT", data });
+    } else if (a.domain === "FACE") {
+      out.attributes.set(name, { domain: "FACE", data: keptFace.map((fi) => a.data[fi]) });
+    }
+  }
+  return out;
+}
+
 reg("GeometryNodeSeparateGeometry", (api) => {
   const g = api.geo("Geometry");
   if (!g.mesh) return { Selection: new Geometry(), Inverted: new Geometry() };
@@ -135,12 +167,13 @@ reg("GeometryNodeSeparateGeometry", (api) => {
     selG.mesh = keepFaces(g.mesh, (fi) => !!asNum(s[fi] ?? 0));
     invG.mesh = keepFaces(g.mesh, (fi) => !asNum(s[fi] ?? 0));
   } else {
+    // POINT: true point-level split — keepFaces() couldn't filter edge-only
+    // wires or isolated verts (the bubble target selects alternating wire pts).
     const ctx = makeFieldCtx(g, "POINT");
     const s = ctx.size ? sel.array(ctx) : [];
-    const keepSel = new Set<number>();
-    for (let i = 0; i < g.mesh.positions.length; i++) if (asNum(s[i] ?? 0)) keepSel.add(i);
-    selG.mesh = keepFaces(g.mesh, (fi) => g.mesh!.faces[fi].every((v) => keepSel.has(v)));
-    invG.mesh = keepFaces(g.mesh, (fi) => g.mesh!.faces[fi].some((v) => !keepSel.has(v)));
+    const on = (i: number) => asNum(s[i] ?? 0) > 0;
+    selG.mesh = keepPointsMesh(g.mesh, on);
+    invG.mesh = keepPointsMesh(g.mesh, (i) => !on(i));
   }
   return { Selection: selG, Inverted: invG };
 });
@@ -276,6 +309,12 @@ let extrudeSeq = 0;
 function faceMaskField(name: string): Field {
   return Field.perElem((i, ctx) => (asNum((ctx.attr?.(name, i) ?? 0) as Elem) > 0 ? 1 : 0));
 }
+// A new extrude makes earlier extrudes' Top/Side masks stale; carrying them
+// forward made repeat-zone lathes accumulate hundreds of attributes (every
+// clone copied them all — superlinear). Blender's anonymous attributes are
+// dropped when unreferenced; consumers of a mask always read it before the
+// next extrude in every graph we run.
+const isStaleExtrudeMask = (name: string) => name.startsWith("__extrude_top_") || name.startsWith("__extrude_side_");
 reg("GeometryNodeExtrudeMesh", (api) => {
   const g = api.geo("Mesh").clone();
   if (!g.mesh) return { Mesh: g, Top: Field.of(0), Side: Field.of(0) };
@@ -337,6 +376,7 @@ reg("GeometryNodeExtrudeMesh", (api) => {
     }
     // carry POINT attributes onto the duplicated verts
     for (const [name, a] of mesh.attributes) {
+      if (isStaleExtrudeMask(name)) { out.attributes.delete(name); continue; }
       if (a.domain === "POINT") out.attributes.set(name, { domain: "POINT", data: out.positions.map((_, i) => a.data[srcVert[i]]) });
       else if (a.domain === "FACE") {
         const data = [...a.data];
@@ -479,6 +519,7 @@ reg("GeometryNodeExtrudeMesh", (api) => {
     return avgElem(vals);
   };
   for (const [name, a] of mesh.attributes) {
+    if (isStaleExtrudeMask(name)) { out.attributes.delete(name); continue; }
     if (a.domain === "POINT") out.attributes.set(name, { domain: "POINT", data: out.positions.map((_, i) => a.data[srcVert[i]]) });
     else if (a.domain === "FACE") out.attributes.set(name, { domain: "FACE", data: srcFace.map((fi) => a.data[fi]) });
     else if (a.domain === "CORNER") {
