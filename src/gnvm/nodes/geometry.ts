@@ -1,0 +1,179 @@
+// Geometry-operation handlers.
+import { Field, Vec3, asVec3, asNum, vadd } from "../core";
+import { Geometry, Mesh, InstanceRef, mergeMeshInto, realizeInstances, transformPoint } from "../geometry";
+import { meshCube, meshGrid, meshCircle, meshLine } from "../primitives";
+import { reg, EvalAPI } from "../registry";
+import { makeFieldCtx } from "../evaluator";
+
+// ---- primitives -----------------------------------------------------------
+reg("GeometryNodeMeshCube", (api) => ({
+  Mesh: meshCube(api.vec("Size"), api.num("Vertices X") || 2, api.num("Vertices Y") || 2, api.num("Vertices Z") || 2),
+}));
+reg("GeometryNodeMeshGrid", (api) => ({
+  Mesh: meshGrid(api.num("Size X"), api.num("Size Y"), api.num("Vertices X") || 3, api.num("Vertices Y") || 3),
+}));
+reg("GeometryNodeMeshCircle", (api) => ({
+  Mesh: meshCircle(api.num("Vertices") || 32, api.num("Radius") || 1, (api.prop<string>("fill_type", "NONE") as any)),
+}));
+reg("GeometryNodeMeshLine", (api) => {
+  const count = api.num("Count") || 10;
+  const start = api.vec("Start Location");
+  const mode = api.prop<string>("mode", "OFFSET");
+  let offset = api.vec("Offset");
+  if (mode === "END_POINTS") {
+    const end = api.vec("Offset"); // socket relabeled "End Location" but identifier stays "Offset"
+    offset = count > 1 ? ([(end[0] - start[0]) / (count - 1), (end[1] - start[1]) / (count - 1), (end[2] - start[2]) / (count - 1)] as Vec3) : [0, 0, 0];
+  }
+  return { Mesh: meshLine(count, start, offset) };
+});
+
+// ---- transform ------------------------------------------------------------
+reg(["GeometryNodeTransform", "GeometryNodeTransformGeometry"], (api) => {
+  const g = api.geo("Geometry").clone();
+  const t = api.vec("Translation"), r = api.vec("Rotation"), s = api.vec("Scale");
+  if (g.mesh) g.mesh.positions = g.mesh.positions.map((p) => transformPoint(p, t, r, s));
+  for (const inst of g.instances) {
+    inst.position = transformPoint(inst.position, t, r, s);
+  }
+  return { Geometry: g };
+});
+
+// ---- set position ---------------------------------------------------------
+reg("GeometryNodeSetPosition", (api) => {
+  const g = api.geo("Geometry").clone();
+  if (!g.mesh) return { Geometry: g };
+  const ctx = makeFieldCtx(g, "POINT");
+  const sel = api.field("Selection").array(ctx);
+  const off = api.field("Offset").array(ctx);
+  const posLinked = api.node.inputs.find((s) => s.identifier === "Position")?.linked;
+  const posArr = posLinked ? api.field("Position").array(ctx) : null;
+  g.mesh.positions = g.mesh.positions.map((p, i) => {
+    if (!asNum(sel[i] ?? 1)) return p;
+    const base = posArr ? asVec3(posArr[i]) : p;
+    return vadd(base, asVec3(off[i] ?? [0, 0, 0]));
+  });
+  return { Geometry: g };
+});
+
+// ---- join geometry --------------------------------------------------------
+reg("GeometryNodeJoinGeometry", (api) => {
+  const parts = api.geoInputs("Geometry");
+  const out = new Geometry();
+  out.mesh = new Mesh();
+  for (const g of parts) {
+    if (g.mesh) mergeMeshInto(out.mesh, g.mesh);
+    for (const inst of g.instances) out.instances.push({ ...inst });
+    for (const s of g.curves) out.curves.push({ cyclic: s.cyclic, points: s.points.map((p) => [...p] as Vec3) });
+  }
+  return { Geometry: out };
+});
+
+// ---- materials ------------------------------------------------------------
+reg("GeometryNodeSetMaterial", (api) => {
+  const g = api.geo("Geometry").clone();
+  const mat = api.ref("Material");
+  if (g.mesh) {
+    const slot = g.mesh.ensureMaterialSlot(mat?.name ?? null);
+    const ctx = makeFieldCtx(g, "FACE");
+    const sel = api.field("Selection").array(ctx);
+    for (let fi = 0; fi < g.mesh.faces.length; fi++) if (asNum(sel[fi] ?? 1)) g.mesh.faceMaterial[fi] = slot;
+  }
+  return { Geometry: g };
+});
+
+// ---- instancing -----------------------------------------------------------
+reg("GeometryNodeInstanceOnPoints", (api) => {
+  const points = api.geo("Points");
+  const instance = api.geo("Instance");
+  const out = new Geometry();
+  // Points come from either a mesh (vertex positions) or a curve (control points).
+  const pts: Vec3[] = points.mesh
+    ? points.mesh.positions
+    : points.curves.flatMap((s) => s.points);
+  if (!pts.length) return { Instances: out };
+  const ctx = makeFieldCtx(points, "POINT");
+  const sel = api.field("Selection").array(ctx);
+  const rot = api.field("Rotation").array(ctx);
+  const scl = api.field("Scale").array(ctx);
+  const scaleLinked = api.node.inputs.find((s) => s.identifier === "Scale")?.linked;
+  const scaleConst = api.vec("Scale");
+  // per-point attributes to carry onto each instance (anonymous-attribute propagation)
+  const pointAttrs = points.mesh
+    ? [...points.mesh.attributes].filter(([, a]) => a.domain === "POINT")
+    : [...points.curveAttributes];
+  for (let i = 0; i < pts.length; i++) {
+    if (!asNum(sel[i] ?? 1)) continue;
+    const s = scaleLinked ? asVec3(scl[i] ?? [1, 1, 1]) : (scaleConst[0] || scaleConst[1] || scaleConst[2] ? scaleConst : [1, 1, 1] as Vec3);
+    let attributes: Map<string, any> | undefined;
+    if (pointAttrs.length) {
+      attributes = new Map();
+      for (const [name, a] of pointAttrs) attributes.set(name, a.data[i]);
+    }
+    out.instances.push({
+      geometry: instance,
+      position: pts[i],
+      rotation: asVec3(rot[i] ?? [0, 0, 0]),
+      scale: s,
+      attributes,
+    } as InstanceRef);
+  }
+  return { Instances: out };
+});
+
+reg("GeometryNodeTranslateInstances", (api) => {
+  const g = api.geo("Instances").clone();
+  const t = api.vec("Translation");
+  for (const inst of g.instances) inst.position = vadd(inst.position, t);
+  return { Instances: g };
+});
+
+reg("GeometryNodeRealizeInstances", (api) => ({ Geometry: realizeInstances(api.geo("Geometry")) }));
+
+// ---- capture attribute ----------------------------------------------------
+reg("GeometryNodeCaptureAttribute", (api) => {
+  const g = api.geo("Geometry").clone();
+  const domMap: Record<string, any> = { POINT: "POINT", EDGE: "EDGE", FACE: "FACE", CORNER: "CORNER", INSTANCE: "INSTANCE", CURVE: "POINT" };
+  const domain = domMap[api.prop<string>("domain", "POINT")] ?? "POINT";
+  const name = `__cap_${api.node.name}`;
+  if (g.mesh) {
+    const ctx = makeFieldCtx(g, domain);
+    g.mesh.attributes.set(name, { domain, data: api.field("Value").array(ctx) });
+  } else if (g.curves.length) {
+    // curve geometry: capture over flattened control points (POINT domain)
+    const ctx = makeFieldCtx(g, "POINT");
+    g.curveAttributes.set(name, { domain: "POINT", data: api.field("Value").array(ctx) });
+  }
+  return {
+    Geometry: g,
+    Attribute: Field.perElem((i, ctx) => (ctx.attr ? (ctx.attr(name, i) ?? 0) : 0)),
+  };
+});
+
+// ---- bounding box ---------------------------------------------------------
+reg("GeometryNodeBoundBox", (api) => {
+  const g = api.geo("Geometry");
+  let min: Vec3 = [Infinity, Infinity, Infinity], max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  const pts = g.mesh?.positions ?? [];
+  for (const p of pts) for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], p[k]); max[k] = Math.max(max[k], p[k]); }
+  if (!pts.length) { min = [0, 0, 0]; max = [0, 0, 0]; }
+  const size: Vec3 = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
+  const center: Vec3 = [(max[0] + min[0]) / 2, (max[1] + min[1]) / 2, (max[2] + min[2]) / 2];
+  const box = meshCube(size, 2, 2, 2);
+  if (box.mesh) box.mesh.positions = box.mesh.positions.map((p) => vadd(p, center));
+  return { "Bounding Box": box, Min: Field.of(min), Max: Field.of(max) };
+});
+
+// ---- passthrough-ish stubs that keep geometry flowing ---------------------
+const passGeometry = (api: EvalAPI) => ({ Geometry: api.geo("Geometry") });
+reg("GeometryNodeSetShadeSmooth", passGeometry);
+reg("GeometryNodeSetID", passGeometry);
+reg("GeometryNodeStoreNamedAttribute", (api) => {
+  const g = api.geo("Geometry").clone();
+  const name = api.str("Name");
+  const domain = (api.prop<string>("domain", "POINT") as any);
+  if (g.mesh && name) {
+    const ctx = makeFieldCtx(g, domain);
+    g.mesh.attributes.set(name, { domain, data: api.field("Value").array(ctx) });
+  }
+  return { Geometry: g };
+});

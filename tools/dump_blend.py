@@ -24,11 +24,15 @@ def dump_node(node):
         "type": node.bl_idname,
         "label": node.label or None,
         "inputs": [],
-        "outputs": [n.name for n in node.outputs],
+        "outputs": [{"name": o.name, "identifier": o.identifier,
+                     "default": socket_value(o) if not o.is_linked or True else None}
+                    for o in node.outputs],
     }
-    for s in node.inputs:
+    for i, s in enumerate(node.inputs):
         d["inputs"].append({
             "name": s.name,
+            "identifier": s.identifier,
+            "idx": i,
             "type": s.bl_idname,
             "linked": s.is_linked,
             "value": None if s.is_linked else socket_value(s),
@@ -68,6 +72,7 @@ def dump_tree(tree):
         for item in tree.interface.items_tree:
             entry = {"name": item.name, "item_type": item.item_type}
             if item.item_type == "SOCKET":
+                entry["identifier"] = item.identifier
                 entry["in_out"] = item.in_out
                 entry["socket_type"] = item.socket_type
                 if hasattr(item, "default_value"):
@@ -85,8 +90,9 @@ def dump_tree(tree):
             d["interface"].append(entry)
     for l in tree.links:
         d["links"].append({
-            "from_node": l.from_node.name, "from_socket": l.from_socket.name,
-            "to_node": l.to_node.name, "to_socket": l.to_socket.name,
+            "from_node": l.from_node.name, "from_socket": l.from_socket.identifier,
+            "to_node": l.to_node.name, "to_socket": l.to_socket.identifier,
+            "to_idx": l.to_socket.index if hasattr(l.to_socket, "index") else None,
         })
     return d
 

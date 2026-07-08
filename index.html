@@ -3,129 +3,97 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hong Kong Building Generator</title>
+    <title>Procedural Studio · Blender geometry-nodes on the web</title>
     <style>
       :root {
         color-scheme: dark;
-        --accent: #8fcfff; /* icy cinematic blue */
+        --accent: #8fcfff;
+        --bg: #0b0d10;
+        --card: rgba(255, 255, 255, 0.035);
+        --border: rgba(255, 255, 255, 0.09);
+        --text: #d7dbe0;
+        --dim: #7c8794;
       }
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
-      #app { width: 100vw; height: 100vh; display: block; }
-
-      /* Letterbox bars */
-      .bar {
-        position: fixed;
-        left: 0;
-        width: 100%;
-        height: 0;
-        background: #000;
-        z-index: 50;
-        pointer-events: none;
-        transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      html, body { min-height: 100%; background: var(--bg); color: var(--text);
+        font-family: "Inter", system-ui, -apple-system, sans-serif; }
+      body {
+        background:
+          radial-gradient(1200px 600px at 70% -10%, rgba(143, 207, 255, 0.10), transparent 60%),
+          radial-gradient(900px 500px at 10% 110%, rgba(120, 160, 255, 0.08), transparent 60%),
+          var(--bg);
+        min-height: 100vh;
       }
-      .bar.top { top: 0; }
-      .bar.bottom { bottom: 0; }
-
-      #loading {
-        position: fixed;
-        inset: 0;
-        z-index: 70;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font: 11px/1.5 ui-monospace, "SF Mono", monospace;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.5);
-        pointer-events: none;
-        user-select: none;
-        transition: opacity 0.4s;
+      .wrap { max-width: 1080px; margin: 0 auto; padding: 8vh 24px 12vh; }
+      .eyebrow {
+        font: 600 11px/1.4 ui-monospace, Menlo, monospace;
+        letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent);
+        margin-bottom: 18px;
       }
-
-      .credit {
-        position: fixed;
-        left: 16px;
-        bottom: 14px;
-        z-index: 60;
-        font: 11px/1.5 ui-monospace, "SF Mono", monospace;
-        letter-spacing: 0.04em;
-        color: rgba(255, 255, 255, 0.4);
-        text-transform: uppercase;
-        pointer-events: none;
-        user-select: none;
+      h1 { font-size: clamp(30px, 5vw, 52px); font-weight: 650; letter-spacing: -0.02em; line-height: 1.05; }
+      h1 .grad { background: linear-gradient(120deg, #eaf2f8, #8fcfff 60%, #6f8dff);
+        -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+      .lede { margin-top: 20px; max-width: 62ch; font-size: 16px; line-height: 1.65; color: var(--dim); }
+      .lede b { color: var(--text); font-weight: 600; }
+      .grid { margin-top: 48px; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+      a.card {
+        display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: inherit;
+        background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px;
+        transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+        position: relative; overflow: hidden; min-height: 190px;
       }
-      .credit b { color: var(--accent); font-weight: 600; }
-
-      /* ---- Stylized lil-gui panel ---- */
-      .lil-gui {
-        --background-color: rgba(18, 21, 28, 0.55);
-        --widget-color: rgba(255, 255, 255, 0.07);
-        --hover-color: rgba(255, 255, 255, 0.13);
-        --focus-color: rgba(143, 207, 255, 0.35);
-        --number-color: var(--accent);
-        --string-color: #9fd6c2;
-        --text-color: #d7d8dd;
-        --title-background-color: rgba(0, 0, 0, 0.35);
-        --title-text-color: #ffffff;
-        --font-family: "Inter", system-ui, -apple-system, sans-serif;
-        --font-size: 11px;
-        --input-font-size: 11px;
-        --widget-height: 24px;
-        --padding: 6px;
-        --spacing: 5px;
-        --slider-knob-color: var(--accent);
-        --slider-input-min-width: 42px;
-      }
-      .lil-gui.root {
-        right: 14px;
-        top: 14px;
-        width: 312px;
-        border-radius: 14px;
-        overflow: hidden;
-        backdrop-filter: blur(18px) saturate(1.2);
-        -webkit-backdrop-filter: blur(18px) saturate(1.2);
-        border: 1px solid rgba(255, 255, 255, 0.09);
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55),
-          inset 0 1px 0 rgba(255, 255, 255, 0.06);
-      }
-      .lil-gui.root > .title {
-        font-weight: 600;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        padding: 11px 12px;
-        color: var(--accent);
-        background: rgba(255, 255, 255, 0.03);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      }
-      .lil-gui .title {
-        transition: color 0.15s ease;
-      }
-      .lil-gui .children { padding-bottom: 2px; }
-      .lil-gui .controller { --gap: 6px; }
-      .lil-gui .controller.string input,
-      .lil-gui .controller.number input { border-radius: 6px; }
-      .lil-gui .slider {
-        border-radius: 6px;
-        background: rgba(255, 255, 255, 0.06);
-      }
-      .lil-gui .slider .fill {
-        background: var(--accent);
-        opacity: 0.85;
-      }
-      .lil-gui button:hover,
-      .lil-gui .controller:hover { --background-color: rgba(255, 255, 255, 0.03); }
-      .lil-gui .folder > .title:hover { color: var(--accent); }
+      a.card:hover { transform: translateY(-4px); border-color: rgba(143, 207, 255, 0.4); background: rgba(143, 207, 255, 0.05); }
+      .tag { font: 600 10px/1 ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase;
+        color: var(--accent); padding: 5px 8px; border: 1px solid var(--border); border-radius: 999px; align-self: flex-start; }
+      .card h2 { font-size: 20px; font-weight: 620; letter-spacing: -0.01em; margin-top: 4px; }
+      .card p { font-size: 13.5px; line-height: 1.55; color: var(--dim); }
+      .card .go { margin-top: auto; font: 600 12px/1 ui-monospace, monospace; color: var(--accent); letter-spacing: 0.04em; }
+      .card .go::after { content: " →"; transition: margin 0.18s ease; display: inline-block; }
+      a.card:hover .go::after { margin-left: 4px; }
+      .footer { margin-top: 56px; font: 12px/1.7 ui-monospace, monospace; color: var(--dim); border-top: 1px solid var(--border); padding-top: 22px; }
+      .footer code { color: var(--accent); }
+      .badge { display: inline-block; font: 600 10px/1 ui-monospace, monospace; color: #9fe0a4;
+        border: 1px solid rgba(159, 224, 164, 0.3); border-radius: 999px; padding: 5px 9px; letter-spacing: 0.1em; }
     </style>
   </head>
   <body>
-    <div id="app"></div>
-    <div id="bar-top" class="bar top"></div>
-    <div id="bar-bottom" class="bar bottom"></div>
-    <div id="loading">Loading asset kit…</div>
-    <div class="credit">
-      <b>HK BUILDING STUDIO</b> · drag to orbit · scroll to zoom · tweak the panel to regenerate
+    <div class="wrap">
+      <div class="eyebrow">Procedural Studio</div>
+      <h1>Blender geometry-nodes,<br /><span class="grad">running on the web.</span></h1>
+      <p class="lede">
+        Three procedural generators, ported from Blender to Three.js by two routes: a
+        <b>bake pipeline</b> (evaluate the node graph in Blender → glTF) and a from-scratch
+        <b>geometry-nodes VM</b> that executes the dumped node graph directly in TypeScript —
+        no Blender at runtime, live sliders, static-deployable.
+      </p>
+
+      <div class="grid">
+        <a class="card" href="/building.html">
+          <span class="tag">Hand-ported</span>
+          <h2>Hong Kong Building</h2>
+          <p>A 592-node build system reverse-engineered into a TypeScript placement algorithm. ~190 instanced parts, 18 live parameters, snow &amp; rain.</p>
+          <span class="go">Open generator</span>
+        </a>
+
+        <a class="card" href="/dojo-viewer.html">
+          <span class="tag">Path A · Bake</span>
+          <h2>Dojo Bin — Baked</h2>
+          <p>A Node Dojo geometry-nodes generator evaluated in Blender and exported to GLB. 100% fidelity, frozen configuration.</p>
+          <span class="go">Open viewer</span>
+        </a>
+
+        <a class="card" href="/gnvm-viewer.html">
+          <span class="tag">Path B · Live VM</span>
+          <h2>Dojo Bin — Live VM <span class="badge">62 nodes</span></h2>
+          <p>The same .blend graph executed by the in-browser geometry-nodes interpreter. Sliders auto-generated from the node group, ~13 ms rebuilds.</p>
+          <span class="go">Open live VM</span>
+        </a>
+      </div>
+
+      <div class="footer">
+        <span class="badge">systematic</span> &nbsp; The VM (<code>src/gnvm/</code>) executes any dumped graph and self-reports node coverage.
+        Tools: <code>dump_blend.py</code> · <code>bake_glb.py</code> · <code>gnvm-run.ts</code> · <code>gnvm-selftest.ts</code>.
+      </div>
     </div>
-    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

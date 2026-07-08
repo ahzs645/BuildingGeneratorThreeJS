@@ -1,0 +1,76 @@
+// Field-plumbing nodes: sample-at-index, evaluate-on-domain, align-euler.
+import { Field, Vec3, Elem, asNum, asVec3, vnorm, vcross, vdot } from "../core";
+import { reg } from "../registry";
+
+// Value sampled at another element's index (both resolved on the consumer domain).
+reg("GeometryNodeFieldAtIndex", (api) => {
+  const idx = api.field("Index");
+  const val = api.field("Value");
+  return {
+    Value: Field.make((ctx) => {
+      const iArr = idx.array(ctx);
+      const vArr = val.array(ctx);
+      const out: Elem[] = new Array(ctx.size);
+      for (let i = 0; i < ctx.size; i++) {
+        const j = Math.max(0, Math.min(vArr.length - 1, Math.round(asNum(iArr[i] ?? 0))));
+        out[i] = vArr[j] ?? 0;
+      }
+      return out;
+    }),
+  };
+});
+
+// Evaluate on Domain: MVP treats it as identity (same-domain read-through).
+reg(["GeometryNodeFieldOnDomain", "GeometryNodeAttributeDomainSize"], (api) => {
+  // AttributeDomainSize returns counts; we don't track them precisely -> 0s.
+  if (api.node.type === "GeometryNodeAttributeDomainSize") {
+    return { "Point Count": Field.of(0), "Edge Count": Field.of(0), "Face Count": Field.of(0), "Face Corner Count": Field.of(0) };
+  }
+  return { Value: api.field("Value") };
+});
+
+// ---- Align Euler to Vector ------------------------------------------------
+// Matrix aligning unit axis `a` onto target `t` (Rodrigues), then euler XYZ
+// extracted for M = Rz*Ry*Rx (the convention rotateEulerXYZ uses).
+function axisAngleMatrix(axis: Vec3, angle: number): number[][] {
+  const [x, y, z] = vnorm(axis);
+  const c = Math.cos(angle), s = Math.sin(angle), t = 1 - c;
+  return [
+    [t * x * x + c, t * x * y - s * z, t * x * z + s * y],
+    [t * x * y + s * z, t * y * y + c, t * y * z - s * x],
+    [t * x * z - s * y, t * y * z + s * x, t * z * z + c],
+  ];
+}
+function matrixToEulerXYZ(M: number[][]): Vec3 {
+  const sy = -M[2][0];
+  const ey = Math.asin(Math.max(-1, Math.min(1, sy)));
+  const cy = Math.cos(ey);
+  if (Math.abs(cy) > 1e-6) {
+    return [Math.atan2(M[2][1], M[2][2]), ey, Math.atan2(M[1][0], M[0][0])];
+  }
+  return [Math.atan2(-M[1][2], M[1][1]), ey, 0]; // gimbal
+}
+
+reg("FunctionNodeAlignEulerToVector", (api) => {
+  const axisSel = api.prop<string>("axis", "X");
+  const a: Vec3 = axisSel === "Y" ? [0, 1, 0] : axisSel === "Z" ? [0, 0, 1] : [1, 0, 0];
+  const vecF = api.field("Vector");
+  const facF = api.field("Factor");
+  return {
+    Rotation: Field.make((ctx) => {
+      const vArr = vecF.array(ctx);
+      const fArr = facF.array(ctx);
+      const out: Elem[] = new Array(ctx.size);
+      for (let i = 0; i < ctx.size; i++) {
+        const t = vnorm(asVec3(vArr[i] ?? [0, 0, 1]));
+        const f = asNum(fArr[i] ?? 1);
+        const d = Math.max(-1, Math.min(1, vdot(a, t)));
+        let ang = Math.acos(d) * f;
+        let axis = vcross(a, t);
+        if (axis[0] === 0 && axis[1] === 0 && axis[2] === 0) axis = Math.abs(a[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+        out[i] = matrixToEulerXYZ(axisAngleMatrix(axis, ang));
+      }
+      return out;
+    }),
+  };
+});
