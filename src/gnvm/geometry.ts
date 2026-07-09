@@ -198,7 +198,20 @@ function topologyOrderStamp(mesh: Mesh): number {
 }
 
 function computeVertexNormals(mesh: Mesh): Vec3[] {
-  const faceNormals = mesh.faces.map((_, fi) => mesh.faceNormal(fi));
+  const faceNormalWeights = mesh.faces.map((f) => {
+    // Newell vector before normalization. Its magnitude tracks face area, which
+    // keeps tiny rim/cap faces from dominating smooth vertex normals.
+    let nx = 0, ny = 0, nz = 0;
+    for (let i = 0; i < f.length; i++) {
+      const cur = mesh.positions[f[i]];
+      const nxt = mesh.positions[f[(i + 1) % f.length]];
+      nx += (cur[1] - nxt[1]) * (cur[2] + nxt[2]);
+      ny += (cur[2] - nxt[2]) * (cur[0] + nxt[0]);
+      nz += (cur[0] - nxt[0]) * (cur[1] + nxt[1]);
+    }
+    return [nx, ny, nz] as Vec3;
+  });
+  const faceNormals = faceNormalWeights.map((n) => vnorm(n));
   const incident: number[][] = mesh.positions.map(() => []);
   const acc: Vec3[] = mesh.positions.map(() => [0, 0, 0]);
   for (let fi = 0; fi < mesh.faces.length; fi++) {
@@ -244,12 +257,23 @@ function computeVertexNormals(mesh: Mesh): Vec3[] {
     for (const seedFi of fis) {
       const seed = faceNormals[seedFi];
       let sum: Vec3 = [0, 0, 0];
+      const cluster: number[] = [];
       let count = 0;
       for (const fi of fis) {
         const n = faceNormals[fi];
         if (vdot(seed, n) >= 0) {
           sum = vadd(sum, n);
+          cluster.push(fi);
           count++;
+        }
+      }
+      if (cluster.length > 1) {
+        const areas = cluster.map((fi) => vlen(faceNormalWeights[fi]));
+        const minArea = Math.min(...areas);
+        const maxArea = Math.max(...areas);
+        if (maxArea > 1e-12 && minArea / maxArea < 1e-3) {
+          sum = [0, 0, 0];
+          for (const fi of cluster) sum = vadd(sum, faceNormalWeights[fi]);
         }
       }
       const dir = vnorm(sum);

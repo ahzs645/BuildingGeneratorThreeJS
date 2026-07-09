@@ -717,7 +717,7 @@ function clipToBox(g: Geometry, box: { min: Vec3; max: Vec3 }, keepInside: boole
     return keepFace[fi];
   });
   capBoxClip(clipped, m, keepFace, box);
-  out.mesh = clipped;
+  out.mesh = compactFaceVertsLocal(clipped);
   return out;
 }
 
@@ -900,6 +900,32 @@ function keepFacesLocal(mesh: Mesh, keep: (fi: number) => boolean): Mesh {
   }
   out.faces = faces;
   out.faceMaterial = fmat;
+  return out;
+}
+
+function compactFaceVertsLocal(mesh: Mesh): Mesh {
+  const used = new Set<number>();
+  for (const f of mesh.faces) for (const vi of f) used.add(vi);
+  if (used.size === mesh.positions.length && !mesh.edges.length) return mesh;
+  const remap = new Map<number, number>();
+  const out = new Mesh();
+  out.materialSlots = [...mesh.materialSlots];
+  for (let i = 0; i < mesh.positions.length; i++) {
+    if (!used.has(i)) continue;
+    remap.set(i, out.positions.length);
+    out.positions.push([...mesh.positions[i]] as Vec3);
+  }
+  out.faces = mesh.faces.map((f) => f.map((vi) => remap.get(vi)!));
+  out.faceMaterial = [...mesh.faceMaterial];
+  for (const [name, a] of mesh.attributes) {
+    if (a.domain === "POINT") {
+      const data: Elem[] = [];
+      for (let i = 0; i < mesh.positions.length; i++) if (used.has(i)) data.push(a.data[i]);
+      out.attributes.set(name, { domain: "POINT", data });
+    } else {
+      out.attributes.set(name, { domain: a.domain, data: [...a.data] });
+    }
+  }
   return out;
 }
 

@@ -392,8 +392,10 @@ function meshSignedAreaXY(m: Mesh): number {
   const capFaces = m.faces.filter((f) =>
     f.length >= 3 && f.every((vi) => Math.abs(m.positions[vi][2]) < 1e-6)
   );
+  const maxZ = Math.max(...m.positions.map((p) => p[2]));
   check("MeshBoolean box clip adds cap face", m.faces.length > sideFacesAfterDrop && capFaces.length > 0, `got ${m.faces.length} faces, ${capFaces.length} caps`);
   check("MeshBoolean box clip has no cut-plane boundary edges", boundaryNearCut.length === 0, `boundary=${boundaryNearCut.length}`);
+  check("MeshBoolean box clip compacts dropped verts", maxZ <= 2 + 1e-6, `maxZ=${maxZ}`);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
