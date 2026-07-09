@@ -576,9 +576,46 @@ export function orientShellOutward(mesh: Mesh): void {
   for (const f of mesh.faces) f.reverse();
 }
 
+function isCollapsedFanFace(face: number[], positions: Vec3[], epsilon: number, minSpan: number): boolean {
+  if (face.length < 3) return true;
+  let collapsedEdge = false;
+  for (let i = 0; i < face.length; i++) {
+    const a = positions[face[i]], b = positions[face[(i + 1) % face.length]];
+    if (Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) <= epsilon) collapsedEdge = true;
+  }
+  if (!collapsedEdge) return false;
+  let span = 0;
+  for (let i = 0; i < face.length; i++) for (let j = i + 1; j < face.length; j++) {
+    const a = positions[face[i]], b = positions[face[j]];
+    span = Math.max(span, Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]));
+  }
+  return span >= minSpan;
+}
+
 export function toTriSoup(g: Geometry): TriSoup {
   const realized = g.instances.length ? realizeInstances(g) : g;
-  const mesh = realized.mesh ?? new Mesh();
+  const source = realized.mesh ?? new Mesh();
+  let min: Vec3 = [Infinity, Infinity, Infinity];
+  let max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const p of source.positions) for (let k = 0; k < 3; k++) {
+    min[k] = Math.min(min[k], p[k]);
+    max[k] = Math.max(max[k], p[k]);
+  }
+  const diag = Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
+  const epsilon = Math.max(1e-7, diag * 1e-8);
+  const minFanSpan = diag * 0.1;
+  // Keep export-only topology independent from the evaluation graph. The Spin
+  // lathe can leave a collapsed axis edge in a very large quad; fan
+  // triangulation would turn that invalid quad into a visible bottom bulb.
+  const mesh = new Mesh();
+  mesh.positions = source.positions;
+  mesh.materialSlots = [...source.materialSlots];
+  for (let fi = 0; fi < source.faces.length; fi++) {
+    const face = source.faces[fi];
+    if (isCollapsedFanFace(face, source.positions, epsilon, minFanSpan)) continue;
+    mesh.faces.push([...face]);
+    mesh.faceMaterial.push(source.faceMaterial[fi] ?? 0);
+  }
   orientShellOutward(mesh);
   const normals = mesh.vertexNormals();
   const positions = new Float32Array(mesh.positions.length * 3);

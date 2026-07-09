@@ -2,7 +2,7 @@
 // built against our EvalAPI directly — no graph machinery needed).
 // Run: npx tsx tools/gnvm-nodetest.ts
 import { Field, Vec3 } from "../src/gnvm/core";
-import { Geometry, Mesh, topologyOf } from "../src/gnvm/geometry";
+import { Geometry, Mesh, toTriSoup, topologyOf } from "../src/gnvm/geometry";
 import { EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
 import { Evaluator, makeFieldCtx } from "../src/gnvm/evaluator";
 import "../src/gnvm/index"; // registers all handlers
