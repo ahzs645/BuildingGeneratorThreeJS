@@ -108,3 +108,65 @@ export function meshLine(count: number, start: Vec3, offset: Vec3): Geometry {
   g.mesh = m;
   return g;
 }
+
+/** Cone / frustum along Z, centered at origin (Blender Mesh Cone). */
+export function meshCone(
+  verts: number,
+  radiusTop: number,
+  radiusBottom: number,
+  depth: number,
+  sideSegments = 1,
+  fillSegments = 1,
+  fillType: "NONE" | "NGON" | "TRIANGLE_FAN" = "NGON",
+): Geometry {
+  const m = new Mesh();
+  verts = Math.max(3, Math.floor(verts));
+  sideSegments = Math.max(1, Math.floor(sideSegments));
+  fillSegments = Math.max(1, Math.floor(fillSegments));
+  const z0 = -depth / 2;
+  const z1 = depth / 2;
+  // Rings from bottom to top (sideSegments+1 rings)
+  const ringStart: number[] = [];
+  for (let s = 0; s <= sideSegments; s++) {
+    const t = s / sideSegments;
+    const r = radiusBottom + (radiusTop - radiusBottom) * t;
+    const z = z0 + (z1 - z0) * t;
+    ringStart.push(m.positions.length);
+    for (let i = 0; i < verts; i++) {
+      const a = (i / verts) * Math.PI * 2;
+      m.positions.push([Math.cos(a) * r, Math.sin(a) * r, z]);
+    }
+  }
+  // Side quads
+  for (let s = 0; s < sideSegments; s++) {
+    const a0 = ringStart[s];
+    const a1 = ringStart[s + 1];
+    for (let i = 0; i < verts; i++) {
+      const j = (i + 1) % verts;
+      m.faces.push([a0 + i, a0 + j, a1 + j, a1 + i]);
+    }
+  }
+  // Caps
+  const addCap = (ring: number, radius: number, z: number, flip: boolean) => {
+    if (radius <= 1e-12 || fillType === "NONE") return;
+    if (fillType === "NGON" && fillSegments <= 1) {
+      const f = Array.from({ length: verts }, (_, i) => ring + i);
+      m.faces.push(flip ? f.reverse() : f);
+      return;
+    }
+    // Triangle fan (also used for fillSegments > 1 with concentric rings simplified to fan)
+    const c = m.positions.length;
+    m.positions.push([0, 0, z]);
+    for (let i = 0; i < verts; i++) {
+      const j = (i + 1) % verts;
+      m.faces.push(flip ? [c, ring + j, ring + i] : [c, ring + i, ring + j]);
+    }
+  };
+  addCap(ringStart[0], radiusBottom, z0, true);
+  addCap(ringStart[sideSegments], radiusTop, z1, false);
+  m.faceMaterial = m.faces.map(() => 0);
+  m.materialSlots = [null];
+  const g = new Geometry();
+  g.mesh = m;
+  return g;
+}

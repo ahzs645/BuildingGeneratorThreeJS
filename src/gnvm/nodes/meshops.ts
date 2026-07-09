@@ -658,29 +658,117 @@ reg("GeometryNodeSubdivideMesh", (api) => {
   if (!g.mesh || level === 0) return { Mesh: g };
   // one level: split every quad/tri into a center-fan of quads (Catmull-like topology, linear positions)
   let mesh = g.mesh;
-  for (let l = 0; l < level; l++) mesh = subdivideOnce(mesh);
+  for (let l = 0; l < level; l++) mesh = subdivideOnce(mesh, false);
   g.mesh = mesh;
   return { Mesh: g };
 });
 
-function subdivideOnce(mesh: Mesh): Mesh {
+// Catmull–Clark subdivision surface (smooth positions). Level capped for safety.
+reg("GeometryNodeSubdivisionSurface", (api) => {
+  const g = api.geo("Mesh").clone();
+  const level = Math.max(0, Math.min(4, Math.round(api.num("Level"))));
+  if (!g.mesh || level === 0) return { Mesh: g };
+  let mesh = g.mesh;
+  for (let l = 0; l < level; l++) mesh = subdivideOnce(mesh, true);
+  g.mesh = mesh;
+  return { Mesh: g };
+});
+
+function subdivideOnce(mesh: Mesh, catmullClark: boolean): Mesh {
   const out = new Mesh();
-  out.positions = mesh.positions.map((p) => [...p] as Vec3);
   out.materialSlots = [...mesh.materialSlots];
-  const edgePoint = new Map<string, number>();
-  const getEdge = (a: number, b: number) => {
-    const k = ekey(a, b);
-    let idx = edgePoint.get(k);
-    if (idx === undefined) { idx = out.positions.length; out.positions.push(vscale(vadd(mesh.positions[a], mesh.positions[b]), 0.5)); edgePoint.set(k, idx); }
-    return idx;
-  };
-  for (let fi = 0; fi < mesh.faces.length; fi++) {
+  const nV = mesh.positions.length;
+  const nF = mesh.faces.length;
+
+  // Unique edges from faces
+  const edgeMap = new Map<string, { a: number; b: number; faces: number[] }>();
+  for (let fi = 0; fi < nF; fi++) {
     const f = mesh.faces[fi];
-    const c = out.positions.length;
-    out.positions.push(mesh.faceCenter(fi));
+    for (let i = 0; i < f.length; i++) {
+      const a = f[i], b = f[(i + 1) % f.length];
+      const k = ekey(a, b);
+      let e = edgeMap.get(k);
+      if (!e) { e = { a, b, faces: [] }; edgeMap.set(k, e); }
+      e.faces.push(fi);
+    }
+  }
+  const edges = [...edgeMap.values()];
+
+  // Face points
+  const facePts: Vec3[] = mesh.faces.map((_, fi) => mesh.faceCenter(fi));
+
+  // Edge points
+  const edgePts: Vec3[] = edges.map((e) => {
+    if (!catmullClark || e.faces.length < 2) {
+      return vscale(vadd(mesh.positions[e.a], mesh.positions[e.b]), 0.5);
+    }
+    // avg of endpoints + adjacent face points
+    const fa = facePts[e.faces[0]], fb = facePts[e.faces[1]];
+    return vscale(
+      [mesh.positions[e.a][0] + mesh.positions[e.b][0] + fa[0] + fb[0],
+       mesh.positions[e.a][1] + mesh.positions[e.b][1] + fa[1] + fb[1],
+       mesh.positions[e.a][2] + mesh.positions[e.b][2] + fa[2] + fb[2]],
+      0.25,
+    );
+  });
+  const edgeIdx = new Map<string, number>();
+  edges.forEach((e, i) => edgeIdx.set(ekey(e.a, e.b), i));
+
+  // Vertex points
+  const vertFaces: number[][] = Array.from({ length: nV }, () => []);
+  const vertEdges: number[][] = Array.from({ length: nV }, () => []);
+  for (let fi = 0; fi < nF; fi++) for (const v of mesh.faces[fi]) vertFaces[v].push(fi);
+  for (let ei = 0; ei < edges.length; ei++) {
+    vertEdges[edges[ei].a].push(ei);
+    vertEdges[edges[ei].b].push(ei);
+  }
+  const newVerts: Vec3[] = mesh.positions.map((p, vi) => {
+    if (!catmullClark) return [...p] as Vec3;
+    const n = vertFaces[vi].length;
+    if (n === 0) return [...p] as Vec3;
+    // boundary: average of incident boundary edge midpoints + original
+    const isBoundary = vertEdges[vi].some((ei) => edges[ei].faces.length < 2);
+    if (isBoundary) {
+      let acc: Vec3 = [0, 0, 0];
+      let c = 0;
+      for (const ei of vertEdges[vi]) {
+        if (edges[ei].faces.length < 2) {
+          acc = vadd(acc, vscale(vadd(mesh.positions[edges[ei].a], mesh.positions[edges[ei].b]), 0.5));
+          c++;
+        }
+      }
+      if (c === 0) return [...p] as Vec3;
+      const mid = vscale(acc, 1 / c);
+      return vscale(vadd(p, mid), 0.5);
+    }
+    // F = avg face points, R = avg midpoints of incident edges, S = original
+    let F: Vec3 = [0, 0, 0];
+    for (const fi of vertFaces[vi]) F = vadd(F, facePts[fi]);
+    F = vscale(F, 1 / n);
+    let R: Vec3 = [0, 0, 0];
+    for (const ei of vertEdges[vi]) R = vadd(R, vscale(vadd(mesh.positions[edges[ei].a], mesh.positions[edges[ei].b]), 0.5));
+    R = vscale(R, 1 / vertEdges[vi].length);
+    // (F + 2R + (n-3)S) / n
+    return vscale(
+      [F[0] + 2 * R[0] + (n - 3) * p[0], F[1] + 2 * R[1] + (n - 3) * p[1], F[2] + 2 * R[2] + (n - 3) * p[2]],
+      1 / n,
+    );
+  });
+
+  out.positions = [...newVerts];
+  const faceBase = out.positions.length;
+  for (const fp of facePts) out.positions.push(fp);
+  const edgeBase = out.positions.length;
+  for (const ep of edgePts) out.positions.push(ep);
+
+  for (let fi = 0; fi < nF; fi++) {
+    const f = mesh.faces[fi];
+    const c = faceBase + fi;
     for (let i = 0; i < f.length; i++) {
       const a = f[i], b = f[(i + 1) % f.length], prev = f[(i - 1 + f.length) % f.length];
-      out.faces.push([a, getEdge(a, b), c, getEdge(prev, a)]);
+      const eNext = edgeBase + edgeIdx.get(ekey(a, b))!;
+      const ePrev = edgeBase + edgeIdx.get(ekey(prev, a))!;
+      out.faces.push([a, eNext, c, ePrev]);
       out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
     }
   }

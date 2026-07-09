@@ -1,7 +1,7 @@
 // Geometry-operation handlers.
 import { Field, Vec3, asVec3, asNum, vadd } from "../core";
 import { Geometry, Mesh, InstanceRef, mergeMeshInto, realizeInstances, transformPoint } from "../geometry";
-import { meshCube, meshGrid, meshCircle, meshLine } from "../primitives";
+import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitives";
 import { reg, EvalAPI, DUMP_CONTEXT } from "../registry";
 import { makeFieldCtx } from "../evaluator";
 
@@ -55,6 +55,19 @@ reg("GeometryNodeMeshLine", (api) => {
     offset = count > 1 ? ([(end[0] - start[0]) / (count - 1), (end[1] - start[1]) / (count - 1), (end[2] - start[2]) / (count - 1)] as Vec3) : [0, 0, 0];
   }
   return { Mesh: meshLine(count, start, offset) };
+});
+reg("GeometryNodeMeshCone", (api) => {
+  const verts = api.num("Vertices") || 32;
+  const sideSeg = api.num("Side Segments") || 1;
+  const fillSeg = api.num("Fill Segments") || 1;
+  const rTop = api.num("Radius Top");
+  const rBot = api.num("Radius Bottom") || 1;
+  const depth = api.num("Depth") || 2;
+  const fill = (api.prop<string>("fill_type", "NGON") as "NONE" | "NGON" | "TRIANGLE_FAN");
+  const mesh = meshCone(verts, rTop, rBot, depth, sideSeg, fillSeg, fill);
+  // Selection fields (const true for whole mesh — enough for non-mask consumers)
+  const yes = Field.of(1);
+  return { Mesh: mesh, Top: yes, Bottom: yes, Side: yes, "UV Map": Field.of([0, 0, 0]) };
 });
 
 // ---- transform ------------------------------------------------------------

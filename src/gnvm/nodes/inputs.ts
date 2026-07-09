@@ -1,5 +1,5 @@
 // Field-producing input nodes (resolved lazily against the consuming geometry's domain).
-import { Field } from "../core";
+import { Field, Vec3 } from "../core";
 import { reg } from "../registry";
 
 reg("GeometryNodeInputPosition", () => ({
@@ -12,6 +12,35 @@ reg("GeometryNodeInputIndex", () => ({
 
 reg("GeometryNodeInputNormal", () => ({
   Normal: Field.perElem((i, ctx) => (ctx.normal ? ctx.normal(i) : [0, 0, 1])),
+}));
+
+// Curve tangent (and a mesh-point finite-difference fallback). Prefer the
+// context's spline frames via a small neighbor delta on curve POINT domain.
+reg("GeometryNodeInputTangent", () => ({
+  Tangent: Field.perElem((i, ctx) => {
+    // Use position of neighbors on the same domain to form a tangent.
+    // For curves, control points are sequential; for mesh edges this is approximate.
+    const p = ctx.position ? ctx.position(i) : ([0, 0, 0] as Vec3);
+    const prev = ctx.position && i > 0 ? ctx.position(i - 1) : p;
+    const next = ctx.position && i + 1 < ctx.size ? ctx.position(i + 1) : p;
+    const dx = next[0] - prev[0], dy = next[1] - prev[1], dz = next[2] - prev[2];
+    const len = Math.hypot(dx, dy, dz);
+    if (len > 1e-12) return [dx / len, dy / len, dz / len] as Vec3;
+    // single-point / endpoint: try one-sided
+    if (ctx.position && i + 1 < ctx.size) {
+      const n = ctx.position(i + 1);
+      const sx = n[0] - p[0], sy = n[1] - p[1], sz = n[2] - p[2];
+      const sl = Math.hypot(sx, sy, sz);
+      if (sl > 1e-12) return [sx / sl, sy / sl, sz / sl] as Vec3;
+    }
+    if (ctx.position && i > 0) {
+      const n = ctx.position(i - 1);
+      const sx = p[0] - n[0], sy = p[1] - n[1], sz = p[2] - n[2];
+      const sl = Math.hypot(sx, sy, sz);
+      if (sl > 1e-12) return [sx / sl, sy / sl, sz / sl] as Vec3;
+    }
+    return [0, 0, 1] as Vec3;
+  }),
 }));
 
 reg("GeometryNodeInputNamedAttribute", (api) => {

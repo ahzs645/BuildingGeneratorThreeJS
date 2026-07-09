@@ -210,3 +210,135 @@ reg("GeometryNodeCurveEndpointSelection", (api) => {
     Selection: Field.perElem((i, ctx) => (i < startN || i >= ctx.size - endN ? 1 : 0)),
   };
 });
+
+// ---- String to Curves (minimal polyline font) -----------------------------
+// Produces one curve-instance per character. Glyph outlines are simplified
+// unit-height strokes (not Blender font fidelity) but yield non-empty curves.
+
+/** Unit-box (x∈[0,0.6], y∈[0,1]) stroke polylines for common glyphs. */
+const GLYPHS: Record<string, Vec3[][]> = (() => {
+  const g: Record<string, Vec3[][]> = {};
+  const L = (pts: number[][]): Vec3[] => pts.map((p) => [p[0], p[1], 0] as Vec3);
+  // Digits
+  g["0"] = [L([[0.05, 0], [0.55, 0], [0.55, 1], [0.05, 1], [0.05, 0]])];
+  g["1"] = [L([[0.15, 0.8], [0.3, 1], [0.3, 0]])];
+  g["2"] = [L([[0.05, 1], [0.55, 1], [0.55, 0.5], [0.05, 0.5], [0.05, 0], [0.55, 0]])];
+  g["3"] = [L([[0.05, 1], [0.55, 1], [0.55, 0.5], [0.2, 0.5], [0.55, 0.5], [0.55, 0], [0.05, 0]])];
+  g["4"] = [L([[0.05, 1], [0.05, 0.5], [0.55, 0.5]]), L([[0.45, 1], [0.45, 0]])];
+  g["5"] = [L([[0.55, 1], [0.05, 1], [0.05, 0.5], [0.55, 0.5], [0.55, 0], [0.05, 0]])];
+  g["6"] = [L([[0.55, 1], [0.05, 1], [0.05, 0], [0.55, 0], [0.55, 0.5], [0.05, 0.5]])];
+  g["7"] = [L([[0.05, 1], [0.55, 1], [0.2, 0]])];
+  g["8"] = [L([[0.05, 0], [0.55, 0], [0.55, 0.5], [0.05, 0.5], [0.05, 1], [0.55, 1], [0.55, 0.5], [0.05, 0.5], [0.05, 0]])];
+  g["9"] = [L([[0.05, 0], [0.55, 0], [0.55, 1], [0.05, 1], [0.05, 0.5], [0.55, 0.5]])];
+  // Letters (uppercase + map lowercase)
+  g["A"] = [L([[0, 0], [0.3, 1], [0.6, 0]]), L([[0.12, 0.4], [0.48, 0.4]])];
+  g["B"] = [L([[0.05, 0], [0.05, 1], [0.4, 1], [0.5, 0.75], [0.4, 0.5], [0.05, 0.5], [0.45, 0.5], [0.55, 0.25], [0.45, 0], [0.05, 0]])];
+  g["C"] = [L([[0.55, 0.85], [0.4, 1], [0.1, 1], [0, 0.8], [0, 0.2], [0.1, 0], [0.4, 0], [0.55, 0.15]])];
+  g["D"] = [L([[0.05, 0], [0.05, 1], [0.35, 1], [0.55, 0.7], [0.55, 0.3], [0.35, 0], [0.05, 0]])];
+  g["E"] = [L([[0.55, 1], [0.05, 1], [0.05, 0], [0.55, 0]]), L([[0.05, 0.5], [0.4, 0.5]])];
+  g["F"] = [L([[0.05, 0], [0.05, 1], [0.55, 1]]), L([[0.05, 0.5], [0.4, 0.5]])];
+  g["G"] = [L([[0.55, 0.85], [0.4, 1], [0.1, 1], [0, 0.8], [0, 0.2], [0.1, 0], [0.4, 0], [0.55, 0.2], [0.55, 0.45], [0.3, 0.45]])];
+  g["H"] = [L([[0.05, 0], [0.05, 1]]), L([[0.55, 0], [0.55, 1]]), L([[0.05, 0.5], [0.55, 0.5]])];
+  g["I"] = [L([[0.15, 1], [0.45, 1]]), L([[0.3, 1], [0.3, 0]]), L([[0.15, 0], [0.45, 0]])];
+  g["J"] = [L([[0.1, 1], [0.5, 1], [0.5, 0.25], [0.35, 0], [0.15, 0], [0.05, 0.15]])];
+  g["K"] = [L([[0.05, 0], [0.05, 1]]), L([[0.55, 1], [0.05, 0.5], [0.55, 0]])];
+  g["L"] = [L([[0.05, 1], [0.05, 0], [0.55, 0]])];
+  g["M"] = [L([[0, 0], [0, 1], [0.3, 0.4], [0.6, 1], [0.6, 0]])];
+  g["N"] = [L([[0.05, 0], [0.05, 1], [0.55, 0], [0.55, 1]])];
+  g["O"] = [L([[0.1, 0], [0.5, 0], [0.6, 0.2], [0.6, 0.8], [0.5, 1], [0.1, 1], [0, 0.8], [0, 0.2], [0.1, 0]])];
+  g["P"] = [L([[0.05, 0], [0.05, 1], [0.4, 1], [0.55, 0.75], [0.4, 0.5], [0.05, 0.5]])];
+  g["Q"] = [L([[0.1, 0.15], [0.5, 0.15], [0.6, 0.35], [0.6, 0.8], [0.5, 1], [0.1, 1], [0, 0.8], [0, 0.35], [0.1, 0.15]]), L([[0.35, 0.35], [0.6, 0]])];
+  g["R"] = [L([[0.05, 0], [0.05, 1], [0.4, 1], [0.55, 0.75], [0.4, 0.5], [0.05, 0.5], [0.3, 0.5], [0.55, 0]])];
+  g["S"] = [L([[0.55, 0.85], [0.4, 1], [0.15, 1], [0.05, 0.8], [0.15, 0.55], [0.45, 0.45], [0.55, 0.2], [0.4, 0], [0.1, 0], [0.05, 0.15]])];
+  g["T"] = [L([[0, 1], [0.6, 1]]), L([[0.3, 1], [0.3, 0]])];
+  g["U"] = [L([[0.05, 1], [0.05, 0.2], [0.15, 0], [0.45, 0], [0.55, 0.2], [0.55, 1]])];
+  g["V"] = [L([[0, 1], [0.3, 0], [0.6, 1]])];
+  g["W"] = [L([[0, 1], [0.15, 0], [0.3, 0.5], [0.45, 0], [0.6, 1]])];
+  g["X"] = [L([[0, 1], [0.6, 0]]), L([[0.6, 1], [0, 0]])];
+  g["Y"] = [L([[0, 1], [0.3, 0.5], [0.6, 1]]), L([[0.3, 0.5], [0.3, 0]])];
+  g["Z"] = [L([[0.05, 1], [0.55, 1], [0.05, 0], [0.55, 0]])];
+  g["."] = [L([[0.25, 0], [0.35, 0], [0.35, 0.1], [0.25, 0.1], [0.25, 0]])];
+  g[":"] = [L([[0.25, 0.2], [0.35, 0.2], [0.35, 0.3], [0.25, 0.3], [0.25, 0.2]]), L([[0.25, 0.7], [0.35, 0.7], [0.35, 0.8], [0.25, 0.8], [0.25, 0.7]])];
+  g["-"] = [L([[0.1, 0.5], [0.5, 0.5]])];
+  g["/"] = [L([[0.1, 0], [0.5, 1]])];
+  g[" "] = [];
+  // lowercase aliases
+  for (const k of Object.keys(g)) {
+    if (k.length === 1 && k >= "A" && k <= "Z") g[k.toLowerCase()] = g[k];
+  }
+  return g;
+})();
+
+function glyphGeometry(ch: string, size: number): Geometry {
+  const fallback: Vec3[][] = [[[0.05, 0, 0], [0.55, 0, 0], [0.55, 1, 0], [0.05, 1, 0], [0.05, 0, 0]]];
+  const polys: Vec3[][] = GLYPHS[ch] ?? fallback;
+  const g = new Geometry();
+  g.curves = polys.map((pts) => ({
+    cyclic: false,
+    points: pts.map((p) => [p[0] * size, p[1] * size, 0] as Vec3),
+  }));
+  for (const s of g.curves) {
+    if (s.points.length >= 2) {
+      const a = s.points[0], b = s.points[s.points.length - 1];
+      s.cyclic = Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) < 1e-9 * Math.max(size, 1e-9);
+    }
+  }
+  return g;
+}
+
+reg("GeometryNodeStringToCurves", (api) => {
+  const text = api.str("String") || "";
+  const size = api.num("Size") || 1;
+  const charSpacing = api.num("Character Spacing");
+  // Blender: character spacing multiplies the advance; 1.0 is default full advance.
+  // Values < 1 pack tighter (bin uses 0.17–0.39). Treat as advance scale with a
+  // floor so tiny values still separate glyphs.
+  const advanceScale = charSpacing > 0 ? charSpacing : 1;
+  const wordSpacing = api.num("Word Spacing") || 1;
+  const lineSpacing = api.num("Line Spacing") || 1;
+  const alignX = (api.prop<string>("align_x", "LEFT") || "LEFT").toUpperCase();
+
+  const lines = text.split("\n");
+  const out = new Geometry();
+  const cellW = size * 0.7;
+  const cellH = size * 1.2 * lineSpacing;
+
+  let lineIdx = 0;
+  for (const line of lines) {
+    const chars = [...line];
+    // measure line width for alignment
+    let lineWidth = 0;
+    for (const ch of chars) {
+      if (ch === " ") lineWidth += cellW * wordSpacing;
+      else lineWidth += cellW * advanceScale;
+    }
+    let x = 0;
+    if (alignX === "CENTER") x = -lineWidth / 2;
+    else if (alignX === "RIGHT") x = -lineWidth;
+    const y = -lineIdx * cellH;
+    for (const ch of chars) {
+      if (ch === " ") {
+        x += cellW * wordSpacing;
+        continue;
+      }
+      const glyph = glyphGeometry(ch, size);
+      out.instances.push({
+        geometry: glyph,
+        position: [x, y, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+      });
+      x += cellW * advanceScale;
+    }
+    lineIdx++;
+  }
+  // Also expose flattened curves for consumers that expect Curve geometry
+  // (realize is typically applied downstream via Instance on Points / realize).
+  return {
+    "Curve Instances": out,
+    Curve: out, // alias some dumps may read
+    Remainder: "",
+    Line: Field.of(0),
+    "Pivot Point": Field.of([0, 0, 0] as Vec3),
+  };
+});

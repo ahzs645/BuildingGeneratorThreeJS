@@ -398,5 +398,127 @@ function meshSignedAreaXY(m: Mesh): number {
   check("MeshBoolean box clip compacts dropped verts", maxZ <= 2 + 1e-6, `maxZ=${maxZ}`);
 }
 
+// (Q) Critical-path: ValueToString / StringJoin / StringToCurves
+{
+  const s = runNode("FunctionNodeValueToString", { Value: 12.6, Decimals: 0 }).String as string;
+  check("ValueToString decimals=0 truncates", s === "12", `got ${s}`);
+  const s2 = runNode("FunctionNodeValueToString", { Value: Math.PI, Decimals: 2 }).String as string;
+  check("ValueToString decimals=2", s2 === "3.14", `got ${s2}`);
+  // Multi-input join via direct REGISTRY harness: inputs() returns one value per key;
+  // exercise the handler by feeding a synthetic multi-input through a custom api below.
+  const joinH = REGISTRY.get("GeometryNodeStringJoin")!;
+  const joinOut = joinH({
+    node: { name: "j", type: "GeometryNodeStringJoin", label: null, inputs: [
+      { name: "Delimiter", identifier: "Delimiter", type: "NodeSocketString", linked: false, value: ":" },
+      { name: "Strings", identifier: "Strings", type: "NodeSocketString", linked: true, value: null },
+    ], outputs: [], props: {} },
+    input: (n) => (n === "Delimiter" ? ":" : ""),
+    inputs: (n) => (n === "Strings" ? ["W", "12"] : n === "Delimiter" ? [":"] : []),
+    geoInputs: () => [],
+    geo: () => new Geometry(),
+    field: () => Field.of(0),
+    num: () => 0,
+    vec: () => [0, 0, 0],
+    bool: () => false,
+    str: (n) => (n === "Delimiter" ? ":" : ""),
+    ref: () => null,
+    prop: (_n, d) => d,
+    resolve: (f, g, dom) => f.array(makeFieldCtx(g, dom)),
+  }) as Record<string, SockVal>;
+  check("StringJoin joins with delimiter", joinOut.String === "W:12", `got ${joinOut.String}`);
+
+  const curves = runNode("GeometryNodeStringToCurves", { String: "AB", Size: 1, "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": 1 }, { align_x: "LEFT" })["Curve Instances"] as Geometry;
+  check("StringToCurves yields one instance per char", curves.instances.length === 2, `got ${curves.instances.length}`);
+  check("StringToCurves instances carry glyph curves", curves.instances.every((inst) => inst.geometry.curves.length > 0));
+}
+
+// (R) InputTangent on a straight curve segment
+{
+  const c = curve([[0, 0, 0], [2, 0, 0], [4, 0, 0]], false);
+  const tan = runNode("GeometryNodeInputTangent", {}).Tangent as Field;
+  const arr = tan.array(makeFieldCtx(c, "POINT")) as number[][];
+  check("InputTangent mid-point ~ +X", arr.length === 3 && approx(arr[1] as number[], [1, 0, 0]), JSON.stringify(arr[1]));
+}
+
+// (S) MeshCone frustum
+{
+  const cone = runNode("GeometryNodeMeshCone", {
+    Vertices: 8, "Side Segments": 1, "Fill Segments": 1,
+    "Radius Top": 0, "Radius Bottom": 1, Depth: 2,
+  }, { fill_type: "NGON" }).Mesh as Geometry;
+  const m = cone.mesh!;
+  check("MeshCone has verts and faces", m.positions.length >= 9 && m.faces.length >= 8, `v=${m.positions.length} f=${m.faces.length}`);
+  const zs = m.positions.map((p) => p[2]);
+  check("MeshCone spans depth +/-1", Math.abs(Math.min(...zs) + 1) < 1e-6 && Math.abs(Math.max(...zs) - 1) < 1e-6);
+}
+
+// (T) FloatToInt floor mode
+{
+  const out = runNode("FunctionNodeFloatToInt", { Float: 3.9 }, { rounding_mode: "FLOOR" }).Integer as Field;
+  check("FloatToInt FLOOR 3.9 -> 3", out.value === 3, `got ${out.value}`);
+}
+
+// (U) CornersOfFace on a quad: unlinked face index uses context index
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [2, 0, 0], [3, 0, 0], [3, 1, 0], [2, 1, 0]];
+  m.faces = [[0, 1, 2, 3], [4, 5, 6, 7]];
+  m.faceMaterial = [0, 0];
+  const g = new Geometry();
+  g.mesh = m;
+  // Build API with unlinked Face Index
+  const h = REGISTRY.get("GeometryNodeCornersOfFace")!;
+  const result = h({
+    node: {
+      name: "c", type: "GeometryNodeCornersOfFace", label: null,
+      inputs: [
+        { name: "Face Index", identifier: "Face Index", type: "NodeSocketInt", linked: false, value: 0 },
+        { name: "Weights", identifier: "Weights", type: "NodeSocketFloat", linked: false, value: 0 },
+        { name: "Sort Index", identifier: "Sort Index", type: "NodeSocketInt", linked: false, value: 0 },
+      ],
+      outputs: [], props: {},
+    },
+    input: () => Field.of(0),
+    inputs: () => [],
+    geoInputs: () => [],
+    geo: () => g,
+    field: (n) => Field.of(n === "Sort Index" ? 0 : 0),
+    num: () => 0,
+    vec: () => [0, 0, 0],
+    bool: () => false,
+    str: () => "",
+    ref: () => null,
+    prop: (_n, d) => d,
+    resolve: (f, geo, dom) => f.array(makeFieldCtx(geo, dom)),
+  }) as Record<string, SockVal>;
+  const corner = result["Corner Index"] as Field;
+  const total = result.Total as Field;
+  const ctx = makeFieldCtx(g, "FACE");
+  const corners = corner.array(ctx) as number[];
+  const totals = total.array(ctx) as number[];
+  check("CornersOfFace totals are 4 per quad", totals[0] === 4 && totals[1] === 4, JSON.stringify(totals));
+  check("CornersOfFace corner indices start each face", corners[0] === 0 && corners[1] === 4, JSON.stringify(corners));
+}
+
+// (V) SubdivisionSurface densifies a cube
+{
+  const cube = runNode("GeometryNodeMeshCube", { Size: [1, 1, 1], "Vertices X": 2, "Vertices Y": 2, "Vertices Z": 2 }).Mesh as Geometry;
+  const before = cube.mesh!.faces.length;
+  const sub = runNode("GeometryNodeSubdivisionSurface", { Mesh: cube, Level: 1 }).Mesh as Geometry;
+  check("SubdivisionSurface densifies faces", (sub.mesh?.faces.length ?? 0) > before, `before=${before} after=${sub.mesh?.faces.length}`);
+  check("SubdivisionSurface densifies verts", (sub.mesh?.positions.length ?? 0) > 8, `verts=${sub.mesh?.positions.length}`);
+}
+
+// (W) SMOOTH_MIN is softer than min; unknown VectorMath is not ADD
+{
+  // |a-b| < k so the smooth term subtracts from min
+  const sm = runNode("ShaderNodeMath", { Value: 0.4, Value_001: 0.5, Value_002: 0.5 }, { operation: "SMOOTH_MIN" }).Value as Field;
+  const mn = runNode("ShaderNodeMath", { Value: 0.4, Value_001: 0.5, Value_002: 0.5 }, { operation: "MINIMUM" }).Value as Field;
+  check("SMOOTH_MIN finite and < raw min for close values", Number.isFinite(sm.value as number) && (sm.value as number) < (mn.value as number), `smooth=${sm.value} min=${mn.value}`);
+  const unk = runNode("ShaderNodeVectorMath", { Vector: [1, 2, 3], Vector_001: [10, 20, 30] }, { operation: "NOT_A_REAL_OP" }).Vector as Field;
+  const got = unk.value as number[];
+  check("unknown VectorMath does not ADD", !approx(got, [11, 22, 33]) && approx(got, [1, 2, 3]), JSON.stringify(got));
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
