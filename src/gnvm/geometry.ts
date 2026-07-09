@@ -2,7 +2,7 @@
 // engine runs under plain node/tsx for self-tests; the browser viewer converts
 // the triangle soup to a BufferGeometry.
 
-import { Vec3, Domain, Elem, vadd, vscale, vnorm } from "./core";
+import { Vec3, Domain, Elem, vadd, vscale, vsub, vdot, vlen, vnorm } from "./core";
 
 export interface Attribute {
   domain: Domain;
@@ -198,12 +198,76 @@ function topologyOrderStamp(mesh: Mesh): number {
 }
 
 function computeVertexNormals(mesh: Mesh): Vec3[] {
+  const faceNormals = mesh.faces.map((_, fi) => mesh.faceNormal(fi));
+  const incident: number[][] = mesh.positions.map(() => []);
   const acc: Vec3[] = mesh.positions.map(() => [0, 0, 0]);
   for (let fi = 0; fi < mesh.faces.length; fi++) {
-    const n = mesh.faceNormal(fi);
-    for (const vi of mesh.faces[fi]) acc[vi] = vadd(acc[vi], n);
+    const n = faceNormals[fi];
+    for (const vi of mesh.faces[fi]) {
+      incident[vi]?.push(fi);
+      acc[vi] = vadd(acc[vi], n);
+    }
   }
-  return acc.map((n) => vnorm(n));
+
+  let normalTopo: Topology | null = null;
+  let islandCenter: Vec3[] | null = null;
+  const centerFor = (vi: number): Vec3 => {
+    if (!islandCenter) {
+      normalTopo = computeTopology(mesh);
+      const sums: Vec3[] = Array.from({ length: normalTopo.pointIslandCount }, () => [0, 0, 0]);
+      const counts = new Array(normalTopo.pointIslandCount).fill(0);
+      for (let i = 0; i < mesh.positions.length; i++) {
+        const island = normalTopo.pointIsland[i] ?? 0;
+        sums[island] = vadd(sums[island], mesh.positions[i]);
+        counts[island]++;
+      }
+      islandCenter = sums.map((s, i) => vscale(s, counts[i] ? 1 / counts[i] : 0));
+    }
+    return islandCenter[normalTopo?.pointIsland[vi] ?? 0] ?? [0, 0, 0];
+  };
+
+  const hasOpposingNormals = (fis: number[]): boolean => {
+    for (let a = 0; a < fis.length; a++) {
+      const na = faceNormals[fis[a]];
+      for (let b = a + 1; b < fis.length; b++) {
+        if (vdot(na, faceNormals[fis[b]]) < -0.5) return true;
+      }
+    }
+    return false;
+  };
+
+  const splitNormal = (vi: number, fis: number[]): Vec3 => {
+    const outward = vnorm(vsub(mesh.positions[vi], centerFor(vi)));
+    let best: Vec3 = [0, 0, 0];
+    let bestCount = -1;
+    let bestOut = -Infinity;
+    for (const seedFi of fis) {
+      const seed = faceNormals[seedFi];
+      let sum: Vec3 = [0, 0, 0];
+      let count = 0;
+      for (const fi of fis) {
+        const n = faceNormals[fi];
+        if (vdot(seed, n) >= 0) {
+          sum = vadd(sum, n);
+          count++;
+        }
+      }
+      const dir = vnorm(sum);
+      const out = vlen(outward) > 0 ? vdot(dir, outward) : 0;
+      if (count > bestCount || (count === bestCount && out > bestOut)) {
+        best = dir;
+        bestCount = count;
+        bestOut = out;
+      }
+    }
+    return vlen(best) > 0 ? best : vnorm(acc[vi]);
+  };
+
+  return acc.map((n, vi) => {
+    const fis = incident[vi];
+    if (!fis.length) return [0, 0, 1] as Vec3;
+    return hasOpposingNormals(fis) ? splitNormal(vi, fis) : vnorm(n);
+  });
 }
 
 function vertexNormalsOf(mesh: Mesh): Vec3[] {

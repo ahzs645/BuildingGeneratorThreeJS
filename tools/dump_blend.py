@@ -121,6 +121,34 @@ for obj in bpy.data.objects:
                 "face_materials": [p.material_index for p in me.polygons],
                 "edges": [[e.vertices[0], e.vertices[1]] for e in me.edges if e.is_loose],
             }
+            # authored custom attributes (e.g. the bubble vase's 'bottom' vertex
+            # tag drives a Named Attribute -> Separate chain in the graph)
+            attrs = {}
+            for a in me.attributes:
+                if a.domain != "POINT" or a.name.startswith(".") or a.name == "position":
+                    continue
+                try:
+                    if a.data_type in ("FLOAT", "INT", "BOOLEAN"):
+                        attrs[a.name] = {"domain": "POINT",
+                                         "data": [float(x.value) for x in a.data]}
+                    elif a.data_type == "FLOAT_VECTOR":
+                        attrs[a.name] = {"domain": "POINT",
+                                         "data": [[round(c, 6) for c in x.vector] for x in a.data]}
+                except Exception:
+                    pass
+            # vertex groups are readable via Named Attribute too
+            for vg in obj.vertex_groups:
+                data = []
+                for v in me.vertices:
+                    w = 0.0
+                    for gref in v.groups:
+                        if gref.group == vg.index:
+                            w = gref.weight
+                            break
+                    data.append(round(w, 6))
+                attrs[vg.name] = {"domain": "POINT", "data": data}
+            if attrs:
+                o["mesh"]["attributes"] = attrs
     for mod in obj.modifiers:
         m = {"name": mod.name, "type": mod.type}
         if mod.type == "NODES" and mod.node_group:

@@ -143,6 +143,20 @@ function meshSignedAreaXY(m: Mesh): number {
   check("FilletCurve tangent pt on BC = (1,0.5,0)", approx(fp[3], [1, 0.5, 0]), JSON.stringify(fp[3]));
 }
 
+// (D2) Set Spline Type NURBS: open cubic smoothing approximates interior controls
+{
+  const c = runNode(
+    "GeometryNodeCurveSplineType",
+    { Curve: curve([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], false) },
+    { spline_type: "NURBS" },
+  ).Curve as Geometry;
+  const pts = c.curves[0].points;
+  const maxX = Math.max(...pts.map((p) => p[0]));
+  check("SetSplineType NURBS densifies open spline", pts.length === 37, `got ${pts.length}`);
+  check("SetSplineType NURBS endpoints preserved", approx(pts[0], [0, 0, 0]) && approx(pts[pts.length - 1], [0, 1, 0]));
+  check("SetSplineType NURBS cuts inward from control corner", maxX < 0.76 && maxX > 0.74, `maxX=${maxX}`);
+}
+
 // (E) CurveToMesh: straight Z rail (open) + diamond profile (cyclic), no caps
 {
   const rail = curve([[0, 0, 0], [0, 0, 2]], false);
@@ -349,6 +363,16 @@ function meshSignedAreaXY(m: Mesh): number {
   const ct2 = topologyOf(c);
   check("topologyOf returns same object for same mesh", t1 === t2);
   check("mutated clone gets fresh topology", ct1 !== ct2 && t1 !== ct2 && ct2.edges.length === 5, `edges=${ct2.edges.length}`);
+}
+
+// (O2) Vertex normals split opposing face-normal fans instead of canceling
+{
+  const m = new Mesh();
+  m.positions = [[1, 0, 0], [1, 1, 0], [1, 0, 1], [1, -1, 0], [1, 0, -1], [0, 0, 0]];
+  m.faces = [[0, 2, 1], [0, 3, 2], [0, 4, 1], [0, 3, 4]];
+  m.edges = [[0, 5]];
+  const n = m.vertexNormals()[0];
+  check("vertex normal chooses outward opposing fan", approx(n, [1, 0, 0]), JSON.stringify(n));
 }
 
 // (P) MeshBoolean box clip caps the dominant cut plane of an open shell

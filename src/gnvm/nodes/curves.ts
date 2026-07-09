@@ -48,10 +48,7 @@ reg("GeometryNodeResampleCurve", (api) => {
   // Blender's implicit float->int socket conversion rounds (148.6 -> 149).
   const count = Math.round(api.num("Count")) || 10;
   const length = api.num("Length") || 0.1;
-  // Preserve untouched components — dropping instances erased the bubble vase's
-  // 58-instance proximity target.
-  const out = g.clone();
-  out.curves = g.curves.map((s) => {
+  const resampleOne = (s: Spline): Spline => {
     if (mode === "EVALUATED") return { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
     if (mode === "LENGTH") {
       // segments of ~`length`: n = max(1, round(total/length)) segments
@@ -59,10 +56,21 @@ reg("GeometryNodeResampleCurve", (api) => {
       return resampleSpline(s, s.cyclic ? n : n + 1);
     }
     return resampleSpline(s, count);
-  });
-  // control-point counts changed -> per-point curve attributes no longer align
-  if (out.curvePointCount() !== g.curvePointCount()) out.curveAttributes.clear();
-  return { Curve: out };
+  };
+  // Resample applies to real curves AND to curves inside instances — measured
+  // against Blender: the vase's 58 instanced profile copies come out at
+  // Count=19 points each (551-pt proximity target), not their original 149.
+  const resampleGeo = (geo: Geometry, seen: Map<Geometry, Geometry>): Geometry => {
+    const cached = seen.get(geo);
+    if (cached) return cached;
+    const o = geo.clone();
+    seen.set(geo, o);
+    o.curves = geo.curves.map(resampleOne);
+    if (o.curvePointCount() !== geo.curvePointCount()) o.curveAttributes.clear();
+    o.instances = geo.instances.map((inst) => ({ ...inst, geometry: resampleGeo(inst.geometry, seen) }));
+    return o;
+  };
+  return { Curve: resampleGeo(g, new Map()) };
 });
 
 reg("GeometryNodeFilletCurve", (api) => {

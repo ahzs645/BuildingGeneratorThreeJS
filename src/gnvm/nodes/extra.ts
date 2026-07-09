@@ -181,10 +181,207 @@ reg("GeometryNodeInputMeshVertexNeighbors", () => ({
   "Face Count": pointTopologyField("FACE"),
 }));
 
+const SPLINE_TYPE_SAMPLES_PER_SEGMENT = 12;
+
+function cloneSpline(s: Spline): Spline {
+  return { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
+}
+
+function lerpVec(a: Vec3, b: Vec3, t: number): Vec3 {
+  return [
+    a[0] + (b[0] - a[0]) * t,
+    a[1] + (b[1] - a[1]) * t,
+    a[2] + (b[2] - a[2]) * t,
+  ];
+}
+
+function catmullPoint(p0: Vec3, p1: Vec3, p2: Vec3, p3: Vec3, t: number): Vec3 {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return [
+    0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3),
+    0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3),
+    0.5 * ((2 * p1[2]) + (-p0[2] + p2[2]) * t + (2 * p0[2] - 5 * p1[2] + 4 * p2[2] - p3[2]) * t2 + (-p0[2] + 3 * p1[2] - 3 * p2[2] + p3[2]) * t3),
+  ];
+}
+
+function catmullRomSpline(s: Spline): Spline {
+  const pts = s.points;
+  const n = pts.length;
+  if (n < 2) return cloneSpline(s);
+  const out: Vec3[] = [];
+  const samples = SPLINE_TYPE_SAMPLES_PER_SEGMENT;
+  if (s.cyclic) {
+    for (let i = 0; i < n; i++) {
+      const p0 = pts[(i - 1 + n) % n];
+      const p1 = pts[i];
+      const p2 = pts[(i + 1) % n];
+      const p3 = pts[(i + 2) % n];
+      for (let k = 0; k < samples; k++) out.push(catmullPoint(p0, p1, p2, p3, k / samples));
+    }
+    return { points: out, cyclic: true };
+  }
+  out.push([...pts[0]] as Vec3);
+  for (let i = 0; i + 1 < n; i++) {
+    const p0 = pts[Math.max(0, i - 1)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(n - 1, i + 2)];
+    for (let k = 1; k <= samples; k++) out.push(catmullPoint(p0, p1, p2, p3, k / samples));
+  }
+  return { points: out, cyclic: false };
+}
+
+function clampedKnots(controlCount: number, degree: number): number[] {
+  const knots: number[] = [];
+  const len = controlCount + degree + 1;
+  const interior = controlCount - degree;
+  for (let i = 0; i < len; i++) {
+    if (i <= degree) knots.push(0);
+    else if (i >= controlCount) knots.push(1);
+    else knots.push((i - degree) / interior);
+  }
+  return knots;
+}
+
+function knotSpan(knots: number[], controlCount: number, degree: number, u: number): number {
+  const last = controlCount - 1;
+  if (u >= knots[last + 1]) return last;
+  if (u <= knots[degree]) return degree;
+  let low = degree;
+  let high = last + 1;
+  let mid = Math.floor((low + high) / 2);
+  while (u < knots[mid] || u >= knots[mid + 1]) {
+    if (u < knots[mid]) high = mid;
+    else low = mid;
+    mid = Math.floor((low + high) / 2);
+  }
+  return mid;
+}
+
+function deBoor(control: Vec3[], degree: number, knots: number[], u: number): Vec3 {
+  if (u <= 0) return [...control[0]] as Vec3;
+  if (u >= 1) return [...control[control.length - 1]] as Vec3;
+  const span = knotSpan(knots, control.length, degree, u);
+  const d: Vec3[] = [];
+  for (let j = 0; j <= degree; j++) d.push([...control[span - degree + j]] as Vec3);
+  for (let r = 1; r <= degree; r++) {
+    for (let j = degree; j >= r; j--) {
+      const i = span - degree + j;
+      const denom = knots[i + degree - r + 1] - knots[i];
+      const alpha = denom > EPS ? (u - knots[i]) / denom : 0;
+      d[j] = lerpVec(d[j - 1], d[j], alpha);
+    }
+  }
+  return d[degree];
+}
+
+function clampedNurbsSpline(s: Spline): Spline {
+  const pts = s.points;
+  const n = pts.length;
+  if (n < 2) return cloneSpline(s);
+  const degree = Math.min(3, n - 1);
+  const knots = clampedKnots(n, degree);
+  const count = Math.max(2, (n - 1) * SPLINE_TYPE_SAMPLES_PER_SEGMENT + 1);
+  const out: Vec3[] = [];
+  for (let i = 0; i < count; i++) out.push(deBoor(pts, degree, knots, i / (count - 1)));
+  return { points: out, cyclic: false };
+}
+
+function periodicCubicBSplinePoint(pts: Vec3[], i: number, t: number): Vec3 {
+  const n = pts.length;
+  const p0 = pts[(i - 1 + n) % n];
+  const p1 = pts[i % n];
+  const p2 = pts[(i + 1) % n];
+  const p3 = pts[(i + 2) % n];
+  const t2 = t * t;
+  const t3 = t2 * t;
+  const b0 = (1 - 3 * t + 3 * t2 - t3) / 6;
+  const b1 = (4 - 6 * t2 + 3 * t3) / 6;
+  const b2 = (1 + 3 * t + 3 * t2 - 3 * t3) / 6;
+  const b3 = t3 / 6;
+  return [
+    p0[0] * b0 + p1[0] * b1 + p2[0] * b2 + p3[0] * b3,
+    p0[1] * b0 + p1[1] * b1 + p2[1] * b2 + p3[1] * b3,
+    p0[2] * b0 + p1[2] * b1 + p2[2] * b2 + p3[2] * b3,
+  ];
+}
+
+function nurbsSpline(s: Spline): Spline {
+  const pts = s.points;
+  const n = pts.length;
+  if (n < 2) return cloneSpline(s);
+  if (!s.cyclic) return clampedNurbsSpline(s);
+  if (n < 4) return catmullRomSpline(s);
+  const out: Vec3[] = [];
+  for (let i = 0; i < n; i++)
+    for (let k = 0; k < SPLINE_TYPE_SAMPLES_PER_SEGMENT; k++)
+      out.push(periodicCubicBSplinePoint(pts, i, k / SPLINE_TYPE_SAMPLES_PER_SEGMENT));
+  return { points: out, cyclic: true };
+}
+
+function nearestControlPointIndex(points: Vec3[], p: Vec3): number {
+  let best = 0;
+  let bestD = Infinity;
+  for (let i = 0; i < points.length; i++) {
+    const d = vlen(vsub(points[i], p));
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  return best;
+}
+
+function convertSplineType(s: Spline, type: string): Spline {
+  switch (type) {
+    case "NURBS": return nurbsSpline(s);
+    case "CATMULL_ROM": return catmullRomSpline(s);
+    // Bezier handles are not stored in the VM. Auto-handle Bezier conversion is
+    // approximated with Catmull-Rom because it interpolates the supplied knots.
+    case "BEZIER": return catmullRomSpline(s);
+    case "POLY":
+    default: return cloneSpline(s);
+  }
+}
+
+function remapCurvePointAttributes(src: Geometry, out: Geometry, sourceIndex: number[]): void {
+  out.curveAttributes.clear();
+  for (const [name, attr] of src.curveAttributes) {
+    if (attr.domain !== "POINT") {
+      out.curveAttributes.set(name, { domain: attr.domain, data: [...attr.data] });
+      continue;
+    }
+    const dflt = attr.data[0] ?? 0;
+    out.curveAttributes.set(name, {
+      domain: "POINT",
+      data: sourceIndex.map((i) => attr.data[i] ?? dflt),
+    });
+  }
+}
+
+function convertCurveGeometrySplineType(g: Geometry, type: string, seen: Map<Geometry, Geometry>): Geometry {
+  const cached = seen.get(g);
+  if (cached) return cached;
+  const out = g.clone();
+  seen.set(g, out);
+  if (type === "POLY") {
+    out.instances = g.instances.map((inst) => ({ ...inst, geometry: convertCurveGeometrySplineType(inst.geometry, type, seen) }));
+    return out;
+  }
+  const sourceIndex: number[] = [];
+  let offset = 0;
+  out.curves = g.curves.map((s) => {
+    const converted = convertSplineType(s, type);
+    for (const p of converted.points) sourceIndex.push(offset + nearestControlPointIndex(s.points, p));
+    offset += s.points.length;
+    return converted;
+  });
+  remapCurvePointAttributes(g, out, sourceIndex);
+  out.instances = g.instances.map((inst) => ({ ...inst, geometry: convertCurveGeometrySplineType(inst.geometry, type, seen) }));
+  return out;
+}
+
 reg("GeometryNodeCurveSplineType", (api) => {
-  // The VM stores only poly splines; non-POLY target types are preserved as the
-  // same control polygon and later resample/fill nodes provide the needed shape.
-  return { Curve: api.geo("Curve").clone() };
+  const type = api.prop<string>("spline_type", "POLY");
+  return { Curve: convertCurveGeometrySplineType(api.geo("Curve"), type, new Map()) };
 });
 
 function sampleSplineAt(s: Spline, distance: number): Vec3 {
@@ -442,6 +639,45 @@ function joinedMesh(parts: Geometry[]): Geometry {
   }
   return out;
 }
+
+// ---- Points / Sample Index -------------------------------------------------
+reg("GeometryNodePoints", (api) => {
+  const count = Math.max(0, Math.round(api.num("Count")));
+  const posF = api.field("Position");
+  const geo = new Geometry();
+  const m = new Mesh();
+  m.materialSlots = [null];
+  const ctx = { size: count, domain: "POINT" as Domain, index: (i: number) => i };
+  const arr = posF.array(ctx as never);
+  for (let i = 0; i < count; i++) m.positions.push(asVec3(arr[i] ?? [0, 0, 0]));
+  geo.mesh = m;
+  return { Geometry: geo, Points: geo };
+});
+
+// Sample a field on a source geometry's domain at given indices. The output is
+// independent of the consumer geometry; constant indices yield constant fields
+// (the vase's floor offset needs `num()` to see through this).
+reg("GeometryNodeSampleIndex", (api) => {
+  const src = api.geo("Geometry");
+  const domain = domainProp(api);
+  const valF = api.field("Value");
+  const idxF = api.field("Index");
+  const clamp = api.prop<boolean>("clamp", false);
+  const srcCtx = makeFieldCtx(src, domain);
+  const srcArr = srcCtx.size ? valF.array(srcCtx) : [];
+  const pick = (j: number): Elem => {
+    let k = Math.round(j);
+    if (clamp) k = Math.max(0, Math.min(srcArr.length - 1, k));
+    return k >= 0 && k < srcArr.length ? srcArr[k] ?? 0 : 0;
+  };
+  if (idxF.isConst) return { Value: Field.of(pick(asNum(idxF.value))) };
+  return {
+    Value: Field.make((ctx) => {
+      const idxArr = idxF.array(ctx);
+      return Array.from({ length: ctx.size }, (_, i) => pick(asNum(idxArr[i] ?? 0)));
+    }),
+  };
+});
 
 // Detect an axis-aligned cuboid: 8 verts whose coords are each min or max.
 function axisBox(g: Geometry): { min: Vec3; max: Vec3 } | null {

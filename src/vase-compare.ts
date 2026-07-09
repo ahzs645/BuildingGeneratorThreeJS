@@ -99,10 +99,20 @@ addEventListener("keydown", (e) => {
   if (e.key === "2") { truthGroup.visible = false; vmGroup.visible = true; }
   if (e.key === "3") { truthGroup.visible = true; vmGroup.visible = true; }
 });
-// ?only=vm / ?only=truth for headless snapshots
-const only = new URLSearchParams(location.search).get("only");
+// ?only=vm / ?only=truth for headless snapshots; ?wire=vm renders the VM as a
+// wireframe like the truth (solid shading hides small relief that wires reveal)
+const params = new URLSearchParams(location.search);
+const only = params.get("only");
 if (only === "vm") truthGroup.visible = false;
 if (only === "truth") vmGroup.visible = false;
+if (params.get("wire") === "vm") {
+  const apply = () => vmGroup.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (mesh.isMesh) mesh.material = new THREE.MeshBasicMaterial({ color: 0x4d9bff, wireframe: true, transparent: true, opacity: 0.35 });
+  });
+  setTimeout(apply, 1500);
+  setTimeout(apply, 5000);
+}
 
 addEventListener("resize", () => {
   camera.aspect = innerWidth / innerHeight;

@@ -363,6 +363,13 @@ reg("GeometryNodeExtrudeMesh", (api) => {
         const key = ekey(u, v);
         if (!orient.has(key)) orient.set(key, [u, v]);
       }
+    // loose wires have no faces: their STORED edge direction (chain order from
+    // Curve to Mesh) is the meaningful orientation — sorted order made the
+    // lathe's first ring winding arbitrary, flipping the shell's outer mask.
+    for (const [a, b] of mesh.edges) {
+      const key = ekey(a, b);
+      if (!orient.has(key)) orient.set(key, [a, b]);
+    }
     const sideFaceIdx: number[] = [];
     const newEdgePairs: [number, number][] = []; // duplicated (top) edges
     for (const ei of selEdges) {
