@@ -2,6 +2,7 @@
 import { Evaluator, Program } from "./evaluator";
 import { Geometry, Mesh, toTriSoup, TriSoup } from "./geometry";
 import { DUMP_CONTEXT, MISSING, REGISTRY } from "./registry";
+import { ensureManifold } from "./boolean";
 
 // Registering the handler modules populates the REGISTRY.
 import "./nodes/math";
@@ -17,6 +18,7 @@ export { Evaluator } from "./evaluator";
 export { Geometry, toTriSoup } from "./geometry";
 export type { TriSoup } from "./geometry";
 export { REGISTRY, MISSING } from "./registry";
+export { ensureManifold, isManifoldReady } from "./boolean";
 
 export interface RunResult {
   geometry: Geometry;
@@ -64,11 +66,16 @@ function baseGeometryOf(dump: Dump, objectName: string): Geometry | null {
   return g;
 }
 
-export function runGenerator(dump: Dump, opts: { object?: string; overrides?: Record<string, any> } = {}): RunResult {
+export async function runGenerator(dump: Dump, opts: { object?: string; overrides?: Record<string, any> } = {}): Promise<RunResult> {
+  // Mesh boolean needs Manifold WASM; load once before evaluation.
+  await ensureManifold();
   MISSING.clear();
   DUMP_CONTEXT.objects = (dump.objects ?? []) as any;
   const found = findModifierGroup(dump, opts.object);
   if (!found) throw new Error("no geometry-nodes modifier found in dump");
+  // Note: Solidify N++ Thickness in this dump is intentionally ~0.1 (unlinked).
+  // "Wall thiccness" drives bubble displacement, NOT solidify depth — do not
+  // rebind it onto Solidify or dual walls balloon into self-intersecting shells.
   const ev = new Evaluator(dump.node_groups);
   const merged: Record<string, any> = { ...found.inputs, ...(opts.overrides ?? {}) };
   // Blender feeds the object's own (pre-modifier) mesh into the tree's Geometry

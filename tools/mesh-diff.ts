@@ -131,7 +131,12 @@ function sample(points: Vec3[], n: number): Vec3[] {
   return out;
 }
 
-function nearestDistances(samples: Vec3[], target: Vec3[]): number[] {
+interface DistanceSample {
+  point: Vec3;
+  distance: number;
+}
+
+function nearestDistances(samples: Vec3[], target: Vec3[]): DistanceSample[] {
   const b = bbox(target);
   const diag = Math.hypot(b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2]);
   const cell = Math.max(1e-6, diag / Math.max(24, Math.cbrt(target.length) * 3));
@@ -148,7 +153,7 @@ function nearestDistances(samples: Vec3[], target: Vec3[]): number[] {
     const bucket = grid.get(k);
     if (bucket) bucket.push(i); else grid.set(k, [i]);
   }
-  const out: number[] = [];
+  const out: DistanceSample[] = [];
   for (const p of samples) {
     const [cx, cy, cz] = coord(p);
     let best = Infinity;
@@ -166,15 +171,60 @@ function nearestDistances(samples: Vec3[], target: Vec3[]): number[] {
       const lowerBoundOutside = Math.max(0, (r - 1) * cell);
       if (Number.isFinite(best) && lowerBoundOutside * lowerBoundOutside > best) break;
     }
-    out.push(Math.sqrt(best));
+    out.push({ point: p, distance: Math.sqrt(best) });
   }
   return out;
 }
 
-function quantiles(vals: number[]): string {
-  const a = [...vals].sort((x, y) => x - y);
+function quantiles(samples: DistanceSample[]): string {
+  const a = samples.map((s) => s.distance).sort((x, y) => x - y);
   const q = (p: number) => a[Math.min(a.length - 1, Math.floor((a.length - 1) * p))];
   return `p50=${q(0.5).toFixed(3)} p90=${q(0.9).toFixed(3)} p99=${q(0.99).toFixed(3)} max=${q(1).toFixed(3)}`;
+}
+
+function describeWorst(label: string, samples: DistanceSample[]): void {
+  if (!samples.length) return;
+  const threshold = [...samples].sort((a, b) => a.distance - b.distance)[Math.floor((samples.length - 1) * 0.99)].distance;
+  const worst = samples.filter((s) => s.distance >= threshold);
+  const b = bbox(worst.map((s) => s.point));
+  console.log(
+    `${label} worst 1% (>=${threshold.toFixed(3)}) bbox=[${b.min.map((v) => v.toFixed(2)).join(",")}]..[${b.max.map((v) => v.toFixed(2)).join(",")}]`
+  );
+}
+
+function describeHeightBands(label: string, points: Vec3[], target: Vec3[]): void {
+  const b = bbox(points);
+  const bands = 6;
+  const step = (b.max[2] - b.min[2]) / bands;
+  const rows: string[] = [];
+  for (let i = 0; i < bands; i++) {
+    const lo = b.min[2] + i * step;
+    const hi = i === bands - 1 ? b.max[2] + 1e-6 : lo + step;
+    const band = points.filter((p) => p[2] >= lo && p[2] < hi);
+    if (!band.length) continue;
+    rows.push(`${lo.toFixed(0)}-${hi.toFixed(0)}: ${quantiles(nearestDistances(sample(band, 1200), target))}`);
+  }
+  console.log(`${label} by z\n  ${rows.join("\n  ")}`);
+}
+
+// A rotationally-generated surface should not have a single bad azimuth. This
+// catches lathe-seam and per-step drift that broad height bands can hide.
+function describeAzimuthBands(label: string, points: Vec3[], target: Vec3[]): void {
+  const cx = (bbox(points).min[0] + bbox(points).max[0]) / 2;
+  const cy = (bbox(points).min[1] + bbox(points).max[1]) / 2;
+  const bands = 12;
+  const buckets: Vec3[][] = Array.from({ length: bands }, () => []);
+  for (const p of points) {
+    const a = Math.atan2(p[1] - cy, p[0] - cx);
+    const i = Math.min(bands - 1, Math.floor(((a + Math.PI) / (2 * Math.PI)) * bands));
+    buckets[i].push(p);
+  }
+  const rows = buckets.map((bucket, i) => {
+    const lo = -180 + (360 * i) / bands;
+    const hi = lo + 360 / bands;
+    return `${lo}\u00b0..${hi}\u00b0: ${quantiles(nearestDistances(sample(bucket, 900), target))}`;
+  });
+  console.log(`${label} by azimuth\n  ${rows.join("\n  ")}`);
 }
 
 const truth = parseGlbPositions(truthPath);
@@ -182,5 +232,13 @@ const vm = parseVmPositions(vmPath);
 const tb = bbox(truth), vb = bbox(vm);
 console.log(`truth points=${truth.length} bbox=[${tb.min.map((v) => v.toFixed(3)).join(",")}]..[${tb.max.map((v) => v.toFixed(3)).join(",")}]`);
 console.log(`vm points=${vm.length} bbox=[${vb.min.map((v) => v.toFixed(3)).join(",")}]..[${vb.max.map((v) => v.toFixed(3)).join(",")}]`);
-console.log(`truth->vm ${quantiles(nearestDistances(sample(truth, 5000), vm))}`);
-console.log(`vm->truth ${quantiles(nearestDistances(sample(vm, 5000), truth))}`);
+const truthToVm = nearestDistances(sample(truth, 5000), vm);
+const vmToTruth = nearestDistances(sample(vm, 5000), truth);
+console.log(`truth->vm ${quantiles(truthToVm)}`);
+console.log(`vm->truth ${quantiles(vmToTruth)}`);
+describeWorst("truth->vm", truthToVm);
+describeWorst("vm->truth", vmToTruth);
+describeHeightBands("truth->vm", truth, vm);
+describeHeightBands("vm->truth", vm, truth);
+describeAzimuthBands("truth->vm", truth, vm);
+describeAzimuthBands("vm->truth", vm, truth);

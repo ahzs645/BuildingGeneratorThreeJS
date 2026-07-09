@@ -54,7 +54,7 @@ function findRoot(dump: Dump, objectName?: string): string {
   throw new Error(`no NODES modifier found${objectName ? ` on ${objectName}` : ""}`);
 }
 
-function probe(label: string, path: string, object?: string) {
+async function probe(label: string, path: string, object?: string) {
   const dump = JSON.parse(fs.readFileSync(path, "utf8")) as Dump;
   const root = findRoot(dump, object);
   const missing = missingOnPath(dump, root);
@@ -67,7 +67,7 @@ function probe(label: string, path: string, object?: string) {
   } else {
     console.log("  (none)");
   }
-  const result = runGenerator(dump, { object });
+  const result = await runGenerator(dump, { object });
   const verts = result.soup.stats.verts;
   const faces = result.soup.stats.faces;
   const curves = result.geometry.curvePointCount();
@@ -86,7 +86,10 @@ function probe(label: string, path: string, object?: string) {
   return ok;
 }
 
-const binOk = probe("bin", "public/dojo/dump_bin.json");
-const vaseOk = probe("vase", "public/dojo/dump_bubble.json", "BUBBLE VASE");
-console.log(binOk && vaseOk ? "\nCOVERAGE_PROBE_OK" : "\nCOVERAGE_PROBE_FAIL");
-process.exit(binOk && vaseOk ? 0 : 1);
+async function main() {
+  const binOk = await probe("bin", "public/dojo/dump_bin.json");
+  const vaseOk = await probe("vase", "public/dojo/dump_bubble.json", "BUBBLE VASE");
+  console.log(binOk && vaseOk ? "\nCOVERAGE_PROBE_OK" : "\nCOVERAGE_PROBE_FAIL");
+  process.exit(binOk && vaseOk ? 0 : 1);
+}
+main();

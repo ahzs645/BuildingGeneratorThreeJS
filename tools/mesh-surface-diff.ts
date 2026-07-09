@@ -1,0 +1,180 @@
+// Surface-aware comparison for the Blender truth mesh and GN-VM export.
+//
+// `mesh-diff.ts` compares vertices, which is useful for locating sampling
+// differences but overstates errors when equivalent faces are triangulated in
+// different ways. This script measures points against the other mesh's actual
+// triangle surface using a small median-split BVH.
+//
+// Usage: npx tsx tools/mesh-surface-diff.ts [truth.glb] [vm.json]
+import { readFileSync } from "node:fs";
+
+type Vec3 = [number, number, number];
+type Mat4 = number[];
+interface TriMesh { positions: Vec3[]; triangles: [number, number, number][]; }
+interface Bounds { min: Vec3; max: Vec3; }
+interface BvhNode extends Bounds { left?: BvhNode; right?: BvhNode; ids?: number[]; }
+
+const truthPath = process.argv[2] ?? "public/dojo/vase_truth.glb";
+const vmPath = process.argv[3] ?? "public/dojo/vase_vm.json";
+
+function identity(): Mat4 { return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]; }
+function mul(a: Mat4, b: Mat4): Mat4 {
+  const out = new Array(16).fill(0);
+  for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++)
+    out[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+  return out;
+}
+function fromTrs(t?: number[], q?: number[], s?: number[]): Mat4 {
+  const [x, y, z, w] = q ?? [0, 0, 0, 1];
+  const [sx, sy, sz] = s ?? [1, 1, 1];
+  const [tx, ty, tz] = t ?? [0, 0, 0];
+  const x2 = x + x, y2 = y + y, z2 = z + z;
+  const xx = x * x2, xy = x * y2, xz = x * z2, yy = y * y2, yz = y * z2, zz = z * z2;
+  const wx = w * x2, wy = w * y2, wz = w * z2;
+  return [
+    (1 - yy - zz) * sx, (xy + wz) * sx, (xz - wy) * sx, 0,
+    (xy - wz) * sy, (1 - xx - zz) * sy, (yz + wx) * sy, 0,
+    (xz + wy) * sz, (yz - wx) * sz, (1 - xx - yy) * sz, 0,
+    tx, ty, tz, 1,
+  ];
+}
+function apply(m: Mat4, p: Vec3): Vec3 { return [m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13], m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14]]; }
+
+function readGlb(path: string): TriMesh {
+  const buf = readFileSync(path);
+  if (buf.toString("utf8", 0, 4) !== "glTF") throw new Error("not a GLB");
+  let off = 12, json: any, bin: Buffer | undefined;
+  while (off < buf.length) {
+    const len = buf.readUInt32LE(off), type = buf.readUInt32LE(off + 4), chunk = buf.subarray(off + 8, off + 8 + len);
+    if (type === 0x4e4f534a) json = JSON.parse(chunk.toString("utf8").trim());
+    if (type === 0x004e4942) bin = chunk;
+    off += 8 + len;
+  }
+  if (!json || !bin) throw new Error("missing GLB JSON/BIN chunk");
+  const accessor = (index: number): { acc: any; view: any; offset: number; stride: number } => {
+    const acc = json.accessors[index], view = json.bufferViews[acc.bufferView];
+    const widths: Record<number, number> = { 5120: 1, 5121: 1, 5122: 2, 5123: 2, 5125: 4, 5126: 4 };
+    const components: Record<string, number> = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 };
+    const width = widths[acc.componentType], count = components[acc.type];
+    return { acc, view, offset: (view.byteOffset ?? 0) + (acc.byteOffset ?? 0), stride: view.byteStride ?? width * count };
+  };
+  const positions = (index: number): Vec3[] => {
+    const { acc, offset, stride } = accessor(index);
+    if (acc.componentType !== 5126 || acc.type !== "VEC3") throw new Error("POSITION must be FLOAT VEC3");
+    return Array.from({ length: acc.count }, (_, i) => {
+      const p = offset + i * stride;
+      return [bin!.readFloatLE(p), bin!.readFloatLE(p + 4), bin!.readFloatLE(p + 8)] as Vec3;
+    });
+  };
+  const indices = (index: number | undefined, count: number): number[] => {
+    if (index === undefined) return Array.from({ length: count }, (_, i) => i);
+    const { acc, offset, stride } = accessor(index);
+    const read = acc.componentType === 5121 ? (p: number) => bin!.readUInt8(p) : acc.componentType === 5123 ? (p: number) => bin!.readUInt16LE(p) : (p: number) => bin!.readUInt32LE(p);
+    return Array.from({ length: acc.count }, (_, i) => read(offset + i * stride));
+  };
+  const out: TriMesh = { positions: [], triangles: [] };
+  const roots: number[] = json.scenes?.[json.scene ?? 0]?.nodes ?? [];
+  const visit = (nodeIndex: number, parent: Mat4) => {
+    const node = json.nodes[nodeIndex], world = mul(parent, node.matrix ? node.matrix.slice(0, 16) : fromTrs(node.translation, node.rotation, node.scale));
+    if (node.mesh !== undefined) for (const primitive of json.meshes[node.mesh].primitives ?? []) {
+      if ((primitive.mode ?? 4) !== 4) continue;
+      const local = positions(primitive.attributes.POSITION), base = out.positions.length;
+      // glTF is Y-up. Convert transformed positions back to Blender/VM Z-up.
+      for (const p of local) {
+        const q = apply(world, p);
+        out.positions.push([q[0], -q[2], q[1]]);
+      }
+      const ids = indices(primitive.indices, local.length);
+      for (let i = 0; i + 2 < ids.length; i += 3) out.triangles.push([base + ids[i], base + ids[i + 1], base + ids[i + 2]]);
+    }
+    for (const child of node.children ?? []) visit(child, world);
+  };
+  for (const root of roots) visit(root, identity());
+  return out;
+}
+
+function readVm(path: string): TriMesh {
+  const vm = JSON.parse(readFileSync(path, "utf8"));
+  const loc = vm.object?.location ?? [275.16204833984375, 0, 0];
+  const positions: Vec3[] = [];
+  for (let i = 0; i < vm.positions.length; i += 3) positions.push([vm.positions[i] + loc[0], vm.positions[i + 1] + loc[1], vm.positions[i + 2] + loc[2]]);
+  const triangles: [number, number, number][] = [];
+  for (let i = 0; i < vm.indices.length; i += 3) triangles.push([vm.indices[i], vm.indices[i + 1], vm.indices[i + 2]]);
+  return { positions, triangles };
+}
+
+function boundsOf(points: Vec3[]): Bounds {
+  const min: Vec3 = [Infinity, Infinity, Infinity], max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const p of points) for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], p[k]); max[k] = Math.max(max[k], p[k]); }
+  return { min, max };
+}
+function triBounds(mesh: TriMesh, id: number): Bounds { const tri = mesh.triangles[id]; return boundsOf([mesh.positions[tri[0]], mesh.positions[tri[1]], mesh.positions[tri[2]]]); }
+function unionBounds(a: Bounds, b: Bounds): Bounds { return { min: [Math.min(a.min[0], b.min[0]), Math.min(a.min[1], b.min[1]), Math.min(a.min[2], b.min[2])], max: [Math.max(a.max[0], b.max[0]), Math.max(a.max[1], b.max[1]), Math.max(a.max[2], b.max[2])] }; }
+function buildBvh(mesh: TriMesh, boxes = mesh.triangles.map((_, i) => triBounds(mesh, i)), centers = boxes.map((b) => [(b.min[0] + b.max[0]) / 2, (b.min[1] + b.max[1]) / 2, (b.min[2] + b.max[2]) / 2] as Vec3), ids = mesh.triangles.map((_, i) => i)): BvhNode {
+  const bounds = ids.reduce((all, id) => unionBounds(all, boxes[id]), { min: [Infinity, Infinity, Infinity] as Vec3, max: [-Infinity, -Infinity, -Infinity] as Vec3 });
+  if (ids.length <= 16) return { ...bounds, ids };
+  const axis = [0, 1, 2].reduce((best, k) => bounds.max[k] - bounds.min[k] > bounds.max[best] - bounds.min[best] ? k : best, 0);
+  ids.sort((a, b) => centers[a][axis] - centers[b][axis]);
+  const mid = Math.floor(ids.length / 2);
+  return { ...bounds, left: buildBvh(mesh, boxes, centers, ids.slice(0, mid)), right: buildBvh(mesh, boxes, centers, ids.slice(mid)) };
+}
+function boxDistanceSq(p: Vec3, b: Bounds): number { let d = 0; for (let k = 0; k < 3; k++) { const x = p[k] < b.min[k] ? b.min[k] - p[k] : p[k] > b.max[k] ? p[k] - b.max[k] : 0; d += x * x; } return d; }
+function pointTriangleDistanceSq(p: Vec3, a: Vec3, b: Vec3, c: Vec3): number {
+  const sub = (u: Vec3, v: Vec3): Vec3 => [u[0] - v[0], u[1] - v[1], u[2] - v[2]];
+  const dot = (u: Vec3, v: Vec3) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+  const pointSegmentDistanceSq = (x: Vec3, u: Vec3, v: Vec3): number => {
+    const uv = sub(v, u), ux = sub(x, u), d = dot(uv, uv);
+    const t = d > 1e-12 ? Math.max(0, Math.min(1, dot(ux, uv) / d)) : 0;
+    const q: Vec3 = [u[0] + t * uv[0], u[1] + t * uv[1], u[2] + t * uv[2]];
+    const delta = sub(x, q);
+    return dot(delta, delta);
+  };
+  const ab = sub(b, a), ac = sub(c, a), ap = sub(p, a), d1 = dot(ab, ap), d2 = dot(ac, ap);
+  const cross: Vec3 = [ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]];
+  if (dot(cross, cross) <= 1e-20)
+    return Math.min(pointSegmentDistanceSq(p, a, b), pointSegmentDistanceSq(p, b, c), pointSegmentDistanceSq(p, c, a));
+  if (d1 <= 0 && d2 <= 0) return dot(ap, ap);
+  const bp = sub(p, b), d3 = dot(ab, bp), d4 = dot(ac, bp);
+  if (d3 >= 0 && d4 <= d3) return dot(bp, bp);
+  const vc = d1 * d4 - d3 * d2;
+  if (vc <= 0 && d1 >= 0 && d3 <= 0) { const v = d1 / (d1 - d3); const q: Vec3 = [a[0] + v * ab[0], a[1] + v * ab[1], a[2] + v * ab[2]]; const d = sub(p, q); return dot(d, d); }
+  const cp = sub(p, c), d5 = dot(ab, cp), d6 = dot(ac, cp);
+  if (d6 >= 0 && d5 <= d6) return dot(cp, cp);
+  const vb = d5 * d2 - d1 * d6;
+  if (vb <= 0 && d2 >= 0 && d6 <= 0) { const w = d2 / (d2 - d6); const q: Vec3 = [a[0] + w * ac[0], a[1] + w * ac[1], a[2] + w * ac[2]]; const d = sub(p, q); return dot(d, d); }
+  const va = d3 * d6 - d5 * d4, area = va + vb + vc;
+  if (Math.abs(area) <= 1e-12) return Math.min(pointSegmentDistanceSq(p, a, b), pointSegmentDistanceSq(p, b, c), pointSegmentDistanceSq(p, c, a));
+  const denom = 1 / area, v = vb * denom, w = vc * denom;
+  const q: Vec3 = [a[0] + ab[0] * v + ac[0] * w, a[1] + ab[1] * v + ac[1] * w, a[2] + ab[2] * v + ac[2] * w];
+  const d = sub(p, q); return dot(d, d);
+}
+function distanceToSurface(p: Vec3, mesh: TriMesh, root: BvhNode): number {
+  let best = Infinity; const stack = [root];
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (boxDistanceSq(p, node) >= best) continue;
+    if (node.ids) for (const id of node.ids) { const [i, j, k] = mesh.triangles[id]; best = Math.min(best, pointTriangleDistanceSq(p, mesh.positions[i], mesh.positions[j], mesh.positions[k])); }
+    else if (node.left && node.right) {
+      const dl = boxDistanceSq(p, node.left), dr = boxDistanceSq(p, node.right);
+      if (dl < dr) { stack.push(node.right, node.left); } else { stack.push(node.left, node.right); }
+    }
+  }
+  return Math.sqrt(best);
+}
+function sample<T>(items: T[], count: number): T[] { let seed = 0x12345678; const out: T[] = []; for (let i = 0; i < Math.min(count, items.length); i++) { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; out.push(items[Math.floor((seed / 0x100000000) * items.length)]); } return out; }
+function report(label: string, source: Vec3[], target: TriMesh, bvh: BvhNode): void {
+  const scored = sample(source, 5000).map((point) => ({ point, distance: distanceToSurface(point, target, bvh) })).sort((a, b) => a.distance - b.distance);
+  const q = (p: number) => scored[Math.floor((scored.length - 1) * p)].distance;
+  const threshold = q(.99);
+  const worst = boundsOf(scored.filter((sample) => sample.distance >= threshold).map((sample) => sample.point));
+  const maxima = scored.slice(-5).reverse().map((sample) => ({ point: sample.point.map((v) => Number(v.toFixed(2))), distance: Number(sample.distance.toFixed(3)) }));
+  console.log(`${label} p50=${q(.5).toFixed(3)} p90=${q(.9).toFixed(3)} p99=${q(.99).toFixed(3)} max=${q(1).toFixed(3)} worst1%=${JSON.stringify(worst)} maxima=${JSON.stringify(maxima)}`);
+}
+
+const truth = readGlb(truthPath), vm = readVm(vmPath);
+console.log(`truth ${truth.positions.length}v ${truth.triangles.length}t ${JSON.stringify(boundsOf(truth.positions))}`);
+console.log(`vm ${vm.positions.length}v ${vm.triangles.length}t ${JSON.stringify(boundsOf(vm.positions))}`);
+console.log("building triangle BVHs...");
+const truthBvh = buildBvh(truth), vmBvh = buildBvh(vm);
+report("truth points -> VM surface", truth.positions, vm, vmBvh);
+report("VM points -> truth surface", vm.positions, truth, truthBvh);

@@ -22,6 +22,7 @@ import { Geometry, Mesh, mergeMeshInto, rotateEulerXYZ, Spline, buildTopology } 
 import { fillCurves, meshEdgesToChains, splineLength, splineSegments } from "../curves";
 import { makeFieldCtx } from "../evaluator";
 import { reg, EvalAPI } from "../registry";
+import { isManifoldReady, manifoldBoolean, manifoldBooleanBox } from "../boolean";
 
 const DOMAINS = new Set<Domain>(["POINT", "EDGE", "FACE", "CORNER", "CURVE", "INSTANCE"]);
 const EPS = 1e-9;
@@ -790,7 +791,8 @@ function capBoxClip(clipped: Mesh, source: Mesh, keepFace: boolean[], box: { min
   const plane = dominantClipPlane(clipped, candidates.map((c) => c.edge), box);
   if (!plane) return;
 
-  const band = Math.max(1e-5, meshDiag(clipped) * 0.25);
+  const diag = meshDiag(clipped);
+  const band = Math.max(1e-5, diag * 0.25);
   const active = candidates.filter(({ edge: [a, b] }) =>
     Math.abs(clipped.positions[a][plane.axis] - plane.coord) <= band &&
     Math.abs(clipped.positions[b][plane.axis] - plane.coord) <= band
@@ -803,6 +805,23 @@ function capBoxClip(clipped: Mesh, source: Mesh, keepFace: boolean[], box: { min
   const loops = meshEdgesToChains(boundary)
     .filter((c) => c.spline.cyclic && c.verts.length >= 3);
   if (!loops.length) return;
+
+  // The FLOAT fallback works at face granularity, so it does not generate the
+  // actual intersection contours that Blender's Boolean solver would use for a
+  // cap. Filling a large shell loop here bridges the inner and outer walls with
+  // an artificial flat band, which reads as a seam in the vase. Only cap small
+  // local loops; preserve the large shell opening instead.
+  const loopSpan = (pts: Vec3[]): number => {
+    let min: Vec3 = [Infinity, Infinity, Infinity];
+    let max: Vec3 = [-Infinity, -Infinity, -Infinity];
+    for (const p of pts) for (let k = 0; k < 3; k++) {
+      min[k] = Math.min(min[k], p[k]);
+      max[k] = Math.max(max[k], p[k]);
+    }
+    return Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
+  };
+  const maxLoop = Math.max(...loops.map((c) => loopSpan(c.spline.points)));
+  if (maxLoop > diag * 0.35) return;
 
   const adjacentFaces = active.map((c) => c.face);
   const materialCounts = new Map<number, number>();
@@ -853,13 +872,13 @@ function capBoxClip(clipped: Mesh, source: Mesh, keepFace: boolean[], box: { min
     }
   }
 
+  const newFaces: number[][] = [];
   const cap = fillCurves(loopSplines, "NGONS");
   if (!cap.faces.length) return;
   const remapCapVert = (vi: number): number | null => {
     const p = cap.positions[vi];
     return projectedKeyToVert.get(pointKey(p)) ?? null;
   };
-  const newFaces: number[][] = [];
   for (const f of cap.faces) {
     const remapped = f.map(remapCapVert);
     if (remapped.every((vi): vi is number => vi !== null)) newFaces.push(remapped);
@@ -930,24 +949,77 @@ function compactFaceVertsLocal(mesh: Mesh): Mesh {
 }
 
 reg("GeometryNodeMeshBoolean", (api) => {
-  const op = api.prop<string>("operation", "DIFFERENCE");
+  const op = (api.prop<string>("operation", "DIFFERENCE") || "DIFFERENCE").toUpperCase() as "UNION" | "DIFFERENCE" | "INTERSECT";
+  // Blender's FLOAT and EXACT solvers are different operations. In particular,
+  // the vase routes its open shell through the FLOAT branch of DOJO_BOOL.001;
+  // feeding that branch to a solid-only CSG library changes its envelope.
+  const solver = (api.prop<string>("solver", "FLOAT") || "FLOAT").toUpperCase();
+  const useExactSolver = solver === "EXACT" && isManifoldReady();
   const mesh1 = api.geo("Mesh 1");
   const mesh2s = api.geoInputs("Mesh 2");
-  let mesh: Geometry;
+
+  // Manifold represents closed solids, so use it only for Blender's EXACT
+  // solver. FLOAT remains on the VM's existing topology-preserving fallback.
+  if (useExactSolver && mesh1.mesh && mesh2s.length) {
+    const out = new Geometry();
+    const boxes = mesh2s.map(axisBox);
+    // Single AABB cutter: dedicated path (vase bottom-cut / bin clips).
+    if (mesh2s.length === 1 && boxes[0]) {
+      const res = manifoldBooleanBox(mesh1.mesh, boxes[0], op);
+      if (res) {
+        out.mesh = res;
+        return { Mesh: out, "Intersecting Edges": Field.of(0) };
+      }
+      // Exact CSG may reject open/non-manifold inputs; use the same local
+      // AABB fallback as FLOAT in that case.
+      const clipped = clipToBox(mesh1, boxes[0], op === "INTERSECT");
+      return { Mesh: clipped, "Intersecting Edges": Field.of(0) };
+    }
+
+    // Multi-operand / mesh cutters: fold left with Manifold.
+    let acc: Mesh | null = mesh1.mesh;
+    for (const g of mesh2s) {
+      if (!acc || !g.mesh) continue;
+      const box = axisBox(g);
+      let next: Mesh | null = null;
+      if (box) next = manifoldBooleanBox(acc, box, op);
+      if (!next) next = manifoldBoolean(acc, g.mesh, op);
+      if (next) acc = next;
+      else if (op === "UNION") {
+        const joined = new Mesh();
+        joined.materialSlots = [...acc.materialSlots];
+        mergeMeshInto(joined, acc);
+        mergeMeshInto(joined, g.mesh);
+        acc = joined;
+      }
+      // DIFFERENCE/INTERSECT without a valid result: keep accumulator (Blender would error/empty)
+    }
+    if (acc) {
+      out.mesh = acc;
+      return { Mesh: out, "Intersecting Edges": Field.of(0) };
+    }
+  }
+
+  // FLOAT solver fallback: preserve the prior VM behavior. It can clip a
+  // simple axis-aligned box, but must not reinterpret a non-solid shell as a
+  // closed CSG operand.
   const boxes = mesh2s.map(axisBox).filter((b): b is { min: Vec3; max: Vec3 } => !!b);
   const box = boxes.length === 1 ? boxes[0] : null;
   if (op === "UNION") {
-    mesh = joinedMesh([mesh1, ...mesh2s]);
-  } else if (op === "INTERSECT") {
-    // Axis-aligned box cutters get a real face-level clip with cap support;
-    // otherwise pass the main geometry through (outer-clip assumption).
-    mesh = box && mesh1.mesh
-      ? clipToBox(mesh1, box, true)
-      : mesh1.mesh || mesh1.curves.length || mesh1.instances.length
-        ? mesh1.clone()
-        : (mesh2s[0]?.clone() ?? new Geometry());
-  } else {
-    mesh = box && mesh1.mesh ? clipToBox(mesh1, box, false) : mesh1.clone();
+    return { Mesh: joinedMesh([mesh1, ...mesh2s]), "Intersecting Edges": Field.of(0) };
   }
-  return { Mesh: mesh, "Intersecting Edges": Field.of(0) };
+  if (op === "INTERSECT") {
+    return {
+      Mesh: box && mesh1.mesh
+        ? clipToBox(mesh1, box, true)
+        : mesh1.mesh || mesh1.curves.length || mesh1.instances.length
+          ? mesh1.clone()
+          : (mesh2s[0]?.clone() ?? new Geometry()),
+      "Intersecting Edges": Field.of(0),
+    };
+  }
+  return {
+    Mesh: box && mesh1.mesh ? clipToBox(mesh1, box, false) : mesh1.clone(),
+    "Intersecting Edges": Field.of(0),
+  };
 });

@@ -10,13 +10,22 @@
       html, body { width: 100%; height: 100%; overflow: hidden; background: #0b0d10; }
       #app { width: 100vw; height: 100vh; display: block; }
       #hud {
-        position: fixed; left: 16px; top: 14px; z-index: 10; max-width: 76ch;
+        position: fixed; left: 16px; top: 14px; z-index: 10; max-width: 80ch;
         font: 12px/1.6 ui-monospace, Menlo, monospace; color: #9fb4c7;
         letter-spacing: .03em; pointer-events: none; text-shadow: 0 1px 2px #000;
       }
       #hud b { color: #eaf2f8; text-transform: uppercase; }
       #hud .truth { color: #ff9d9d; }
       #hud .vm { color: #8fcfff; }
+      .compare-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; pointer-events: auto; }
+      .compare-controls button {
+        appearance: none; cursor: pointer; color: #aebecd; background: rgba(11,13,16,.72);
+        border: 1px solid rgba(255,255,255,.16); border-radius: 999px; padding: 5px 9px;
+        font: 600 10px/1 ui-monospace, monospace; letter-spacing: .06em; text-transform: uppercase;
+      }
+      .compare-controls button:hover { color: #eaf2f8; border-color: rgba(143,207,255,.5); }
+      .compare-controls button[aria-pressed="true"] { color: #eaf2f8; background: rgba(94,180,255,.16); border-color: rgba(94,180,255,.62); }
+      .compare-controls button.truth-toggle[aria-pressed="true"] { color: #ffd0d0; background: rgba(255,107,107,.14); border-color: rgba(255,107,107,.62); }
       #home {
         position: fixed; left: 16px; bottom: 14px; z-index: 20;
         font: 600 11px/1 ui-monospace, Menlo, monospace; letter-spacing: 0.1em; text-transform: uppercase;
@@ -30,9 +39,19 @@
     <canvas id="app"></canvas>
     <a id="home" href="/">← studio</a>
     <div id="hud">
-      <b>Vase compare</b> · <span class="truth">red wire = Blender truth</span> · <span class="vm">blue solid = GN-VM</span>
-      · keys: 1 truth, 2 vm, 3 both · <span id="stat">loading…</span>
+      <b>Vase compare</b> · <span class="truth">red wire = Blender truth</span> · <span class="vm">blue wire = GN-VM</span>
+      · <span id="stat">loading…</span>
+      <div class="compare-controls" aria-label="Vase comparison controls">
+        <button id="toggle-truth" class="truth-toggle" type="button" aria-pressed="true">Blender</button>
+        <button id="toggle-vm" type="button" aria-pressed="true">GN-VM</button>
+        <button id="view-overlay" type="button" aria-pressed="true">Overlay</button>
+        <button id="view-side-by-side" type="button" aria-pressed="false">Side by side</button>
+        <button id="toggle-vm-style" type="button" aria-pressed="false">VM solid</button>
+        <button id="reframe" type="button">Reframe</button>
+      </div>
+      <div style="opacity:.85;margin-top:6px">Keys: <b>1</b> Blender · <b>2</b> GN-VM · <b>3</b> both · <b>T/V</b> toggle each · <b>O/S</b> overlay/side by side · <b>W</b> solid · <b>R</b> reframe</div>
     </div>
+
     <script type="module" src="/src/vase-compare.ts"></script>
   </body>
 </html>

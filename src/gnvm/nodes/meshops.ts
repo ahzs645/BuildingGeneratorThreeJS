@@ -269,8 +269,14 @@ reg("GeometryNodeMergeByDistance", (api) => {
     const nf: number[] = [];
     const nc: number[] = [];
     const f = mesh.faces[fi];
+    const remapped = f.map((vi) => remap[vi]);
+    // A welded zero-length boundary is not a new triangle. In particular, the
+    // vase's Spin node collapses a ring of axis vertices; retaining the
+    // shortened quad turns it into a center-to-rim fan that Blender omits.
+    // Discard the face rather than synthesizing a different surface.
+    if (remapped.some((vi, ci) => vi === remapped[(ci + 1) % remapped.length])) continue;
     for (let ci = 0; ci < f.length; ci++) {
-      const r = remap[f[ci]];
+      const r = remapped[ci];
       if (!nf.length || nf[nf.length - 1] !== r) {
         nf.push(r);
         nc.push(cornerStart[fi] + ci);

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "lil-gui": "^0.20.0",
+    "manifold-3d": "^3.5.1",
     "three": "^0.185.1"
   },
   "devDependencies": {

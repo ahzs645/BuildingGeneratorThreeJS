@@ -74,21 +74,22 @@ function bbox(positions: Float32Array): BBox {
   };
 }
 
-function runVmSweep(dump: Dump): SweepResult[] {
-  return cases.map((combo) => {
+async function runVmSweep(dump: Dump): Promise<SweepResult[]> {
+  const out: SweepResult[] = [];
+  for (const combo of cases) {
     const started = Date.now();
     try {
-      const result = runGenerator(dump, { object: "Procedural Drawer", overrides: combo.overrides });
-      return {
+      const result = await runGenerator(dump, { object: "Procedural Drawer", overrides: combo.overrides });
+      out.push({
         combo,
         status: "ok",
         verts: result.soup.stats.verts,
         faces: result.soup.stats.faces,
         bbox: bbox(result.soup.positions),
         elapsed_ms: Date.now() - started,
-      };
+      });
     } catch (error) {
-      return {
+      out.push({
         combo,
         status: "error",
         verts: null,
@@ -96,9 +97,10 @@ function runVmSweep(dump: Dump): SweepResult[] {
         bbox: null,
         elapsed_ms: Date.now() - started,
         error: error instanceof Error ? error.stack ?? error.message : String(error),
-      };
+      });
     }
-  });
+  }
+  return out;
 }
 
 function fmtNum(value: number | null, digits = 1): string {
@@ -164,7 +166,7 @@ const vmPayload: SweepPayload = {
   source: "gnvm",
   dump: dumpPath,
   object: "Procedural Drawer",
-  results: runVmSweep(dump),
+  results: await runVmSweep(dump),
 };
 
 writeFileSync(vmOutPath, `${JSON.stringify(vmPayload, null, 2)}\n`);

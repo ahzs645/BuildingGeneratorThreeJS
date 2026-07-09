@@ -8,7 +8,7 @@ const obj = process.argv[3];
 const dump = JSON.parse(readFileSync(path, "utf8")) as Dump;
 
 const t0 = Date.now();
-const res = runGenerator(dump, { object: obj });
+const res = await runGenerator(dump, { object: obj });
 const ms = Date.now() - t0;
 
 console.log(`\n=== GN-VM run: ${path.split("/").pop()}${obj ? ` [${obj}]` : ""} ===`);

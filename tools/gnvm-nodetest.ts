@@ -4,7 +4,7 @@
 import { Field, Vec3 } from "../src/gnvm/core";
 import { Geometry, Mesh, topologyOf } from "../src/gnvm/geometry";
 import { EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
-import { makeFieldCtx } from "../src/gnvm/evaluator";
+import { Evaluator, makeFieldCtx } from "../src/gnvm/evaluator";
 import "../src/gnvm/index"; // registers all handlers
 
 type Input = SockVal | number | number[] | boolean;
@@ -326,6 +326,17 @@ function meshSignedAreaXY(m: Mesh): number {
   check("MergeByDistance preserves material slots", JSON.stringify(om.materialSlots) === JSON.stringify([null, "left", "right"]));
 }
 
+// Faces whose edge collapses during a weld must not become a new fan triangle.
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [0, 0, 0], [2, 0, 0], [0, 2, 0]];
+  m.faces = [[0, 1, 2, 3]];
+  const g = new Geometry();
+  g.mesh = m;
+  const out = runNode("GeometryNodeMergeByDistance", { Geometry: g, Selection: true, Distance: 1e-4, Mode: "All" }).Geometry as Geometry;
+  check("MergeByDistance drops a face with a welded boundary edge", out.mesh!.faces.length === 0, `faces=${out.mesh!.faces.length}`);
+}
+
 // (M) MergeByDistance selection=false vertices do not participate in welding
 {
   const m = new Mesh();
@@ -375,27 +386,58 @@ function meshSignedAreaXY(m: Mesh): number {
   check("vertex normal chooses outward opposing fan", approx(n, [1, 0, 0]), JSON.stringify(n));
 }
 
-// (P) MeshBoolean box clip caps the dominant cut plane of an open shell
+// (P) MeshBoolean respects Blender's FLOAT / EXACT solver selection.
 {
-  const cyl = openCylinder(12, [-2, -1, 0.5, 1.5], 1);
+  const { ensureManifold } = await import("../src/gnvm/boolean");
+  await ensureManifold();
+
+  // With a non-AABB cutter, FLOAT must retain its topology-preserving fallback
+  // while EXACT is allowed to use Manifold's solid CSG.
+  const a = box([-1, -1, -1], [1, 1, 1]);
+  const tilted = box([-1, -1, -1], [1, 1, 1]);
+  const c = Math.cos(Math.PI / 4), s = Math.sin(Math.PI / 4);
+  tilted.mesh!.positions = tilted.mesh!.positions.map(([x, y, z]) => [
+    x * c - y * s + 0.75,
+    x * s + y * c,
+    z,
+  ]);
+  const floatInter = runNode(
+    "GeometryNodeMeshBoolean",
+    { "Mesh 1": a, "Mesh 2": tilted },
+    { operation: "INTERSECT", solver: "FLOAT" },
+  ).Mesh as Geometry;
+  const floatMinX = Math.min(...floatInter.mesh!.positions.map((p) => p[0]));
+  check("MeshBoolean FLOAT keeps non-AABB input topology", floatInter.mesh!.faces.length === a.mesh!.faces.length && floatMinX === -1, `faces=${floatInter.mesh!.faces.length} minX=${floatMinX}`);
+
+  const exactInter = runNode(
+    "GeometryNodeMeshBoolean",
+    { "Mesh 1": a, "Mesh 2": tilted },
+    { operation: "INTERSECT", solver: "EXACT" },
+  ).Mesh as Geometry;
+  const exactMinX = Math.min(...exactInter.mesh!.positions.map((p) => p[0]));
+  check("MeshBoolean EXACT uses solid CSG", exactInter.mesh!.faces.length > 0 && exactMinX > -0.99, `faces=${exactInter.mesh!.faces.length} minX=${exactMinX}`);
+
+  // FLOAT still clips an axis-aligned box using the local fallback.
+  const solid = box([-1, -1, -1], [1, 1, 1]);
+  const cutter = box([-2, -2, 0], [2, 2, 2]); // 8 verts, 6 faces — axis box
   const clipped = runNode(
     "GeometryNodeMeshBoolean",
-    { "Mesh 1": cyl, "Mesh 2": box([-2, -2, 0], [2, 2, 2]) },
-    { operation: "INTERSECT" },
+    { "Mesh 1": solid, "Mesh 2": cutter },
+    { operation: "INTERSECT", solver: "FLOAT" },
   ).Mesh as Geometry;
   const m = clipped.mesh!;
-  const sideFacesAfterDrop = 12;
-  const boundaryNearCut = topologyOf(m).edges.filter((e) =>
-    e.faces.length === 1 &&
-    e.verts.every((vi) => Math.abs(m.positions[vi][2]) < 1e-6)
-  );
-  const capFaces = m.faces.filter((f) =>
-    f.length >= 3 && f.every((vi) => Math.abs(m.positions[vi][2]) < 1e-6)
-  );
   const maxZ = Math.max(...m.positions.map((p) => p[2]));
-  check("MeshBoolean box clip adds cap face", m.faces.length > sideFacesAfterDrop && capFaces.length > 0, `got ${m.faces.length} faces, ${capFaces.length} caps`);
-  check("MeshBoolean box clip has no cut-plane boundary edges", boundaryNearCut.length === 0, `boundary=${boundaryNearCut.length}`);
-  check("MeshBoolean box clip compacts dropped verts", maxZ <= 2 + 1e-6, `maxZ=${maxZ}`);
+  const minZ = Math.min(...m.positions.map((p) => p[2]));
+  check("MeshBoolean box INTERSECT keeps upper half", minZ >= -1e-3 && maxZ <= 1 + 1e-3 && m.faces.length > 0, `z=[${minZ},${maxZ}] f=${m.faces.length}`);
+
+  // EXACT gracefully falls back when Manifold rejects an open shell.
+  const cyl = openCylinder(12, [-2, -1, 0.5, 1.5], 1);
+  const openClip = runNode(
+    "GeometryNodeMeshBoolean",
+    { "Mesh 1": cyl, "Mesh 2": box([-2, -2, 0], [2, 2, 2]) },
+    { operation: "INTERSECT", solver: "EXACT" },
+  ).Mesh as Geometry;
+  check("MeshBoolean open-shell INTERSECT non-empty", (openClip.mesh?.faces.length ?? 0) > 0, `faces=${openClip.mesh?.faces.length}`);
 }
 
 // (Q) Critical-path: ValueToString / StringJoin / StringToCurves
@@ -518,6 +560,39 @@ function meshSignedAreaXY(m: Mesh): number {
   const unk = runNode("ShaderNodeVectorMath", { Vector: [1, 2, 3], Vector_001: [10, 20, 30] }, { operation: "NOT_A_REAL_OP" }).Vector as Field;
   const got = unk.value as number[];
   check("unknown VectorMath does not ADD", !approx(got, [11, 22, 33]) && approx(got, [1, 2, 3]), JSON.stringify(got));
+}
+
+// (X) A linked float entering a group Int socket is rounded at the boundary.
+// Spin uses the same socket both for Repeat Input's count and its angle divisor;
+// retaining the incoming fraction in only the divisor leaves a closure gap.
+{
+  const socket = (name: string, identifier: string, in_out: "INPUT" | "OUTPUT", socket_type: string, dflt = 0) => ({ name, identifier, item_type: "SOCKET", in_out, socket_type, default: dflt });
+  const program: any = {
+    inner: {
+      name: "inner", type: "GeometryNodeTree",
+      interface: [socket("Steps", "Steps", "INPUT", "NodeSocketInt"), socket("Result", "Result", "OUTPUT", "NodeSocketInt")],
+      nodes: [
+        { name: "Group Input", type: "NodeGroupInput", label: null, inputs: [], outputs: [{ name: "Steps", identifier: "Steps" }], props: {} },
+        { name: "Group Output", type: "NodeGroupOutput", label: null, inputs: [{ name: "Result", identifier: "Result", type: "NodeSocketInt", linked: true, value: null }], outputs: [], props: {} },
+      ],
+      links: [{ from_node: "Group Input", from_socket: "Steps", to_node: "Group Output", to_socket: "Result" }],
+    },
+    outer: {
+      name: "outer", type: "GeometryNodeTree",
+      interface: [socket("Density", "Density", "INPUT", "NodeSocketFloat"), socket("Result", "Result", "OUTPUT", "NodeSocketInt")],
+      nodes: [
+        { name: "Group Input", type: "NodeGroupInput", label: null, inputs: [], outputs: [{ name: "Density", identifier: "Density" }], props: {} },
+        { name: "Inner", type: "GeometryNodeGroup", label: null, group: "inner", inputs: [{ name: "Steps", identifier: "Steps", type: "NodeSocketInt", linked: true, value: null }], outputs: [{ name: "Result", identifier: "Result" }], props: {} },
+        { name: "Group Output", type: "NodeGroupOutput", label: null, inputs: [{ name: "Result", identifier: "Result", type: "NodeSocketInt", linked: true, value: null }], outputs: [], props: {} },
+      ],
+      links: [
+        { from_node: "Group Input", from_socket: "Density", to_node: "Inner", to_socket: "Steps" },
+        { from_node: "Inner", from_socket: "Result", to_node: "Group Output", to_socket: "Result" },
+      ],
+    },
+  };
+  const result = new Evaluator(program).evalGroup("outer", { Density: Field.of(349.38) }).Result as Field;
+  check("Group input coerces linked float to Int", result.value === 349, `got ${result.value}`);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

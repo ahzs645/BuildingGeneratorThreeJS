@@ -5,8 +5,9 @@ import { runGenerator, Dump } from "../src/gnvm/index";
 
 const [, , dumpPath, outPath, objName] = process.argv;
 const dump = JSON.parse(readFileSync(dumpPath, "utf8")) as Dump;
+
 const t0 = Date.now();
-const res = runGenerator(dump, { object: objName });
+const res = await runGenerator(dump, { object: objName });
 const soup = res.soup;
 // Include the object's world transform: bakes/GLB exports apply it, the VM
 // evaluates in local space — viewers need it to overlay the two.

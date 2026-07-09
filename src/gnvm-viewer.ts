@@ -126,9 +126,9 @@ async function main() {
     meta.push({ name: it.name, socket: it.socket_type });
   }
 
-  function rebuild() {
+  async function rebuild() {
     const t0 = performance.now();
-    const res = runGenerator(dump, { object: objName, overrides: params });
+    const res = await runGenerator(dump, { object: objName, overrides: params });
     const ms = (performance.now() - t0).toFixed(0);
     if (current) {
       scene.remove(current);

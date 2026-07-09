@@ -545,9 +545,41 @@ export interface TriSoup {
   stats: { verts: number; faces: number; tris: number };
 }
 
+/**
+ * For shell-like meshes (vase / bin walls), ensure face windings give
+ * predominantly outward radial normals. Solidify + Flip chains often leave the
+ * outer wall inverted; FrontSide materials then look like an empty or inverted
+ * interior even when the envelope matches Blender.
+ */
+export function orientShellOutward(mesh: Mesh): void {
+  if (!mesh.faces.length || mesh.positions.length < 8) return;
+  const nrm = mesh.vertexNormals();
+  let out = 0, inn = 0;
+  // Sample mid-height verts away from the axis.
+  let zmin = Infinity, zmax = -Infinity;
+  for (const p of mesh.positions) {
+    zmin = Math.min(zmin, p[2]);
+    zmax = Math.max(zmax, p[2]);
+  }
+  const z0 = zmin + (zmax - zmin) * 0.35;
+  const z1 = zmin + (zmax - zmin) * 0.75;
+  for (let i = 0; i < mesh.positions.length; i++) {
+    const p = mesh.positions[i];
+    if (p[2] < z0 || p[2] > z1) continue;
+    const r = Math.hypot(p[0], p[1]);
+    if (r < 1e-6) continue;
+    const radial = (nrm[i][0] * p[0] + nrm[i][1] * p[1]) / r;
+    if (radial > 0.12) out++;
+    else if (radial < -0.12) inn++;
+  }
+  if (inn <= out * 1.15) return;
+  for (const f of mesh.faces) f.reverse();
+}
+
 export function toTriSoup(g: Geometry): TriSoup {
   const realized = g.instances.length ? realizeInstances(g) : g;
   const mesh = realized.mesh ?? new Mesh();
+  orientShellOutward(mesh);
   const normals = mesh.vertexNormals();
   const positions = new Float32Array(mesh.positions.length * 3);
   const normArr = new Float32Array(mesh.positions.length * 3);
