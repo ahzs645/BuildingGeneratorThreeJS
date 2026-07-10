@@ -807,10 +807,10 @@ function capBoxClip(clipped: Mesh, source: Mesh, keepFace: boolean[], box: { min
   if (!loops.length) return;
 
   // The FLOAT fallback works at face granularity, so it does not generate the
-  // actual intersection contours that Blender's Boolean solver would use for a
-  // cap. Filling a large shell loop here bridges the inner and outer walls with
-  // an artificial flat band, which reads as a seam in the vase. Only cap small
-  // local loops; preserve the large shell opening instead.
+  // actual intersection contours that Blender's Boolean solver uses for a cap.
+  // A single large loop is an open shell mouth and must remain open. Two or more
+  // nested loops describe a clipped wall thickness, though; fillCurves keeps
+  // the inner loop as a hole and produces Blender's planar annular cut surface.
   const loopSpan = (pts: Vec3[]): number => {
     let min: Vec3 = [Infinity, Infinity, Infinity];
     let max: Vec3 = [-Infinity, -Infinity, -Infinity];
@@ -821,8 +821,8 @@ function capBoxClip(clipped: Mesh, source: Mesh, keepFace: boolean[], box: { min
     return Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
   };
   const maxLoop = Math.max(...loops.map((c) => loopSpan(c.spline.points)));
-  if (maxLoop > diag * 0.35) return;
-
+  if (maxLoop > diag * 0.35 && loops.length < 2) return;
+  const largeNested = maxLoop > diag * 0.35 && loops.length >= 2;
   const adjacentFaces = active.map((c) => c.face);
   const materialCounts = new Map<number, number>();
   for (const fi of adjacentFaces) {
@@ -835,13 +835,23 @@ function capBoxClip(clipped: Mesh, source: Mesh, keepFace: boolean[], box: { min
   }
   const attrSourceFace = adjacentFaces[0];
 
+  // With coarse face-level clipping, a large shell's surviving boundary is a
+  // sampled approximation of the true intersection contour. Keep its cap on
+  // the interior-most sampled plane so it cannot protrude past either wall;
+  // small local caps retain the exact cutter plane.
+  const loopCoords = loops.flatMap((loop) => loop.verts.map((vi) => clipped.positions[vi][plane.axis]));
+  const clipsAtMax = Math.abs(plane.coord - box.max[plane.axis]) <= Math.abs(plane.coord - box.min[plane.axis]);
+  const capCoord = largeNested
+    ? clipsAtMax ? Math.min(...loopCoords) : Math.max(...loopCoords)
+    : plane.coord;
+
   const projectedBySource = new Map<number, number>();
   const projectedKeyToVert = new Map<string, number>();
   const projectVert = (vi: number): number => {
     const found = projectedBySource.get(vi);
     if (found !== undefined) return found;
     const p = [...clipped.positions[vi]] as Vec3;
-    p[plane.axis] = plane.coord;
+    p[plane.axis] = capCoord;
     const idx = clipped.positions.length;
     clipped.positions.push(p);
     projectedBySource.set(vi, idx);

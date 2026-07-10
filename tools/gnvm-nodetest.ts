@@ -431,6 +431,42 @@ function meshSignedAreaXY(m: Mesh): number {
   const minZ = Math.min(...m.positions.map((p) => p[2]));
   check("MeshBoolean box INTERSECT keeps upper half", minZ >= -1e-3 && maxZ <= 1 + 1e-3 && m.faces.length > 0, `z=[${minZ},${maxZ}] f=${m.faces.length}`);
 
+  // A clipped hollow shell has two large nested boundary loops. FLOAT should
+  // bridge them with an annulus at the cutter plane, not leave a jagged open
+  // rim and not fill the inner opening with a disk.
+  const tube = new Geometry();
+  const tm = new Mesh();
+  const segments = 12;
+  const zs = [-1, -0.2, 0.2];
+  for (const radius of [2, 1]) for (const z of zs) for (let i = 0; i < segments; i++) {
+    const angle = i / segments * Math.PI * 2;
+    tm.positions.push([Math.cos(angle) * radius, Math.sin(angle) * radius, z]);
+  }
+  const ring = (inner: number, zi: number, i: number) => ((inner * zs.length + zi) * segments + i);
+  for (const inner of [0, 1]) for (let zi = 0; zi + 1 < zs.length; zi++) for (let i = 0; i < segments; i++) {
+    const j = (i + 1) % segments;
+    const face = [ring(inner, zi, i), ring(inner, zi, j), ring(inner, zi + 1, j), ring(inner, zi + 1, i)];
+    tm.faces.push(inner ? face.reverse() : face);
+    tm.faceMaterial.push(0);
+  }
+  for (let i = 0; i < segments; i++) {
+    const j = (i + 1) % segments;
+    tm.faces.push([ring(0, 0, i), ring(1, 0, i), ring(1, 0, j), ring(0, 0, j)]);
+    tm.faceMaterial.push(0);
+  }
+  tube.mesh = tm;
+  const tubeClip = runNode(
+    "GeometryNodeMeshBoolean",
+    { "Mesh 1": tube, "Mesh 2": box([-3, -3, -2], [3, 3, 0]) },
+    { operation: "INTERSECT", solver: "FLOAT" },
+  ).Mesh as Geometry;
+  const cutFaces = tubeClip.mesh!.faces.filter((f) => {
+    const zs = f.map((vi) => tubeClip.mesh!.positions[vi][2]);
+    return Math.max(...zs) - Math.min(...zs) < 1e-6 && Math.max(...zs) > -0.5;
+  });
+  const cutMinRadius = Math.min(...cutFaces.flatMap((f) => f.map((vi) => Math.hypot(tubeClip.mesh!.positions[vi][0], tubeClip.mesh!.positions[vi][1]))));
+  check("MeshBoolean FLOAT caps a clipped hollow shell with an annulus", cutFaces.length > 0 && cutMinRadius > 0.9, `faces=${cutFaces.length} minRadius=${cutMinRadius}`);
+
   // EXACT gracefully falls back when Manifold rejects an open shell.
   const cyl = openCylinder(12, [-2, -1, 0.5, 1.5], 1);
   const openClip = runNode(

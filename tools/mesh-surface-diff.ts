@@ -224,6 +224,31 @@ function axialFanSummary(label: string, mesh: TriMesh): void {
   console.log(`${label} axial fan triangles=${fans.length} z=[${minZ.toFixed(3)},${maxZ.toFixed(3)}] maxRadius=${maxRadius.toFixed(3)}`);
 }
 
+function topPlanarSummary(label: string, mesh: TriMesh): void {
+  const bounds = boundsOf(mesh.positions);
+  const center: Vec3 = [(bounds.min[0] + bounds.max[0]) / 2, (bounds.min[1] + bounds.max[1]) / 2, 0];
+  const nearTop: { z: number; area: number; minRadius: number; maxRadius: number }[] = [];
+  for (const [a, b, c] of mesh.triangles) {
+    const points = [mesh.positions[a], mesh.positions[b], mesh.positions[c]];
+    const zs = points.map((p) => p[2]);
+    if (Math.max(...zs) < bounds.max[2] - 5 || Math.max(...zs) - Math.min(...zs) > 1e-3) continue;
+    const radii = points.map((p) => Math.hypot(p[0] - center[0], p[1] - center[1]));
+    nearTop.push({
+      z: zs.reduce((sum, z) => sum + z, 0) / 3,
+      area: triangleArea(...points),
+      minRadius: Math.min(...radii),
+      maxRadius: Math.max(...radii),
+    });
+  }
+  const nonzero = nearTop.filter((tri) => tri.area > 1e-8);
+  const zMin = nonzero.length ? Math.min(...nonzero.map((tri) => tri.z)) : 0;
+  const zMax = nonzero.length ? Math.max(...nonzero.map((tri) => tri.z)) : 0;
+  const rMin = nonzero.length ? Math.min(...nonzero.map((tri) => tri.minRadius)) : 0;
+  const rMax = nonzero.length ? Math.max(...nonzero.map((tri) => tri.maxRadius)) : 0;
+  const area = nonzero.reduce((sum, tri) => sum + tri.area, 0);
+  console.log(`${label} planar top triangles=${nonzero.length} z=[${zMin.toFixed(3)},${zMax.toFixed(3)}] radius=[${rMin.toFixed(3)},${rMax.toFixed(3)}] area=${area.toFixed(3)}`);
+}
+
 function reportTriangleCentroids(label: string, mesh: TriMesh, triangleIds: number[], target: TriMesh, bvh: BvhNode): void {
   const scored = triangleIds
     .map((id) => {
@@ -250,6 +275,30 @@ function reportTriangleCentroids(label: string, mesh: TriMesh, triangleIds: numb
   console.log(`${label} centroid p50=${q(.5).toFixed(3)} p90=${q(.9).toFixed(3)} p99=${q(.99).toFixed(3)} max=${q(1).toFixed(3)} outliers>2=${outliers.length} bounds=${JSON.stringify(outlierBounds)} maxima=${JSON.stringify(maxima)}`);
 }
 
+function reportHeightBands(label: string, mesh: TriMesh, target: TriMesh, bvh: BvhNode, bandCount = 12): void {
+  const bounds = boundsOf(mesh.positions);
+  const span = Math.max(1e-9, bounds.max[2] - bounds.min[2]);
+  const bands: { distances: number[]; minZ: number; maxZ: number }[] = Array.from({ length: bandCount }, (_, i) => ({
+    distances: [],
+    minZ: bounds.min[2] + span * i / bandCount,
+    maxZ: bounds.min[2] + span * (i + 1) / bandCount,
+  }));
+  for (const [a, b, c] of mesh.triangles) {
+    const points = [mesh.positions[a], mesh.positions[b], mesh.positions[c]];
+    if (triangleArea(...points) <= 1e-8) continue;
+    const point = points.reduce((sum, p) => [sum[0] + p[0] / 3, sum[1] + p[1] / 3, sum[2] + p[2] / 3] as Vec3, [0, 0, 0] as Vec3);
+    const index = Math.min(bandCount - 1, Math.max(0, Math.floor((point[2] - bounds.min[2]) / span * bandCount)));
+    bands[index].distances.push(distanceToSurface(point, target, bvh));
+  }
+  console.log(`${label} height bands:`);
+  for (const band of bands) {
+    band.distances.sort((a, b) => a - b);
+    if (!band.distances.length) continue;
+    const q = (p: number) => band.distances[Math.floor((band.distances.length - 1) * p)];
+    console.log(`  z=[${band.minZ.toFixed(2)},${band.maxZ.toFixed(2)}] n=${band.distances.length} p50=${q(.5).toFixed(3)} p99=${q(.99).toFixed(3)} max=${q(1).toFixed(3)}`);
+  }
+}
+
 const truth = readGlb(truthPath), vm = readVm(vmPath);
 console.log(`truth ${truth.positions.length}v ${truth.triangles.length}t ${JSON.stringify(boundsOf(truth.positions))}`);
 console.log(`vm ${vm.positions.length}v ${vm.triangles.length}t ${JSON.stringify(boundsOf(vm.positions))}`);
@@ -257,10 +306,18 @@ areaSummary("truth", truth);
 areaSummary("vm", vm);
 axialFanSummary("truth", truth);
 axialFanSummary("vm", vm);
+topPlanarSummary("truth", truth);
+topPlanarSummary("vm", vm);
 console.log("building triangle BVHs...");
 const truthBvh = buildBvh(truth), vmBvh = buildBvh(vm);
 report("truth points -> VM surface", truth.positions, vm, vmBvh);
 report("VM points -> truth surface", vm.positions, truth, truthBvh);
+if (process.argv.includes("--centroids"))
+  reportTriangleCentroids("truth -> VM surface", truth, truth.triangles.map((_, i) => i), vm, vmBvh);
+if (process.argv.includes("--regions")) {
+  reportHeightBands("truth -> VM", truth, vm, vmBvh);
+  reportHeightBands("VM -> truth", vm, truth, truthBvh);
+}
 for (const [index, component] of connectedComponents(vm).entries()) {
   console.log(`VM component ${index + 1}: ${component.vertices.length}v ${component.triangleIds.length}t ${JSON.stringify(boundsOf(component.vertices))}`);
   report(`VM component ${index + 1} -> truth surface`, component.vertices, truth, truthBvh);
