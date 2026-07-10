@@ -552,6 +552,93 @@ export interface TriSoup {
 }
 
 /**
+ * Make a geometrically closed mesh consistently oriented without moving it.
+ *
+ * Geometry Nodes can intentionally carry coincident vertices and collapsed
+ * faces (the vase's axial fans do both), so adjacency is built from lightly
+ * welded position keys rather than raw vertex indices. Open or non-manifold
+ * inputs are left untouched. For each closed component, only the smaller
+ * parity set is flipped; this repairs a local winding patch without globally
+ * reversing an otherwise-correct shell or affecting fields evaluated earlier.
+ */
+export function orientClosedSurface(mesh: Mesh, eps = 1e-5): number {
+  if (mesh.faces.length < 4 || mesh.positions.length < 4) return 0;
+  const positionIds = new Map<string, number>();
+  const welded: number[] = new Array(mesh.positions.length);
+  const keyOf = (p: Vec3) => p.map((value) => Math.round(value / eps)).join("_");
+  for (let i = 0; i < mesh.positions.length; i++) {
+    const key = keyOf(mesh.positions[i]);
+    let id = positionIds.get(key);
+    if (id === undefined) {
+      id = positionIds.size;
+      positionIds.set(key, id);
+    }
+    welded[i] = id;
+  }
+
+  type Use = { face: number; direction: number };
+  const edgeUses = new Map<string, Use[]>();
+  const participating = new Set<number>();
+  for (let fi = 0; fi < mesh.faces.length; fi++) {
+    const raw = mesh.faces[fi].map((vi) => welded[vi]);
+    const ring: number[] = [];
+    for (const vi of raw) if (ring.at(-1) !== vi) ring.push(vi);
+    if (ring.length > 1 && ring[0] === ring.at(-1)) ring.pop();
+    if (ring.length < 3) continue;
+    // A repeated non-consecutive point is a self-touching polygon. Do not
+    // guess at its topology in an export-time orientation pass.
+    if (new Set(ring).size !== ring.length) return 0;
+    participating.add(fi);
+    for (let i = 0; i < ring.length; i++) {
+      const a = ring[i], b = ring[(i + 1) % ring.length];
+      const key = a < b ? `${a}_${b}` : `${b}_${a}`;
+      const uses = edgeUses.get(key) ?? [];
+      uses.push({ face: fi, direction: a < b ? 1 : -1 });
+      edgeUses.set(key, uses);
+    }
+  }
+  if (!participating.size || [...edgeUses.values()].some((uses) => uses.length !== 2 || uses[0].face === uses[1].face)) return 0;
+
+  const adjacency = new Map<number, { face: number; parity: number }[]>();
+  for (const fi of participating) adjacency.set(fi, []);
+  for (const uses of edgeUses.values()) {
+    const parity = uses[0].direction === uses[1].direction ? 1 : 0;
+    adjacency.get(uses[0].face)!.push({ face: uses[1].face, parity });
+    adjacency.get(uses[1].face)!.push({ face: uses[0].face, parity });
+  }
+
+  const parity = new Map<number, number>();
+  const flips = new Set<number>();
+  for (const seed of participating) {
+    if (parity.has(seed)) continue;
+    parity.set(seed, 0);
+    const queue = [seed];
+    const component: number[] = [];
+    for (let head = 0; head < queue.length; head++) {
+      const face = queue[head];
+      component.push(face);
+      for (const edge of adjacency.get(face) ?? []) {
+        const wanted = parity.get(face)! ^ edge.parity;
+        const found = parity.get(edge.face);
+        if (found === undefined) {
+          parity.set(edge.face, wanted);
+          queue.push(edge.face);
+        } else if (found !== wanted) {
+          return 0; // non-orientable component
+        }
+      }
+    }
+    const ones = component.filter((face) => parity.get(face) === 1);
+    const chosen = ones.length <= component.length - ones.length
+      ? ones
+      : component.filter((face) => parity.get(face) === 0);
+    for (const face of chosen) flips.add(face);
+  }
+  for (const fi of flips) mesh.faces[fi].reverse();
+  return flips.size;
+}
+
+/**
  * For shell-like meshes (vase / bin walls), ensure face windings give
  * predominantly outward radial normals. Solidify + Flip chains often leave the
  * outer wall inverted; FrontSide materials then look like an empty or inverted
@@ -593,6 +680,7 @@ export function toTriSoup(g: Geometry): TriSoup {
     mesh.faces.push([...face]);
     mesh.faceMaterial.push(source.faceMaterial[fi] ?? 0);
   }
+  orientClosedSurface(mesh);
   orientShellOutward(mesh);
   const normals = mesh.vertexNormals();
   const positions = new Float32Array(mesh.positions.length * 3);

@@ -2,7 +2,7 @@
 // built against our EvalAPI directly — no graph machinery needed).
 // Run: npx tsx tools/gnvm-nodetest.ts
 import { Field, Vec3 } from "../src/gnvm/core";
-import { Geometry, Mesh, toTriSoup, topologyOf } from "../src/gnvm/geometry";
+import { Geometry, Mesh, orientClosedSurface, toTriSoup, topologyOf } from "../src/gnvm/geometry";
 import { EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
 import { Evaluator, makeFieldCtx } from "../src/gnvm/evaluator";
 import "../src/gnvm/index"; // registers all handlers
@@ -688,6 +688,33 @@ function meshSignedAreaXY(m: Mesh): number {
       const crossesProfile = Math.abs(sm.positions[a][2] - sm.positions[b][2]) > 0.5;
       return !crossesProfile || e.faces.length === 2;
     }),
+  );
+  const ringAt = (z: number) => sm.positions
+    .map((p, i) => ({ p, i }))
+    .filter(({ p }) => Math.abs(p[2] - z) < 1e-6)
+    .sort((a, b) => Math.atan2(a.p[1], a.p[0]) - Math.atan2(b.p[1], b.p[0]))
+    .map(({ i }) => i);
+  sm.faces.push(ringAt(3), ringAt(0).reverse());
+  sm.faceMaterial.push(0, 0);
+  const repairedFaces = orientClosedSurface(sm);
+  const directedEdges = new Map<string, { direction: number; face: number }[]>();
+  for (let fi = 0; fi < sm.faces.length; fi++) {
+    const face = sm.faces[fi];
+    for (let i = 0; i < face.length; i++) {
+      const a = face[i], b = face[(i + 1) % face.length];
+      const key = a < b ? `${a}_${b}` : `${b}_${a}`;
+      const directions = directedEdges.get(key) ?? [];
+      directions.push({ direction: a < b ? 1 : -1, face: fi });
+      directedEdges.set(key, directions);
+    }
+  }
+  const windingConflicts = [...directedEdges.entries()].filter(
+    ([, edges]) => edges.length === 2 && edges[0].direction === edges[1].direction,
+  );
+  check(
+    "closed repeated EDGE extrude repairs endpoint-strip winding",
+    repairedFaces > 0 && windingConflicts.length === 0 && topologyOf(sm).edges.every((edge) => edge.faces.length === 2),
+    `repaired=${repairedFaces} conflicts=${windingConflicts.length} ${JSON.stringify(windingConflicts.slice(0, 6))}`,
   );
 }
 
