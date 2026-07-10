@@ -1,9 +1,12 @@
 """Run a Blender-vs-VM parity sweep's Blender side in one bpy session.
 
 Usage:
-  blender --background FILE.blend --python tools/parity_sweep.py -- OUT.json
+  blender --background FILE.blend --python tools/parity_sweep.py -- \
+    OUT.json [GLB_EXPORT_DIR] [OBJECT_NAME] [CASES.json]
 """
 import json
+import os
+import re
 import signal
 import sys
 import time
@@ -90,14 +93,14 @@ def material_face_vertex_counts(obj, mesh):
     }
 
 
-def find_drawer_modifier():
-    obj = bpy.data.objects.get("Procedural Drawer")
+def find_modifier(object_name):
+    obj = bpy.data.objects.get(object_name)
     if obj is None:
-        raise RuntimeError('object "Procedural Drawer" not found')
+        raise RuntimeError(f'object "{object_name}" not found')
     for mod in obj.modifiers:
         if mod.type == "NODES" and mod.node_group is not None:
             return obj, mod
-    raise RuntimeError('NODES modifier not found on "Procedural Drawer"')
+    raise RuntimeError(f'NODES modifier not found on "{object_name}"')
 
 
 def modifier_interface(mod):
@@ -152,6 +155,30 @@ def evaluate_case(obj, mod, name_to_identifier, saved_values, case):
         ev.to_mesh_clear()
 
 
+def export_case_glb(obj, path):
+    for scene_obj in bpy.context.view_layer.objects:
+        scene_obj.select_set(False)
+    obj.hide_set(False)
+    obj.hide_render = False
+    obj.hide_viewport = False
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.export_scene.gltf(
+        filepath=path,
+        export_format="GLB",
+        use_selection=True,
+        export_apply=True,
+        export_yup=True,
+        export_materials="EXPORT",
+        export_normals=True,
+    )
+
+
+def case_filename(index, name, extension):
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+    return f"{index:02d}-{slug}.{extension}"
+
+
 def estimate_cosmetic_geometry(obj, mod, name_to_identifier, saved_values):
     case = {"name": "DEFAULT", "overrides": {}}
     set_modifier_inputs(mod, name_to_identifier, saved_values, {})
@@ -181,19 +208,32 @@ def estimate_cosmetic_geometry(obj, mod, name_to_identifier, saved_values):
 
 
 def main():
-    out_path = argv_after_dash()[0]
-    obj, mod = find_drawer_modifier()
+    args = argv_after_dash()
+    out_path = args[0]
+    export_dir = args[1] if len(args) > 1 else None
+    object_name = args[2] if len(args) > 2 else "Procedural Drawer"
+    cases = CASES
+    if len(args) > 3:
+        with open(args[3], "r", encoding="utf-8") as handle:
+            cases = json.load(handle)
+    if export_dir:
+        os.makedirs(export_dir, exist_ok=True)
+    obj, mod = find_modifier(object_name)
     name_to_identifier, saved_values = modifier_interface(mod)
     results = []
     cosmetic_geometry = estimate_cosmetic_geometry(obj, mod, name_to_identifier, saved_values)
 
     old_handler = signal.signal(signal.SIGALRM, alarm_handler)
     try:
-        for case in CASES:
+        for case_index, case in enumerate(cases):
             print("SWEEP", case["name"], flush=True)
             signal.alarm(TIMEOUT_SECONDS)
             try:
                 result = evaluate_case(obj, mod, name_to_identifier, saved_values, case)
+                if export_dir:
+                    filename = case_filename(case_index, case["name"], "glb")
+                    export_case_glb(obj, os.path.join(export_dir, filename))
+                    result["export"] = filename
                 print(
                     f"  -> {result['verts']} verts, {result['faces']} faces, {result['elapsed_ms']} ms",
                     flush=True,
@@ -235,6 +275,7 @@ def main():
         "node_group": mod.node_group.name,
         "saved_values": saved_values,
         "results": results,
+        "export_dir": export_dir,
         "cosmetic_geometry": cosmetic_geometry,
     }
     with open(out_path, "w", encoding="utf-8") as handle:

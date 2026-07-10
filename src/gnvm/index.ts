@@ -33,6 +33,8 @@ export interface RunResult {
 export interface Dump {
   node_groups: Program;
   objects?: { name: string; modifiers?: { type: string; node_group?: string; input_values?: Record<string, any> }[] }[];
+  materials?: Record<string, { nodes?: { type: string; inputs?: { name: string; identifier: string; linked: boolean; value: unknown }[] }[] }>;
+  images?: Record<string, unknown>;
 }
 
 // Find the modifier group name for an object (or the first NODES modifier in the file).

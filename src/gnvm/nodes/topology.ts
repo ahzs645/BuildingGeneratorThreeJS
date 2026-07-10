@@ -7,21 +7,21 @@ import { reg } from "../registry";
 // Face Neighbors: Vertex Count = verts in the face; Face Count = adjacent faces.
 // The subdivision uses Vertex Count==4 to find quad faces to split.
 reg("GeometryNodeInputMeshFaceNeighbors", () => ({
-  "Vertex Count": Field.perElem((i, ctx) => (ctx.faceVertCount ? ctx.faceVertCount(i) : 0)),
-  "Face Count": Field.perElem((i, ctx) => (ctx.faceNeighborCount ? ctx.faceNeighborCount(i) : 0)),
+  "Vertex Count": Field.perElem((i, ctx) => (ctx.faceVertCount ? ctx.faceVertCount(i) : 0)).tagged("FACE"),
+  "Face Count": Field.perElem((i, ctx) => (ctx.faceNeighborCount ? ctx.faceNeighborCount(i) : 0)).tagged("FACE"),
 }));
 
 // Edge Neighbors: how many faces use this edge (2 = interior, 1 = boundary).
 reg("GeometryNodeInputMeshEdgeNeighbors", () => ({
-  "Face Count": Field.perElem((i, ctx) => (ctx.edgeFaceCount ? ctx.edgeFaceCount(i) : 0)),
+  "Face Count": Field.perElem((i, ctx) => (ctx.edgeFaceCount ? ctx.edgeFaceCount(i) : 0)).tagged("EDGE"),
 }));
 
 // Edge Vertices: endpoint indices + positions of each edge.
 reg("GeometryNodeInputMeshEdgeVertices", () => ({
-  "Vertex Index 1": Field.perElem((i, ctx) => (ctx.edgeVerts ? ctx.edgeVerts(i)[0] : 0)),
-  "Vertex Index 2": Field.perElem((i, ctx) => (ctx.edgeVerts ? ctx.edgeVerts(i)[1] : 0)),
-  "Position 1": Field.perElem((i, ctx) => (ctx.edgeVerts && ctx.position ? ctx.position(ctx.edgeVerts(i)[0]) : [0, 0, 0])),
-  "Position 2": Field.perElem((i, ctx) => (ctx.edgeVerts && ctx.position ? ctx.position(ctx.edgeVerts(i)[1]) : [0, 0, 0])),
+  "Vertex Index 1": Field.perElem((i, ctx) => (ctx.edgeVerts ? ctx.edgeVerts(i)[0] : 0)).tagged("EDGE"),
+  "Vertex Index 2": Field.perElem((i, ctx) => (ctx.edgeVerts ? ctx.edgeVerts(i)[1] : 0)).tagged("EDGE"),
+  "Position 1": Field.perElem((i, ctx) => (ctx.edgeVerts && ctx.position ? ctx.position(ctx.edgeVerts(i)[0]) : [0, 0, 0])).tagged("EDGE"),
+  "Position 2": Field.perElem((i, ctx) => (ctx.edgeVerts && ctx.position ? ctx.position(ctx.edgeVerts(i)[1]) : [0, 0, 0])).tagged("EDGE"),
 }));
 
 // Mesh Island: connected-component id + total count. Drives "choose bin".

@@ -124,6 +124,18 @@ function meshSignedAreaXY(m: Mesh): number {
   check("CombineXYZ -> (2,3,4)", approx(v.value as number[], [2, 3, 4]));
 }
 
+// (B2) Align Euler antiparallel AUTO pivot remains a proper rotation. A tiny
+// Mesh Circle cosine at -Y must not normalize to a zero axis / reflection.
+{
+  const rotation = runNode(
+    "FunctionNodeAlignEulerToVector",
+    { Vector: [-3.7e-16, -1, 0], Factor: 1 },
+    { axis: "Y", pivot_axis: "AUTO" },
+  ).Rotation as Field;
+  const value = rotation.array({ size: 1, domain: "POINT" })[0] as Vec3;
+  check("AlignEuler antiparallel Y uses stable Z pivot", Math.abs(Math.abs(value[2]) - Math.PI) < 1e-6 && Math.abs(value[0]) < 1e-6, JSON.stringify(value));
+}
+
 // (C) MeshCube size (1,1,1) -> 8 verts, spans +/-0.5
 {
   const g = runNode("GeometryNodeMeshCube", { Size: [1, 1, 1], "Vertices X": 2, "Vertices Y": 2, "Vertices Z": 2 }).Mesh as Geometry;

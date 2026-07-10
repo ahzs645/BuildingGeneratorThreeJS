@@ -61,13 +61,27 @@
       <div class="eyebrow">Procedural Studio</div>
       <h1>Blender geometry-nodes,<br /><span class="grad">running on the web.</span></h1>
       <p class="lede">
-        Three procedural generators, ported from Blender to Three.js by two routes: a
+        A growing set of procedural generators, ported from Blender to Three.js by two routes: a
         <b>bake pipeline</b> (evaluate the node graph in Blender → glTF) and a from-scratch
         <b>geometry-nodes VM</b> that executes the dumped node graph directly in TypeScript —
         no Blender at runtime, live sliders, static-deployable.
       </p>
 
       <div class="grid">
+        <a class="card" href="/blend-import.html">
+          <span class="tag">Importer · Local</span>
+          <h2>BlendBridge <span class="badge">new</span></h2>
+          <p>Drop in a Blender file. Extract its Geometry Nodes graph, inspect browser coverage, generate controls, run a worker-isolated preview, and export reusable graph JSON.</p>
+          <span class="go">Import a .blend</span>
+        </a>
+
+        <a class="card" href="/dojo-gallery.html">
+          <span class="tag">Node Dojo · Gallery</span>
+          <h2>More Node Dojo Studies <span class="badge">new</span></h2>
+          <p>Chrome Crayon, Schoen Gyroid, Schwarz P-Surface, the complete procedural hat, and the recursive bin in one selectable browser viewer. Original, studio, and wireframe views.</p>
+          <span class="go">Open gallery</span>
+        </a>
+
         <a class="card" href="/building.html">
           <span class="tag">Hand-ported</span>
           <h2>Hong Kong Building</h2>

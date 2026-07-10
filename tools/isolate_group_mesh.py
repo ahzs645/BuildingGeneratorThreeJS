@@ -68,6 +68,8 @@ faces = [list(p.vertices) for p in m.polygons]
 print(f"RESULT: {len(pos)} verts, {len(faces)} faces")
 with open(out_path, "w") as f:
     json.dump({"group": group_name, "shape": shape, "verts": pos, "faces": faces,
+               "face_materials": [p.material_index for p in m.polygons],
+               "materials": [material.name if material else None for material in m.materials],
                "defaults": {k: (list(v) if hasattr(v, "__len__") and not isinstance(v, str) else v) for k, v in defaults.items()}}, f)
 ev.to_mesh_clear()
 print("ISOLATE_OK ->", out_path)

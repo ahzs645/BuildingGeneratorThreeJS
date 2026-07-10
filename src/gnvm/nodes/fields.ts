@@ -1,5 +1,5 @@
 // Field-plumbing nodes: sample-at-index, evaluate-on-domain, align-euler.
-import { Field, Vec3, Elem, Domain, asNum, asVec3, vnorm, vcross, vdot } from "../core";
+import { Field, Vec3, Elem, Domain, asNum, asVec3, vnorm, vcross, vdot, vlen } from "../core";
 import { reg } from "../registry";
 
 const DOMAINS = new Set<Domain>(["POINT", "EDGE", "FACE", "CORNER", "CURVE", "INSTANCE"]);
@@ -87,7 +87,12 @@ reg("FunctionNodeAlignEulerToVector", (api) => {
         const d = Math.max(-1, Math.min(1, vdot(a, t)));
         let ang = Math.acos(d) * f;
         let axis = vcross(a, t);
-        if (axis[0] === 0 && axis[1] === 0 && axis[2] === 0) axis = Math.abs(a[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+        if (vlen(axis) <= 1e-12) {
+          // Antiparallel vectors have infinitely many valid rotation axes.
+          // Blender's AUTO pivot keeps Z stable when aligning Y (the radial
+          // array's -Y point); choosing X reflects the instanced curve in Z.
+          axis = axisSel === "Y" ? [0, 0, 1] : axisSel === "Z" ? [1, 0, 0] : [0, 1, 0];
+        }
         out[i] = matrixToEulerXYZ(axisAngleMatrix(axis, ang));
       }
       return out;

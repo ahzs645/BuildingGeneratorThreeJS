@@ -71,6 +71,8 @@ if (outPath && m) {
     group: groupName, shape,
     verts: m.positions.map((p) => p.map((c) => Math.round(c * 1e5) / 1e5)),
     faces: m.faces,
+    face_materials: m.faceMaterial,
+    materials: m.materialSlots,
   }));
   console.log("->", outPath);
 }

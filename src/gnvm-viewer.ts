@@ -36,30 +36,48 @@ const grid = new THREE.GridHelper(400, 40, 0x2a3340, 0x161b21);
 (grid.material as THREE.Material).opacity = 0.4;
 scene.add(grid);
 
-// Material palette keyed by the .blend material name the VM assigns per face.
-// Base colors taken from the dump's Principled BSDF/Emission nodes:
-//   '3D' = blue bins, '3D.004' = red highlight, 'emit*' = white glow, 'mat' = body gray.
-function materialFor(name: string | null): THREE.Material {
-  const n = (name ?? "").toLowerCase();
-  if (n === "3d.004" || n.includes("red")) {
-    return new THREE.MeshStandardMaterial({ color: 0xff2b2b, emissive: 0x7a0000, emissiveIntensity: 1.2, roughness: 0.5 });
+function materialFor(dump: Dump, name: string | null): THREE.Material {
+  const tree = name ? dump.materials?.[name] : undefined;
+  const principled = tree?.nodes?.find((node) => node.type === "ShaderNodeBsdfPrincipled");
+  const emission = tree?.nodes?.find((node) => node.type === "ShaderNodeEmission");
+  const input = (node: typeof principled, identifier: string, fallback: unknown) =>
+    node?.inputs?.find((socket) => socket.identifier === identifier || socket.name === identifier)?.value ?? fallback;
+  const rgb = (value: unknown, fallback: [number, number, number]): THREE.Color => {
+    const color = Array.isArray(value) ? value : fallback;
+    return new THREE.Color().setRGB(Number(color[0] ?? fallback[0]), Number(color[1] ?? fallback[1]), Number(color[2] ?? fallback[2]));
+  };
+
+  if (emission) {
+    const color = rgb(input(emission, "Color", [1, 1, 1, 1]), [1, 1, 1]);
+    const strength = Number(input(emission, "Strength", 1));
+    return new THREE.MeshStandardMaterial({
+      color,
+      emissive: color,
+      emissiveIntensity: strength,
+      roughness: 1,
+      metalness: 0,
+      side: THREE.DoubleSide,
+    });
   }
-  if (n === "3d") {
-    return new THREE.MeshStandardMaterial({ color: 0x0838ff, roughness: 0.45, metalness: 0.05 });
-  }
-  if (n.startsWith("emit")) {
-    return new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xbfc8d4, emissiveIntensity: 0.6, roughness: 0.7 });
-  }
-  if (n.includes("chrome") || n.includes("metal")) {
-    return new THREE.MeshStandardMaterial({ color: 0xcfd6dd, metalness: 0.9, roughness: 0.2 });
-  }
-  if (n.includes("bed")) {
-    return new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.85, metalness: 0.0 });
-  }
-  return new THREE.MeshStandardMaterial({ color: 0x8d97a3, metalness: 0.05, roughness: 0.6 });
+
+  // Unassigned faces and unsupported group-based shaders follow glTF's white
+  // default instead of the old hard-coded gray drawer material.
+  const base = rgb(input(principled, "Base Color", [1, 1, 1, 1]), [1, 1, 1]);
+  const alpha = Number(input(principled, "Alpha", 1));
+  const emissiveColor = rgb(input(principled, "Emission Color", [0, 0, 0, 1]), [0, 0, 0]);
+  return new THREE.MeshStandardMaterial({
+    color: base,
+    metalness: Number(input(principled, "Metallic", 0)),
+    roughness: Number(input(principled, "Roughness", name?.includes("bed") ? 0.9 : 0.5)),
+    emissive: emissiveColor,
+    emissiveIntensity: Number(input(principled, "Emission Strength", 1)),
+    opacity: alpha,
+    transparent: alpha < 1,
+    side: THREE.DoubleSide,
+  });
 }
 
-function soupToMesh(soup: TriSoup): THREE.Mesh {
+function soupToMesh(dump: Dump, soup: TriSoup): THREE.Mesh {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(soup.positions, 3));
   geo.setAttribute("normal", new THREE.BufferAttribute(soup.normals, 3));
@@ -67,9 +85,9 @@ function soupToMesh(soup: TriSoup): THREE.Mesh {
   const mats: THREE.Material[] = [];
   soup.groups.forEach((g, i) => {
     geo.addGroup(g.start, g.count, i);
-    mats.push(materialFor(g.material));
+    mats.push(materialFor(dump, g.material));
   });
-  if (!soup.groups.length) mats.push(materialFor(null));
+  if (!soup.groups.length) mats.push(materialFor(dump, null));
   return new THREE.Mesh(geo, mats.length > 1 ? mats : mats[0]);
 }
 
@@ -134,7 +152,7 @@ async function main() {
       scene.remove(current);
       (current.geometry as THREE.BufferGeometry).dispose();
     }
-    current = soupToMesh(res.soup);
+    current = soupToMesh(dump, res.soup);
     current.rotation.x = -Math.PI / 2; // Blender Z-up -> three.js Y-up
     scene.add(current);
     if (!framed) { frame(current); framed = true; }

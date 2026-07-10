@@ -1,0 +1,11 @@
+[
+  { "name": "baseline", "overrides": {} },
+  { "name": "Resolution=0.3", "overrides": { "Resolution": 0.3 } },
+  { "name": "Resolution=0.6", "overrides": { "Resolution": 0.6 } },
+  { "name": "Wall thiccness=20", "overrides": { "Wall thiccness": 20 } },
+  { "name": "Wall thiccness=50", "overrides": { "Wall thiccness": 50 } },
+  { "name": "bubble density=30", "overrides": { "bubble density": 30 } },
+  { "name": "bubble density=80", "overrides": { "bubble density": 80 } },
+  { "name": "bottom cut=15", "overrides": { "bottom cut": 15 } },
+  { "name": "drop=false", "overrides": { "drop": false } }
+]

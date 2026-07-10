@@ -825,7 +825,6 @@ function capBoxClip(clipped: Mesh, source: Mesh, keepFace: boolean[], box: { min
   };
   const maxLoop = Math.max(...loops.map((c) => loopSpan(c.spline.points)));
   if (maxLoop > diag * 0.35 && loops.length < 2) return;
-  const largeNested = maxLoop > diag * 0.35 && loops.length >= 2;
   const adjacentFaces = active.map((c) => c.face);
   const materialCounts = new Map<number, number>();
   for (const fi of adjacentFaces) {
@@ -837,16 +836,19 @@ function capBoxClip(clipped: Mesh, source: Mesh, keepFace: boolean[], box: { min
     if (count > (materialCounts.get(capMaterial) ?? 0)) capMaterial = mat;
   }
   const attrSourceFace = adjacentFaces[0];
+  const capAttributeValues = new Map<string, Elem>();
+  for (const [name, a] of clipped.attributes)
+    if (a.domain === "FACE") capAttributeValues.set(name, a.data[attrSourceFace] ?? 0);
 
-  // With coarse face-level clipping, a large shell's surviving boundary is a
-  // sampled approximation of the true intersection contour. Keep its cap on
-  // the interior-most sampled plane so it cannot protrude past either wall;
-  // small local caps retain the exact cutter plane.
-  const loopCoords = loops.flatMap((loop) => loop.verts.map((vi) => clipped.positions[vi][plane.axis]));
+  // A minimum-side cut crosses into the mesh, so Blender's cap belongs on the
+  // exact cutter plane (important for the vase bottom cut). At a maximum-side
+  // boundary the face-level fallback can instead identify the shell's existing
+  // nested mouth as a cut; keep that large mouth on its innermost sampled ring
+  // rather than stretching it up to the box limit.
+  const largeNested = maxLoop > diag * 0.35 && loops.length >= 2;
   const clipsAtMax = Math.abs(plane.coord - box.max[plane.axis]) <= Math.abs(plane.coord - box.min[plane.axis]);
-  const capCoord = largeNested
-    ? clipsAtMax ? Math.min(...loopCoords) : Math.max(...loopCoords)
-    : plane.coord;
+  const loopCoords = loops.flatMap((loop) => loop.verts.map((vi) => clipped.positions[vi][plane.axis]));
+  const capCoord = largeNested && clipsAtMax ? Math.min(...loopCoords) : plane.coord;
 
   const projectedBySource = new Map<number, number>();
   const projectedKeyToVert = new Map<string, number>();
@@ -874,8 +876,19 @@ function capBoxClip(clipped: Mesh, source: Mesh, keepFace: boolean[], box: { min
     loopSplines.push({ points: pts, cyclic: true });
   }
 
+  const mappedFaces = clipped.faces.map((f) => f.map((vi) => boundaryVerts.has(vi) ? projectVert(vi) : vi));
+  const adjacentFaceSet = new Set(adjacentFaces);
+  const overlapsCap = (fi: number, f: number[]) =>
+    largeNested && clipsAtMax && adjacentFaceSet.has(fi) &&
+    f.every((vi) => Math.abs(clipped.positions[vi][plane.axis] - capCoord) <= 1e-6);
+  const keptFaceIndexes: number[] = [];
+  for (let fi = 0; fi < mappedFaces.length; fi++) if (!overlapsCap(fi, mappedFaces[fi])) keptFaceIndexes.push(fi);
+  clipped.faces = keptFaceIndexes.map((fi) => mappedFaces[fi]);
+  clipped.faceMaterial = keptFaceIndexes.map((fi) => clipped.faceMaterial[fi] ?? 0);
+  for (const [name, a] of clipped.attributes) {
+    if (a.domain === "FACE") clipped.attributes.set(name, { domain: "FACE", data: keptFaceIndexes.map((fi) => a.data[fi] ?? 0) });
+  }
   const originalFaceCount = clipped.faces.length;
-  clipped.faces = clipped.faces.map((f) => f.map((vi) => boundaryVerts.has(vi) ? projectVert(vi) : vi));
 
   for (const [name, a] of clipped.attributes) {
     if (a.domain === "POINT") {
@@ -906,7 +919,7 @@ function capBoxClip(clipped: Mesh, source: Mesh, keepFace: boolean[], box: { min
     if (a.domain !== "FACE") continue;
     const data = [...a.data];
     while (data.length < originalFaceCount) data.push(0);
-    for (let i = 0; i < newFaces.length; i++) data.push(a.data[attrSourceFace] ?? 0);
+    for (let i = 0; i < newFaces.length; i++) data.push(capAttributeValues.get(name) ?? 0);
     clipped.attributes.set(name, { domain: "FACE", data });
   }
 }

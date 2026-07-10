@@ -65,10 +65,6 @@ function show(g: THREE.Group) {
 async function loadVariant(base: string, v: Variant): Promise<THREE.Group> {
   if (cache.has(v.id)) return cache.get(v.id)!;
   const gltf = await loader.loadAsync(`${base}/${v.file}`);
-  gltf.scene.traverse((o) => {
-    const m = o as THREE.Mesh;
-    if (m.isMesh) { const mat = m.material as THREE.MeshStandardMaterial; if (mat && "roughness" in mat) { mat.roughness = 0.55; } }
-  });
   cache.set(v.id, gltf.scene);
   return gltf.scene;
 }

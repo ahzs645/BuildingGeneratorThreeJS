@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Node Dojo Gallery · Blender geometry nodes in the browser</title>
+    <style>
+      :root { color-scheme: dark; --accent: #8fcfff; --panel: rgba(10, 13, 17, .86); --line: rgba(255,255,255,.1); }
+      * { box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #080a0d; color: #dfe7ed; font-family: Inter, system-ui, sans-serif; }
+      #app { width: 100vw; height: 100vh; display: block; }
+      .top { position: fixed; z-index: 10; top: 20px; left: 22px; pointer-events: none; text-shadow: 0 2px 8px #000; }
+      .eyebrow { color: var(--accent); font: 700 10px/1 ui-monospace, monospace; letter-spacing: .2em; text-transform: uppercase; }
+      h1 { margin: 8px 0 5px; font-size: clamp(22px, 3vw, 34px); letter-spacing: -.035em; }
+      #subtitle { max-width: 55ch; color: #92a0ad; font-size: 12px; line-height: 1.5; }
+      #panel { position: fixed; z-index: 20; top: 18px; right: 18px; width: min(330px, calc(100vw - 36px)); max-height: calc(100vh - 36px); overflow: auto; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); backdrop-filter: blur(18px); box-shadow: 0 18px 55px rgba(0,0,0,.35); }
+      #models { display: grid; gap: 7px; }
+      .model { width: 100%; text-align: left; color: #aab5be; background: rgba(255,255,255,.025); border: 1px solid transparent; border-radius: 10px; padding: 10px 11px; cursor: pointer; }
+      .model:hover { color: #fff; border-color: rgba(255,255,255,.14); }
+      .model.active { color: #fff; border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 9%, transparent); }
+      .model strong { display: block; font-size: 13px; font-weight: 650; }
+      .model span { display: block; margin-top: 3px; color: #71808c; font: 10px/1.35 ui-monospace, monospace; }
+      .controls { display: flex; gap: 6px; margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--line); }
+      .controls button, .links a { color: #96a5b1; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.025); padding: 7px 9px; font: 600 10px/1 ui-monospace, monospace; text-decoration: none; cursor: pointer; }
+      .controls button.active, .controls button:hover, .links a:hover { color: #fff; border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+      .links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+      #status { position: fixed; z-index: 10; left: 22px; bottom: 18px; color: #8795a0; font: 11px/1.5 ui-monospace, monospace; text-shadow: 0 2px 8px #000; }
+      #status .ok { color: #9fe0a4; }
+      #status .err { color: #ff9b9b; }
+      @media (max-width: 700px) {
+        .top { top: 14px; left: 14px; }
+        .top #subtitle { display: none; }
+        #panel { top: auto; right: 10px; bottom: 10px; left: 10px; width: auto; max-height: 44vh; }
+        #status { left: 14px; bottom: calc(44vh + 22px); }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="app"></canvas>
+    <div class="top">
+      <div class="eyebrow">Node Dojo → browser</div>
+      <h1 id="title">Gallery</h1>
+      <div id="subtitle">Blender-evaluated Geometry Nodes, presented as portable glTF.</div>
+    </div>
+    <aside id="panel">
+      <div id="models"></div>
+      <div class="controls" aria-label="View style">
+        <button type="button" data-style="original">original</button>
+        <button type="button" data-style="studio" class="active">studio</button>
+        <button type="button" data-style="wireframe">wire</button>
+        <button type="button" id="spin" class="active">spin</button>
+        <button type="button" id="reset">reset</button>
+      </div>
+      <div class="links">
+        <a href="/">studio home</a>
+        <a href="/gnvm-viewer.html">live bin VM</a>
+        <a href="/vase-compare.html?view=side-by-side">vase compare</a>
+      </div>
+    </aside>
+    <div id="status">loading…</div>
+    <script type="module" src="/src/dojo-gallery.ts"></script>
+  </body>
+</html>

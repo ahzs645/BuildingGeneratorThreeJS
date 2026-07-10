@@ -2,7 +2,7 @@
 // Faithful-enough Blender semantics (region + individual extrude, domain-aware
 // delete/separate, weld, flip).
 import { Field, Vec3, Elem, asVec3, asNum, vadd, vscale, vnorm } from "../core";
-import { Geometry, Mesh, buildTopology } from "../geometry";
+import { Geometry, Mesh, buildTopology, invalidateMeshCaches } from "../geometry";
 import { reg } from "../registry";
 import { makeFieldCtx } from "../evaluator";
 
@@ -184,7 +184,13 @@ reg("GeometryNodeFlipFaces", (api) => {
   if (g.mesh) {
     const ctx = makeFieldCtx(g, "FACE");
     const sel = api.field("Selection").array(ctx);
-    for (let fi = 0; fi < g.mesh.faces.length; fi++) if (asNum(sel[fi] ?? 1)) g.mesh.faces[fi].reverse();
+    let flipped = false;
+    for (let fi = 0; fi < g.mesh.faces.length; fi++) {
+      if (!asNum(sel[fi] ?? 1)) continue;
+      g.mesh.faces[fi].reverse();
+      flipped = true;
+    }
+    if (flipped) invalidateMeshCaches(g.mesh);
   }
   return { Mesh: g };
 });

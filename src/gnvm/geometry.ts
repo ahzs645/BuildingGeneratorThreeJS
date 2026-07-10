@@ -138,8 +138,9 @@ export interface Topology {
 // assignment), DeleteGeometry EDGE (edges assignment), FlipFaces (face-row
 // reverse), and mergeMeshInto's EDGE-attribute reconciliation (canonical keys
 // before append). Cache validation records array identities/counts plus face
-// and loose-edge order stamps, so assignments, appends, and the audited face
-// reverse invalidate without turning hot mesh arrays into accessor/proxy arrays.
+// and counts, so assignments and appends invalidate without turning hot mesh
+// arrays into accessor/proxy arrays. The audited in-place face reversals call
+// invalidateMeshCaches explicitly.
 // The audit found no in-place Vec3 coordinate writes; if those are added later
 // they must assign a fresh positions array or explicitly invalidate the cache.
 interface TopologyCacheMeta {
@@ -149,7 +150,6 @@ interface TopologyCacheMeta {
   positionCount: number;
   faceCount: number;
   edgeCount: number;
-  stamp: number;
 }
 
 interface VertexNormalsCacheMeta {
@@ -157,7 +157,6 @@ interface VertexNormalsCacheMeta {
   faces: number[][];
   positionCount: number;
   faceCount: number;
-  stamp: number;
 }
 
 const topologyCache = new WeakMap<Mesh, Topology>();
@@ -165,36 +164,11 @@ const topologyCacheMeta = new WeakMap<Mesh, TopologyCacheMeta>();
 const vertexNormalsCache = new WeakMap<Mesh, Vec3[]>();
 const vertexNormalsCacheMeta = new WeakMap<Mesh, VertexNormalsCacheMeta>();
 
-function invalidatePositionCache(mesh: Mesh): void {
+export function invalidateMeshCaches(mesh: Mesh): void {
   topologyCache.delete(mesh);
   topologyCacheMeta.delete(mesh);
   vertexNormalsCache.delete(mesh);
   vertexNormalsCacheMeta.delete(mesh);
-}
-
-function mixStamp(h: number, n: number): number {
-  return Math.imul(h ^ (n | 0), 16777619) >>> 0;
-}
-
-function faceOrderStamp(mesh: Mesh): number {
-  let h = 2166136261;
-  h = mixStamp(h, mesh.faces.length);
-  for (const f of mesh.faces) {
-    h = mixStamp(h, f.length);
-    for (const vi of f) h = mixStamp(h, vi);
-  }
-  return h;
-}
-
-function topologyOrderStamp(mesh: Mesh): number {
-  let h = faceOrderStamp(mesh);
-  h = mixStamp(h, mesh.positions.length);
-  h = mixStamp(h, mesh.edges.length);
-  for (const [a, b] of mesh.edges) {
-    h = mixStamp(h, a);
-    h = mixStamp(h, b);
-  }
-  return h;
 }
 
 function computeVertexNormals(mesh: Mesh): Vec3[] {
@@ -311,10 +285,8 @@ function vertexNormalsOf(mesh: Mesh): Vec3[] {
     meta.positionCount === mesh.positions.length &&
     meta.faceCount === mesh.faces.length
   ) {
-    const stamp = faceOrderStamp(mesh);
-    if (meta.stamp === stamp) return cached;
+    return cached;
   }
-  const stamp = faceOrderStamp(mesh);
   const normals = computeVertexNormals(mesh);
   vertexNormalsCache.set(mesh, normals);
   vertexNormalsCacheMeta.set(mesh, {
@@ -322,7 +294,6 @@ function vertexNormalsOf(mesh: Mesh): Vec3[] {
     faces: mesh.faces,
     positionCount: mesh.positions.length,
     faceCount: mesh.faces.length,
-    stamp,
   });
   return normals;
 }
@@ -340,10 +311,8 @@ export function topologyOf(mesh: Mesh): Topology {
     meta.faceCount === mesh.faces.length &&
     meta.edgeCount === mesh.edges.length
   ) {
-    const stamp = topologyOrderStamp(mesh);
-    if (meta.stamp === stamp) return cached;
+    return cached;
   }
-  const stamp = topologyOrderStamp(mesh);
   const topo = computeTopology(mesh);
   topologyCache.set(mesh, topo);
   topologyCacheMeta.set(mesh, {
@@ -353,7 +322,6 @@ export function topologyOf(mesh: Mesh): Topology {
     positionCount: mesh.positions.length,
     faceCount: mesh.faces.length,
     edgeCount: mesh.edges.length,
-    stamp,
   });
   return topo;
 }
@@ -363,8 +331,15 @@ export function buildTopology(mesh: Mesh): Topology {
 }
 
 function computeTopology(mesh: Mesh): Topology {
-  const ekey = (a: number, b: number) => (a < b ? `${a}_${b}` : `${b}_${a}`);
-  const emap = new Map<string, { verts: [number, number]; faces: number[] }>();
+  type EdgeKey = number | string;
+  const edgeKeyBase = 2 ** 21;
+  const ekey = (a: number, b: number): EdgeKey => {
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    // A numeric pair key is exact while both indices fit in 21 bits and avoids
+    // allocating a string for every face corner on normal browser-sized meshes.
+    return hi < edgeKeyBase ? lo * edgeKeyBase + hi : `${lo}_${hi}`;
+  };
+  const emap = new Map<EdgeKey, { verts: [number, number]; faces: number[] }>();
   const addFaceEdge = (a: number, b: number, fi: number) => {
     const k = ekey(a, b);
     let e = emap.get(k);
@@ -378,16 +353,17 @@ function computeTopology(mesh: Mesh): Topology {
   for (const [a, b] of mesh.edges) addFaceEdge(a, b, -1);
   const edges = [...emap.values()];
 
-  // face adjacency via shared edges
-  const faceNeighborSets: Set<number>[] = mesh.faces.map(() => new Set<number>());
-  for (const e of edges) for (const fa of e.faces) for (const fb of e.faces) if (fa !== fb) faceNeighborSets[fa].add(fb);
-  const faceNeighbors = faceNeighborSets.map((s) => s.size);
-
-  // union-find helper
-  const uf = (n: number, unions: [number, number][]) => {
+  // Most consumers only need canonical edges. Build adjacency and connected
+  // components lazily so an EDGE-domain field does not also allocate several
+  // full-mesh union/find and incidence tables.
+  const uf = (n: number, addUnions: (join: (a: number, b: number) => void) => void) => {
     const parent = Array.from({ length: n }, (_, i) => i);
     const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
-    for (const [a, b] of unions) parent[find(a)] = find(b);
+    const join = (a: number, b: number) => {
+      const ra = find(a), rb = find(b);
+      if (ra !== rb) parent[ra] = rb;
+    };
+    addUnions(join);
     const label = new Map<number, number>();
     const out = new Array(n);
     let count = 0;
@@ -395,24 +371,44 @@ function computeTopology(mesh: Mesh): Topology {
     return { out, count };
   };
 
-  const faceUnions: [number, number][] = [];
-  for (const e of edges) for (let i = 1; i < e.faces.length; i++) faceUnions.push([e.faces[0], e.faces[i]]);
-  const fu = uf(mesh.faces.length, faceUnions);
-
-  const pointUnions: [number, number][] = edges.map((e) => e.verts);
-  const pu = uf(mesh.positions.length, pointUnions);
-
-  const pointFaces: number[][] = mesh.positions.map(() => []);
-  for (let fi = 0; fi < mesh.faces.length; fi++) for (const v of mesh.faces[fi]) pointFaces[v]?.push(fi);
+  let faceNeighbors: number[] | null = null;
+  let faceIslands: { out: number[]; count: number } | null = null;
+  let pointIslands: { out: number[]; count: number } | null = null;
+  let pointFaces: number[][] | null = null;
+  const getFaceNeighbors = () => {
+    if (!faceNeighbors) {
+      const sets: Set<number>[] = mesh.faces.map(() => new Set<number>());
+      for (const e of edges)
+        for (const fa of e.faces)
+          for (const fb of e.faces)
+            if (fa !== fb) sets[fa].add(fb);
+      faceNeighbors = sets.map((s) => s.size);
+    }
+    return faceNeighbors;
+  };
+  const getFaceIslands = () => (faceIslands ??= uf(mesh.faces.length, (join) => {
+    for (const e of edges) for (let i = 1; i < e.faces.length; i++) join(e.faces[0], e.faces[i]);
+  }));
+  const getPointIslands = () => (pointIslands ??= uf(mesh.positions.length, (join) => {
+    for (const e of edges) join(e.verts[0], e.verts[1]);
+  }));
+  const getPointFaces = () => {
+    if (!pointFaces) {
+      pointFaces = mesh.positions.map(() => []);
+      for (let fi = 0; fi < mesh.faces.length; fi++)
+        for (const v of mesh.faces[fi]) pointFaces[v]?.push(fi);
+    }
+    return pointFaces;
+  };
 
   return {
     edges,
-    faceNeighbors,
-    faceIsland: fu.out,
-    faceIslandCount: fu.count,
-    pointIsland: pu.out,
-    pointIslandCount: pu.count,
-    pointFaces,
+    get faceNeighbors() { return getFaceNeighbors(); },
+    get faceIsland() { return getFaceIslands().out; },
+    get faceIslandCount() { return getFaceIslands().count; },
+    get pointIsland() { return getPointIslands().out; },
+    get pointIslandCount() { return getPointIslands().count; },
+    get pointFaces() { return getPointFaces(); },
   };
 }
 
@@ -462,7 +458,7 @@ export function mergeMeshInto(a: Mesh, b: Mesh): void {
     a.faces.push(b.faces[fi].map((vi) => vi + baseV));
     a.faceMaterial.push(slotMap[b.faceMaterial[fi] ?? 0] ?? 0);
   }
-  invalidatePositionCache(a);
+  invalidateMeshCaches(a);
   // reconcile POINT + FACE (+ EDGE when present) attributes across the union of names
   const reconcile = (domain: "POINT" | "FACE" | "EDGE", baseCount: number, addCount: number) => {
     const names = new Set<string>();
@@ -635,6 +631,7 @@ export function orientClosedSurface(mesh: Mesh, eps = 1e-5): number {
     for (const face of chosen) flips.add(face);
   }
   for (const fi of flips) mesh.faces[fi].reverse();
+  if (flips.size) invalidateMeshCaches(mesh);
   return flips.size;
 }
 
@@ -667,6 +664,7 @@ export function orientShellOutward(mesh: Mesh): void {
   }
   if (inn <= out * 1.15) return;
   for (const f of mesh.faces) f.reverse();
+  invalidateMeshCaches(mesh);
 }
 
 export function toTriSoup(g: Geometry): TriSoup {

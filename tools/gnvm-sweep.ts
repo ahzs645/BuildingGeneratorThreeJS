@@ -1,7 +1,7 @@
 // Run the parameter-space parity sweep through the GN-VM.
 // Usage:
-//   node --import tsx tools/gnvm-sweep.ts public/dojo/dump_bin.json VM.json [BLENDER.json]
-import { readFileSync, writeFileSync } from "node:fs";
+//   node --import tsx tools/gnvm-sweep.ts DUMP.json VM.json [BLENDER.json] [VM_EXPORT_DIR] [OBJECT] [CASES.json]
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { runGenerator, Dump } from "../src/gnvm/index";
 
 type Numeric = number | boolean;
@@ -24,6 +24,7 @@ interface SweepResult {
   faces: number | null;
   bbox: BBox | null;
   elapsed_ms: number | null;
+  export?: string;
   error?: string;
 }
 
@@ -33,7 +34,7 @@ interface SweepPayload {
   [key: string]: unknown;
 }
 
-const cases: Combo[] = [
+const defaultCases: Combo[] = [
   ...[0.15, 0.417, 0.85].flatMap((dx) =>
     [0.2, 0.633, 0.9].map((dy) => ({
       name: `divide x=${dx}, divide y=${dy}`,
@@ -49,7 +50,7 @@ const cases: Combo[] = [
 ];
 
 function usage(): never {
-  console.error("usage: node --import tsx tools/gnvm-sweep.ts public/dojo/dump_bin.json VM.json [BLENDER.json]");
+  console.error("usage: node --import tsx tools/gnvm-sweep.ts DUMP.json VM.json [BLENDER.json] [VM_EXPORT_DIR] [OBJECT] [CASES.json]");
   process.exit(2);
 }
 
@@ -74,20 +75,46 @@ function bbox(positions: Float32Array): BBox {
   };
 }
 
-async function runVmSweep(dump: Dump): Promise<SweepResult[]> {
+function caseFilename(index: number, name: string): string {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return `${String(index).padStart(2, "0")}-${slug}.json`;
+}
+
+async function runVmSweep(dump: Dump, combos: Combo[], objectName: string, exportDir?: string): Promise<SweepResult[]> {
   const out: SweepResult[] = [];
-  for (const combo of cases) {
+  if (exportDir) mkdirSync(exportDir, { recursive: true });
+  const object = (dump.objects as any[] | undefined)?.find((candidate) => candidate.name === objectName);
+  for (const [caseIndex, combo] of combos.entries()) {
     const started = Date.now();
     try {
-      const result = await runGenerator(dump, { object: "Procedural Drawer", overrides: combo.overrides });
-      out.push({
+      const result = await runGenerator(dump, { object: objectName, overrides: combo.overrides });
+      const sweepResult: SweepResult = {
         combo,
         status: "ok",
         verts: result.soup.stats.verts,
         faces: result.soup.stats.faces,
         bbox: bbox(result.soup.positions),
         elapsed_ms: Date.now() - started,
-      });
+      };
+      if (exportDir) {
+        const filename = caseFilename(caseIndex, combo.name);
+        writeFileSync(`${exportDir}/${filename}`, JSON.stringify({
+          positions: Array.from(result.soup.positions),
+          normals: Array.from(result.soup.normals),
+          indices: Array.from(result.soup.indices),
+          groups: result.soup.groups,
+          stats: result.soup.stats,
+          object: object ? {
+            name: object.name,
+            location: object.location,
+            rotation: object.rotation,
+            scale: object.scale,
+          } : null,
+          overrides: combo.overrides,
+        }));
+        sweepResult.export = filename;
+      }
+      out.push(sweepResult);
     } catch (error) {
       out.push({
         combo,
@@ -158,15 +185,17 @@ function compare(blender: SweepPayload, vm: SweepPayload): string {
   return rows.join("\n");
 }
 
-const [, , dumpPath, vmOutPath, blenderPath] = process.argv;
+const [, , dumpPath, vmOutPath, blenderPath, exportDir, objectArg, casesPath] = process.argv;
 if (!dumpPath || !vmOutPath) usage();
 
 const dump = JSON.parse(readFileSync(dumpPath, "utf8")) as Dump;
+const objectName = objectArg || "Procedural Drawer";
+const cases = casesPath ? JSON.parse(readFileSync(casesPath, "utf8")) as Combo[] : defaultCases;
 const vmPayload: SweepPayload = {
   source: "gnvm",
   dump: dumpPath,
-  object: "Procedural Drawer",
-  results: await runVmSweep(dump),
+  object: objectName,
+  results: await runVmSweep(dump, cases, objectName, exportDir),
 };
 
 writeFileSync(vmOutPath, `${JSON.stringify(vmPayload, null, 2)}\n`);

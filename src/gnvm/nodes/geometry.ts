@@ -3,7 +3,7 @@ import { Field, Vec3, asVec3, asNum, vadd } from "../core";
 import { Geometry, Mesh, InstanceRef, mergeMeshInto, realizeInstances, transformPoint } from "../geometry";
 import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitives";
 import { reg, EvalAPI, DUMP_CONTEXT } from "../registry";
-import { makeFieldCtx } from "../evaluator";
+import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 
 // ---- object info ------------------------------------------------------------
 // Materializes a referenced scene object from the dump's embedded plain meshes
@@ -199,7 +199,16 @@ reg("GeometryNodeCaptureAttribute", (api) => {
   const name = `__cap_${api.node.name}`;
   if (g.mesh) {
     const ctx = makeFieldCtx(g, domain);
-    g.mesh.attributes.set(name, { domain, data: api.field("Value").array(ctx) });
+    const value = api.field("Value");
+    let data: import("../core").Elem[];
+    if (value.srcDomain && value.srcDomain !== domain && ctx.toDomain) {
+      const source = value.srcDomain;
+      const sourceData = value.array(makeFieldCtx(g, source));
+      data = Array.from({ length: ctx.size }, (_, i) => ctx.toDomain!(source, sourceData, i) ?? 0);
+    } else {
+      data = value.array(ctx);
+    }
+    g.mesh.attributes.set(name, { domain, data });
   } else if (g.curves.length) {
     // curve geometry: capture over flattened control points (POINT domain)
     const ctx = makeFieldCtx(g, "POINT");
@@ -274,7 +283,13 @@ reg("GeometryNodeProximity", (api) => {
     }),
     Distance: Field.make((ctx) => {
       const arr = posF ? posF.array(ctx) : null;
-      return Array.from({ length: ctx.size }, (_, i) => (pts.length ? nearest(sample(ctx, i, arr)).d : 0));
+      if (FIELD_PROBE.node !== api.node.name || FIELD_PROBE.socket !== "Distance") {
+        return Array.from({ length: ctx.size }, (_, i) => (pts.length ? nearest(sample(ctx, i, arr)).d : 0));
+      }
+      const positions = Array.from({ length: ctx.size }, (_, i) => sample(ctx, i, arr));
+      const values = positions.map((p) => (pts.length ? nearest(p).d : 0));
+      FIELD_PROBE.batches.push({ domain: ctx.domain, positions, values, targets: pts });
+      return values;
     }),
     "Is Valid": Field.of(pts.length ? 1 : 0),
   };
