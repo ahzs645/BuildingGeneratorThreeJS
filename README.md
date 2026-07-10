@@ -23,7 +23,7 @@ toggle…) are exposed as live sliders.
 
 ## BlendBridge Geometry Nodes studio
 
-Open `http://127.0.0.1:5173/blend-import.html` while the dev server is running. You
+Open `http://127.0.0.1:5173/blendbridge` while the dev server is running. You
 can drop in a `.blend` file, choose a Geometry Nodes modifier, edit its exposed
 inputs, build a Three.js preview, and export either the extracted graph JSON or the
 evaluated mesh JSON. The bundled bin graph is available from **Try the bin sample**.
@@ -37,6 +37,22 @@ can be re-imported without opening Blender again.
 
 The static production bundle contains the studio UI and runtime, but direct `.blend`
 extraction still needs the local Vite middleware (or a future hosted Blender worker).
+
+The interface is a single Vite + React application. Routes such as `/building`,
+`/gallery`, `/gnvm`, and `/vase` lazy-load their Three.js runtimes from one HTML
+bootstrap. Previous `.html` URLs redirect to the corresponding React route.
+
+## GitHub Pages
+
+Pushing `main` deploys the static React studio through
+`.github/workflows/deploy-pages.yml`. The workflow runs the GN-VM regression suite,
+builds with the repository-specific Vite base path, installs an SPA fallback, and
+publishes `dist` through GitHub Pages. In repository settings, set **Pages → Source**
+to **GitHub Actions** once if Pages has not previously been enabled.
+
+GitHub Pages can run the gallery, baked generators, GN-VM, comparison tools, and
+previously extracted graph JSON. Direct `.blend` extraction and the Blender-backed
+live bin still require the local services because Pages is static hosting.
 
 ## Re-exporting the asset kit
 

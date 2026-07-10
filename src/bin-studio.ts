@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import GUI from "lil-gui";
+import { publicUrl } from "./base-url";
 
 const canvas = document.getElementById("app") as HTMLCanvasElement;
 const statEl = document.getElementById("stat")!;
@@ -70,7 +71,7 @@ async function loadVariant(base: string, v: Variant): Promise<THREE.Group> {
 }
 
 async function main() {
-  const base = "/dojo/variants";
+  const base = publicUrl("dojo/variants");
   const manifest = (await (await fetch(`${base}/variants.json`)).json()) as { axis: string; variants: Variant[] };
   const variants = manifest.variants;
   const state = { [manifest.axis]: 0 };

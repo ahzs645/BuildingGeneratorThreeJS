@@ -1,11 +1,4 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GN-VM · Bin Generator (live, in-browser)</title>
-    <style>
-      :root { color-scheme: dark; }
+:root { color-scheme: dark; }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       html, body { width: 100%; height: 100%; overflow: hidden; background: #0b0d10; }
       #app { width: 100vw; height: 100vh; display: block; }
@@ -24,12 +17,3 @@
         border-radius: 999px; background: rgba(11,13,16,0.6); backdrop-filter: blur(6px);
       }
       #home:hover { color: #eaf2f8; border-color: rgba(143,207,255,0.5); }
-    </style>
-  </head>
-  <body>
-    <canvas id="app"></canvas>
-    <a id="home" href="/">← studio</a>
-    <div id="hud"><b>GN-VM</b> · running the dumped .blend graph live in TypeScript · <span id="stat">loading…</span></div>
-    <script type="module" src="/src/gnvm-viewer.ts"></script>
-  </body>
-</html>

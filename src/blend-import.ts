@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { REGISTRY, type Dump, type TriSoup } from "./gnvm/index";
+import { isStaticDeploy, publicUrl } from "./base-url";
 
 type ImportedDump = Omit<Dump, "objects" | "node_groups" | "materials"> & {
   blender_version?: string;
@@ -366,6 +367,7 @@ async function importFile(file: File): Promise<void> {
     if (file.name.toLowerCase().endsWith(".json")) {
       value = JSON.parse(await file.text()) as ImportedDump;
     } else {
+      if (isStaticDeploy) throw new Error("Direct .blend extraction needs the local app. Export graph JSON locally, then drop that JSON here.");
       const response = await fetch("/api/blend-import", { method: "POST", headers: { "Content-Type": "application/octet-stream", "X-Blend-Filename": file.name }, body: file });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? `Import failed (${response.status})`);
@@ -383,7 +385,7 @@ async function loadSample(): Promise<void> {
   setBusy(true);
   status("Loading the included bin graph…", true);
   try {
-    const response = await fetch("/dojo/dump_bin.json");
+    const response = await fetch(publicUrl("dojo/dump_bin.json"));
     if (!response.ok) throw new Error(`Sample failed to load (${response.status})`);
     const value = await response.json() as ImportedDump;
     loadDump(value, "dojo-bin-sample.json", Number(response.headers.get("content-length")) || 0);
@@ -460,7 +462,11 @@ document.querySelectorAll<HTMLButtonElement>(".tab").forEach((button) => button.
   document.querySelectorAll(".tab-panel").forEach((panel) => panel.classList.toggle("active", panel.id === `panel-${button.dataset.tab}`));
 }));
 
-void fetch("/api/blend-import/health").then((response) => response.json()).then((health) => {
+if (isStaticDeploy) {
+  const el = $("#health");
+  el.classList.add("bad");
+  el.querySelector("span:last-child")!.textContent = "Static demo · graph JSON supported";
+} else void fetch("/api/blend-import/health").then((response) => response.json()).then((health) => {
   const el = $("#health");
   el.classList.add(health.available ? "ok" : "bad");
   el.querySelector("span:last-child")!.textContent = health.available ? "Blender ready · local only" : "Blender not found";

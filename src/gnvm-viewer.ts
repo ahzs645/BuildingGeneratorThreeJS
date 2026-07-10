@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import GUI from "lil-gui";
 import { runGenerator, Dump, TriSoup } from "./gnvm/index";
+import { publicUrl } from "./base-url";
 
 const canvas = document.getElementById("app") as HTMLCanvasElement;
 const statEl = document.getElementById("stat")!;
@@ -123,7 +124,7 @@ function rangeFor(name: string, socket: string, def: number): [number, number, n
 }
 
 async function main() {
-  const dump = (await (await fetch("/dojo/dump_bin.json")).json()) as Dump;
+  const dump = (await (await fetch(publicUrl("dojo/dump_bin.json"))).json()) as Dump;
 
   // Initial params: the saved modifier input values (matches the .blend's look).
   const objName = "Procedural Drawer";

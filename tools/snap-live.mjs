@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 const browser = await puppeteer.launch({ executablePath:"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless:"shell", args:["--enable-unsafe-swiftshader","--no-sandbox"], defaultViewport:{width:1200,height:800} });
 const page = await browser.newPage();
 page.on("console",m=>{const t=m.text(); if(t.includes("BINLIVE")||t.includes("baked")) console.log("[c]",t);});
-await page.goto("http://localhost:5173/bin-live.html",{waitUntil:"domcontentloaded"});
+await page.goto("http://localhost:5173/bin/live",{waitUntil:"domcontentloaded"});
 await new Promise(r=>setTimeout(r,4000)); // initial bake
 // set a named slider by its label
 async function setParam(label,val){

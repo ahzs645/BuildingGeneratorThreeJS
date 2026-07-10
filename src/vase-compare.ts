@@ -7,6 +7,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { publicUrl } from "./base-url";
 
 const canvas = document.getElementById("app") as HTMLCanvasElement;
 const stat = document.getElementById("stat")!;
@@ -115,7 +116,7 @@ function logBBox(label: string, obj: THREE.Object3D) {
 }
 
 // ---- Truth (red wire) -------------------------------------------------------
-new GLTFLoader().load("/dojo/vase_truth.glb", (gltf) => {
+new GLTFLoader().load(publicUrl("dojo/vase_truth.glb"), (gltf) => {
   let tris = 0;
   gltf.scene.traverse((o) => {
     const mesh = o as THREE.Mesh;
@@ -157,7 +158,7 @@ function applyVmMode() {
 // The exporter rewrites this static asset while the Vite server is running.
 // Always fetch the current mesh after a page reload instead of reusing a stale
 // cached preview from an earlier comparison pass.
-fetch("/dojo/vase_vm.json", { cache: "no-store" })
+fetch(publicUrl("dojo/vase_vm.json"), { cache: "no-store" })
   .then((r) => r.json())
   .then((soup) => {
     const geo = new THREE.BufferGeometry();

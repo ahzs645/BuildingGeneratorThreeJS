@@ -1,11 +1,4 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Node Dojo Gallery · Blender geometry nodes in the browser</title>
-    <style>
-      :root { color-scheme: dark; --accent: #8fcfff; --panel: rgba(10, 13, 17, .86); --line: rgba(255,255,255,.1); }
+:root { color-scheme: dark; --accent: #8fcfff; --panel: rgba(10, 13, 17, .86); --line: rgba(255,255,255,.1); }
       * { box-sizing: border-box; }
       html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #080a0d; color: #dfe7ed; font-family: Inter, system-ui, sans-serif; }
       #app { width: 100vw; height: 100vh; display: block; }
@@ -33,31 +26,3 @@
         #panel { top: auto; right: 10px; bottom: 10px; left: 10px; width: auto; max-height: 44vh; }
         #status { left: 14px; bottom: calc(44vh + 22px); }
       }
-    </style>
-  </head>
-  <body>
-    <canvas id="app"></canvas>
-    <div class="top">
-      <div class="eyebrow">Node Dojo → browser</div>
-      <h1 id="title">Gallery</h1>
-      <div id="subtitle">Blender-evaluated Geometry Nodes, presented as portable glTF.</div>
-    </div>
-    <aside id="panel">
-      <div id="models"></div>
-      <div class="controls" aria-label="View style">
-        <button type="button" data-style="original">original</button>
-        <button type="button" data-style="studio" class="active">studio</button>
-        <button type="button" data-style="wireframe">wire</button>
-        <button type="button" id="spin" class="active">spin</button>
-        <button type="button" id="reset">reset</button>
-      </div>
-      <div class="links">
-        <a href="/">studio home</a>
-        <a href="/gnvm-viewer.html">live bin VM</a>
-        <a href="/vase-compare.html?view=side-by-side">vase compare</a>
-      </div>
-    </aside>
-    <div id="status">loading…</div>
-    <script type="module" src="/src/dojo-gallery.ts"></script>
-  </body>
-</html>

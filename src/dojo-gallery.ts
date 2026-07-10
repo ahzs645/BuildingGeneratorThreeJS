@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { publicUrl } from "./base-url";
 
 type Example = {
   id: string;
@@ -12,11 +13,11 @@ type Example = {
 };
 
 const examples: Example[] = [
-  { id: "chrome-crayon", title: "Chrome Crayon", detail: "curve-driven drawing generator · 81,958 faces", file: "/dojo/gallery/chrome-crayon.glb", accent: 0x8fcfff },
-  { id: "shoen-gyroid", title: "Schoen Gyroid", detail: "Math Clay TPMS study · 46,920 faces", file: "/dojo/gallery/shoen-gyroid.glb", accent: 0xd9a7ff },
-  { id: "schwarz-p", title: "Schwarz P-Surface", detail: "Math Clay TPMS study · 18,978 faces", file: "/dojo/gallery/schwarz-p.glb", accent: 0xffb56d },
-  { id: "hat-front", title: "Send Nodes Hat", detail: "complete procedural hat assembly · 379,885 faces", file: "/dojo/gallery/hat-front.glb", accent: 0xff758c },
-  { id: "dojo-bin", title: "Recursive Bin Generator", detail: "existing Node Dojo bake · 100% Blender fidelity", file: "/dojo/bin.glb", accent: 0x5b83ff },
+  { id: "chrome-crayon", title: "Chrome Crayon", detail: "curve-driven drawing generator · 81,958 faces", file: publicUrl("dojo/gallery/chrome-crayon.glb"), accent: 0x8fcfff },
+  { id: "shoen-gyroid", title: "Schoen Gyroid", detail: "Math Clay TPMS study · 46,920 faces", file: publicUrl("dojo/gallery/shoen-gyroid.glb"), accent: 0xd9a7ff },
+  { id: "schwarz-p", title: "Schwarz P-Surface", detail: "Math Clay TPMS study · 18,978 faces", file: publicUrl("dojo/gallery/schwarz-p.glb"), accent: 0xffb56d },
+  { id: "hat-front", title: "Send Nodes Hat", detail: "complete procedural hat assembly · 379,885 faces", file: publicUrl("dojo/gallery/hat-front.glb"), accent: 0xff758c },
+  { id: "dojo-bin", title: "Recursive Bin Generator", detail: "existing Node Dojo bake · 100% Blender fidelity", file: publicUrl("dojo/bin.glb"), accent: 0x5b83ff },
 ];
 
 const canvas = document.querySelector<HTMLCanvasElement>("#app")!;

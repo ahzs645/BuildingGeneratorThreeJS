@@ -11,10 +11,16 @@
   "dependencies": {
     "lil-gui": "^0.20.0",
     "manifold-3d": "^3.5.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1",
     "three": "^0.185.1"
   },
   "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "@types/three": "^0.185.0",
+    "@vitejs/plugin-react": "^6.0.3",
     "puppeteer-core": "^25.3.0",
     "tsx": "^4.22.5",
     "typescript": "^6.0.3",

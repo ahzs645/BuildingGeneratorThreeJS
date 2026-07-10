@@ -3,6 +3,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { publicUrl } from "./base-url";
 
 const canvas = document.getElementById("app") as HTMLCanvasElement;
 const errEl = document.getElementById("err")!;
@@ -57,7 +58,7 @@ function frameObject(obj: THREE.Object3D) {
 }
 
 new GLTFLoader().load(
-  "/dojo/bin.glb",
+  publicUrl("dojo/bin.glb"),
   (gltf) => {
     const root = gltf.scene;
     let meshes = 0, tris = 0;
@@ -79,7 +80,7 @@ new GLTFLoader().load(
   },
   undefined,
   (e) => {
-    errEl.textContent = "Failed to load /dojo/bin.glb\n" + (e as any)?.message;
+    errEl.textContent = "Failed to load dojo/bin.glb\n" + (e as any)?.message;
     console.log("VIEWER_ERROR", (e as any)?.message);
   },
 );

@@ -1,11 +1,4 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dojo Bin — Live (Blender-backed)</title>
-    <style>
-      :root { color-scheme: dark; }
+:root { color-scheme: dark; }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       html, body { width: 100%; height: 100%; overflow: hidden; background: #0b0d10; }
       #app { width: 100vw; height: 100vh; display: block; }
@@ -30,13 +23,3 @@
         border-radius: 999px; background: rgba(11,13,16,0.6);
       }
       #home:hover { color: #eaf2f8; border-color: rgba(143,207,255,0.5); }
-    </style>
-  </head>
-  <body>
-    <canvas id="app"></canvas>
-    <a id="home" href="/">← studio</a>
-    <div id="busy">baking…</div>
-    <div id="hud"><b>Dojo Bin · Live</b> · every slider re-bakes in Blender (100% fidelity) · <span id="stat">connecting…</span></div>
-    <script type="module" src="/src/bin-live.ts"></script>
-  </body>
-</html>

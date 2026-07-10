@@ -4,7 +4,7 @@
 
 The Blender and GN-VM vase models are broadly aligned, but the GN-VM mesh still has a real, narrow outer-shell seam/interpenetration. It is most visible in close wireframe views near the rotational closure seam. This is **not fully resolved**.
 
-Comparison page: `http://127.0.0.1:5173/vase-compare.html?view=side-by-side`
+Comparison page: `http://127.0.0.1:5173/vase?view=side-by-side`
 
 Current generated asset (`public/dojo/vase_vm.json`):
 

@@ -16,6 +16,7 @@ import { createSnow } from "./snow";
 import { createSnowAccumUniforms, createSnowShellMaterial } from "./snowAccum";
 import { createRain } from "./rain";
 import { createWetUniforms, applyWet } from "./wet";
+import { publicUrl } from "./base-url";
 
 const app = document.getElementById("app")!;
 // logarithmicDepthBuffer spreads depth precision so near-coplanar surfaces (posters
@@ -305,7 +306,7 @@ controls.autoRotateSpeed = cine.orbitSpeed;
 camera.fov = cine.fov;
 camera.updateProjectionMatrix();
 
-// letterbox bars (CSS overlay, styled in index.html)
+// letterbox bars (CSS overlay, styled by the React building route)
 const barTop = document.getElementById("bar-top") as HTMLElement | null;
 const barBottom = document.getElementById("bar-bottom") as HTMLElement | null;
 function applyLetterbox(): void {
@@ -567,7 +568,7 @@ devWindow.__setEnv = s => {
   env.frame(getBounds());
 };
 
-kit.load("/assets/kit.glb", "/assets/kit_manifest.json").then(() => {
+kit.load(publicUrl("assets/kit.glb"), publicUrl("assets/kit_manifest.json")).then(() => {
   document.getElementById("loading")?.remove();
   // inject the wet-surface shader into the building materials once (inert while
   // uWet = 0; the rain toggle raises it to 1). No shell geometry — it lives in the
