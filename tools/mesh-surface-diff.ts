@@ -14,8 +14,9 @@ interface TriMesh { positions: Vec3[]; triangles: [number, number, number][]; }
 interface Bounds { min: Vec3; max: Vec3; }
 interface BvhNode extends Bounds { left?: BvhNode; right?: BvhNode; ids?: number[]; }
 
-const truthPath = process.argv[2] ?? "public/dojo/vase_truth.glb";
-const vmPath = process.argv[3] ?? "public/dojo/vase_vm.json";
+const positionalArgs = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
+const truthPath = positionalArgs[0] ?? "public/dojo/vase_truth.glb";
+const vmPath = positionalArgs[1] ?? "public/dojo/vase_vm.json";
 
 function identity(): Mat4 { return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]; }
 function mul(a: Mat4, b: Mat4): Mat4 {
@@ -171,10 +172,98 @@ function report(label: string, source: Vec3[], target: TriMesh, bvh: BvhNode): v
   console.log(`${label} p50=${q(.5).toFixed(3)} p90=${q(.9).toFixed(3)} p99=${q(.99).toFixed(3)} max=${q(1).toFixed(3)} worst1%=${JSON.stringify(worst)} maxima=${JSON.stringify(maxima)}`);
 }
 
+function connectedComponents(mesh: TriMesh): { vertices: Vec3[]; triangleIds: number[] }[] {
+  const parent = mesh.positions.map((_, i) => i);
+  const find = (i: number): number => {
+    while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; }
+    return i;
+  };
+  const join = (a: number, b: number): void => {
+    a = find(a); b = find(b);
+    if (a !== b) parent[b] = a;
+  };
+  for (const [a, b, c] of mesh.triangles) { join(a, b); join(b, c); }
+  const groups = new Map<number, { ids: number[]; triangleIds: number[] }>();
+  for (let i = 0; i < mesh.positions.length; i++) {
+    const root = find(i), group = groups.get(root) ?? { ids: [], triangleIds: [] };
+    group.ids.push(i); groups.set(root, group);
+  }
+  for (let id = 0; id < mesh.triangles.length; id++) groups.get(find(mesh.triangles[id][0]))!.triangleIds.push(id);
+  return [...groups.values()]
+    .map((group) => ({ vertices: group.ids.map((id) => mesh.positions[id]), triangleIds: group.triangleIds }))
+    .sort((a, b) => b.triangleIds.length - a.triangleIds.length);
+}
+
+function triangleArea(a: Vec3, b: Vec3, c: Vec3): number {
+  const ab: Vec3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+  const ac: Vec3 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+  return Math.hypot(ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]) / 2;
+}
+
+function areaSummary(label: string, mesh: TriMesh): void {
+  const areas = mesh.triangles.map(([a, b, c]) => triangleArea(mesh.positions[a], mesh.positions[b], mesh.positions[c])).sort((a, b) => a - b);
+  const q = (p: number) => areas[Math.floor((areas.length - 1) * p)];
+  const total = areas.reduce((sum, area) => sum + area, 0);
+  console.log(`${label} triangle area total=${total.toFixed(3)} p50=${q(.5).toFixed(3)} p99=${q(.99).toFixed(3)} p99.9=${q(.999).toFixed(3)} max=${q(1).toFixed(3)} zero=${areas.filter((area) => area < 1e-8).length}`);
+}
+
+function axialFanSummary(label: string, mesh: TriMesh): void {
+  const bounds = boundsOf(mesh.positions);
+  const center: Vec3 = [(bounds.min[0] + bounds.max[0]) / 2, (bounds.min[1] + bounds.max[1]) / 2, 0];
+  const fans: { radius: number; z: number; area: number }[] = [];
+  for (const [a, b, c] of mesh.triangles) {
+    const points = [mesh.positions[a], mesh.positions[b], mesh.positions[c]];
+    const radii = points.map((p) => Math.hypot(p[0] - center[0], p[1] - center[1]));
+    const minRadius = Math.min(...radii), maxRadius = Math.max(...radii);
+    if (minRadius > 2 || maxRadius < 20) continue;
+    fans.push({ radius: maxRadius, z: points.reduce((sum, p) => sum + p[2], 0) / 3, area: triangleArea(...points) });
+  }
+  const minZ = fans.length ? Math.min(...fans.map((fan) => fan.z)) : 0;
+  const maxZ = fans.length ? Math.max(...fans.map((fan) => fan.z)) : 0;
+  const maxRadius = fans.length ? Math.max(...fans.map((fan) => fan.radius)) : 0;
+  console.log(`${label} axial fan triangles=${fans.length} z=[${minZ.toFixed(3)},${maxZ.toFixed(3)}] maxRadius=${maxRadius.toFixed(3)}`);
+}
+
+function reportTriangleCentroids(label: string, mesh: TriMesh, triangleIds: number[], target: TriMesh, bvh: BvhNode): void {
+  const scored = triangleIds
+    .map((id) => {
+      const [a, b, c] = mesh.triangles[id];
+      const points = [mesh.positions[a], mesh.positions[b], mesh.positions[c]];
+      return {
+        id,
+        point: points.reduce((sum, point) => [sum[0] + point[0] / 3, sum[1] + point[1] / 3, sum[2] + point[2] / 3] as Vec3, [0, 0, 0] as Vec3),
+        area: triangleArea(...points),
+      };
+    })
+    .filter((sample) => sample.area > 1e-8)
+    .map((sample) => ({ ...sample, distance: distanceToSurface(sample.point, target, bvh) }))
+    .sort((a, b) => a.distance - b.distance);
+  const q = (p: number) => scored[Math.floor((scored.length - 1) * p)].distance;
+  const outliers = scored.filter((sample) => sample.distance > 2);
+  const maxima = scored.slice(-8).reverse().map((sample) => ({
+    tri: sample.id,
+    point: sample.point.map((value) => Number(value.toFixed(2))),
+    area: Number(sample.area.toFixed(3)),
+    distance: Number(sample.distance.toFixed(3)),
+  }));
+  const outlierBounds = outliers.length ? boundsOf(outliers.map((sample) => sample.point)) : null;
+  console.log(`${label} centroid p50=${q(.5).toFixed(3)} p90=${q(.9).toFixed(3)} p99=${q(.99).toFixed(3)} max=${q(1).toFixed(3)} outliers>2=${outliers.length} bounds=${JSON.stringify(outlierBounds)} maxima=${JSON.stringify(maxima)}`);
+}
+
 const truth = readGlb(truthPath), vm = readVm(vmPath);
 console.log(`truth ${truth.positions.length}v ${truth.triangles.length}t ${JSON.stringify(boundsOf(truth.positions))}`);
 console.log(`vm ${vm.positions.length}v ${vm.triangles.length}t ${JSON.stringify(boundsOf(vm.positions))}`);
+areaSummary("truth", truth);
+areaSummary("vm", vm);
+axialFanSummary("truth", truth);
+axialFanSummary("vm", vm);
 console.log("building triangle BVHs...");
 const truthBvh = buildBvh(truth), vmBvh = buildBvh(vm);
 report("truth points -> VM surface", truth.positions, vm, vmBvh);
 report("VM points -> truth surface", vm.positions, truth, truthBvh);
+for (const [index, component] of connectedComponents(vm).entries()) {
+  console.log(`VM component ${index + 1}: ${component.vertices.length}v ${component.triangleIds.length}t ${JSON.stringify(boundsOf(component.vertices))}`);
+  report(`VM component ${index + 1} -> truth surface`, component.vertices, truth, truthBvh);
+  if (process.argv.includes("--centroids"))
+    reportTriangleCentroids(`VM component ${index + 1} -> truth surface`, vm, component.triangleIds, truth, truthBvh);
+}

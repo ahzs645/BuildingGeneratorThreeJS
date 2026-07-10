@@ -42,6 +42,17 @@ type CompareMode = "overlay" | "side-by-side";
 let showTruth = true;
 let showVm = true;
 let compareMode: CompareMode = "overlay";
+let sideBySideOffset = 0;
+
+function positionSideBySide() {
+  if (compareMode !== "side-by-side") return;
+  // Keep the pair in the camera's image plane. A fixed world-X offset looks
+  // like two different viewing angles after orbiting close to the model, which
+  // makes a seam on one side appear to pass through the other mesh.
+  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).normalize();
+  truthGroup.position.copy(right).multiplyScalar(-sideBySideOffset);
+  vmGroup.position.copy(right).multiplyScalar(sideBySideOffset);
+}
 
 function frameAll() {
   const box = new THREE.Box3();
@@ -50,7 +61,13 @@ function frameAll() {
   if (box.isEmpty()) return;
   const c = box.getCenter(new THREE.Vector3());
   const s = box.getSize(new THREE.Vector3()).length();
-  camera.position.set(c.x + s * 0.85, c.y + s * 0.55, c.z + s * 0.85);
+  // Frame the pair from a neutral angle before its image-plane separation is
+  // applied, so neither model starts closer or visually larger than the other.
+  if (compareMode === "side-by-side") {
+    camera.position.set(c.x, c.y - s * 0.65, c.z + s * 0.85);
+  } else {
+    camera.position.set(c.x + s * 0.85, c.y + s * 0.55, c.z + s * 0.85);
+  }
   controls.target.copy(c);
   controls.update();
 }
@@ -58,6 +75,7 @@ function frameAll() {
 function syncComparison(reframe = true) {
   truthGroup.visible = showTruth;
   vmGroup.visible = showVm;
+  controls.autoRotate = compareMode === "overlay";
   truthGroup.position.x = 0;
   vmGroup.position.x = 0;
 
@@ -68,9 +86,10 @@ function syncComparison(reframe = true) {
     const vmWidth = vmGroup.children.length
       ? new THREE.Box3().setFromObject(vmGroup).getSize(new THREE.Vector3()).x
       : 0;
-    const offset = Math.max(truthWidth, vmWidth, 1) * 0.62;
-    truthGroup.position.x = -offset;
-    vmGroup.position.x = offset;
+    sideBySideOffset = Math.max(truthWidth, vmWidth, 1) * 0.62;
+    positionSideBySide();
+  } else {
+    sideBySideOffset = 0;
   }
 
   truthToggle.setAttribute("aria-pressed", String(showTruth));
@@ -135,7 +154,10 @@ function applyVmMode() {
   syncComparison(false);
 }
 
-fetch("/dojo/vase_vm.json")
+// The exporter rewrites this static asset while the Vite server is running.
+// Always fetch the current mesh after a page reload instead of reusing a stale
+// cached preview from an earlier comparison pass.
+fetch("/dojo/vase_vm.json", { cache: "no-store" })
   .then((r) => r.json())
   .then((soup) => {
     const geo = new THREE.BufferGeometry();
@@ -291,5 +313,6 @@ addEventListener("resize", () => {
 
 renderer.setAnimationLoop(() => {
   controls.update();
+  positionSideBySide();
   renderer.render(scene, camera);
 });

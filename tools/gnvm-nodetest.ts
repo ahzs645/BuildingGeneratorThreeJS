@@ -326,15 +326,16 @@ function meshSignedAreaXY(m: Mesh): number {
   check("MergeByDistance preserves material slots", JSON.stringify(om.materialSlots) === JSON.stringify([null, "left", "right"]));
 }
 
-// Faces whose edge collapses during a weld must not become a new fan triangle.
+// A collapsed long quad still carries a valid center-to-rim triangle after
+// Blender's triangulation; the exporter must preserve that topology.
 {
   const m = new Mesh();
-  m.positions = [[0, 0, 0], [0, 0, 0], [2, 0, 0], [0, 2, 0]];
+  m.positions = [[0, 0, 0], [0, 0, 0], [10, 0, 0], [10, 1, 0]];
   m.faces = [[0, 1, 2, 3]];
   const g = new Geometry();
   g.mesh = m;
-  const out = runNode("GeometryNodeMergeByDistance", { Geometry: g, Selection: true, Distance: 1e-4, Mode: "All" }).Geometry as Geometry;
-  check("MergeByDistance drops a face with a welded boundary edge", out.mesh!.faces.length === 0, `faces=${out.mesh!.faces.length}`);
+  const soup = toTriSoup(g);
+  check("toTriSoup preserves a collapsed long fan quad", soup.indices.length === 6, `tris=${soup.indices.length / 3}`);
 }
 
 // (M) MergeByDistance selection=false vertices do not participate in welding
@@ -376,7 +377,7 @@ function meshSignedAreaXY(m: Mesh): number {
   check("mutated clone gets fresh topology", ct1 !== ct2 && t1 !== ct2 && ct2.edges.length === 5, `edges=${ct2.edges.length}`);
 }
 
-// (O2) Vertex normals split opposing face-normal fans instead of canceling
+// (O2) Vertex normals split opposing face-normal fans instead of canceling.
 {
   const m = new Mesh();
   m.positions = [[1, 0, 0], [1, 1, 0], [1, 0, 1], [1, -1, 0], [1, 0, -1], [0, 0, 0]];
@@ -593,6 +594,65 @@ function meshSignedAreaXY(m: Mesh): number {
   };
   const result = new Evaluator(program).evalGroup("outer", { Density: Field.of(349.38) }).Result as Field;
   check("Group input coerces linked float to Int", result.value === 349, `got ${result.value}`);
+}
+
+// (Y) Repeated EDGE extrude must carry the source profile's direction through
+// every new top edge. Spin rotates that top edge and welds the last ring to the
+// first; alternating the direction makes the two faces at an odd-step closure
+// both point inward, producing a bad seam normal after Solidify.
+{
+  const m = new Mesh();
+  // At -X, a top-to-bottom profile extruded around +Z produces outward faces.
+  m.positions = [[-1, 0, 3], [-1, 0, 2], [-1, 0, 1], [-1, 0, 0]];
+  m.edges = [[0, 1], [1, 2], [2, 3]];
+  let spun = new Geometry();
+  spun.mesh = m;
+  let selection: Field = Field.of(1);
+  const steps = 5;
+  const angle = (Math.PI * 2) / steps;
+  const turn = Field.perElem((i, ctx) => {
+    const [x, y, z] = ctx.position?.(i) ?? [0, 0, 0];
+    return [x * Math.cos(angle) - y * Math.sin(angle), x * Math.sin(angle) + y * Math.cos(angle), z];
+  });
+  for (let step = 0; step < steps; step++) {
+    const extruded = runNode(
+      "GeometryNodeExtrudeMesh",
+      { Mesh: spun, Selection: selection, Offset: [0, 0, 0], "Offset Scale": 0, Individual: true },
+      { mode: "EDGES" },
+    );
+    spun = extruded.Mesh as Geometry;
+    selection = extruded.Top as Field;
+    spun = runNode(
+      "GeometryNodeSetPosition",
+      { Geometry: spun, Selection: selection, Position: turn, Offset: [0, 0, 0] },
+      {},
+      ["Position"],
+    ).Geometry as Geometry;
+  }
+  spun = runNode(
+    "GeometryNodeMergeByDistance",
+    { Geometry: spun, Selection: true, Distance: 1e-4, Mode: "All" as any },
+  ).Geometry as Geometry;
+  spun = runNode("GeometryNodeFlipFaces", { Mesh: spun, Selection: true }).Mesh as Geometry;
+  const sm = spun.mesh!;
+  const radialDots = sm.faces.map((f, fi) => {
+    const c = sm.faceCenter(fi);
+    const n = sm.faceNormal(fi);
+    return { z: c[2], dot: c[0] * n[0] + c[1] * n[1] };
+  }).filter(({ z }) => z > 1 && z < 2).map(({ dot }) => dot);
+  check(
+    "repeated EDGE extrude keeps outward winding through closure",
+    sm.faces.length === 15 && radialDots.length === steps && radialDots.every((d) => d > 0.5),
+    `faces=${sm.faces.length} radialDots=${radialDots.map((d) => d.toFixed(3)).join(",")}`,
+  );
+  check(
+    "repeated EDGE extrude weld has no boundary seam",
+    topologyOf(sm).edges.every((e) => {
+      const [a, b] = e.verts;
+      const crossesProfile = Math.abs(sm.positions[a][2] - sm.positions[b][2]) > 0.5;
+      return !crossesProfile || e.faces.length === 2;
+    }),
+  );
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

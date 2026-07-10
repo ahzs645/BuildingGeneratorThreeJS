@@ -269,14 +269,8 @@ reg("GeometryNodeMergeByDistance", (api) => {
     const nf: number[] = [];
     const nc: number[] = [];
     const f = mesh.faces[fi];
-    const remapped = f.map((vi) => remap[vi]);
-    // A welded zero-length boundary is not a new triangle. In particular, the
-    // vase's Spin node collapses a ring of axis vertices; retaining the
-    // shortened quad turns it into a center-to-rim fan that Blender omits.
-    // Discard the face rather than synthesizing a different surface.
-    if (remapped.some((vi, ci) => vi === remapped[(ci + 1) % remapped.length])) continue;
     for (let ci = 0; ci < f.length; ci++) {
-      const r = remapped[ci];
+      const r = remap[f[ci]];
       if (!nf.length || nf[nf.length - 1] !== r) {
         nf.push(r);
         nc.push(cornerStart[fi] + ci);
@@ -369,18 +363,41 @@ reg("GeometryNodeExtrudeMesh", (api) => {
         const key = ekey(u, v);
         if (!orient.has(key)) orient.set(key, [u, v]);
       }
-    // loose wires have no faces: their STORED edge direction (chain order from
-    // Curve to Mesh) is the meaningful orientation — sorted order made the
-    // lathe's first ring winding arbitrary, flipping the shell's outer mask.
+    // Loose wires have no face loop to orient from. Blender's generated side
+    // loop traverses the source edge opposite its stored Curve-to-Mesh order;
+    // using the canonical sorted edge direction made the first Spin sector
+    // arbitrary.
     for (const [a, b] of mesh.edges) {
       const key = ekey(a, b);
-      if (!orient.has(key)) orient.set(key, [a, b]);
+      if (!orient.has(key)) orient.set(key, [b, a]);
     }
+    const inheritedTop = new Array(inEdges.length).fill(false);
+    for (const [name, a] of mesh.attributes) {
+      if (a.domain !== "EDGE" || !name.startsWith("__extrude_top_")) continue;
+      for (let ei = 0; ei < inEdges.length; ei++)
+        if (asNum(a.data[ei] ?? 0) > 0) inheritedTop[ei] = true;
+    }
+    const vertexEdgeCount = new Array(mesh.positions.length).fill(0);
+    for (const e of inEdges) for (const v of e.verts) vertexEdgeCount[v]++;
     const sideFaceIdx: number[] = [];
     const newEdgePairs: [number, number][] = []; // duplicated (top) edges
     for (const ei of selEdges) {
       const [ca, cb] = inEdges[ei].verts;
-      const [a, b] = orient.get(ekey(ca, cb)) ?? [ca, cb];
+      let [a, b] = orient.get(ekey(ca, cb)) ?? [ca, cb];
+      // Spin repeatedly extrudes the previous pass's Top edges. On interior
+      // profile edges, the adjacent face traverses that top edge opposite the
+      // original profile direction, so reverse it again before constructing
+      // the next quad. Otherwise every angular sector alternates winding and
+      // an odd-step weld leaves a one-sector normal discontinuity. Preserve
+      // the open profile's endpoint strips: their valence stays one on the
+      // source wire and two on later rings, and Blender uses boundary-loop
+      // winding there for the top rim and collapsed axial fan.
+      const profileBoundary = inheritedTop[ei]
+        ? vertexEdgeCount[ca] <= 2 || vertexEdgeCount[cb] <= 2
+        : inEdges[ei].faces.length === 0 && (vertexEdgeCount[ca] <= 1 || vertexEdgeCount[cb] <= 1);
+      if (inheritedTop[ei]) {
+        if (!profileBoundary && inEdges[ei].faces.length === 1) [a, b] = [b, a];
+      } else if (profileBoundary) [a, b] = [b, a];
       const na = dupOf(a), nb = dupOf(b);
       sideFaceIdx.push(out.faces.length);
       out.faces.push([a, b, nb, na]);

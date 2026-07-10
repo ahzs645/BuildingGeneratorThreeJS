@@ -278,7 +278,13 @@ function computeVertexNormals(mesh: Mesh): Vec3[] {
       }
       const dir = vnorm(sum);
       const out = vlen(outward) > 0 ? vdot(dir, outward) : 0;
-      if (count > bestCount || (count === bestCount && out > bestOut)) {
+      // At a welded seam, the two shell sides can contribute opposing normal
+      // fans. The old count-first choice could select the inward fan merely
+      // because the seam has one more tiny cap face on that side, folding the
+      // next outer-shell displacement through the inner shell. Prefer the
+      // cluster that faces away from the connected component's center; face
+      // count remains the tie-breaker for genuinely co-directional fans.
+      if (out > bestOut + 1e-9 || (Math.abs(out - bestOut) <= 1e-9 && count > bestCount)) {
         best = dir;
         bestCount = count;
         bestOut = out;
@@ -576,43 +582,14 @@ export function orientShellOutward(mesh: Mesh): void {
   for (const f of mesh.faces) f.reverse();
 }
 
-function isCollapsedFanFace(face: number[], positions: Vec3[], epsilon: number, minSpan: number): boolean {
-  if (face.length < 3) return true;
-  let collapsedEdge = false;
-  for (let i = 0; i < face.length; i++) {
-    const a = positions[face[i]], b = positions[face[(i + 1) % face.length]];
-    if (Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) <= epsilon) collapsedEdge = true;
-  }
-  if (!collapsedEdge) return false;
-  let span = 0;
-  for (let i = 0; i < face.length; i++) for (let j = i + 1; j < face.length; j++) {
-    const a = positions[face[i]], b = positions[face[j]];
-    span = Math.max(span, Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]));
-  }
-  return span >= minSpan;
-}
-
 export function toTriSoup(g: Geometry): TriSoup {
   const realized = g.instances.length ? realizeInstances(g) : g;
   const source = realized.mesh ?? new Mesh();
-  let min: Vec3 = [Infinity, Infinity, Infinity];
-  let max: Vec3 = [-Infinity, -Infinity, -Infinity];
-  for (const p of source.positions) for (let k = 0; k < 3; k++) {
-    min[k] = Math.min(min[k], p[k]);
-    max[k] = Math.max(max[k], p[k]);
-  }
-  const diag = Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
-  const epsilon = Math.max(1e-7, diag * 1e-8);
-  const minFanSpan = diag * 0.1;
-  // Keep export-only topology independent from the evaluation graph. The Spin
-  // lathe can leave a collapsed axis edge in a very large quad; fan
-  // triangulation would turn that invalid quad into a visible bottom bulb.
   const mesh = new Mesh();
   mesh.positions = source.positions;
   mesh.materialSlots = [...source.materialSlots];
   for (let fi = 0; fi < source.faces.length; fi++) {
     const face = source.faces[fi];
-    if (isCollapsedFanFace(face, source.positions, epsilon, minFanSpan)) continue;
     mesh.faces.push([...face]);
     mesh.faceMaterial.push(source.faceMaterial[fi] ?? 0);
   }
