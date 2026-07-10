@@ -142,7 +142,26 @@ reg("GeometryNodeFillCurve", (api) => {
   const menu = api.str("Mode").toUpperCase().replace(/[^A-Z]/g, "");
   const mode = (menu === "NGONS" || menu === "TRIANGLES" ? menu : api.prop<string>("mode", "TRIANGLES")) as "NGONS" | "TRIANGLES";
   const out = new Geometry();
-  out.mesh = fillCurves(g.curves, mode);
+  // Blender's Fill Curve operates in the curve component's local XY plane;
+  // Z is discarded rather than carried through from the control points. This
+  // matters when a translated mesh is converted to curves before filling (the
+  // Dojo bin deliberately moves its source grid to z=-0.019, then Fill Curve
+  // creates the bin floors back at z=0).
+  const planar = g.curves.map((s) => {
+    let points = s.points.map((p) => [p[0], p[1], 0] as Vec3);
+    if (s.cyclic && points.length >= 3) {
+      let area2 = 0;
+      for (let i = 0; i < points.length; i++) {
+        const a = points[i], b = points[(i + 1) % points.length];
+        area2 += a[0] * b[1] - b[0] * a[1];
+      }
+      // Fill Curve emits front-facing (+Z) polygons for local-XY loops even
+      // when Mesh to Curve supplied the boundary in clockwise order.
+      if (area2 < 0) points = [points[0], ...points.slice(1).reverse()];
+    }
+    return { cyclic: s.cyclic, points };
+  });
+  out.mesh = fillCurves(planar, mode);
   return { Mesh: out };
 });
 

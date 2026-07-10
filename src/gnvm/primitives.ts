@@ -57,17 +57,26 @@ export function meshGrid(sizeX: number, sizeY: number, vx: number, vy: number): 
   const m = new Mesh();
   vx = Math.max(2, Math.floor(vx));
   vy = Math.max(2, Math.floor(vy));
-  for (let j = 0; j < vy; j++)
-    for (let i = 0; i < vx; i++) {
+  // Blender stores Grid vertices X-major (all Y samples for one X before the
+  // next X). Geometry looks identical either way, but Index/Field at Index
+  // consumers rely on this order (the Dojo bin samples corners recursively).
+  for (let i = 0; i < vx; i++)
+    for (let j = 0; j < vy; j++) {
       const x = (i / (vx - 1) - 0.5) * sizeX;
       const y = (j / (vy - 1) - 0.5) * sizeY;
       m.positions.push([x, y, 0]);
     }
-  for (let j = 0; j + 1 < vy; j++)
-    for (let i = 0; i + 1 < vx; i++) {
-      const a = j * vx + i;
-      m.faces.push([a, a + 1, a + vx + 1, a + vx]);
+  for (let i = 0; i + 1 < vx; i++)
+    for (let j = 0; j + 1 < vy; j++) {
+      const a = i * vy + j;
+      m.faces.push([a, a + vy, a + vy + 1, a + 1]);
     }
+  // Native Grid edge order: Y edges within each X column, then X edges by row.
+  // Mesh to Curve uses this ordering to choose cyclic spline traversal.
+  for (let i = 0; i < vx; i++)
+    for (let j = 0; j + 1 < vy; j++) m.edges.push([i * vy + j, i * vy + j + 1]);
+  for (let j = 0; j < vy; j++)
+    for (let i = 0; i + 1 < vx; i++) m.edges.push([i * vy + j, (i + 1) * vy + j]);
   m.faceMaterial = m.faces.map(() => 0);
   m.materialSlots = [null];
   const g = new Geometry();

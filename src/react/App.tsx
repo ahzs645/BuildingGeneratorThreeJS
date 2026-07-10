@@ -8,9 +8,8 @@ const BlendBridgePage = lazy(() => import("./pages/BlendBridgePage"));
 const BuildingPage = lazy(() => import("./pages/BuildingPage"));
 const DojoViewerPage = lazy(() => import("./pages/DojoViewerPage"));
 const DojoGalleryPage = lazy(() => import("./pages/DojoGalleryPage"));
-const BinStudioPage = lazy(() => import("./pages/BinStudioPage"));
+const BinComparePage = lazy(() => import("./pages/BinComparePage"));
 const BinLivePage = lazy(() => import("./pages/BinLivePage"));
-const GnvmPage = lazy(() => import("./pages/GnvmPage"));
 const VaseComparePage = lazy(() => import("./pages/VaseComparePage"));
 
 function LegacyRedirect({ to }: { to: string }): React.JSX.Element {
@@ -32,9 +31,9 @@ export default function App(): React.JSX.Element {
           <Route path="/building" element={<BuildingPage />} />
           <Route path="/dojo" element={<DojoViewerPage />} />
           <Route path="/gallery" element={<DojoGalleryPage />} />
-          <Route path="/bin" element={<BinStudioPage />} />
+          <Route path="/bin" element={<BinComparePage />} />
           <Route path="/bin/live" element={<BinLivePage />} />
-          <Route path="/gnvm" element={<GnvmPage />} />
+          <Route path="/gnvm" element={<LegacyRedirect to="/bin" />} />
           <Route path="/vase" element={<VaseComparePage />} />
 
           <Route path="/blend-import.html" element={<LegacyRedirect to="/blendbridge" />} />
@@ -43,7 +42,7 @@ export default function App(): React.JSX.Element {
           <Route path="/dojo-gallery.html" element={<LegacyRedirect to="/gallery" />} />
           <Route path="/bin-studio.html" element={<LegacyRedirect to="/bin" />} />
           <Route path="/bin-live.html" element={<LegacyRedirect to="/bin/live" />} />
-          <Route path="/gnvm-viewer.html" element={<LegacyRedirect to="/gnvm" />} />
+          <Route path="/gnvm-viewer.html" element={<LegacyRedirect to="/bin" />} />
           <Route path="/vase-compare.html" element={<LegacyRedirect to="/vase" />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -179,6 +179,14 @@ function meshSignedAreaXY(m: Mesh): number {
   check("CurveToMesh spans rail z 0..2", Math.abs(Math.min(...zs)) < 1e-6 && Math.abs(Math.max(...zs) - 2) < 1e-6);
 }
 
+// Blender Grid is X-major, and Mesh to Curve follows its stored edge order.
+{
+  const grid = runNode("GeometryNodeMeshGrid", { "Size X": 2, "Size Y": 2, "Vertices X": 2, "Vertices Y": 2 }).Mesh as Geometry;
+  check("MeshGrid uses Blender X-major vertex order", JSON.stringify(grid.mesh!.positions) === JSON.stringify([[-1, -1, 0], [-1, 1, 0], [1, -1, 0], [1, 1, 0]]));
+  const boundary = runNode("GeometryNodeMeshToCurve", { Mesh: grid, Selection: true }).Curve as Geometry;
+  check("MeshToCurve follows stored Grid edge order", JSON.stringify(boundary.curves[0]?.points) === JSON.stringify([[-1, -1, 0], [-1, 1, 0], [1, 1, 0], [1, -1, 0]]));
+}
+
 // (F) FillCurve NGON: triangle -> 1 face, 3 verts
 {
   const g = runNode("GeometryNodeFillCurve", { Curve: curve([[0, 0, 0], [1, 0, 0], [0, 1, 0]], true) }, { mode: "NGONS" }).Mesh as Geometry;
@@ -192,6 +200,12 @@ function meshSignedAreaXY(m: Mesh): number {
   const m = g.mesh!;
   check("FillCurve NGON single loop keeps one ngon", m.faces.length === 1 && m.positions.length === 4);
   check("FillCurve NGON single loop preserves vertex order", JSON.stringify(m.faces[0]) === JSON.stringify([0, 1, 2, 3]) && m.positions.every((p, i) => approx(p, pts[i])));
+}
+
+// Fill Curve is defined in the curve component's local XY plane.
+{
+  const g = runNode("GeometryNodeFillCurve", { Curve: curve([[0, 0, -0.019], [1, 0, -0.019], [0, 1, -0.019]], true) }, { mode: "NGONS" }).Mesh as Geometry;
+  check("FillCurve projects translated curves onto local XY", g.mesh!.positions.every((p) => Math.abs(p[2]) < 1e-9));
 }
 
 // (F3) FillCurve nested squares: inner loop is a hole and ring triangulates

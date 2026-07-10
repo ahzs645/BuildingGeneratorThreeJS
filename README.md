@@ -39,8 +39,13 @@ The static production bundle contains the studio UI and runtime, but direct `.bl
 extraction still needs the local Vite middleware (or a future hosted Blender worker).
 
 The interface is a single Vite + React application. Routes such as `/building`,
-`/gallery`, `/gnvm`, and `/vase` lazy-load their Three.js runtimes from one HTML
+`/gallery`, `/bin`, and `/vase` lazy-load their Three.js runtimes from one HTML
 bootstrap. Previous `.html` URLs redirect to the corresponding React route.
+
+`/bin` is the synchronized Dojo Bin parity workspace: one Bin Select control
+drives a baked Blender-truth variant and a fresh GN-VM evaluation, with overlay,
+side-by-side, wire/material, triangle, highlighted-material, and envelope-delta
+comparisons. The former standalone `/gnvm` page redirects into this workspace.
 
 ## GitHub Pages
 
@@ -53,6 +58,18 @@ to **GitHub Actions** once if Pages has not previously been enabled.
 GitHub Pages can run the gallery, baked generators, GN-VM, comparison tools, and
 previously extracted graph JSON. Direct `.blend` extraction and the Blender-backed
 live bin still require the local services because Pages is static hosting.
+
+For the live Blender bin locally, run the warm Blender evaluator and its HTTP
+bridge alongside Vite (replace the `.blend` path if the source is elsewhere):
+
+```sh
+blender --background "/path/to/Dojo Bin Generator_recursive red bins_v.0.1.1.blend" \
+  --python tools/bake_server.py -- /tmp/bin-bake-comm "Procedural Drawer"
+node tools/bake-bridge.mjs /tmp/bin-bake-comm 7801
+```
+
+Then open `/bin/live`. The `/bin` comparison does not need those services: its
+Blender side uses 12 checked-in truth bakes while GN-VM evaluates live.
 
 ## Re-exporting the asset kit
 

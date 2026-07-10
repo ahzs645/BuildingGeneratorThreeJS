@@ -17,6 +17,10 @@ interface BvhNode extends Bounds { left?: BvhNode; right?: BvhNode; ids?: number
 const positionalArgs = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
 const truthPath = positionalArgs[0] ?? "public/dojo/vase_truth.glb";
 const vmPath = positionalArgs[1] ?? "public/dojo/vase_vm.json";
+const materialOption = process.argv.find((arg) => arg.startsWith("--material="));
+const materialFilter = materialOption ? materialOption.slice("--material=".length) : undefined;
+const normalizedMaterialFilter = materialFilter === "<none>" ? null : materialFilter;
+const brief = process.argv.includes("--brief");
 
 function identity(): Mat4 { return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]; }
 function mul(a: Mat4, b: Mat4): Mat4 {
@@ -41,7 +45,7 @@ function fromTrs(t?: number[], q?: number[], s?: number[]): Mat4 {
 }
 function apply(m: Mat4, p: Vec3): Vec3 { return [m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13], m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14]]; }
 
-function readGlb(path: string): TriMesh {
+function readGlb(path: string, filter?: string | null): TriMesh {
   const buf = readFileSync(path);
   if (buf.toString("utf8", 0, 4) !== "glTF") throw new Error("not a GLB");
   let off = 12, json: any, bin: Buffer | undefined;
@@ -79,6 +83,8 @@ function readGlb(path: string): TriMesh {
     const node = json.nodes[nodeIndex], world = mul(parent, node.matrix ? node.matrix.slice(0, 16) : fromTrs(node.translation, node.rotation, node.scale));
     if (node.mesh !== undefined) for (const primitive of json.meshes[node.mesh].primitives ?? []) {
       if ((primitive.mode ?? 4) !== 4) continue;
+      const material = primitive.material === undefined ? null : json.materials?.[primitive.material]?.name ?? null;
+      if (filter !== undefined && material !== filter) continue;
       const local = positions(primitive.attributes.POSITION), base = out.positions.length;
       // glTF is Y-up. Convert transformed positions back to Blender/VM Z-up.
       for (const p of local) {
@@ -94,14 +100,34 @@ function readGlb(path: string): TriMesh {
   return out;
 }
 
-function readVm(path: string): TriMesh {
+function readVm(path: string, filter?: string | null): TriMesh {
   const vm = JSON.parse(readFileSync(path, "utf8"));
   const loc = vm.object?.location ?? [275.16204833984375, 0, 0];
   const positions: Vec3[] = [];
   for (let i = 0; i < vm.positions.length; i += 3) positions.push([vm.positions[i] + loc[0], vm.positions[i + 1] + loc[1], vm.positions[i + 2] + loc[2]]);
   const triangles: [number, number, number][] = [];
-  for (let i = 0; i < vm.indices.length; i += 3) triangles.push([vm.indices[i], vm.indices[i + 1], vm.indices[i + 2]]);
-  return { positions, triangles };
+  if (filter === undefined) {
+    for (let i = 0; i < vm.indices.length; i += 3) triangles.push([vm.indices[i], vm.indices[i + 1], vm.indices[i + 2]]);
+  } else {
+    for (const group of vm.groups ?? []) {
+      if ((group.material ?? null) !== filter) continue;
+      for (let i = group.start; i < group.start + group.count; i += 3)
+        triangles.push([vm.indices[i], vm.indices[i + 1], vm.indices[i + 2]]);
+    }
+  }
+  if (filter === undefined) return { positions, triangles };
+  const remap = new Map<number, number>();
+  const filteredPositions: Vec3[] = [];
+  const filteredTriangles = triangles.map((triangle) => triangle.map((old) => {
+    let next = remap.get(old);
+    if (next === undefined) {
+      next = filteredPositions.length;
+      remap.set(old, next);
+      filteredPositions.push(positions[old]);
+    }
+    return next;
+  }) as [number, number, number]);
+  return { positions: filteredPositions, triangles: filteredTriangles };
 }
 
 function boundsOf(points: Vec3[]): Bounds {
@@ -299,7 +325,7 @@ function reportHeightBands(label: string, mesh: TriMesh, target: TriMesh, bvh: B
   }
 }
 
-const truth = readGlb(truthPath), vm = readVm(vmPath);
+const truth = readGlb(truthPath, normalizedMaterialFilter), vm = readVm(vmPath, normalizedMaterialFilter);
 console.log(`truth ${truth.positions.length}v ${truth.triangles.length}t ${JSON.stringify(boundsOf(truth.positions))}`);
 console.log(`vm ${vm.positions.length}v ${vm.triangles.length}t ${JSON.stringify(boundsOf(vm.positions))}`);
 areaSummary("truth", truth);
@@ -318,7 +344,7 @@ if (process.argv.includes("--regions")) {
   reportHeightBands("truth -> VM", truth, vm, vmBvh);
   reportHeightBands("VM -> truth", vm, truth, truthBvh);
 }
-for (const [index, component] of connectedComponents(vm).entries()) {
+if (!brief) for (const [index, component] of connectedComponents(vm).entries()) {
   console.log(`VM component ${index + 1}: ${component.vertices.length}v ${component.triangleIds.length}t ${JSON.stringify(boundsOf(component.vertices))}`);
   report(`VM component ${index + 1} -> truth surface`, component.vertices, truth, truthBvh);
   if (process.argv.includes("--centroids"))

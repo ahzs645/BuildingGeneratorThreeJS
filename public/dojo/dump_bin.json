@@ -110,6 +110,42 @@
    "mesh_stats": {
     "verts": 4,
     "faces": 1
+   },
+   "mesh": {
+    "verts": [
+     [
+      -1.0,
+      -1.0,
+      0.0
+     ],
+     [
+      1.0,
+      -1.0,
+      0.0
+     ],
+     [
+      -1.0,
+      1.0,
+      0.0
+     ],
+     [
+      1.0,
+      1.0,
+      0.0
+     ]
+    ],
+    "faces": [
+     [
+      0,
+      1,
+      3,
+      2
+     ]
+    ],
+    "face_materials": [
+     0
+    ],
+    "edges": []
    }
   },
   {
@@ -8657,7 +8693,8 @@
      "from_socket": "Geometry",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group Input.002",
@@ -8720,7 +8757,8 @@
      "from_socket": "Geometry",
      "to_node": "Join Geometry.002",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Join Geometry.002",
@@ -8923,14 +8961,16 @@
      "from_socket": "Geometry",
      "to_node": "Join Geometry.003",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Set Position.006",
      "from_socket": "Geometry",
      "to_node": "Join Geometry.003",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group Input.007",
@@ -9000,7 +9040,8 @@
      "from_socket": "Output",
      "to_node": "Join Geometry.004",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Math.011",
@@ -9105,7 +9146,8 @@
      "from_socket": "Output",
      "to_node": "Join Geometry.004",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Join Geometry.006",
@@ -9182,7 +9224,8 @@
      "from_socket": "Output",
      "to_node": "Group.003",
      "to_socket": "Socket_1",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.017",
@@ -9224,21 +9267,24 @@
      "from_socket": "Socket_2",
      "to_node": "Join Geometry.005",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Transform Geometry.002",
      "from_socket": "Geometry",
      "to_node": "Join Geometry.005",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     },
     {
      "from_node": "Join Geometry.005",
      "from_socket": "Geometry",
      "to_node": "Join Geometry.006",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Set Position.010",
@@ -9329,14 +9375,16 @@
      "from_socket": "Output",
      "to_node": "Join Geometry.004",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Set Position",
      "from_socket": "Geometry",
      "to_node": "Join Geometry.001",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Reroute.003",
@@ -9420,7 +9468,8 @@
      "from_socket": "Mesh",
      "to_node": "Join Geometry.010",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.009",
@@ -9469,7 +9518,8 @@
      "from_socket": "Socket_1",
      "to_node": "Join Geometry.005",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.005",
@@ -9546,7 +9596,8 @@
      "from_socket": "Geometry",
      "to_node": "Join Geometry.011",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Switch.002",
@@ -9616,7 +9667,8 @@
      "from_socket": "Curve",
      "to_node": "Join Geometry.012",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Boolean",
@@ -9693,7 +9745,8 @@
      "from_socket": "Geometry",
      "to_node": "Join Geometry.007",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.018",
@@ -9749,7 +9802,8 @@
      "from_socket": "Socket_3",
      "to_node": "Join Geometry.005",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Extrude Mesh",
@@ -12408,7 +12462,8 @@
      "from_socket": "Geometry",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Set Position.001",
@@ -12506,7 +12561,8 @@
      "from_socket": "Mesh",
      "to_node": "Join Geometry.001",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Set Position.002",
@@ -15762,7 +15818,8 @@
      "from_socket": "Geometry",
      "to_node": "Join Geometry.001",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Set Position.007",
@@ -16863,7 +16920,8 @@
      "from_socket": "Socket_2",
      "to_node": "Join Strings",
      "to_socket": "Strings",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group Input",
@@ -21511,7 +21569,8 @@
      "from_socket": "Output",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Mesh Circle",
@@ -21546,14 +21605,16 @@
      "from_socket": "Output",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Reroute.005",
      "from_socket": "Output",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Reroute.006",
@@ -21882,7 +21943,8 @@
      "from_socket": "Mesh",
      "to_node": "Join Geometry.001",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Switch.005",
@@ -21952,7 +22014,8 @@
      "from_socket": "Inverted",
      "to_node": "Join Geometry.001",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Math",
@@ -28175,7 +28238,8 @@
      "from_socket": "Mesh",
      "to_node": "Join Geometry.008",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group Input",
@@ -32718,7 +32782,8 @@
      "from_socket": "String",
      "to_node": "Join Strings",
      "to_socket": "Strings",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -38695,21 +38760,24 @@
      "from_socket": "Output",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Switch.010",
      "from_socket": "Output",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Switch.013",
      "from_socket": "Output",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group Input",
@@ -38821,14 +38889,16 @@
      "from_socket": "Output",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     },
     {
      "from_node": "Switch.015",
      "from_socket": "Output",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 5
     },
     {
      "from_node": "Separate Components",
@@ -39003,21 +39073,24 @@
      "from_socket": "Output",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 6
     },
     {
      "from_node": "Switch.017",
      "from_socket": "Output",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 7
     },
     {
      "from_node": "Switch.016",
      "from_socket": "Output",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 8
     },
     {
      "from_node": "Separate Components",
@@ -39066,7 +39139,8 @@
      "from_socket": "Output",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 9
     },
     {
      "from_node": "Group.003",
@@ -41303,35 +41377,40 @@
      "from_socket": "Instances",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Instance on Points.003",
      "from_socket": "Instances",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Instance on Points.002",
      "from_socket": "Instances",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Instance on Points",
      "from_socket": "Instances",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     },
     {
      "from_node": "Instance on Points.001",
      "from_socket": "Instances",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 5
     },
     {
      "from_node": "Join Geometry",
@@ -43434,35 +43513,40 @@
      "from_socket": "Instances",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Instance on Points.003",
      "from_socket": "Instances",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Instance on Points.002",
      "from_socket": "Instances",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Instance on Points",
      "from_socket": "Instances",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     },
     {
      "from_node": "Instance on Points.001",
      "from_socket": "Instances",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 5
     },
     {
      "from_node": "Join Geometry",
@@ -44234,7 +44318,8 @@
      "from_socket": "Geometry",
      "to_node": "Join Geometry.001",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Join Geometry.001",
@@ -46174,7 +46259,8 @@
      "from_socket": "Geometry",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Index",
@@ -46272,7 +46358,8 @@
      "from_socket": "Geometry",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Scene Time",
@@ -46902,7 +46989,8 @@
      "from_socket": "String",
      "to_node": "Join Strings",
      "to_socket": "Strings",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "String to Curves",
@@ -47592,7 +47680,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -48004,7 +48093,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -48247,7 +48337,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -48557,14 +48648,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -48976,7 +49069,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -49219,7 +49313,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -49529,14 +49624,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -49779,7 +49876,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -50089,14 +50187,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -50406,14 +50506,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -50656,7 +50758,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -51068,7 +51171,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -51311,7 +51415,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -51621,14 +51726,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -51871,7 +51978,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -52181,14 +52289,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -52498,14 +52608,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -52882,21 +52994,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -53139,7 +53254,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -53449,14 +53565,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -53766,14 +53884,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -54150,21 +54270,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -54474,14 +54597,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -54858,21 +54983,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -55249,21 +55377,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -55573,14 +55704,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -55992,7 +56125,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -56235,7 +56369,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -56545,14 +56680,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -56795,7 +56932,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -57105,14 +57243,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -57422,14 +57562,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -57806,21 +57948,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -58063,7 +58208,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -58373,14 +58519,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -58690,14 +58838,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -59074,21 +59224,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -59398,14 +59551,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -59782,21 +59937,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -60173,21 +60331,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -60497,14 +60658,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -60747,7 +60910,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -61057,14 +61221,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -61374,14 +61540,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -61624,7 +61792,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -61934,14 +62103,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -62318,21 +62489,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -62709,21 +62883,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -63033,14 +63210,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -63350,14 +63529,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -63734,21 +63915,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -64125,21 +64309,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -64449,14 +64636,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -64833,21 +65022,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -65291,28 +65483,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -65756,28 +65952,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -66020,7 +66220,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -66432,7 +66633,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -66675,7 +66877,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -66985,14 +67188,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -67235,7 +67440,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -67545,14 +67751,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -67862,14 +68070,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -68246,21 +68456,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -68503,7 +68716,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -68813,14 +69027,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -69130,14 +69346,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -69514,21 +69732,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -69838,14 +70059,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -70222,21 +70445,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -70613,21 +70839,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -70937,14 +71166,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -71187,7 +71418,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -71497,14 +71729,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -71814,14 +72048,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -72198,21 +72434,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -72522,14 +72761,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -72906,21 +73147,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -73297,21 +73541,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -73755,28 +74002,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -74086,14 +74337,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -74470,21 +74723,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -74861,21 +75117,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -75319,28 +75578,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -75717,21 +75980,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -76175,28 +76441,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -76640,28 +76910,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -77038,21 +77312,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -77295,7 +77572,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -77605,14 +77883,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -77922,14 +78202,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -78306,21 +78588,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -78630,14 +78915,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -79014,21 +79301,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -79271,7 +79561,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -79581,14 +79872,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -79898,14 +80191,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -80282,21 +80577,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -80673,21 +80971,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -81131,28 +81432,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -81529,21 +81834,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -81987,28 +82295,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -82318,14 +82630,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -82568,7 +82882,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -82878,14 +83193,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -83262,21 +83579,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -83653,21 +83973,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -83977,14 +84300,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -84361,21 +84686,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -84819,28 +85147,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -85150,14 +85482,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -85400,7 +85734,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -85777,21 +86112,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -86235,28 +86573,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -86700,28 +87042,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -87098,21 +87444,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -87556,28 +87905,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -87820,7 +88173,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -88197,21 +88551,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -88792,7 +89149,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -89035,7 +89393,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -89345,14 +89704,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -89595,7 +89956,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -89905,14 +90267,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -90222,14 +90586,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -90606,21 +90972,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -90863,7 +91232,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -91173,14 +91543,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -91490,14 +91862,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -91874,21 +92248,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -92198,14 +92575,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -92582,21 +92961,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -92973,21 +93355,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -93297,14 +93682,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -93547,7 +93934,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -93857,14 +94245,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -94174,14 +94564,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -94558,21 +94950,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -94882,14 +95277,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -95266,21 +95663,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -95657,21 +96057,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -96115,28 +96518,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -96446,14 +96853,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -96696,7 +97105,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -97073,21 +97483,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -97397,14 +97810,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -97781,21 +98196,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -98105,14 +98523,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -98556,28 +98976,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -98820,7 +99244,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -99063,7 +99488,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -99373,14 +99799,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -99690,14 +100118,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -100074,21 +100504,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -100398,14 +100831,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -100782,21 +101217,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -101173,21 +101611,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -101631,28 +102072,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -101962,14 +102407,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -102346,21 +102793,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -102737,21 +103187,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -103195,28 +103648,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -103593,21 +104050,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -104051,28 +104511,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -104516,28 +104980,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -104914,21 +105382,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -105238,14 +105709,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -105622,21 +106095,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -106013,21 +106489,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -106337,14 +106816,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -106721,21 +107202,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -107179,28 +107663,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -107644,28 +108132,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -108042,21 +108534,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -108433,21 +108928,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -108757,14 +109255,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -109208,28 +109708,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -109472,7 +109976,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -109916,28 +110421,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -110314,21 +110823,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -110571,7 +111083,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -110983,7 +111496,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -111293,14 +111807,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -111610,14 +112126,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -111994,21 +112512,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -112318,14 +112839,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -112702,21 +113225,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -113093,21 +113619,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -113551,28 +114080,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -113882,14 +114415,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -114266,21 +114801,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -114657,21 +115195,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -115115,28 +115656,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -115379,7 +115924,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -115689,14 +116235,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -116006,14 +116554,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -116256,7 +116806,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -116566,14 +117117,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -116950,21 +117503,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -117341,21 +117897,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -117799,28 +118358,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -118197,21 +118760,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -118655,28 +119221,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -119120,28 +119690,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -119384,7 +119958,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -119761,21 +120336,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -120085,14 +120663,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -120536,28 +121116,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -120934,21 +121518,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -121258,14 +121845,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -121508,7 +122097,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -121885,21 +122475,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -122378,14 +122971,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -122762,21 +123357,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -123153,21 +123751,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -123611,28 +124212,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -124009,21 +124614,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -124467,28 +125075,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -124798,14 +125410,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -125182,21 +125796,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -125573,21 +126190,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -126031,28 +126651,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -126496,28 +127120,32 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     },
     {
      "from_node": "Group.004",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 4
     }
    ]
   },
@@ -126760,7 +127388,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -127070,14 +127699,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -127454,21 +128085,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -127711,7 +128345,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -128123,7 +128758,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -128433,14 +129069,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -128750,14 +129388,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -129000,7 +129640,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -129310,14 +129951,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -129694,21 +130337,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -129951,7 +130597,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -130430,14 +131077,16 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     }
    ]
   },
@@ -130680,7 +131329,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },
@@ -131057,21 +131707,24 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     },
     {
      "from_node": "Group.002",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 2
     },
     {
      "from_node": "Group.003",
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 3
     }
    ]
   },
@@ -131483,7 +132136,8 @@
      "from_socket": "Output_0",
      "to_node": "Join Geometry",
      "to_socket": "Geometry",
-     "to_idx": null
+     "to_idx": null,
+     "multi_input_sort_id": 1
     }
    ]
   },

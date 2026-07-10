@@ -6,8 +6,7 @@ const cards = [
   { href: "/blendbridge", tag: "Importer · Local", title: "BlendBridge", badge: "new", copy: "Drop in a Blender file. Extract its Geometry Nodes graph, inspect browser coverage, generate controls, run a worker-isolated preview, and export reusable graph JSON.", action: "Import a .blend" },
   { href: "/gallery", tag: "Node Dojo · Gallery", title: "More Node Dojo Studies", badge: "new", copy: "Chrome Crayon, Schoen Gyroid, Schwarz P-Surface, the procedural hat, and the recursive bin in one selectable browser viewer.", action: "Open gallery" },
   { href: "/building", tag: "Hand-ported", title: "Hong Kong Building", copy: "A 592-node build system reverse-engineered into a TypeScript placement algorithm. About 190 instanced parts and 18 live parameters.", action: "Open generator" },
-  { href: "/bin", tag: "Path A · Bake", title: "Dojo Bin Studio", badge: "interactive", copy: "The complete Node Dojo bin with pre-baked variants at Blender fidelity and an interactive selected-bin control.", action: "Open studio" },
-  { href: "/gnvm", tag: "Path B · Live VM", title: "Dojo Bin — Live VM", badge: "GN-VM", copy: "The same Blender graph executed by the browser Geometry Nodes interpreter with generated controls and live mesh rebuilds.", action: "Open live VM" },
+  { href: "/bin", tag: "Blender ↔ GN-VM", title: "Dojo Bin Compare", badge: "interactive", copy: "One synchronized workspace for Blender truth and the browser VM. Change Bin Select, overlay both meshes, inspect material counts, or separate them side by side.", action: "Compare both" },
   { href: "/vase", tag: "Path B · Parity", title: "Bubble Vase Compare", copy: "Blender truth overlaid on the GN-VM result, with wireframe, solid, overlay, and side-by-side comparison controls.", action: "Open compare" },
 ] as const;
 

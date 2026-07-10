@@ -187,12 +187,24 @@ function computeVertexNormals(mesh: Mesh): Vec3[] {
   });
   const faceNormals = faceNormalWeights.map((n) => vnorm(n));
   const incident: number[][] = mesh.positions.map(() => []);
+  // Blender's mesh point normals are corner-angle weighted. Equal face
+  // weighting badly tilts a rounded n-gon rim toward its two wall quads: the
+  // n-gon's almost-pi corner must contribute about twice each quad's pi/2
+  // corner. The Dojo bin's normal-based thickness offset exposes this directly.
   const acc: Vec3[] = mesh.positions.map(() => [0, 0, 0]);
   for (let fi = 0; fi < mesh.faces.length; fi++) {
+    const f = mesh.faces[fi];
     const n = faceNormals[fi];
-    for (const vi of mesh.faces[fi]) {
+    for (let k = 0; k < f.length; k++) {
+      const vi = f[k];
       incident[vi]?.push(fi);
-      acc[vi] = vadd(acc[vi], n);
+      const p = mesh.positions[vi];
+      const prev = mesh.positions[f[(k - 1 + f.length) % f.length]];
+      const next = mesh.positions[f[(k + 1) % f.length]];
+      const a = vnorm(vsub(prev, p));
+      const b = vnorm(vsub(next, p));
+      const angle = Math.acos(Math.max(-1, Math.min(1, vdot(a, b))));
+      acc[vi] = vadd(acc[vi], vscale(n, Number.isFinite(angle) ? angle : 0));
     }
   }
 

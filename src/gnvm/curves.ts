@@ -598,8 +598,11 @@ function meshEdgesToCurvesInternal(mesh: Mesh, selected?: (vi: number) => boolea
     if (!adj.has(b)) adj.set(b, new Set());
     adj.get(a)!.add(b); adj.get(b)!.add(a);
   };
-  for (const f of mesh.faces) for (let i = 0; i < f.length; i++) addE(f[i], f[(i + 1) % f.length]);
+  // Mesh to Curve follows stored edge order. This can differ from face winding:
+  // Grid starts BL->TL while Mesh Circle starts +X->+Y. Fall back to polygon
+  // loops only for meshes that do not carry explicit edges.
   for (const [a, b] of mesh.edges) addE(a, b);
+  for (const f of mesh.faces) for (let i = 0; i < f.length; i++) addE(f[i], f[(i + 1) % f.length]);
   const out: { spline: Spline; verts: number[] }[] = [];
   const visitedEdge = new Set<string>();
   const ek = (a: number, b: number) => (a < b ? `${a}_${b}` : `${b}_${a}`);

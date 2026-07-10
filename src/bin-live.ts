@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import GUI from "lil-gui";
+import { BIN_PARAMETERS } from "./bin-params";
 
 const BRIDGE = "http://localhost:7801";
 const canvas = document.getElementById("app") as HTMLCanvasElement;
@@ -57,23 +58,8 @@ function show(g: THREE.Group) {
   if (!framed) { frame(g); framed = true; }
 }
 
-// param config: sensible ranges + the bin's authored defaults
-const PARAMS: { name: string; min?: number; max?: number; step?: number; def: number | boolean; bool?: boolean }[] = [
-  { name: "Size X", min: 0.1, max: 3, step: 0.01, def: 0.708 },
-  { name: "Size Y", min: 0.1, max: 3, step: 0.01, def: 0.511 },
-  { name: "Size Z", min: 0, max: 1, step: 0.01, def: 0.113 },
-  { name: "bin gap size", min: 0.2, max: 50, step: 0.1, def: 1.3 },
-  { name: "bin wall thiccness", min: 0, max: 30, step: 0.1, def: 1.808 },
-  { name: "fillet", min: 0, max: 30, step: 0.1, def: 0.811 },
-  { name: "divide x", min: 0, max: 1, step: 0.001, def: 0.417 },
-  { name: "divide y", min: 0, max: 1, step: 0.001, def: 0.633 },
-  { name: "Bin Select", min: 0, max: 20, step: 1, def: 5 },
-  { name: "print layers", min: 0, max: 5, step: 0.01, def: 0.052 },
-  { name: "make exportable", bool: true, def: false },
-];
-
 const state: Record<string, number | boolean> = {};
-for (const p of PARAMS) state[p.name] = p.def;
+for (const p of BIN_PARAMETERS) state[p.name] = p.defaultValue;
 
 let baking = false;
 let pending = false;
@@ -115,8 +101,8 @@ async function main() {
     return;
   }
   const gui = new GUI({ title: "dojo bin · live (Blender)" });
-  for (const p of PARAMS) {
-    if (p.bool) gui.add(state, p.name).onChange(requestBake);
+  for (const p of BIN_PARAMETERS) {
+    if (p.boolean) gui.add(state, p.name).onChange(requestBake);
     else gui.add(state, p.name, p.min, p.max, p.step).onChange(requestBake);
   }
   await bake(); // initial

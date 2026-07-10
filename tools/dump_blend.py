@@ -93,11 +93,18 @@ def dump_tree(tree):
                             entry[attr] = val
             d["interface"].append(entry)
     for l in tree.links:
-        d["links"].append({
+        entry = {
             "from_node": l.from_node.name, "from_socket": l.from_socket.identifier,
             "to_node": l.to_node.name, "to_socket": l.to_socket.identifier,
             "to_idx": l.to_socket.index if hasattr(l.to_socket, "index") else None,
-        })
+        }
+        # Multi-input sockets (Join Geometry) evaluate from highest sort id to
+        # lowest. Omit the common zero to keep dumps compact; any non-zero link
+        # is enough for the evaluator to enable sorted multi-input handling.
+        sort_id = getattr(l, "multi_input_sort_id", 0)
+        if sort_id:
+            entry["multi_input_sort_id"] = sort_id
+        d["links"].append(entry)
     return d
 
 result = {"blender_version": bpy.app.version_string, "objects": [], "node_groups": {}, "materials": {}, "images": []}

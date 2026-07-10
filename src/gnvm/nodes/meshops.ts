@@ -217,43 +217,62 @@ reg("GeometryNodeMergeByDistance", (api) => {
   const cellKey = (x: number, y: number, z: number) => `${x}_${y}_${z}`;
   const selectedCtx = makeFieldCtx(g, "POINT");
   const selected = api.field("Selection").array(selectedCtx);
+  // Blender mesh coordinates are float32 at node boundaries. Preserve that
+  // precision for threshold comparisons; double-precision fillet coordinates
+  // can differ by ~1e-8 and choose the opposite side of an exact 0.001 weld.
+  const weldPositions: Vec3[] = mesh.positions.map((p) => [Math.fround(p[0]), Math.fround(p[1]), Math.fround(p[2])]);
+  // Blender uses non-transitive representative clusters (a chain of points
+  // less than Distance apart must not collapse into one vertex), then places
+  // each result at its cluster average.
   const reps = new Map<string, number[]>();
   const remap: number[] = [];
   const srcVert: number[] = [];
-  const pos: Vec3[] = [];
+  const seeds: Vec3[] = [];
+  const sums: Vec3[] = [];
+  const counts: number[] = [];
   for (let i = 0; i < mesh.positions.length; i++) {
-    const p = mesh.positions[i];
+    const p = weldPositions[i];
     let found = -1;
-    if (asNum(selected[i] ?? 1)) {
+    if (asNum(selected[i] ?? 1) > 0) {
       const [cx, cy, cz] = cellCoord(p);
       for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
         const bucket = reps.get(cellKey(cx + dx, cy + dy, cz + dz));
         if (!bucket) continue;
         for (const ri of bucket) {
-          const q = pos[ri];
+          const q = seeds[ri];
           const d2 = (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2;
           if (d2 <= distSq && (found < 0 || ri < found)) found = ri;
         }
       }
       if (found >= 0) {
         remap[i] = found;
+        sums[found] = vadd(sums[found], p);
+        counts[found]++;
         continue;
       }
-      const ni = pos.length;
+      const ni = seeds.length;
       remap[i] = ni;
       srcVert[ni] = i;
-      pos.push([...p] as Vec3);
-      const bucketKey = cellKey(cx, cy, cz);
-      const bucket = reps.get(bucketKey);
+      seeds.push([...p] as Vec3);
+      sums.push([...p] as Vec3);
+      counts.push(1);
+      const key = cellKey(cx, cy, cz);
+      const bucket = reps.get(key);
       if (bucket) bucket.push(ni);
-      else reps.set(bucketKey, [ni]);
+      else reps.set(key, [ni]);
     } else {
-      const ni = pos.length;
+      const ni = seeds.length;
       remap[i] = ni;
       srcVert[ni] = i;
-      pos.push([...p] as Vec3);
+      seeds.push([...p] as Vec3);
+      sums.push([...p] as Vec3);
+      counts.push(1);
     }
   }
+  const pos = sums.map((sum, i) => {
+    const averaged = vscale(sum, 1 / counts[i]);
+    return [Math.fround(averaged[0]), Math.fround(averaged[1]), Math.fround(averaged[2])] as Vec3;
+  });
   const m = new Mesh();
   m.positions = pos;
   m.materialSlots = [...mesh.materialSlots];
@@ -274,19 +293,19 @@ reg("GeometryNodeMergeByDistance", (api) => {
   for (let fi = 0; fi < mesh.faces.length; fi++) {
     const nf: number[] = [];
     const nc: number[] = [];
+    const faceVerts = new Set<number>();
     const f = mesh.faces[fi];
     for (let ci = 0; ci < f.length; ci++) {
       const r = remap[f[ci]];
-      if (!nf.length || nf[nf.length - 1] !== r) {
-        nf.push(r);
-        nc.push(cornerStart[fi] + ci);
-      }
+      // Mesh welding removes repeated corners even when the duplicates are not
+      // adjacent in the original polygon. Keeping [a,b,a,c] as a four-corner
+      // face inflated the bin's material tessellation; Blender emits [a,b,c].
+      if (faceVerts.has(r)) continue;
+      faceVerts.add(r);
+      nf.push(r);
+      nc.push(cornerStart[fi] + ci);
     }
-    if (nf.length >= 2 && nf[0] === nf[nf.length - 1]) {
-      nf.pop();
-      nc.pop();
-    }
-    if (new Set(nf).size >= 3) {
+    if (nf.length >= 3) {
       m.faces.push(nf);
       m.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
       keptFace.push(fi);
@@ -403,6 +422,13 @@ reg("GeometryNodeExtrudeMesh", (api) => {
         : inEdges[ei].faces.length === 0 && (vertexEdgeCount[ca] <= 1 || vertexEdgeCount[cb] <= 1);
       if (inheritedTop[ei]) {
         if (!profileBoundary && inEdges[ei].faces.length === 1) [a, b] = [b, a];
+      } else if (inEdges[ei].faces.length > 0) {
+        // Blender traverses an already face-bound edge opposite the adjacent
+        // face when building the new side quad. This is observable on an open
+        // filled floor: extruding its perimeter upward gives inward-facing
+        // wall normals. The bin's thickness group intentionally relies on that
+        // normal field to inset its duplicate shell.
+        [a, b] = [b, a];
       } else if (profileBoundary) [a, b] = [b, a];
       const na = dupOf(a), nb = dupOf(b);
       sideFaceIdx.push(out.faces.length);
@@ -558,12 +584,30 @@ reg("GeometryNodeExtrudeMesh", (api) => {
         edgeCount.set(k, e);
       }
     }
+    // A region extrude duplicates only its boundary vertices. Vertices wholly
+    // inside the selected region are reused and moved in place. Duplicating the
+    // whole region happens to leave the face count unchanged, but it changes
+    // vertex-normal interpolation and prevents later Merge by Distance nodes
+    // from reproducing Blender's topology (the Dojo bin doubled 896 interior
+    // vertices here and its wall-thickness field consequently pointed outward).
+    const boundaryVerts = new Set<number>();
+    for (const e of edgeCount.values()) {
+      if (e.n !== 1) continue;
+      boundaryVerts.add(e.a);
+      boundaryVerts.add(e.b);
+    }
     const newIdx = new Map<number, number>();
     for (const v of vertSet) {
-      const idx = out.positions.length;
-      out.positions.push(vadd(mesh.positions[v], deltaFor(v, normAcc.get(v)!)));
-      srcVert.push(v);
-      newIdx.set(v, idx);
+      const moved = vadd(mesh.positions[v], deltaFor(v, normAcc.get(v)!));
+      if (boundaryVerts.has(v)) {
+        const idx = out.positions.length;
+        out.positions.push(moved);
+        srcVert.push(v);
+        newIdx.set(v, idx);
+      } else {
+        out.positions[v] = moved;
+        newIdx.set(v, v);
+      }
     }
     for (const fi of selFaces) {
       const f = mesh.faces[fi];
@@ -663,15 +707,28 @@ reg("GeometryNodeSplitEdges", (api) => {
   const pointAttrNames = [...m.attributes].filter(([, a]) => a.domain === "POINT").map(([k]) => k);
   const newPointAttrs = new Map<string, Elem[]>();
   for (const name of pointAttrNames) newPointAttrs.set(name, []);
+  const faceCopies: Map<number, number>[] = [];
   for (let fi = 0; fi < m.faces.length; fi++) {
     const f = m.faces[fi];
     const base = nm.positions.length;
+    const copies = new Map<number, number>();
     for (const vi of f) {
       nm.positions.push([...m.positions[vi]] as Vec3);
+      copies.set(vi, base + copies.size);
       for (const name of pointAttrNames) newPointAttrs.get(name)!.push(m.attributes.get(name)!.data[vi]);
     }
+    faceCopies.push(copies);
     nm.faces.push(f.map((_, k) => base + k));
     nm.faceMaterial.push(m.faceMaterial[fi] ?? 0);
+  }
+  if (m.edges.length) {
+    for (const [a, b] of m.edges)
+      for (const copies of faceCopies) {
+        const na = copies.get(a), nb = copies.get(b);
+        if (na !== undefined && nb !== undefined) nm.edges.push([na, nb]);
+      }
+  } else {
+    for (const f of nm.faces) for (let k = 0; k < f.length; k++) nm.edges.push([f[k], f[(k + 1) % f.length]]);
   }
   for (const [name, data] of newPointAttrs) nm.attributes.set(name, { domain: "POINT", data });
   // carry FACE attributes unchanged (same face count/order)
