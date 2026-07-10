@@ -283,7 +283,10 @@ function clampedNurbsSpline(s: Spline): Spline {
   if (n < 2) return cloneSpline(s);
   const degree = Math.min(3, n - 1);
   const knots = clampedKnots(n, degree);
-  const count = Math.max(2, (n - 1) * SPLINE_TYPE_SAMPLES_PER_SEGMENT + 1);
+  // Blender evaluates an open NURBS once per non-zero knot span, not once per
+  // control-point interval. With order 4 (degree 3), six controls therefore
+  // produce (6 - 3) * resolution + 1 = 37 evaluated points at resolution 12.
+  const count = Math.max(2, (n - degree) * SPLINE_TYPE_SAMPLES_PER_SEGMENT + 1);
   const out: Vec3[] = [];
   for (let i = 0; i < count; i++) out.push(deBoor(pts, degree, knots, i / (count - 1)));
   return { points: out, cyclic: false };

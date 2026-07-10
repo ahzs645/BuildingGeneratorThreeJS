@@ -30,6 +30,13 @@ if target is None:
 
 print("BAKE target:", target.name)
 
+# Tutorial files often park finished studies in a collection that is not linked
+# into the active scene. Temporarily link the requested object so Blender's
+# selection-only glTF export can still bake it by name.
+if target.name not in bpy.context.view_layer.objects:
+    bpy.context.scene.collection.objects.link(target)
+    bpy.context.view_layer.update()
+
 # make sure it renders/exports: unhide, select only it
 for o in bpy.data.objects:
     o.select_set(False)

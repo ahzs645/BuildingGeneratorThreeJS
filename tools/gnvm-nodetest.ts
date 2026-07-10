@@ -152,7 +152,7 @@ function meshSignedAreaXY(m: Mesh): number {
   ).Curve as Geometry;
   const pts = c.curves[0].points;
   const maxX = Math.max(...pts.map((p) => p[0]));
-  check("SetSplineType NURBS densifies open spline", pts.length === 37, `got ${pts.length}`);
+  check("SetSplineType NURBS uses Blender's non-zero knot spans", pts.length === 13, `got ${pts.length}`);
   check("SetSplineType NURBS endpoints preserved", approx(pts[0], [0, 0, 0]) && approx(pts[pts.length - 1], [0, 1, 0]));
   check("SetSplineType NURBS cuts inward from control corner", maxX < 0.76 && maxX > 0.74, `maxX=${maxX}`);
 }
