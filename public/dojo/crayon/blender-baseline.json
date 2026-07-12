@@ -1,0 +1,89 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "CHROME CRAYON OBJECT",
+  "modifier": "CHROME CRAYON 3D",
+  "node_group": "CHROME CRAYON 3D _4.3_DEC2024",
+  "saved_values": {
+    "Show Pt Count": false,
+    "crv preview": false,
+    "Line Thiccness": 24.318012237548828,
+    "Peak Height": 404.7418212890625,
+    "resolution": 0.8351974487304688,
+    "Sigilize": 665,
+    "Soften": 0,
+    "3D material": "chrome.003",
+    "FLATTEN": false,
+    "Flat Color": [
+      2.0014684200286865,
+      2.0014684200286865,
+      2.0014684200286865,
+      1.0
+    ],
+    "Material": "chrome.003",
+    "Extrude Base": 1.0,
+    "SPIRO": 3
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "browser baseline",
+        "overrides": {
+          "Sigilize": 20,
+          "Soften": 0,
+          "SPIRO": 0,
+          "resolution": 0.2
+        }
+      },
+      "status": "ok",
+      "verts": 2152,
+      "faces": 2152,
+      "bbox": {
+        "min": [
+          -2.1776,
+          -102.7766,
+          -1.0
+        ],
+        "max": [
+          205.9204,
+          81.6582,
+          21.7418
+        ]
+      },
+      "elapsed_ms": 5.9,
+      "export": "00-browser-baseline.glb"
+    }
+  ],
+  "export_dir": "public/dojo/crayon",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "chrome.003": {
+        "faces": 81958,
+        "verts": 81952
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 81958,
+      "verts": 81952
+    }
+  }
+}

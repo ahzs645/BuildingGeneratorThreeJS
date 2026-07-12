@@ -9,12 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@gltf-transform/core": "^4.4.1",
+    "@xyflow/react": "^12.11.2",
     "lil-gui": "^0.20.0",
     "manifold-3d": "^3.5.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.1",
-    "three": "^0.185.1"
+    "three": "^0.185.1",
+    "three-mesh-bvh": "^0.9.11"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",

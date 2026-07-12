@@ -121,7 +121,13 @@ def set_modifier_inputs(mod, name_to_identifier, saved_values, overrides):
     for name, value in saved_values.items():
         identifier = name_to_identifier.get(name)
         if identifier is not None:
-            mod[identifier] = value
+            try:
+                mod[identifier] = value
+            except TypeError:
+                # Datablock-valued sockets (materials/objects) are serialized as
+                # names for reports. Keep their existing modifier value instead
+                # of attempting to assign that report string back to Blender.
+                pass
     for name, value in overrides.items():
         identifier = name_to_identifier.get(name)
         if identifier is None:

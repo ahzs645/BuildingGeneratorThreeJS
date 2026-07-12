@@ -1,6 +1,7 @@
 // Field-plumbing nodes: sample-at-index, evaluate-on-domain, align-euler.
 import { Field, Vec3, Elem, Domain, asNum, asVec3, vnorm, vcross, vdot, vlen } from "../core";
 import { reg } from "../registry";
+import { buildTopology } from "../geometry";
 
 const DOMAINS = new Set<Domain>(["POINT", "EDGE", "FACE", "CORNER", "CURVE", "INSTANCE"]);
 
@@ -31,9 +32,18 @@ reg("GeometryNodeFieldAtIndex", (api) => {
 // distinction matters: e.g. Normal on POINT (smooth vertex normals) vs CORNER
 // (face-split) is how the solidify angle compensation is computed.
 reg(["GeometryNodeFieldOnDomain", "GeometryNodeAttributeDomainSize"], (api) => {
-  // AttributeDomainSize returns counts; we don't track them precisely -> 0s.
   if (api.node.type === "GeometryNodeAttributeDomainSize") {
-    return { "Point Count": Field.of(0), "Edge Count": Field.of(0), "Face Count": Field.of(0), "Face Corner Count": Field.of(0) };
+    const g = api.geo("Geometry");
+    const m = g.mesh;
+    return {
+      "Point Count": Field.of(m ? m.positions.length : g.curvePointCount()),
+      "Edge Count": Field.of(m ? buildTopology(m).edges.length : g.curves.reduce((n, s) => n + Math.max(0, s.points.length - (s.cyclic ? 0 : 1)), 0)),
+      "Face Count": Field.of(m?.faces.length ?? 0),
+      "Face Corner Count": Field.of(m?.faces.reduce((n, f) => n + f.length, 0) ?? 0),
+      "Spline Count": Field.of(g.curves.length),
+      "Instance Count": Field.of(g.instances.length),
+      "Layer Count": Field.of(0),
+    };
   }
   const domainProp = api.prop<string>("domain", "POINT");
   const target: Domain = DOMAINS.has(domainProp as Domain) ? (domainProp as Domain) : "POINT";

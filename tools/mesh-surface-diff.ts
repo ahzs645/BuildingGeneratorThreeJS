@@ -103,8 +103,16 @@ function readGlb(path: string, filter?: string | null): TriMesh {
 function readVm(path: string, filter?: string | null): TriMesh {
   const vm = JSON.parse(readFileSync(path, "utf8"));
   const loc = vm.object?.location ?? [275.16204833984375, 0, 0];
+  const rot = vm.object?.rotation ?? [0, 0, 0];
+  const scale = vm.object?.scale ?? [1, 1, 1];
   const positions: Vec3[] = [];
-  for (let i = 0; i < vm.positions.length; i += 3) positions.push([vm.positions[i] + loc[0], vm.positions[i + 1] + loc[1], vm.positions[i + 2] + loc[2]]);
+  for (let i = 0; i < vm.positions.length; i += 3) {
+    let x = vm.positions[i] * scale[0], y = vm.positions[i + 1] * scale[1], z = vm.positions[i + 2] * scale[2];
+    let c = Math.cos(rot[0]), s = Math.sin(rot[0]); [y, z] = [y * c - z * s, y * s + z * c];
+    c = Math.cos(rot[1]); s = Math.sin(rot[1]); [x, z] = [x * c + z * s, -x * s + z * c];
+    c = Math.cos(rot[2]); s = Math.sin(rot[2]); [x, y] = [x * c - y * s, x * s + y * c];
+    positions.push([x + loc[0], y + loc[1], z + loc[2]]);
+  }
   const triangles: [number, number, number][] = [];
   if (filter === undefined) {
     for (let i = 0; i < vm.indices.length; i += 3) triangles.push([vm.indices[i], vm.indices[i + 1], vm.indices[i + 2]]);

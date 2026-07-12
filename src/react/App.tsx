@@ -11,6 +11,7 @@ const DojoGalleryPage = lazy(() => import("./pages/DojoGalleryPage"));
 const BinComparePage = lazy(() => import("./pages/BinComparePage"));
 const BinLivePage = lazy(() => import("./pages/BinLivePage"));
 const VaseComparePage = lazy(() => import("./pages/VaseComparePage"));
+const CrayonComparePage = lazy(() => import("./pages/CrayonComparePage"));
 
 function LegacyRedirect({ to }: { to: string }): React.JSX.Element {
   const { search } = useLocation();
@@ -35,6 +36,7 @@ export default function App(): React.JSX.Element {
           <Route path="/bin/live" element={<BinLivePage />} />
           <Route path="/gnvm" element={<LegacyRedirect to="/bin" />} />
           <Route path="/vase" element={<VaseComparePage />} />
+          <Route path="/crayon" element={<CrayonComparePage />} />
 
           <Route path="/blend-import.html" element={<LegacyRedirect to="/blendbridge" />} />
           <Route path="/building.html" element={<LegacyRedirect to="/building" />} />

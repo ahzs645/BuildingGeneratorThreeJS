@@ -114,7 +114,7 @@ trees_to_dump = {}
 for obj in bpy.data.objects:
     o = {"name": obj.name, "type": obj.type, "location": list(obj.location),
          "rotation": list(obj.rotation_euler), "scale": list(obj.scale),
-         "visible": not obj.hide_render, "modifiers": [], "materials": [m.name for m in obj.data.materials] if obj.type == "MESH" and obj.data else []}
+         "visible": not obj.hide_render, "modifiers": [], "materials": [m.name for m in obj.data.materials] if obj.type in ("MESH", "CURVE") and obj.data else []}
     if obj.type == "MESH" and obj.data:
         o["mesh_stats"] = {"verts": len(obj.data.vertices), "faces": len(obj.data.polygons)}
         # Embed small BASE meshes (pre-modifier obj.data): ObjectInfo materializes
@@ -156,6 +156,35 @@ for obj in bpy.data.objects:
                 attrs[vg.name] = {"domain": "POINT", "data": data}
             if attrs:
                 o["mesh"]["attributes"] = attrs
+    elif obj.type == "CURVE" and obj.data:
+        # Geometry Nodes receives the object's pre-modifier curve component.
+        # Store evaluated polylines so the browser VM can resample Bezier input
+        # without needing Blender's proprietary curve datablock implementation.
+        def bezier(a, b, c, d, t):
+            u = 1.0 - t
+            return [u*u*u*a[i] + 3*u*u*t*b[i] + 3*u*t*t*c[i] + t*t*t*d[i] for i in range(3)]
+        splines = []
+        for spline in obj.data.splines:
+            cyclic = bool(spline.use_cyclic_u)
+            points = []
+            if spline.type == "BEZIER":
+                bp = list(spline.bezier_points)
+                segments = len(bp) if cyclic else max(0, len(bp) - 1)
+                resolution = max(2, int(getattr(spline, "resolution_u", 0) or obj.data.resolution_u or 12))
+                for segment in range(segments):
+                    p0 = bp[segment]
+                    p1 = bp[(segment + 1) % len(bp)]
+                    for step in range(resolution):
+                        if segment and step == 0:
+                            continue
+                        points.append([round(v, 6) for v in bezier(p0.co, p0.handle_right, p1.handle_left, p1.co, step / resolution)])
+                if not cyclic and bp:
+                    points.append([round(v, 6) for v in bp[-1].co])
+            else:
+                points = [[round(p.co.x, 6), round(p.co.y, 6), round(p.co.z, 6)] for p in spline.points]
+            if points:
+                splines.append({"points": points, "cyclic": cyclic})
+        o["curves"] = splines
     for mod in obj.modifiers:
         m = {"name": mod.name, "type": mod.type}
         if mod.type == "NODES" and mod.node_group:

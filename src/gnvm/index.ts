@@ -13,6 +13,7 @@ import "./nodes/fields";
 import "./nodes/curves";
 import "./nodes/topology";
 import "./nodes/extra";
+import "./nodes/crayon";
 
 export { Evaluator } from "./evaluator";
 export { Geometry, toTriSoup } from "./geometry";
@@ -32,7 +33,14 @@ export interface RunResult {
 // A dump-file shape (subset we consume).
 export interface Dump {
   node_groups: Program;
-  objects?: { name: string; modifiers?: { type: string; node_group?: string; input_values?: Record<string, any> }[] }[];
+  objects?: {
+    name: string;
+    location?: number[];
+    rotation?: number[];
+    scale?: number[];
+    modifiers?: { type: string; node_group?: string; input_values?: Record<string, any> }[];
+    curves?: { points: number[][]; cyclic: boolean }[];
+  }[];
   materials?: Record<string, { nodes?: { type: string; inputs?: { name: string; identifier: string; linked: boolean; value: unknown }[] }[] }>;
   images?: Record<string, unknown>;
 }
@@ -52,20 +60,22 @@ export function findModifierGroup(dump: Dump, objectName?: string): { group: str
 // Build a Geometry from a dump object's embedded base mesh (pre-modifier obj.data).
 function baseGeometryOf(dump: Dump, objectName: string): Geometry | null {
   const obj: any = (dump.objects ?? []).find((o) => o.name === objectName);
-  if (!obj?.mesh) return null;
   const g = new Geometry();
-  const m = new Mesh();
-  m.positions = obj.mesh.verts.map((p: number[]) => [p[0], p[1], p[2]] as [number, number, number]);
-  m.faces = obj.mesh.faces.map((f: number[]) => [...f]);
-  m.faceMaterial = obj.mesh.face_materials ? [...obj.mesh.face_materials] : m.faces.map(() => 0);
-  m.materialSlots = obj.materials?.length ? [...obj.materials] : [null];
-  m.edges = (obj.mesh.edges ?? []).map((e: number[]) => [e[0], e[1]] as [number, number]);
-  // authored custom attributes (e.g. the vase's 'bottom' vertex tag)
-  for (const [name, a] of Object.entries<any>(obj.mesh.attributes ?? {})) {
-    m.attributes.set(name, { domain: a.domain ?? "POINT", data: [...a.data] });
+  if (obj?.mesh) {
+    const m = new Mesh();
+    m.positions = obj.mesh.verts.map((p: number[]) => [p[0], p[1], p[2]] as [number, number, number]);
+    m.faces = obj.mesh.faces.map((f: number[]) => [...f]);
+    m.faceMaterial = obj.mesh.face_materials ? [...obj.mesh.face_materials] : m.faces.map(() => 0);
+    m.materialSlots = obj.materials?.length ? [...obj.materials] : [null];
+    m.edges = (obj.mesh.edges ?? []).map((e: number[]) => [e[0], e[1]] as [number, number]);
+    // authored custom attributes (e.g. the vase's 'bottom' vertex tag)
+    for (const [name, a] of Object.entries<any>(obj.mesh.attributes ?? {})) {
+      m.attributes.set(name, { domain: a.domain ?? "POINT", data: [...a.data] });
+    }
+    g.mesh = m;
   }
-  g.mesh = m;
-  return g;
+  if (obj?.curves) g.curves = obj.curves.map((s: any) => ({ cyclic: Boolean(s.cyclic), points: s.points.map((p: number[]) => [p[0], p[1], p[2]]) }));
+  return g.mesh || g.curves.length ? g : null;
 }
 
 export async function runGenerator(dump: Dump, opts: { object?: string; overrides?: Record<string, any> } = {}): Promise<RunResult> {

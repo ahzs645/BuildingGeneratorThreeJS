@@ -68,6 +68,7 @@ export interface DumpObject {
   scale?: number[];
   materials?: string[];
   mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][] };
+  curves?: { points: number[][]; cyclic: boolean }[];
 }
 export const DUMP_CONTEXT: { objects: DumpObject[] } = { objects: [] };
 

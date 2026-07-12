@@ -1,6 +1,6 @@
 // Geometry-operation handlers.
 import { Field, Vec3, asVec3, asNum, vadd } from "../core";
-import { Geometry, Mesh, InstanceRef, mergeMeshInto, realizeInstances, transformPoint } from "../geometry";
+import { Geometry, Mesh, InstanceRef, buildTopology, mergeMeshInto, realizeInstances, transformPoint } from "../geometry";
 import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitives";
 import { reg, EvalAPI, DUMP_CONTEXT } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
@@ -27,6 +27,10 @@ reg("GeometryNodeObjectInfo", (api) => {
     }
     out.mesh = m;
   }
+  if (obj?.curves) out.curves = obj.curves.map((s) => ({
+    cyclic: Boolean(s.cyclic),
+    points: s.points.map((p) => [p[0], p[1], p[2]] as Vec3),
+  }));
   return {
     Geometry: out,
     Location: Field.of(((obj?.location ?? [0, 0, 0]) as Vec3)),
@@ -75,6 +79,7 @@ reg(["GeometryNodeTransform", "GeometryNodeTransformGeometry"], (api) => {
   const g = api.geo("Geometry").clone();
   const t = api.vec("Translation"), r = api.vec("Rotation"), s = api.vec("Scale");
   if (g.mesh) g.mesh.positions = g.mesh.positions.map((p) => transformPoint(p, t, r, s));
+  for (const spline of g.curves) spline.points = spline.points.map((p) => transformPoint(p, t, r, s));
   for (const inst of g.instances) {
     inst.position = transformPoint(inst.position, t, r, s);
   }
@@ -102,6 +107,17 @@ reg("GeometryNodeSetPosition", (api) => {
   const off = api.field("Offset").array(ctx);
   const posLinked = api.node.inputs.find((s) => s.identifier === "Position")?.linked;
   const posArr = posLinked ? api.field("Position").array(ctx) : null;
+  if (FIELD_PROBE.node === api.node.name) {
+    const requested = FIELD_PROBE.socket ?? "Position";
+    const values = requested.startsWith("attr:")
+      ? Array.from({ length: ctx.size }, (_, i) => ctx.attr?.(requested.slice(5), i) ?? 0)
+      : requested === "Selection" ? sel : requested === "Offset" ? off : posArr ?? [];
+    FIELD_PROBE.batches.push({
+      domain: "POINT",
+      positions: Array.from({ length: ctx.size }, (_, i) => ctx.position?.(i) ?? [0, 0, 0]),
+      values,
+    });
+  }
   const move = (p: Vec3, i: number): Vec3 => {
     if (!asNum(sel[i] ?? 1)) return p;
     const base = posArr ? asVec3(posArr[i]) : p;
@@ -157,6 +173,8 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
   const sel = api.field("Selection").array(ctx);
   const rot = api.field("Rotation").array(ctx);
   const scl = api.field("Scale").array(ctx);
+  const pickInstance = api.bool("Pick Instance");
+  const instanceIndices = api.field("Instance Index").array(ctx);
   const scaleLinked = api.node.inputs.find((s) => s.identifier === "Scale")?.linked;
   const scaleConst = api.vec("Scale");
   // per-point attributes to carry onto each instance (anonymous-attribute propagation)
@@ -171,11 +189,14 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
       attributes = new Map();
       for (const [name, a] of pointAttrs) attributes.set(name, a.data[i]);
     }
+    const picked = pickInstance && instance.instances.length
+      ? instance.instances[((Math.round(asNum(instanceIndices[i] ?? 0)) % instance.instances.length) + instance.instances.length) % instance.instances.length]
+      : null;
     out.instances.push({
-      geometry: instance,
+      geometry: picked?.geometry ?? instance,
       position: pts[i],
-      rotation: asVec3(rot[i] ?? [0, 0, 0]),
-      scale: s,
+      rotation: picked ? vadd(asVec3(rot[i] ?? [0, 0, 0]), picked.rotation) : asVec3(rot[i] ?? [0, 0, 0]),
+      scale: picked ? [s[0] * picked.scale[0], s[1] * picked.scale[1], s[2] * picked.scale[2]] : s,
       attributes,
     } as InstanceRef);
   }
@@ -195,7 +216,7 @@ reg("GeometryNodeRealizeInstances", (api) => ({ Geometry: realizeInstances(api.g
 reg("GeometryNodeCaptureAttribute", (api) => {
   const g = api.geo("Geometry").clone();
   const domMap: Record<string, any> = { POINT: "POINT", EDGE: "EDGE", FACE: "FACE", CORNER: "CORNER", INSTANCE: "INSTANCE", CURVE: "POINT" };
-  const domain = domMap[api.prop<string>("domain", "POINT")] ?? "POINT";
+  let domain = domMap[api.prop<string>("domain", "POINT")] ?? "POINT";
   const name = `__cap_${api.node.name}`;
   if (g.mesh) {
     const ctx = makeFieldCtx(g, domain);
@@ -209,6 +230,32 @@ reg("GeometryNodeCaptureAttribute", (api) => {
       data = value.array(ctx);
     }
     g.mesh.attributes.set(name, { domain, data });
+  } else if (g.instances.length) {
+    if (domain === "INSTANCE") {
+      const ctx = makeFieldCtx(g, "INSTANCE");
+      const data = api.field("Value").array(ctx);
+      for (let i = 0; i < g.instances.length; i++) {
+        const attrs = g.instances[i].attributes ?? new Map<string, import("../core").Elem>();
+        attrs.set(name, data[i] ?? 0);
+        g.instances[i].attributes = attrs;
+      }
+    } else {
+      // Point/face captures on instance geometry are evaluated inside each
+      // referenced payload, then become ordinary attributes when realized.
+      // Chrome Crayon uses this to remember the local vertex index of each
+      // triangle/quad/pentagon profile before Pick Instance.
+      for (const inst of g.instances) {
+        const payload = inst.geometry.clone();
+        if (payload.mesh) {
+          const payloadCtx = makeFieldCtx(payload, domain);
+          payload.mesh.attributes.set(name, { domain, data: api.field("Value").array(payloadCtx) });
+        } else if (payload.curves.length) {
+          const payloadCtx = makeFieldCtx(payload, "POINT");
+          payload.curveAttributes.set(name, { domain: "POINT", data: api.field("Value").array(payloadCtx) });
+        }
+        inst.geometry = payload;
+      }
+    }
   } else if (g.curves.length) {
     // curve geometry: capture over flattened control points (POINT domain)
     const ctx = makeFieldCtx(g, "POINT");
@@ -225,54 +272,67 @@ reg("GeometryNodeCaptureAttribute", (api) => {
 // ---- geometry proximity ----------------------------------------------------
 // POINTS mode: distance from each source element to the nearest target point.
 // An unlinked "Source Position" means Blender's implicit position field.
-// Instanced targets are realized (the bubble vase probes 58 instanced spheres);
-// lookups go through a uniform grid — brute force is O(n·m) at vase scale.
+// Instanced targets are realized (the bubble vase probes 58 instanced spheres).
+// A k-d tree avoids both O(n*m) brute force and the costly empty-shell scans of
+// the previous string-keyed uniform grid when source points sit far from a
+// long, thin target (Chrome Crayon's resampled drawing curve).
 reg("GeometryNodeProximity", (api) => {
   let target = api.geo("Target");
   if (target.instances.length) target = realizeInstances(target);
   const pts: Vec3[] = target.mesh ? target.mesh.positions : target.curves.flatMap((s) => s.points);
+  const targetElement = api.prop<string>("target_element", "POINTS");
+  const segments: [Vec3, Vec3][] = targetElement === "EDGES" && target.mesh
+    ? buildTopology(target.mesh).edges.map((edge) => [target.mesh!.positions[edge.verts[0]], target.mesh!.positions[edge.verts[1]]])
+    : [];
   const posLinked = api.node.inputs.find((s) => s.identifier === "Source Position")?.linked;
   const posF = posLinked ? api.field("Source Position") : null;
-  // uniform-grid spatial index over the target points
-  const mn: Vec3 = [Infinity, Infinity, Infinity];
-  const mx: Vec3 = [-Infinity, -Infinity, -Infinity];
-  for (const p of pts) for (let k = 0; k < 3; k++) { if (p[k] < mn[k]) mn[k] = p[k]; if (p[k] > mx[k]) mx[k] = p[k]; }
-  const diag = pts.length ? Math.hypot(mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]) : 1;
-  const cell = Math.max(1e-6, diag / Math.max(4, Math.cbrt(pts.length) * 2));
-  const grid = new Map<string, number[]>();
-  const ck = (x: number, y: number, z: number) => `${x}_${y}_${z}`;
-  const cc = (p: Vec3) => [Math.floor(p[0] / cell), Math.floor(p[1] / cell), Math.floor(p[2] / cell)] as const;
-  for (let i = 0; i < pts.length; i++) {
-    const [x, y, z] = cc(pts[i]);
-    const k = ck(x, y, z);
-    const b = grid.get(k);
-    if (b) b.push(i); else grid.set(k, [i]);
-  }
+  type KdNode = { index: number; axis: 0 | 1 | 2; left: KdNode | null; right: KdNode | null };
+  const buildKd = (indices: number[], depth = 0): KdNode | null => {
+    if (!indices.length) return null;
+    const axis = (depth % 3) as 0 | 1 | 2;
+    indices.sort((a, b) => pts[a][axis] - pts[b][axis]);
+    const mid = indices.length >> 1;
+    return {
+      index: indices[mid],
+      axis,
+      left: buildKd(indices.slice(0, mid), depth + 1),
+      right: buildKd(indices.slice(mid + 1), depth + 1),
+    };
+  };
+  const kdRoot = buildKd(Array.from({ length: pts.length }, (_, i) => i));
   const nearest = (p: Vec3): { d: number; q: Vec3 } => {
     if (!pts.length) return { d: 0, q: [0, 0, 0] };
-    const [cx, cy, cz] = cc(p);
-    let best = Infinity;
-    let bq: Vec3 = pts[0];
-    // expand shells until a hit, then one extra ring to catch closer diagonals
-    for (let r = 0; r < 64; r++) {
-      let found = false;
-      for (let dx = -r; dx <= r; dx++)
-        for (let dy = -r; dy <= r; dy++)
-          for (let dz = -r; dz <= r; dz++) {
-            if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue; // shell only
-            const b = grid.get(ck(cx + dx, cy + dy, cz + dz));
-            if (!b) continue;
-            found = true;
-            for (const i of b) {
-              const q = pts[i];
-              const d = (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2;
-              if (d < best) { best = d; bq = q; }
-            }
-          }
-      if (best !== Infinity && (found || r > 0) && Math.sqrt(best) <= (r) * cell) break;
-      if (r === 63) break;
+    if (segments.length) {
+      let bestSq = Infinity;
+      let best: Vec3 = segments[0][0];
+      for (const [a, b] of segments) {
+        const abx = b[0] - a[0], aby = b[1] - a[1], abz = b[2] - a[2];
+        const apx = p[0] - a[0], apy = p[1] - a[1], apz = p[2] - a[2];
+        const denom = abx * abx + aby * aby + abz * abz;
+        const t = denom > 1e-20 ? Math.max(0, Math.min(1, (apx * abx + apy * aby + apz * abz) / denom)) : 0;
+        const q: Vec3 = [a[0] + abx * t, a[1] + aby * t, a[2] + abz * t];
+        const dx = p[0] - q[0], dy = p[1] - q[1], dz = p[2] - q[2];
+        const dSq = dx * dx + dy * dy + dz * dz;
+        if (dSq < bestSq) { bestSq = dSq; best = q; }
+      }
+      return { d: Math.sqrt(bestSq), q: best };
     }
-    return { d: Math.sqrt(best), q: bq };
+    let bestSq = Infinity;
+    let bestIndex = 0;
+    const visit = (node: KdNode | null) => {
+      if (!node) return;
+      const q = pts[node.index];
+      const dx = p[0] - q[0], dy = p[1] - q[1], dz = p[2] - q[2];
+      const dSq = dx * dx + dy * dy + dz * dz;
+      if (dSq < bestSq) { bestSq = dSq; bestIndex = node.index; }
+      const delta = p[node.axis] - q[node.axis];
+      const near = delta <= 0 ? node.left : node.right;
+      const far = delta <= 0 ? node.right : node.left;
+      visit(near);
+      if (delta * delta < bestSq) visit(far);
+    };
+    visit(kdRoot);
+    return { d: Math.sqrt(bestSq), q: pts[bestIndex] };
   };
   const sample = (ctx: import("../core").FieldCtx, i: number, arr: import("../core").Elem[] | null): Vec3 =>
     arr ? asVec3(arr[i] ?? [0, 0, 0]) : ctx.position?.(i) ?? [0, 0, 0];

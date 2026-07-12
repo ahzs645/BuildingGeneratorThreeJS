@@ -1,10 +1,10 @@
 // Mesh-topology operations: the nodes that turn flat panels into real 3-D bins.
 // Faithful-enough Blender semantics (region + individual extrude, domain-aware
 // delete/separate, weld, flip).
-import { Field, Vec3, Elem, asVec3, asNum, vadd, vscale, vnorm } from "../core";
+import { Field, Vec3, Elem, Domain, asVec3, asNum, vadd, vscale, vnorm } from "../core";
 import { Geometry, Mesh, buildTopology, invalidateMeshCaches } from "../geometry";
 import { reg } from "../registry";
-import { makeFieldCtx } from "../evaluator";
+import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 
 const ekey = (a: number, b: number) => (a < b ? `${a}_${b}` : `${b}_${a}`);
 
@@ -63,6 +63,15 @@ function keepFaces(mesh: Mesh, keep: (fi: number) => boolean, doCompact = true):
   }
   out.faces = faces;
   out.faceMaterial = fmat;
+  if (mesh.faces.length) {
+    // FACE-domain deletion/separation removes topology that belongs only to
+    // discarded faces. Leaving the grid's original explicit edge list intact
+    // kept thousands of otherwise orphaned vertices alive in compact().
+    const liveEdges = new Set<string>();
+    for (const face of faces)
+      for (let i = 0; i < face.length; i++) liveEdges.add(ekey(face[i], face[(i + 1) % face.length]));
+    out.edges = out.edges.filter(([a, b]) => liveEdges.has(ekey(a, b)));
+  }
   for (const [k, data] of faceAttrs) out.attributes.set(k, { domain: "FACE", data });
   return doCompact ? compact(out) : out;
 }
@@ -154,18 +163,79 @@ function keepPointsMesh(mesh: Mesh, keep: (vi: number) => boolean): Mesh {
   return out;
 }
 
+function keepEdgesMesh(mesh: Mesh, keep: (ei: number) => boolean): Mesh {
+  const topology = buildTopology(mesh);
+  const keptEdges = topology.edges.filter((_, i) => keep(i)).map((edge) => edge.verts);
+  const keptKeys = new Set(keptEdges.map(([a, b]) => ekey(a, b)));
+  const vertices = new Set<number>();
+  for (const [a, b] of keptEdges) { vertices.add(a); vertices.add(b); }
+  const remap = new Map<number, number>();
+  const out = new Mesh();
+  out.materialSlots = [...mesh.materialSlots];
+  for (let i = 0; i < mesh.positions.length; i++) if (vertices.has(i)) {
+    remap.set(i, out.positions.length);
+    out.positions.push([...mesh.positions[i]] as Vec3);
+  }
+  out.edges = keptEdges.map(([a, b]) => [remap.get(a)!, remap.get(b)!]);
+  const keptFaces: number[] = [];
+  for (let fi = 0; fi < mesh.faces.length; fi++) {
+    const face = mesh.faces[fi];
+    const allEdgesKept = face.every((v, i) => keptKeys.has(ekey(v, face[(i + 1) % face.length])));
+    if (!allEdgesKept) continue;
+    out.faces.push(face.map((vi) => remap.get(vi)!));
+    out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
+    keptFaces.push(fi);
+  }
+  for (const [name, attr] of mesh.attributes) {
+    if (attr.domain === "POINT") out.attributes.set(name, { domain: "POINT", data: [...vertices].sort((a, b) => a - b).map((i) => attr.data[i]) });
+    else if (attr.domain === "FACE") out.attributes.set(name, { domain: "FACE", data: keptFaces.map((i) => attr.data[i]) });
+  }
+  return out;
+}
+
 reg("GeometryNodeSeparateGeometry", (api) => {
   const g = api.geo("Geometry");
-  if (!g.mesh) return { Selection: new Geometry(), Inverted: new Geometry() };
   const domain = api.prop<string>("domain", "POINT");
   const sel = api.field("Selection");
   const selG = new Geometry();
   const invG = new Geometry();
+  if (!g.mesh && g.curves.length) {
+    if (domain === "CURVE") {
+      const ctx = makeFieldCtx(g, "CURVE");
+      const values = sel.array(ctx);
+      g.curves.forEach((spline, i) => {
+        const target = asNum(values[i] ?? 0) > 0 ? selG : invG;
+        target.curves.push({ cyclic: spline.cyclic, points: spline.points.map((p) => [...p] as Vec3) });
+      });
+    } else {
+      const ctx = makeFieldCtx(g, "POINT");
+      const values = sel.array(ctx);
+      let offset = 0;
+      for (const spline of g.curves) {
+        const selected: Vec3[] = [], inverted: Vec3[] = [];
+        for (let i = 0; i < spline.points.length; i++) {
+          const target = asNum(values[offset + i] ?? 0) > 0 ? selected : inverted;
+          target.push([...spline.points[i]] as Vec3);
+        }
+        if (selected.length) selG.curves.push({ cyclic: spline.cyclic && selected.length === spline.points.length, points: selected });
+        if (inverted.length) invG.curves.push({ cyclic: spline.cyclic && inverted.length === spline.points.length, points: inverted });
+        offset += spline.points.length;
+      }
+    }
+    return { Selection: selG, Inverted: invG };
+  }
+  if (!g.mesh) return { Selection: selG, Inverted: invG };
   if (domain === "FACE") {
     const ctx = makeFieldCtx(g, "FACE");
     const s = sel.array(ctx);
     selG.mesh = keepFaces(g.mesh, (fi) => !!asNum(s[fi] ?? 0));
     invG.mesh = keepFaces(g.mesh, (fi) => !asNum(s[fi] ?? 0));
+  } else if (domain === "EDGE") {
+    const ctx = makeFieldCtx(g, "EDGE");
+    const s = sel.array(ctx);
+    const on = (i: number) => asNum(s[i] ?? 0) > 0;
+    selG.mesh = keepEdgesMesh(g.mesh, on);
+    invG.mesh = keepEdgesMesh(g.mesh, (i) => !on(i));
   } else {
     // POINT: true point-level split — keepFaces() couldn't filter edge-only
     // wires or isolated verts (the bubble target selects alternating wire pts).
@@ -217,6 +287,13 @@ reg("GeometryNodeMergeByDistance", (api) => {
   const cellKey = (x: number, y: number, z: number) => `${x}_${y}_${z}`;
   const selectedCtx = makeFieldCtx(g, "POINT");
   const selected = api.field("Selection").array(selectedCtx);
+  if (FIELD_PROBE.node === api.node.name) {
+    FIELD_PROBE.batches.push({
+      domain: "POINT",
+      positions: Array.from({ length: selectedCtx.size }, (_, i) => selectedCtx.position?.(i) ?? [0, 0, 0]),
+      values: selected,
+    });
+  }
   // Blender mesh coordinates are float32 at node boundaries. Preserve that
   // precision for threshold comparisons; double-precision fillet coordinates
   // can differ by ~1e-8 and choose the opposite side of an exact 0.001 weld.
@@ -865,7 +942,25 @@ function subdivideOnce(mesh: Mesh, catmullClark: boolean): Mesh {
 reg("GeometryNodeMeshToPoints", (api) => {
   const g = api.geo("Mesh");
   const out = new Geometry();
-  if (g.mesh) { const m = new Mesh(); m.positions = g.mesh.positions.map((p) => [...p] as Vec3); out.mesh = m; }
+  if (g.mesh) {
+    const mode = api.prop<string>("mode", "VERTICES");
+    const domain: Domain = mode === "FACES" ? "FACE" : mode === "EDGES" ? "EDGE" : "POINT";
+    const ctx = makeFieldCtx(g, domain);
+    const selection = api.field("Selection").array(ctx);
+    const positionLinked = api.node.inputs.find((socket) => socket.identifier === "Position")?.linked;
+    const positions = positionLinked ? api.field("Position").array(ctx).map(asVec3) : Array.from({ length: ctx.size }, (_, i) => ctx.position?.(i) ?? [0, 0, 0] as Vec3);
+    const m = new Mesh();
+    const kept: number[] = [];
+    for (let i = 0; i < ctx.size; i++) if (asNum(selection[i] ?? 1) > 0) {
+      kept.push(i);
+      m.positions.push([...positions[i]] as Vec3);
+    }
+    for (const [name] of g.mesh.attributes) {
+      const data = kept.map((i) => ctx.attr?.(name, i) ?? 0);
+      m.attributes.set(name, { domain: "POINT", data });
+    }
+    out.mesh = m;
+  }
   return { Points: out };
 });
 

@@ -546,7 +546,7 @@ export function realizeInstances(g: Geometry): Geometry {
     for (const s of rg.curves)
       out.curves.push({ cyclic: s.cyclic, points: s.points.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale)) });
   }
-  out.mesh = mesh;
+  if (g.mesh || mesh.positions.length || mesh.faces.length || mesh.edges.length) out.mesh = mesh;
   return out;
 }
 

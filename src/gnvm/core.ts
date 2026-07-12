@@ -62,6 +62,11 @@ export interface FieldCtx {
   // Curve spline queries (for SplineParameter): index/factor WITHIN each spline.
   splineIndex?: (i: number) => number;
   splineFactor?: (i: number) => number;
+  splineCyclic?: (i: number) => boolean;
+  splineLength?: (i: number) => number;
+  splinePointCount?: (i: number) => number;
+  // Explicit neighborhood on the active domain (Blur Attribute).
+  neighbors?: (i: number) => number[];
 }
 
 export class Field {
