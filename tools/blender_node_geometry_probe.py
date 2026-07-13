@@ -30,9 +30,9 @@ bpy.context.window.scene = probe_scene
 obj.hide_viewport = False
 obj.hide_render = False
 obj.hide_set(False)
+modifier = next((candidate for candidate in obj.modifiers if candidate.type == "NODES" and candidate.node_group is not None), None)
 probe_overrides = json.loads(os.environ.get("NODE_DOJO_PROBE_OVERRIDES", "{}"))
 if probe_overrides:
-    modifier = next((candidate for candidate in obj.modifiers if candidate.type == "NODES" and candidate.node_group is not None), None)
     if modifier is None:
         raise RuntimeError(f'no Geometry Nodes modifier on {object_name!r}')
     identifiers = {
@@ -56,6 +56,26 @@ if source is None or target is None:
 for link in list(target.links):
     group.links.remove(link)
 group.links.new(source, target)
+
+# When probing a node inside a nested group, optionally route the corresponding
+# root-level group node straight to the modifier output. This prevents the
+# product's downstream smoothing/boolean stages from obscuring the intermediate
+# topology being measured.
+root_node_name = os.environ.get("NODE_DOJO_PROBE_ROOT_NODE")
+if root_node_name:
+    if modifier is None:
+        raise RuntimeError(f'no Geometry Nodes modifier on {object_name!r}')
+    root_group = modifier.node_group
+    root_node = root_group.nodes.get(root_node_name)
+    root_output = next((candidate for candidate in root_group.nodes if candidate.bl_idname == "NodeGroupOutput" and candidate.is_active_output), None)
+    root_socket_name = os.environ.get("NODE_DOJO_PROBE_ROOT_SOCKET", socket_name)
+    root_source = root_node.outputs.get(root_socket_name) if root_node else None
+    root_target = next((socket for socket in root_output.inputs if socket.type == "GEOMETRY"), None) if root_output else None
+    if root_source is None or root_target is None:
+        raise RuntimeError(f"missing root probe socket: {root_node_name!r}:{root_socket_name!r}")
+    for link in list(root_target.links):
+        root_group.links.remove(link)
+    root_group.links.new(root_source, root_target)
 
 realize_group = bpy.data.node_groups.new("__PROBE_REALIZE_INSTANCES", "GeometryNodeTree")
 realize_group.interface.new_socket(name="Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")

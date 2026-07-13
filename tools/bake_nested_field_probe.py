@@ -1,7 +1,7 @@
 """Bake a field on the geometry entering a node inside a nested GN group.
 
 Usage: blender --background FILE.blend --python tools/bake_nested_field_probe.py -- \
-  OBJECT ROOT_GROUP INSTANCE_NODE NESTED_GROUP SRC_NODE SRC_SOCKET CONSUMER OUT.json [overrides.json]
+  OBJECT ROOT_GROUP INSTANCE_NODE NESTED_GROUP SRC_NODE SRC_SOCKET CONSUMER OUT.json [DOMAIN] [overrides.json]
 """
 import bpy
 import json
@@ -10,7 +10,10 @@ import sys
 
 args = sys.argv[sys.argv.index("--") + 1:]
 object_name, root_name, instance_name, nested_name, source_name, socket_name, consumer_name, out_path = args[:8]
-overrides_path = args[8] if len(args) > 8 else None
+domains = {"POINT", "EDGE", "FACE", "CORNER", "INSTANCE", "CURVE"}
+domain = args[8].upper() if len(args) > 8 and args[8].upper() in domains else "POINT"
+overrides_index = 9 if len(args) > 8 and args[8].upper() in domains else 8
+overrides_path = args[overrides_index] if len(args) > overrides_index else None
 root = bpy.data.node_groups[root_name]
 nested = bpy.data.node_groups[nested_name]
 source = nested.nodes[source_name]
@@ -23,7 +26,7 @@ assert geometry_input is not None, f"linked geometry input not found on {consume
 geometry_source = geometry_input.links[0].from_socket
 
 store = nested.nodes.new("GeometryNodeStoreNamedAttribute")
-store.domain = "POINT"
+store.domain = domain
 data_types = {
     "NodeSocketBool": "BOOLEAN",
     "NodeSocketInt": "INT",
@@ -72,7 +75,11 @@ elif store.data_type == "FLOAT_VECTOR":
 else:
     values = [item.value for item in attribute.data]
 positions = [[round(v.co.x, 7), round(v.co.y, 7), round(v.co.z, 7)] for v in mesh.vertices]
+histogram = {}
+for value in values:
+    key = str(value)
+    histogram[key] = histogram.get(key, 0) + 1
 with open(out_path, "w") as handle:
-    json.dump({"values": values, "positions": positions}, handle)
+    json.dump({"domain": domain, "values": values, "histogram": histogram, "positions": positions}, handle)
 evaluated.to_mesh_clear()
 print(f"NESTED_FIELD_PROBE_OK: {len(values)} values -> {out_path}")

@@ -517,6 +517,13 @@ reg("GeometryNodeCaptureAttribute", (api) => {
     } else {
       data = value.array(ctx);
     }
+    if (FIELD_PROBE.node === api.node.name && (FIELD_PROBE.socket === "Value" || FIELD_PROBE.socket === "Attribute")) {
+      FIELD_PROBE.batches.push({
+        domain,
+        positions: Array.from({ length: ctx.size }, (_, i) => ctx.position?.(i) ?? [0, 0, 0]),
+        values: data,
+      });
+    }
     g.mesh.attributes.set(name, { domain, data });
   } else if (g.instances.length) {
     if (domain === "INSTANCE") {
