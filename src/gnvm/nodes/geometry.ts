@@ -1,6 +1,6 @@
 // Geometry-operation handlers.
-import { Field, Vec3, asVec3, asNum, vadd } from "../core";
-import { Geometry, Mesh, InstanceRef, buildTopology, inverseTransformPoint, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint } from "../geometry";
+import { Field, Vec3, asVec3, asNum, vadd, vdot, vsub } from "../core";
+import { Geometry, Mesh, InstanceRef, buildTopology, inverseTransformPoint, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint, triangulateFaceIndices } from "../geometry";
 import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitives";
 import { reg, EvalAPI, DUMP_CONTEXT } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
@@ -550,11 +550,107 @@ reg("GeometryNodeCaptureAttribute", (api) => {
 // A k-d tree avoids both O(n*m) brute force and the costly empty-shell scans of
 // the previous string-keyed uniform grid when source points sit far from a
 // long, thin target (Chrome Crayon's resampled drawing curve).
+type ProximityTriangle = { a: Vec3; b: Vec3; c: Vec3; min: Vec3; max: Vec3; center: Vec3 };
+type ProximityBvh = { min: Vec3; max: Vec3; left?: ProximityBvh; right?: ProximityBvh; triangles?: ProximityTriangle[] };
+const proximityBvhCache = new WeakMap<Mesh, ProximityBvh | null>();
+
+function buildProximityBvh(triangles: ProximityTriangle[]): ProximityBvh | null {
+  if (!triangles.length) return null;
+  const min: Vec3 = [Infinity, Infinity, Infinity], max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const triangle of triangles) for (let axis = 0; axis < 3; axis++) {
+    min[axis] = Math.min(min[axis], triangle.min[axis]);
+    max[axis] = Math.max(max[axis], triangle.max[axis]);
+  }
+  if (triangles.length <= 12) return { min, max, triangles };
+  const spans = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
+  const axis = spans[1] > spans[0] ? (spans[2] > spans[1] ? 2 : 1) : (spans[2] > spans[0] ? 2 : 0);
+  const ordered = [...triangles].sort((a, b) => a.center[axis] - b.center[axis]);
+  const middle = ordered.length >> 1;
+  return { min, max, left: buildProximityBvh(ordered.slice(0, middle))!, right: buildProximityBvh(ordered.slice(middle))! };
+}
+
+function proximityBvh(mesh: Mesh): ProximityBvh | null {
+  const cached = proximityBvhCache.get(mesh);
+  if (cached !== undefined) return cached;
+  const triangles: ProximityTriangle[] = [];
+  for (const face of mesh.faces) for (const [ai, bi, ci] of triangulateFaceIndices(mesh, face)) {
+    const a = mesh.positions[ai], b = mesh.positions[bi], c = mesh.positions[ci];
+    const min: Vec3 = [Math.min(a[0], b[0], c[0]), Math.min(a[1], b[1], c[1]), Math.min(a[2], b[2], c[2])];
+    const max: Vec3 = [Math.max(a[0], b[0], c[0]), Math.max(a[1], b[1], c[1]), Math.max(a[2], b[2], c[2])];
+    triangles.push({ a, b, c, min, max, center: [(min[0] + max[0]) * .5, (min[1] + max[1]) * .5, (min[2] + max[2]) * .5] });
+  }
+  const result = buildProximityBvh(triangles);
+  proximityBvhCache.set(mesh, result);
+  return result;
+}
+
+function closestTrianglePoint(point: Vec3, triangle: ProximityTriangle): Vec3 {
+  const ab = vsub(triangle.b, triangle.a), ac = vsub(triangle.c, triangle.a), ap = vsub(point, triangle.a);
+  const d1 = vdot(ab, ap), d2 = vdot(ac, ap);
+  if (d1 <= 0 && d2 <= 0) return triangle.a;
+  const bp = vsub(point, triangle.b), d3 = vdot(ab, bp), d4 = vdot(ac, bp);
+  if (d3 >= 0 && d4 <= d3) return triangle.b;
+  const vc = d1 * d4 - d3 * d2;
+  if (vc <= 0 && d1 >= 0 && d3 <= 0) {
+    const t = d1 / (d1 - d3);
+    return [triangle.a[0] + ab[0] * t, triangle.a[1] + ab[1] * t, triangle.a[2] + ab[2] * t];
+  }
+  const cp = vsub(point, triangle.c), d5 = vdot(ab, cp), d6 = vdot(ac, cp);
+  if (d6 >= 0 && d5 <= d6) return triangle.c;
+  const vb = d5 * d2 - d1 * d6;
+  if (vb <= 0 && d2 >= 0 && d6 <= 0) {
+    const t = d2 / (d2 - d6);
+    return [triangle.a[0] + ac[0] * t, triangle.a[1] + ac[1] * t, triangle.a[2] + ac[2] * t];
+  }
+  const va = d3 * d6 - d5 * d4;
+  if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+    const edge = vsub(triangle.c, triangle.b);
+    const t = (d4 - d3) / (d4 - d3 + d5 - d6);
+    return [triangle.b[0] + edge[0] * t, triangle.b[1] + edge[1] * t, triangle.b[2] + edge[2] * t];
+  }
+  const denominator = va + vb + vc;
+  if (Math.abs(denominator) < 1e-20) return triangle.a;
+  const v = vb / denominator, w = vc / denominator;
+  return [triangle.a[0] + ab[0] * v + ac[0] * w, triangle.a[1] + ab[1] * v + ac[1] * w, triangle.a[2] + ab[2] * v + ac[2] * w];
+}
+
+function boxDistanceSquared(point: Vec3, min: Vec3, max: Vec3): number {
+  let distance = 0;
+  for (let axis = 0; axis < 3; axis++) {
+    const delta = point[axis] < min[axis] ? min[axis] - point[axis] : point[axis] > max[axis] ? point[axis] - max[axis] : 0;
+    distance += delta * delta;
+  }
+  return distance;
+}
+
+function nearestFacePoint(point: Vec3, root: ProximityBvh | null): { d: number; q: Vec3 } {
+  if (!root) return { d: 0, q: [0, 0, 0] };
+  let bestSquared = Infinity;
+  let best: Vec3 = [0, 0, 0];
+  const visit = (node: ProximityBvh) => {
+    if (boxDistanceSquared(point, node.min, node.max) >= bestSquared) return;
+    if (node.triangles) {
+      for (const triangle of node.triangles) {
+        const q = closestTrianglePoint(point, triangle);
+        const delta = vsub(point, q), squared = vdot(delta, delta);
+        if (squared < bestSquared) { bestSquared = squared; best = q; }
+      }
+      return;
+    }
+    const children = [node.left, node.right].filter((child): child is ProximityBvh => !!child)
+      .sort((a, b) => boxDistanceSquared(point, a.min, a.max) - boxDistanceSquared(point, b.min, b.max));
+    for (const child of children) visit(child);
+  };
+  visit(root);
+  return { d: Math.sqrt(bestSquared), q: best };
+}
+
 reg("GeometryNodeProximity", (api) => {
   let target = api.geo("Target");
   if (target.instances.length) target = realizeInstances(target);
   const pts: Vec3[] = target.mesh ? target.mesh.positions : target.curves.flatMap((s) => s.points);
   const targetElement = api.prop<string>("target_element", "POINTS");
+  const faces = targetElement === "FACES" && target.mesh ? proximityBvh(target.mesh) : null;
   const segments: [Vec3, Vec3][] = targetElement === "EDGES" && target.mesh
     ? buildTopology(target.mesh).edges.map((edge) => [target.mesh!.positions[edge.verts[0]], target.mesh!.positions[edge.verts[1]]])
     : [];
@@ -576,6 +672,7 @@ reg("GeometryNodeProximity", (api) => {
   const kdRoot = buildKd(Array.from({ length: pts.length }, (_, i) => i));
   const nearest = (p: Vec3): { d: number; q: Vec3 } => {
     if (!pts.length) return { d: 0, q: [0, 0, 0] };
+    if (faces) return nearestFacePoint(p, faces);
     if (segments.length) {
       let bestSq = Infinity;
       let best: Vec3 = segments[0][0];

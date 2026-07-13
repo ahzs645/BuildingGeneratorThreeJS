@@ -6,6 +6,7 @@ Usage:
 """
 import bpy
 import json
+import os
 import sys
 
 
@@ -14,6 +15,8 @@ object_name, out_path, container_path, spec = args[:4]
 mode = args[4] if len(args) > 4 else "direct"
 node_name, socket_name = spec.split(":", 1)
 obj = bpy.data.objects[object_name]
+if obj.name not in bpy.context.view_layer.objects and bpy.context.scene.collection.objects.get(obj.name) is None:
+    bpy.context.scene.collection.objects.link(obj)
 modifier = next(item for item in obj.modifiers if item.type == "NODES" and item.node_group)
 root = modifier.node_group
 tree = root
@@ -36,6 +39,11 @@ for container_name in container_path.split("/"):
     tree = container.node_tree
 
 nested = tree
+repeat_iterations = os.environ.get("NODE_DOJO_REPEAT_ITERATIONS")
+if repeat_iterations is not None:
+    for repeat_input in nested.nodes:
+        if repeat_input.bl_idname == "GeometryNodeRepeatInput":
+            repeat_input.inputs["Iterations"].default_value = int(repeat_iterations)
 nested_output = next(node for node in nested.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output)
 nested_geometry = next(socket for socket in nested_output.inputs if socket.type == "GEOMETRY")
 old_nested = nested_geometry.links[0].from_socket if nested_geometry.is_linked else None

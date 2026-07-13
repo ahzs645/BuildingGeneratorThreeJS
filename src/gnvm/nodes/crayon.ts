@@ -2,7 +2,7 @@
 // They are general VM operations, kept in one module so the compatibility
 // milestone remains easy to audit against its Blender source.
 import { Field, FieldCtx, Vec3, Elem, Domain, asNum, asVec3, vadd, vsub, vscale, vdot, vcross, vlen, vnorm } from "../core";
-import { Geometry, Mesh, buildTopology, realizeInstances } from "../geometry";
+import { Geometry, Mesh, buildTopology, invalidateMeshCaches, orientClosedSurface, realizeInstances, triangulateFaceIndices } from "../geometry";
 import { resampleSpline, splineFrames } from "../curves";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 import { reg, EvalAPI } from "../registry";
@@ -437,8 +437,8 @@ reg("GeometryNodeRaycast", (api) => {
   let target = api.geo("Target Geometry");
   if (target.instances.length) target = realizeInstances(target);
   const triangles: Triangle[] = [];
-  if (target.mesh) for (const face of target.mesh.faces) for (let i = 1; i + 1 < face.length; i++) {
-    const a = target.mesh.positions[face[0]], b = target.mesh.positions[face[i]], c = target.mesh.positions[face[i + 1]];
+  if (target.mesh) for (const face of target.mesh.faces) for (const [ai, bi, ci] of triangulateFaceIndices(target.mesh, face)) {
+    const a = target.mesh.positions[ai], b = target.mesh.positions[bi], c = target.mesh.positions[ci];
     triangles.push({ a, b, c, normal: vnorm(vcross(vsub(b, a), vsub(c, a))) });
   }
   const bvh = triangleBvh(triangles);
@@ -526,28 +526,66 @@ reg("GeometryNodeDualMesh", (api) => {
   const dual = new Mesh();
   dual.materialSlots = [...mesh.materialSlots];
   dual.positions = mesh.faces.map((_, fi) => mesh.faceCenter(fi));
-  const center = mesh.positions.length
-    ? vscale(mesh.positions.reduce((sum, p) => vadd(sum, p), [0, 0, 0] as Vec3), 1 / mesh.positions.length)
-    : [0, 0, 0] as Vec3;
+  const edgeFaces = new Map<string, number[]>();
+  for (const edge of topo.edges)
+    edgeFaces.set(`${edge.verts[0]},${edge.verts[1]}`, edge.faces);
+  const across = (vertex: number, neighbor: number, face: number): number | undefined => {
+    const key = vertex < neighbor ? `${vertex},${neighbor}` : `${neighbor},${vertex}`;
+    return edgeFaces.get(key)?.find((candidate) => candidate !== face);
+  };
   for (let vi = 0; vi < mesh.positions.length; vi++) {
     const adjacent = topo.pointFaces[vi] ?? [];
     if (adjacent.length < 3) continue;
-    const normal = vnorm(vsub(mesh.positions[vi], center));
-    const ref = Math.abs(normal[0]) < 0.9 ? [1, 0, 0] as Vec3 : [0, 1, 0] as Vec3;
-    const u = vnorm(vsub(ref, vscale(normal, vdot(ref, normal))));
-    const v = vnorm(vcross(normal, u));
-    adjacent.sort((fa, fb) => {
-      const pa = vsub(dual.positions[fa], mesh.positions[vi]);
-      const pb = vsub(dual.positions[fb], mesh.positions[vi]);
-      return Math.atan2(vdot(pa, v), vdot(pa, u)) - Math.atan2(vdot(pb, v), vdot(pb, u));
-    });
-    const face = [...adjacent];
+    // Incident faces form a cycle around a manifold vertex. Traverse that
+    // cycle through shared edges instead of projecting around an approximate
+    // global/radial normal; radial sorting breaks on concave and threaded
+    // meshes even when their topology is perfectly closed.
+    const start = adjacent[0];
+    const firstSource = mesh.faces[start];
+    const firstCorner = firstSource.indexOf(vi);
+    const firstNeighbor = firstSource[(firstCorner + 1) % firstSource.length];
+    const firstNext = across(vi, firstNeighbor, start);
+    const ordered = [start];
+    let previous = start;
+    let current = firstNext;
+    while (current !== undefined && current !== start && !ordered.includes(current)) {
+      ordered.push(current);
+      const source = mesh.faces[current];
+      const corner = source.indexOf(vi);
+      const candidates = [
+        across(vi, source[(corner - 1 + source.length) % source.length], current),
+        across(vi, source[(corner + 1) % source.length], current),
+      ];
+      const next = candidates.find((candidate) => candidate !== undefined && candidate !== previous);
+      previous = current;
+      current = next;
+    }
+    // Non-manifold data can have multiple fans. Retain every source face in a
+    // stable fallback order, while closed manifold inputs take the exact cycle.
+    const face = ordered.length === adjacent.length
+      ? ordered
+      : [...ordered, ...adjacent.filter((candidate) => !ordered.includes(candidate))];
+    const normal = mesh.vertexNormals()[vi] ?? [0, 0, 1] as Vec3;
     if (face.length >= 3) {
       const faceNormal = vnorm(vcross(vsub(dual.positions[face[1]], dual.positions[face[0]]), vsub(dual.positions[face[2]], dual.positions[face[0]])));
       if (vdot(faceNormal, normal) < 0) face.reverse();
     }
     dual.faces.push(face);
     dual.faceMaterial.push(0);
+  }
+  orientClosedSurface(dual);
+  let signedVolume = 0;
+  for (const face of dual.faces) for (let corner = 1; corner + 1 < face.length; corner++) {
+    const a = dual.positions[face[0]], b = dual.positions[face[corner]], c = dual.positions[face[corner + 1]];
+    signedVolume += (
+      a[0] * (b[1] * c[2] - b[2] * c[1])
+      + a[1] * (b[2] * c[0] - b[0] * c[2])
+      + a[2] * (b[0] * c[1] - b[1] * c[0])
+    ) / 6;
+  }
+  if (signedVolume < 0) {
+    for (const face of dual.faces) face.reverse();
+    invalidateMeshCaches(dual);
   }
   out.mesh = dual;
   return { "Dual Mesh": out };

@@ -25,6 +25,14 @@ for (const containerName of path) {
   group.links.push({ from_node: container.name, from_socket: containerSocket.identifier, to_node: outputNode.name, to_socket: outputSocket.identifier });
   group = (dump.node_groups as any)[container.group];
 }
+const repeatIterations = process.env.GNVM_REPEAT_ITERATIONS;
+if (repeatIterations !== undefined) {
+  for (const candidateNode of group.nodes ?? []) {
+    if (candidateNode.type !== "GeometryNodeRepeatInput") continue;
+    const iterations = candidateNode.inputs?.find((input: any) => input.name === "Iterations" || input.identifier === "Iterations");
+    if (iterations) iterations.value = Number(repeatIterations);
+  }
+}
 const sourceNode = group.nodes.find((node: any) => node.name === nodeName);
 const sourceSocket = sourceNode?.outputs.find((socket: any) => socket.name === socketName || socket.identifier === socketName);
 const outputNode = group.nodes.find((node: any) => node.type === "NodeGroupOutput" && node.props?.is_active_output !== false)

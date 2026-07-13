@@ -471,6 +471,34 @@
     ]
   },
   {
+    "id": "n03d-bolt-watertight",
+    "title": "N03D · Watertight Bolt",
+    "object": "Bolt Gen_DHTS_Thru Head v03.003",
+    "dump": "dojo/n03d/bolt-watertight/dump.json",
+    "reference": "dojo/references/n03d/bolt-watertight.png",
+    "blenderStats": { "verts": 16570, "faces": 16572 },
+    "note": "Visual near-parity for the distinct 13-pass watertighten root. The browser produces a closed 16,774 / 16,776 mesh versus Blender's 16,570 / 16,572, with matching healed thread silhouette and bounds within 0.012 units before the supplied object's residual Z placement. This high-resolution volume workflow takes about 68 seconds to evaluate.",
+    "controls": [
+      { "name": "length", "label": "Bolt length", "min": 8, "max": 60, "step": 0.1, "value": 24.632158279418945 },
+      { "name": "thread dia", "label": "Thread diameter", "min": 5, "max": 40, "step": 0.1, "value": 14.95798110961914 },
+      { "name": "head dia", "label": "Head diameter", "min": 5, "max": 50, "step": 0.1, "value": 30 },
+      { "name": "head height", "label": "Head height", "min": 3, "max": 30, "step": 0.1, "value": 8.496904373168945 },
+      { "name": "head sides", "label": "Head sides", "min": 3, "max": 12, "step": 1, "value": 6 },
+      { "type": "checkbox", "name": "emboss label", "label": "Emboss label", "value": false },
+      { "name": "a untapped", "label": "Untapped length", "min": 0.1, "max": 20, "step": 0.1, "value": 2.265333414077759 },
+      { "type": "checkbox", "name": "TAP", "label": "Tap mode", "value": true },
+      { "type": "checkbox", "name": "thread only", "label": "Thread only", "value": false },
+      { "type": "checkbox", "name": "SPLIT TO PRINT", "label": "Split to print", "value": false },
+      { "type": "checkbox", "name": "spacer", "label": "Spacer", "value": false },
+      { "name": "wall thic", "label": "Wall thickness", "min": 0.1, "max": 12, "step": 0.1, "value": 5.95355224609375 },
+      { "name": "res", "label": "Resolution", "min": 12, "max": 96, "step": 1, "value": 55 },
+      { "name": "layout offset tuning", "label": "Layout offset", "min": -30, "max": 10, "step": 0.1, "value": -10.208999633789062 },
+      { "type": "checkbox", "name": "preview sections", "label": "Preview sections", "value": false },
+      { "type": "checkbox", "name": "watertighten", "label": "Watertighten", "value": true },
+      { "name": "Input", "label": "Heal offset", "min": -1, "max": 1, "step": 0.01, "value": 0 }
+    ]
+  },
+  {
     "id": "n03d-clevis-pin",
     "title": "N03D · Clevis Pin",
     "object": "CLEVIS PIN",

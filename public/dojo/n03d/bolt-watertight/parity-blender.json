@@ -1,0 +1,14 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Bolt Gen_DHTS_Thru Head v03.003",
+  "node_group": "BOLT GEN DHTS v03_Thru Head_1JUL2024.005",
+  "result": {
+    "verts": 16570,
+    "faces": 16572,
+    "bbox": {
+      "min": [-7.965977668762207, -7.969223499298096, 0.9689807891845703],
+      "max": [7.9789533615112305, 7.969223499298096, 28.184940338134766]
+    }
+  }
+}

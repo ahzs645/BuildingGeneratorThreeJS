@@ -2,10 +2,10 @@
   "source": "root-audit.json",
   "active_roots": 39,
   "summary": {
-    "published_or_represented": 27,
+    "published_or_represented": 28,
     "duplicates_or_family_variants": 5,
     "helpers_empty_or_stacked": 6,
-    "open_parity_targets": 1
+    "open_parity_targets": 0
   },
   "roots": [
     { "root": "BIT STAND nodes", "classification": "published", "catalog": "n03d-bit-stand" },
@@ -13,7 +13,7 @@
     { "root": "BOLT GEN DHTS v03_Thru Head_1JUL2024", "classification": "published", "catalog": "n03d-bolt-generator" },
     { "root": "BOLT GEN DHTS v03_Thru Head_1JUL2024.001", "classification": "duplicate-preset", "catalog": "n03d-bolt-generator", "note": "Same 59-node graph shape and saved modifier inputs as .002; only its seed profile Z placement differs." },
     { "root": "BOLT GEN DHTS v03_Thru Head_1JUL2024.002", "classification": "duplicate-preset", "catalog": "n03d-bolt-generator", "note": "Same 59-node graph shape and saved modifier inputs as .001; only its seed profile Z placement differs." },
-    { "root": "BOLT GEN DHTS v03_Thru Head_1JUL2024.005", "classification": "open-parity-target", "note": "Distinct watertighten variant. Local Blender is 16,588/16,590; GN-VM is 83,796/42,020 and takes about 166 seconds, with visibly divergent boolean closure." },
+    { "root": "BOLT GEN DHTS v03_Thru Head_1JUL2024.005", "classification": "published", "catalog": "n03d-bolt-watertight", "note": "Distinct 13-pass watertighten variant. The closed browser result is 16,774/16,776 versus Blender 16,570/16,572." },
     { "root": "CHROME CRAYON 3D", "classification": "published", "catalog": "n03d-old-chrome-crayon" },
     { "root": "CLEVIS PIN 31MAY2024_v1", "classification": "published", "catalog": "n03d-clevis-pin" },
     { "root": "Geometry Nodes", "classification": "represented-placeholder", "catalog": "n03d-split-n-tap", "note": "The supplied wrapper is a placeholder icosphere; the intended nested Split n Tap WIP group is the published comparison." },

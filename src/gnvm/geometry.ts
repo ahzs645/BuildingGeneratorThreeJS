@@ -92,6 +92,61 @@ export class Mesh {
   }
 }
 
+/** Triangulate one ordered 3D polygon without assuming it is convex. */
+export function triangulateFaceIndices(mesh: Mesh, face: number[]): [number, number, number][] {
+  if (face.length < 3) return [];
+  if (face.length === 3) return [[face[0], face[1], face[2]]];
+  const normal = (() => {
+    let x = 0, y = 0, z = 0;
+    for (let i = 0; i < face.length; i++) {
+      const a = mesh.positions[face[i]], b = mesh.positions[face[(i + 1) % face.length]];
+      x += (a[1] - b[1]) * (a[2] + b[2]);
+      y += (a[2] - b[2]) * (a[0] + b[0]);
+      z += (a[0] - b[0]) * (a[1] + b[1]);
+    }
+    return [x, y, z] as Vec3;
+  })();
+  const drop = Math.abs(normal[0]) > Math.abs(normal[1])
+    ? (Math.abs(normal[0]) > Math.abs(normal[2]) ? 0 : 2)
+    : (Math.abs(normal[1]) > Math.abs(normal[2]) ? 1 : 2);
+  const projected = face.map((vertex) => {
+    const p = mesh.positions[vertex];
+    return drop === 0 ? [p[1], p[2]] : drop === 1 ? [p[0], p[2]] : [p[0], p[1]];
+  });
+  const cross = (a: number[], b: number[], c: number[]) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  let area = 0;
+  for (let i = 0; i < projected.length; i++) {
+    const a = projected[i], b = projected[(i + 1) % projected.length];
+    area += a[0] * b[1] - b[0] * a[1];
+  }
+  const orientation = area >= 0 ? 1 : -1;
+  const inside = (p: number[], a: number[], b: number[], c: number[]) => {
+    const ab = orientation * cross(a, b, p), bc = orientation * cross(b, c, p), ca = orientation * cross(c, a, p);
+    return ab >= -1e-10 && bc >= -1e-10 && ca >= -1e-10;
+  };
+  const remaining = Array.from({ length: face.length }, (_, index) => index);
+  const triangles: [number, number, number][] = [];
+  for (let guard = 0; remaining.length > 3 && guard < face.length * face.length; guard++) {
+    let clipped = false;
+    for (let i = 0; i < remaining.length; i++) {
+      const before = remaining[(i - 1 + remaining.length) % remaining.length];
+      const current = remaining[i];
+      const after = remaining[(i + 1) % remaining.length];
+      if (orientation * cross(projected[before], projected[current], projected[after]) <= 1e-12) continue;
+      if (remaining.some((candidate) => candidate !== before && candidate !== current && candidate !== after
+        && inside(projected[candidate], projected[before], projected[current], projected[after]))) continue;
+      triangles.push([face[before], face[current], face[after]]);
+      remaining.splice(i, 1);
+      clipped = true;
+      break;
+    }
+    if (!clipped) break;
+  }
+  if (remaining.length === 3) triangles.push([face[remaining[0]], face[remaining[1]], face[remaining[2]]]);
+  if (triangles.length === face.length - 2) return triangles;
+  return Array.from({ length: face.length - 2 }, (_, index) => [face[0], face[index + 1], face[index + 2]]);
+}
+
 export interface InstanceRef {
   geometry: Geometry;
   position: Vec3;

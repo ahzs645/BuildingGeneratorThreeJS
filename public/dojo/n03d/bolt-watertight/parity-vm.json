@@ -1,0 +1,14 @@
+{
+  "source": "gnvm",
+  "object": "Bolt Gen_DHTS_Thru Head v03.003",
+  "node_group": "BOLT GEN DHTS v03_Thru Head_1JUL2024.005",
+  "evaluation_ms": 67982,
+  "result": {
+    "verts": 16774,
+    "faces": 16776,
+    "bbox": {
+      "min": [-7.965977668762207, -7.9749321937561035, 0.0],
+      "max": [7.967535018920898, 7.9749321937561035, 27.216123580932617]
+    }
+  }
+}

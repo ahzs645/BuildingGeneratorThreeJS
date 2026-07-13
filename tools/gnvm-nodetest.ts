@@ -2,7 +2,7 @@
 // built against our EvalAPI directly — no graph machinery needed).
 // Run: npx tsx tools/gnvm-nodetest.ts
 import { Field, Vec3 } from "../src/gnvm/core";
-import { Geometry, Mesh, orientClosedSurface, toTriSoup, topologyOf } from "../src/gnvm/geometry";
+import { Geometry, Mesh, orientClosedSurface, toTriSoup, topologyOf, triangulateFaceIndices } from "../src/gnvm/geometry";
 import { DUMP_CONTEXT, EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
 import { Evaluator, makeFieldCtx } from "../src/gnvm/evaluator";
 import "../src/gnvm/index"; // registers all handlers
@@ -278,6 +278,16 @@ function meshSignedAreaXY(m: Mesh): number {
   check("MeshCube spans +/-0.5", Math.abs(Math.min(...xs) + 0.5) < 1e-6 && Math.abs(Math.max(...xs) - 0.5) < 1e-6);
 }
 
+{
+  const dual = runNode("GeometryNodeDualMesh", { Mesh: box([-1, -1, -1], [1, 1, 1]) })["Dual Mesh"] as Geometry;
+  let volume = 0;
+  for (const face of dual.mesh?.faces ?? []) for (let corner = 1; corner + 1 < face.length; corner++) {
+    const a = dual.mesh!.positions[face[0]], b = dual.mesh!.positions[face[corner]], c = dual.mesh!.positions[face[corner + 1]];
+    volume += (a[0] * (b[1] * c[2] - b[2] * c[1]) + a[1] * (b[2] * c[0] - b[0] * c[2]) + a[2] * (b[0] * c[1] - b[1] * c[0])) / 6;
+  }
+  check("Dual Mesh keeps a closed surface outward", dual.mesh?.positions.length === 6 && dual.mesh.faces.length === 8 && volume > 0, `${dual.mesh?.positions.length}v/${dual.mesh?.faces.length}f volume=${volume}`);
+}
+
 // (D) FilletCurve: 90deg open corner A(0,0,0) B(1,0,0) C(1,1,0), radius .5, count 2
 {
   const f = runNode("GeometryNodeFilletCurve", { Curve: curve([[0, 0, 0], [1, 0, 0], [1, 1, 0]], false), Radius: 0.5, Count: 2 }).Curve as Geometry;
@@ -409,6 +419,42 @@ function meshSignedAreaXY(m: Mesh): number {
     Threshold: 0.5,
   }).Mesh as Geometry;
   check("Volume Cube to Mesh extracts a welded SDF surface", !!surface.mesh && surface.mesh.positions.length > 100 && surface.mesh.faces.length > 100);
+  const volumeFaceSizes = (surface.mesh?.faces ?? []).reduce<Record<string, number>>((counts, face) => {
+    counts[String(face.length)] = (counts[String(face.length)] ?? 0) + 1;
+    return counts;
+  }, {});
+  check("Volume to Mesh reconstructs Blender quad topology", !!surface.mesh && surface.mesh.faces.every((face) => face.length === 4),
+    JSON.stringify(volumeFaceSizes));
+  const volumeEdges = new Map<string, number>();
+  for (const face of surface.mesh?.faces ?? []) for (let corner = 0; corner < face.length; corner++) {
+    const a = face[corner], b = face[(corner + 1) % face.length];
+    const key = a < b ? `${a},${b}` : `${b},${a}`;
+    volumeEdges.set(key, (volumeEdges.get(key) ?? 0) + 1);
+  }
+  check("Volume to Mesh surface nets are manifold", [...volumeEdges.values()].every((uses) => uses === 2));
+}
+
+{
+  const target = new Geometry();
+  target.mesh = new Mesh();
+  target.mesh.positions = [[0, 0, 0], [2, 0, 0], [0, 2, 0]];
+  target.mesh.faces = [[0, 1, 2]];
+  const source = new Geometry();
+  source.mesh = new Mesh();
+  source.mesh.positions = [[0.5, 0.5, 1]];
+  const position = runNode("GeometryNodeProximity", { Target: target }, { target_element: "FACES" }).Position as Field;
+  check("Geometry Proximity FACES projects onto triangle interiors", approx(position.array(makeFieldCtx(source, "POINT"))[0] as number[], [0.5, 0.5, 0]));
+}
+
+{
+  const concave = new Mesh();
+  concave.positions = [[0, 0, 0], [2, 0, 0], [2, 2, 0], [1, 1, 0], [0, 2, 0]];
+  const triangles = triangulateFaceIndices(concave, [0, 1, 2, 3, 4]);
+  const area = triangles.reduce((sum, [a, b, c]) => {
+    const p = concave.positions[a], q = concave.positions[b], r = concave.positions[c];
+    return sum + Math.abs((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])) * 0.5;
+  }, 0);
+  check("concave n-gons use ear-clipped ray triangles", triangles.length === 3 && Math.abs(area - 3) < 1e-9, `${triangles.length} triangles / area ${area}`);
 }
 
 // (F3) FillCurve nested squares: inner loop is a hole and ring triangulates
