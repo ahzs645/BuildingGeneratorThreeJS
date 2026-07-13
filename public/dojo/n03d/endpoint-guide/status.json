@@ -1,0 +1,16 @@
+{
+  "id": "n03d-endpoint-guide",
+  "object": "Plane.002",
+  "root": "Geometry Nodes.007",
+  "status": "exact-parity",
+  "blender": {
+    "verts": 320,
+    "faces": 288
+  },
+  "gnvm": {
+    "verts": 320,
+    "faces": 288
+  },
+  "coverage": "100% of reachable node types across the 1-group, 13-node closure.",
+  "validation": "The fixed guide converts the supplied two-point mesh line to a beveled curve and instances square markers on both endpoints. Topology is exact and local bounds differ only by sub-micro-unit floating-point rounding. Geometry Nodes.016 on Plane.007 was audited separately: its isolated authored output is empty and it is not published as a generator."
+}

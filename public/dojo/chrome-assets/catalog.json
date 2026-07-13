@@ -779,5 +779,16 @@
     "localSpace": true,
     "note": "Exact Blender topology and bit-for-bit matching local bounds for the fixed 2-group, 24-node five-way pipe icon. The web comparison preserves all generated faces and material assignments; its normalized reference renderer does not carry Blender's split smooth normals.",
     "controls": []
+  },
+  {
+    "id": "n03d-endpoint-guide",
+    "title": "N03D · Endpoint Guide",
+    "object": "Plane.002",
+    "dump": "dojo/n03d/endpoint-guide/dump.json",
+    "reference": "dojo/references/n03d/endpoint-guide.png",
+    "blenderStats": { "verts": 320, "faces": 288 },
+    "localSpace": true,
+    "note": "Exact topology for the fixed 13-node mesh-line guide: a beveled center line with instanced square endpoint markers. Local bounds agree with Blender to sub-micro-unit floating-point precision.",
+    "controls": []
   }
 ]

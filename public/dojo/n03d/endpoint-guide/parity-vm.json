@@ -1,0 +1,18 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/endpoint-guide/dump.json",
+  "object": "Plane.002",
+  "results": [
+    {
+      "combo": { "name": "authored default", "overrides": {} },
+      "status": "ok",
+      "verts": 320,
+      "faces": 288,
+      "bbox": {
+        "min": [-2.3498854637145996, -0.10000009834766388, -2.3498854637145996],
+        "max": [2.3498854637145996, 0.10000009834766388, 59.5869255065918]
+      },
+      "elapsed_ms": 21
+    }
+  ]
+}
