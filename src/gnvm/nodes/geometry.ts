@@ -88,14 +88,15 @@ function relativeInstanceTransform(objectMatrix: Matrix4Rows, activeMatrix: Matr
   ] as Vec3);
   const scale = axes.map((axis) => Math.hypot(axis[0], axis[1], axis[2]) || 1) as Vec3;
   const r = axes.map((axis, column) => axis.map((value) => value / scale[column])) as Vec3[];
-  // The normalized basis vectors are matrix columns. Extract XYZ Euler for
-  // the Rz*Ry*Rx convention used by rotateEulerXYZ.
-  const m11 = r[0][0], m12 = r[1][0], m13 = r[2][0];
-  const m22 = r[1][1], m23 = r[2][1], m32 = r[1][2], m33 = r[2][2];
-  const y = Math.asin(Math.max(-1, Math.min(1, m13)));
-  const rotation: Vec3 = Math.abs(m13) < .9999999
-    ? [Math.atan2(-m23, m33), y, Math.atan2(-m12, m11)]
-    : [Math.atan2(m32, m22), y, 0];
+  // The normalized basis vectors above are matrix columns: r[column][row].
+  // Extract Blender XYZ Euler from Rz*Ry*Rx. Reading r as rows transposes the
+  // rotation; single-axis transforms happen to survive, but combined X/Z
+  // rotations (such as Modern Pipe's horizontal dowel) lose their long axis.
+  const sinY = Math.max(-1, Math.min(1, -r[0][2]));
+  const y = Math.asin(sinY);
+  const rotation: Vec3 = Math.abs(sinY) < .9999999
+    ? [Math.atan2(r[1][2], r[2][2]), y, Math.atan2(r[0][1], r[0][0])]
+    : [Math.atan2(-r[2][1], r[1][1]), y, 0];
   return { position, rotation, scale };
 }
 

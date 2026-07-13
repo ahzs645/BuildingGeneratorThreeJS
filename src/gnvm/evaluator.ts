@@ -709,16 +709,21 @@ class Invocation {
     for (let index = 0; index < sourceContext.size; index++) {
       if (selection.length && !asNum(selection[index] ?? 0)) continue;
       const element = new Geometry();
-      if (domain === "INSTANCE" && source.instances[index]) {
-        const instance = source.instances[index];
+      const sourceInstance = domain === "INSTANCE" ? source.instances[index] : undefined;
+      if (sourceInstance) {
+        // Blender evaluates an INSTANCE-domain element in the instance's local
+        // identity frame. The source transform is applied to each Generation
+        // result when the zone aggregates its iterations. Feeding the authored
+        // transform into the body and emitting at identity is not equivalent
+        // when a body node changes rotation (Modern Pipe aligns its end rings).
         element.instances.push({
-          ...instance,
-          position: [...instance.position] as Vec3,
-          rotation: [...instance.rotation] as Vec3,
-          scale: [...instance.scale] as Vec3,
+          ...sourceInstance,
+          position: [0, 0, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
           attributes: new Map([
-            ...(instance.attributes?.entries() ?? []),
-            ["__instance_rotation", [...instance.rotation] as Vec3],
+            ...(sourceInstance.attributes?.entries() ?? []),
+            ["__instance_rotation", [0, 0, 0] as Vec3],
           ]),
         });
       }
@@ -727,7 +732,19 @@ class Invocation {
       this.foreachState.set(inNode.name, { Index: Field.of(index), Element: element });
       for (const [identifier, parts] of generated) {
         const value = this.pull(outNode, identifier);
-        if (value instanceof Geometry) parts.push(value);
+        if (!(value instanceof Geometry)) continue;
+        if (!sourceInstance) {
+          parts.push(value);
+          continue;
+        }
+        const transformed = new Geometry();
+        transformed.instances.push({
+          geometry: value.clone(),
+          position: [...sourceInstance.position] as Vec3,
+          rotation: [...sourceInstance.rotation] as Vec3,
+          scale: [...sourceInstance.scale] as Vec3,
+        });
+        parts.push(transformed);
       }
     }
     this.foreachState.delete(inNode.name);

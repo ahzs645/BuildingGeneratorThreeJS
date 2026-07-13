@@ -2,7 +2,7 @@
 // built against our EvalAPI directly — no graph machinery needed).
 // Run: npx tsx tools/gnvm-nodetest.ts
 import { Field, Vec3 } from "../src/gnvm/core";
-import { Geometry, Mesh, orientClosedSurface, toTriSoup, topologyOf, triangulateFaceIndices } from "../src/gnvm/geometry";
+import { Geometry, Mesh, orientClosedSurface, realizeInstances, toTriSoup, topologyOf, transformPoint, triangulateFaceIndices } from "../src/gnvm/geometry";
 import { DUMP_CONTEXT, EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
 import { Evaluator, makeFieldCtx } from "../src/gnvm/evaluator";
 import "../src/gnvm/index"; // registers all handlers
@@ -1278,6 +1278,7 @@ function meshSignedAreaXY(m: Mesh): number {
 {
   const savedObjects = DUMP_CONTEXT.objects;
   const savedCollections = DUMP_CONTEXT.collections;
+  const savedActiveObject = DUMP_CONTEXT.activeObject;
   DUMP_CONTEXT.objects = [
     { name: "dot-a", location: [5, 0, 0], evaluated_mesh: { verts: [[0, 0, 0]], faces: [] } },
     { name: "dot-b", location: [8, 0, 0], evaluated_mesh: { verts: [[1, 0, 0]], faces: [] } },
@@ -1290,8 +1291,84 @@ function meshSignedAreaXY(m: Mesh): number {
   }).Instances as Geometry;
   check("Collection Info emits one instance per evaluated child", collection.instances.length === 2, `instances=${collection.instances.length}`);
   check("Collection Info Reset Children clears transforms", collection.instances.every((instance) => approx(instance.position, [0, 0, 0])));
+  DUMP_CONTEXT.objects = [{
+    name: "rotated-child",
+    matrix_world: [[0, 0, 1, 4], [1, 0, 0, 5], [0, 1, 0, 6], [0, 0, 0, 1]],
+    evaluated_mesh: { verts: [[0, 0, 2]], faces: [] },
+  } as any];
+  DUMP_CONTEXT.collections = [{ name: "rotated-pack", objects: ["rotated-child"] }];
+  DUMP_CONTEXT.activeObject = {
+    name: "active", matrix_world: [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+  } as any;
+  const rotatedCollection = runNode("GeometryNodeCollectionInfo", {
+    Collection: { datablock: "Collection", name: "rotated-pack" },
+    "Separate Children": true, "Reset Children": false,
+  }, { transform_space: "RELATIVE" }).Instances as Geometry;
+  const rotatedChild = rotatedCollection.instances[0];
+  check("Collection Info preserves combined matrix rotations",
+    approx(transformPoint([0, 0, 2], rotatedChild.position, rotatedChild.rotation, rotatedChild.scale), [6, 5, 6]));
   DUMP_CONTEXT.objects = savedObjects;
   DUMP_CONTEXT.collections = savedCollections;
+  DUMP_CONTEXT.activeObject = savedActiveObject;
+}
+
+// INSTANCE-domain For Each evaluates its body in element-local space and
+// reapplies the source transform to generated geometry at the zone boundary.
+// A body that converts an element to points exposes the difference: carrying
+// the source transform into the body loses its rotation on the new instance.
+{
+  const node = (name: string, type: string, inputs: any[], outputs: any[], extra: Record<string, unknown> = {}) => ({
+    name, type, label: null, inputs, outputs, ...extra,
+  });
+  const geometryInput = (name: string, identifier = name, value: unknown = null) => ({
+    name, identifier, type: "NodeSocketGeometry", linked: value === null, value,
+  });
+  const geometryOutput = (name: string, identifier = name) => ({ name, identifier, type: "NodeSocketGeometry" });
+  const foreachProgram: any = {
+    foreach_instance_test: {
+      name: "foreach_instance_test", type: "GeometryNodeTree", interface: [],
+      nodes: [
+        node("Group Input", "NodeGroupInput", [], [geometryOutput("Geometry")]),
+        node("For Each Input", "GeometryNodeForeachGeometryElementInput", [
+          geometryInput("Geometry"), { name: "Selection", identifier: "Selection", type: "NodeSocketBool", linked: false, value: true },
+        ], [geometryOutput("Element"), { name: "Index", identifier: "Index", type: "NodeSocketInt" }], { paired_output: "For Each Output" }),
+        node("Instances to Points", "GeometryNodeInstancesToPoints", [
+          geometryInput("Instances"), { name: "Selection", identifier: "Selection", type: "NodeSocketBool", linked: false, value: true },
+          { name: "Position", identifier: "Position", type: "NodeSocketVector", linked: false, value: [0, 0, 0] },
+          { name: "Radius", identifier: "Radius", type: "NodeSocketFloat", linked: false, value: 0.05 },
+        ], [geometryOutput("Points")]),
+        node("Local Point", "GeometryNodeMeshLine", [
+          { name: "Count", identifier: "Count", type: "NodeSocketInt", linked: false, value: 1 },
+          { name: "Start Location", identifier: "Start Location", type: "NodeSocketVector", linked: false, value: [0, 0, 1] },
+          { name: "Offset", identifier: "Offset", type: "NodeSocketVector", linked: false, value: [0, 0, 0] },
+        ], [geometryOutput("Mesh")]),
+        node("Instance on Points", "GeometryNodeInstanceOnPoints", [
+          geometryInput("Points"), { name: "Selection", identifier: "Selection", type: "NodeSocketBool", linked: false, value: true },
+          geometryInput("Instance"), { name: "Pick Instance", identifier: "Pick Instance", type: "NodeSocketBool", linked: false, value: false },
+          { name: "Instance Index", identifier: "Instance Index", type: "NodeSocketInt", linked: false, value: 0 },
+          { name: "Rotation", identifier: "Rotation", type: "NodeSocketRotation", linked: false, value: [0, 0, 0] },
+          { name: "Scale", identifier: "Scale", type: "NodeSocketVector", linked: false, value: [1, 1, 1] },
+        ], [geometryOutput("Instances")]),
+        node("For Each Output", "GeometryNodeForeachGeometryElementOutput", [
+          geometryInput("Generation", "Generation_0"),
+        ], [geometryOutput("Generation", "Generation_0")], { props: { domain: "INSTANCE" } }),
+        node("Group Output", "NodeGroupOutput", [geometryInput("Output")], []),
+      ],
+      links: [
+        { from_node: "Group Input", from_socket: "Geometry", to_node: "For Each Input", to_socket: "Geometry" },
+        { from_node: "For Each Input", from_socket: "Element", to_node: "Instances to Points", to_socket: "Instances" },
+        { from_node: "Instances to Points", from_socket: "Points", to_node: "Instance on Points", to_socket: "Points" },
+        { from_node: "Local Point", from_socket: "Mesh", to_node: "Instance on Points", to_socket: "Instance" },
+        { from_node: "Instance on Points", from_socket: "Instances", to_node: "For Each Output", to_socket: "Generation_0" },
+        { from_node: "For Each Output", from_socket: "Generation_0", to_node: "Group Output", to_socket: "Output" },
+      ],
+    },
+  };
+  const source = new Geometry();
+  source.instances.push({ geometry: new Geometry(), position: [4, 5, 6], rotation: [Math.PI / 2, 0, Math.PI / 2], scale: [1, 1, 1] });
+  const generated = new Evaluator(foreachProgram).evalGroup("foreach_instance_test", { Geometry: source }).Output as Geometry;
+  const generatedPoint = realizeInstances(generated).mesh?.positions[0];
+  check("For Each generation reapplies source instance transform", approx(generatedPoint ?? [], [5, 5, 6]), JSON.stringify(generatedPoint));
 }
 
 // (AE) Curve Tilt and Radius are point fields, and an unlinked Instance Index

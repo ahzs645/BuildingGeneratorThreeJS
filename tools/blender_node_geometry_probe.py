@@ -5,6 +5,7 @@ Usage:
     OBJECT GROUP NODE SOCKET OUT.json
 """
 import json
+import os
 import sys
 
 import bpy
@@ -19,6 +20,16 @@ obj = bpy.data.objects.get(object_name)
 group = bpy.data.node_groups.get(group_name)
 if obj is None or group is None:
     raise RuntimeError(f"missing object/group: {object_name!r} / {group_name!r}")
+# Several Node Dojo assets live in an excluded library collection. Evaluating
+# them in the authored presentation scene can therefore hide Collection Info
+# dependencies and return a misleading primitive fallback. Isolate the target
+# in a clean scene, matching the reference-render and parity-sweep workflow.
+probe_scene = bpy.data.scenes.new("__NODE_DOJO_GEOMETRY_PROBE_SCENE")
+probe_scene.collection.objects.link(obj)
+bpy.context.window.scene = probe_scene
+obj.hide_viewport = False
+obj.hide_render = False
+obj.hide_set(False)
 node = group.nodes.get(node_name)
 group_output = next((candidate for candidate in group.nodes if candidate.bl_idname == "NodeGroupOutput" and candidate.is_active_output), None)
 if node is None or group_output is None:
@@ -63,6 +74,9 @@ payload = {
     "faces": len(mesh.polygons) if mesh else 0,
     "bbox": {"min": minimum, "max": maximum},
 }
+if os.environ.get("NODE_DOJO_PROBE_GEOMETRY") == "1":
+    payload["positions"] = positions
+    payload["faces"] = [list(polygon.vertices) for polygon in mesh.polygons] if mesh else []
 with open(out_path, "w", encoding="utf-8") as handle:
     json.dump(payload, handle, indent=2)
 if mesh:

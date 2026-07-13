@@ -769,10 +769,10 @@
     "object": "PIPE GEN 4.3_OCT2024_00",
     "dump": "dojo/joints/modern-pipe/dump.json",
     "reference": "dojo/references/joints/modern-pipe.png",
-    "blenderStats": { "verts": 11163, "faces": 8064 },
+    "blenderStats": { "verts": 11162, "faces": 8064 },
     "localSpace": true,
     "surfaceBounds": true,
-    "note": "The complete 296-group, 2,413-node neupipe product builds its six-way pipe layout, per-instance sleeves, signed-distance joint shell, and dual-mesh smoothing in-browser. Native manifold surface nets improve the authored result to 11,826 / 8,538 versus Blender's 11,163 / 8,064 (5.94% vertex delta), with a much smoother central junction; smaller-joint variants remain denser.",
+    "note": "The complete 296-group, 2,413-node neupipe product builds its six-way pipe layout, per-instance sleeves, signed-distance joint shell, and dual-mesh smoothing in-browser. Combined collection rotations and instance-domain For Each transforms now match Blender: the authored result is 11,252 / 8,128 versus Blender's 11,162 / 8,064 (0.81% vertex delta) with exact collection bounds, and all four parity cases remain within 1.45% topology.",
     "controls": [
       { "type": "checkbox", "name": "keep structure geo", "label": "Keep structure pipes", "value": true },
       { "name": "joint size", "label": "Joint size", "min": 10, "max": 40, "step": 0.1, "value": 23.177337646484375 },
