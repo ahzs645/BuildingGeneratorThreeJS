@@ -5,5 +5,6 @@
   "status": "near-exact",
   "blender": { "verts": 35886, "faces": 33474 },
   "gnvm": { "verts": 35766, "faces": 33347 },
-  "validation": "The recovered Pixels Medium outlines are embedded in the portable dump. Authored topology differs by 0.33% vertices and 0.38% faces; maximum local-bounds difference is 2.2816 units."
+  "font": { "source": "dojo/fonts/pixels.ttf", "family": "Pixels Medium", "fallback": "embedded Blender-extracted outlines" },
+  "validation": "The page loads the supplied Pixels Medium TTF and visibly reports when it falls back to the embedded outline atlas. Authored topology differs by 0.33% vertices and 0.38% faces; maximum local-bounds difference is 2.2816 units."
 }

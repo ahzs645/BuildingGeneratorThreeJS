@@ -75,7 +75,13 @@
     "dump": "dojo/chrome-assets/ui-window-generator/dump.json",
     "reference": "dojo/references/chrome-assets/ui-window-generator.png",
     "blenderStats": { "verts": 35886, "faces": 33474 },
-    "note": "The recovered Pixels Medium outlines and vertical metrics are embedded in the portable graph; authored topology is within 0.38% of Blender.",
+    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. Authored topology is within 0.38% of Blender.",
+    "font": {
+      "url": "dojo/fonts/pixels.ttf",
+      "family": "Pixels Medium",
+      "requiredFor": "the exact UI title styling",
+      "fallback": "using the embedded Blender-extracted outline fallback"
+    },
     "controls": [
       { "name": "subdivide", "label": "Subdivision density", "min": 0.1, "max": 2, "step": 0.000001, "value": 1.5221697092056274 },
       { "name": "line thiccness", "label": "Line thickness", "min": 0.25, "max": 6, "step": 0.000001, "value": 2.462169885635376 },
