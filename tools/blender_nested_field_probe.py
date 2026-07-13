@@ -14,12 +14,17 @@ field_node, field_socket = field_spec.split(":", 1)
 group_output = next(node for node in tree.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output)
 geometry_output = next(socket for socket in group_output.inputs if socket.type == "GEOMETRY")
 original = geometry_output.links[0].from_socket if geometry_output.is_linked else None
+field_output = tree.nodes[field_node].outputs[field_socket]
 store = tree.nodes.new("GeometryNodeStoreNamedAttribute")
-store.data_type = "FLOAT"
+store.data_type = {
+    "NodeSocketBool": "BOOLEAN",
+    "NodeSocketInt": "INT",
+    "NodeSocketVector": "FLOAT_VECTOR",
+}.get(field_output.bl_idname, "FLOAT")
 store.domain = domain.upper()
 store.inputs["Name"].default_value = "__nested_probe"
 tree.links.new(tree.nodes[geometry_node].outputs[geometry_socket], store.inputs["Geometry"])
-tree.links.new(tree.nodes[field_node].outputs[field_socket], store.inputs["Value"])
+tree.links.new(field_output, store.inputs["Value"])
 for link in list(geometry_output.links):
     tree.links.remove(link)
 tree.links.new(store.outputs["Geometry"], geometry_output)
@@ -30,7 +35,12 @@ evaluated = obj.evaluated_get(bpy.context.evaluated_depsgraph_get())
 mesh = evaluated.to_mesh()
 try:
     attribute = mesh.attributes.get("__nested_probe")
-    values = [float(item.value) for item in attribute.data] if attribute else []
+    if not attribute:
+        values = []
+    elif store.data_type == "FLOAT_VECTOR":
+        values = [[float(component) for component in item.vector] for item in attribute.data]
+    else:
+        values = [item.value for item in attribute.data]
     positions = [[float(vertex.co.x), float(vertex.co.y), float(vertex.co.z)] for vertex in mesh.vertices]
     payload = {"domain": domain.upper(), "values": values, "positions": positions, "verts": len(mesh.vertices), "faces": len(mesh.polygons), "edges": len(mesh.edges)}
 finally:

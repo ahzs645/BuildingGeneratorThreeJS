@@ -970,6 +970,10 @@ function meshSignedAreaXY(m: Mesh): number {
   const arr = normal.array(makeFieldCtx(square, "POINT")) as number[][];
   check("InputNormal planar loop stays in XY", arr.every((value) => Math.abs(value[2]) < 1e-9), JSON.stringify(arr));
   check("InputNormal planar CCW loop points inward", arr[0][0] > 0 && arr[0][1] > 0, JSON.stringify(arr[0]));
+
+  const wire = runNode("GeometryNodeCurveToMesh", { Curve: square, "Profile Curve": new Geometry(), "Fill Caps": false }).Mesh as Geometry;
+  const wireNormals = normal.array(makeFieldCtx(wire, "POINT")) as number[][];
+  check("Curve to Mesh wire preserves evaluated curve normals", wireNormals.every((value, i) => approx(value, arr[i])), JSON.stringify(wireNormals[0]));
 }
 
 // (S) MeshCone frustum

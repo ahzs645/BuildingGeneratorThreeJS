@@ -8,7 +8,7 @@
 //    recorded in MISSING and fall back to passing the first geometry input through,
 //    so evaluation never crashes and we get a coverage report + partial mesh.
 
-import { Field, Vec3, Domain, FieldCtx, asNum, fieldMap, vadd, vcross, vdot, vnorm, vscale, vsub } from "./core";
+import { Field, Vec3, Domain, FieldCtx, asNum, asVec3, fieldMap, vadd, vcross, vdot, vnorm, vscale, vsub } from "./core";
 import { Geometry, Mesh, mergeMeshInto, realizeInstances, topologyOf, Topology } from "./geometry";
 import { splineFrames, splineLength } from "./curves";
 import { EvalAPI, RawNode, REGISTRY, MISSING, SockVal, DataRef } from "./registry";
@@ -408,6 +408,10 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
       // Corner normals are face-split (per-face), unlike smooth vertex normals —
       // the solidify angle-compensation trick depends on this distinction.
       if (domain === "CORNER") return mesh.faceNormal(C().face[i]);
+      if (!mesh.faces.length && domain === "POINT") {
+        const wireNormal = mesh.attributes.get("__wire_normal");
+        if (wireNormal?.domain === "POINT") return asVec3(wireNormal.data[i] ?? [0, 0, 0]);
+      }
       if (!normals) normals = mesh.vertexNormals();
       return normals[i] ?? [0, 0, 1];
     },

@@ -112,6 +112,7 @@ payload = {
 }
 if os.environ.get("NODE_DOJO_PROBE_GEOMETRY") == "1":
     payload["positions"] = positions
+    payload["edges"] = [list(edge.vertices) for edge in mesh.edges] if mesh else []
     payload["faces"] = [list(polygon.vertices) for polygon in mesh.polygons] if mesh else []
 with open(out_path, "w", encoding="utf-8") as handle:
     json.dump(payload, handle, indent=2)

@@ -42,5 +42,5 @@ const curve_attributes = Object.fromEntries([...geometry.curveAttributes].map(([
   count: attribute.data.length,
   sample: attribute.data.slice(0, 8),
 }]));
-writeFileSync(outPath, `${JSON.stringify({ positions, faces, attributes, curves: geometry.curves.length, curve_lengths: geometry.curves.map((curve) => curve.points.length), curve_attributes, instances: geometry.instances.length, instance_payloads }, null, 2)}\n`);
+writeFileSync(outPath, `${JSON.stringify({ positions, edges: geometry.mesh?.edges ?? [], faces, attributes, curves: geometry.curves.length, curve_lengths: geometry.curves.map((curve) => curve.points.length), curve_attributes, instances: geometry.instances.length, instance_payloads }, null, 2)}\n`);
 console.log(`GNVM_NODE_GEOMETRY_PROBE_OK ${positions.length}v/${faces.length}f ${geometry.curves.length}c/${geometry.instances.length}i -> ${outPath}`);
