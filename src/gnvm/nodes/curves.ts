@@ -51,8 +51,9 @@ reg("GeometryNodeResampleCurve", (api) => {
   const resampleOne = (s: Spline): Spline => {
     if (mode === "EVALUATED") return { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
     if (mode === "LENGTH") {
-      // segments of ~`length`: n = max(1, round(total/length)) segments
-      const n = Math.max(1, Math.round(splineLength(s) / Math.max(1e-9, length)));
+      // Blender fits the largest whole number of segments at or below the
+      // requested spacing, then includes both endpoints for open splines.
+      const n = Math.max(1, Math.floor(splineLength(s) / Math.max(1e-9, length)));
       return resampleSpline(s, s.cyclic ? n : n + 1);
     }
     return resampleSpline(s, count);
@@ -141,28 +142,35 @@ reg("GeometryNodeFillCurve", (api) => {
   // older dumps carry it as a `mode` prop.
   const menu = api.str("Mode").toUpperCase().replace(/[^A-Z]/g, "");
   const mode = (menu === "NGONS" || menu === "TRIANGLES" ? menu : api.prop<string>("mode", "TRIANGLES")) as "NGONS" | "TRIANGLES";
-  const out = new Geometry();
-  // Blender's Fill Curve operates in the curve component's local XY plane;
-  // Z is discarded rather than carried through from the control points. This
-  // matters when a translated mesh is converted to curves before filling (the
-  // Dojo bin deliberately moves its source grid to z=-0.019, then Fill Curve
-  // creates the bin floors back at z=0).
-  const planar = g.curves.map((s) => {
-    let points = s.points.map((p) => [p[0], p[1], 0] as Vec3);
-    if (s.cyclic && points.length >= 3) {
-      let area2 = 0;
-      for (let i = 0; i < points.length; i++) {
-        const a = points[i], b = points[(i + 1) % points.length];
-        area2 += a[0] * b[1] - b[0] * a[1];
+  const fillGeometry = (source: Geometry): Geometry => {
+    const out = new Geometry();
+    // Blender's Fill Curve operates in the curve component's local XY plane;
+    // Z is discarded rather than carried through from the control points. This
+    // matters when a translated mesh is converted to curves before filling (the
+    // Dojo bin deliberately moves its source grid to z=-0.019, then Fill Curve
+    // creates the bin floors back at z=0).
+    const planar = source.curves.map((s) => {
+      let points = s.points.map((p) => [p[0], p[1], 0] as Vec3);
+      if (s.cyclic && points.length >= 3) {
+        let area2 = 0;
+        for (let i = 0; i < points.length; i++) {
+          const a = points[i], b = points[(i + 1) % points.length];
+          area2 += a[0] * b[1] - b[0] * a[1];
+        }
+        // Fill Curve emits front-facing (+Z) polygons for local-XY loops even
+        // when Mesh to Curve supplied the boundary in clockwise order.
+        if (area2 < 0) points = [points[0], ...points.slice(1).reverse()];
       }
-      // Fill Curve emits front-facing (+Z) polygons for local-XY loops even
-      // when Mesh to Curve supplied the boundary in clockwise order.
-      if (area2 < 0) points = [points[0], ...points.slice(1).reverse()];
-    }
-    return { cyclic: s.cyclic, points };
-  });
-  out.mesh = fillCurves(planar, mode);
-  return { Mesh: out };
+      return { cyclic: s.cyclic, points };
+    });
+    if (planar.length) out.mesh = fillCurves(planar, mode);
+    // String to Curves outputs one curve instance per glyph. Fill Curve keeps
+    // those instances and fills each payload in local space; dropping them made
+    // the Node Dojo Typewriter animate strings internally but output no text.
+    out.instances = source.instances.map((instance) => ({ ...instance, geometry: fillGeometry(instance.geometry) }));
+    return out;
+  };
+  return { Mesh: fillGeometry(g) };
 });
 
 // ---- mesh -> curve --------------------------------------------------------
@@ -292,14 +300,26 @@ function glyphGeometry(ch: string, size: number): Geometry {
   const fallback: Vec3[][] = [[[0.05, 0, 0], [0.55, 0, 0], [0.55, 1, 0], [0.05, 1, 0], [0.05, 0, 0]]];
   const polys: Vec3[][] = GLYPHS[ch] ?? fallback;
   const g = new Geometry();
-  g.curves = polys.map((pts) => ({
-    cyclic: false,
-    points: pts.map((p) => [p[0] * size, p[1] * size, 0] as Vec3),
-  }));
-  for (const s of g.curves) {
-    if (s.points.length >= 2) {
-      const a = s.points[0], b = s.points[s.points.length - 1];
-      s.cyclic = Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) < 1e-9 * Math.max(size, 1e-9);
+  const stroke = .065 * size;
+  for (const raw of polys) {
+    const pts = raw.map((p) => [p[0] * size, p[1] * size, 0] as Vec3);
+    const closed = pts.length > 2 && Math.hypot(pts[0][0] - pts.at(-1)![0], pts[0][1] - pts.at(-1)![1]) < 1e-9 * Math.max(size, 1e-9);
+    if (closed) {
+      g.curves.push({ cyclic: true, points: pts.slice(0, -1) });
+      continue;
+    }
+    // Blender fonts output closed outline curves. The portable glyph table is
+    // stored as compact centerline strokes, so expand each segment to a thin
+    // closed quad before Fill Curve consumes it.
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const a = pts[i], b = pts[i + 1];
+      const dx = b[0] - a[0], dy = b[1] - a[1], length = Math.hypot(dx, dy);
+      if (length < 1e-12) continue;
+      const nx = -dy / length * stroke, ny = dx / length * stroke;
+      g.curves.push({ cyclic: true, points: [
+        [a[0] + nx, a[1] + ny, 0], [b[0] + nx, b[1] + ny, 0],
+        [b[0] - nx, b[1] - ny, 0], [a[0] - nx, a[1] - ny, 0],
+      ] });
     }
   }
   return g;

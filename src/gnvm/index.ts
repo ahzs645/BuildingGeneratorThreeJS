@@ -33,6 +33,8 @@ export interface RunResult {
 // A dump-file shape (subset we consume).
 export interface Dump {
   node_groups: Program;
+  scene?: { frame_current?: number; fps?: number; fps_base?: number };
+  collections?: { name: string; objects: string[] }[];
   objects?: {
     name: string;
     location?: number[];
@@ -83,6 +85,9 @@ export async function runGenerator(dump: Dump, opts: { object?: string; override
   await ensureManifold();
   MISSING.clear();
   DUMP_CONTEXT.objects = (dump.objects ?? []) as any;
+  DUMP_CONTEXT.collections = dump.collections ?? [];
+  DUMP_CONTEXT.frame = Number(opts.overrides?.__frame ?? dump.scene?.frame_current ?? 0);
+  DUMP_CONTEXT.fps = Number(dump.scene?.fps ?? 24) / Math.max(Number(dump.scene?.fps_base ?? 1), 1e-9);
   const found = findModifierGroup(dump, opts.object);
   if (!found) throw new Error("no geometry-nodes modifier found in dump");
   // Note: Solidify N++ Thickness in this dump is intentionally ~0.1 (unlinked).

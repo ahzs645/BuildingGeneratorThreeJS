@@ -1,0 +1,14 @@
+[
+  {
+    "name": "authored baseline",
+    "overrides": {}
+  },
+  {
+    "name": "frame 24",
+    "overrides": { "__frame": 24 }
+  },
+  {
+    "name": "frame 72",
+    "overrides": { "__frame": 72 }
+  }
+]

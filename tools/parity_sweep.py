@@ -129,6 +129,9 @@ def set_modifier_inputs(mod, name_to_identifier, saved_values, overrides):
                 # of attempting to assign that report string back to Blender.
                 pass
     for name, value in overrides.items():
+        if name == "__frame":
+            bpy.context.scene.frame_set(int(value))
+            continue
         identifier = name_to_identifier.get(name)
         if identifier is None:
             raise KeyError(f"modifier input not found: {name}")
@@ -141,13 +144,49 @@ def evaluated_mesh(obj):
     depsgraph = bpy.context.evaluated_depsgraph_get()
     depsgraph.update()
     ev = obj.evaluated_get(depsgraph)
-    return ev, ev.to_mesh()
+    mesh = ev.to_mesh()
+    if mesh is not None:
+        return ev, mesh, None
+
+    # Curve objects whose Geometry Nodes output still contains instances can
+    # return None from Object.to_mesh(). Add a temporary pass-through modifier
+    # that realizes the geometry set, matching what render/export eventually
+    # consumes without changing the saved node group.
+    realize_group = bpy.data.node_groups.new("__PARITY_REALIZE_INSTANCES", "GeometryNodeTree")
+    realize_group.interface.new_socket(name="Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")
+    realize_group.interface.new_socket(name="Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
+    group_input = realize_group.nodes.new("NodeGroupInput")
+    realize = realize_group.nodes.new("GeometryNodeRealizeInstances")
+    group_output = realize_group.nodes.new("NodeGroupOutput")
+    realize_group.links.new(group_input.outputs["Geometry"], realize.inputs["Geometry"])
+    realize_group.links.new(realize.outputs["Geometry"], group_output.inputs["Geometry"])
+    realize_mod = obj.modifiers.new(name="__PARITY_REALIZE_INSTANCES", type="NODES")
+    realize_mod.node_group = realize_group
+    obj.update_tag()
+    bpy.context.view_layer.update()
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    depsgraph.update()
+    ev = obj.evaluated_get(depsgraph)
+    mesh = ev.to_mesh()
+    if mesh is None:
+        obj.modifiers.remove(realize_mod)
+        bpy.data.node_groups.remove(realize_group)
+        raise RuntimeError(f'could not create evaluated mesh for "{obj.name}"')
+    return ev, mesh, (obj, realize_mod, realize_group)
+
+
+def clear_evaluated_mesh(ev, _mesh, temporary_realize):
+    ev.to_mesh_clear()
+    if temporary_realize is not None:
+        obj, realize_mod, realize_group = temporary_realize
+        obj.modifiers.remove(realize_mod)
+        bpy.data.node_groups.remove(realize_group)
 
 
 def evaluate_case(obj, mod, name_to_identifier, saved_values, case):
     started = time.time()
     set_modifier_inputs(mod, name_to_identifier, saved_values, case["overrides"])
-    ev, mesh = evaluated_mesh(obj)
+    ev, mesh, owned = evaluated_mesh(obj)
     try:
         return {
             "combo": case,
@@ -158,7 +197,7 @@ def evaluate_case(obj, mod, name_to_identifier, saved_values, case):
             "elapsed_ms": round((time.time() - started) * 1000, 1),
         }
     finally:
-        ev.to_mesh_clear()
+        clear_evaluated_mesh(ev, mesh, owned)
 
 
 def export_case_glb(obj, path):
@@ -188,7 +227,7 @@ def case_filename(index, name, extension):
 def estimate_cosmetic_geometry(obj, mod, name_to_identifier, saved_values):
     case = {"name": "DEFAULT", "overrides": {}}
     set_modifier_inputs(mod, name_to_identifier, saved_values, {})
-    ev, mesh = evaluated_mesh(obj)
+    ev, mesh, owned = evaluated_mesh(obj)
     try:
         counts = material_face_vertex_counts(obj, mesh)
         text_materials = ["emit.004"]
@@ -210,7 +249,7 @@ def estimate_cosmetic_geometry(obj, mod, name_to_identifier, saved_values):
             "total": {"faces": len(mesh.polygons), "verts": len(mesh.vertices)},
         }
     finally:
-        ev.to_mesh_clear()
+        clear_evaluated_mesh(ev, mesh, owned)
 
 
 def main():

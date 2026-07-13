@@ -3,7 +3,9 @@ import bpy
 import json
 import sys
 
-out_path = sys.argv[sys.argv.index("--") + 1]
+tool_args = sys.argv[sys.argv.index("--") + 1:]
+out_path = tool_args[0]
+target_object = tool_args[1] if len(tool_args) > 1 else None
 
 def socket_value(sock):
     try:
@@ -127,7 +129,36 @@ def dump_tree(tree):
         d["links"].append(entry)
     return d
 
-result = {"blender_version": bpy.app.version_string, "objects": [], "node_groups": {}, "materials": {}, "images": []}
+result = {
+    "blender_version": bpy.app.version_string,
+    "scene": {
+        "frame_current": bpy.context.scene.frame_current,
+        "fps": bpy.context.scene.render.fps,
+        "fps_base": bpy.context.scene.render.fps_base,
+    },
+    "objects": [], "collections": [], "node_groups": {}, "materials": {}, "images": []
+}
+
+dependency_collection_names = set()
+if target_object and bpy.data.objects.get(target_object):
+    for modifier in bpy.data.objects[target_object].modifiers:
+        if modifier.type != "NODES" or not modifier.node_group:
+            continue
+        for item in modifier.node_group.interface.items_tree:
+            if item.item_type != "SOCKET" or item.in_out != "INPUT":
+                continue
+            try:
+                value = modifier[item.identifier]
+                if isinstance(value, bpy.types.Collection):
+                    dependency_collection_names.add(value.name)
+            except Exception:
+                pass
+dependency_object_names = {
+    obj.name
+    for name in dependency_collection_names
+    for obj in bpy.data.collections[name].objects
+}
+depsgraph = bpy.context.evaluated_depsgraph_get()
 
 trees_to_dump = {}
 
@@ -195,8 +226,6 @@ for obj in bpy.data.objects:
                     p0 = bp[segment]
                     p1 = bp[(segment + 1) % len(bp)]
                     for step in range(resolution):
-                        if segment and step == 0:
-                            continue
                         points.append([round(v, 6) for v in bezier(p0.co, p0.handle_right, p1.handle_left, p1.co, step / resolution)])
                 if not cyclic and bp:
                     points.append([round(v, 6) for v in bp[-1].co])
@@ -205,11 +234,25 @@ for obj in bpy.data.objects:
             if points:
                 splines.append({"points": points, "cyclic": cyclic})
         o["curves"] = splines
+    if obj.name in dependency_object_names and obj.type in ("MESH", "CURVE"):
+        evaluated = obj.evaluated_get(depsgraph)
+        mesh = evaluated.to_mesh()
+        try:
+            o["evaluated_mesh"] = {
+                "verts": [[round(v.co.x, 6), round(v.co.y, 6), round(v.co.z, 6)] for v in mesh.vertices],
+                "faces": [list(p.vertices) for p in mesh.polygons],
+                "face_materials": [p.material_index for p in mesh.polygons],
+                "edges": [[e.vertices[0], e.vertices[1]] for e in mesh.edges if e.is_loose],
+                "materials": [material.name if material else None for material in mesh.materials],
+            }
+        finally:
+            evaluated.to_mesh_clear()
     for mod in obj.modifiers:
         m = {"name": mod.name, "type": mod.type}
         if mod.type == "NODES" and mod.node_group:
             m["node_group"] = mod.node_group.name
-            trees_to_dump[mod.node_group.name] = mod.node_group
+            if target_object is None or obj.name == target_object:
+                trees_to_dump[mod.node_group.name] = mod.node_group
             # modifier input overrides
             inputs = {}
             for item in mod.node_group.interface.items_tree:
@@ -228,6 +271,10 @@ for obj in bpy.data.objects:
         o["modifiers"].append(m)
     result["objects"].append(o)
 
+for collection in bpy.data.collections:
+    if target_object is None or collection.name in dependency_collection_names:
+        result["collections"].append({"name": collection.name, "objects": [obj.name for obj in collection.objects]})
+
 # collect all node groups (including nested ones)
 pending = dict(trees_to_dump)
 done = set()
@@ -241,10 +288,12 @@ while pending:
         if n.bl_idname == "GeometryNodeGroup" and n.node_tree and n.node_tree.name not in done:
             pending[n.node_tree.name] = n.node_tree
 
-# also dump any geometry node groups not reachable (just in case)
-for tree in bpy.data.node_groups:
-    if tree.bl_idname == "GeometryNodeTree" and tree.name not in done:
-        result["node_groups"][tree.name] = dump_tree(tree)
+# Full-file extraction keeps every group for graph browsing. Targeted extraction
+# intentionally contains only the selected modifier's reachable group closure.
+if target_object is None:
+    for tree in bpy.data.node_groups:
+        if tree.bl_idname == "GeometryNodeTree" and tree.name not in done:
+            result["node_groups"][tree.name] = dump_tree(tree)
 
 for mat in bpy.data.materials:
     if mat.use_nodes and mat.node_tree:

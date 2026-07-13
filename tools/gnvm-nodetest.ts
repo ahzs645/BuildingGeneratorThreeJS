@@ -3,7 +3,7 @@
 // Run: npx tsx tools/gnvm-nodetest.ts
 import { Field, Vec3 } from "../src/gnvm/core";
 import { Geometry, Mesh, orientClosedSurface, toTriSoup, topologyOf } from "../src/gnvm/geometry";
-import { EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
+import { DUMP_CONTEXT, EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
 import { Evaluator, makeFieldCtx } from "../src/gnvm/evaluator";
 import "../src/gnvm/index"; // registers all handlers
 
@@ -757,6 +757,59 @@ function meshSignedAreaXY(m: Mesh): number {
   ).Selection as Geometry;
   check("empty mesh does not mask populated curve field domain", ctx.size === 3, `size=${ctx.size}`);
   check("Separate Geometry retains curve points beside empty mesh", split.curvePointCount() === 3, `points=${split.curvePointCount()}`);
+}
+
+// (AA) String nodes use Unicode characters rather than UTF-16 code units.
+{
+  const length = runNode("FunctionNodeStringLength", { String: "A🙂B" }).Length as Field;
+  const slice = runNode("FunctionNodeSliceString", { String: "A🙂BC", Position: 1, Length: 2 }).String;
+  const special = runNode("FunctionNodeInputSpecialCharacters", {});
+  check("String Length counts Unicode characters", length.value === 3, `length=${length.value}`);
+  check("Slice String extracts Unicode characters", slice === "🙂B", `slice=${String(slice)}`);
+  check("Special Characters exposes newline and tab", special["Line Break"] === "\n" && special.Tab === "\t");
+}
+
+// (AB) Length-mode curve resampling floors the number of fitted segments and
+// includes both endpoints. This is the count rule used by Periodic Brush.
+{
+  const source = curve([[0, 0, 0], [4.9, 0, 0]], false);
+  const sampled = runNode("GeometryNodeResampleCurve", { Curve: source, Mode: "Length" as any, Count: 12, Length: 2 }).Curve as Geometry;
+  check("Resample Curve length mode floors fitted segments", sampled.curvePointCount() === 3, `points=${sampled.curvePointCount()}`);
+}
+
+// (AC) Blender 5 treats an instances component as position-bearing points.
+{
+  const payload = box([0, 0, 0], [1, 1, 1]);
+  const instances = new Geometry();
+  instances.instances = [0, 1, 2].map((i) => ({ geometry: payload, position: [i, 0, 0] as Vec3, rotation: [0, 0, 0], scale: [1, 1, 1] }));
+  const moved = runNode("GeometryNodeSetPosition", {
+    Geometry: instances,
+    Selection: true,
+    Position: [0, 0, 0],
+    Offset: Field.perElem((i) => [0, 0, i * .01]),
+  }).Geometry as Geometry;
+  check("Set Position offsets instance points", approx(moved.instances[2].position, [2, 0, .02]));
+}
+
+// (AD) Collection Info materializes evaluated child geometry as pickable
+// instances and Reset Children strips authored object transforms.
+{
+  const savedObjects = DUMP_CONTEXT.objects;
+  const savedCollections = DUMP_CONTEXT.collections;
+  DUMP_CONTEXT.objects = [
+    { name: "dot-a", location: [5, 0, 0], evaluated_mesh: { verts: [[0, 0, 0]], faces: [] } },
+    { name: "dot-b", location: [8, 0, 0], evaluated_mesh: { verts: [[1, 0, 0]], faces: [] } },
+  ];
+  DUMP_CONTEXT.collections = [{ name: "period pack", objects: ["dot-a", "dot-b"] }];
+  const collection = runNode("GeometryNodeCollectionInfo", {
+    Collection: { datablock: "Collection", name: "period pack" },
+    "Separate Children": true,
+    "Reset Children": true,
+  }).Instances as Geometry;
+  check("Collection Info emits one instance per evaluated child", collection.instances.length === 2, `instances=${collection.instances.length}`);
+  check("Collection Info Reset Children clears transforms", collection.instances.every((instance) => approx(instance.position, [0, 0, 0])));
+  DUMP_CONTEXT.objects = savedObjects;
+  DUMP_CONTEXT.collections = savedCollections;
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

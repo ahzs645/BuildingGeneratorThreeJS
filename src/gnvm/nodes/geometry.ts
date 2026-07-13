@@ -8,35 +8,60 @@ import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 // ---- object info ------------------------------------------------------------
 // Materializes a referenced scene object from the dump's embedded plain meshes
 // (dump_blend.py exports them for non-GN objects, e.g. the bin's 'printbed').
+function geometryOfDumpObject(obj: (typeof DUMP_CONTEXT.objects)[number] | undefined, evaluated = false): Geometry {
+  const out = new Geometry();
+  const source = evaluated ? obj?.evaluated_mesh ?? obj?.mesh : obj?.mesh;
+  if (source) {
+    const m = new Mesh();
+    m.positions = source.verts.map((p) => [p[0], p[1], p[2]] as Vec3);
+    m.faces = source.faces.map((f) => [...f]);
+    m.faceMaterial = source.face_materials ? [...source.face_materials] : m.faces.map(() => 0);
+    const evaluatedMaterials = (source as { materials?: (string | null)[] }).materials;
+    m.materialSlots = evaluatedMaterials?.length ? [...evaluatedMaterials] : obj?.materials?.length ? [...obj.materials] : [null];
+    m.edges = (source.edges ?? []).map((edge) => [...edge] as [number, number]);
+    out.mesh = m;
+  }
+  if (!evaluated && obj?.curves) out.curves = obj.curves.map((spline) => ({
+    cyclic: Boolean(spline.cyclic), points: spline.points.map((p) => [p[0], p[1], p[2]] as Vec3),
+  }));
+  return out;
+}
+
 reg("GeometryNodeObjectInfo", (api) => {
   const ref = api.ref("Object");
   const obj = DUMP_CONTEXT.objects.find((o) => o.name === ref?.name);
-  const out = new Geometry();
-  if (obj?.mesh) {
-    const m = new Mesh();
-    m.positions = obj.mesh.verts.map((p) => [p[0], p[1], p[2]] as Vec3);
-    m.faces = obj.mesh.faces.map((f) => [...f]);
-    m.faceMaterial = obj.mesh.face_materials ? [...obj.mesh.face_materials] : m.faces.map(() => 0);
-    m.materialSlots = obj.materials?.length ? [...obj.materials] : [null];
-    m.edges = (obj.mesh.edges ?? []).map((e) => [...e] as [number, number]);
-    if (api.prop<string>("transform_space", "ORIGINAL") === "RELATIVE") {
-      const loc = (obj.location ?? [0, 0, 0]) as Vec3;
-      const rot = (obj.rotation ?? [0, 0, 0]) as Vec3;
-      const scl = (obj.scale ?? [1, 1, 1]) as Vec3;
-      m.positions = m.positions.map((p) => transformPoint(p, loc, rot, scl));
-    }
-    out.mesh = m;
+  const out = geometryOfDumpObject(obj);
+  if (out.mesh && api.prop<string>("transform_space", "ORIGINAL") === "RELATIVE") {
+    const loc = (obj?.location ?? [0, 0, 0]) as Vec3;
+    const rot = (obj?.rotation ?? [0, 0, 0]) as Vec3;
+    const scl = (obj?.scale ?? [1, 1, 1]) as Vec3;
+    out.mesh.positions = out.mesh.positions.map((p) => transformPoint(p, loc, rot, scl));
   }
-  if (obj?.curves) out.curves = obj.curves.map((s) => ({
-    cyclic: Boolean(s.cyclic),
-    points: s.points.map((p) => [p[0], p[1], p[2]] as Vec3),
-  }));
   return {
     Geometry: out,
     Location: Field.of(((obj?.location ?? [0, 0, 0]) as Vec3)),
     Rotation: Field.of(((obj?.rotation ?? [0, 0, 0]) as Vec3)),
     Scale: Field.of(((obj?.scale ?? [1, 1, 1]) as Vec3)),
   };
+});
+
+reg("GeometryNodeCollectionInfo", (api) => {
+  const ref = api.ref("Collection");
+  const collection = DUMP_CONTEXT.collections.find((entry) => entry.name === ref?.name);
+  const out = new Geometry();
+  const resetChildren = api.bool("Reset Children");
+  for (const name of collection?.objects ?? []) {
+    const object = DUMP_CONTEXT.objects.find((entry) => entry.name === name);
+    const geometry = geometryOfDumpObject(object, true);
+    if (!geometry.mesh && !geometry.curves.length && !geometry.instances.length) continue;
+    out.instances.push({
+      geometry,
+      position: resetChildren ? [0, 0, 0] : ((object?.location ?? [0, 0, 0]) as Vec3),
+      rotation: resetChildren ? [0, 0, 0] : ((object?.rotation ?? [0, 0, 0]) as Vec3),
+      scale: resetChildren ? [1, 1, 1] : ((object?.scale ?? [1, 1, 1]) as Vec3),
+    });
+  }
+  return { Instances: out };
 });
 
 // ---- primitives -----------------------------------------------------------
@@ -89,8 +114,12 @@ reg(["GeometryNodeTransform", "GeometryNodeTransformGeometry"], (api) => {
 // ---- set position ---------------------------------------------------------
 reg("GeometryNodeSetPosition", (api) => {
   const g = api.geo("Geometry").clone();
-  if (!g.mesh && !g.curves.length) return { Geometry: g };
-  const ctx = makeFieldCtx(g, "POINT");
+  if (!g.mesh && !g.curves.length && !g.instances.length) return { Geometry: g };
+  // Blender 5 applies Set Position directly to the points represented by an
+  // instances component as well as mesh/curve points. Periodic Brush uses this
+  // to lift each successive dot instance slightly in Z.
+  const domain = !g.mesh && !g.curves.length && g.instances.length ? "INSTANCE" : "POINT";
+  const ctx = makeFieldCtx(g, domain);
   // Selection chains built entirely from FACE/EDGE-domain masks evaluate on
   // their source domain and convert ONCE at the end (Blender's order) —
   // per-leaf conversion turns NOT(mask) into "not touching any", wrongly
@@ -125,10 +154,12 @@ reg("GeometryNodeSetPosition", (api) => {
   };
   if (g.mesh) {
     g.mesh.positions = g.mesh.positions.map(move);
-  } else {
+  } else if (g.curves.length) {
     // curve geometry: the ctx flattens control points in spline order
     let i = 0;
     g.curves = g.curves.map((s) => ({ cyclic: s.cyclic, points: s.points.map((p) => move(p, i++)) }));
+  } else {
+    g.instances = g.instances.map((instance, i) => ({ ...instance, position: move(instance.position, i) }));
   }
   return { Geometry: g };
 });

@@ -1,6 +1,6 @@
 // Field-producing input nodes (resolved lazily against the consuming geometry's domain).
 import { Field, Vec3 } from "../core";
-import { reg } from "../registry";
+import { DUMP_CONTEXT, reg } from "../registry";
 
 reg("GeometryNodeInputPosition", () => ({
   Position: Field.perElem((i, ctx) => (ctx.position ? ctx.position(i) : [0, 0, 0])),
@@ -54,4 +54,7 @@ reg("GeometryNodeInputNamedAttribute", (api) => {
   };
 });
 
-reg("GeometryNodeInputSceneTime", () => ({ Seconds: Field.of(0), Frame: Field.of(0) }));
+reg("GeometryNodeInputSceneTime", () => ({
+  Seconds: Field.of(DUMP_CONTEXT.frame / Math.max(DUMP_CONTEXT.fps, 1e-9)),
+  Frame: Field.of(DUMP_CONTEXT.frame),
+}));

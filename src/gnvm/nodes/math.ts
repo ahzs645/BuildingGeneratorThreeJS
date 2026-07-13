@@ -300,6 +300,23 @@ reg("GeometryNodeStringJoin", (api) => {
   return { String: parts.join(delim) };
 });
 
+reg("FunctionNodeStringLength", (api) => ({
+  Length: Field.of(Array.from(api.str("String")).length),
+}));
+
+reg("FunctionNodeSliceString", (api) => {
+  const characters = Array.from(api.str("String"));
+  let position = Math.trunc(api.num("Position"));
+  const length = Math.max(0, Math.trunc(api.num("Length")));
+  if (position < 0) position = Math.max(0, characters.length + position);
+  return { String: characters.slice(position, position + length).join("") };
+});
+
+reg("FunctionNodeInputSpecialCharacters", () => ({
+  "Line Break": "\n",
+  Tab: "\t",
+}));
+
 function outDefault(api: EvalAPI, name: string): any {
   const o = api.node.outputs.find((x) => x.name === name || x.identifier === name);
   return o?.default;
