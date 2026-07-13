@@ -824,5 +824,207 @@
     "controls": [
       { "type": "checkbox", "name": "FLATTEN", "label": "Flatten surface", "value": false }
     ]
+  },
+  {
+    "id": "math-clay-lorenze-001",
+    "title": "Math Clay · Forked Crown",
+    "object": "Math Clay Study.003",
+    "dump": "dojo/math-clay/dump.json",
+    "reference": "dojo/references/math-clay/lorenze-001.png",
+    "blenderStats": { "verts": 23968, "faces": 23966 },
+    "localSpace": true,
+    "note": "Near-exact 16-group, 223-node Lorenz surface. The forked crown silhouette aligns with Blender; browser vertices are 2.55% lower and bounds differ by at most 1.1468 units.",
+    "controls": [
+      { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
+      { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
+      { "type": "checkbox", "name": "hard sphere boolean", "label": "Hard sphere clip", "value": false }
+    ]
+  },
+  {
+    "id": "math-clay-lorenze",
+    "title": "Math Clay · Twisted Saddle",
+    "object": "Math Clay Study.002",
+    "dump": "dojo/math-clay/dump.json",
+    "reference": "dojo/references/math-clay/lorenze.png",
+    "blenderStats": { "verts": 30644, "faces": 30642 },
+    "localSpace": true,
+    "note": "Near-exact 16-group, 224-node surface. The nested saddle and opening align visually; browser vertices are 2.79% lower and bounds differ by 1.0572 units.",
+    "controls": [
+      { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 3 },
+      { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
+      { "type": "checkbox", "name": "hard sphere boolean", "label": "Hard sphere clip", "value": false }
+    ]
+  },
+  {
+    "id": "math-clay-lorenze-007",
+    "title": "Math Clay · Rounded Curl Study",
+    "object": "Math Clay Study.008",
+    "dump": "dojo/math-clay/dump.json",
+    "reference": "dojo/references/math-clay/lorenze-007.png",
+    "blenderStats": { "verts": 16249, "faces": 15459 },
+    "localSpace": true,
+    "note": "Work in progress: all 224 nodes execute, but the browser currently produces a forked saddle instead of Blender's rounded curled shell. Hard-sphere clipping and this root's specialized field branch still differ.",
+    "controls": [
+      { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 3 },
+      { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
+      { "type": "checkbox", "name": "hard sphere boolean", "label": "Hard sphere clip", "value": true }
+    ]
+  },
+  {
+    "id": "math-clay-lorenze-003",
+    "title": "Math Clay · Loop Shell",
+    "object": "Math Clay Study.006",
+    "dump": "dojo/math-clay/dump.json",
+    "reference": "dojo/references/math-clay/lorenze-003.png",
+    "blenderStats": { "verts": 29226, "faces": 29226 },
+    "localSpace": true,
+    "note": "Near-exact 16-group, 234-node loop shell. Browser vertices are within 0.10% of Blender and bounds differ by only 0.2715 units.",
+    "controls": [
+      { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
+      { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
+      { "type": "checkbox", "name": "hard sphere boolean", "label": "Hard sphere clip", "value": false }
+    ]
+  },
+  {
+    "id": "math-clay-lorenze-005",
+    "title": "Math Clay · Nested Spike Study",
+    "object": "Math Clay Study.007",
+    "dump": "dojo/math-clay/dump.json",
+    "reference": "dojo/references/math-clay/lorenze-005.png",
+    "blenderStats": { "verts": 108958, "faces": 108924 },
+    "localSpace": true,
+    "note": "Work in progress: the 238-node rotated field executes, but the web surface fragments into thin sheets instead of Blender's ordered nested spikes. Rotation-aware field sampling remains the blocker.",
+    "controls": [
+      { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
+      { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
+      { "type": "checkbox", "name": "hard sphere boolean", "label": "Hard sphere clip", "value": false }
+    ]
+  },
+  {
+    "id": "math-clay-tpms-017",
+    "title": "Math Clay · Star Cell",
+    "object": "Math Clay Study.014",
+    "dump": "dojo/math-clay/dump.json",
+    "reference": "dojo/references/math-clay/tpms-017.png",
+    "blenderStats": { "verts": 155474, "faces": 155472 },
+    "localSpace": true,
+    "note": "Recognizable lower-density parity for the 240-node star cell. The six-lobed form and central chamber align, but browser marching cubes produce 31,974 vertices versus Blender's 155,474.",
+    "controls": [
+      { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.212766408920288 },
+      { "name": "Voxel Size", "label": "Voxel size", "min": 0.4, "max": 1.5, "step": 0.02, "value": 0.4216800034046173 },
+      { "type": "checkbox", "name": "hard sphere boolean", "label": "Hard sphere clip", "value": false }
+    ]
+  },
+  {
+    "id": "math-clay-tpms-019",
+    "title": "Math Clay · Spiked Orb Study",
+    "object": "Math Clay Study.018",
+    "dump": "dojo/math-clay/dump.json",
+    "reference": "dojo/references/math-clay/tpms-019.png",
+    "blenderStats": { "verts": 42770, "faces": 42768 },
+    "localSpace": true,
+    "note": "Work in progress: the complete 242-node root runs, but the browser resolves a planar star-cell field instead of Blender's spiked orb. The root's Factor-driven specialized field is not semantically equivalent yet.",
+    "controls": [
+      { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.5531917810440063 },
+      { "name": "Factor", "label": "Shape factor", "min": 0, "max": 1, "step": 0.01, "value": 0.9678784012794495 },
+      { "name": "Voxel Size", "label": "Voxel size", "min": 0.4, "max": 1.5, "step": 0.02, "value": 0.4216800034046173 }
+    ]
+  },
+  {
+    "id": "math-clay-tpms-020",
+    "title": "Math Clay · Rounded Star Cell",
+    "object": "Math Clay Study.019",
+    "dump": "dojo/math-clay/dump.json",
+    "reference": "dojo/references/math-clay/tpms-020.png",
+    "blenderStats": { "verts": 153602, "faces": 153600 },
+    "localSpace": true,
+    "note": "Recognizable lower-density parity for the rounded star cell. The silhouette and cavities align within 0.9377 units; browser marching cubes use 31,974 vertices versus Blender's 153,602.",
+    "controls": [
+      { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.5531917810440063 },
+      { "name": "Factor", "label": "Shape factor", "min": 0, "max": 1, "step": 0.01, "value": 0 },
+      { "name": "Voxel Size", "label": "Voxel size", "min": 0.4, "max": 1.5, "step": 0.02, "value": 0.4216800034046173 }
+    ]
+  },
+  {
+    "id": "math-clay-tpms-016",
+    "title": "Math Clay · Cross-Section Lattice Study",
+    "object": "Math Clay Study.013",
+    "dump": "dojo/math-clay/dump.json",
+    "reference": "dojo/references/math-clay/tpms-016.png",
+    "blenderStats": { "verts": 87099, "faces": 85390 },
+    "localSpace": true,
+    "note": "Work in progress: all 250 nodes run and preserve the nested cross-section bands, but the browser clips with planar slabs instead of Blender's rounded enclosing lobes.",
+    "controls": [
+      { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.0638302564620972 },
+      { "name": "Voxel Size", "label": "Voxel size", "min": 0.4, "max": 1.5, "step": 0.02, "value": 0.4216800034046173 },
+      { "type": "checkbox", "name": "hard sphere boolean", "label": "Hard sphere clip", "value": true }
+    ]
+  },
+  {
+    "id": "math-clay-tpms-018",
+    "title": "Math Clay · Twin Bowl Study",
+    "object": "Math Clay Study.001",
+    "dump": "dojo/math-clay/dump.json",
+    "reference": "dojo/references/math-clay/tpms-018.png",
+    "blenderStats": { "verts": 14190, "faces": 13558 },
+    "localSpace": true,
+    "note": "Work in progress: the 267-node root produces the paired bowl family, but rotation and clipping differ visibly from Blender and the maximum bound delta is 5.6959 units.",
+    "controls": [
+      { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.0638302564620972 },
+      { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
+      { "type": "checkbox", "name": "hard sphere boolean", "label": "Hard sphere clip", "value": true }
+    ]
+  },
+  {
+    "id": "math-clay-lorenze-002",
+    "title": "Math Clay · Layered Arch",
+    "object": "Math Clay Study.004",
+    "dump": "dojo/math-clay/dump.json",
+    "reference": "dojo/references/math-clay/lorenze-002.png",
+    "blenderStats": { "verts": 35200, "faces": 35198 },
+    "localSpace": true,
+    "note": "Near-exact 271-node layered arch: browser vertices are within 0.03% and bounds within 0.1141 units of Blender.",
+    "controls": [
+      { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
+      { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
+      { "type": "checkbox", "name": "hard sphere boolean", "label": "Hard sphere clip", "value": false }
+    ]
+  },
+  {
+    "id": "math-clay-lorenze-004",
+    "title": "Math Clay · Porous Stack",
+    "object": "Math Clay Study.005",
+    "dump": "dojo/math-clay/dump.json",
+    "reference": "dojo/references/math-clay/lorenze-004.png",
+    "blenderStats": { "verts": 61098, "faces": 61124 },
+    "localSpace": true,
+    "note": "Near-exact 273-node porous stack: browser vertices are within 0.08% and bounds within 0.1945 units of Blender, with matching openings and layered silhouette.",
+    "controls": [
+      { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
+      { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
+      { "type": "checkbox", "name": "hard sphere boolean", "label": "Hard sphere clip", "value": false }
+    ]
+  },
+  {
+    "id": "math-clay-tpms-main",
+    "title": "Math Clay · D-Surface Generator",
+    "object": "Dsurface",
+    "dump": "dojo/math-clay/dump.json",
+    "reference": "dojo/references/math-clay/tpms-main.png",
+    "blenderStats": { "verts": 35054, "faces": 35052 },
+    "localSpace": true,
+    "note": "The full 22-group, 421-node TPMS generator reproduces the authored D-surface silhouette with lower-density marching cubes: 28,926 live browser vertices versus Blender's 35,054 and bounds within 1.2157 units.",
+    "controls": [
+      { "type": "select", "name": "Menu", "label": "TPMS formula", "value": 2, "options": [
+        { "label": "Schwarz P", "value": 0 },
+        { "label": "Schoen Gyroid", "value": 1 },
+        { "label": "D-Surface", "value": 2 },
+        { "label": "Fischer Koch S", "value": 3 },
+        { "label": "Y-Surface", "value": 4 }
+      ] },
+      { "name": "Gyroid scale", "label": "Field scale", "min": 0.1, "max": 2, "step": 0.01, "value": 0.5505321025848389 },
+      { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
+      { "type": "checkbox", "name": "cross section view", "label": "Cross-section view", "value": false }
+    ]
   }
 ]
