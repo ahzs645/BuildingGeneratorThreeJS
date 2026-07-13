@@ -1,0 +1,53 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/hollow-magnet-foot/dump.json",
+  "object": "feet hollow magnet.001",
+  "results": [
+    {
+      "combo": {
+        "name": "authored foot",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 1268,
+      "faces": 1158,
+      "bbox": {
+        "min": [
+          0.0006,
+          0.0006,
+          -0.005
+        ],
+        "max": [
+          0.0204,
+          0.0204,
+          0
+        ]
+      },
+      "elapsed_ms": 28
+    },
+    {
+      "combo": {
+        "name": "selection enabled",
+        "overrides": {
+          "Selection": true
+        }
+      },
+      "status": "ok",
+      "verts": 1268,
+      "faces": 1158,
+      "bbox": {
+        "min": [
+          0.0006,
+          0.0006,
+          -0.005
+        ],
+        "max": [
+          0.0204,
+          0.0204,
+          0
+        ]
+      },
+      "elapsed_ms": 6
+    }
+  ]
+}

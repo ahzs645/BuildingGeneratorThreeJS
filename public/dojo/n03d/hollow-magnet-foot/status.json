@@ -1,0 +1,10 @@
+{
+  "id": "n03d-hollow-magnet-foot",
+  "object": "feet hollow magnet.001",
+  "root": "feet hollow",
+  "status": "exact-topology-parity",
+  "blender": { "verts": 1268, "faces": 1158 },
+  "gnvm": { "verts": 1268, "faces": 1158 },
+  "coverage": "100% of reachable node types across the 2-group, 18-node closure.",
+  "validation": "Authored and Selection-enabled Blender/VM cases have exact topology and local bounds within 0.0001 units. The supplied Selection socket does not change Blender's evaluated result, so the library entry intentionally exposes no misleading control."
+}

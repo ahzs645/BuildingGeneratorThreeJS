@@ -1,7 +1,7 @@
 """Render a GN-VM tri-soup JSON with the Chrome Assets reference camera.
 
 Usage:
-  blender --background --python tools/render_gnvm_reference.py -- SOUP.json OUT.png
+  blender --background --python tools/render_gnvm_reference.py -- SOUP.json OUT.png [LOCAL]
 """
 import json
 import sys
@@ -14,6 +14,7 @@ args = sys.argv[sys.argv.index("--") + 1 :]
 if len(args) < 2:
     raise SystemExit("usage: SOUP.json OUT.png")
 soup_path, out_path = args[:2]
+local_space = len(args) > 2 and args[2].upper() == "LOCAL"
 with open(soup_path, "r", encoding="utf-8") as handle:
     soup = json.load(handle)
 
@@ -30,7 +31,7 @@ mesh.update()
 obj = bpy.data.objects.new("GNVM reference", mesh)
 bpy.context.scene.collection.objects.link(obj)
 
-source = soup.get("object") or {}
+source = {} if local_space else (soup.get("object") or {})
 obj.location = source.get("location") or (0, 0, 0)
 obj.rotation_euler = source.get("rotation") or (0, 0, 0)
 obj.scale = source.get("scale") or (1, 1, 1)
@@ -52,7 +53,7 @@ direction = Vector((1.0, -1.25, 0.85)).normalized()
 camera.location = center + direction * radius * 3.0
 camera.rotation_euler = (center - camera.location).to_track_quat("-Z", "Y").to_euler()
 camera_data.type = "ORTHO"
-camera_data.ortho_scale = max(size.x, size.y, size.z, 1.0) * 1.45
+camera_data.ortho_scale = max(size.x, size.y, size.z, 1e-4) * 1.45
 
 scene = bpy.context.scene
 scene.camera = camera

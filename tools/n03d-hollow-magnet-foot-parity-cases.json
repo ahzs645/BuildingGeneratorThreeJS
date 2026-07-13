@@ -1,0 +1,4 @@
+[
+  { "name": "authored foot", "overrides": {} },
+  { "name": "selection enabled", "overrides": { "Selection": true } }
+]

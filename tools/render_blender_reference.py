@@ -2,7 +2,7 @@
 
 Usage:
   blender --background FILE.blend --python tools/render_blender_reference.py -- \
-    OBJECT_NAME OUT.png [OUT.json]
+    OBJECT_NAME OUT.png [OUT.json] [LOCAL]
 """
 import json
 import math
@@ -36,9 +36,15 @@ args = sys.argv[sys.argv.index("--") + 1:]
 object_name = args[0]
 out_path = args[1]
 meta_path = args[2] if len(args) > 2 else None
+local_space = len(args) > 3 and args[3].upper() == "LOCAL"
 obj = bpy.data.objects.get(object_name)
 if obj is None:
     raise RuntimeError(f'object not found: "{object_name}"')
+
+if local_space:
+    obj.location = (0, 0, 0)
+    obj.rotation_euler = (0, 0, 0)
+    obj.scale = (1, 1, 1)
 
 # Some supplied scenes retain an old movie-only output setting that rejects PNG
 # under Blender 5. A clean reference scene also prevents unrelated presentation
@@ -95,7 +101,7 @@ direction = Vector((1.0, -1.25, 0.85)).normalized()
 camera.location = center + direction * radius * 3.0
 camera.rotation_euler = (center - camera.location).to_track_quat("-Z", "Y").to_euler()
 camera_data.type = "ORTHO"
-camera_data.ortho_scale = max(size.x, size.y, size.z, 1.0) * 1.45
+camera_data.ortho_scale = max(size.x, size.y, size.z, 1e-4) * 1.45
 bpy.context.scene.camera = camera
 
 scene = bpy.context.scene

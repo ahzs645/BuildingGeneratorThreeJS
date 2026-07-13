@@ -1,0 +1,90 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "feet hollow magnet.001",
+  "modifier": "GeometryNodes",
+  "node_group": "feet hollow",
+  "saved_values": {
+    "Selection": false
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored foot",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 1268,
+      "faces": 1158,
+      "bbox": {
+        "min": [
+          0.0006,
+          0.0006,
+          -0.005
+        ],
+        "max": [
+          0.0204,
+          0.0204,
+          -0.0001
+        ]
+      },
+      "elapsed_ms": 1.1
+    },
+    {
+      "combo": {
+        "name": "selection enabled",
+        "overrides": {
+          "Selection": true
+        }
+      },
+      "status": "ok",
+      "verts": 1268,
+      "faces": 1158,
+      "bbox": {
+        "min": [
+          0.0006,
+          0.0006,
+          -0.005
+        ],
+        "max": [
+          0.0204,
+          0.0204,
+          -0.0001
+        ]
+      },
+      "elapsed_ms": 1.0
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "<none>": {
+        "faces": 1158,
+        "verts": 1268
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 1158,
+      "verts": 1268
+    }
+  }
+}

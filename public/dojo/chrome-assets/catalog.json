@@ -531,5 +531,15 @@
       { "name": "head height", "label": "Head height", "min": 0.2, "max": 8, "step": 0.1, "value": 2 },
       { "name": "resolution", "label": "Resolution", "min": 8, "max": 128, "step": 1, "value": 51 }
     ]
+  },
+  {
+    "id": "n03d-hollow-magnet-foot",
+    "title": "N03D · Hollow Magnet Foot",
+    "object": "feet hollow magnet.001",
+    "dump": "dojo/n03d/hollow-magnet-foot/dump.json",
+    "reference": "dojo/references/n03d/hollow-magnet-foot.png",
+    "blenderStats": { "verts": 1268, "faces": 1158 },
+    "note": "Exact 1,268 / 1,158 topology with local bounds within 0.0001 units. The saved Selection input does not alter Blender's output, so this asset is shown without a non-functional control. Its 20 mm-scale reference is rendered in local space for a useful comparison.",
+    "controls": []
   }
 ]
