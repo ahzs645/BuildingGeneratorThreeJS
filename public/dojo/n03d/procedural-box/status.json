@@ -5,6 +5,7 @@
   "status": "bounds-parity-topology-near",
   "blender": { "verts": 90928, "faces": 87165 },
   "gnvm": { "verts": 97186, "faces": 88087 },
+  "reference": "dojo/references/n03d/procedural-box.png",
   "coverage": "100% of reachable node types, including bundled G_Center Geometry and G_Implicit Geometry helpers.",
   "validation": "Authored-default Blender and GN-VM bounds match to 0.0001 on all axes. GN-VM is +6.88% vertices and +1.06% faces; the remaining difference is curve/screw sampling topology rather than assembly scale or placement."
 }

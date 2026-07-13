@@ -3,8 +3,19 @@
   "object": "__GNVM_SPLIT_N_TAP",
   "root": "Split n Tap WIP",
   "status": "bounds-near-parity-topology-near",
-  "blender": { "verts": 2372, "faces": 2380, "bbox_size": [28.0667, 28.0738, 10.2506] },
-  "gnvm": { "verts": 2472, "faces": 2441, "bbox_size": [28.0854, 28.0474, 10.128] },
+  "blender": {
+    "verts": 2372,
+    "faces": 2380,
+    "bbox_size": [28.0667, 28.0738, 10.2506]
+  },
+  "gnvm": {
+    "verts": 2472,
+    "faces": 2441,
+    "bbox_size": [28.0854, 28.0474, 10.128]
+  },
   "coverage": "100% of reachable node types, including bundled G_Parenting, G_Implicit Attribute, and G_Implicit Geometry helpers.",
-  "validation": "The authored default now reproduces Blender's radial scale: X/Y bounds differ by at most 0.094%, with +4.22% vertices and +2.56% faces. The remaining difference is loft/merge sampling topology and a 1.20% Z-height shortfall, not a missing helper or unsupported node."
+  "source_wrapper": "The supplied SPLIT N TAP object evaluates only a 42-vertex / 80-face placeholder icosphere. Browser and reference evidence instead instantiate its intended nested Split n Tap WIP group on the same one-point carrier geometry.",
+  "object_inputs": "Split and select-parts depend on Object/Object Parent inputs that are unassigned in the supplied file. Blender's Split=true branch therefore evaluates empty; the browser catalog hides these nonfunctional controls until object picking is supported.",
+  "reference": "dojo/references/n03d/split-n-tap.png",
+  "validation": "The authored default now reproduces Blender's radial scale: X/Y bounds differ by at most 0.094%, with +4.22% vertices and +2.56% faces. The remaining loft/merge sampling difference leaves the top cap open, produces a visible radial seam, and causes a 1.20% Z-height shortfall; it is not a missing helper or unsupported node."
 }
