@@ -6,7 +6,7 @@ The pack contains **16 Blender projects**, **499 active Geometry Nodes modifiers
 
 | Project | Active modifiers | Root families | Current web evidence |
 | --- | ---: | ---: | --- |
-| Intro Module | 82 | 52 | Inventory complete |
+| Intro Module | 82 | 52 | All roots classified; sampled typography/UI studies partial |
 | New Joint Generators | 32 | 13 | Inventory complete |
 | N03D 3D-printing Utilities | 77 | 39 | Inventory complete |
 | Recursive Bin | 1 | 1 | Live Blender/GN-VM comparison |
@@ -15,9 +15,9 @@ The pack contains **16 Blender projects**, **499 active Geometry Nodes modifiers
 | Knit Graphic | 0 | 0 | No active Geometry Nodes modifier |
 | Typewriter | 1 | 1 | Live GN-VM; supplied Pixels TTF with embedded outline fallback |
 | Send Nodes Hat | 5 | 4 | Baked gallery reference |
-| Module 2 | 103 | 69 | Inventory complete |
-| Module 3 | 28 | 20 | Inventory complete |
-| Module 4 | 68 | 35 | Inventory complete |
+| Module 2 | 103 | 69 | All roots classified; shared finale 100% covered but divergent |
+| Module 3 | 28 | 20 | All roots classified; shared finale 100% covered but divergent |
+| Module 4 | 68 | 35 | All roots classified; shared finale 100% covered but divergent |
 | Chrome Crayon | 1 | 1 | Live Blender/GN-VM comparison |
 | Math Clay | 33 | 14 | All 13 distinct surface roots live; shared helper represented through its consumer |
 | Bubble Vessel | 6 | 3 | Live Blender/GN-VM comparison |

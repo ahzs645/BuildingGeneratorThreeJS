@@ -1,0 +1,2789 @@
+{
+  "generatedBy": "tools/audit-course-roots.mjs",
+  "projects": [
+    "intro-module",
+    "module-2",
+    "module-3",
+    "module-4"
+  ],
+  "activeRootFamilies": 176,
+  "exactStructuralFamilies": 166,
+  "duplicateRootsCollapsed": 10,
+  "classifications": {
+    "auto-smooth-helper": 4,
+    "complex-study": 47,
+    "empty-or-passthrough-helper": 12,
+    "instructional-step": 113
+  },
+  "crossProjectDuplicateFamilies": [
+    {
+      "signature": "0781d119e03f986c6c67843212903a2739c3f672e74e36768e6eeedd95c401e2",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.053",
+          "exampleObject": "how to.033",
+          "reachableGroups": 9,
+          "reachableNodes": 413,
+          "classification": "complex-study"
+        },
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.053",
+          "exampleObject": "how to.033",
+          "reachableGroups": 9,
+          "reachableNodes": 413,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "9500d53a3f612940c0073d0db9be9be5e0d1ded9c069980d284c2ef68300e02d",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.122",
+          "exampleObject": "how to.016",
+          "reachableGroups": 4,
+          "reachableNodes": 43,
+          "classification": "instructional-step"
+        },
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.122",
+          "exampleObject": "how to.016",
+          "reachableGroups": 4,
+          "reachableNodes": 43,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "d274e4f5f1c37bcf2014faa53018579c55f40585383cbf6b49450582154c00c0",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.028",
+          "exampleObject": "Plane.077",
+          "reachableGroups": 4,
+          "reachableNodes": 31,
+          "classification": "instructional-step"
+        },
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.089",
+          "exampleObject": "Plane.001",
+          "reachableGroups": 4,
+          "reachableNodes": 31,
+          "classification": "instructional-step"
+        },
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.028",
+          "exampleObject": "Plane.077",
+          "reachableGroups": 4,
+          "reachableNodes": 31,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "cf7537f404817f1edf79a67606fa62ae92bd2d3e13dc291a23f49b0f5bd9688c",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Auto Smooth",
+          "exampleObject": "eye",
+          "reachableGroups": 1,
+          "reachableNodes": 10,
+          "classification": "auto-smooth-helper"
+        },
+        {
+          "project": "module-2",
+          "root": "Auto Smooth",
+          "exampleObject": "circle dojo.001",
+          "reachableGroups": 1,
+          "reachableNodes": 10,
+          "classification": "auto-smooth-helper"
+        },
+        {
+          "project": "module-3",
+          "root": "Auto Smooth",
+          "exampleObject": "circle dojo.001",
+          "reachableGroups": 1,
+          "reachableNodes": 10,
+          "classification": "auto-smooth-helper"
+        },
+        {
+          "project": "module-4",
+          "root": "Auto Smooth",
+          "exampleObject": "circle dojo.001",
+          "reachableGroups": 1,
+          "reachableNodes": 10,
+          "classification": "auto-smooth-helper"
+        }
+      ]
+    },
+    {
+      "signature": "d885bb2cd53e5bf5db4ce51f6766e505533d2757431ce5a43fb45da772db378b",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.127",
+          "exampleObject": "check",
+          "reachableGroups": 1,
+          "reachableNodes": 2,
+          "classification": "empty-or-passthrough-helper"
+        },
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.127",
+          "exampleObject": "check",
+          "reachableGroups": 1,
+          "reachableNodes": 2,
+          "classification": "empty-or-passthrough-helper"
+        }
+      ]
+    }
+  ],
+  "largestComplexStudies": [
+    {
+      "signature": "0306e6ae855822367dbe2275967da83ec4ae167cfea3ab17df93ffb05e426dd5",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "geo",
+          "exampleObject": "Plane.023",
+          "reachableGroups": 37,
+          "reachableNodes": 1181,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "5f293e402747702d11a7222ad9585509adeae30d2f5985b03fa63f14b12bf309",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.023",
+          "exampleObject": "Cube.014",
+          "reachableGroups": 33,
+          "reachableNodes": 1130,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "973096764bee273a0202ba70789da45bab4c5a2066a78b60b132ccfa3f518c2d",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.002",
+          "exampleObject": "dojo",
+          "reachableGroups": 11,
+          "reachableNodes": 503,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "41d40487bf2efc7a356cbde4f839cc5ee56ce61f699a8e82b9d09463c3f6c43d",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.002",
+          "exampleObject": "dojo",
+          "reachableGroups": 11,
+          "reachableNodes": 503,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "3995c507c5d91cc0cd99f9b175fe01c4588626a86176fd0d8d41e8ae9a0c20a3",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.002",
+          "exampleObject": "dojo",
+          "reachableGroups": 11,
+          "reachableNodes": 497,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "f85730545de79b40d0e5844b563a0dbb439556145037e0ef4e3e74d608fc0eb5",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.098",
+          "exampleObject": "Plane.020",
+          "reachableGroups": 11,
+          "reachableNodes": 453,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "7aadcfb37aa6989ca74bfcd598b378f07de0ee0d35a1071bad58b7956ea52247",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.113",
+          "exampleObject": "Plane.046",
+          "reachableGroups": 11,
+          "reachableNodes": 451,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "0fb08257377e7933da441de5f37ac9abc81e9810126d4fbd2ebbcdca1236bc7c",
+      "members": [
+        {
+          "project": "module-2",
+          "root": ".arrow",
+          "exampleObject": "Plane.014",
+          "reachableGroups": 11,
+          "reachableNodes": 449,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "0ce6a78d916b9c55bdb2a8b9b127d59fc1e29b5fc23cff77cf912ef91c2b3928",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.032",
+          "exampleObject": "Plane.017",
+          "reachableGroups": 11,
+          "reachableNodes": 449,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "7e399474ab7b9adf4f3f9adf66031bf07d659dc08d32576a0aea86c46536bc5b",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.063",
+          "exampleObject": "Plane.022",
+          "reachableGroups": 11,
+          "reachableNodes": 449,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "f7275d5d9f0eeb8233e8f3f6d074f2483242fc66b4b49ca998117fe0255a97e1",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.094",
+          "exampleObject": "Plane.040",
+          "reachableGroups": 11,
+          "reachableNodes": 449,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "94b9e420666f2f7ebf0b0de9b8bd107f7f9a3f8b6a20eb9cb8af782c3d7facba",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "_big boy arrow",
+          "exampleObject": "Plane.083",
+          "reachableGroups": 11,
+          "reachableNodes": 449,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "3a8c5206fe6349b7178bd6cfbf857d05397868384dba9b9948a59ef7f99fb7e3",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.032",
+          "exampleObject": "Plane.007",
+          "reachableGroups": 11,
+          "reachableNodes": 449,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "0781d119e03f986c6c67843212903a2739c3f672e74e36768e6eeedd95c401e2",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.053",
+          "exampleObject": "how to.033",
+          "reachableGroups": 9,
+          "reachableNodes": 413,
+          "classification": "complex-study"
+        },
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.053",
+          "exampleObject": "how to.033",
+          "reachableGroups": 9,
+          "reachableNodes": 413,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "549ee4f38dfa15dd04931b632bb3289b03f64b2bde21dea55b9e0e89307cbb27",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.108",
+          "exampleObject": "how to.001",
+          "reachableGroups": 9,
+          "reachableNodes": 413,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "4f88ef1311c5b52fd4cfac6f209226e3a335b8bd4a26fa66a7bcf57ba61bcafd",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.109",
+          "exampleObject": "how to.002",
+          "reachableGroups": 9,
+          "reachableNodes": 413,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "78f6d0b3189d95e6e8aeefeda6fd78577a5314bda4515a68826f5acc86063760",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.145",
+          "exampleObject": "Plane.010",
+          "reachableGroups": 9,
+          "reachableNodes": 407,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "cc0ffb5b7e3de2455a2fb10cb1e4844026c7be504c93ceaad913873cc3f297fd",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.041",
+          "exampleObject": "Plane.006",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "0762866b34b320029166f4cf37ffcb2fe641ad005274ff9a6dfdcfa8b5b8c3b8",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.042",
+          "exampleObject": "Plane.007",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "bd11396c846855e7b6508036636f0d652a2af95b5b34a820ada16cfb7b2672be",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.022",
+          "exampleObject": "Plane.013",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "473b1743a6f04f71dfec07f9a24124e6b8c7b3c2b0a7fe50d18e2ba732ca0fdf",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.023",
+          "exampleObject": "Plane.015",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "5ce91bf1daccad9113439e4f1d39ee94bb8dda179490f5133b97b30e283cf59b",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.044",
+          "exampleObject": "Plane.018",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "fe057bc9413ae57d00e91801f68da549b32607991dd7f24c4d76748365ff4991",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.126",
+          "exampleObject": "Plane.002",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "be33d36eb3cb95052a573e4614abc7110d2c376f774a3aa730005357eeb258b0",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.130",
+          "exampleObject": "Plane.004",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "be1b32e27847125c47af8b06ac68ceaad06bffd63074619d886efcb2475ddb69",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.132",
+          "exampleObject": "Plane.008",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "0c9079df2cce40a6a507bfaba30adf94ab35bdfe70dc16a14db82dafddc066b4",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.146",
+          "exampleObject": "Plane.011",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "7ea0c0105c67078fb9e89faee2ba07f851a0de4ea3af0494a196f10aada0c917",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.023",
+          "exampleObject": "Plane.015",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "9d581f3a54af49402392a58573cde821bc711c6f73aa968e4b8d389ba4cebe35",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.071",
+          "exampleObject": "Plane.019",
+          "reachableGroups": 9,
+          "reachableNodes": 405,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "76a69ccdfd20827c6ebc3441062a333c2f8d97379604b4917e32934385d1b8c3",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.075",
+          "exampleObject": "Plane.033",
+          "reachableGroups": 9,
+          "reachableNodes": 405,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "5e8c6201f5e209a232f3ff7b67ddc777a7733036eab7d0888751870f4d684c4f",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.078",
+          "exampleObject": "Plane.036",
+          "reachableGroups": 9,
+          "reachableNodes": 405,
+          "classification": "complex-study"
+        }
+      ]
+    }
+  ],
+  "families": [
+    {
+      "signature": "0306e6ae855822367dbe2275967da83ec4ae167cfea3ab17df93ffb05e426dd5",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "geo",
+          "exampleObject": "Plane.023",
+          "reachableGroups": 37,
+          "reachableNodes": 1181,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "5f293e402747702d11a7222ad9585509adeae30d2f5985b03fa63f14b12bf309",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.023",
+          "exampleObject": "Cube.014",
+          "reachableGroups": 33,
+          "reachableNodes": 1130,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "973096764bee273a0202ba70789da45bab4c5a2066a78b60b132ccfa3f518c2d",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.002",
+          "exampleObject": "dojo",
+          "reachableGroups": 11,
+          "reachableNodes": 503,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "41d40487bf2efc7a356cbde4f839cc5ee56ce61f699a8e82b9d09463c3f6c43d",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.002",
+          "exampleObject": "dojo",
+          "reachableGroups": 11,
+          "reachableNodes": 503,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "3995c507c5d91cc0cd99f9b175fe01c4588626a86176fd0d8d41e8ae9a0c20a3",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.002",
+          "exampleObject": "dojo",
+          "reachableGroups": 11,
+          "reachableNodes": 497,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "f85730545de79b40d0e5844b563a0dbb439556145037e0ef4e3e74d608fc0eb5",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.098",
+          "exampleObject": "Plane.020",
+          "reachableGroups": 11,
+          "reachableNodes": 453,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "7aadcfb37aa6989ca74bfcd598b378f07de0ee0d35a1071bad58b7956ea52247",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.113",
+          "exampleObject": "Plane.046",
+          "reachableGroups": 11,
+          "reachableNodes": 451,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "0fb08257377e7933da441de5f37ac9abc81e9810126d4fbd2ebbcdca1236bc7c",
+      "members": [
+        {
+          "project": "module-2",
+          "root": ".arrow",
+          "exampleObject": "Plane.014",
+          "reachableGroups": 11,
+          "reachableNodes": 449,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "0ce6a78d916b9c55bdb2a8b9b127d59fc1e29b5fc23cff77cf912ef91c2b3928",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.032",
+          "exampleObject": "Plane.017",
+          "reachableGroups": 11,
+          "reachableNodes": 449,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "7e399474ab7b9adf4f3f9adf66031bf07d659dc08d32576a0aea86c46536bc5b",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.063",
+          "exampleObject": "Plane.022",
+          "reachableGroups": 11,
+          "reachableNodes": 449,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "f7275d5d9f0eeb8233e8f3f6d074f2483242fc66b4b49ca998117fe0255a97e1",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.094",
+          "exampleObject": "Plane.040",
+          "reachableGroups": 11,
+          "reachableNodes": 449,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "94b9e420666f2f7ebf0b0de9b8bd107f7f9a3f8b6a20eb9cb8af782c3d7facba",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "_big boy arrow",
+          "exampleObject": "Plane.083",
+          "reachableGroups": 11,
+          "reachableNodes": 449,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "3a8c5206fe6349b7178bd6cfbf857d05397868384dba9b9948a59ef7f99fb7e3",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.032",
+          "exampleObject": "Plane.007",
+          "reachableGroups": 11,
+          "reachableNodes": 449,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "0781d119e03f986c6c67843212903a2739c3f672e74e36768e6eeedd95c401e2",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.053",
+          "exampleObject": "how to.033",
+          "reachableGroups": 9,
+          "reachableNodes": 413,
+          "classification": "complex-study"
+        },
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.053",
+          "exampleObject": "how to.033",
+          "reachableGroups": 9,
+          "reachableNodes": 413,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "549ee4f38dfa15dd04931b632bb3289b03f64b2bde21dea55b9e0e89307cbb27",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.108",
+          "exampleObject": "how to.001",
+          "reachableGroups": 9,
+          "reachableNodes": 413,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "4f88ef1311c5b52fd4cfac6f209226e3a335b8bd4a26fa66a7bcf57ba61bcafd",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.109",
+          "exampleObject": "how to.002",
+          "reachableGroups": 9,
+          "reachableNodes": 413,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "78f6d0b3189d95e6e8aeefeda6fd78577a5314bda4515a68826f5acc86063760",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.145",
+          "exampleObject": "Plane.010",
+          "reachableGroups": 9,
+          "reachableNodes": 407,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "cc0ffb5b7e3de2455a2fb10cb1e4844026c7be504c93ceaad913873cc3f297fd",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.041",
+          "exampleObject": "Plane.006",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "0762866b34b320029166f4cf37ffcb2fe641ad005274ff9a6dfdcfa8b5b8c3b8",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.042",
+          "exampleObject": "Plane.007",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "bd11396c846855e7b6508036636f0d652a2af95b5b34a820ada16cfb7b2672be",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.022",
+          "exampleObject": "Plane.013",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "473b1743a6f04f71dfec07f9a24124e6b8c7b3c2b0a7fe50d18e2ba732ca0fdf",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.023",
+          "exampleObject": "Plane.015",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "5ce91bf1daccad9113439e4f1d39ee94bb8dda179490f5133b97b30e283cf59b",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.044",
+          "exampleObject": "Plane.018",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "fe057bc9413ae57d00e91801f68da549b32607991dd7f24c4d76748365ff4991",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.126",
+          "exampleObject": "Plane.002",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "be33d36eb3cb95052a573e4614abc7110d2c376f774a3aa730005357eeb258b0",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.130",
+          "exampleObject": "Plane.004",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "be1b32e27847125c47af8b06ac68ceaad06bffd63074619d886efcb2475ddb69",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.132",
+          "exampleObject": "Plane.008",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "0c9079df2cce40a6a507bfaba30adf94ab35bdfe70dc16a14db82dafddc066b4",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.146",
+          "exampleObject": "Plane.011",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "7ea0c0105c67078fb9e89faee2ba07f851a0de4ea3af0494a196f10aada0c917",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.023",
+          "exampleObject": "Plane.015",
+          "reachableGroups": 9,
+          "reachableNodes": 406,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "9d581f3a54af49402392a58573cde821bc711c6f73aa968e4b8d389ba4cebe35",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.071",
+          "exampleObject": "Plane.019",
+          "reachableGroups": 9,
+          "reachableNodes": 405,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "76a69ccdfd20827c6ebc3441062a333c2f8d97379604b4917e32934385d1b8c3",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.075",
+          "exampleObject": "Plane.033",
+          "reachableGroups": 9,
+          "reachableNodes": 405,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "5e8c6201f5e209a232f3ff7b67ddc777a7733036eab7d0888751870f4d684c4f",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.078",
+          "exampleObject": "Plane.036",
+          "reachableGroups": 9,
+          "reachableNodes": 405,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "83b5a0232532ec1ec7c4ddb1c2b6447cbee988294ebbda422bec51db340b5f15",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.121",
+          "exampleObject": "Plane.050",
+          "reachableGroups": 9,
+          "reachableNodes": 405,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "489ab025f445cfb5f26df5cffb22b9b13229b700f9d64cec07cd490fd6896271",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.038",
+          "exampleObject": "Plane",
+          "reachableGroups": 8,
+          "reachableNodes": 402,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "32bcdd1b19904a25be1bf8759d81fa32974db0b85859427730f2305ec1d3761d",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.025",
+          "exampleObject": "Plane.025",
+          "reachableGroups": 11,
+          "reachableNodes": 291,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "2839f4664296bd54b79c33b711b5929cabf460c0052ffb67e89101c9bbb7480d",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.012",
+          "exampleObject": "Plane.017",
+          "reachableGroups": 16,
+          "reachableNodes": 290,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "71d702913a367d55c472228eb3b98fc6102145542cf4f142c6fb3dfac6d83e2c",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.024",
+          "exampleObject": "Plane.024",
+          "reachableGroups": 11,
+          "reachableNodes": 288,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "a1903f909d1581dcade9a5e3687771a0e3612f9e17a0bd93b991a1fe0e70f7ac",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.134",
+          "exampleObject": "Cube.001",
+          "reachableGroups": 5,
+          "reachableNodes": 212,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "6d7be2f5a41efa13ca734e5afaad5464650ed871153041bcb6424672fb283efc",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.075",
+          "exampleObject": "Plane.078",
+          "reachableGroups": 8,
+          "reachableNodes": 170,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "df9faced7f05d19fced5670c7c396702fd4fec2f212bb7cb095ec7fe7ba5f34c",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.120",
+          "exampleObject": "1A.001",
+          "reachableGroups": 8,
+          "reachableNodes": 169,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "566a539176f8e1a0a6a3a404760a86fd8196c614e4cd3bf7a6096d340a644961",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.014",
+          "exampleObject": "Plane.009",
+          "reachableGroups": 8,
+          "reachableNodes": 167,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "ffdeaa032678095a7db15235f35b29627cb7a8ce6fb7d6f9b5990b1abb615f24",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.120",
+          "exampleObject": "1A",
+          "reachableGroups": 8,
+          "reachableNodes": 167,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "d8aaac9527cae9e76825e430bc34e92c43dba2791dedcbdd092a1b9412d6dd9d",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.039",
+          "exampleObject": "Plane.001",
+          "reachableGroups": 5,
+          "reachableNodes": 167,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "67161da6778293e14626621a4462319bc0cddd8c27a3bc2f416aea1b5c993ffe",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.001",
+          "exampleObject": "Plane.003",
+          "reachableGroups": 8,
+          "reachableNodes": 166,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "e7aa57bc29d7c06c4cfc4d30e30d34cc74ac6ee8ca3cc627831ed8850d14e54c",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Room",
+          "exampleObject": "Plane.034",
+          "reachableGroups": 7,
+          "reachableNodes": 163,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "2b4757fda6a3d1332fa57b4c6f0b3faa3248033f7b73cf24c306d37a050d8e57",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.011",
+          "exampleObject": "chalkboard",
+          "reachableGroups": 7,
+          "reachableNodes": 104,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "e7fd851871a0b1160e3c9ec4d223f857efeb6303d4c74f7a59701b4dbb88b6f4",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.032",
+          "exampleObject": "Plane.019",
+          "reachableGroups": 3,
+          "reachableNodes": 101,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "584d0765061f3a49f7eba8e7f05733150f1181be33158610bf51538f316dd395",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.036",
+          "exampleObject": "Plane.035",
+          "reachableGroups": 5,
+          "reachableNodes": 64,
+          "classification": "complex-study"
+        }
+      ]
+    },
+    {
+      "signature": "697ac6110b0a99123b2ca1403f02fea677fc0bb9f54ab1a4e0b4106eaa411c01",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.027",
+          "exampleObject": "Plane.022",
+          "reachableGroups": 5,
+          "reachableNodes": 53,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "9e2d5efa490ab6d64143844d8950b13d00daa2d7c247c2c2afff7ae2cc26ddeb",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.035",
+          "exampleObject": "Plane.029",
+          "reachableGroups": 5,
+          "reachableNodes": 53,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "a68e1f25978918c8226f559d53691538a41bd1b2995d2d23ae196fdef68c9d3b",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.028",
+          "exampleObject": "Plane.030",
+          "reachableGroups": 5,
+          "reachableNodes": 53,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "01c144bd35a38b8de32547d095e1d9d0cda60eba564cc5576834fcf71e465120",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.029",
+          "exampleObject": "Plane.031",
+          "reachableGroups": 5,
+          "reachableNodes": 53,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "79681f02ebc9223b49689a81df4cdad6ecdd49a8d6b4ef8392f6ded99650eb51",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.041",
+          "exampleObject": "Plane.038",
+          "reachableGroups": 5,
+          "reachableNodes": 53,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "e98615491a6bc9cb228700ede62fc863a4f76f7578adb9d0774722f77f7ef94d",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "hoody.001",
+          "exampleObject": "NODEJOJO",
+          "reachableGroups": 4,
+          "reachableNodes": 52,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "da7cb93850abdcea4476a46ae54bf9aea9179e6eeeb8060146356e2e2dbee6c1",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.016",
+          "exampleObject": "ANGEL",
+          "reachableGroups": 2,
+          "reachableNodes": 47,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "194f0857f89393f1cd8e13da0502f3c1d37483792d18fe572bc7aae0c0a1a859",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.015",
+          "exampleObject": "Plane.005",
+          "reachableGroups": 5,
+          "reachableNodes": 47,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "1cb35106a8afa72140152a0dfd5c0c6e3235bde3e7d05042445df21942e2fa53",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.020",
+          "exampleObject": "Plane.020",
+          "reachableGroups": 5,
+          "reachableNodes": 47,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "628d064ad763dbbdc9a1831c730ef7c712afbc55edd08b77d1c1e8c2e6b274ff",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "this is a mat",
+          "exampleObject": "Plane.039",
+          "reachableGroups": 4,
+          "reachableNodes": 44,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "9500d53a3f612940c0073d0db9be9be5e0d1ded9c069980d284c2ef68300e02d",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.122",
+          "exampleObject": "how to.016",
+          "reachableGroups": 4,
+          "reachableNodes": 43,
+          "classification": "instructional-step"
+        },
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.122",
+          "exampleObject": "how to.016",
+          "reachableGroups": 4,
+          "reachableNodes": 43,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "27f5058ae2a0092f2e8d2dc32251f4d4e28198254f7a110f2191e4c97c6fdbff",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.034",
+          "exampleObject": "Getting Started",
+          "reachableGroups": 3,
+          "reachableNodes": 43,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "5f8064b03f7856ea64a60ee039d3500007db0c8cf2d03194b85161bc319b11a2",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.057",
+          "exampleObject": "Plane.079",
+          "reachableGroups": 5,
+          "reachableNodes": 40,
+          "classification": "instructional-step"
+        },
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.131",
+          "exampleObject": "Plane.080",
+          "reachableGroups": 5,
+          "reachableNodes": 40,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "3272f251d088f18a2cdee6fb9f5b3b0ce4736d3dcb1d6411fe5b96da5363627d",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.099",
+          "exampleObject": "Plane.025",
+          "reachableGroups": 5,
+          "reachableNodes": 40,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "665ded069873b229972b4fe8ea74b03d6c2d4ae5063867630fa9e198de6f8061",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.049",
+          "exampleObject": "Plane.034",
+          "reachableGroups": 5,
+          "reachableNodes": 40,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "d7c243c144022279cfbc9c69377a5051d14f0c21039becd3e5b568b1f11eb8f7",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.057",
+          "exampleObject": "Plane.035",
+          "reachableGroups": 5,
+          "reachableNodes": 40,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "e8f25cf41698956dd6a3717873bf93f224c049c15e9a294d5afa0b14f25ddafa",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.084",
+          "exampleObject": "Plane.043",
+          "reachableGroups": 5,
+          "reachableNodes": 40,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "aa6905b90d4d59341acb40b88e3cb1a46700f7116ff8438e80236fce82a4b173",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.100",
+          "exampleObject": "Plane.047",
+          "reachableGroups": 5,
+          "reachableNodes": 40,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "7869f4bb1e7da7939a44de929ac364417941e6b7a63d0d38c74ac0f84bb515a1",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.101",
+          "exampleObject": "Plane.048",
+          "reachableGroups": 5,
+          "reachableNodes": 40,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "9cb2f8eaec9320acc94217976bc789e28cb685077a653c466d86900ae2540875",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.102",
+          "exampleObject": "Plane.049",
+          "reachableGroups": 5,
+          "reachableNodes": 40,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "f3c4e2bcbb7bf1756b82117466d247077ed8ff835a0db670c5322c551ae10c5a",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.073",
+          "exampleObject": "Plane.073",
+          "reachableGroups": 5,
+          "reachableNodes": 40,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "5d8e3b7a15ed7e1c8d209fbb109b6ad26761eaf1035b21a81064800a39a30074",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.001",
+          "exampleObject": "Plane.081",
+          "reachableGroups": 5,
+          "reachableNodes": 40,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "f16693f935b3257c894b83cc8e99a55be818e229d434bdcc23521ecaa528ff80",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.133",
+          "exampleObject": "Plane.082",
+          "reachableGroups": 5,
+          "reachableNodes": 40,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "1355034503464b67567e31dd90f98704c5bd208500e28b6239d02b44bc07b698",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.096",
+          "exampleObject": "Cube.022",
+          "reachableGroups": 4,
+          "reachableNodes": 38,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "ed19fc22278ba86d4dd1ac28dab3f9c0d99d3038f57fc187c805d0162618194f",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.139",
+          "exampleObject": "l hand",
+          "reachableGroups": 4,
+          "reachableNodes": 36,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "3683ea529b1f9369062e4b133de0e54c3fa3b402d8a8f78f6d1c30703dc4d0d9",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.010",
+          "exampleObject": "Plane.012",
+          "reachableGroups": 2,
+          "reachableNodes": 36,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "aaa1a89982b256f39c496ffef799cf89ab30aca82911b7a3a4aaad7b834bcf1a",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.003",
+          "exampleObject": "Cube.041",
+          "reachableGroups": 1,
+          "reachableNodes": 35,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "f72ee32fc80d744d5ef0bce88179482f378dfcd8d5d0dd28aaf7fd54530a9f89",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "click me sphere",
+          "exampleObject": "Cube.043",
+          "reachableGroups": 1,
+          "reachableNodes": 32,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "d274e4f5f1c37bcf2014faa53018579c55f40585383cbf6b49450582154c00c0",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.028",
+          "exampleObject": "Plane.077",
+          "reachableGroups": 4,
+          "reachableNodes": 31,
+          "classification": "instructional-step"
+        },
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.089",
+          "exampleObject": "Plane.001",
+          "reachableGroups": 4,
+          "reachableNodes": 31,
+          "classification": "instructional-step"
+        },
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.028",
+          "exampleObject": "Plane.077",
+          "reachableGroups": 4,
+          "reachableNodes": 31,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "d6e5184eb70dd8bd9e2e35a88e9a8c83705acfe2fe89e179c6557cf310e015ca",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.072",
+          "exampleObject": "Plane.024",
+          "reachableGroups": 4,
+          "reachableNodes": 31,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "331c5eb1cfaa1d4b6f508af6ede63c236c3ee670bbe6a98f3929a1d6a74d58ae",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.089",
+          "exampleObject": "Plane.028",
+          "reachableGroups": 4,
+          "reachableNodes": 31,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "4e790a19f5e74e94ffaa8cc70abec50aada503625504ed028f69d60787756e4c",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.028",
+          "exampleObject": "Plane.077",
+          "reachableGroups": 4,
+          "reachableNodes": 31,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "5ff7a4c44b8fe7dd965f9019c185f33d2da03d58091a0a7fc1516b03b485f523",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "clickme box",
+          "exampleObject": "Cube.002",
+          "reachableGroups": 1,
+          "reachableNodes": 29,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "e0dc4ec7696a0917a73709c6ee50f03c216a86990eec12c1bd509dde212359f3",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.138",
+          "exampleObject": "Vert.003",
+          "reachableGroups": 2,
+          "reachableNodes": 29,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "9080bb19e59d1d9eb7f8052378f4286467aa73f82996c7bafaebad10dc507374",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Pokey Sphere Displacment.002",
+          "exampleObject": "Plane.027",
+          "reachableGroups": 2,
+          "reachableNodes": 28,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "1257d3f6a8158f7263a8acac5860c30f0f1822e606f040ce2b6299d9d4904ce7",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.097",
+          "exampleObject": "Cube.040",
+          "reachableGroups": 1,
+          "reachableNodes": 27,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "d4db00c07f47f47c0940f7b31dd301ca84625eaf71e4cc0b976f6f5057a818f5",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.007",
+          "exampleObject": "cursor",
+          "reachableGroups": 3,
+          "reachableNodes": 26,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "1386658764a2da0cd8e59f5b502d0d17df9af298f7e938311ececf345a0de93f",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Pokey Sphere Displacment",
+          "exampleObject": "Plane.004",
+          "reachableGroups": 2,
+          "reachableNodes": 26,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "b72433fae4bedbd976b3f105e7c9b9972b6ce0db41e3c6ea0b63e531438bfed2",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "c.instancer codex",
+          "exampleObject": "Cube.023",
+          "reachableGroups": 4,
+          "reachableNodes": 24,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "89d5bc10bcb1cb45dce01e0c962c65042db8fe161a099026e2bb08cc7cd88ff7",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.033",
+          "exampleObject": "Plane.026",
+          "reachableGroups": 1,
+          "reachableNodes": 22,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "0d991a16a112e04787eac929a062eabbd43c64b726efffda0b1747fd7462abe5",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.152",
+          "exampleObject": "lightbulb.004",
+          "reachableGroups": 1,
+          "reachableNodes": 22,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "7b5f27cb11640a5d5c79d63c6126b90857fe1ffdc2d6c2dd5a73f73babc7d268",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.114",
+          "exampleObject": "Cube.025",
+          "reachableGroups": 1,
+          "reachableNodes": 21,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "c8f29cda6b7175d871d621e738551de0a2c3c6adee6a5a6cb58fe6d89c934ba7",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.140",
+          "exampleObject": "Grid",
+          "reachableGroups": 3,
+          "reachableNodes": 21,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "640aeb66588672c17753cdd5bc74cde9162adb7a02299698835b07b82d5e0fec",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.095",
+          "exampleObject": "Cube.020",
+          "reachableGroups": 1,
+          "reachableNodes": 20,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "3039ca388ec3c70953d38938830dc740221436969b1c39acd27eb685aaa37a6e",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.118",
+          "exampleObject": "Cube.026",
+          "reachableGroups": 1,
+          "reachableNodes": 20,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "0b4eda804320a14bf71895d65502000fba5774288b4aafbdd8f11c44fd8c8e7b",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.155",
+          "exampleObject": "Cube.008",
+          "reachableGroups": 1,
+          "reachableNodes": 20,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "5b095b158e7338c4dcd8b89e41197afc1c936e0980bfba32b835c3956a4a3447",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.149",
+          "exampleObject": "Vert.005",
+          "reachableGroups": 1,
+          "reachableNodes": 20,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "09c506abfa7983436bb79a94c14456d9c6a528ba3253423f8492a5742d7a859f",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.005",
+          "exampleObject": "Cube.010",
+          "reachableGroups": 1,
+          "reachableNodes": 19,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "154f1769163c7f9770bd3109a88a20bf64bb49f412274d346ac3680d9056c7da",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.082",
+          "exampleObject": "Cube.016",
+          "reachableGroups": 1,
+          "reachableNodes": 19,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "6c2ccb5f97d31f7a135c6d420cbf8a81192d300436625ebf4a9409a4c6d08af8",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.090",
+          "exampleObject": "Cube.018",
+          "reachableGroups": 1,
+          "reachableNodes": 19,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "b7c0607d0b3a5256cc815a8c8713dc94a44b487123696d201f35ebfda82e9044",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.093",
+          "exampleObject": "Cube.019",
+          "reachableGroups": 1,
+          "reachableNodes": 19,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "a56053b7c04d93c027ab381804268bacd6322ca41b3b3de6fe0de91772ad2bc5",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.085",
+          "exampleObject": "Cube.050",
+          "reachableGroups": 1,
+          "reachableNodes": 19,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "92185268ee22f1ed2676415943fdc74ebb395d7247d1d2041b27dc7667b4fe9b",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.085",
+          "exampleObject": "Cube.050",
+          "reachableGroups": 1,
+          "reachableNodes": 19,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "d8188dea2744adb1c6410b7863e1f7a54e730cf4ade415592284116b07c0bf23",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.085",
+          "exampleObject": "Cube.050",
+          "reachableGroups": 1,
+          "reachableNodes": 19,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "f6b536f27650c2ac8dcbf24a1ee616f8f9f7957b7cf4822070f3d5b93784f69c",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.008",
+          "exampleObject": "Cube.004",
+          "reachableGroups": 1,
+          "reachableNodes": 18,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "86be8c3e68da1bc370dd5e9e14328cb521e79d7fd83960c921619cd06662202e",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.038",
+          "exampleObject": "Cube.005",
+          "reachableGroups": 1,
+          "reachableNodes": 18,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "e541bbecce7086e30e488e39f843260a523d504b30f66b51653e8836c9d0623d",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.039",
+          "exampleObject": "Cube.006",
+          "reachableGroups": 1,
+          "reachableNodes": 18,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "c543fab30daf8b5e23d2dc3c46dc585516d65abacff91ec5bb808cb7e187f135",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.004",
+          "exampleObject": "Plane.007",
+          "reachableGroups": 2,
+          "reachableNodes": 18,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "9a1ca90a3668dd2f9a97d0919c6912863d80355a244deb43d7d04c8319c56454",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.022",
+          "exampleObject": "Plane.021",
+          "reachableGroups": 2,
+          "reachableNodes": 18,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "24c4854f103eb3a319dcbdb24dee075886c0696f681c9e700bcbe4c318f1bef1",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.026",
+          "exampleObject": "Plane.028",
+          "reachableGroups": 2,
+          "reachableNodes": 18,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "e560cf34d894e20068cac5d3c5349d81f2d869aa41af3dc14784a1fccbd03e45",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.030",
+          "exampleObject": "Plane.032",
+          "reachableGroups": 2,
+          "reachableNodes": 18,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "254ae7431b34ceee428fb993e218b1bf7a66e3b2a9c9f68e019e4e5114192c6b",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.031",
+          "exampleObject": "Plane.033",
+          "reachableGroups": 2,
+          "reachableNodes": 18,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "d1d7e4c87a80565f28dd6617becf54e018c00ce783aa0488da258fec309a4b12",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.037",
+          "exampleObject": "Plane.036",
+          "reachableGroups": 2,
+          "reachableNodes": 18,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "5cb972a3fbb6845c92540afdef069cf916732c06e0e20cad476ad028e955b2a0",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.040",
+          "exampleObject": "Plane.037",
+          "reachableGroups": 2,
+          "reachableNodes": 18,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "db27498cb5b0490f70a6f54952bd1cac6516387c3853ee12814355263702e47e",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.141",
+          "exampleObject": "Vert.004",
+          "reachableGroups": 1,
+          "reachableNodes": 18,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "60d51544039faa39e57add01f630cc54dbf28aa28ed814360e253e8848591775",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.088",
+          "exampleObject": "Cube.017",
+          "reachableGroups": 1,
+          "reachableNodes": 17,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "130a77cc418c2b76b2cb7af34d64074998d3e8e0fe293299eea77138bb9fd317",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.148",
+          "exampleObject": "special empty.001",
+          "reachableGroups": 1,
+          "reachableNodes": 16,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "288301442276743e11f965787955ddfd11a10eadbe51cc13acdf035968964229",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.123",
+          "exampleObject": "Plane.052",
+          "reachableGroups": 2,
+          "reachableNodes": 16,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "93e640a1f1f20e21993e38f60407252d08b74d6da94a658917971522a0bf5ea9",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.017",
+          "exampleObject": "eye",
+          "reachableGroups": 1,
+          "reachableNodes": 15,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "35ee87d2d798609dbdf4af8da684ea1dd9249346e239db76c35088a10244bd87",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.018",
+          "exampleObject": "eye.001",
+          "reachableGroups": 1,
+          "reachableNodes": 15,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "b0302319f6290e9221f6911e3159e360cd68be041f8432a1e0633959d65ed63a",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.019",
+          "exampleObject": "eye.002",
+          "reachableGroups": 1,
+          "reachableNodes": 15,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "b0e0d6591ca981262e77c8c68a22a3c7bdf7e1a4a7b3b9f332a09b39156bac9c",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.003",
+          "exampleObject": "Plane.013",
+          "reachableGroups": 2,
+          "reachableNodes": 14,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "8067856239a7d60232d49dfadfd5d0c4fee983853885c427455dfc94597cbfb4",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.125",
+          "exampleObject": "Cube",
+          "reachableGroups": 1,
+          "reachableNodes": 14,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "a9dec3ff9228377db950f2e57e5c5f259e82c7450475b381710979195b9264f5",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.082",
+          "exampleObject": "Cube.039",
+          "reachableGroups": 1,
+          "reachableNodes": 13,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "703a7d3441c550439fa4cd6f01e00be2b2682c1b35b9a4e0bb25327a3b403270",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "c.displace surfaces.036",
+          "exampleObject": "1.001",
+          "reachableGroups": 1,
+          "reachableNodes": 12,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "7272b7adc3a1b24f35093fdcd80f7bbab7d4a0c72fe78760654c6f8c96bc179b",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.081",
+          "exampleObject": "Cube.036",
+          "reachableGroups": 1,
+          "reachableNodes": 12,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "b34105a5710f997cbd080ec249a5c69339d47d69f78343aec0607f42d3178908",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "c.displace surfaces.018",
+          "exampleObject": "1.028",
+          "reachableGroups": 1,
+          "reachableNodes": 12,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "c2cd23d1f8d1ad2089408953cb4e2696f7ec338d8c40104ee9f2fb67d4a70ea8",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.078",
+          "exampleObject": "Cube.038",
+          "reachableGroups": 1,
+          "reachableNodes": 12,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "e180b98aee9e48634c995f72549fb51130e89f2ea41a257bb4497450a5946c78",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "c.displace surfaces.018",
+          "exampleObject": "1.028",
+          "reachableGroups": 1,
+          "reachableNodes": 12,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "cf68851718ca3816953c2bb95238d54377663b64eac0a23f98e4a978bfb9fcc5",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "c.displace surfaces.018",
+          "exampleObject": "1.028",
+          "reachableGroups": 1,
+          "reachableNodes": 11,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "0b91c8b307baf097459971227ad6ddcc935e5d15e35bf5c9a0b69eafc5b7cfc7",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.074",
+          "exampleObject": "Cube.008",
+          "reachableGroups": 1,
+          "reachableNodes": 11,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "dad2dff8bb28f64715cc98142c719ec1d9f25591d21bf094c7f86f6fa2687239",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.077",
+          "exampleObject": "Cube.035",
+          "reachableGroups": 1,
+          "reachableNodes": 11,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "3301e3177ec07e810e86f0965a309f75959ce115fea4e99024a3b567da7c24a4",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "c.displace surfaces.027",
+          "exampleObject": "1.026",
+          "reachableGroups": 1,
+          "reachableNodes": 11,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "261f7359b69798cedee74f948046e2289f6ea7b6ec1e20b3e87e995ab9172d95",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "c.displace surfaces.027",
+          "exampleObject": "1.026",
+          "reachableGroups": 1,
+          "reachableNodes": 11,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "cf7537f404817f1edf79a67606fa62ae92bd2d3e13dc291a23f49b0f5bd9688c",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Auto Smooth",
+          "exampleObject": "eye",
+          "reachableGroups": 1,
+          "reachableNodes": 10,
+          "classification": "auto-smooth-helper"
+        },
+        {
+          "project": "module-2",
+          "root": "Auto Smooth",
+          "exampleObject": "circle dojo.001",
+          "reachableGroups": 1,
+          "reachableNodes": 10,
+          "classification": "auto-smooth-helper"
+        },
+        {
+          "project": "module-3",
+          "root": "Auto Smooth",
+          "exampleObject": "circle dojo.001",
+          "reachableGroups": 1,
+          "reachableNodes": 10,
+          "classification": "auto-smooth-helper"
+        },
+        {
+          "project": "module-4",
+          "root": "Auto Smooth",
+          "exampleObject": "circle dojo.001",
+          "reachableGroups": 1,
+          "reachableNodes": 10,
+          "classification": "auto-smooth-helper"
+        }
+      ]
+    },
+    {
+      "signature": "ded630f0b8bfecc7a1e17853ef1cff8151726a27134479412c031e20958977a1",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "c.displace surfaces.035",
+          "exampleObject": "1.002",
+          "reachableGroups": 1,
+          "reachableNodes": 10,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "2a66c4644f0d70585b2519134f10023eaa50e2dbb0677974e5ca564af19064d3",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "c.displace surfaces.027",
+          "exampleObject": "1.026",
+          "reachableGroups": 1,
+          "reachableNodes": 10,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "66dd71d8cfe5b12ca758a1c3f28fafa8f1ccf83a4b24af48bbce82bcdc6e251e",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.079",
+          "exampleObject": "Cube.033",
+          "reachableGroups": 1,
+          "reachableNodes": 10,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "6ad7cb9ab453fd4964539230d4381aa0dc980b493f0ca12e0786438b28cd592e",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.086",
+          "exampleObject": "Cube.048",
+          "reachableGroups": 1,
+          "reachableNodes": 10,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "4a1f8ad9f99df8deeb110e60b55910c8f4d7c88c6760e2e998ec14cfd6cafb10",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.124",
+          "exampleObject": "Plane.054",
+          "reachableGroups": 1,
+          "reachableNodes": 10,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "d5020655113ce41341aafdf39eec51a8eb59fc41c3a12fca3daa8ccb0b60786c",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes",
+          "exampleObject": "Grid.007",
+          "reachableGroups": 2,
+          "reachableNodes": 10,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "f2435d188092f4060eaabeb2dc1177132772267903114121ef83ebc3def6afc4",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.147",
+          "exampleObject": "Plane.012",
+          "reachableGroups": 2,
+          "reachableNodes": 10,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "cba4fe3ce541cb07e2955e819f8003528db537c78196b4888003dc905a74c330",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.148",
+          "exampleObject": "Plane.013",
+          "reachableGroups": 2,
+          "reachableNodes": 10,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "2b7f08f1bccd33bda7ec889308f00b662e2e6375e23a23c42d044962d6799b2d",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.124",
+          "exampleObject": "Plane.054",
+          "reachableGroups": 1,
+          "reachableNodes": 10,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "3feaaa719206ee56b90fd82d7b936875bcf9c43708b7bda506c2e6408d20af69",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.013",
+          "exampleObject": "Plane",
+          "reachableGroups": 2,
+          "reachableNodes": 8,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "64217493c4ba1f4b6a5f81ea7096e067c817f25992692e05dc16626fcab8e4e6",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "c.displace surfaces.020",
+          "exampleObject": "1.023",
+          "reachableGroups": 1,
+          "reachableNodes": 8,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "03afab24afd6f604447625f4456a5abe491e51e2c79034e8921a68ad0142a478",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.151",
+          "exampleObject": "lightbulb.002",
+          "reachableGroups": 1,
+          "reachableNodes": 8,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "23e6c04ccb50546a904dd23272f98660c81bcf38e4454b0f245a2f94710fc316",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.137",
+          "exampleObject": "Vert.001",
+          "reachableGroups": 1,
+          "reachableNodes": 8,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "2ec16958b56a0326b2fa86ff9836131977b0950542154b8eaf27a5aae581e390",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.139",
+          "exampleObject": "Vert.002",
+          "reachableGroups": 1,
+          "reachableNodes": 8,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "435d8a6950deb62042b9df65fe6a20adec48f65b1a66b8794c32414711215f73",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.006",
+          "exampleObject": "Screen Recording 2024-01-21 at 4.55.15 PM",
+          "reachableGroups": 1,
+          "reachableNodes": 7,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "39d79465be2bedfc0604787fb60dca752db4df57f806ccfeeeacd0c5616a9d7b",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.043",
+          "exampleObject": "BezierCurve.001",
+          "reachableGroups": 1,
+          "reachableNodes": 7,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "b8ac13e3b93ce132d3e90be28bb5311357598ca48b62ab15a083d28001fb293f",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.056",
+          "exampleObject": "Cube.014",
+          "reachableGroups": 1,
+          "reachableNodes": 7,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "180a432390618ff2e43679f5c38297f1ef2a1d8c343a2555aaaf73b72cd8dd4e",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.083",
+          "exampleObject": "Cube.021",
+          "reachableGroups": 1,
+          "reachableNodes": 7,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "9c5bfe34558a74f6797ea2241a0b1c7e3a2f42412b90150dbb05dbef2d0a5702",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.091",
+          "exampleObject": "Cube.028",
+          "reachableGroups": 1,
+          "reachableNodes": 7,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "4fdd140877643ce6db6eae78e864902ff1a350b617a58d3762363b4c353ead88",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.004",
+          "exampleObject": "Plane.010",
+          "reachableGroups": 2,
+          "reachableNodes": 7,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "a034bb208a9f6a328e7b7cb5ebeceae667e1e50d4d60e9f57b9fe583638e7286",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "c.instancer codex.001",
+          "exampleObject": "Cube.003",
+          "reachableGroups": 1,
+          "reachableNodes": 5,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "9b5ce3a94ba18cd9767d76b6a57bdb19078966d8f95a0bc23185f484fab0ec1f",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "c.instancer codex.002",
+          "exampleObject": "Cube.007",
+          "reachableGroups": 1,
+          "reachableNodes": 5,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "a96ec6b049d1c8f830a7c1b21e8b9c9d212b111e6c667093c523d0a2ce8f3f63",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.036",
+          "exampleObject": "Cube.012",
+          "reachableGroups": 1,
+          "reachableNodes": 5,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "2b0b1db2200155dfce5e10e380b10b8c93c406e52371e7fa26c89290f26cbcd1",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.040",
+          "exampleObject": "Cylinder.001",
+          "reachableGroups": 1,
+          "reachableNodes": 5,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "72e9b51eaa954ee4ea13d9b928bf4889c623d77bfe922c5e84f779837116eda4",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.143",
+          "exampleObject": "Grid.004",
+          "reachableGroups": 1,
+          "reachableNodes": 5,
+          "classification": "instructional-step"
+        }
+      ]
+    },
+    {
+      "signature": "8eebf7547ce1ceb935e426a7999cbefc78b87504fed8893f82f57cb271c1a0b7",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.002",
+          "exampleObject": "Cube.001",
+          "reachableGroups": 1,
+          "reachableNodes": 4,
+          "classification": "empty-or-passthrough-helper"
+        }
+      ]
+    },
+    {
+      "signature": "8e390595622dd0f8fd6a0272c573ccd67d258eda87b559f3196731e6a476cadb",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "c.instancer codex.003",
+          "exampleObject": "Cube.001",
+          "reachableGroups": 1,
+          "reachableNodes": 4,
+          "classification": "empty-or-passthrough-helper"
+        }
+      ]
+    },
+    {
+      "signature": "2137ef06fc76024837ba51c65753281f06d767d4601fd2b95066e2fb6a0a525a",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.142",
+          "exampleObject": "Point.005",
+          "reachableGroups": 1,
+          "reachableNodes": 4,
+          "classification": "empty-or-passthrough-helper"
+        }
+      ]
+    },
+    {
+      "signature": "db70574871c2e7562d27ab394225dfaf8cb76c9ba141a3efbd5d81fd5909bf7b",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.092",
+          "exampleObject": "Cube.009",
+          "reachableGroups": 1,
+          "reachableNodes": 3,
+          "classification": "empty-or-passthrough-helper"
+        },
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.080",
+          "exampleObject": "Cube.034",
+          "reachableGroups": 1,
+          "reachableNodes": 3,
+          "classification": "empty-or-passthrough-helper"
+        }
+      ]
+    },
+    {
+      "signature": "43f9b976ca5a1ec76f30a772786cb68e1ade4d9de9db4e1009b2598c08e0eeb5",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.087",
+          "exampleObject": "Cube.037",
+          "reachableGroups": 1,
+          "reachableNodes": 3,
+          "classification": "empty-or-passthrough-helper"
+        }
+      ]
+    },
+    {
+      "signature": "80746af0ba6e02be8e0de0625698a3f2f3c0d420de6cf8ab84f287816fd3a292",
+      "members": [
+        {
+          "project": "module-2",
+          "root": "Geometry Nodes.097",
+          "exampleObject": "Icosphere.009",
+          "reachableGroups": 1,
+          "reachableNodes": 3,
+          "classification": "empty-or-passthrough-helper"
+        }
+      ]
+    },
+    {
+      "signature": "d885bb2cd53e5bf5db4ce51f6766e505533d2757431ce5a43fb45da772db378b",
+      "members": [
+        {
+          "project": "module-3",
+          "root": "Geometry Nodes.127",
+          "exampleObject": "check",
+          "reachableGroups": 1,
+          "reachableNodes": 2,
+          "classification": "empty-or-passthrough-helper"
+        },
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.127",
+          "exampleObject": "check",
+          "reachableGroups": 1,
+          "reachableNodes": 2,
+          "classification": "empty-or-passthrough-helper"
+        }
+      ]
+    },
+    {
+      "signature": "ce0e4ac660d8004700731754bd74072fb55bfe381b15426a5c2cd09c84bcc317",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "Geometry Nodes.042",
+          "exampleObject": "Cube.012",
+          "reachableGroups": 1,
+          "reachableNodes": 2,
+          "classification": "empty-or-passthrough-helper"
+        }
+      ]
+    },
+    {
+      "signature": "685abc3bc631674daaf64e4b3342c3524b69d1073177204b9eca9a1a3219eeff",
+      "members": [
+        {
+          "project": "intro-module",
+          "root": "cam snap",
+          "exampleObject": "head",
+          "reachableGroups": 1,
+          "reachableNodes": 2,
+          "classification": "empty-or-passthrough-helper"
+        }
+      ]
+    },
+    {
+      "signature": "5b6ecda1e6dc03a6b734d2dd697be0e5d3d0c322629ed4c45dfdb6f4b956414e",
+      "members": [
+        {
+          "project": "module-4",
+          "root": "Geometry Nodes.150",
+          "exampleObject": "coil",
+          "reachableGroups": 1,
+          "reachableNodes": 2,
+          "classification": "empty-or-passthrough-helper"
+        }
+      ]
+    }
+  ]
+}
