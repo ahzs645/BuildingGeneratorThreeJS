@@ -1,0 +1,22 @@
+{
+  "object": "Sticker Noodle Brush.001",
+  "type": "CURVE",
+  "bbox": {
+    "min": [
+      936.9984130859375,
+      -407.3834228515625,
+      87.69105529785156
+    ],
+    "max": [
+      1089.7762451171875,
+      -270.1485595703125,
+      88.46192932128906
+    ]
+  },
+  "verts": null,
+  "faces": null,
+  "materials": [
+    "flat crayon.002",
+    "flat crayon.002"
+  ]
+}

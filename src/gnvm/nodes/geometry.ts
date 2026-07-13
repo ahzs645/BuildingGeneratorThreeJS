@@ -1,6 +1,6 @@
 // Geometry-operation handlers.
 import { Field, Vec3, asVec3, asNum, vadd } from "../core";
-import { Geometry, Mesh, InstanceRef, buildTopology, mergeMeshInto, realizeInstances, transformPoint } from "../geometry";
+import { Geometry, Mesh, InstanceRef, buildTopology, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint } from "../geometry";
 import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitives";
 import { reg, EvalAPI, DUMP_CONTEXT } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
@@ -21,7 +21,7 @@ function geometryOfDumpObject(obj: (typeof DUMP_CONTEXT.objects)[number] | undef
     m.edges = (source.edges ?? []).map((edge) => [...edge] as [number, number]);
     out.mesh = m;
   }
-  if (!evaluated && obj?.curves) {
+  if (obj?.curves && (!evaluated || !source)) {
     out.curves = obj.curves.map((spline) => ({
       cyclic: Boolean(spline.cyclic), points: spline.points.map((p) => [p[0], p[1], p[2]] as Vec3),
     }));
@@ -34,7 +34,10 @@ function geometryOfDumpObject(obj: (typeof DUMP_CONTEXT.objects)[number] | undef
 reg("GeometryNodeObjectInfo", (api) => {
   const ref = api.ref("Object");
   const obj = DUMP_CONTEXT.objects.find((o) => o.name === ref?.name);
-  const out = geometryOfDumpObject(obj);
+  // Blender's Geometry output includes the referenced object's evaluated
+  // modifier stack. Targeted dumps embed that mesh so nested asset generators
+  // (Sticker Noodle Brush -> Polarity Sticker) remain procedural in the VM.
+  const out = geometryOfDumpObject(obj, true);
   if (out.mesh && api.prop<string>("transform_space", "ORIGINAL") === "RELATIVE") {
     const loc = (obj?.location ?? [0, 0, 0]) as Vec3;
     const rot = (obj?.rotation ?? [0, 0, 0]) as Vec3;
@@ -247,6 +250,29 @@ reg("GeometryNodeTranslateInstances", (api) => {
   const g = api.geo("Instances").clone();
   const t = api.vec("Translation");
   for (const inst of g.instances) inst.position = vadd(inst.position, t);
+  return { Instances: g };
+});
+
+reg("GeometryNodeRotateInstances", (api) => {
+  const g = api.geo("Instances").clone();
+  const ctx = makeFieldCtx(g, "INSTANCE");
+  const selection = api.field("Selection").array(ctx);
+  const rotations = api.field("Rotation").array(ctx);
+  const pivots = api.field("Pivot Point").array(ctx);
+  const local = api.bool("Local Space");
+  for (let i = 0; i < g.instances.length; i++) {
+    if (!asNum(selection[i] ?? 1)) continue;
+    const instance = g.instances[i];
+    const rotation = asVec3(rotations[i] ?? [0, 0, 0]);
+    const pivot = asVec3(pivots[i] ?? [0, 0, 0]);
+    if (!local) {
+      const relative = [instance.position[0] - pivot[0], instance.position[1] - pivot[1], instance.position[2] - pivot[2]] as Vec3;
+      instance.position = vadd(pivot, rotateEulerXYZ(relative, rotation));
+    }
+    // The asset graphs rotate only around Z; component-wise Euler addition is
+    // exact for that case and preserves existing point rotations.
+    instance.rotation = vadd(instance.rotation, rotation);
+  }
   return { Instances: g };
 });
 

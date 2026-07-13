@@ -839,5 +839,24 @@ function meshSignedAreaXY(m: Mesh): number {
   check("unlinked Pick Instance index cycles by point", placed.instances[0].geometry === sourceA && placed.instances[1].geometry === sourceB);
 }
 
+// (AF) Nested asset generators depend on Object Info's evaluated modifier mesh,
+// then rotate those payloads as instances.
+{
+  const savedObjects = DUMP_CONTEXT.objects;
+  DUMP_CONTEXT.objects = [{
+    name: "nested", mesh: { verts: [[0, 0, 0]], faces: [] },
+    evaluated_mesh: { verts: [[0, 0, 0], [1, 0, 0]], faces: [] },
+  }];
+  const nested = runNode("GeometryNodeObjectInfo", { Object: { datablock: "Object", name: "nested" }, "As Instance": false }).Geometry as Geometry;
+  check("Object Info uses evaluated modifier geometry", nested.mesh?.positions.length === 2, `verts=${nested.mesh?.positions.length}`);
+  DUMP_CONTEXT.objects = savedObjects;
+  const instances = new Geometry();
+  instances.instances = [{ geometry: box([0, 0, 0], [1, 1, 1]), position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }];
+  const rotated = runNode("GeometryNodeRotateInstances", {
+    Instances: instances, Selection: true, Rotation: [0, 0, Math.PI / 2], "Pivot Point": [0, 0, 0], "Local Space": true,
+  }, {}, ["Instances", "Rotation"]).Instances as Geometry;
+  check("Rotate Instances composes local rotation", approx(rotated.instances[0].rotation, [0, 0, Math.PI / 2]));
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

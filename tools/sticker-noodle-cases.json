@@ -1,0 +1,6 @@
+[
+  { "name": "authored baseline", "overrides": {} },
+  { "name": "wider spacing", "overrides": { "Dot Distance": 2.0 } },
+  { "name": "smaller stickers", "overrides": { "dot size": 0.35 } },
+  { "name": "half twist", "overrides": { "twist factor": 0.5 } }
+]

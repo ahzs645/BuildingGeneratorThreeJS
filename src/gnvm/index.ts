@@ -98,10 +98,19 @@ export async function runGenerator(dump: Dump, opts: { object?: string; override
   // "Wall thiccness" drives bubble displacement, NOT solidify depth — do not
   // rebind it onto Solidify or dual walls balloon into self-intersecting shells.
   const ev = new Evaluator(dump.node_groups);
-  const merged: Record<string, any> = { ...found.inputs, ...(opts.overrides ?? {}) };
+  const groupDef: any = dump.node_groups[found.group];
+  const merged: Record<string, any> = { ...found.inputs };
+  for (const [key, value] of Object.entries(opts.overrides ?? {})) {
+    merged[key] = value;
+    // Friendly-name UI overrides must replace the identifier value captured in
+    // the modifier dump; identifier-first binding otherwise restores the saved
+    // value. Duplicate names intentionally update every matching socket.
+    for (const item of groupDef?.interface ?? [])
+      if (item.item_type === "SOCKET" && item.in_out === "INPUT" && item.name === key)
+        merged[item.identifier] = value;
+  }
   // Blender feeds the object's own (pre-modifier) mesh into the tree's Geometry
   // input — e.g. the bubble vase's seed mesh. Bind it by socket identifier.
-  const groupDef: any = dump.node_groups[found.group];
   const geoSocket = groupDef?.interface?.find(
     (it: any) => it.item_type === "SOCKET" && it.in_out === "INPUT" && it.socket_type === "NodeSocketGeometry"
   );

@@ -1,0 +1,101 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/sticker-noodle-brush/dump.json",
+  "object": "Sticker Noodle Brush.001",
+  "results": [
+    {
+      "combo": {
+        "name": "authored baseline",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 16252,
+      "faces": 956,
+      "bbox": {
+        "min": [
+          -40.2581,
+          -78.0777,
+          0
+        ],
+        "max": [
+          92.1866,
+          80.5001,
+          2.38
+        ]
+      },
+      "elapsed_ms": 42
+    },
+    {
+      "combo": {
+        "name": "wider spacing",
+        "overrides": {
+          "Dot Distance": 2
+        }
+      },
+      "status": "ok",
+      "verts": 10676,
+      "faces": 628,
+      "bbox": {
+        "min": [
+          -40.0896,
+          -77.5056,
+          0
+        ],
+        "max": [
+          92.2522,
+          79.2083,
+          1.56
+        ]
+      },
+      "elapsed_ms": 11
+    },
+    {
+      "combo": {
+        "name": "smaller stickers",
+        "overrides": {
+          "dot size": 0.35
+        }
+      },
+      "status": "ok",
+      "verts": 16252,
+      "faces": 956,
+      "bbox": {
+        "min": [
+          -34.7392,
+          -72.561,
+          0
+        ],
+        "max": [
+          86.6678,
+          74.9819,
+          2.38
+        ]
+      },
+      "elapsed_ms": 13
+    },
+    {
+      "combo": {
+        "name": "half twist",
+        "overrides": {
+          "twist factor": 0.5
+        }
+      },
+      "status": "ok",
+      "verts": 16252,
+      "faces": 956,
+      "bbox": {
+        "min": [
+          -40.2571,
+          -78.071,
+          0
+        ],
+        "max": [
+          92.1699,
+          80.4921,
+          2.38
+        ]
+      },
+      "elapsed_ms": 13
+    }
+  ]
+}
