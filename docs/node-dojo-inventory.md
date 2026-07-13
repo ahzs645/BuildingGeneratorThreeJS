@@ -13,7 +13,7 @@ The pack contains **16 Blender projects**, **499 active Geometry Nodes modifiers
 | Dusty Crystal Cocoon | 2 | 1 | Active roots are Auto Smooth only |
 | The Nodes Node | 17 | 12 | Inventory complete |
 | Knit Graphic | 0 | 0 | No active Geometry Nodes modifier |
-| Typewriter | 1 | 1 | Live GN-VM; missing external font documented |
+| Typewriter | 1 | 1 | Live GN-VM; supplied Pixels TTF with embedded outline fallback |
 | Send Nodes Hat | 5 | 4 | Baked gallery reference |
 | Module 2 | 103 | 69 | Inventory complete |
 | Module 3 | 28 | 20 | Inventory complete |

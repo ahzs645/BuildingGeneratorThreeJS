@@ -9,7 +9,7 @@ Inventory date: 2026-07-12. The source pack contains 16 `.blend` projects.
 - Simple Bubble Vessel — live GN-VM and Blender comparison.
 - Math Clay — baked Schoen Gyroid and Schwarz P-Surface gallery studies.
 - Send Nodes Hat — baked gallery assembly.
-- Procedural Typewriter — live GN-VM with editable text and scene-frame animation. The referenced `Blurmed.ttf` is missing from the pack, so the web page uses portable vector glyphs.
+- Procedural Typewriter — live GN-VM with editable text and scene-frame animation. The page loads the supplied `pixels.ttf` and keeps a matching Blender-extracted outline atlas as its offline geometry fallback.
 - Chrome Asset Library: Periodic Brush — live GN-VM with all nine `period pack` collection children, editable distance/scale controls, and exact Blender parity across the validation sweep.
 - Chrome Asset Library: Flat Stickie Pack — Blender reference and live GN-VM output match at 28 vertices, 7 faces, and identical local bounds.
 - Chrome Asset Library: Polarity Sticker — Arc/Fill Curve output matches Blender at 68 vertices, 4 faces, and identical local bounds.
@@ -41,4 +41,4 @@ Inventory date: 2026-07-12. The source pack contains 16 `.blend` projects.
 - **Knit Graphic** — 262 Geometry Node groups exist, but no object currently has an active Geometry Nodes modifier.
 - **Dusty Crystal Cocoon** — the only active node modifiers reported by Blender are `Auto Smooth`; the authored result appears baked or driven outside the active modifier path.
 - **Modules 2–4 and Intro Module** — teaching scenes containing 4,000–13,000 nodes and dozens of unrelated modifier roots. Select a named exercise/object before porting.
-- **Typewriter font** — Blender references `NFT_ Caveman/NFT PIXEL FONT LIBRARY/Blurmed.ttf`, which is absent from the supplied folder.
+- **Typewriter font** — the original Blender reference to `Blurmed.ttf` is replaced by the supplied `pixels.ttf`; its extracted outlines are embedded for offline fallback.

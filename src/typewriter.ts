@@ -15,6 +15,7 @@ const evaluateButton = document.querySelector<HTMLButtonElement>("#typewriter-ev
 const statusEl = document.querySelector<HTMLElement>("#typewriter-status")!;
 const countEl = document.querySelector<HTMLElement>("#typewriter-count")!;
 const runtimeEl = document.querySelector<HTMLElement>("#typewriter-runtime")!;
+const fontStatusEl = document.querySelector<HTMLElement>("#typewriter-font-status")!;
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -40,6 +41,22 @@ let appliedId = 0;
 let playing = false;
 let lastPlay = 0;
 let editTimer = 0;
+
+async function loadSuppliedFont(): Promise<boolean> {
+  try {
+    const family = "Pixels Medium";
+    const face = await new FontFace(family, `url(${JSON.stringify(publicUrl("dojo/fonts/pixels.ttf"))})`).load();
+    document.fonts.add(face);
+    textInput.style.fontFamily = `"${family}", ui-monospace, monospace`;
+    fontStatusEl.className = "typewriter-font-status loaded";
+    fontStatusEl.textContent = "Pixels Medium TTF loaded · GN geometry uses its matching extracted outlines.";
+    return true;
+  } catch {
+    fontStatusEl.className = "typewriter-font-status fallback";
+    fontStatusEl.textContent = "Supplied Pixels Medium TTF unavailable · using the embedded Blender-extracted outline fallback.";
+    return false;
+  }
+}
 
 function editableDump(): Dump {
   const next = structuredClone(dump) as Dump;
@@ -116,4 +133,7 @@ renderer.setAnimationLoop((time) => {
   controls.update(); renderer.render(scene, camera);
 });
 
-fetch(publicUrl("dojo/typewriter/dump.json")).then((response) => response.json()).then((loaded: Dump) => { dump = loaded; void update(); }).catch((error) => { statusEl.textContent = String(error); });
+Promise.all([
+  loadSuppliedFont(),
+  fetch(publicUrl("dojo/typewriter/dump.json")).then((response) => response.json() as Promise<Dump>),
+]).then(([, loaded]) => { dump = loaded; void update(); }).catch((error) => { statusEl.textContent = String(error); });
