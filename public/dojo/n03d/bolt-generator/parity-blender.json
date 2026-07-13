@@ -1,0 +1,206 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Bolt Gen_DHTS_Thru Head v03.002",
+  "modifier": "BOLT GEN DHTS v02_4MAY2024.001",
+  "node_group": "BOLT GEN DHTS v03_Thru Head_1JUL2024",
+  "saved_values": {
+    "length": 24.632158279418945,
+    "thread dia": 14.95798110961914,
+    "head dia": 30.0,
+    "head height": 8.496904373168945,
+    "head sides": 6,
+    "emboss label": false,
+    "a untapped": 1.4766666889190674,
+    "TAP": false,
+    "thread only": false,
+    "Filament Color": [
+      0.858807384967804,
+      1.0,
+      0.005893345456570387,
+      1.0
+    ],
+    "SPLIT TO PRINT": false,
+    "spacer": false,
+    "wall thic": 5.95355224609375,
+    "res": 55,
+    "layout offset tuning": -10.208999633789062,
+    "preview sections": false
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 8646,
+      "faces": 8535,
+      "bbox": {
+        "min": [
+          -14.5966,
+          -13.0445,
+          -8.5058
+        ],
+        "max": [
+          14.9994,
+          13.0518,
+          26.724
+        ]
+      },
+      "elapsed_ms": 31.7
+    },
+    {
+      "combo": {
+        "name": "length 15",
+        "overrides": {
+          "length": 15
+        }
+      },
+      "status": "ok",
+      "verts": 8646,
+      "faces": 8535,
+      "bbox": {
+        "min": [
+          -14.5966,
+          -13.0445,
+          -8.5058
+        ],
+        "max": [
+          14.9994,
+          13.0518,
+          26.724
+        ]
+      },
+      "elapsed_ms": 32.7
+    },
+    {
+      "combo": {
+        "name": "eight-sided head",
+        "overrides": {
+          "head sides": 8
+        }
+      },
+      "status": "ok",
+      "verts": 8650,
+      "faces": 8537,
+      "bbox": {
+        "min": [
+          -14.6868,
+          -14.8362,
+          -8.5058
+        ],
+        "max": [
+          14.9994,
+          14.8431,
+          26.724
+        ]
+      },
+      "elapsed_ms": 33.0
+    },
+    {
+      "combo": {
+        "name": "thread only",
+        "overrides": {
+          "thread only": true
+        }
+      },
+      "status": "ok",
+      "verts": 8086,
+      "faces": 8086,
+      "bbox": {
+        "min": [
+          -7.4703,
+          -7.4737,
+          0.1638
+        ],
+        "max": [
+          7.4787,
+          7.4775,
+          26.724
+        ]
+      },
+      "elapsed_ms": 10.1
+    },
+    {
+      "combo": {
+        "name": "tap mode",
+        "overrides": {
+          "TAP": true
+        }
+      },
+      "status": "ok",
+      "verts": 2009,
+      "faces": 2667,
+      "bbox": {
+        "min": [
+          -7.9697,
+          -7.9734,
+          -0.0089
+        ],
+        "max": [
+          7.9787,
+          7.9775,
+          27.2073
+        ]
+      },
+      "elapsed_ms": 12.9
+    },
+    {
+      "combo": {
+        "name": "spacer",
+        "overrides": {
+          "spacer": true
+        }
+      },
+      "status": "ok",
+      "verts": 8646,
+      "faces": 8535,
+      "bbox": {
+        "min": [
+          -14.5966,
+          -13.0445,
+          -8.5058
+        ],
+        "max": [
+          14.9994,
+          13.0518,
+          26.724
+        ]
+      },
+      "elapsed_ms": 31.7
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "Filament PLA .02 mm layer height": {
+        "faces": 8535,
+        "verts": 8646
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 8535,
+      "verts": 8646
+    }
+  }
+}

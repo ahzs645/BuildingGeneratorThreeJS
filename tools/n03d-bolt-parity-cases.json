@@ -1,0 +1,8 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "length 15", "overrides": { "length": 15 } },
+  { "name": "eight-sided head", "overrides": { "head sides": 8 } },
+  { "name": "thread only", "overrides": { "thread only": true } },
+  { "name": "tap mode", "overrides": { "TAP": true } },
+  { "name": "spacer", "overrides": { "spacer": true } }
+]

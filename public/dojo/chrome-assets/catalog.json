@@ -443,5 +443,31 @@
       { "type": "checkbox", "name": "roundsquare", "label": "Round-square profile", "value": false },
       { "name": "cutter offset", "label": "Cutter offset", "min": 0, "max": 4, "step": 0.05, "value": 0.4000000059604645 }
     ]
+  },
+  {
+    "id": "n03d-bolt-generator",
+    "title": "N03D · Bolt Generator",
+    "object": "Bolt Gen_DHTS_Thru Head v03.002",
+    "dump": "dojo/n03d/bolt-generator/dump.json",
+    "reference": "dojo/references/n03d/bolt-generator.png",
+    "blenderStats": { "verts": 8646, "faces": 8535 },
+    "note": "Visual near-parity with exact bounds across all six validation cases. The authored browser result is 8,590 / 8,767 versus Blender's 8,646 / 8,535; thread-only is topology-exact. Blender's blue filament shader is shown only in the reference while the browser uses the shared comparison material.",
+    "controls": [
+      { "name": "length", "label": "Bolt length", "min": 8, "max": 60, "step": 0.1, "value": 24.632158279418945 },
+      { "name": "thread dia", "label": "Thread diameter", "min": 5, "max": 40, "step": 0.1, "value": 14.95798110961914 },
+      { "name": "head dia", "label": "Head diameter", "min": 5, "max": 50, "step": 0.1, "value": 30 },
+      { "name": "head height", "label": "Head height", "min": 3, "max": 30, "step": 0.1, "value": 8.496904373168945 },
+      { "name": "head sides", "label": "Head sides", "min": 3, "max": 12, "step": 1, "value": 6 },
+      { "type": "checkbox", "name": "emboss label", "label": "Emboss label", "value": false },
+      { "name": "a untapped", "label": "Untapped length", "min": 0.1, "max": 20, "step": 0.1, "value": 1.4766666889190674 },
+      { "type": "checkbox", "name": "TAP", "label": "Tap mode", "value": false },
+      { "type": "checkbox", "name": "thread only", "label": "Thread only", "value": false },
+      { "type": "checkbox", "name": "SPLIT TO PRINT", "label": "Split to print", "value": false },
+      { "type": "checkbox", "name": "spacer", "label": "Spacer", "value": false },
+      { "name": "wall thic", "label": "Wall thickness", "min": 0.1, "max": 12, "step": 0.1, "value": 5.95355224609375 },
+      { "name": "res", "label": "Resolution", "min": 12, "max": 96, "step": 1, "value": 55 },
+      { "name": "layout offset tuning", "label": "Layout offset", "min": -30, "max": 10, "step": 0.1, "value": -10.208999633789062 },
+      { "type": "checkbox", "name": "preview sections", "label": "Preview sections", "value": false }
+    ]
   }
 ]

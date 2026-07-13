@@ -1,0 +1,155 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/bolt-generator/dump.json",
+  "object": "Bolt Gen_DHTS_Thru Head v03.002",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 8590,
+      "faces": 8767,
+      "bbox": {
+        "min": [
+          -14.5966,
+          -13.0445,
+          -8.5058
+        ],
+        "max": [
+          14.9994,
+          13.0518,
+          26.724
+        ]
+      },
+      "elapsed_ms": 202,
+      "export": "00-authored-default.json"
+    },
+    {
+      "combo": {
+        "name": "length 15",
+        "overrides": {
+          "length": 15
+        }
+      },
+      "status": "ok",
+      "verts": 8590,
+      "faces": 8767,
+      "bbox": {
+        "min": [
+          -14.5966,
+          -13.0445,
+          -8.5058
+        ],
+        "max": [
+          14.9994,
+          13.0518,
+          26.724
+        ]
+      },
+      "elapsed_ms": 141,
+      "export": "01-length-15.json"
+    },
+    {
+      "combo": {
+        "name": "eight-sided head",
+        "overrides": {
+          "head sides": 8
+        }
+      },
+      "status": "ok",
+      "verts": 8594,
+      "faces": 8775,
+      "bbox": {
+        "min": [
+          -14.6868,
+          -14.8362,
+          -8.5058
+        ],
+        "max": [
+          14.9994,
+          14.8431,
+          26.724
+        ]
+      },
+      "elapsed_ms": 121,
+      "export": "02-eight-sided-head.json"
+    },
+    {
+      "combo": {
+        "name": "thread only",
+        "overrides": {
+          "thread only": true
+        }
+      },
+      "status": "ok",
+      "verts": 8086,
+      "faces": 8086,
+      "bbox": {
+        "min": [
+          -7.4703,
+          -7.4737,
+          0.1638
+        ],
+        "max": [
+          7.4787,
+          7.4775,
+          26.724
+        ]
+      },
+      "elapsed_ms": 221,
+      "export": "03-thread-only.json"
+    },
+    {
+      "combo": {
+        "name": "tap mode",
+        "overrides": {
+          "TAP": true
+        }
+      },
+      "status": "ok",
+      "verts": 2015,
+      "faces": 2840,
+      "bbox": {
+        "min": [
+          -7.9697,
+          -7.9734,
+          -0.0089
+        ],
+        "max": [
+          7.9787,
+          7.9775,
+          27.2073
+        ]
+      },
+      "elapsed_ms": 307,
+      "export": "04-tap-mode.json"
+    },
+    {
+      "combo": {
+        "name": "spacer",
+        "overrides": {
+          "spacer": true
+        }
+      },
+      "status": "ok",
+      "verts": 8590,
+      "faces": 8767,
+      "bbox": {
+        "min": [
+          -14.5966,
+          -13.0445,
+          -8.5058
+        ],
+        "max": [
+          14.9994,
+          13.0518,
+          26.724
+        ]
+      },
+      "elapsed_ms": 120,
+      "export": "05-spacer.json"
+    }
+  ]
+}
