@@ -140,6 +140,7 @@ result = {
 }
 
 dependency_collection_names = set()
+dependency_object_names = set()
 if target_object and bpy.data.objects.get(target_object):
     for modifier in bpy.data.objects[target_object].modifiers:
         if modifier.type != "NODES" or not modifier.node_group:
@@ -151,13 +152,15 @@ if target_object and bpy.data.objects.get(target_object):
                 value = modifier[item.identifier]
                 if isinstance(value, bpy.types.Collection):
                     dependency_collection_names.add(value.name)
+                elif isinstance(value, bpy.types.Object):
+                    dependency_object_names.add(value.name)
             except Exception:
                 pass
-dependency_object_names = {
+dependency_object_names.update({
     obj.name
     for name in dependency_collection_names
     for obj in bpy.data.collections[name].objects
-}
+})
 depsgraph = bpy.context.evaluated_depsgraph_get()
 
 trees_to_dump = {}
@@ -218,6 +221,7 @@ for obj in bpy.data.objects:
         for spline in obj.data.splines:
             cyclic = bool(spline.use_cyclic_u)
             points = []
+            tilts = []
             if spline.type == "BEZIER":
                 bp = list(spline.bezier_points)
                 segments = len(bp) if cyclic else max(0, len(bp) - 1)
@@ -226,13 +230,17 @@ for obj in bpy.data.objects:
                     p0 = bp[segment]
                     p1 = bp[(segment + 1) % len(bp)]
                     for step in range(resolution):
-                        points.append([round(v, 6) for v in bezier(p0.co, p0.handle_right, p1.handle_left, p1.co, step / resolution)])
+                        factor = step / resolution
+                        points.append([round(v, 6) for v in bezier(p0.co, p0.handle_right, p1.handle_left, p1.co, factor)])
+                        tilts.append(round((1.0 - factor) * p0.tilt + factor * p1.tilt, 6))
                 if not cyclic and bp:
                     points.append([round(v, 6) for v in bp[-1].co])
+                    tilts.append(round(bp[-1].tilt, 6))
             else:
                 points = [[round(p.co.x, 6), round(p.co.y, 6), round(p.co.z, 6)] for p in spline.points]
+                tilts = [round(p.tilt, 6) for p in spline.points]
             if points:
-                splines.append({"points": points, "cyclic": cyclic})
+                splines.append({"points": points, "cyclic": cyclic, "tilts": tilts})
         o["curves"] = splines
     if obj.name in dependency_object_names and obj.type in ("MESH", "CURVE"):
         evaluated = obj.evaluated_get(depsgraph)
@@ -255,18 +263,29 @@ for obj in bpy.data.objects:
                 trees_to_dump[mod.node_group.name] = mod.node_group
             # modifier input overrides
             inputs = {}
-            for item in mod.node_group.interface.items_tree:
-                if item.item_type == "SOCKET" and item.in_out == "INPUT":
-                    key = item.identifier
-                    try:
-                        v = mod[key]
-                        if hasattr(v, "name"):
-                            v = {"datablock": type(v).__name__, "name": v.name}
-                        elif hasattr(v, "__len__") and not isinstance(v, str):
-                            v = list(v)
+            input_items = [
+                item for item in mod.node_group.interface.items_tree
+                if item.item_type == "SOCKET" and item.in_out == "INPUT"
+            ]
+            input_name_counts = {
+                item.name: sum(1 for candidate in input_items if candidate.name == item.name)
+                for item in input_items
+            }
+            for item in input_items:
+                key = item.identifier
+                try:
+                    v = mod[key]
+                    if hasattr(v, "name"):
+                        v = {"datablock": type(v).__name__, "name": v.name}
+                    elif hasattr(v, "__len__") and not isinstance(v, str):
+                        v = list(v)
+                    # Identifier keys preserve duplicate interface names;
+                    # friendly names remain available when unambiguous.
+                    inputs[item.identifier] = v
+                    if input_name_counts[item.name] == 1:
                         inputs[item.name] = v
-                    except Exception:
-                        pass
+                except Exception:
+                    pass
             m["input_values"] = inputs
         o["modifiers"].append(m)
     result["objects"].append(o)

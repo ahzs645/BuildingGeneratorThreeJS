@@ -1,0 +1,36 @@
+[
+  {
+    "object": "BezierCurve.005",
+    "modifier": "Auto Smooth",
+    "root": "Auto Smooth",
+    "reachable_groups": 1,
+    "reachable_nodes": 10,
+    "node_types": {
+      "NodeGroupOutput": 1,
+      "NodeGroupInput": 2,
+      "GeometryNodeSetShadeSmooth": 2,
+      "GeometryNodeInputMeshEdgeAngle": 1,
+      "GeometryNodeInputEdgeSmooth": 1,
+      "GeometryNodeInputShadeSmooth": 1,
+      "FunctionNodeBooleanMath": 1,
+      "FunctionNodeCompare": 1
+    }
+  },
+  {
+    "object": "Line.003",
+    "modifier": "Auto Smooth",
+    "root": "Auto Smooth",
+    "reachable_groups": 1,
+    "reachable_nodes": 10,
+    "node_types": {
+      "NodeGroupOutput": 1,
+      "NodeGroupInput": 2,
+      "GeometryNodeSetShadeSmooth": 2,
+      "GeometryNodeInputMeshEdgeAngle": 1,
+      "GeometryNodeInputEdgeSmooth": 1,
+      "GeometryNodeInputShadeSmooth": 1,
+      "FunctionNodeBooleanMath": 1,
+      "FunctionNodeCompare": 1
+    }
+  }
+]

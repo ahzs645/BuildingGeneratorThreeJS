@@ -6,6 +6,10 @@ reg("GeometryNodeInputPosition", () => ({
   Position: Field.perElem((i, ctx) => (ctx.position ? ctx.position(i) : [0, 0, 0])),
 }));
 
+reg("GeometryNodeInputCurveTilt", () => ({
+  Tilt: Field.perElem((i, ctx) => ctx.attr?.("tilt", i) ?? 0),
+}));
+
 reg("GeometryNodeInputIndex", () => ({
   Index: Field.perElem((i) => i),
 }));

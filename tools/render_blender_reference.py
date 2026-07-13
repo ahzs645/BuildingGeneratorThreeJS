@@ -1,0 +1,93 @@
+"""Render one active Geometry Nodes object as an isolated Blender reference.
+
+Usage:
+  blender --background FILE.blend --python tools/render_blender_reference.py -- \
+    OBJECT_NAME OUT.png [OUT.json]
+"""
+import json
+import math
+import sys
+
+import bpy
+from mathutils import Vector
+
+
+args = sys.argv[sys.argv.index("--") + 1:]
+object_name = args[0]
+out_path = args[1]
+meta_path = args[2] if len(args) > 2 else None
+obj = bpy.data.objects.get(object_name)
+if obj is None:
+    raise RuntimeError(f'object not found: "{object_name}"')
+
+# Some supplied scenes retain an old movie-only output setting that rejects PNG
+# under Blender 5. A clean reference scene also prevents unrelated presentation
+# objects, cameras, and lights from affecting the isolated generator render.
+scene = bpy.data.scenes.new("__NODE_DOJO_REFERENCE_SCENE")
+scene.collection.objects.link(obj)
+bpy.context.window.scene = scene
+obj.hide_render = False
+obj.hide_viewport = False
+obj.hide_set(False)
+
+depsgraph = bpy.context.evaluated_depsgraph_get()
+depsgraph.update()
+evaluated = obj.evaluated_get(depsgraph)
+corners = []
+try:
+    for corner in evaluated.bound_box:
+        corners.append(evaluated.matrix_world @ Vector(corner))
+except Exception:
+    pass
+if not corners or all(abs(value + 1.0) < 1e-6 for corner in corners for value in corner):
+    corners = [obj.matrix_world.translation.copy()]
+
+minimum = Vector((min(p.x for p in corners), min(p.y for p in corners), min(p.z for p in corners)))
+maximum = Vector((max(p.x for p in corners), max(p.y for p in corners), max(p.z for p in corners)))
+center = (minimum + maximum) * 0.5
+size = maximum - minimum
+radius = max(size.length * 0.5, 0.5)
+
+camera_data = bpy.data.cameras.new("__NODE_DOJO_REFERENCE_CAMERA")
+camera = bpy.data.objects.new("__NODE_DOJO_REFERENCE_CAMERA", camera_data)
+scene.collection.objects.link(camera)
+direction = Vector((1.0, -1.25, 0.85)).normalized()
+camera.location = center + direction * radius * 3.0
+camera.rotation_euler = (center - camera.location).to_track_quat("-Z", "Y").to_euler()
+camera_data.type = "ORTHO"
+camera_data.ortho_scale = max(size.x, size.y, size.z, 1.0) * 1.45
+bpy.context.scene.camera = camera
+
+scene = bpy.context.scene
+scene.render.image_settings.file_format = "PNG"
+scene.render.engine = "BLENDER_WORKBENCH"
+scene.display.shading.light = "STUDIO"
+scene.display.shading.color_type = "MATERIAL"
+scene.display.shading.show_shadows = True
+scene.display.shading.show_cavity = True
+scene.display.shading.cavity_type = "BOTH"
+scene.display.shading.show_specular_highlight = True
+scene.render.resolution_x = 768
+scene.render.resolution_y = 768
+scene.render.resolution_percentage = 100
+scene.render.film_transparent = True
+scene.render.filepath = out_path
+scene.view_settings.look = "AgX - Medium High Contrast"
+bpy.ops.render.render(write_still=True)
+
+if meta_path:
+    mesh = evaluated.to_mesh()
+    stats = {
+        "object": obj.name,
+        "type": obj.type,
+        "bbox": {"min": list(minimum), "max": list(maximum)},
+        "verts": len(mesh.vertices) if mesh else None,
+        "faces": len(mesh.polygons) if mesh else None,
+        "materials": [slot.material.name if slot.material else None for slot in obj.material_slots],
+    }
+    if mesh:
+        evaluated.to_mesh_clear()
+    with open(meta_path, "w", encoding="utf-8") as handle:
+        json.dump(stats, handle, indent=2)
+
+print(f"BLENDER_REFERENCE_OK -> {out_path}")

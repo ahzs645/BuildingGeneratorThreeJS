@@ -1,0 +1,18 @@
+[
+  { "id": "intro-module", "category": "course", "path": "Node Dojo/Blender Tutorial/Modules/INTRO MODULE_ The Basics of Nodes and Node Dojo_2MAY2024.blend" },
+  { "id": "joint-generators", "category": "library", "path": "Node Dojo/Blender Tutorial/Utilities/NEW JOINT GENERATORS 42 to 43_16DEC2024_01.blend" },
+  { "id": "n03d-printing", "category": "library", "path": "Node Dojo/Blender Tutorial/Utilities/All_N03D_Tools_Asset_Libraries/N03D TOOLS - 3D printing Utilities.blend" },
+  { "id": "recursive-bin", "category": "addon", "path": "Node Dojo 2/Blender Tutorial/Addons/Dojo Bin Generator_recursive red bins_v.0.1.1.blend" },
+  { "id": "dusty-crystal-cocoon", "category": "addon", "path": "Node Dojo 2/Blender Tutorial/Addons/Dusty Crystal Coccoon_DOWNLOAD.blend" },
+  { "id": "nodes-node", "category": "addon", "path": "Node Dojo 2/Blender Tutorial/Addons/The Nodes Node_.blend" },
+  { "id": "knit-graphic", "category": "addon", "path": "Node Dojo 2/Blender Tutorial/Addons/_Knit Graphic Download.blend" },
+  { "id": "typewriter", "category": "addon", "path": "Node Dojo 2/Blender Tutorial/Addons/_Typewriter Nodes.blend" },
+  { "id": "send-nodes-hat", "category": "addon", "path": "Node Dojo 2/Blender Tutorial/Addons/send nodes hat_download.blend" },
+  { "id": "module-2", "category": "course", "path": "Node Dojo 2/Blender Tutorial/Modules/MODULE 2_8JUN2022.blend" },
+  { "id": "module-3", "category": "course", "path": "Node Dojo 2/Blender Tutorial/Modules/MODULE 3_ Mesh Modeling and Secret Ancient Bevel Technique.blend" },
+  { "id": "module-4", "category": "course", "path": "Node Dojo 2/Blender Tutorial/Modules/MODULE 4_ wax ON wax OFF_1MAY2024.blend" },
+  { "id": "chrome-crayon", "category": "utility", "path": "Node Dojo 2/Blender Tutorial/Utilities/Chrome Crayon 4.3 With Gizmos.blend" },
+  { "id": "math-clay", "category": "utility", "path": "Node Dojo 2/Blender Tutorial/Utilities/math clay download.blend" },
+  { "id": "bubble-vessel", "category": "utility", "path": "Node Dojo 2/Blender Tutorial/Utilities/simple bubble vessel generator.blend" },
+  { "id": "chrome-assets", "category": "library", "path": "Node Dojo 2/Blender Tutorial/Utilities/All_N03D_Tools_Asset_Libraries/NO3D Chrome Asset Library.blend" }
+]

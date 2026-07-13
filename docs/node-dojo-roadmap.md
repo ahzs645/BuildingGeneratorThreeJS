@@ -11,10 +11,11 @@ Inventory date: 2026-07-12. The source pack contains 16 `.blend` projects.
 - Send Nodes Hat — baked gallery assembly.
 - Procedural Typewriter — live GN-VM with editable text and scene-frame animation. The referenced `Blurmed.ttf` is missing from the pack, so the web page uses portable vector glyphs.
 - Chrome Asset Library: Periodic Brush — live GN-VM with all nine `period pack` collection children, editable distance/scale controls, and exact Blender parity across the validation sweep.
+- Chrome Asset Library: Flat Stickie Pack — Blender reference and live GN-VM output match at 28 vertices, 7 faces, and identical local bounds.
 
 ## Recommended next targets
 
-1. **Chrome Asset Library** — 43 active objects, 26 modifier roots, 404 groups. Periodic Brush is complete; continue one brush at a time using its new Collection Info extraction path.
+1. **Chrome Asset Library** — 43 active objects, 26 modifier roots, 404 groups. Periodic Brush and Flat Stickie Pack are complete; continue in increasing reachable-node complexity.
 2. **N03D 3D-printing Utilities** — 73 active objects, 39 roots, 639 groups. Start with one isolated bolt, dowel, or clevis-pin generator rather than loading the whole library.
 3. **New Joint Generators** — 32 active objects, 13 roots, 572 groups. Pipe and dowel generators are the clearest individual products; Bubble Putty is a larger field/volume target.
 4. **More Math Clay surfaces** — 33 active objects and 14 root families. Low-risk as baked gallery pieces; substantially more work for a live TPMS evaluator.

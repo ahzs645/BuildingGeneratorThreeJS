@@ -21,9 +21,13 @@ function geometryOfDumpObject(obj: (typeof DUMP_CONTEXT.objects)[number] | undef
     m.edges = (source.edges ?? []).map((edge) => [...edge] as [number, number]);
     out.mesh = m;
   }
-  if (!evaluated && obj?.curves) out.curves = obj.curves.map((spline) => ({
-    cyclic: Boolean(spline.cyclic), points: spline.points.map((p) => [p[0], p[1], p[2]] as Vec3),
-  }));
+  if (!evaluated && obj?.curves) {
+    out.curves = obj.curves.map((spline) => ({
+      cyclic: Boolean(spline.cyclic), points: spline.points.map((p) => [p[0], p[1], p[2]] as Vec3),
+    }));
+    const tilts = obj.curves.flatMap((spline) => spline.tilts ?? spline.points.map(() => 0));
+    if (tilts.some((value) => value !== 0)) out.curveAttributes.set("tilt", { domain: "POINT", data: tilts });
+  }
   return out;
 }
 
@@ -206,6 +210,7 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
   const scl = api.field("Scale").array(ctx);
   const pickInstance = api.bool("Pick Instance");
   const instanceIndices = api.field("Instance Index").array(ctx);
+  const instanceIndexLinked = api.node.inputs.find((socket) => socket.identifier === "Instance Index")?.linked;
   const scaleLinked = api.node.inputs.find((s) => s.identifier === "Scale")?.linked;
   const scaleConst = api.vec("Scale");
   // per-point attributes to carry onto each instance (anonymous-attribute propagation)
@@ -220,8 +225,12 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
       attributes = new Map();
       for (const [name, a] of pointAttrs) attributes.set(name, a.data[i]);
     }
+    // Blender's unlinked Instance Index follows the point index for a list
+    // produced by Geometry to Instance (verified by Flat Stickie Pack's seven
+    // distinct sources on seven points), despite the socket displaying 0.
+    const requestedIndex = instanceIndexLinked ? Math.round(asNum(instanceIndices[i] ?? 0)) : i;
     const picked = pickInstance && instance.instances.length
-      ? instance.instances[((Math.round(asNum(instanceIndices[i] ?? 0)) % instance.instances.length) + instance.instances.length) % instance.instances.length]
+      ? instance.instances[((requestedIndex % instance.instances.length) + instance.instances.length) % instance.instances.length]
       : null;
     out.instances.push({
       geometry: picked?.geometry ?? instance,

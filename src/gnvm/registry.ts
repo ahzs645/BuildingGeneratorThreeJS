@@ -69,7 +69,7 @@ export interface DumpObject {
   materials?: string[];
   mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][] };
   evaluated_mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][]; materials?: (string | null)[] };
-  curves?: { points: number[][]; cyclic: boolean }[];
+  curves?: { points: number[][]; cyclic: boolean; tilts?: number[] }[];
 }
 export const DUMP_CONTEXT: { objects: DumpObject[]; collections: { name: string; objects: string[] }[]; frame: number; fps: number } = { objects: [], collections: [], frame: 0, fps: 24 };
 

@@ -812,5 +812,23 @@ function meshSignedAreaXY(m: Mesh): number {
   DUMP_CONTEXT.collections = savedCollections;
 }
 
+// (AE) Curve Tilt is a point field, and an unlinked Instance Index cycles the
+// Geometry-to-Instance list in Blender's authored Flat Stickie Pack.
+{
+  const points = curve([[0, 0, 0], [2, 0, 0]], false);
+  points.curveAttributes.set("tilt", { domain: "POINT", data: [.2, -.4] });
+  const tilt = runNode("GeometryNodeInputCurveTilt", {}).Tilt as Field;
+  check("Curve Tilt reads curve point attributes", approx(tilt.array(makeFieldCtx(points, "POINT")) as number[], [.2, -.4]));
+  const sourceA = box([0, 0, 0], [1, 1, 1]);
+  const sourceB = box([0, 0, 0], [2, 2, 2]);
+  const choices = new Geometry();
+  choices.instances = [sourceA, sourceB].map((geometry) => ({ geometry, position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }));
+  const placed = runNode("GeometryNodeInstanceOnPoints", {
+    Points: points, Selection: true, Instance: choices, "Pick Instance": true,
+    "Instance Index": 0, Rotation: [0, 0, 0], Scale: [1, 1, 1],
+  }, {}, ["Points", "Instance"]).Instances as Geometry;
+  check("unlinked Pick Instance index cycles by point", placed.instances[0].geometry === sourceA && placed.instances[1].geometry === sourceB);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

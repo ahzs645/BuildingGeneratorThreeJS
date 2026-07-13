@@ -1,0 +1,30 @@
+[
+  {
+    "object": "_Typewriter Node Container",
+    "modifier": "GeometryNodes",
+    "root": "GN",
+    "reachable_groups": 2,
+    "reachable_nodes": 29,
+    "node_types": {
+      "NodeFrame": 2,
+      "GeometryNodeStringJoin": 2,
+      "FunctionNodeInputSpecialCharacters": 1,
+      "GeometryNodeInputSceneTime": 2,
+      "FunctionNodeSliceString": 1,
+      "GeometryNodeStringToCurves": 1,
+      "ShaderNodeMapRange": 2,
+      "GeometryNodeInputIndex": 1,
+      "ShaderNodeMath": 3,
+      "GeometryNodeSwitch": 1,
+      "FunctionNodeCompare": 1,
+      "GeometryNodeFillCurve": 1,
+      "NodeGroupOutput": 2,
+      "FunctionNodeStringLength": 1,
+      "NodeGroupInput": 2,
+      "NodeReroute": 3,
+      "FunctionNodeInputString": 1,
+      "GeometryNodeJoinGeometry": 1,
+      "GeometryNodeGroup": 1
+    }
+  }
+]

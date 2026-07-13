@@ -614,7 +614,10 @@ export class Evaluator {
     const bindings: Record<string, SockVal> = {};
     for (const item of g.interface) {
       if (item.item_type === "SOCKET" && item.in_out === "INPUT") {
-        const val = item.name in overrides ? overrides[item.name] : item.identifier in overrides ? overrides[item.identifier] : item.default;
+        // Blender permits duplicate interface names. Modifier dumps therefore
+        // bind by socket identifier first; human-friendly name overrides remain
+        // available for the common unambiguous case.
+        const val = item.identifier in overrides ? overrides[item.identifier] : item.name in overrides ? overrides[item.name] : item.default;
         bindings[item.identifier] = wrapConst(item.socket_type, val);
       }
     }
