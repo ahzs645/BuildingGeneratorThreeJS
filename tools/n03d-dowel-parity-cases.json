@@ -1,0 +1,8 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "diameter 12", "overrides": { "dia/width": 12 } },
+  { "name": "from end", "overrides": { "from mid": false } },
+  { "name": "cutter", "overrides": { "cutter": true } },
+  { "name": "round square", "overrides": { "roundsquare": true } },
+  { "name": "cutter offset 2", "overrides": { "cutter": true, "cutter offset": 2 } }
+]

@@ -5,10 +5,10 @@ import "./chrome-assets.css";
 const loadChromeAssets = () => import("../../chrome-assets");
 
 export default function ChromeAssetsPage(): React.JSX.Element {
-  usePageRuntime("Chrome Asset Library · Blender vs browser", loadChromeAssets);
+  usePageRuntime("Node Dojo Asset Library · Blender vs browser", loadChromeAssets);
   return <main className="assets-shell">
     <StudioLink />
-    <header className="assets-head"><p>Node Dojo coverage lab</p><h1>Chrome Asset Library</h1><div id="assets-status">Loading catalog…</div></header>
+    <header className="assets-head"><p>Node Dojo coverage lab</p><h1>Live Asset Library</h1><div id="assets-status">Loading catalog…</div></header>
     <section className="assets-compare">
       <figure className="assets-pane"><figcaption><span>Blender reference</span><strong id="assets-blender-count">—</strong></figcaption><img id="assets-reference" alt="Isolated Blender reference render" /></figure>
       <figure className="assets-pane"><figcaption><span>Browser GN-VM</span><strong id="assets-vm-count">—</strong></figcaption><canvas id="assets-canvas" /></figure>

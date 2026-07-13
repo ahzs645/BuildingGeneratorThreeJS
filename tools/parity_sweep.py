@@ -141,6 +141,9 @@ def set_modifier_inputs(mod, name_to_identifier, saved_values, overrides):
         identifier = name_to_identifier.get(name)
         if identifier is not None:
             try:
+                current = mod.get(identifier)
+                if current == value or (hasattr(current, "name") and current.name == value):
+                    continue
                 mod[identifier] = value
             except TypeError:
                 # Datablock-valued sockets (materials/objects) are serialized as
@@ -154,6 +157,8 @@ def set_modifier_inputs(mod, name_to_identifier, saved_values, overrides):
         identifier = name_to_identifier.get(name)
         if identifier is None:
             raise KeyError(f"modifier input not found: {name}")
+        if mod.get(identifier) == value:
+            continue
         mod[identifier] = value
 
 
@@ -273,6 +278,15 @@ def main():
     if export_dir:
         os.makedirs(export_dir, exist_ok=True)
     obj, mod = find_modifier(object_name)
+    # Asset-library objects can live in hidden/excluded collections. Evaluate
+    # them in a clean scene, as the isolated reference renderer does, so a
+    # downstream Realize Instances modifier sees the complete geometry set.
+    scene = bpy.data.scenes.new("__NODE_DOJO_PARITY_SCENE")
+    scene.collection.objects.link(obj)
+    bpy.context.window.scene = scene
+    obj.hide_render = False
+    obj.hide_viewport = False
+    obj.hide_set(False)
     name_to_identifier, saved_values = modifier_interface(mod)
     results = []
     cosmetic_geometry = estimate_cosmetic_geometry(obj, mod, name_to_identifier, saved_values)

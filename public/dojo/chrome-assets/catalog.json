@@ -427,5 +427,21 @@
     "blenderStats": { "verts": 2867, "faces": 5376 },
     "note": "Visual near-parity: vector Map Range now builds the authored Marching Cubes grid, cyclic curve tangents orient all four spikes outward, and Blender's origin-based collapsed-apex Cone is reproduced. Browser output is 2,745 / 4,896; the remaining Mesh-to-SDF sampling difference shortens the X bounds by up to 0.559 units.",
     "controls": []
+  },
+  {
+    "id": "n03d-dowel",
+    "title": "N03D · Dowel Generator",
+    "object": "Plane.004",
+    "dump": "dojo/n03d/dowel/dump.json",
+    "reference": "dojo/references/n03d/dowel.png",
+    "blenderStats": { "verts": 333, "faces": 224 },
+    "note": "Exact Blender topology across all six validation cases. Diameter, midpoint placement, cutter mode, round/square profile, and cutter offset all evaluate live in the browser; bounds remain within 0.0039 units.",
+    "controls": [
+      { "name": "dia/width", "label": "Diameter / width", "min": 2, "max": 40, "step": 0.1, "value": 22 },
+      { "type": "checkbox", "name": "from mid", "label": "Build from midpoint", "value": true },
+      { "type": "checkbox", "name": "cutter", "label": "Cutter mode", "value": false },
+      { "type": "checkbox", "name": "roundsquare", "label": "Round-square profile", "value": false },
+      { "name": "cutter offset", "label": "Cutter offset", "min": 0, "max": 4, "step": 0.05, "value": 0.4000000059604645 }
+    ]
   }
 ]

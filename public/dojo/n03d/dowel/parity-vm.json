@@ -1,0 +1,156 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/dowel/dump.json",
+  "object": "Plane.004",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 333,
+      "faces": 224,
+      "bbox": {
+        "min": [
+          -10.9989,
+          -10.9956,
+          -50.0024
+        ],
+        "max": [
+          10.9989,
+          11,
+          50.0024
+        ]
+      },
+      "elapsed_ms": 26,
+      "export": "00-authored-default.json"
+    },
+    {
+      "combo": {
+        "name": "diameter 12",
+        "overrides": {
+          "dia/width": 12
+        }
+      },
+      "status": "ok",
+      "verts": 333,
+      "faces": 224,
+      "bbox": {
+        "min": [
+          -5.9994,
+          -5.9976,
+          -50.0024
+        ],
+        "max": [
+          5.9994,
+          6,
+          50.0024
+        ]
+      },
+      "elapsed_ms": 1,
+      "export": "01-diameter-12.json"
+    },
+    {
+      "combo": {
+        "name": "from end",
+        "overrides": {
+          "from mid": false
+        }
+      },
+      "status": "ok",
+      "verts": 666,
+      "faces": 557,
+      "bbox": {
+        "min": [
+          -10.9989,
+          -10.9956,
+          0
+        ],
+        "max": [
+          10.9989,
+          11,
+          50.0024
+        ]
+      },
+      "elapsed_ms": 3,
+      "export": "02-from-end.json"
+    },
+    {
+      "combo": {
+        "name": "cutter",
+        "overrides": {
+          "cutter": true
+        }
+      },
+      "status": "ok",
+      "verts": 333,
+      "faces": 224,
+      "bbox": {
+        "min": [
+          -11.3989,
+          -11.3954,
+          -50.0024
+        ],
+        "max": [
+          11.3989,
+          11.4,
+          50.0024
+        ]
+      },
+      "elapsed_ms": 1,
+      "export": "03-cutter.json"
+    },
+    {
+      "combo": {
+        "name": "round square",
+        "overrides": {
+          "roundsquare": true
+        }
+      },
+      "status": "ok",
+      "verts": 12,
+      "faces": 10,
+      "bbox": {
+        "min": [
+          -11,
+          -11,
+          -50.0024
+        ],
+        "max": [
+          11,
+          11,
+          50.0024
+        ]
+      },
+      "elapsed_ms": 1,
+      "export": "04-round-square.json"
+    },
+    {
+      "combo": {
+        "name": "cutter offset 2",
+        "overrides": {
+          "cutter": true,
+          "cutter offset": 2
+        }
+      },
+      "status": "ok",
+      "verts": 333,
+      "faces": 224,
+      "bbox": {
+        "min": [
+          -12.9987,
+          -12.9948,
+          -50.0024
+        ],
+        "max": [
+          12.9987,
+          13,
+          50.0024
+        ]
+      },
+      "elapsed_ms": 1,
+      "export": "05-cutter-offset-2.json"
+    }
+  ]
+}
