@@ -16,6 +16,7 @@ const statusEl = document.querySelector<HTMLElement>("#typewriter-status")!;
 const countEl = document.querySelector<HTMLElement>("#typewriter-count")!;
 const runtimeEl = document.querySelector<HTMLElement>("#typewriter-runtime")!;
 const fontStatusEl = document.querySelector<HTMLElement>("#typewriter-font-status")!;
+const fontFileEl = document.querySelector<HTMLInputElement>("#typewriter-font-file")!;
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -42,21 +43,37 @@ let playing = false;
 let lastPlay = 0;
 let editTimer = 0;
 
-async function loadSuppliedFont(): Promise<boolean> {
+async function loadDisplayFallback(): Promise<boolean> {
   try {
     const family = "Pixels Medium";
     const face = await new FontFace(family, `url(${JSON.stringify(publicUrl("dojo/fonts/pixels.ttf"))})`).load();
     document.fonts.add(face);
     textInput.style.fontFamily = `"${family}", ui-monospace, monospace`;
-    fontStatusEl.className = "typewriter-font-status loaded";
-    fontStatusEl.textContent = "Pixels Medium TTF loaded · GN geometry uses its matching extracted outlines.";
+    fontStatusEl.className = "typewriter-font-status fallback";
+    fontStatusEl.textContent = "Exact Blurmed glyph geometry is embedded · editor preview currently uses the supplied Pixels fallback. Choose the recovered Blurmed.ttf above to match it.";
     return true;
   } catch {
     fontStatusEl.className = "typewriter-font-status fallback";
-    fontStatusEl.textContent = "Supplied Pixels Medium TTF unavailable · using the embedded Blender-extracted outline fallback.";
+    fontStatusEl.textContent = "Exact Blurmed glyph geometry is embedded · no editor-preview TTF is loaded. Choose your local recovered Blurmed.ttf above.";
     return false;
   }
 }
+
+fontFileEl.addEventListener("change", async () => {
+  const file = fontFileEl.files?.[0];
+  if (!file) return;
+  try {
+    const family = "BlurMedium Local";
+    const face = await new FontFace(family, await file.arrayBuffer()).load();
+    document.fonts.add(face);
+    textInput.style.fontFamily = `"${family}", ui-monospace, monospace`;
+    fontStatusEl.className = "typewriter-font-status loaded";
+    fontStatusEl.textContent = `${file.name} loaded locally for editor preview · generated geometry continues to use the matching embedded Blender outline atlas.`;
+  } catch {
+    fontStatusEl.className = "typewriter-font-status fallback";
+    fontStatusEl.textContent = `${file.name} could not be loaded as a TTF · exact embedded Blurmed geometry remains active.`;
+  }
+});
 
 function editableDump(): Dump {
   const next = structuredClone(dump) as Dump;
@@ -134,6 +151,6 @@ renderer.setAnimationLoop((time) => {
 });
 
 Promise.all([
-  loadSuppliedFont(),
+  loadDisplayFallback(),
   fetch(publicUrl("dojo/typewriter/dump.json")).then((response) => response.json() as Promise<Dump>),
 ]).then(([, loaded]) => { dump = loaded; void update(); }).catch((error) => { statusEl.textContent = String(error); });

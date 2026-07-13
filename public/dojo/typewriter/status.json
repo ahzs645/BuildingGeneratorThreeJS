@@ -1,0 +1,18 @@
+{
+  "source": "_Typewriter Nodes.blend",
+  "root": "GN",
+  "status": "live-partial-layout-parity",
+  "font": {
+    "original": "Blurmed.ttf",
+    "geometry": "Embedded 95-glyph Blender-extracted BlurMedium Regular outline atlas",
+    "rawBinaryPublished": false,
+    "editorFallback": "dojo/fonts/pixels.ttf"
+  },
+  "authoredFrame240Sample": {
+    "text": "NODE DOJO TYPEWRITER — now r_",
+    "blender": { "verts": 4743, "faces": 33 },
+    "gnvm": { "verts": 5872, "faces": 33 },
+    "status": "exact-face-count-divergent-layout"
+  },
+  "validation": "The recovered Blurmed.ttf was loaded in Blender and its glyph outlines were extracted into the portable dump. Blender 5 leaves the legacy animated instances-to-Fill-Curve path empty, so the reference harness explicitly realizes the glyphs and materializes the frame-240 typed string. Both engines generate the same 33 filled glyph faces; browser outline sampling is denser and its word wrapping remains different."
+}

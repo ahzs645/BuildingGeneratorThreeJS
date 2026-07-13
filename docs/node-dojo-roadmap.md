@@ -9,7 +9,7 @@ Inventory date: 2026-07-12. The source pack contains 16 `.blend` projects.
 - Simple Bubble Vessel — live GN-VM and Blender comparison.
 - Math Clay — baked Schoen Gyroid and Schwarz P-Surface gallery studies.
 - Send Nodes Hat — all four distinct active roots now run live. The bill, front shell, and sampling cube are topology-exact; the embroidery lettering is visually aligned at about 12% denser topology after deterministically freezing the source file's dependency cycle for Blender truth.
-- Procedural Typewriter — live GN-VM with editable text and scene-frame animation. The page loads the supplied `pixels.ttf` and keeps a matching Blender-extracted outline atlas as its offline geometry fallback.
+- Procedural Typewriter — live GN-VM with editable text and scene-frame animation. The recovered original `Blurmed.ttf` now supplies the embedded 95-glyph geometry atlas without publishing the commercial binary; the page accepts the user's local TTF for editor-preview matching and retains Pixels as its legal display fallback. Frame-240 face count is exact at 33, while outline density and wrapping remain partial parity.
 - Chrome Asset Library: Periodic Brush — live GN-VM with all nine `period pack` collection children, editable distance/scale controls, and exact Blender parity across the validation sweep.
 - Chrome Asset Library: Flat Stickie Pack — Blender reference and live GN-VM output match at 28 vertices, 7 faces, and identical local bounds.
 - Chrome Asset Library: Polarity Sticker — Arc/Fill Curve output matches Blender at 68 vertices, 4 faces, and identical local bounds.
@@ -79,4 +79,4 @@ Inventory date: 2026-07-12. The source pack contains 16 `.blend` projects.
 - **Knit Graphic** — 262 Geometry Node groups exist, but no object currently has an active Geometry Nodes modifier.
 - **Dusty Crystal Cocoon** — the only active node modifiers reported by Blender are `Auto Smooth`; the authored result appears baked or driven outside the active modifier path.
 - **Modules 2–4 and Intro Module** — all 176 active roots are now classified. The 47 complex studies need individual visual-semantic work; the 113 instructional snapshots and 16 helpers are intentionally not expanded into duplicate product entries.
-- **Typewriter font** — the original Blender reference to `Blurmed.ttf` is replaced by the supplied `pixels.ttf`; its extracted outlines are embedded for offline fallback.
+- **Font binaries** — Blurmed, Degular, Dogica, Brokenscript, Pixels, and DejaVu ExtraLight are recovered. Only license-safe Pixels and DejaVu binaries are published; commercial fonts contribute extracted glyph geometry only. Bodoni Poster, Eurostile Bold Extended, and Caslon Black remain unavailable. See `docs/node-dojo-font-audit.md`.

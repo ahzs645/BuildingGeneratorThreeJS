@@ -37,6 +37,11 @@ inner = typewriter.node_tree
 string_to_curves = inner.nodes.get("String to Curves")
 fill_curve = inner.nodes.get("Fill Curve")
 if string_to_curves and fill_curve:
+    static_text = os.environ.get("NODE_DOJO_TYPEWRITER_STATIC_TEXT")
+    if static_text is not None:
+        for link in list(string_to_curves.inputs["String"].links):
+            inner.links.remove(link)
+        string_to_curves.inputs["String"].default_value = static_text
     direct = next((link for link in inner.links if link.from_node == string_to_curves and link.to_node == fill_curve), None)
     if direct:
         inner.links.remove(direct)

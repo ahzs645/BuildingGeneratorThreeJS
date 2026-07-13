@@ -19,8 +19,9 @@ export default function TypewriterPage(): React.JSX.Element {
       <label><span>Animation frame</span><div className="typewriter-range"><input id="typewriter-frame" type="range" min="0" max="240" step="1" defaultValue="240" /><output id="typewriter-frame-output">240</output></div></label>
       <div className="typewriter-actions"><button id="typewriter-play" type="button">Play</button><button id="typewriter-evaluate" type="button">Evaluate</button></div>
       <section className="typewriter-stats"><span>Browser GN-VM</span><strong id="typewriter-count">—</strong><small id="typewriter-runtime">Web Worker</small></section>
-      <div id="typewriter-font-status" className="typewriter-font-status loading">Pixels Medium TTF is required for the supplied type style. Loading supplied font…</div>
-      <p className="typewriter-note">This page uses the supplied <code>pixels.ttf</code>. Its matching Blender-extracted outline atlas is embedded as the offline geometry fallback while preserving the authored Slice String, timing, wrapping, spacing, and Fill Curve graph.</p>
+      <label className="typewriter-font-file"><span>Original font preview</span><input id="typewriter-font-file" type="file" accept=".ttf,font/ttf" /></label>
+      <div id="typewriter-font-status" className="typewriter-font-status loading">The original Blurmed.ttf is license-restricted. Exact extracted glyph geometry is embedded; choose your local recovered TTF to match the editor preview.</div>
+      <p className="typewriter-note">Generated geometry uses the recovered <code>Blurmed.ttf</code> outline atlas extracted in Blender. The commercial TTF is not distributed by the app; <code>pixels.ttf</code> remains the legal editor-preview fallback.</p>
     </aside>
     <div className="typewriter-help">Drag to orbit · scroll to zoom</div>
   </main>;
