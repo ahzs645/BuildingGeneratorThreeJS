@@ -1,0 +1,29 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/print-test-sphere/dump.json",
+  "object": "Cube",
+  "results": [
+    {
+      "combo": {
+        "name": "authored sphere",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 32359,
+      "faces": 58898,
+      "bbox": {
+        "min": [
+          -1.0369,
+          -1.0552,
+          -1.0369
+        ],
+        "max": [
+          1.0358,
+          1.0563,
+          1.0358
+        ]
+      },
+      "elapsed_ms": 593
+    }
+  ]
+}

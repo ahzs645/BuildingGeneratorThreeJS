@@ -260,6 +260,7 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
     fork: (d) => makeFieldCtx(geo, d),
     toDomain,
     faceVertCount: (i) => (mesh ? mesh.faces[i]?.length ?? 0 : 0),
+    faceArea: (i) => (mesh ? mesh.faceArea(i) : 0),
     faceNeighborCount: (i) => (mesh ? T().faceNeighbors[i] ?? 0 : 0),
     edgeVerts: (i) => (mesh ? T().edges[i]?.verts ?? [0, 0] : [0, 0]),
     edgeFaceCount: (i) => (mesh ? T().edges[i]?.faces.length ?? 0 : 0),

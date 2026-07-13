@@ -588,5 +588,16 @@
     "flatShading": true,
     "note": "Exact Blender geometry across seven validation cases: 10,692 vertices / 95 faces with identical local bounds. No print object is assigned in the supplied file, so slice/layer/transform inputs are Blender no-ops and are not exposed. The neutral comparison preserves material assignment but does not reproduce the original build-plate shader because its logo_600x600_crop_center.webp is missing from the pack.",
     "controls": []
+  },
+  {
+    "id": "n03d-print-test-sphere",
+    "title": "N03D · Patterned Print-Test Sphere",
+    "object": "Cube",
+    "dump": "dojo/n03d/print-test-sphere/dump.json",
+    "reference": "dojo/references/n03d/print-test-sphere.png",
+    "blenderStats": { "verts": 32190, "faces": 58917 },
+    "flatShading": true,
+    "note": "Near parity after adding Mesh Face Area: the complete raised-tile sphere runs at 32,359 / 58,898 versus Blender's 32,190 / 58,917. The vertex delta is 0.53%, face count differs by 19, and local bounds differ by at most 0.0194 units; the remaining difference is merge-by-distance behavior around adjacent tiles.",
+    "controls": []
   }
 ]

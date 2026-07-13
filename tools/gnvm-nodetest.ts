@@ -1153,6 +1153,10 @@ function meshSignedAreaXY(m: Mesh): number {
   const cylinderZ = cylinder.mesh!.positions.map((position) => position[2]);
   check("Mesh Cylinder remains centered on Z", Math.abs(Math.min(...cylinderZ) + 2) < 1e-6 && Math.abs(Math.max(...cylinderZ) - 2) < 1e-6);
 
+  const faceArea = runNode("GeometryNodeInputMeshFaceArea", {}).Area as Field;
+  const areaValues = faceArea.array(makeFieldCtx(box([0, 0, 0], [2, 3, 4]), "FACE"));
+  check("Face Area reads polygon areas", approx(areaValues as number[], [6, 6, 8, 12, 8, 12]), `areas=${areaValues}`);
+
   const quad = box([0, 0, 0], [1, 1, 0]);
   const triangulated = runNode("GeometryNodeTriangulate", { Mesh: quad, Selection: true }).Mesh as Geometry;
   check("Triangulate splits six box quads", triangulated.mesh?.faces.length === 12 && triangulated.mesh.faces.every((face) => face.length === 3));

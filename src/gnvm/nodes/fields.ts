@@ -5,6 +5,10 @@ import { buildTopology } from "../geometry";
 
 const DOMAINS = new Set<Domain>(["POINT", "EDGE", "FACE", "CORNER", "CURVE", "INSTANCE"]);
 
+reg("GeometryNodeInputMeshFaceArea", () => ({
+  Area: Field.perElem((i, ctx) => ctx.faceArea?.(i) ?? 0).tagged("FACE"),
+}));
+
 // Value sampled at another element's index. The index is evaluated on the
 // consumer context; the value is evaluated on the node's declared source domain.
 reg("GeometryNodeFieldAtIndex", (api) => {

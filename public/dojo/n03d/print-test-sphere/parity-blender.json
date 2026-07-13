@@ -1,0 +1,68 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Cube",
+  "modifier": "GeometryNodes",
+  "node_group": "Geometry Nodes.002",
+  "saved_values": {},
+  "results": [
+    {
+      "combo": {
+        "name": "authored sphere",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 32190,
+      "faces": 58917,
+      "bbox": {
+        "min": [
+          -1.0358,
+          -1.0369,
+          -1.0358
+        ],
+        "max": [
+          1.0369,
+          1.0369,
+          1.0358
+        ]
+      },
+      "elapsed_ms": 30.5
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "<none>": {
+        "faces": 726,
+        "verts": 728
+      },
+      "knit thread": {
+        "faces": 58191,
+        "verts": 31462
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 58917,
+      "verts": 32190
+    }
+  }
+}

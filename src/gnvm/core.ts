@@ -55,6 +55,7 @@ export interface FieldCtx {
   attr?: (name: string, i: number) => Elem | undefined;
   // Mesh-topology queries (populated when the geometry is a mesh).
   faceVertCount?: (i: number) => number; // verts in face i (FACE domain)
+  faceArea?: (i: number) => number; // polygon area in scene units squared
   faceNeighborCount?: (i: number) => number; // faces sharing an edge with face i
   edgeVerts?: (i: number) => [number, number]; // endpoints of edge i (EDGE domain)
   edgeFaceCount?: (i: number) => number; // faces using edge i

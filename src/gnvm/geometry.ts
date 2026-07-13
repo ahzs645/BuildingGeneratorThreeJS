@@ -51,6 +51,23 @@ export class Mesh {
     return vnorm([nx, ny, nz]);
   }
 
+  faceArea(fi: number): number {
+    const face = this.faces[fi];
+    if (!face || face.length < 3) return 0;
+    const origin = this.positions[face[0]];
+    let area = 0;
+    for (let i = 1; i + 1 < face.length; i++) {
+      const a = vsub(this.positions[face[i]], origin);
+      const b = vsub(this.positions[face[i + 1]], origin);
+      area += vlen([
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+      ]) * 0.5;
+    }
+    return area;
+  }
+
   // Smooth per-vertex normals (area-weighted from face normals).
   vertexNormals(): Vec3[] {
     return vertexNormalsOf(this);
