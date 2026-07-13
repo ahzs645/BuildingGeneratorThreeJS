@@ -2,10 +2,11 @@
   "id": "string-to-text",
   "object": "Vert.001",
   "root": "Dojo_STRING TO TEXT",
-  "status": "parity-pending",
-  "reason": "The packed SF Intermosaic outlines now match Blender's raw 222 glyph vertices exactly. Remaining differences are downstream reset/fill and layout semantics.",
+  "status": "near-parity",
+  "reason": "The packed SF Intermosaic outlines, authored 20-face output, curve-only mode, empty mode, reset behavior, and all 119 reachable node handlers now match Blender. The VM omits Blender's 24 loose/bookkeeping vertices in the authored fill output.",
   "blender": { "verts": 246, "faces": 20 },
-  "gnvm": { "verts": 222, "faces": 103 },
+  "gnvm": { "verts": 222, "faces": 20 },
+  "validation": "Thirteen Blender/browser cases cover editable text, size, alignment, character and line spacing, word wrapping, all fill modes, and reset-letter behavior. Authored bounds differ by 1.151 units; surface vertex deltas stay at or below 14.93%.",
   "portableDump": "dojo/chrome-assets/string-to-text/dump.json",
   "reference": "dojo/references/chrome-assets/string-to-text.png"
 }

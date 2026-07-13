@@ -88,7 +88,10 @@ function menuSwitchIndex(api: EvalAPI): number {
   if (typeof raw === "string") menu = raw;
   else if (raw instanceof Field && raw.isConst) {
     const v = raw.value;
-    if (typeof v === "number") return Math.max(0, Math.min(items.length - 1, Math.round(v)));
+    // A menu interface can expose more enum items than a downstream Menu
+    // Switch. Blender leaves the switch output empty when that linked enum has
+    // no corresponding item; it does not clamp to the final connected input.
+    if (typeof v === "number") return Math.round(v);
     menu = String(asNum(v));
   }
   let idx = names.findIndex((n) => n === menu);
@@ -96,7 +99,7 @@ function menuSwitchIndex(api: EvalAPI): number {
   const activeName = api.prop<{ name?: string } | undefined>("active_item", undefined)?.name;
   if (idx < 0 && activeName && menu === activeName) idx = api.prop<number>("active_index", 0);
   if (idx < 0 && /^-?\d+$/.test(menu)) idx = Number(menu);
-  return idx >= 0 && idx < items.length ? idx : 0;
+  return idx >= 0 && idx < items.length ? idx : -1;
 }
 
 reg("GeometryNodeMenuSwitch", (api) => {

@@ -1,0 +1,317 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/string-to-text/dump.json",
+  "object": "Vert.001",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 222,
+      "faces": 20,
+      "bbox": {
+        "min": [
+          -32.0099,
+          -13.3911,
+          0
+        ],
+        "max": [
+          32.0099,
+          13.3911,
+          0
+        ]
+      },
+      "elapsed_ms": 28
+    },
+    {
+      "combo": {
+        "name": "short text",
+        "overrides": {
+          "String": "NODE DOJO"
+        }
+      },
+      "status": "ok",
+      "verts": 114,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -20.772,
+          -8.6531,
+          0
+        ],
+        "max": [
+          20.772,
+          8.6531,
+          0
+        ]
+      },
+      "elapsed_ms": 1
+    },
+    {
+      "combo": {
+        "name": "size=8",
+        "overrides": {
+          "Size": 8
+        }
+      },
+      "status": "ok",
+      "verts": 222,
+      "faces": 20,
+      "bbox": {
+        "min": [
+          -18.1689,
+          -7.6008,
+          0
+        ],
+        "max": [
+          18.1689,
+          7.6008,
+          0
+        ]
+      },
+      "elapsed_ms": 3
+    },
+    {
+      "combo": {
+        "name": "size=20",
+        "overrides": {
+          "Size": 20
+        }
+      },
+      "status": "ok",
+      "verts": 222,
+      "faces": 20,
+      "bbox": {
+        "min": [
+          -45.4222,
+          -19.002,
+          0
+        ],
+        "max": [
+          45.4222,
+          19.002,
+          0
+        ]
+      },
+      "elapsed_ms": 2
+    },
+    {
+      "combo": {
+        "name": "align=0",
+        "overrides": {
+          "Align": 0
+        }
+      },
+      "status": "ok",
+      "verts": 222,
+      "faces": 20,
+      "bbox": {
+        "min": [
+          -32.0099,
+          -13.3911,
+          0
+        ],
+        "max": [
+          32.0099,
+          13.3911,
+          0
+        ]
+      },
+      "elapsed_ms": 4
+    },
+    {
+      "combo": {
+        "name": "align=2",
+        "overrides": {
+          "Align": 2
+        }
+      },
+      "status": "ok",
+      "verts": 222,
+      "faces": 20,
+      "bbox": {
+        "min": [
+          -32.0099,
+          -13.3911,
+          0
+        ],
+        "max": [
+          32.0099,
+          13.3911,
+          0
+        ]
+      },
+      "elapsed_ms": 1
+    },
+    {
+      "combo": {
+        "name": "character spacing=0.7",
+        "overrides": {
+          "Character Spacing": 0.7
+        }
+      },
+      "status": "ok",
+      "verts": 222,
+      "faces": 20,
+      "bbox": {
+        "min": [
+          -20.3586,
+          -13.3911,
+          0
+        ],
+        "max": [
+          20.3586,
+          13.3911,
+          0
+        ]
+      },
+      "elapsed_ms": 1
+    },
+    {
+      "combo": {
+        "name": "character spacing=1.5",
+        "overrides": {
+          "Character Spacing": 1.5
+        }
+      },
+      "status": "ok",
+      "verts": 222,
+      "faces": 20,
+      "bbox": {
+        "min": [
+          -39.1511,
+          -13.3911,
+          0
+        ],
+        "max": [
+          39.1511,
+          13.3911,
+          0
+        ]
+      },
+      "elapsed_ms": 2
+    },
+    {
+      "combo": {
+        "name": "line spacing=1.2",
+        "overrides": {
+          "Line Spacing": 1.2
+        }
+      },
+      "status": "ok",
+      "verts": 222,
+      "faces": 20,
+      "bbox": {
+        "min": [
+          -32.0099,
+          -20.8284,
+          0
+        ],
+        "max": [
+          32.0099,
+          20.8284,
+          0
+        ]
+      },
+      "elapsed_ms": 1
+    },
+    {
+      "combo": {
+        "name": "text box width=0",
+        "overrides": {
+          "Text Box Width": 0
+        }
+      },
+      "status": "ok",
+      "verts": 222,
+      "faces": 20,
+      "bbox": {
+        "min": [
+          -88.1996,
+          -3.9151,
+          0
+        ],
+        "max": [
+          88.1996,
+          3.9151,
+          0
+        ]
+      },
+      "elapsed_ms": 1
+    },
+    {
+      "combo": {
+        "name": "fill=0",
+        "overrides": {
+          "Fill": 0
+        }
+      },
+      "status": "ok",
+      "verts": 222,
+      "faces": 0,
+      "bbox": {
+        "min": [
+          -32.0099,
+          -13.3911,
+          0
+        ],
+        "max": [
+          32.0099,
+          13.3911,
+          0
+        ]
+      },
+      "elapsed_ms": 1
+    },
+    {
+      "combo": {
+        "name": "fill=2",
+        "overrides": {
+          "Fill": 2
+        }
+      },
+      "status": "ok",
+      "verts": 0,
+      "faces": 0,
+      "bbox": {
+        "min": [
+          0,
+          0,
+          0
+        ],
+        "max": [
+          0,
+          0,
+          0
+        ]
+      },
+      "elapsed_ms": 0
+    },
+    {
+      "combo": {
+        "name": "reset letters",
+        "overrides": {
+          "Reset Letters Position": true
+        }
+      },
+      "status": "ok",
+      "verts": 222,
+      "faces": 20,
+      "bbox": {
+        "min": [
+          -3.9151,
+          -3.9151,
+          0
+        ],
+        "max": [
+          3.9151,
+          3.9151,
+          0
+        ]
+      },
+      "elapsed_ms": 4
+    }
+  ]
+}

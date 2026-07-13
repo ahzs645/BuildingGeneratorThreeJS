@@ -293,6 +293,17 @@ function meshSignedAreaXY(m: Mesh): number {
   check("MenuSwitch picks enum string item", out.value === 20, `got ${out.value}`);
 }
 
+{
+  const a = curve([[0, 0, 0], [1, 0, 0]], false);
+  const b = curve([[0, 1, 0], [1, 1, 0]], false);
+  const out = runNode(
+    "GeometryNodeMenuSwitch",
+    { Menu: 2, Item_0: a, Item_1: b },
+    { data_type: "GEOMETRY" },
+  ).Output as Geometry;
+  check("MenuSwitch unmatched enum item outputs empty geometry", out.curves.length === 0 && out.instances.length === 0 && !out.mesh);
+}
+
 // (I3) VectorRotate: axis-angle 90deg around +Z
 {
   const out = runNode("ShaderNodeVectorRotate", { Vector: [1, 0, 0], Center: [0, 0, 0], Axis: [0, 0, 1], Angle: Math.PI / 2, Rotation: [0, 0, 0] }, { rotation_type: "AXIS_ANGLE", invert: false }).Vector as Field;
