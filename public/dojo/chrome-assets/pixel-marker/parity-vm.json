@@ -1,0 +1,155 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/pixel-marker/dump.json",
+  "object": "PIXEL CRAYON.002",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 209,
+      "faces": 134,
+      "bbox": {
+        "min": [
+          -76.1469,
+          -75.9257,
+          0.9998
+        ],
+        "max": [
+          45.072,
+          38.2738,
+          0.9998
+        ]
+      },
+      "elapsed_ms": 34,
+      "export": "00-authored-default.json"
+    },
+    {
+      "combo": {
+        "name": "pixel size 0.25",
+        "overrides": {
+          "pixel size": 0.25
+        }
+      },
+      "status": "ok",
+      "verts": 516,
+      "faces": 376,
+      "bbox": {
+        "min": [
+          -77.9296,
+          -77.6051,
+          0.9998
+        ],
+        "max": [
+          46.8546,
+          39.9532,
+          0.9998
+        ]
+      },
+      "elapsed_ms": 9,
+      "export": "01-pixel-size-0-25.json"
+    },
+    {
+      "combo": {
+        "name": "line thickness 15",
+        "overrides": {
+          "line thiccness": 15
+        }
+      },
+      "status": "ok",
+      "verts": 158,
+      "faces": 74,
+      "bbox": {
+        "min": [
+          -73.6273,
+          -73.3269,
+          0.9998
+        ],
+        "max": [
+          42.5728,
+          36.2821,
+          0.9998
+        ]
+      },
+      "elapsed_ms": 4,
+      "export": "02-line-thickness-15.json"
+    },
+    {
+      "combo": {
+        "name": "not flattened",
+        "overrides": {
+          "FLATTEN": false
+        }
+      },
+      "status": "ok",
+      "verts": 209,
+      "faces": 134,
+      "bbox": {
+        "min": [
+          -76.1469,
+          -75.9257,
+          0.9998
+        ],
+        "max": [
+          45.072,
+          38.2738,
+          0.9998
+        ]
+      },
+      "elapsed_ms": 4,
+      "export": "03-not-flattened.json"
+    },
+    {
+      "combo": {
+        "name": "3D branch",
+        "overrides": {
+          "3D/flat": false
+        }
+      },
+      "status": "ok",
+      "verts": 418,
+      "faces": 434,
+      "bbox": {
+        "min": [
+          -76.1469,
+          -75.9257,
+          0.9998
+        ],
+        "max": [
+          45.072,
+          38.2738,
+          24.7155
+        ]
+      },
+      "elapsed_ms": 10,
+      "export": "04-3d-branch.json"
+    },
+    {
+      "combo": {
+        "name": "extrude height 10",
+        "overrides": {
+          "extrude height": 10
+        }
+      },
+      "status": "ok",
+      "verts": 209,
+      "faces": 134,
+      "bbox": {
+        "min": [
+          -76.1469,
+          -75.9257,
+          0.9998
+        ],
+        "max": [
+          45.072,
+          38.2738,
+          0.9998
+        ]
+      },
+      "elapsed_ms": 4,
+      "export": "05-extrude-height-10.json"
+    }
+  ]
+}

@@ -1,0 +1,208 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "PIXEL CRAYON.002",
+  "modifier": "CHROME CRAYON 3D",
+  "node_group": "pixel marker.001",
+  "saved_values": {
+    "extrude height": 23.715652465820312,
+    "line thiccness": 25.0,
+    "FLATTEN": true,
+    "pixel size": 0.14962799847126007,
+    "3D/flat": true,
+    "Flat Color": [
+      5.0,
+      5.0,
+      5.0,
+      1.0
+    ],
+    "3d color": [
+      3.3002500534057617,
+      5.0,
+      0.0,
+      1.0
+    ]
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 209,
+      "faces": 134,
+      "bbox": {
+        "min": [
+          -76.1429,
+          -75.9254,
+          0.9998
+        ],
+        "max": [
+          45.0817,
+          38.272,
+          0.9998
+        ]
+      },
+      "elapsed_ms": 7.5,
+      "export": "00-authored-default.glb"
+    },
+    {
+      "combo": {
+        "name": "pixel size 0.25",
+        "overrides": {
+          "pixel size": 0.25
+        }
+      },
+      "status": "ok",
+      "verts": 514,
+      "faces": 375,
+      "bbox": {
+        "min": [
+          -77.9256,
+          -77.6048,
+          0.9998
+        ],
+        "max": [
+          46.8644,
+          39.9513,
+          0.9998
+        ]
+      },
+      "elapsed_ms": 8.7,
+      "export": "01-pixel-size-0-25.glb"
+    },
+    {
+      "combo": {
+        "name": "line thickness 15",
+        "overrides": {
+          "line thiccness": 15
+        }
+      },
+      "status": "ok",
+      "verts": 158,
+      "faces": 74,
+      "bbox": {
+        "min": [
+          -73.6248,
+          -73.3267,
+          0.9998
+        ],
+        "max": [
+          42.5786,
+          36.281,
+          0.9998
+        ]
+      },
+      "elapsed_ms": 7.8,
+      "export": "02-line-thickness-15.glb"
+    },
+    {
+      "combo": {
+        "name": "not flattened",
+        "overrides": {
+          "FLATTEN": false
+        }
+      },
+      "status": "ok",
+      "verts": 209,
+      "faces": 134,
+      "bbox": {
+        "min": [
+          -76.1429,
+          -75.9254,
+          0.9998
+        ],
+        "max": [
+          45.0817,
+          38.272,
+          0.9998
+        ]
+      },
+      "elapsed_ms": 8.2,
+      "export": "03-not-flattened.glb"
+    },
+    {
+      "combo": {
+        "name": "3D branch",
+        "overrides": {
+          "3D/flat": false
+        }
+      },
+      "status": "ok",
+      "verts": 418,
+      "faces": 434,
+      "bbox": {
+        "min": [
+          -76.1429,
+          -75.9254,
+          0.9998
+        ],
+        "max": [
+          45.0817,
+          38.272,
+          24.7155
+        ]
+      },
+      "elapsed_ms": 8.3,
+      "export": "04-3d-branch.glb"
+    },
+    {
+      "combo": {
+        "name": "extrude height 10",
+        "overrides": {
+          "extrude height": 10
+        }
+      },
+      "status": "ok",
+      "verts": 209,
+      "faces": 134,
+      "bbox": {
+        "min": [
+          -76.1429,
+          -75.9254,
+          0.9998
+        ],
+        "max": [
+          45.0817,
+          38.272,
+          0.9998
+        ]
+      },
+      "elapsed_ms": 8.0,
+      "export": "05-extrude-height-10.glb"
+    }
+  ],
+  "export_dir": "/tmp/pixel-marker-blender",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "flat.nodes": {
+        "faces": 134,
+        "verts": 209
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 134,
+      "verts": 209
+    }
+  }
+}

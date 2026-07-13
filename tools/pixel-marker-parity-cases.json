@@ -1,0 +1,8 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "pixel size 0.25", "overrides": { "pixel size": 0.25 } },
+  { "name": "line thickness 15", "overrides": { "line thiccness": 15 } },
+  { "name": "not flattened", "overrides": { "FLATTEN": false } },
+  { "name": "3D branch", "overrides": { "3D/flat": false } },
+  { "name": "extrude height 10", "overrides": { "extrude height": 10 } }
+]

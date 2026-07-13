@@ -1,0 +1,8 @@
+{
+  "object": "PIXEL CRAYON.002",
+  "root": "pixel marker.001",
+  "status": "authored-exact",
+  "blender": { "verts": 209, "faces": 134 },
+  "gnvm": { "verts": 209, "faces": 134 },
+  "validation": "Five of six parameter cases match topology exactly; pixel size 0.25 differs by 2 vertices and 1 face (0.39%) while bounds remain within 0.01 units."
+}

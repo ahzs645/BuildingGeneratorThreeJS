@@ -81,6 +81,8 @@ function baseGeometryOf(dump: Dump, objectName: string): Geometry | null {
     g.curves = obj.curves.map((s: any) => ({ cyclic: Boolean(s.cyclic), points: s.points.map((p: number[]) => [p[0], p[1], p[2]]) }));
     const tilts = obj.curves.flatMap((s: any) => s.tilts ?? s.points.map(() => 0));
     if (tilts.some((value: number) => value !== 0)) g.curveAttributes.set("tilt", { domain: "POINT", data: tilts });
+    const radii = obj.curves.flatMap((s: any) => s.radii ?? s.points.map(() => 1));
+    if (radii.some((value: number) => value !== 1)) g.curveAttributes.set("radius", { domain: "POINT", data: radii });
   }
   return g.mesh || g.curves.length ? g : null;
 }

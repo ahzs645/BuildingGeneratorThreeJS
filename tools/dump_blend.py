@@ -281,6 +281,7 @@ for obj in bpy.data.objects:
             cyclic = bool(spline.use_cyclic_u)
             points = []
             tilts = []
+            radii = []
             if spline.type == "BEZIER":
                 bp = list(spline.bezier_points)
                 segments = len(bp) if cyclic else max(0, len(bp) - 1)
@@ -292,14 +293,17 @@ for obj in bpy.data.objects:
                         factor = step / resolution
                         points.append([round(v, 6) for v in bezier(p0.co, p0.handle_right, p1.handle_left, p1.co, factor)])
                         tilts.append(round((1.0 - factor) * p0.tilt + factor * p1.tilt, 6))
+                        radii.append(round((1.0 - factor) * p0.radius + factor * p1.radius, 6))
                 if not cyclic and bp:
                     points.append([round(v, 6) for v in bp[-1].co])
                     tilts.append(round(bp[-1].tilt, 6))
+                    radii.append(round(bp[-1].radius, 6))
             else:
                 points = [[round(p.co.x, 6), round(p.co.y, 6), round(p.co.z, 6)] for p in spline.points]
                 tilts = [round(p.tilt, 6) for p in spline.points]
+                radii = [round(p.radius, 6) for p in spline.points]
             if points:
-                splines.append({"points": points, "cyclic": cyclic, "tilts": tilts})
+                splines.append({"points": points, "cyclic": cyclic, "tilts": tilts, "radii": radii})
         o["curves"] = splines
     if obj.name in dependency_object_names and obj.type in ("MESH", "CURVE"):
         evaluated = obj.evaluated_get(depsgraph)

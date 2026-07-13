@@ -1,0 +1,208 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "PIXEL CRAYON.003",
+  "modifier": "CHROME CRAYON 3D",
+  "node_group": "pixel marker.001",
+  "saved_values": {
+    "extrude height": 14.615509033203125,
+    "line thiccness": 25.0,
+    "FLATTEN": true,
+    "pixel size": 0.15092499554157257,
+    "3D/flat": false,
+    "Flat Color": [
+      2.0056307315826416,
+      2.0056307315826416,
+      2.0056307315826416,
+      1.0
+    ],
+    "3d color": [
+      0.9577709436416626,
+      1.0,
+      0.0,
+      1.0
+    ]
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 412,
+      "faces": 428,
+      "bbox": {
+        "min": [
+          -74.6259,
+          -74.4106,
+          0.9767
+        ],
+        "max": [
+          44.2843,
+          37.6294,
+          15.5922
+        ]
+      },
+      "elapsed_ms": 8.3,
+      "export": "00-authored-default.glb"
+    },
+    {
+      "combo": {
+        "name": "pixel size 0.25",
+        "overrides": {
+          "pixel size": 0.25
+        }
+      },
+      "status": "ok",
+      "verts": 988,
+      "faces": 996,
+      "bbox": {
+        "min": [
+          -76.0249,
+          -76.0582,
+          0.9767
+        ],
+        "max": [
+          45.6832,
+          35.1579,
+          15.5922
+        ]
+      },
+      "elapsed_ms": 9.3,
+      "export": "01-pixel-size-0-25.glb"
+    },
+    {
+      "combo": {
+        "name": "line thickness 15",
+        "overrides": {
+          "line thiccness": 15
+        }
+      },
+      "status": "ok",
+      "verts": 314,
+      "faces": 326,
+      "bbox": {
+        "min": [
+          -72.1633,
+          -71.8688,
+          0.9767
+        ],
+        "max": [
+          41.8363,
+          35.6814,
+          15.5922
+        ]
+      },
+      "elapsed_ms": 8.5,
+      "export": "02-line-thickness-15.glb"
+    },
+    {
+      "combo": {
+        "name": "not flattened",
+        "overrides": {
+          "FLATTEN": false
+        }
+      },
+      "status": "ok",
+      "verts": 412,
+      "faces": 428,
+      "bbox": {
+        "min": [
+          -74.6259,
+          -74.4106,
+          0.9767
+        ],
+        "max": [
+          44.2843,
+          37.6294,
+          15.5922
+        ]
+      },
+      "elapsed_ms": 7.9,
+      "export": "03-not-flattened.glb"
+    },
+    {
+      "combo": {
+        "name": "flat branch",
+        "overrides": {
+          "3D/flat": true
+        }
+      },
+      "status": "ok",
+      "verts": 206,
+      "faces": 130,
+      "bbox": {
+        "min": [
+          -74.6259,
+          -74.4106,
+          0.9767
+        ],
+        "max": [
+          44.2843,
+          37.6294,
+          0.9767
+        ]
+      },
+      "elapsed_ms": 8.0,
+      "export": "04-flat-branch.glb"
+    },
+    {
+      "combo": {
+        "name": "extrude height 10",
+        "overrides": {
+          "extrude height": 10
+        }
+      },
+      "status": "ok",
+      "verts": 412,
+      "faces": 428,
+      "bbox": {
+        "min": [
+          -74.6259,
+          -74.4106,
+          0.9767
+        ],
+        "max": [
+          44.2843,
+          37.6294,
+          10.9767
+        ]
+      },
+      "elapsed_ms": 8.8,
+      "export": "05-extrude-height-10.glb"
+    }
+  ],
+  "export_dir": "/tmp/pixel-marker003-blender",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "gn.bdsf": {
+        "faces": 428,
+        "verts": 412
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 428,
+      "verts": 412
+    }
+  }
+}
