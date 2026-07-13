@@ -14,7 +14,7 @@ The pack contains **16 Blender projects**, **499 active Geometry Nodes modifiers
 | The Nodes Node | 17 | 12 | All 12 roots live; 6 exact/structural, 6 legacy UI-panel variants partial |
 | Knit Graphic | 0 | 0 | No active Geometry Nodes modifier |
 | Typewriter | 1 | 1 | Live GN-VM; supplied Pixels TTF with embedded outline fallback |
-| Send Nodes Hat | 5 | 4 | Baked gallery reference |
+| Send Nodes Hat | 5 | 4 | All 4 roots live; 3 exact, embroidery partial |
 | Module 2 | 103 | 69 | All roots classified; shared finale 100% covered but divergent |
 | Module 3 | 28 | 20 | All roots classified; shared finale 100% covered but divergent |
 | Module 4 | 68 | 35 | All roots classified; shared finale 100% covered but divergent |

@@ -8,7 +8,7 @@ Inventory date: 2026-07-12. The source pack contains 16 `.blend` projects.
 - Chrome Crayon — live GN-VM, editable graph, reconstructed shader.
 - Simple Bubble Vessel — live GN-VM and Blender comparison.
 - Math Clay — baked Schoen Gyroid and Schwarz P-Surface gallery studies.
-- Send Nodes Hat — baked gallery assembly.
+- Send Nodes Hat — all four distinct active roots now run live. The bill, front shell, and sampling cube are topology-exact; the embroidery lettering is visually aligned at about 12% denser topology after deterministically freezing the source file's dependency cycle for Blender truth.
 - Procedural Typewriter — live GN-VM with editable text and scene-frame animation. The page loads the supplied `pixels.ttf` and keeps a matching Blender-extracted outline atlas as its offline geometry fallback.
 - Chrome Asset Library: Periodic Brush — live GN-VM with all nine `period pack` collection children, editable distance/scale controls, and exact Blender parity across the validation sweep.
 - Chrome Asset Library: Flat Stickie Pack — Blender reference and live GN-VM output match at 28 vertices, 7 faces, and identical local bounds.
@@ -62,6 +62,7 @@ Inventory date: 2026-07-12. The source pack contains 16 `.blend` projects.
 - Math Clay: all thirteen distinct surface roots now have live Blender/web comparisons from one shared portable scene dump. Five Lorenz-derived roots are near-exact (0.03%–2.79% vertex deltas), three TPMS roots preserve the authored form at lower marching-cubes density, and five roots are deliberately labeled divergent where specialized rotated fields or hard-sphere clipping still differ. Every reachable node type across the collection has a handler.
 - The Nodes Node: all twelve distinct active roots now have live comparisons from one shared portable dump. The source cube, dense base plate, paired Hook-deformed noodles, wire stamp guide, and mesh-line noodle are exact or structurally exact. The six 895–900-node UI-panel variants now execute their full reachable graphs with legacy geometry/material switch support; their body/socket branches are visible, while cumulative row placement, text transforms, and bottom-edge curve filling remain explicitly labeled partial or divergent.
 - Course Modules: all 176 active roots across Intro and Modules 2–4 are structurally inventoried in `public/dojo/course-audit/status.json`. They comprise 113 small instructional snapshots, 16 helpers, and 47 complex studies rather than 176 independent generators. The repeated Modules 2–4 `dojo` finale has 100% node-handler coverage after adding Blender's shortest-edge-path nodes, but remains visually divergent because the browser selects a building-facade lesson branch instead of Blender's banner-and-medallion result.
+- Send Nodes Hat: all four distinct active roots have live Blender/browser comparisons. The 4-node bill, 29-node front deformation, and 40-node sampling cube are exact. The 160-node embroidery graph now has complete surface-sampling/rotation/radius coverage and reproduces the intended stitched lettering at 211,596 / 210,756 versus Blender's cycle-frozen 188,934 / 188,160.
 
 ## Recommended next targets
 
@@ -71,6 +72,7 @@ Inventory date: 2026-07-12. The source pack contains 16 `.blend` projects.
 4. **Math Clay surfaces** — all thirteen distinct surface roots plus the shared Soft Pixel Marker dependency are represented. Continue semantic correction on the five visibly divergent roots: `lorenze.007`, `lorenze.005`, `TPMS generator.019`, `.016`, and `.018`.
 5. **The Nodes Node** — all 12 distinct roots are represented in the live library. Continue semantic correction on the six legacy UI-panel variants; six smaller roots already have exact or structural parity.
 6. **Course Modules** — the complete root audit is recorded in `docs/node-dojo-course-audit.md`. Treat repeated lesson stages and helpers as inventory evidence; publish only distinct visible exercises. The canonical Modules 2–4 finale is the first semantic parity target.
+7. **Send Nodes Hat** — all distinct roots are represented. Continue only the embroidery tessellation and relative-transform correction; the other three roots are exact.
 
 ## Needs source or scope clarification
 

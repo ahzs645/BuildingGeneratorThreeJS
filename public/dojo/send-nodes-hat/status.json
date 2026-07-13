@@ -1,0 +1,12 @@
+{
+  "source": "send nodes hat_download.blend",
+  "status": "4-distinct-roots-live",
+  "coverage": "Every reachable node type across all four active modifier roots has a browser handler.",
+  "variants": [
+    { "id": "send-nodes-hat-bill", "object": "hat bill", "root": "Geometry Nodes.001", "nodes": 4, "status": "exact", "blender": { "verts": 1611, "faces": 1629 }, "gnvm": { "verts": 1611, "faces": 1629 } },
+    { "id": "send-nodes-hat-front", "object": "hat front", "root": "fancy trick", "nodes": 29, "status": "exact", "blender": { "verts": 60105, "faces": 59680 }, "gnvm": { "verts": 60105, "faces": 59680 } },
+    { "id": "send-nodes-hat-sampling-cube", "object": "Cube.001", "root": "Geometry Nodes.002", "nodes": 40, "status": "exact", "blender": { "verts": 8, "faces": 6 }, "gnvm": { "verts": 8, "faces": 6 } },
+    { "id": "send-nodes-hat-embroidery", "object": "embroidery crv", "root": "embroidery", "nodes": 160, "status": "live-partial-parity", "blender": { "verts": 188934, "faces": 188160 }, "gnvm": { "verts": 211596, "faces": 210756 } }
+  ],
+  "validation": "The bill, front-shell deformation, and sampling cube have exact topology and matching silhouettes. The source file has a hat-front/embroidery dependency cycle, so the embroidery truth render freezes the exact 60,105 / 59,680 evaluated front before evaluating the stitch graph. The browser reproduces the intended SEND NODES lettering and stitch flow at about 12% denser topology."
+}
