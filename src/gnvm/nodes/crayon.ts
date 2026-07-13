@@ -143,7 +143,8 @@ reg("GeometryNodeDuplicateElements", (api) => {
 });
 
 reg("GeometryNodeCurveToPoints", (api) => {
-  const input = api.geo("Curve");
+  const curveInput = api.geo("Curve");
+  const input = curveInput.instances.length ? realizeInstances(curveInput) : curveInput;
   const mode = api.prop<string>("mode", "COUNT");
   const count = Math.max(1, Math.round(api.num("Count")));
   const length = Math.max(1e-9, api.num("Length") || 0.1);

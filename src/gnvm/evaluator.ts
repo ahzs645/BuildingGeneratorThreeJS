@@ -426,6 +426,8 @@ class Invocation {
   private visiting = new Set<string>();
   // Active repeat-zone state: RepeatInput node name -> its current-iteration outputs.
   private repeatState = new Map<string, Record<string, SockVal>>();
+  // Active per-element state for a For Each Geometry Element zone.
+  private foreachState = new Map<string, Record<string, SockVal>>();
 
   constructor(private ev: Evaluator, private group: RawGroup, private bindings: Record<string, SockVal>) {
     for (const n of group.nodes) this.byName.set(n.name, n);
@@ -542,6 +544,13 @@ class Invocation {
       }
       case "GeometryNodeRepeatOutput":
         return this.runRepeatZone(node);
+      case "GeometryNodeForeachGeometryElementInput": {
+        const active = this.foreachState.get(node.name);
+        if (active) return active;
+        return { Index: Field.of(0), Element: this.pull(node, "Geometry") };
+      }
+      case "GeometryNodeForeachGeometryElementOutput":
+        return this.runForeachZone(node);
     }
     const handler = REGISTRY.get(node.type);
     if (!handler) {
@@ -603,6 +612,95 @@ class Invocation {
     for (const nm of zone) this.memo.delete(nm);
     this.memo.delete(inNode.name);
     return state;
+  }
+
+  // Blender's For Each Geometry Element zone evaluates its body once for every
+  // selected element, then joins each Generation output. New Joint's sleeve
+  // builder uses the INSTANCE domain, with one collection child per iteration.
+  private runForeachZone(outNode: RawNode): Record<string, SockVal> {
+    const inNode = this.group.nodes.find(
+      (node) => node.type === "GeometryNodeForeachGeometryElementInput" && node.paired_output === outNode.name,
+    ) ?? this.group.nodes.find((node) => node.type === "GeometryNodeForeachGeometryElementInput");
+    if (!inNode) return {};
+    const sourceValue = this.pull(inNode, "Geometry");
+    const source = sourceValue instanceof Geometry ? sourceValue : new Geometry();
+    const domain = (outNode.props?.domain ?? "INSTANCE") as Domain;
+    const sourceContext = makeFieldCtx(source, domain);
+    const selectionValue = this.pull(inNode, "Selection");
+    const selection = selectionValue instanceof Field ? selectionValue.array(sourceContext) : [];
+    const generated = new Map<string, Geometry[]>();
+    for (const socket of outNode.inputs) {
+      if (socket.identifier.startsWith("Generation_")) generated.set(socket.identifier, []);
+    }
+
+    const zone = new Set<string>();
+    const queue = [inNode.name];
+    while (queue.length) {
+      const current = queue.pop()!;
+      for (const link of this.group.links) {
+        if (link.from_node === current && !zone.has(link.to_node)) {
+          zone.add(link.to_node);
+          queue.push(link.to_node);
+        }
+      }
+    }
+
+    for (let index = 0; index < sourceContext.size; index++) {
+      if (selection.length && !asNum(selection[index] ?? 0)) continue;
+      const element = new Geometry();
+      if (domain === "INSTANCE" && source.instances[index]) {
+        const instance = source.instances[index];
+        element.instances.push({
+          ...instance,
+          position: [...instance.position] as Vec3,
+          rotation: [...instance.rotation] as Vec3,
+          scale: [...instance.scale] as Vec3,
+          attributes: new Map([
+            ...(instance.attributes?.entries() ?? []),
+            ["__instance_rotation", [...instance.rotation] as Vec3],
+          ]),
+        });
+      }
+      for (const name of zone) this.memo.delete(name);
+      this.memo.delete(inNode.name);
+      this.foreachState.set(inNode.name, { Index: Field.of(index), Element: element });
+      for (const [identifier, parts] of generated) {
+        const value = this.pull(outNode, identifier);
+        if (value instanceof Geometry) parts.push(value);
+      }
+    }
+    this.foreachState.delete(inNode.name);
+    for (const name of zone) this.memo.delete(name);
+    this.memo.delete(inNode.name);
+
+    const outputs: Record<string, SockVal> = { Geometry: source.clone() };
+    for (const [identifier, parts] of generated) {
+      const joined = new Geometry();
+      for (const part of parts) {
+        if (!part.mesh && !part.curves.length) {
+          joined.instances.push(...part.instances.map((instance) => ({
+            ...instance,
+            position: [...instance.position] as Vec3,
+            rotation: [...instance.rotation] as Vec3,
+            scale: [...instance.scale] as Vec3,
+            attributes: instance.attributes ? new Map(instance.attributes) : undefined,
+          })));
+        } else {
+          // Generation geometry is emitted once per iteration. Preserve that
+          // boundary as an instance, matching Blender's zone aggregation and
+          // allowing downstream Instance Count / Realize Instances nodes to
+          // distinguish the generated pipe sleeves.
+          joined.instances.push({
+            geometry: part.clone(),
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [1, 1, 1],
+          });
+        }
+      }
+      outputs[identifier] = joined;
+    }
+    return outputs;
   }
 
   // Unknown node: pass the first geometry input through to every geometry output.

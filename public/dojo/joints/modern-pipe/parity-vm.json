@@ -1,0 +1,101 @@
+{
+  "source": "gnvm",
+  "dump": "/tmp/joint-neupipe-dump.json",
+  "object": "PIPE GEN 4.3_OCT2024_00",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 25217,
+      "faces": 20818,
+      "bbox": {
+        "min": [
+          -175.8002,
+          -49.6525,
+          -49.6525
+        ],
+        "max": [
+          49.6525,
+          239.4409,
+          157.1542
+        ]
+      },
+      "elapsed_ms": 17749
+    },
+    {
+      "combo": {
+        "name": "joint size 18",
+        "overrides": {
+          "joint size": 18
+        }
+      },
+      "status": "ok",
+      "verts": 22303,
+      "faces": 18114,
+      "bbox": {
+        "min": [
+          -175.8002,
+          -42.5911,
+          -42.5911
+        ],
+        "max": [
+          42.5911,
+          239.4409,
+          157.1542
+        ]
+      },
+      "elapsed_ms": 14920
+    },
+    {
+      "combo": {
+        "name": "hide structure",
+        "overrides": {
+          "keep structure geo": false
+        }
+      },
+      "status": "ok",
+      "verts": 20249,
+      "faces": 16060,
+      "bbox": {
+        "min": [
+          -72.4282,
+          -49.6525,
+          -49.6525
+        ],
+        "max": [
+          49.6525,
+          122.186,
+          63.8353
+        ]
+      },
+      "elapsed_ms": 18051
+    },
+    {
+      "combo": {
+        "name": "bone preview",
+        "overrides": {
+          "bone preview": true
+        }
+      },
+      "status": "ok",
+      "verts": 31114,
+      "faces": 28056,
+      "bbox": {
+        "min": [
+          -73.3997,
+          -49.6525,
+          -49.6525
+        ],
+        "max": [
+          49.6525,
+          123.4262,
+          64.698
+        ]
+      },
+      "elapsed_ms": 18171
+    }
+  ]
+}

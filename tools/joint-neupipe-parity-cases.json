@@ -1,0 +1,6 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "joint size 18", "overrides": { "joint size": 18 } },
+  { "name": "hide structure", "overrides": { "keep structure geo": false } },
+  { "name": "bone preview", "overrides": { "bone preview": true } }
+]

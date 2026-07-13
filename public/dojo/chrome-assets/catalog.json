@@ -734,5 +734,24 @@
       { "name": "Factor", "label": "Joint factor", "min": 0, "max": 0.95, "step": 0.01, "value": 0.16170205175876617 },
       { "type": "checkbox", "name": "hi rez", "label": "High resolution", "value": false }
     ]
+  },
+  {
+    "id": "joint-modern-pipe",
+    "title": "New Joint · Modern Pipe Generator",
+    "object": "PIPE GEN 4.3_OCT2024_00",
+    "dump": "dojo/joints/modern-pipe/dump.json",
+    "reference": "dojo/references/joints/modern-pipe.png",
+    "blenderStats": { "verts": 11163, "faces": 8064 },
+    "localSpace": true,
+    "surfaceBounds": true,
+    "note": "The complete 296-group, 2,413-node neupipe product now builds its six-way pipe layout, per-instance sleeves, signed-distance joint shell, and dual-mesh smoothing in-browser. It is live partial parity: 26,538 / 21,594 in the browser versus Blender's 11,163 / 8,064, with denser tessellation and visible SDF roughness at the central junction.",
+    "controls": [
+      { "type": "checkbox", "name": "keep structure geo", "label": "Keep structure pipes", "value": true },
+      { "name": "joint size", "label": "Joint size", "min": 10, "max": 40, "step": 0.1, "value": 23.177337646484375 },
+      { "name": "wall thiccness", "label": "Wall thickness", "min": 1, "max": 15, "step": 0.1, "value": 9.11734390258789 },
+      { "name": "poly size", "label": "Sleeve polygon size", "min": 0.5, "max": 5, "step": 0.05, "value": 1.1353329420089722 },
+      { "name": "ring size", "label": "End-ring size", "min": 0, "max": 4, "step": 0.05, "value": 0.24033333361148834 },
+      { "type": "checkbox", "name": "bone preview", "label": "Bone preview", "value": false }
+    ]
   }
 ]

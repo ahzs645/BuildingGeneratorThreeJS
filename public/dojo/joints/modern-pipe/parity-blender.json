@@ -1,0 +1,166 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "PIPE GEN 4.3_OCT2024_00",
+  "modifier": "GeometryNodes",
+  "node_group": "neupipe.001",
+  "saved_values": {
+    "Structure Collection": "pipe structure",
+    "keep structure geo": true,
+    "bounding box": false,
+    "joint size": 23.177337646484375,
+    "wall thiccness": 9.11734390258789,
+    "filament color": [
+      0.0006639764178544283,
+      0.03036780282855034,
+      0.8001810312271118,
+      1.0
+    ],
+    "Finalize (cut)": false,
+    "2_softe": 7,
+    "2_Iterations": 4,
+    "refine amount": 0.8240004181861877,
+    "ends influence": 7.8873443603515625,
+    "1_Iterations": 9,
+    "1_factor": 1.0,
+    "1_soften": 10,
+    "bone preview": false,
+    "ring profile": 35,
+    "poly size": 1.1353329420089722,
+    "ring size": 0.24033333361148834,
+    "ring offset": -1.0,
+    "end offset": 0.0
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 11163,
+      "faces": 8064,
+      "bbox": {
+        "min": [
+          -175.8002,
+          -32.5678,
+          -32.5678
+        ],
+        "max": [
+          32.5678,
+          239.4409,
+          157.1542
+        ]
+      },
+      "elapsed_ms": 55.6
+    },
+    {
+      "combo": {
+        "name": "joint size 18",
+        "overrides": {
+          "joint size": 18
+        }
+      },
+      "status": "ok",
+      "verts": 10857,
+      "faces": 7644,
+      "bbox": {
+        "min": [
+          -175.8002,
+          -31.7779,
+          -31.7779
+        ],
+        "max": [
+          31.7779,
+          239.4409,
+          157.1542
+        ]
+      },
+      "elapsed_ms": 52.1
+    },
+    {
+      "combo": {
+        "name": "hide structure",
+        "overrides": {
+          "keep structure geo": false
+        }
+      },
+      "status": "ok",
+      "verts": 6195,
+      "faces": 3306,
+      "bbox": {
+        "min": [
+          -61.267,
+          -32.5678,
+          -32.5678
+        ],
+        "max": [
+          32.5678,
+          109.8691,
+          64.0596
+        ]
+      },
+      "elapsed_ms": 52.8
+    },
+    {
+      "combo": {
+        "name": "bone preview",
+        "overrides": {
+          "bone preview": true
+        }
+      },
+      "status": "ok",
+      "verts": 31447,
+      "faces": 28386,
+      "bbox": {
+        "min": [
+          -62.1411,
+          -32.5678,
+          -32.5678
+        ],
+        "max": [
+          32.5678,
+          110.6426,
+          64.7426
+        ]
+      },
+      "elapsed_ms": 64.7
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "Filament and Cross Section 1OCT2024": {
+        "faces": 3306,
+        "verts": 3386
+      },
+      "proc_ mahogany.001": {
+        "faces": 4758,
+        "verts": 4968
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 8064,
+      "verts": 11163
+    }
+  }
+}

@@ -301,6 +301,28 @@ function meshSignedAreaXY(m: Mesh): number {
   check("FillCurve projects translated curves onto local XY", g.mesh!.positions.every((p) => Math.abs(p[2]) < 1e-9));
 }
 
+{
+  const density = Field.perElem((i, ctx) => {
+    const point = ctx.position?.(i) ?? [0, 0, 0];
+    return Math.hypot(point[0], point[1], point[2]);
+  });
+  const volume = runNode("GeometryNodeVolumeCube", {
+    Density: density,
+    Background: 1,
+    Min: [-1, -1, -1],
+    Max: [1, 1, 1],
+    "Resolution X": 24,
+    "Resolution Y": 24,
+    "Resolution Z": 24,
+  }).Volume as any;
+  const surface = runNode("GeometryNodeVolumeToMesh", {
+    Volume: volume,
+    "Voxel Size": 0.1,
+    Threshold: 0.5,
+  }).Mesh as Geometry;
+  check("Volume Cube to Mesh extracts a welded SDF surface", !!surface.mesh && surface.mesh.positions.length > 100 && surface.mesh.faces.length > 100);
+}
+
 // (F3) FillCurve nested squares: inner loop is a hole and ring triangulates
 {
   const outer: Vec3[] = [[-2, -2, 0], [2, -2, 0], [2, 2, 0], [-2, 2, 0]];

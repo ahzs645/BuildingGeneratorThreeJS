@@ -27,6 +27,8 @@ source = node.outputs.get(socket_name)
 target = next((socket for socket in group_output.inputs if socket.type == "GEOMETRY"), None)
 if source is None or target is None:
     raise RuntimeError(f"missing geometry socket: {socket_name!r}")
+for link in list(target.links):
+    group.links.remove(link)
 group.links.new(source, target)
 
 realize_group = bpy.data.node_groups.new("__PROBE_REALIZE_INSTANCES", "GeometryNodeTree")

@@ -1,0 +1,16 @@
+{
+  "id": "joint-modern-pipe",
+  "object": "PIPE GEN 4.3_OCT2024_00",
+  "root": "neupipe.001",
+  "status": "live-partial-parity",
+  "blender": {
+    "verts": 11163,
+    "faces": 8064
+  },
+  "gnvm": {
+    "verts": 26538,
+    "faces": 21594
+  },
+  "coverage": "100% of reachable node types across the 296-group, 2,413-node closure, including its six-object pipe structure collection.",
+  "validation": "The authored six-way pipe layout, generated sleeves, SDF joint shell, dual-mesh smoothing, and structure toggle run in-browser. The live browser/WASM result is 26,538 / 21,594; the reproducible Node parity sweep is 25,217 / 20,818. Both are more densely tessellated and rougher at the central junction than Blender, while bone-preview topology is within 1.06% in the sweep."
+}

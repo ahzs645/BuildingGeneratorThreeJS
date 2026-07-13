@@ -1,6 +1,6 @@
 // Curve subsystem handlers: primitives, resample, fillet, sweep-to-mesh, fill.
 import { Field, Vec3, Elem, asNum, asVec3, vadd, vsub, vscale, vdot, vcross, vlen, vnorm } from "../core";
-import { Geometry, Mesh, Spline, buildTopology } from "../geometry";
+import { Geometry, Mesh, Spline, buildTopology, realizeInstances } from "../geometry";
 import { DUMP_CONTEXT, reg } from "../registry";
 import { makeFieldCtx } from "../evaluator";
 import { resampleSpline, filletSpline, sweep, fillCurves, meshEdgesToChains, splineLength, splineFrames } from "../curves";
@@ -313,8 +313,12 @@ reg("GeometryNodeReverseCurve", (api) => {
 
 // ---- curve -> mesh --------------------------------------------------------
 reg("GeometryNodeCurveToMesh", (api) => {
-  const rail = api.geo("Curve");
-  const prof = api.geo("Profile Curve");
+  const railInput = api.geo("Curve");
+  const profileInput = api.geo("Profile Curve");
+  // Blender evaluates curve components carried by instances here. The New
+  // Joint sleeve builder rotates a one-curve instance per pipe before sweep.
+  const rail = railInput.instances.length ? realizeInstances(railInput) : railInput;
+  const prof = profileInput.instances.length ? realizeInstances(profileInput) : profileInput;
   const caps = api.bool("Fill Caps");
   // Blender 5 "Scale": per-rail-point profile scale (the curve radius mechanism).
   // Resolved on the rail's flattened POINT domain; unlinked non-1 constants apply
