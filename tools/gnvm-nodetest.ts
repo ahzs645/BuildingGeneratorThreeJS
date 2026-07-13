@@ -869,5 +869,24 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Rotate Instances composes local rotation", approx(rotated.instances[0].rotation, [0, 0, Math.PI / 2]));
 }
 
+// (AG) Packed images remain available to worker-side image fields. Repeated
+// field reads on the same geometry context reuse the resolved array.
+{
+  const savedImages = DUMP_CONTEXT.images;
+  DUMP_CONTEXT.images = [{ name: "two pixels", size: [2, 1], channels: 4, pixels_rgba8: "/wAA/wD/AP8=" }];
+  const imageRef = { datablock: "Image", name: "two pixels" };
+  const info = runNode("GeometryNodeImageInfo", { Image: imageRef, Frame: 0 });
+  check("Image Info exposes packed dimensions", (info.Width as Field).value === 2 && (info.Height as Field).value === 1);
+  const sampled = runNode("GeometryNodeImageTexture", {
+    Image: imageRef, Vector: Field.perElem((i) => [i, 0, 0]), Frame: 0,
+  }, { extension: "CLIP", interpolation: "Closest" }, ["Vector"]);
+  const imageCtx = makeFieldCtx(curve([[0, 0, 0], [1, 0, 0]], false), "POINT");
+  const colorsA = (sampled.Color as Field).array(imageCtx);
+  const colorsB = (sampled.Color as Field).array(imageCtx);
+  check("Image Texture samples CLIP edge pixels", approx(colorsA[0] as number[], [1, 0, 0]) && approx(colorsA[1] as number[], [0, 1, 0]));
+  check("field arrays memoize per context", colorsA === colorsB);
+  DUMP_CONTEXT.images = savedImages;
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -256,6 +256,64 @@ reg("GeometryNodeSampleNearest", (api) => {
 
 type Triangle = { a: Vec3; b: Vec3; c: Vec3; normal: Vec3 };
 type Hit = { hit: number; position: Vec3; normal: Vec3; distance: number };
+type TriangleBvh = { min: Vec3; max: Vec3; left?: TriangleBvh; right?: TriangleBvh; triangles?: Triangle[] };
+
+function triangleBounds(triangle: Triangle): { min: Vec3; max: Vec3; center: Vec3 } {
+  const min: Vec3 = [Math.min(triangle.a[0], triangle.b[0], triangle.c[0]), Math.min(triangle.a[1], triangle.b[1], triangle.c[1]), Math.min(triangle.a[2], triangle.b[2], triangle.c[2])];
+  const max: Vec3 = [Math.max(triangle.a[0], triangle.b[0], triangle.c[0]), Math.max(triangle.a[1], triangle.b[1], triangle.c[1]), Math.max(triangle.a[2], triangle.b[2], triangle.c[2])];
+  return { min, max, center: [(min[0] + max[0]) * .5, (min[1] + max[1]) * .5, (min[2] + max[2]) * .5] };
+}
+
+function triangleBvh(triangles: Triangle[]): TriangleBvh | undefined {
+  if (!triangles.length) return undefined;
+  const bounds = triangles.map(triangleBounds);
+  const min: Vec3 = [Infinity, Infinity, Infinity], max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const entry of bounds) for (let axis = 0; axis < 3; axis++) {
+    min[axis] = Math.min(min[axis], entry.min[axis]); max[axis] = Math.max(max[axis], entry.max[axis]);
+  }
+  if (triangles.length <= 12) return { min, max, triangles };
+  const spans = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
+  const axis = spans[1] > spans[0] ? (spans[2] > spans[1] ? 2 : 1) : (spans[2] > spans[0] ? 2 : 0);
+  const ordered = triangles.map((triangle, index) => ({ triangle, center: bounds[index].center[axis] })).sort((a, b) => a.center - b.center);
+  const middle = Math.floor(ordered.length / 2);
+  return { min, max, left: triangleBvh(ordered.slice(0, middle).map((entry) => entry.triangle)), right: triangleBvh(ordered.slice(middle).map((entry) => entry.triangle)) };
+}
+
+function rayBox(origin: Vec3, direction: Vec3, min: Vec3, max: Vec3, distance: number): boolean {
+  let near = 0, far = distance;
+  for (let axis = 0; axis < 3; axis++) {
+    if (Math.abs(direction[axis]) < 1e-12) {
+      if (origin[axis] < min[axis] || origin[axis] > max[axis]) return false;
+      continue;
+    }
+    let a = (min[axis] - origin[axis]) / direction[axis], b = (max[axis] - origin[axis]) / direction[axis];
+    if (a > b) [a, b] = [b, a];
+    near = Math.max(near, a); far = Math.min(far, b);
+    if (near > far) return false;
+  }
+  return true;
+}
+
+function rayBvh(origin: Vec3, direction: Vec3, maxDistance: number, root?: TriangleBvh): Hit | null {
+  if (!root) return null;
+  let best: Hit | null = null;
+  let bestDistance = maxDistance;
+  const stack = [root];
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!rayBox(origin, direction, node.min, node.max, bestDistance)) continue;
+    if (node.triangles) {
+      for (const triangle of node.triangles) {
+        const hit = rayTriangle(origin, direction, bestDistance, triangle);
+        if (hit && hit.distance < bestDistance) { best = hit; bestDistance = hit.distance; }
+      }
+    } else {
+      if (node.left) stack.push(node.left);
+      if (node.right) stack.push(node.right);
+    }
+  }
+  return best;
+}
 function rayTriangle(origin: Vec3, direction: Vec3, maxDistance: number, tri: Triangle): Hit | null {
   const e1 = vsub(tri.b, tri.a), e2 = vsub(tri.c, tri.a);
   const h = vcross(direction, e2);
@@ -281,6 +339,7 @@ reg("GeometryNodeRaycast", (api) => {
     const a = target.mesh.positions[face[0]], b = target.mesh.positions[face[i]], c = target.mesh.positions[face[i + 1]];
     triangles.push({ a, b, c, normal: vnorm(vcross(vsub(b, a), vsub(c, a))) });
   }
+  const bvh = triangleBvh(triangles);
   const sourcePosition = api.field("Source Position");
   const rayDirection = api.field("Ray Direction");
   const rayLength = api.field("Ray Length");
@@ -292,14 +351,9 @@ reg("GeometryNodeRaycast", (api) => {
     const origins = positionLinked ? sourcePosition.array(ctx).map(asVec3) : Array.from({ length: ctx.size }, (_, i) => ctx.position?.(i) ?? [0, 0, 0] as Vec3);
     const dirs = rayDirection.array(ctx).map((v) => vnorm(asVec3(v)));
     const lengths = rayLength.array(ctx).map((v) => Math.max(0, asNum(v)));
-    const result = origins.map((origin, i) => {
-      let best: Hit = { hit: 0, position: origin, normal: [0, 0, 0], distance: 0 };
-      let bestDistance = Infinity;
-      for (const tri of triangles) {
-        const hit = rayTriangle(origin, dirs[i] ?? [0, 0, 1], lengths[i] ?? 100, tri);
-        if (hit && hit.distance < bestDistance) { best = hit; bestDistance = hit.distance; }
-      }
-      return best;
+    const result: Hit[] = origins.map((origin, i) => {
+      return rayBvh(origin, dirs[i] ?? [0, 0, 1], lengths[i] ?? 100, bvh)
+        ?? { hit: 0, position: origin, normal: [0, 0, 0] as Vec3, distance: 0 };
     });
     cache.set(ctx, result);
     return result;

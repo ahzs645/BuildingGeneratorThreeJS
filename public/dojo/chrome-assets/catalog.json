@@ -8,7 +8,33 @@
     "blenderStats": { "verts": 7840, "faces": 280 },
     "controls": [
       { "name": "Dot Distance", "label": "Dot distance", "min": 0.75, "max": 5, "step": 0.000001, "value": 2.151417 },
-      { "name": "dot size", "label": "Dot size", "min": 0.15, "max": 2, "step": 0.01, "value": 1 }
+      { "name": "dot size", "label": "Dot size", "min": 0.15, "max": 2, "step": 0.000001, "value": 1 }
+    ]
+  },
+  {
+    "id": "img-pixel-stippler",
+    "title": "Image Pixel Stippler",
+    "object": "IMG PIXEL STIPPLER",
+    "dump": "dojo/chrome-assets/img-pixel-stippler/dump.json",
+    "reference": "dojo/references/chrome-assets/img-pixel-stippler.png",
+    "blenderStats": { "verts": 72094, "faces": 71550 },
+    "controls": [
+      { "name": "pixelate", "label": "Pixelate", "min": 0.5, "max": 1, "step": 0.000001, "value": 0.5988134145736694 },
+      { "name": "STIPPLE DENSITY", "label": "Stipple density", "min": 25, "max": 500, "step": 1, "value": 333 },
+      { "name": "structure", "label": "Structure", "min": 0, "max": 1, "step": 0.000001, "value": 0.5173912048339844 },
+      { "name": "Contrast", "label": "Contrast", "min": 0, "max": 1, "step": 0.000001, "value": 0.6395052671432495 }
+    ]
+  },
+  {
+    "id": "outline-sticker",
+    "title": "Outline Sticker",
+    "object": "outline sticker.001",
+    "dump": "dojo/chrome-assets/outline-sticker/dump.json",
+    "reference": "dojo/references/chrome-assets/outline-sticker.png",
+    "blenderStats": { "verts": 1056, "faces": 1025 },
+    "controls": [
+      { "name": "scale", "label": "Scale", "min": 2, "max": 18, "step": 0.000001, "value": 11.558334350585938 },
+      { "name": "outline", "label": "Outline", "min": 0, "max": 2, "step": 0.000001, "value": 0.49366679787635803 }
     ]
   },
   {
@@ -38,9 +64,9 @@
     "blenderStats": { "verts": 716079, "faces": 715520 },
     "controls": [
       { "name": "Dot Distance", "label": "Dot distance", "min": 0.25, "max": 2, "step": 0.000001, "value": 0.5356634855270386 },
-      { "name": "dot size", "label": "Dot size", "min": 0.2, "max": 2.5, "step": 0.01, "value": 1.8435211181640625 },
-      { "name": "outer", "label": "Outer radius", "min": 0, "max": 2, "step": 0.01, "value": 0 },
-      { "name": "inner", "label": "Inner inset", "min": 0, "max": 1.5, "step": 0.01, "value": 0 },
+      { "name": "dot size", "label": "Dot size", "min": 0.2, "max": 2.5, "step": 0.000001, "value": 1.8435211181640625 },
+      { "name": "outer", "label": "Outer radius", "min": 0, "max": 2, "step": 0.000001, "value": 0 },
+      { "name": "inner", "label": "Inner inset", "min": 0, "max": 1.5, "step": 0.000001, "value": 0 },
       { "name": "Points", "label": "Star points", "min": 3, "max": 12, "step": 1, "value": 5 }
     ]
   },
@@ -53,8 +79,8 @@
     "blenderStats": { "verts": 16252, "faces": 956 },
     "controls": [
       { "name": "Dot Distance", "label": "Dot distance", "min": 0.5, "max": 4, "step": 0.000001, "value": 1.3138313293457031 },
-      { "name": "dot size", "label": "Dot size", "min": 0.15, "max": 1.5, "step": 0.01, "value": 0.584686279296875 },
-      { "name": "twist factor", "label": "Twist factor", "min": 0, "max": 3, "step": 0.01, "value": 1.3605499267578125 }
+      { "name": "dot size", "label": "Dot size", "min": 0.15, "max": 1.5, "step": 0.000001, "value": 0.584686279296875 },
+      { "name": "twist factor", "label": "Twist factor", "min": 0, "max": 3, "step": 0.000001, "value": 1.3605499267578125 }
     ]
   },
   {

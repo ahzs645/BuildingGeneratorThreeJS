@@ -35,6 +35,7 @@ export interface Dump {
   node_groups: Program;
   scene?: { frame_current?: number; fps?: number; fps_base?: number };
   collections?: { name: string; objects: string[] }[];
+  images?: { name: string; filepath?: string; size: number[]; pixels_rgba8?: string; channels?: number }[];
   objects?: {
     name: string;
     location?: number[];
@@ -44,7 +45,6 @@ export interface Dump {
     curves?: { points: number[][]; cyclic: boolean; tilts?: number[] }[];
   }[];
   materials?: Record<string, { nodes?: { type: string; inputs?: { name: string; identifier: string; linked: boolean; value: unknown }[] }[] }>;
-  images?: Record<string, unknown>;
 }
 
 // Find the modifier group name for an object (or the first NODES modifier in the file).
@@ -90,6 +90,7 @@ export async function runGenerator(dump: Dump, opts: { object?: string; override
   MISSING.clear();
   DUMP_CONTEXT.objects = (dump.objects ?? []) as any;
   DUMP_CONTEXT.collections = dump.collections ?? [];
+  DUMP_CONTEXT.images = dump.images ?? [];
   DUMP_CONTEXT.frame = Number(opts.overrides?.__frame ?? dump.scene?.frame_current ?? 0);
   DUMP_CONTEXT.fps = Number(dump.scene?.fps ?? 24) / Math.max(Number(dump.scene?.fps_base ?? 1), 1e-9);
   const found = findModifierGroup(dump, opts.object);

@@ -1,5 +1,6 @@
 """Dump geometry node trees, objects, and materials from a .blend to JSON."""
 import bpy
+import base64
 import json
 import sys
 
@@ -141,6 +142,7 @@ result = {
 
 dependency_collection_names = set()
 dependency_object_names = set()
+dependency_image_names = set()
 if target_object and bpy.data.objects.get(target_object):
     for modifier in bpy.data.objects[target_object].modifiers:
         if modifier.type != "NODES" or not modifier.node_group:
@@ -154,6 +156,8 @@ if target_object and bpy.data.objects.get(target_object):
                     dependency_collection_names.add(value.name)
                 elif isinstance(value, bpy.types.Object):
                     dependency_object_names.add(value.name)
+                elif isinstance(value, bpy.types.Image):
+                    dependency_image_names.add(value.name)
             except Exception:
                 pass
 dependency_object_names.update({
@@ -304,6 +308,10 @@ while pending:
     done.add(name)
     result["node_groups"][name] = dump_tree(tree)
     for n in tree.nodes:
+        for socket in n.inputs:
+            value = getattr(socket, "default_value", None)
+            if isinstance(value, bpy.types.Image):
+                dependency_image_names.add(value.name)
         if n.bl_idname == "GeometryNodeGroup" and n.node_tree and n.node_tree.name not in done:
             pending[n.node_tree.name] = n.node_tree
 
@@ -319,7 +327,24 @@ for mat in bpy.data.materials:
         result["materials"][mat.name] = dump_tree(mat.node_tree)
 
 for img in bpy.data.images:
-    result["images"].append({"name": img.name, "filepath": img.filepath, "size": list(img.size)})
+    entry = {"name": img.name, "filepath": img.filepath, "size": list(img.size)}
+    if target_object and img.name in dependency_image_names and img.size[0] and img.size[1]:
+        try:
+            channels = max(1, int(img.channels))
+            values = list(img.pixels[:])
+            rgba = bytearray(img.size[0] * img.size[1] * 4)
+            for pixel in range(img.size[0] * img.size[1]):
+                for channel in range(4):
+                    source_channel = min(channel, channels - 1)
+                    value = values[pixel * channels + source_channel] if pixel * channels + source_channel < len(values) else (1.0 if channel == 3 else 0.0)
+                    if channel == 3 and channels < 4:
+                        value = 1.0
+                    rgba[pixel * 4 + channel] = max(0, min(255, round(float(value) * 255)))
+            entry["pixels_rgba8"] = base64.b64encode(rgba).decode("ascii")
+            entry["channels"] = 4
+        except Exception as error:
+            entry["pixel_error"] = repr(error)
+    result["images"].append(entry)
 
 with open(out_path, "w", encoding="utf-8") as f:
     json.dump(result, f, indent=1, default=str)

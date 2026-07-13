@@ -1,0 +1,77 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/outline-sticker/dump.json",
+  "object": "outline sticker.001",
+  "results": [
+    {
+      "combo": {
+        "name": "authored baseline",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 1056,
+      "faces": 1025,
+      "bbox": {
+        "min": [
+          -12.052,
+          -12.052,
+          0
+        ],
+        "max": [
+          12.052,
+          12.052,
+          0
+        ]
+      },
+      "elapsed_ms": 32
+    },
+    {
+      "combo": {
+        "name": "smaller scale",
+        "overrides": {
+          "scale": 8
+        }
+      },
+      "status": "ok",
+      "verts": 1056,
+      "faces": 1025,
+      "bbox": {
+        "min": [
+          -8.4937,
+          -8.4937,
+          0
+        ],
+        "max": [
+          8.4937,
+          8.4937,
+          0
+        ]
+      },
+      "elapsed_ms": 7
+    },
+    {
+      "combo": {
+        "name": "wide outline",
+        "overrides": {
+          "outline": 1
+        }
+      },
+      "status": "ok",
+      "verts": 1056,
+      "faces": 1025,
+      "bbox": {
+        "min": [
+          -12.5583,
+          -12.5583,
+          0
+        ],
+        "max": [
+          12.5583,
+          12.5583,
+          0
+        ]
+      },
+      "elapsed_ms": 6
+    }
+  ]
+}

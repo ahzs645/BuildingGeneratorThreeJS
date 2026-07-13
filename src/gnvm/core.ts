@@ -81,6 +81,7 @@ export class Field {
     public readonly fn: (ctx: FieldCtx) => Elem[],
     public readonly constant?: Elem,
   ) {}
+  private readonly resolved = new WeakMap<FieldCtx, Elem[]>();
 
   static of(v: Elem): Field {
     return new Field(() => [], v);
@@ -115,7 +116,11 @@ export class Field {
       for (let i = 0; i < ctx.size; i++) out[i] = c;
       return out;
     }
-    return this.fn(ctx);
+    const cached = this.resolved.get(ctx);
+    if (cached) return cached;
+    const result = this.fn(ctx);
+    this.resolved.set(ctx, result);
+    return result;
   }
 
   // Constant fast-path read (throws if not constant).

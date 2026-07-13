@@ -1,0 +1,6 @@
+[
+  { "name": "authored baseline", "overrides": {} },
+  { "name": "coarse pixels", "overrides": { "pixelate": 0.9 } },
+  { "name": "lower density", "overrides": { "STIPPLE DENSITY": 150.0 } },
+  { "name": "strong structure", "overrides": { "structure": 0.8 } }
+]

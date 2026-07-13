@@ -1,0 +1,11 @@
+{
+  "id": "string-to-text",
+  "object": "Vert.001",
+  "root": "Dojo_STRING TO TEXT",
+  "status": "parity-pending",
+  "reason": "The current portable stroke-glyph fallback does not reproduce Blender Bfont outlines or layout exactly.",
+  "blender": { "verts": 246, "faces": 20 },
+  "gnvm": { "verts": 238, "faces": 75 },
+  "portableDump": "dojo/chrome-assets/string-to-text/dump.json",
+  "reference": "dojo/references/chrome-assets/string-to-text.png"
+}

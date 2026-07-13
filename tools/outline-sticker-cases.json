@@ -1,0 +1,5 @@
+[
+  { "name": "authored baseline", "overrides": {} },
+  { "name": "smaller scale", "overrides": { "scale": 8.0 } },
+  { "name": "wide outline", "overrides": { "outline": 1.0 } }
+]

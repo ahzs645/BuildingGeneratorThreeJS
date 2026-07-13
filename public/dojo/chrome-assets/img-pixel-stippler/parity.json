@@ -1,0 +1,101 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/img-pixel-stippler/dump.json",
+  "object": "IMG PIXEL STIPPLER",
+  "results": [
+    {
+      "combo": {
+        "name": "authored baseline",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 811
+    },
+    {
+      "combo": {
+        "name": "coarse pixels",
+        "overrides": {
+          "pixelate": 0.9
+        }
+      },
+      "status": "ok",
+      "verts": 4424,
+      "faces": 4290,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 52
+    },
+    {
+      "combo": {
+        "name": "lower density",
+        "overrides": {
+          "STIPPLE DENSITY": 150
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 770
+    },
+    {
+      "combo": {
+        "name": "strong structure",
+        "overrides": {
+          "structure": 0.8
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 703
+    }
+  ]
+}

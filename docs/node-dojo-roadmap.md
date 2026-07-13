@@ -17,10 +17,12 @@ Inventory date: 2026-07-12. The source pack contains 16 `.blend` projects.
 - Chrome Asset Library: Sticker Noodle Brush — nested Polarity Sticker evaluation and Rotate Instances match Blender across spacing, size, and twist cases (16,252 vertices / 956 faces authored).
 - Chrome Asset Library: Sticker Noodle Star — the shared `dot periodic brush.003` family used by eight objects matches Blender across spacing, star radii, and point-count cases (716,079 vertices / 715,520 faces authored).
 - Chrome Asset Library: `gn.sticker control` and `gn.sticker control.001` — the 10pt Spoke and Soft Star flat-stickie roots match their Blender quads exactly (4 vertices / 1 face each).
+- Chrome Asset Library: Outline Sticker — the `Geometry Nodes.009` root matches Blender across authored scale and outline controls (1,056 vertices / 1,025 faces).
+- Chrome Asset Library: Image Pixel Stippler — packed image extraction, image sampling, field memoization, and BVH raycasting match Blender across authored/coarse image cases (72,094 vertices / 71,550 faces authored).
 
 ## Recommended next targets
 
-1. **Chrome Asset Library** — 43 active objects, 26 modifier roots, 404 groups. Eight root families are complete; continue in increasing reachable-node complexity. `soft pixel marker.001` is extracted but source-blocked because Blender cannot evaluate its missing Budokan font.
+1. **Chrome Asset Library** — 43 active objects, 26 modifier roots, 404 groups. Ten root families are complete; continue in increasing reachable-node complexity. `soft pixel marker.001` is source-blocked by the missing Budokan font; `Dojo_STRING TO TEXT` is extracted with Blender evidence but remains pending exact Bfont outline/layout parity.
 2. **N03D 3D-printing Utilities** — 73 active objects, 39 roots, 639 groups. Start with one isolated bolt, dowel, or clevis-pin generator rather than loading the whole library.
 3. **New Joint Generators** — 32 active objects, 13 roots, 572 groups. Pipe and dowel generators are the clearest individual products; Bubble Putty is a larger field/volume target.
 4. **More Math Clay surfaces** — 33 active objects and 14 root families. Low-risk as baked gallery pieces; substantially more work for a live TPMS evaluator.
