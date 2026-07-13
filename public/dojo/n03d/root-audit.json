@@ -1,0 +1,947 @@
+[
+  {
+    "root": "BIT STAND nodes",
+    "object": "Plane.005",
+    "modifier": "BIT STAND nodes",
+    "status": "ok",
+    "verts": 8718,
+    "faces": 5270,
+    "bbox": {
+      "min": [
+        -23.7908,
+        -55.0344,
+        -3.8361
+      ],
+      "max": [
+        23.7908,
+        55.0344,
+        56.1639
+      ]
+    },
+    "materials": [
+      null
+    ],
+    "elapsed_ms": 223.1
+  },
+  {
+    "root": "BOLT GEN DHTS v02_4MAY2024.001",
+    "object": "Bolt Object",
+    "modifier": "BOLT GEN DHTS v02_4MAY2024.001",
+    "status": "ok",
+    "verts": 1,
+    "faces": 0,
+    "bbox": {
+      "min": [
+        -0.0,
+        -0.0,
+        -0.0
+      ],
+      "max": [
+        -0.0,
+        -0.0,
+        -0.0
+      ]
+    },
+    "materials": [],
+    "elapsed_ms": 8.7
+  },
+  {
+    "root": "BOLT GEN DHTS v03_Thru Head_1JUL2024",
+    "object": "Bolt Gen_DHTS_Thru Head v03.001",
+    "modifier": "BOLT GEN DHTS v02_4MAY2024.001",
+    "status": "ok",
+    "verts": 32356,
+    "faces": 32051,
+    "bbox": {
+      "min": [
+        -24.3196,
+        -25.64,
+        35.1032
+      ],
+      "max": [
+        15.1122,
+        25.64,
+        124.5942
+      ]
+    },
+    "materials": [
+      "Filament PLA .02 mm layer height",
+      null
+    ],
+    "elapsed_ms": 93.8
+  },
+  {
+    "root": "BOLT GEN DHTS v03_Thru Head_1JUL2024.001",
+    "object": "Bolt Gen_DHTS_Thru Head v03.006",
+    "modifier": "BOLT GEN DHTS v02_4MAY2024.001",
+    "status": "ok",
+    "verts": 2696,
+    "faces": 4330,
+    "bbox": {
+      "min": [
+        -7.9787,
+        -7.9737,
+        4.1776
+      ],
+      "max": [
+        7.9693,
+        7.9773,
+        31.3939
+      ]
+    },
+    "materials": [
+      null,
+      "Filament PLA .02 mm layer height"
+    ],
+    "elapsed_ms": 22.2
+  },
+  {
+    "root": "BOLT GEN DHTS v03_Thru Head_1JUL2024.002",
+    "object": "Bolt Gen_DHTS_Thru Head v03.008",
+    "modifier": "BOLT GEN DHTS v02_4MAY2024.001",
+    "status": "ok",
+    "verts": 2696,
+    "faces": 4330,
+    "bbox": {
+      "min": [
+        -7.9786,
+        -7.973,
+        4.2941
+      ],
+      "max": [
+        7.9702,
+        7.9776,
+        31.5103
+      ]
+    },
+    "materials": [
+      null,
+      "Filament PLA .02 mm layer height"
+    ],
+    "elapsed_ms": 34.4
+  },
+  {
+    "root": "BOLT GEN DHTS v03_Thru Head_1JUL2024.005",
+    "object": "Bolt Gen_DHTS_Thru Head v03.003",
+    "modifier": "BOLT GEN DHTS v02_4MAY2024.001",
+    "status": "ok",
+    "verts": 16580,
+    "faces": 16582,
+    "bbox": {
+      "min": [
+        -7.966,
+        -7.9692,
+        0.0
+      ],
+      "max": [
+        7.979,
+        7.9692,
+        27.216
+      ]
+    },
+    "materials": [],
+    "elapsed_ms": 638.0
+  },
+  {
+    "root": "CHROME CRAYON 3D",
+    "object": "CHROME CRAYON OBJECT",
+    "modifier": "CHROME CRAYON 3D",
+    "status": "ok",
+    "verts": 71755,
+    "faces": 71104,
+    "bbox": {
+      "min": [
+        -0.3206,
+        -0.3213,
+        -0.0009
+      ],
+      "max": [
+        0.3337,
+        0.2297,
+        0.0379
+      ]
+    },
+    "materials": [
+      null,
+      "chrome.001"
+    ],
+    "elapsed_ms": 701.0
+  },
+  {
+    "root": "CLEVIS PIN 31MAY2024_v1",
+    "object": "CLEVIS PIN",
+    "modifier": "CLEVIS PIN 31MAY2024_v1",
+    "status": "ok",
+    "verts": 36390,
+    "faces": 34198,
+    "bbox": {
+      "min": [
+        -8.142,
+        -8.1387,
+        -4.0058
+      ],
+      "max": [
+        8.142,
+        8.1387,
+        18.36
+      ]
+    },
+    "materials": [
+      null,
+      "Filament PLA .02 mm layer height"
+    ],
+    "elapsed_ms": 170.5
+  },
+  {
+    "root": "Geometry Nodes",
+    "object": "SPLIT N TAP",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 42,
+    "faces": 80,
+    "bbox": {
+      "min": [
+        -951.0579,
+        -999.9999,
+        -1000.0
+      ],
+      "max": [
+        951.0579,
+        999.9999,
+        1000.0
+      ]
+    },
+    "materials": [],
+    "elapsed_ms": 9.6
+  },
+  {
+    "root": "Geometry Nodes.002",
+    "object": "Cube",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 32190,
+    "faces": 58917,
+    "bbox": {
+      "min": [
+        -1.0358,
+        -1.0369,
+        -1.0358
+      ],
+      "max": [
+        1.0369,
+        1.0369,
+        1.0358
+      ]
+    },
+    "materials": [
+      "knit thread",
+      null
+    ],
+    "elapsed_ms": 38.1
+  },
+  {
+    "root": "Geometry Nodes.003",
+    "object": "proc box",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 90928,
+    "faces": 87165,
+    "bbox": {
+      "min": [
+        -47.2342,
+        -62.3152,
+        0.0
+      ],
+      "max": [
+        31.5067,
+        62.3152,
+        74.758
+      ]
+    },
+    "materials": [
+      null,
+      "filament visualizer .02 mm layer height.001"
+    ],
+    "elapsed_ms": 254.9
+  },
+  {
+    "root": "Geometry Nodes.004",
+    "object": "PROC.BOX WIP.001",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 90928,
+    "faces": 87165,
+    "bbox": {
+      "min": [
+        -47.2342,
+        -62.3152,
+        0.0
+      ],
+      "max": [
+        31.5066,
+        62.3152,
+        74.758
+      ]
+    },
+    "materials": [
+      null,
+      "filament visualizer .02 mm layer height.002"
+    ],
+    "elapsed_ms": 258.3
+  },
+  {
+    "root": "Geometry Nodes.007",
+    "object": "Plane.002",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 320,
+    "faces": 288,
+    "bbox": {
+      "min": [
+        -2.3499,
+        -0.1,
+        -2.3499
+      ],
+      "max": [
+        2.3499,
+        0.1,
+        59.5869
+      ]
+    },
+    "materials": [
+      "emit.002"
+    ],
+    "elapsed_ms": 12.4
+  },
+  {
+    "root": "Geometry Nodes.009",
+    "object": "Cube.003",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 0,
+    "faces": 0,
+    "bbox": {
+      "min": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "materials": [],
+    "elapsed_ms": 9.6
+  },
+  {
+    "root": "Geometry Nodes.011",
+    "object": "Cube.001",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 8,
+    "faces": 5,
+    "bbox": {
+      "min": [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "materials": [
+      "Material.003",
+      "Filament PLA .02 mm layer height"
+    ],
+    "elapsed_ms": 9.1
+  },
+  {
+    "root": "Geometry Nodes.012",
+    "object": "GLUE GRID",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 4736,
+    "faces": 4096,
+    "bbox": {
+      "min": [
+        -0.0,
+        -0.0,
+        0.0019
+      ],
+      "max": [
+        168.168,
+        168.168,
+        4.653
+      ]
+    },
+    "materials": [
+      null
+    ],
+    "elapsed_ms": 13.0
+  },
+  {
+    "root": "Geometry Nodes.013",
+    "object": "print test mesh",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 111,
+    "faces": 105,
+    "bbox": {
+      "min": [
+        -5.5,
+        -5.5,
+        -5.5
+      ],
+      "max": [
+        5.5,
+        8.7572,
+        5.5
+      ]
+    },
+    "materials": [],
+    "elapsed_ms": 8.9
+  },
+  {
+    "root": "Geometry Nodes.015",
+    "object": "Plane.006",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 1808,
+    "faces": 905,
+    "bbox": {
+      "min": [
+        -21.0863,
+        -21.0863,
+        0.0
+      ],
+      "max": [
+        21.0863,
+        21.0863,
+        4.5051
+      ]
+    },
+    "materials": [
+      "Filament PLA .02 mm layer height"
+    ],
+    "elapsed_ms": 14.9
+  },
+  {
+    "root": "Geometry Nodes.016",
+    "object": "Plane.007",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 0,
+    "faces": 0,
+    "bbox": {
+      "min": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "materials": [],
+    "elapsed_ms": 9.0
+  },
+  {
+    "root": "Geometry Nodes.028",
+    "object": "Cube.008",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 8896,
+    "faces": 8558,
+    "bbox": {
+      "min": [
+        -54.2708,
+        -39.7184,
+        -19.7629
+      ],
+      "max": [
+        25.4103,
+        39.7184,
+        19.7629
+      ]
+    },
+    "materials": [
+      null,
+      "Filament PLA .02 mm layer height"
+    ],
+    "elapsed_ms": 71.2
+  },
+  {
+    "root": "Geometry Nodes.031",
+    "object": "tutorial",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 4512,
+    "faces": 3032,
+    "bbox": {
+      "min": [
+        -62.5315,
+        -63.1044,
+        0.0
+      ],
+      "max": [
+        30.2942,
+        63.1044,
+        74.758
+      ]
+    },
+    "materials": [
+      null,
+      "filament visualizer .02 mm layer height.001"
+    ],
+    "elapsed_ms": 67.5
+  },
+  {
+    "root": "Print Bed Previewer.001",
+    "object": "Print Bed Previewer_Object",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 10692,
+    "faces": 95,
+    "bbox": {
+      "min": [
+        -127.8021,
+        -136.3182,
+        -1.8833
+      ],
+      "max": [
+        127.8021,
+        136.3182,
+        235.0
+      ]
+    },
+    "materials": [
+      null,
+      "build plate",
+      "Filament PLA .02 mm layer height",
+      "cross section.002"
+    ],
+    "elapsed_ms": 17.7
+  },
+  {
+    "root": "Shelf_dowel from mesh line",
+    "object": "Plane.003",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 1887,
+    "faces": 1778,
+    "bbox": {
+      "min": [
+        -10.9956,
+        -10.9989,
+        -142.713
+      ],
+      "max": [
+        11.0,
+        10.9989,
+        26.1745
+      ]
+    },
+    "materials": [
+      "proc_ mahogany.003"
+    ],
+    "elapsed_ms": 11.1
+  },
+  {
+    "root": "Shelf_dowel from mesh line.001",
+    "object": "Plane.001",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 1887,
+    "faces": 1778,
+    "bbox": {
+      "min": [
+        -10.9956,
+        -10.9989,
+        -142.713
+      ],
+      "max": [
+        11.0,
+        10.9989,
+        26.1745
+      ]
+    },
+    "materials": [
+      "proc_ mahogany.002"
+    ],
+    "elapsed_ms": 9.8
+  },
+  {
+    "root": "arrow nodes",
+    "object": "ARROW",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 1155,
+    "faces": 1153,
+    "bbox": {
+      "min": [
+        -5.5425,
+        -0.1297,
+        -7.1
+      ],
+      "max": [
+        5.5321,
+        0.1574,
+        7.8016
+      ]
+    },
+    "materials": [
+      "flat.w",
+      "flat.b.001"
+    ],
+    "elapsed_ms": 10.0
+  },
+  {
+    "root": "asmbly_bracket.001",
+    "object": "Cube.035",
+    "modifier": "asmbly_bracket",
+    "status": "ok",
+    "verts": 5955,
+    "faces": 5639,
+    "bbox": {
+      "min": [
+        -39.572,
+        -17.0,
+        -17.0
+      ],
+      "max": [
+        20.8494,
+        17.0,
+        17.0
+      ]
+    },
+    "materials": [
+      null,
+      "filament .02 mm.004"
+    ],
+    "elapsed_ms": 386.0
+  },
+  {
+    "root": "benchy",
+    "object": "Benchy",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 112569,
+    "faces": 225154,
+    "bbox": {
+      "min": [
+        -68.7102,
+        -35.9303,
+        -16.2419
+      ],
+      "max": [
+        70.3592,
+        35.9303,
+        95.0118
+      ]
+    },
+    "materials": [
+      "Filament PLA .02 mm layer height"
+    ],
+    "elapsed_ms": 64.3
+  },
+  {
+    "root": "bin.stackable",
+    "object": "BIN_ Stackable Gridfinity 31MAY2024",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 11288,
+    "faces": 10410,
+    "bbox": {
+      "min": [
+        0.5005,
+        0.5005,
+        0.0
+      ],
+      "max": [
+        83.5835,
+        41.5415,
+        29.9826
+      ]
+    },
+    "materials": [
+      null,
+      "Filament PLA .02 mm layer height"
+    ],
+    "elapsed_ms": 22.4
+  },
+  {
+    "root": "crayon curve",
+    "object": "CRAYON",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 1574,
+    "faces": 1330,
+    "bbox": {
+      "min": [
+        -60.7046,
+        32.9647,
+        0.0
+      ],
+      "max": [
+        120.2773,
+        80.2123,
+        7.2422
+      ]
+    },
+    "materials": [
+      null,
+      "flat crayon"
+    ],
+    "elapsed_ms": 22.3
+  },
+  {
+    "root": "dowel",
+    "object": "Plane.004",
+    "modifier": "dowel",
+    "status": "ok",
+    "verts": 333,
+    "faces": 224,
+    "bbox": {
+      "min": [
+        -10.9956,
+        -10.9989,
+        -50.0024
+      ],
+      "max": [
+        11.0,
+        10.9989,
+        50.0024
+      ]
+    },
+    "materials": [
+      "proc_ mahogany.003"
+    ],
+    "elapsed_ms": 10.6
+  },
+  {
+    "root": "dowel from mesh line",
+    "object": "Vert.003",
+    "modifier": "dowel from mesh line",
+    "status": "ok",
+    "verts": 2109,
+    "faces": 2000,
+    "bbox": {
+      "min": [
+        -10.9956,
+        -10.9989,
+        -133.3352
+      ],
+      "max": [
+        11.0,
+        10.9989,
+        53.2996
+      ]
+    },
+    "materials": [
+      "proc_ mahogany.001"
+    ],
+    "elapsed_ms": 9.5
+  },
+  {
+    "root": "driver",
+    "object": "Bolt Gen_DHTS_Thru Head v03.001",
+    "modifier": "driver",
+    "status": "ok",
+    "verts": 32356,
+    "faces": 32051,
+    "bbox": {
+      "min": [
+        -24.3196,
+        -25.64,
+        35.1032
+      ],
+      "max": [
+        15.1122,
+        25.64,
+        124.5942
+      ]
+    },
+    "materials": [
+      "Filament PLA .02 mm layer height",
+      null
+    ],
+    "elapsed_ms": 89.6
+  },
+  {
+    "root": "feet hollow",
+    "object": "feet hollow magnet.001",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 1268,
+    "faces": 1158,
+    "bbox": {
+      "min": [
+        0.0006,
+        0.0006,
+        -0.005
+      ],
+      "max": [
+        0.0204,
+        0.0204,
+        -0.0001
+      ]
+    },
+    "materials": [
+      null
+    ],
+    "elapsed_ms": 8.8
+  },
+  {
+    "root": "hole punch",
+    "object": "hole punch obj",
+    "modifier": "hole punch",
+    "status": "ok",
+    "verts": 153,
+    "faces": 104,
+    "bbox": {
+      "min": [
+        -2.9943,
+        -2.9986,
+        -7.5404
+      ],
+      "max": [
+        3.0,
+        2.9986,
+        0.25
+      ]
+    },
+    "materials": [
+      null,
+      "Filament PLA .02 mm layer height"
+    ],
+    "elapsed_ms": 10.0
+  },
+  {
+    "root": "pill hole countersunk",
+    "object": "Pill Hole_counter sunk",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 336,
+    "faces": 362,
+    "bbox": {
+      "min": [
+        -4.0,
+        -10.9099,
+        -1.0
+      ],
+      "max": [
+        4.0,
+        10.9099,
+        3.0
+      ]
+    },
+    "materials": [
+      null,
+      "Filament PLA .02 mm layer height"
+    ],
+    "elapsed_ms": 9.5
+  },
+  {
+    "root": "pill hole cylindrical",
+    "object": "Pill Hole_cylindrical",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 200,
+    "faces": 176,
+    "bbox": {
+      "min": [
+        -4.0,
+        -11.9906,
+        -1.0
+      ],
+      "max": [
+        4.0,
+        11.4854,
+        1.0
+      ]
+    },
+    "materials": [
+      null,
+      "Filament PLA .02 mm layer height"
+    ],
+    "elapsed_ms": 8.5
+  },
+  {
+    "root": "simple conveyer",
+    "object": "Cube.005",
+    "modifier": "GeometryNodes",
+    "status": "ok",
+    "verts": 16,
+    "faces": 13,
+    "bbox": {
+      "min": [
+        -25.927,
+        -16.1945,
+        -15.13
+      ],
+      "max": [
+        25.927,
+        75.417,
+        15.13
+      ]
+    },
+    "materials": [],
+    "elapsed_ms": 12.0
+  },
+  {
+    "root": "simple conveyor mechanic",
+    "object": "Cube.011",
+    "modifier": "simple conveyor mechanic",
+    "status": "ok",
+    "verts": 16,
+    "faces": 13,
+    "bbox": {
+      "min": [
+        -25.927,
+        -33.3117,
+        -15.13
+      ],
+      "max": [
+        25.927,
+        -3.4774,
+        15.13
+      ]
+    },
+    "materials": [
+      "Filament PLA .02 mm layer height"
+    ],
+    "elapsed_ms": 7.9
+  },
+  {
+    "root": "vice material",
+    "object": "Cube.008",
+    "modifier": "GeometryNodes.001",
+    "status": "ok",
+    "verts": 8896,
+    "faces": 8558,
+    "bbox": {
+      "min": [
+        -54.2708,
+        -39.7184,
+        -19.7629
+      ],
+      "max": [
+        25.4103,
+        39.7184,
+        19.7629
+      ]
+    },
+    "materials": [
+      null,
+      "Filament PLA .02 mm layer height"
+    ],
+    "elapsed_ms": 68.3
+  }
+]

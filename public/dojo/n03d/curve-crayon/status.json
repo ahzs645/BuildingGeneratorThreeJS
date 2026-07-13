@@ -1,0 +1,12 @@
+{
+  "id": "n03d-curve-crayon",
+  "object": "CRAYON",
+  "root": "crayon curve",
+  "status": "topology-and-bounds-exact",
+  "blender": { "verts": 1574, "faces": 1330 },
+  "gnvm": { "verts": 1574, "faces": 1330 },
+  "parameter_case": { "overrides": { "line weight": 10 }, "blender": { "verts": 2828, "faces": 2597 }, "gnvm": { "verts": 2828, "faces": 2597 } },
+  "coverage": "100% of all reachable node types across 12 groups and 530 nodes.",
+  "reference": "dojo/references/n03d/curve-crayon.png",
+  "validation": "Authored topology and bounds match Blender within dump rounding. The changed line-weight case is also topology-exact."
+}

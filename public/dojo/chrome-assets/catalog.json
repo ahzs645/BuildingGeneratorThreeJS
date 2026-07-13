@@ -1310,6 +1310,44 @@
       "value": 0
     }
   ]
+},
+{
+  "id": "n03d-old-chrome-crayon",
+  "title": "N03D · Legacy 3D Chrome Crayon",
+  "object": "CHROME CRAYON OBJECT",
+  "dump": "dojo/n03d/old-chrome-crayon/dump.json",
+  "reference": "dojo/references/n03d/old-chrome-crayon.png",
+  "blenderStats": { "verts": 71755, "faces": 71104 },
+  "localSpace": true,
+  "note": "Exact authored topology across the 250-node legacy crayon graph. Browser bounds are up to 0.014 units wider; a second thickness case matches all 50,810 Blender faces with one fewer browser vertex.",
+  "controls": [
+    { "name": "Line Thiccness", "label": "Line thickness", "min": 0.3, "max": 2, "step": 0.000001, "value": 1.2360687255859375 },
+    { "name": "Resolution", "label": "Resolution", "min": 40, "max": 500, "step": 1, "value": 333 },
+    { "name": "Sigilize", "label": "Sigilize", "min": 0, "max": 1500, "step": 1, "value": 1111 },
+    { "name": "Soften", "label": "Soften", "min": 0, "max": 150, "step": 1, "value": 94 },
+    { "type": "checkbox", "name": "FLATTEN", "label": "Flatten", "value": false },
+    { "type": "checkbox", "name": "Show Pt Count", "label": "Show point count", "value": false }
+  ]
+},
+{
+  "id": "n03d-curve-crayon",
+  "title": "N03D · Curve Crayon",
+  "object": "CRAYON",
+  "dump": "dojo/n03d/curve-crayon/dump.json",
+  "reference": "dojo/references/n03d/curve-crayon.png",
+  "blenderStats": { "verts": 1574, "faces": 1330 },
+  "localSpace": true,
+  "note": "Exact topology and bounds for the complete 530-node curve-crayon graph. A changed line-weight case is also exact at 2,828 vertices and 2,597 faces.",
+  "controls": [
+    { "name": "line weight", "label": "Line weight", "min": 1, "max": 20, "step": 0.000001, "value": 6.023773193359375 },
+    { "name": "resolution", "label": "Resolution", "min": 0.1, "max": 1, "step": 0.000001, "value": 0.548275887966156 },
+    { "name": "Sigil-ize", "label": "Sigilize", "min": 0, "max": 50, "step": 1, "value": 0 },
+    { "name": "buffer", "label": "Buffer", "min": 0, "max": 150, "step": 0.000001, "value": 19.59649658203125 },
+    { "type": "checkbox", "name": "flat/chrome", "label": "Flat chrome", "value": false },
+    { "type": "checkbox", "name": "Animate", "label": "Animate", "value": false },
+    { "name": "frame duration", "label": "Frame duration", "min": 0, "max": 500, "step": 1, "value": 0 },
+    { "type": "checkbox", "name": "mirror", "label": "Mirror", "value": false },
+    { "type": "checkbox", "name": "wavy", "label": "Wavy", "value": false }
+  ]
 }
 ]
-
