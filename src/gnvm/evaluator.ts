@@ -9,7 +9,7 @@
 //    so evaluation never crashes and we get a coverage report + partial mesh.
 
 import { Field, Vec3, Domain, FieldCtx, asNum, fieldMap, vadd, vcross, vdot, vnorm, vscale, vsub } from "./core";
-import { Geometry, realizeInstances, topologyOf, Topology } from "./geometry";
+import { Geometry, Mesh, mergeMeshInto, realizeInstances, topologyOf, Topology } from "./geometry";
 import { splineFrames, splineLength } from "./curves";
 import { EvalAPI, RawNode, REGISTRY, MISSING, SockVal, DataRef } from "./registry";
 
@@ -525,6 +525,49 @@ class Invocation {
       }
       case "GeometryNodeGroup": {
         if (!node.group) return {};
+        // This Blender 3.4-era utility pack implements large socket selectors
+        // as nested math/switch node groups. Evaluating the legacy boolean
+        // ladder field-by-field is both expensive and prone to float/bool
+        // coercion differences, while the group contract itself is exact.
+        if (node.group === "_SWITCH.GEOMETRY 25 slot" || node.group === "_SWITCH.accumalative geo") {
+          const rawValue = this.pull(node, "Input_0");
+          const value = Math.max(0, Math.round(rawValue instanceof Field && rawValue.isConst ? asNum(rawValue.value) : 0));
+          const geometryInputs = node.inputs.filter((socket) => socket.type === "NodeSocketGeometry" && /^\d+$/.test(socket.name));
+          if (node.group === "_SWITCH.GEOMETRY 25 slot") {
+            const socket = geometryInputs[value - 1];
+            return { Output_19: socket ? this.pull(node, socket.identifier) : new Geometry() };
+          }
+          const joined = new Geometry();
+          joined.mesh = new Mesh();
+          for (const socket of geometryInputs.slice(0, value)) {
+            const part = this.pull(node, socket.identifier);
+            if (!(part instanceof Geometry)) continue;
+            if (part.mesh) mergeMeshInto(joined.mesh, part.mesh);
+            joined.curves.push(...part.curves.map((spline) => ({
+              cyclic: spline.cyclic,
+              resolution: spline.resolution,
+              points: spline.points.map((point) => [...point] as Vec3),
+              controlPoints: spline.controlPoints?.map((point) => [...point] as Vec3),
+              bezierLeft: spline.bezierLeft?.map((point) => [...point] as Vec3),
+              bezierRight: spline.bezierRight?.map((point) => [...point] as Vec3),
+            })));
+            joined.instances.push(...part.instances.map((instance) => ({
+              ...instance,
+              position: [...instance.position] as Vec3,
+              rotation: [...instance.rotation] as Vec3,
+              scale: [...instance.scale] as Vec3,
+              attributes: instance.attributes ? new Map(instance.attributes) : undefined,
+            })));
+          }
+          if (!joined.mesh.positions.length && !joined.mesh.faces.length && !joined.mesh.edges.length) joined.mesh = undefined;
+          return { Output_19: joined };
+        }
+        if (node.group === "_SWITCH.Materials 15 slot") {
+          const rawValue = this.pull(node, "Input_0");
+          const value = Math.max(0, Math.round(rawValue instanceof Field && rawValue.isConst ? asNum(rawValue.value) : 0));
+          const sockets = node.inputs.filter((socket) => socket.type === "NodeSocketMaterial" && /^\d+$/.test(socket.name));
+          return { Output_19: sockets[value - 1] ? this.pull(node, sockets[value - 1].identifier) : null };
+        }
         const sub: Record<string, SockVal> = {};
         for (const s of node.inputs)
           if (s.identifier) sub[s.identifier] = coerceGroupInput(this.pull(node, s.identifier), s.type);
