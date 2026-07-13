@@ -36,6 +36,12 @@ export interface DataRef {
   datablock?: string;
   name: string;
 }
+export interface FontAtlas {
+  name: string;
+  error?: string;
+  align_offsets?: Record<string, number>;
+  glyphs: Record<string, { advance: number; curves: { cyclic: boolean; points: number[][] }[] }>;
+}
 export type SockVal = Geometry | Field | string | DataRef | null | undefined;
 
 export interface EvalAPI {
@@ -78,11 +84,12 @@ export const DUMP_CONTEXT: {
   objects: DumpObject[];
   collections: { name: string; objects: string[] }[];
   images: { name: string; filepath?: string; size: number[]; pixels_rgba8?: string; channels?: number; decoded?: Uint8Array }[];
+  fonts: Record<string, FontAtlas>;
   activeObject?: DumpObject;
   evaluatedObjects: Map<string, Geometry>;
   frame: number;
   fps: number;
-} = { objects: [], collections: [], images: [], evaluatedObjects: new Map(), frame: 0, fps: 24 };
+} = { objects: [], collections: [], images: [], fonts: {}, evaluatedObjects: new Map(), frame: 0, fps: 24 };
 
 export function reg(types: string | string[], handler: Handler): void {
   for (const t of Array.isArray(types) ? types : [types]) REGISTRY.set(t, handler);

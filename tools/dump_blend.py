@@ -151,6 +151,99 @@ def dump_tree(tree):
         d["links"].append(entry)
     return d
 
+
+def dump_font_glyph(font, character, align_y="TOP_BASELINE"):
+    """Convert one Blender vector-font glyph to portable cyclic polylines."""
+    curve = bpy.data.curves.new("__NODE_DOJO_FONT_GLYPH", "FONT")
+    curve.body = character
+    curve.font = font
+    curve.size = 1.0
+    curve.align_x = "LEFT"
+    curve.align_y = align_y
+    obj = bpy.data.objects.new("__NODE_DOJO_FONT_GLYPH", curve)
+    bpy.context.scene.collection.objects.link(obj)
+    for selected in bpy.context.selected_objects:
+        selected.select_set(False)
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.convert(target="CURVE")
+
+    def bezier(a, b, c, d, factor):
+        inverse = 1.0 - factor
+        return [
+            inverse**3 * a[index]
+            + 3.0 * inverse * inverse * factor * b[index]
+            + 3.0 * inverse * factor * factor * c[index]
+            + factor**3 * d[index]
+            for index in range(3)
+        ]
+
+    splines = []
+    for spline in obj.data.splines:
+        cyclic = bool(spline.use_cyclic_u)
+        points = []
+        if spline.type == "BEZIER":
+            controls = list(spline.bezier_points)
+            all_vector = all(
+                point.handle_left_type == "VECTOR" and point.handle_right_type == "VECTOR"
+                for point in controls
+            )
+            if all_vector:
+                points = [[round(value, 7) for value in point.co] for point in controls]
+            else:
+                segment_count = len(controls) if cyclic else max(0, len(controls) - 1)
+                resolution = max(2, int(spline.resolution_u or obj.data.resolution_u or 12))
+                for segment in range(segment_count):
+                    first = controls[segment]
+                    second = controls[(segment + 1) % len(controls)]
+                    for step in range(resolution):
+                        points.append([
+                            round(value, 7)
+                            for value in bezier(first.co, first.handle_right, second.handle_left, second.co, step / resolution)
+                        ])
+                if not cyclic and controls:
+                    points.append([round(value, 7) for value in controls[-1].co])
+        else:
+            points = [[round(point.co[index], 7) for index in range(3)] for point in spline.points]
+        if points:
+            splines.append({"cyclic": cyclic, "points": points})
+
+    data = obj.data
+    bpy.data.objects.remove(obj, do_unlink=True)
+    if data.users == 0:
+        bpy.data.curves.remove(data)
+    return splines
+
+
+def dump_font_atlas(font):
+    marker = "|"
+    marker_splines = dump_font_glyph(font, marker)
+    marker_max = max((point[0] for spline in marker_splines for point in spline["points"]), default=0.0)
+    glyphs = {}
+    for codepoint in range(32, 127):
+        character = chr(codepoint)
+        splines = dump_font_glyph(font, character)
+        combined = dump_font_glyph(font, character + marker)
+        combined_max = max((point[0] for spline in combined for point in spline["points"]), default=marker_max)
+        glyphs[character] = {
+            "advance": round(max(0.0, combined_max - marker_max), 7),
+            "curves": splines,
+        }
+    baseline_points = [point for spline in dump_font_glyph(font, "A", "TOP_BASELINE") for point in spline["points"]]
+    baseline_min_y = min((point[1] for point in baseline_points), default=0.0)
+    alignments = {
+        "TOP": "Top",
+        "TOP_BASELINE": "Top Baseline",
+        "CENTER": "Middle",
+        "BOTTOM_BASELINE": "Bottom Baseline",
+        "BOTTOM": "Bottom",
+    }
+    align_offsets = {}
+    for blender_value, socket_value in alignments.items():
+        points = [point for spline in dump_font_glyph(font, "A", blender_value) for point in spline["points"]]
+        align_offsets[socket_value] = round(min((point[1] for point in points), default=baseline_min_y) - baseline_min_y, 7)
+    return {"name": font.name, "align_offsets": align_offsets, "glyphs": glyphs}
+
 result = {
     "blender_version": bpy.app.version_string,
     "scene": {
@@ -158,7 +251,7 @@ result = {
         "fps": bpy.context.scene.render.fps,
         "fps_base": bpy.context.scene.render.fps_base,
     },
-    "objects": [], "collections": [], "node_groups": {}, "materials": {}, "images": [], "dependency_objects": []
+    "objects": [], "collections": [], "node_groups": {}, "materials": {}, "images": [], "fonts": {}, "dependency_objects": []
 }
 
 dependency_collection_names = set()
@@ -415,6 +508,29 @@ for img in bpy.data.images:
         except Exception as error:
             entry["pixel_error"] = repr(error)
     result["images"].append(entry)
+
+# String to Curves depends on Blender's vector-font outlines, which browsers
+# cannot recover from a .blend. Export the referenced ASCII glyphs as cyclic
+# polylines so the GN-VM can reproduce packed fonts and explicitly supplied
+# font overrides without shipping Blender or a TTF parser.
+referenced_fonts = {}
+for tree_name in result["node_groups"]:
+    tree = bpy.data.node_groups.get(tree_name)
+    if tree is None:
+        continue
+    for node in tree.nodes:
+        if node.bl_idname != "GeometryNodeStringToCurves":
+            continue
+        socket = next((candidate for candidate in node.inputs if candidate.name == "Font"), None)
+        font = getattr(socket, "default_value", None) if socket else None
+        if isinstance(font, bpy.types.VectorFont):
+            referenced_fonts[font.name] = font
+for font_name, font in referenced_fonts.items():
+    try:
+        result["fonts"][font_name] = dump_font_atlas(font)
+    except Exception as error:
+        result["fonts"][font_name] = {"name": font_name, "error": repr(error), "glyphs": {}}
+        print(f"FONT_ATLAS_ERROR {font_name}: {error!r}")
 
 with open(out_path, "w", encoding="utf-8") as f:
     json.dump(result, f, indent=1, default=str)

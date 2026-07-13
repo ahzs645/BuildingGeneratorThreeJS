@@ -1,9 +1,9 @@
 {
   "root": "_TEXT.006",
   "objects": ["text", "txt"],
-  "status": "pending-bfont-parity",
+  "status": "near-parity",
   "blender": { "object": "text", "verts": 1053, "faces": 960 },
-  "gnvmPortableGlyphs": { "verts": 1724, "faces": 1496 },
+  "gnvmEmbeddedFont": { "verts": 1213, "faces": 975 },
   "coverage": { "missingNodeTypes": 0 },
-  "blocker": "The browser portable glyph atlas does not yet reproduce Blender Bfont outlines, kerning, and fill triangulation exactly."
+  "remaining": "The packed SF Intermosaic glyph outlines and raw point counts are exact. Downstream N-gon/instance processing still accounts for the remaining 160 vertices and 15 faces."
 }

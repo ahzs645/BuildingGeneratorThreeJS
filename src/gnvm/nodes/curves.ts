@@ -1,7 +1,7 @@
 // Curve subsystem handlers: primitives, resample, fillet, sweep-to-mesh, fill.
 import { Field, Vec3, Elem, asNum, asVec3, vadd, vsub, vscale, vdot, vcross, vlen, vnorm } from "../core";
 import { Geometry, Mesh, Spline, buildTopology } from "../geometry";
-import { reg } from "../registry";
+import { DUMP_CONTEXT, reg } from "../registry";
 import { makeFieldCtx } from "../evaluator";
 import { resampleSpline, filletSpline, sweep, fillCurves, meshEdgesToChains, splineLength, splineFrames } from "../curves";
 
@@ -270,7 +270,7 @@ reg("GeometryNodeFillCurve", (api) => {
   // older dumps carry it as a `mode` prop.
   const menu = api.str("Mode").toUpperCase().replace(/[^A-Z]/g, "");
   const mode = (menu === "NGONS" || menu === "TRIANGLES" ? menu : api.prop<string>("mode", "TRIANGLES")) as "NGONS" | "TRIANGLES";
-  const fillGeometry = (source: Geometry): Geometry => {
+  const fillGeometry = (source: Geometry, instancePayload = false): Geometry => {
     const out = new Geometry();
     // Blender's Fill Curve operates in the curve component's local XY plane;
     // Z is discarded rather than carried through from the control points. This
@@ -291,11 +291,31 @@ reg("GeometryNodeFillCurve", (api) => {
       }
       return { cyclic: s.cyclic, points };
     });
-    if (planar.length) out.mesh = fillCurves(planar, mode);
+    if (planar.length) {
+      if (instancePayload && mode === "NGONS") {
+        // Fill Curve preserves String to Curves' glyph instances. In N-gon
+        // mode Blender emits one face for every cyclic outline inside each
+        // instance (including counter-wound inner outlines); it does not bridge
+        // those loops into a triangulated hole until the instances are realized
+        // before filling.
+        const mesh = new Mesh();
+        mesh.materialSlots = [null];
+        for (const spline of planar) {
+          if (!spline.cyclic || spline.points.length < 3) continue;
+          const base = mesh.positions.length;
+          mesh.positions.push(...spline.points.map((point) => [...point] as Vec3));
+          mesh.faces.push(spline.points.map((_, index) => base + index));
+          mesh.faceMaterial.push(0);
+        }
+        out.mesh = mesh;
+      } else {
+        out.mesh = fillCurves(planar, mode);
+      }
+    }
     // String to Curves outputs one curve instance per glyph. Fill Curve keeps
     // those instances and fills each payload in local space; dropping them made
     // the Node Dojo Typewriter animate strings internally but output no text.
-    out.instances = source.instances.map((instance) => ({ ...instance, geometry: fillGeometry(instance.geometry) }));
+    out.instances = source.instances.map((instance) => ({ ...instance, geometry: fillGeometry(instance.geometry, true) }));
     return out;
   };
   return { Mesh: fillGeometry(g) };
@@ -486,6 +506,17 @@ function glyphGeometry(ch: string, size: number): Geometry {
   return g;
 }
 
+function atlasGlyphGeometry(fontName: string | undefined, ch: string, size: number): Geometry | null {
+  const entry = fontName ? DUMP_CONTEXT.fonts[fontName]?.glyphs[ch] : undefined;
+  if (!entry) return null;
+  const geometry = new Geometry();
+  geometry.curves = entry.curves.map((curve) => ({
+    cyclic: curve.cyclic,
+    points: curve.points.map((point) => [Number(point[0] ?? 0) * size, Number(point[1] ?? 0) * size, Number(point[2] ?? 0) * size] as Vec3),
+  }));
+  return geometry;
+}
+
 reg("GeometryNodeStringToCurves", (api) => {
   const text = api.str("String") || "";
   const size = api.num("Size") || 1;
@@ -496,11 +527,15 @@ reg("GeometryNodeStringToCurves", (api) => {
   const advanceScale = charSpacing > 0 ? charSpacing : 1;
   const wordSpacing = api.num("Word Spacing") || 1;
   const lineSpacing = api.num("Line Spacing") || 1;
-  const alignX = (api.prop<string>("align_x", "LEFT") || "LEFT").toUpperCase();
+  const alignX = (api.str("Align X") || api.prop<string>("align_x", "LEFT") || "LEFT").toUpperCase();
+  const alignY = api.str("Align Y") || "Top Baseline";
+  const fontName = api.ref("Font")?.name;
+  const atlas = fontName ? DUMP_CONTEXT.fonts[fontName] : undefined;
+  const alignYOffset = size * (atlas?.align_offsets?.[alignY] ?? 0);
+  const advanceOf = (ch: string) => size * (atlas?.glyphs[ch]?.advance ?? .7) * advanceScale * (ch === " " ? wordSpacing : 1);
 
   const lines = text.split("\n");
   const out = new Geometry();
-  const cellW = size * 0.7;
   const cellH = size * 1.2 * lineSpacing;
 
   let lineIdx = 0;
@@ -509,26 +544,25 @@ reg("GeometryNodeStringToCurves", (api) => {
     // measure line width for alignment
     let lineWidth = 0;
     for (const ch of chars) {
-      if (ch === " ") lineWidth += cellW * wordSpacing;
-      else lineWidth += cellW * advanceScale;
+      lineWidth += advanceOf(ch);
     }
     let x = 0;
     if (alignX === "CENTER") x = -lineWidth / 2;
     else if (alignX === "RIGHT") x = -lineWidth;
-    const y = -lineIdx * cellH;
+    const y = alignYOffset - lineIdx * cellH;
     for (const ch of chars) {
       if (ch === " ") {
-        x += cellW * wordSpacing;
+        x += advanceOf(ch);
         continue;
       }
-      const glyph = glyphGeometry(ch, size);
+      const glyph = atlasGlyphGeometry(fontName, ch, size) ?? glyphGeometry(ch, size);
       out.instances.push({
         geometry: glyph,
         position: [x, y, 0],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       });
-      x += cellW * advanceScale;
+      x += advanceOf(ch);
     }
     lineIdx++;
   }

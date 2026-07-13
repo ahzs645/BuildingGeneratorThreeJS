@@ -1,0 +1,9 @@
+{
+  "id": "ui-window-generator",
+  "object": "Vert.057",
+  "root": "UI Window Generator.001",
+  "status": "near-exact",
+  "blender": { "verts": 35886, "faces": 33474 },
+  "gnvm": { "verts": 35766, "faces": 33347 },
+  "validation": "The recovered Pixels Medium outlines are embedded in the portable dump. Authored topology differs by 0.33% vertices and 0.38% faces; maximum local-bounds difference is 2.2816 units."
+}

@@ -36,6 +36,7 @@ export interface Dump {
   scene?: { frame_current?: number; fps?: number; fps_base?: number };
   collections?: { name: string; objects: string[] }[];
   images?: { name: string; filepath?: string; size: number[]; pixels_rgba8?: string; channels?: number }[];
+  fonts?: Record<string, import("./registry").FontAtlas>;
   dependency_objects?: string[];
   objects?: {
     name: string;
@@ -96,6 +97,7 @@ export async function runGenerator(dump: Dump, opts: { object?: string; override
   DUMP_CONTEXT.objects = (dump.objects ?? []) as any;
   DUMP_CONTEXT.collections = dump.collections ?? [];
   DUMP_CONTEXT.images = dump.images ?? [];
+  DUMP_CONTEXT.fonts = dump.fonts ?? {};
   DUMP_CONTEXT.evaluatedObjects.clear();
   DUMP_CONTEXT.frame = Number(opts.overrides?.__frame ?? dump.scene?.frame_current ?? 0);
   DUMP_CONTEXT.fps = Number(dump.scene?.fps ?? 24) / Math.max(Number(dump.scene?.fps_base ?? 1), 1e-9);

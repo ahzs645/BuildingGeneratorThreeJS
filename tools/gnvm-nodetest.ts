@@ -555,6 +555,34 @@ function meshSignedAreaXY(m: Mesh): number {
   const curves = runNode("GeometryNodeStringToCurves", { String: "AB", Size: 1, "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": 1 }, { align_x: "LEFT" })["Curve Instances"] as Geometry;
   check("StringToCurves yields one instance per char", curves.instances.length === 2, `got ${curves.instances.length}`);
   check("StringToCurves instances carry glyph curves", curves.instances.every((inst) => inst.geometry.curves.length > 0));
+
+  const savedFonts = DUMP_CONTEXT.fonts;
+  DUMP_CONTEXT.fonts = {
+    TestFont: {
+      name: "TestFont",
+      glyphs: {
+        A: { advance: .8, curves: [{ cyclic: true, points: [[0, 0, 0], [.6, 0, 0], [.6, 1, 0], [0, 1, 0]] }] },
+        B: { advance: .7, curves: [{ cyclic: true, points: [[0, 0, 0], [.5, 0, 0], [.5, 1, 0], [0, 1, 0]] }] },
+      },
+    },
+  };
+  const atlasCurves = runNode("GeometryNodeStringToCurves", {
+    String: "AB", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
+    "Align X": "Left", "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": 1,
+  })["Curve Instances"] as Geometry;
+  check("StringToCurves uses extracted font outlines", atlasCurves.instances[0].geometry.curves[0].points[2][1] === 2);
+  check("StringToCurves uses extracted font advances", Math.abs(atlasCurves.instances[1].position[0] - 1.6) < 1e-9);
+  DUMP_CONTEXT.fonts = savedFonts;
+
+  const outlinedGlyph = new Geometry();
+  outlinedGlyph.curves = [
+    { cyclic: true, points: [[0, 0, 0], [2, 0, 0], [2, 2, 0], [0, 2, 0]] },
+    { cyclic: true, points: [[.5, .5, 0], [.5, 1.5, 0], [1.5, 1.5, 0], [1.5, .5, 0]] },
+  ];
+  const glyphInstances = new Geometry();
+  glyphInstances.instances = [{ geometry: outlinedGlyph, position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }];
+  const filledGlyphs = runNode("GeometryNodeFillCurve", { Curve: glyphInstances, Mode: "N-gons" }).Mesh as Geometry;
+  check("Fill Curve keeps one N-gon per glyph outline", filledGlyphs.instances[0].geometry.mesh?.faces.length === 2);
 }
 
 // (R) InputTangent on a straight curve segment
