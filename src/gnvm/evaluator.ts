@@ -188,14 +188,14 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
     }
     return edgeKeyIdx;
   };
-  const size = mesh
-    ? domain === "EDGE"
+  const size = domain === "INSTANCE"
+    ? geo.instances.length
+    : domain === "CURVE"
+      ? geo.curves.length
+      : mesh
+      ? domain === "EDGE"
       ? T().edges.length // canonical edges (from faces), not just explicit ones
       : mesh.domainSize(domain)
-    : domain === "INSTANCE" && geo.instances.length
-      ? geo.instances.length
-      : domain === "CURVE"
-        ? geo.curves.length
       : curvePts.length; // POINT/CURVE domain over control points
   let normals: Vec3[] | null = null;
   let curveNormals: Vec3[] | null = null;
@@ -256,7 +256,7 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
   return {
     size,
     domain,
-    component: mesh ? "MESH" : geo.curves.length ? "CURVE" : geo.instances.length ? "INSTANCE" : "EMPTY",
+    component: domain === "INSTANCE" ? "INSTANCE" : domain === "CURVE" ? "CURVE" : mesh ? "MESH" : geo.curves.length ? "CURVE" : "EMPTY",
     fork: (d) => makeFieldCtx(geo, d),
     toDomain,
     faceVertCount: (i) => (mesh ? mesh.faces[i]?.length ?? 0 : 0),
@@ -345,6 +345,7 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
       return out;
     },
     position: (i) => {
+      if (domain === "INSTANCE") return geo.instances[i]?.position ?? [0, 0, 0];
       if (mesh) {
         if (domain === "FACE") return mesh.faceCenter(i);
         if (domain === "CORNER") return mesh.positions[C().vert[i]] ?? [0, 0, 0];
@@ -354,7 +355,6 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
         }
         return mesh.positions[i] ?? [0, 0, 0];
       }
-      if (domain === "INSTANCE") return geo.instances[i]?.position ?? [0, 0, 0];
       if (domain === "CURVE") {
         const pts = geo.curves[i]?.points ?? [];
         return pts.length ? pts.reduce((sum, p) => vadd(sum, p), [0, 0, 0] as Vec3).map((v) => v / pts.length) as Vec3 : [0, 0, 0];
@@ -405,8 +405,8 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
     },
     index: (i) => i,
     attr: (name, i) => {
+      if (domain === "INSTANCE") return geo.instances[i]?.attributes?.get(name);
       if (!mesh) {
-        if (domain === "INSTANCE") return geo.instances[i]?.attributes?.get(name);
         // curve geometry: read curve-component attributes (POINT over control points)
         const ca = geo.curveAttributes.get(name);
         return ca ? ca.data[i] : undefined;

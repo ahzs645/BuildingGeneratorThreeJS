@@ -1,0 +1,20 @@
+{
+  "id": "n03d-print-test-mesh",
+  "object": "print test mesh",
+  "root": "Geometry Nodes.013",
+  "status": "exact-geometry-nodes-parity",
+  "blender": {
+    "verts": 16751,
+    "faces": 9065
+  },
+  "gnvm": {
+    "verts": 16751,
+    "faces": 9065
+  },
+  "full_blender_modifier_stack": {
+    "verts": 25719,
+    "faces": 18182
+  },
+  "coverage": "100% of reachable node types across the 5-group, 168-node closure.",
+  "validation": "The Geometry Nodes output, including all non-manifold edge tubes and tetrahedral diagnostic markers, has exact topology and bounds. The supplied object applies a separate Bevel modifier after Geometry Nodes; that non-GN modifier is excluded from the fair VM comparison and documented with its full-stack evaluated counts."
+}

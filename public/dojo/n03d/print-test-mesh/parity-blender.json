@@ -1,0 +1,68 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "print test mesh",
+  "modifier": "GeometryNodes",
+  "node_group": "Geometry Nodes.013",
+  "saved_values": {},
+  "results": [
+    {
+      "combo": {
+        "name": "authored GN diagnostic",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 16751,
+      "faces": 9065,
+      "bbox": {
+        "min": [
+          -5.8697,
+          -5.5,
+          -5.8697
+        ],
+        "max": [
+          5.8697,
+          9.127,
+          5.8697
+        ]
+      },
+      "elapsed_ms": 11.7
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "filament .02 mm.002": {
+        "faces": 105,
+        "verts": 111
+      },
+      "flat.w": {
+        "faces": 8960,
+        "verts": 16640
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 9065,
+      "verts": 16751
+    }
+  }
+}

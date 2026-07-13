@@ -318,6 +318,29 @@ reg("GeometryNodeTranslateInstances", (api) => {
   return { Instances: g };
 });
 
+reg("GeometryNodeScaleInstances", (api) => {
+  const g = api.geo("Instances").clone();
+  const ctx = makeFieldCtx(g, "INSTANCE");
+  const selected = api.field("Selection").array(ctx);
+  const scales = api.field("Scale").array(ctx);
+  const centers = api.field("Center").array(ctx);
+  for (let i = 0; i < g.instances.length; i++) {
+    if (asNum(selected[i] ?? 1) <= 0) continue;
+    const factor = asVec3(scales[i] ?? [1, 1, 1]);
+    const center = asVec3(centers[i] ?? [0, 0, 0]);
+    const instance = g.instances[i];
+    instance.scale = [instance.scale[0] * factor[0], instance.scale[1] * factor[1], instance.scale[2] * factor[2]];
+    // Center is relative to the instance origin in local-space mode. The
+    // authored diagnostic graph uses zero, but preserve the pivot displacement.
+    instance.position = [
+      instance.position[0] + center[0] * (1 - factor[0]),
+      instance.position[1] + center[1] * (1 - factor[1]),
+      instance.position[2] + center[2] * (1 - factor[2]),
+    ];
+  }
+  return { Instances: g };
+});
+
 reg("GeometryNodeRotateInstances", (api) => {
   const g = api.geo("Instances").clone();
   const ctx = makeFieldCtx(g, "INSTANCE");

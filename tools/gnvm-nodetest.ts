@@ -1122,6 +1122,18 @@ function meshSignedAreaXY(m: Mesh): number {
     Instances: instances, Selection: true, Rotation: [0, 0, Math.PI / 2], "Pivot Point": [0, 0, 0], "Local Space": true,
   }, {}, ["Instances", "Rotation"]).Instances as Geometry;
   check("Rotate Instances composes local rotation", approx(rotated.instances[0].rotation, [0, 0, Math.PI / 2]));
+  const scaled = runNode("GeometryNodeScaleInstances", {
+    Instances: instances, Selection: true, Scale: [2, 3, 4], Center: [0, 0, 0], "Local Space": true,
+  }, {}, ["Scale"]).Instances as Geometry;
+  check("Scale Instances composes per-axis scale", approx(scaled.instances[0].scale, [2, 3, 4]));
+  const mixedInstances = instances.clone();
+  mixedInstances.mesh = box([0, 0, 0], [1, 1, 1]).mesh;
+  const scaledMixed = runNode("GeometryNodeScaleInstances", {
+    Instances: mixedInstances, Selection: true, Scale: 0.5, Center: [0, 0, 0], "Local Space": true,
+  }, {}, ["Scale"]).Instances as Geometry;
+  check("instance fields use INSTANCE domain beside a mesh component", approx(scaledMixed.instances[0].scale, [0.5, 0.5, 0.5]));
+  const wireInstances = runNode("GeometryNodeMeshToCurve", { Mesh: instances, Selection: true }).Curve as Geometry;
+  check("Mesh to Curve preserves instance transforms", wireInstances.instances.length === 1 && wireInstances.instances[0].geometry.curves.length > 0);
 }
 
 // (AG) Packed images remain available to worker-side image fields. Repeated

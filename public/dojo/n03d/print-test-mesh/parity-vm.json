@@ -1,0 +1,29 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/print-test-mesh/dump.json",
+  "object": "print test mesh",
+  "results": [
+    {
+      "combo": {
+        "name": "authored GN diagnostic",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 16751,
+      "faces": 9065,
+      "bbox": {
+        "min": [
+          -5.8697,
+          -5.5,
+          -5.8697
+        ],
+        "max": [
+          5.8697,
+          9.127,
+          5.8697
+        ]
+      },
+      "elapsed_ms": 82
+    }
+  ]
+}
