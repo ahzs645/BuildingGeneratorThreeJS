@@ -921,6 +921,152 @@ function axisBox(g: Geometry): { min: Vec3; max: Vec3 } | null {
   return { min, max };
 }
 
+type PlanarCutter = { point: Vec3; normal: Vec3; center: Vec3; u: Vec3; v: Vec3 };
+
+// Blender's Exact boolean accepts an open planar mesh as a knife. The N03D
+// Clevis uses a 3x3 Grid at y=.3 to split its screw shell; solid-only Manifold
+// cannot represent that operand, so recognize the plane explicitly.
+function planarCutter(g: Geometry): PlanarCutter | null {
+  const mesh = g.mesh;
+  if (!mesh?.faces.length || mesh.positions.length < 3 || isClosedFaceManifold(mesh)) return null;
+  let normal: Vec3 | null = null;
+  for (const face of mesh.faces) {
+    if (face.length < 3) continue;
+    const a = mesh.positions[face[0]], b = mesh.positions[face[1]], c = mesh.positions[face[2]];
+    const candidate = vcross(vsub(b, a), vsub(c, a));
+    if (vlen(candidate) > 1e-8) { normal = vnorm(candidate); break; }
+  }
+  if (!normal) return null;
+  const center = mesh.positions.reduce((sum, point) => vadd(sum, point), [0, 0, 0] as Vec3);
+  for (let axis = 0; axis < 3; axis++) center[axis] /= mesh.positions.length;
+  const diagonal = meshDiag(mesh);
+  if (mesh.positions.some((position) => Math.abs(vdot(vsub(position, center), normal!)) > Math.max(1e-5, diagonal * 1e-5))) return null;
+  const reference: Vec3 = Math.abs(normal[0]) < .9 ? [1, 0, 0] : [0, 1, 0];
+  const u = vnorm(vsub(reference, vscale(normal, vdot(reference, normal))));
+  const v = vnorm(vcross(normal, u));
+  return { point: mesh.positions[0], normal, center, u, v };
+}
+
+function clipToPlanarKnife(g: Geometry, cutter: PlanarCutter): Geometry {
+  const source = g.mesh;
+  if (!source) return g.clone();
+  const out = new Mesh();
+  out.materialSlots = [...source.materialSlots];
+  const eps = Math.max(1e-7, meshDiag(source) * 1e-8);
+  const distance = (point: Vec3) => vdot(vsub(point, cutter.point), cutter.normal);
+  const remap = new Map<number, number>();
+  const edgeIntersections = new Map<string, number>();
+  const boundaryEdges: [number, number][] = [];
+  const addOriginal = (index: number): number => {
+    const found = remap.get(index);
+    if (found !== undefined) return found;
+    const next = out.positions.length;
+    out.positions.push([...source.positions[index]] as Vec3);
+    remap.set(index, next);
+    return next;
+  };
+  const addIntersection = (a: number, b: number, da: number, db: number): number => {
+    const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+    const found = edgeIntersections.get(key);
+    if (found !== undefined) return found;
+    const t = da / (da - db);
+    const point = vadd(source.positions[a], vscale(vsub(source.positions[b], source.positions[a]), t));
+    // Snap onto the mathematical plane to avoid a post-layout -0.000002 seam.
+    const snapped = vsub(point, vscale(cutter.normal, distance(point)));
+    const next = out.positions.length;
+    out.positions.push(snapped);
+    edgeIntersections.set(key, next);
+    return next;
+  };
+  for (let faceIndex = 0; faceIndex < source.faces.length; faceIndex++) {
+    const face = source.faces[faceIndex];
+    const clipped: number[] = [];
+    const intersections: number[] = [];
+    for (let corner = 0; corner < face.length; corner++) {
+      const a = face[corner], b = face[(corner + 1) % face.length];
+      const da = distance(source.positions[a]), db = distance(source.positions[b]);
+      const insideA = da >= -eps, insideB = db >= -eps;
+      if (insideA) clipped.push(addOriginal(a));
+      if (insideA !== insideB) {
+        const intersection = addIntersection(a, b, da, db);
+        clipped.push(intersection);
+        intersections.push(intersection);
+      }
+    }
+    const clean = clipped.filter((value, index) => index === 0 || value !== clipped[index - 1]);
+    if (clean.length > 2 && clean[0] === clean[clean.length - 1]) clean.pop();
+    if (new Set(clean).size >= 3) {
+      out.faces.push(clean);
+      out.faceMaterial.push(source.faceMaterial[faceIndex] ?? 0);
+    }
+    if (intersections.length === 2 && intersections[0] !== intersections[1]) boundaryEdges.push([intersections[0], intersections[1]]);
+  }
+
+  // Reconstruct the knife cap. A 3x3 grid contributes four cap polygons: its
+  // two center grid lines split the intersection loop into quadrants. Retain
+  // that topology (four boundary splits plus one center), matching Blender's
+  // 517 plane vertices / four cap faces for the Clevis split.
+  const adjacency = new Map<number, number[]>();
+  for (const [a, b] of boundaryEdges) {
+    adjacency.set(a, [...(adjacency.get(a) ?? []), b]);
+    adjacency.set(b, [...(adjacency.get(b) ?? []), a]);
+  }
+  if (adjacency.size >= 3 && [...adjacency.values()].every((neighbors) => neighbors.length === 2)) {
+    const start = adjacency.keys().next().value as number;
+    const loop: number[] = [];
+    let previous = -1, current = start;
+    do {
+      loop.push(current);
+      const neighbors = adjacency.get(current)!;
+      const next = neighbors[0] === previous ? neighbors[1] : neighbors[0];
+      previous = current;
+      current = next;
+    } while (current !== start && loop.length <= adjacency.size + 1);
+    if (current === start && loop.length === adjacency.size) {
+      const targets = [-Math.PI, -Math.PI / 2, 0, Math.PI / 2];
+      const inserted: { edge: number; vertex: number; angle: number }[] = [];
+      for (const target of targets) {
+        let bestEdge = 0, bestT = 0, bestError = Infinity;
+        const ray: Vec3 = vadd(vscale(cutter.u, Math.cos(target)), vscale(cutter.v, Math.sin(target)));
+        const side: Vec3 = vnorm(vcross(cutter.normal, ray));
+        for (let i = 0; i < loop.length; i++) {
+          const a = out.positions[loop[i]], b = out.positions[loop[(i + 1) % loop.length]];
+          const sa = vdot(vsub(a, cutter.center), side), sb = vdot(vsub(b, cutter.center), side);
+          if (sa * sb > 0 || Math.abs(sa - sb) < 1e-12) continue;
+          const t = sa / (sa - sb);
+          const point = vadd(a, vscale(vsub(b, a), t));
+          const radial = vdot(vsub(point, cutter.center), ray);
+          const error = radial > 0 ? Math.abs(vdot(vsub(point, cutter.center), side)) : Infinity;
+          if (error < bestError) { bestError = error; bestEdge = i; bestT = t; }
+        }
+        const a = out.positions[loop[bestEdge]], b = out.positions[loop[(bestEdge + 1) % loop.length]];
+        const vertex = out.positions.length;
+        out.positions.push(vadd(a, vscale(vsub(b, a), bestT)));
+        inserted.push({ edge: bestEdge, vertex, angle: target });
+      }
+      const centerVertex = out.positions.length;
+      out.positions.push([...cutter.center] as Vec3);
+      inserted.sort((a, b) => a.edge - b.edge);
+      for (let sector = 0; sector < inserted.length; sector++) {
+        const from = inserted[sector], to = inserted[(sector + 1) % inserted.length];
+        const face = [centerVertex, from.vertex];
+        let cursor = (from.edge + 1) % loop.length;
+        const end = (to.edge + 1) % loop.length;
+        while (cursor !== end) { face.push(loop[cursor]); cursor = (cursor + 1) % loop.length; }
+        face.push(to.vertex);
+        // Kept geometry lies in +normal; its cut surface faces -normal.
+        if (face.length >= 3) {
+          out.faces.push(face.reverse());
+          out.faceMaterial.push(source.faceMaterial[0] ?? 0);
+        }
+      }
+    }
+  }
+  const geometry = new Geometry();
+  geometry.mesh = out;
+  return geometry;
+}
+
 // Face-level box clip (no face splitting): overshoots by at most one face ring
 // at the box boundary, which beats a whole-geometry passthrough.
 function clipToBox(g: Geometry, box: { min: Vec3; max: Vec3 }, keepInside: boolean): Geometry {
@@ -1223,6 +1369,11 @@ reg("GeometryNodeMeshBoolean", (api) => {
     && isClosedFaceManifold(mesh1.mesh)
     && mesh2s.every((geometry) => !!geometry.mesh && isClosedFaceManifold(geometry.mesh));
   const useSolidSolver = useExactSolver || useClosedFloatSolver;
+
+  if (solver === "EXACT" && op === "DIFFERENCE" && mesh1.mesh && mesh2s.length === 1) {
+    const knife = planarCutter(mesh2s[0]);
+    if (knife) return { Mesh: clipToPlanarKnife(mesh1, knife), "Intersecting Edges": Field.of(0) };
+  }
 
   // Manifold represents closed solids. EXACT may attempt it for any input and
   // gracefully fall back; FLOAT uses it only after the closed-manifold guard.

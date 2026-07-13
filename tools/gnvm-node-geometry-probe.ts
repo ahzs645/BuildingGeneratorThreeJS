@@ -1,12 +1,16 @@
 // Export one intermediate geometry-node socket from a GN-VM evaluation.
-// Usage: node --import tsx tools/gnvm-node-geometry-probe.ts DUMP OBJECT [GROUP] NODE SOCKET OUT.json
+// Usage: node --import tsx tools/gnvm-node-geometry-probe.ts DUMP OBJECT [GROUP] NODE SOCKET OUT.json [OVERRIDES.json]
 import { readFileSync, writeFileSync } from "node:fs";
 import { runGenerator, type Dump } from "../src/gnvm/index";
 import { GEOMETRY_PROBE } from "../src/gnvm/evaluator";
 
 const args = process.argv.slice(2);
-if (args.length !== 5 && args.length !== 6) throw new Error("usage: DUMP OBJECT [GROUP] NODE SOCKET OUT.json");
-const [dumpPath, objectName, ...target] = args;
+if (args.length < 5 || args.length > 7) throw new Error("usage: DUMP OBJECT [GROUP] NODE SOCKET OUT.json [OVERRIDES.json]");
+const [dumpPath, objectName, ...rest] = args;
+// The optional override form is intentionally paired with an explicit group
+// name so it remains unambiguous with the legacy six-argument group form.
+const overridesPath = rest.length === 5 ? rest.pop() : undefined;
+const target = rest;
 const [groupName, nodeName, socketName, outPath] = target.length === 4
   ? target
   : [null, target[0], target[1], target[2]];
@@ -15,7 +19,9 @@ GEOMETRY_PROBE.group = groupName;
 GEOMETRY_PROBE.node = nodeName;
 GEOMETRY_PROBE.socket = socketName;
 GEOMETRY_PROBE.geometry = null;
-await runGenerator(dump, { object: objectName });
+const rawOverrides = overridesPath ? JSON.parse(readFileSync(overridesPath, "utf8")) : {};
+const overrides = Array.isArray(rawOverrides) ? rawOverrides[0]?.overrides ?? {} : rawOverrides;
+await runGenerator(dump, { object: objectName, overrides });
 const geometry = GEOMETRY_PROBE.geometry;
 GEOMETRY_PROBE.group = null;
 GEOMETRY_PROBE.node = null;

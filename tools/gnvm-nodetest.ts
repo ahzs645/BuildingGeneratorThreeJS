@@ -889,6 +889,27 @@ function meshSignedAreaXY(m: Mesh): number {
     { operation: "INTERSECT", solver: "EXACT" },
   ).Mesh as Geometry;
   check("MeshBoolean open-shell INTERSECT non-empty", (openClip.mesh?.faces.length ?? 0) > 0, `faces=${openClip.mesh?.faces.length}`);
+
+  // EXACT treats an open planar mesh as a knife. A 3x3 grid oriented +Y keeps
+  // the positive half-space and contributes four cap quadrants.
+  const knife = new Geometry();
+  const km = new Mesh();
+  for (const x of [-2, 0, 2]) for (const z of [-2, 0, 2]) km.positions.push([x, 0, z]);
+  const ki = (x: number, z: number) => x * 3 + z;
+  for (let x = 0; x < 2; x++) for (let z = 0; z < 2; z++) {
+    km.faces.push([ki(x, z + 1), ki(x + 1, z + 1), ki(x + 1, z), ki(x, z)]);
+    km.faceMaterial.push(0);
+  }
+  knife.mesh = km;
+  const sliced = runNode(
+    "GeometryNodeMeshBoolean",
+    { "Mesh 1": box([-1, -1, -1], [1, 1, 1]), "Mesh 2": knife },
+    { operation: "DIFFERENCE", solver: "EXACT" },
+  ).Mesh as Geometry;
+  const slicedMinY = Math.min(...sliced.mesh!.positions.map((point) => point[1]));
+  const capFaces = sliced.mesh!.faces.filter((face) => face.every((vertex) => Math.abs(sliced.mesh!.positions[vertex][1]) < 1e-6));
+  check("MeshBoolean EXACT planar knife keeps oriented half-space", slicedMinY >= -1e-6, `minY=${slicedMinY}`);
+  check("MeshBoolean EXACT planar grid contributes four cap faces", capFaces.length === 4, `caps=${capFaces.length}`);
 }
 
 // (Q) Critical-path: ValueToString / StringJoin / StringToCurves
