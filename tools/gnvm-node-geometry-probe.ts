@@ -32,5 +32,15 @@ const instance_payloads = geometry.instances.map((instance) => ({
   rotation: instance.rotation,
   scale: instance.scale,
 }));
-writeFileSync(outPath, `${JSON.stringify({ positions, faces, curves: geometry.curves.length, curve_lengths: geometry.curves.map((curve) => curve.points.length), instances: geometry.instances.length, instance_payloads }, null, 2)}\n`);
+const attributes = Object.fromEntries([...(geometry.mesh?.attributes ?? [])].map(([name, attribute]) => [name, {
+  domain: attribute.domain,
+  count: attribute.data.length,
+  sample: attribute.data.slice(0, 8),
+}]));
+const curve_attributes = Object.fromEntries([...geometry.curveAttributes].map(([name, attribute]) => [name, {
+  domain: attribute.domain,
+  count: attribute.data.length,
+  sample: attribute.data.slice(0, 8),
+}]));
+writeFileSync(outPath, `${JSON.stringify({ positions, faces, attributes, curves: geometry.curves.length, curve_lengths: geometry.curves.map((curve) => curve.points.length), curve_attributes, instances: geometry.instances.length, instance_payloads }, null, 2)}\n`);
 console.log(`GNVM_NODE_GEOMETRY_PROBE_OK ${positions.length}v/${faces.length}f ${geometry.curves.length}c/${geometry.instances.length}i -> ${outPath}`);

@@ -349,7 +349,11 @@ reg("GeometryNodeCaptureAttribute", (api) => {
   const domMap: Record<string, any> = { POINT: "POINT", EDGE: "EDGE", FACE: "FACE", CORNER: "CORNER", INSTANCE: "INSTANCE", CURVE: "POINT" };
   let domain = domMap[api.prop<string>("domain", "POINT")] ?? "POINT";
   const name = `__cap_${api.node.name}`;
-  if (g.mesh) {
+  // A geometry set may contain an allocated but empty mesh beside a populated
+  // curve component (Join Geometry commonly produces this shape). Capture on
+  // the component that actually owns elements instead of letting the empty
+  // mesh swallow the curve attribute.
+  if (g.mesh && (g.mesh.domainSize(domain) > 0 || !g.curves.length)) {
     const ctx = makeFieldCtx(g, domain);
     const value = api.field("Value");
     let data: import("../core").Elem[];

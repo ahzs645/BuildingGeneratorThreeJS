@@ -318,8 +318,11 @@ reg("GeometryNodeCurveToMesh", (api) => {
   mesh.materialSlots = [null];
   const profiles = prof.curves;
   const tangentAttribute = rail.curveAttributes.get("__curve_tangent")?.data;
+  const railPointAttributes = [...rail.curveAttributes].filter(([, attribute]) => attribute.domain === "POINT");
+  const profilePointAttributes = [...prof.curveAttributes].filter(([, attribute]) => attribute.domain === "POINT");
   let flatBase = 0;
   for (const r of rail.curves) {
+    const railBase = flatBase;
     const scales = scaleArr ? scaleArr.slice(flatBase, flatBase + r.points.length) : undefined;
     const tangentOverrides = tangentAttribute?.slice(flatBase, flatBase + r.points.length).map(asVec3);
     flatBase += r.points.length;
@@ -331,6 +334,7 @@ reg("GeometryNodeCurveToMesh", (api) => {
       if (r.cyclic && r.points.length > 2) mesh.edges.push([base + r.points.length - 1, base]);
       continue;
     }
+    let profileBase = 0;
     for (const p of profiles) {
       if (r.points.length === 1) {
         // Blender retains one transformed profile ring for an isolated curve
@@ -343,12 +347,50 @@ reg("GeometryNodeCurveToMesh", (api) => {
           center[1] + point[1] * scale,
           center[2] + point[2] * scale,
         ]);
+        for (const [name, attribute] of railPointAttributes) {
+          const target = mesh.attributes.get(name) ?? { domain: "POINT" as const, data: [] };
+          for (let j = 0; j < p.points.length; j++) target.data.push(attribute.data[railBase] ?? 0);
+          mesh.attributes.set(name, target);
+        }
+        for (const [name, attribute] of profilePointAttributes) {
+          const target = mesh.attributes.get(name) ?? { domain: "POINT" as const, data: [] };
+          for (let j = 0; j < p.points.length; j++) target.data.push(attribute.data[profileBase + j] ?? 0);
+          mesh.attributes.set(name, target);
+        }
+        profileBase += p.points.length;
         continue;
       }
       const sm = sweep(r, p, caps, scales, tangentOverrides);
       const base = mesh.positions.length;
       for (const pos of sm.positions) mesh.positions.push(pos);
       for (let fi = 0; fi < sm.faces.length; fi++) { mesh.faces.push(sm.faces[fi].map((v) => v + base)); mesh.faceMaterial.push(0); }
+      // Curve to Mesh interpolates every rail POINT attribute onto the swept
+      // mesh. Each rail point contributes one complete profile ring, matching
+      // sweep()'s rail-major vertex order. This is essential for anonymous
+      // Capture Attribute fields: the N03D screw group captures its original
+      // rail positions, sweeps a profile, then uses those stored positions to
+      // rotate the resulting mesh. Dropping the attributes collapses the whole
+      // sweep to the origin at the downstream Set Position node.
+      const profilePointCount = p.points.length;
+      for (const [name, attribute] of railPointAttributes) {
+        const target = mesh.attributes.get(name) ?? { domain: "POINT" as const, data: [] };
+        for (let i = 0; i < r.points.length; i++) {
+          const value = attribute.data[railBase + i] ?? 0;
+          for (let j = 0; j < profilePointCount; j++) target.data.push(value);
+        }
+        mesh.attributes.set(name, target);
+      }
+      // Profile POINT attributes repeat around every rail ring. The screw
+      // group captures the profile's original Position before sweeping it and
+      // reads that anonymous attribute after Curve to Mesh.
+      for (const [name, attribute] of profilePointAttributes) {
+        const target = mesh.attributes.get(name) ?? { domain: "POINT" as const, data: [] };
+        for (let i = 0; i < r.points.length; i++) {
+          for (let j = 0; j < profilePointCount; j++) target.data.push(attribute.data[profileBase + j] ?? 0);
+        }
+        mesh.attributes.set(name, target);
+      }
+      profileBase += profilePointCount;
     }
   }
   out.mesh = mesh;

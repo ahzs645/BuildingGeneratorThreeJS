@@ -1,0 +1,149 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/clevis-pin/dump.json",
+  "object": "CLEVIS PIN",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 45246,
+      "faces": 37114,
+      "bbox": {
+        "min": [
+          -7.3792,
+          -7.3762,
+          -4
+        ],
+        "max": [
+          7.3792,
+          7.3762,
+          18.36
+        ]
+      },
+      "elapsed_ms": 2209
+    },
+    {
+      "combo": {
+        "name": "split to print",
+        "overrides": {
+          "SPLIT TO PRINT": true
+        }
+      },
+      "status": "ok",
+      "verts": 45246,
+      "faces": 37114,
+      "bbox": {
+        "min": [
+          -18.6709,
+          -10.2132,
+          -0.3
+        ],
+        "max": [
+          19.997,
+          31.6437,
+          6.8197
+        ]
+      },
+      "elapsed_ms": 2196
+    },
+    {
+      "combo": {
+        "name": "head height 6",
+        "overrides": {
+          "head height": 6
+        }
+      },
+      "status": "ok",
+      "verts": 47038,
+      "faces": 38874,
+      "bbox": {
+        "min": [
+          -7.3792,
+          -7.3762,
+          -6
+        ],
+        "max": [
+          7.3792,
+          7.3762,
+          18.36
+        ]
+      },
+      "elapsed_ms": 2324
+    },
+    {
+      "combo": {
+        "name": "shaft diameter 10",
+        "overrides": {
+          "shaft diameter": 10
+        }
+      },
+      "status": "ok",
+      "verts": 47910,
+      "faces": 39754,
+      "bbox": {
+        "min": [
+          -8.8247,
+          -8.8211,
+          -4
+        ],
+        "max": [
+          8.8247,
+          8.8211,
+          18.36
+        ]
+      },
+      "elapsed_ms": 1981
+    },
+    {
+      "combo": {
+        "name": "head offset 5",
+        "overrides": {
+          "head offset": 5
+        }
+      },
+      "status": "ok",
+      "verts": 47578,
+      "faces": 39424,
+      "bbox": {
+        "min": [
+          -8.7107,
+          -8.7072,
+          -4
+        ],
+        "max": [
+          8.7107,
+          8.7072,
+          18.36
+        ]
+      },
+      "elapsed_ms": 1933
+    },
+    {
+      "combo": {
+        "name": "clip thickness 1.8",
+        "overrides": {
+          "clip thiccness": 1.8
+        }
+      },
+      "status": "ok",
+      "verts": 45246,
+      "faces": 37114,
+      "bbox": {
+        "min": [
+          -7.3792,
+          -7.3762,
+          -4
+        ],
+        "max": [
+          7.3792,
+          7.3762,
+          18.36
+        ]
+      },
+      "elapsed_ms": 1691
+    }
+  ]
+}

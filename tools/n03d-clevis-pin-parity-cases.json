@@ -1,0 +1,8 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "split to print", "overrides": { "SPLIT TO PRINT": true } },
+  { "name": "head height 6", "overrides": { "head height": 6 } },
+  { "name": "shaft diameter 10", "overrides": { "shaft diameter": 10 } },
+  { "name": "head offset 5", "overrides": { "head offset": 5 } },
+  { "name": "clip thickness 1.8", "overrides": { "clip thiccness": 1.8 } }
+]

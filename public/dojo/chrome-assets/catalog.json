@@ -469,5 +469,20 @@
       { "name": "layout offset tuning", "label": "Layout offset", "min": -30, "max": 10, "step": 0.1, "value": -10.208999633789062 },
       { "type": "checkbox", "name": "preview sections", "label": "Preview sections", "value": false }
     ]
+  },
+  {
+    "id": "n03d-clevis-pin",
+    "title": "N03D · Clevis Pin",
+    "object": "CLEVIS PIN",
+    "dump": "dojo/n03d/clevis-pin/dump.json",
+    "reference": "dojo/references/n03d/clevis-pin.png",
+    "blenderStats": { "verts": 36390, "faces": 34198 },
+    "note": "Work in progress: captured profile attributes now survive Curve to Mesh, restoring the full pin instead of only its retaining clip. The browser produces 45,246 / 37,114 versus Blender's 36,390 / 34,198; six cases preserve the major control behavior, with radial bounds still short by about 0.763 units.",
+    "controls": [
+      { "name": "head height", "label": "Head height", "min": 2, "max": 10, "step": 0.1, "value": 4 },
+      { "name": "shaft diameter", "label": "Shaft diameter", "min": 3, "max": 16, "step": 0.1, "value": 7.108998775482178 },
+      { "name": "head offset", "label": "Head offset", "min": 1, "max": 8, "step": 0.1, "value": 3.668487548828125 },
+      { "type": "checkbox", "name": "SPLIT TO PRINT", "label": "Split to print", "value": false }
+    ]
   }
 ]
