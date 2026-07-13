@@ -497,11 +497,16 @@ reg("GeometryNodeRotateInstances", (api) => {
 reg("GeometryNodeRealizeInstances", (api) => ({ Geometry: realizeInstances(api.geo("Geometry")) }));
 
 // ---- capture attribute ----------------------------------------------------
+let captureAttributeSequence = 0;
 reg("GeometryNodeCaptureAttribute", (api) => {
   const g = api.geo("Geometry").clone();
   const domMap: Record<string, any> = { POINT: "POINT", EDGE: "EDGE", FACE: "FACE", CORNER: "CORNER", INSTANCE: "INSTANCE", CURVE: "CURVE" };
   let domain = domMap[api.prop<string>("domain", "POINT")] ?? "POINT";
-  const name = `__cap_${api.node.name}`;
+  // Node names are unique only inside one node group. Nested assets commonly
+  // contain many nodes all named "Capture Attribute"; a visible-name key lets
+  // point-instance attributes overwrite the prototype's anonymous attribute
+  // during realization. Each evaluated capture needs its own anonymous ID.
+  const name = `__cap_${captureAttributeSequence++}_${api.node.name}`;
   // A geometry set may contain an allocated but empty mesh beside a populated
   // curve component (Join Geometry commonly produces this shape). Capture on
   // the component that actually owns elements instead of letting the empty

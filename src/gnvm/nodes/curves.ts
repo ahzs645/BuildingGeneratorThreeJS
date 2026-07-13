@@ -340,12 +340,6 @@ reg("GeometryNodeCurveToMesh", (api) => {
   const tangentAttribute = rail.curveAttributes.get("__curve_tangent")?.data;
   const railPointAttributes = [...rail.curveAttributes].filter(([, attribute]) => attribute.domain === "POINT");
   const profilePointAttributes = [...prof.curveAttributes].filter(([, attribute]) => attribute.domain === "POINT");
-  // Curve to Mesh without a profile produces a wire mesh. Blender preserves
-  // the curve's evaluated point normals on that wire (loose mesh vertices do
-  // not simply acquire +Z normals). Keep those normals as an internal point
-  // attribute so fields crossing a group boundary still see the authored
-  // projection direction.
-  const wireCtx = !profiles.length ? makeFieldCtx(rail, "POINT") : null;
   let flatBase = 0;
   for (const r of rail.curves) {
     const railBase = flatBase;
@@ -368,9 +362,9 @@ reg("GeometryNodeCurveToMesh", (api) => {
         for (let i = 0; i < r.points.length; i++) target.data.push(attribute.data[railBase + i] ?? 0);
         mesh.attributes.set(name, target);
       }
-      const wireNormals = mesh.attributes.get("__wire_normal") ?? { domain: "POINT" as const, data: [] };
-      for (let i = 0; i < r.points.length; i++) wireNormals.data.push(wireCtx?.normal?.(railBase + i) ?? [0, 0, 0]);
-      mesh.attributes.set("__wire_normal", wireNormals);
+      const curveWire = mesh.attributes.get("__curve_wire") ?? { domain: "POINT" as const, data: [] };
+      for (let i = 0; i < r.points.length; i++) curveWire.data.push(1);
+      mesh.attributes.set("__curve_wire", curveWire);
       continue;
     }
     let profileBase = 0;

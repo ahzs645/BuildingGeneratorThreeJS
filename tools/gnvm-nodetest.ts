@@ -4,7 +4,7 @@
 import { Field, Vec3 } from "../src/gnvm/core";
 import { Geometry, Mesh, orientClosedSurface, realizeInstances, toTriSoup, topologyOf, transformPoint, triangulateFaceIndices } from "../src/gnvm/geometry";
 import { DUMP_CONTEXT, EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
-import { Evaluator, makeFieldCtx } from "../src/gnvm/evaluator";
+import { Evaluator, gradientDirectionField, makeFieldCtx } from "../src/gnvm/evaluator";
 import "../src/gnvm/index"; // registers all handlers
 
 type Input = SockVal | number | number[] | boolean;
@@ -166,6 +166,29 @@ function meshSignedAreaXY(m: Mesh): number {
   const captured = runNode("GeometryNodeCaptureAttribute", { Geometry: source, Value: index }, { domain: "CURVE" });
   const values = (captured.Attribute as Field).array(makeFieldCtx(captured.Geometry as Geometry, "POINT")) as number[];
   check("Capture Attribute broadcasts CURVE values to points", approx(values, [0, 0, 1, 1, 1]), JSON.stringify(values));
+}
+
+// Anonymous capture IDs must not collide when identically named nodes from
+// different nested groups meet at Instance on Points / Realize Instances.
+{
+  const prototype = new Geometry();
+  prototype.mesh = new Mesh();
+  prototype.mesh.positions = [[0, 0, 0], [1, 0, 0], [0, 1, 0]];
+  prototype.mesh.faces = [[0, 1, 2]];
+  const localIndex = Field.perElem((i) => i);
+  const prototypeCapture = runNode("GeometryNodeCaptureAttribute", { Geometry: prototype, Value: localIndex }, { domain: "POINT" });
+
+  const pointSource = new Geometry();
+  pointSource.mesh = new Mesh();
+  pointSource.mesh.positions = [[2, 0, 0]];
+  const pointCapture = runNode("GeometryNodeCaptureAttribute", { Geometry: pointSource, Value: [0, 0, 1] }, { domain: "POINT" });
+  const placed = runNode("GeometryNodeInstanceOnPoints", {
+    Points: pointCapture.Geometry as Geometry, Selection: true, Instance: prototypeCapture.Geometry as Geometry,
+    "Pick Instance": false, "Instance Index": 0, Rotation: [0, 0, 0], Scale: [1, 1, 1],
+  }, {}, ["Points", "Instance"]).Instances as Geometry;
+  const realized = realizeInstances(placed);
+  const restored = (prototypeCapture.Attribute as Field).array(makeFieldCtx(realized, "POINT")) as number[];
+  check("Capture Attribute IDs survive nested instance attribute collisions", approx(restored, [0, 1, 2]), JSON.stringify(restored));
 }
 
 {
@@ -973,7 +996,21 @@ function meshSignedAreaXY(m: Mesh): number {
 
   const wire = runNode("GeometryNodeCurveToMesh", { Curve: square, "Profile Curve": new Geometry(), "Fill Caps": false }).Mesh as Geometry;
   const wireNormals = normal.array(makeFieldCtx(wire, "POINT")) as number[][];
-  check("Curve to Mesh wire preserves evaluated curve normals", wireNormals.every((value, i) => approx(value, arr[i])), JSON.stringify(wireNormals[0]));
+  check("Curve to Mesh wire uses Blender radial loose-vertex normals",
+    approx(wireNormals[0], [0, 0, 0]) && approx(wireNormals[1], [1, 0, 0]) && approx(wireNormals[2], [Math.SQRT1_2, Math.SQRT1_2, 0]),
+    JSON.stringify(wireNormals));
+}
+
+// Node Dojo's Gradient Direction group derives a point direction from the
+// first triangle of each face and rotates it back into the scalar gradient.
+{
+  const plane = new Geometry();
+  plane.mesh = new Mesh();
+  plane.mesh.positions = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]];
+  plane.mesh.faces = [[0, 1, 2, 3]];
+  const xGradient = Field.perElem((i, ctx) => ctx.position?.(i)[0] ?? 0);
+  const directions = gradientDirectionField(xGradient, false).array(makeFieldCtx(plane, "POINT")) as Vec3[];
+  check("Gradient Direction reconstructs a planar +X scalar gradient", directions.every((value) => approx(value, [1, 0, 0])), JSON.stringify(directions));
 }
 
 // (S) MeshCone frustum

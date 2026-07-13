@@ -49,6 +49,12 @@ node = group.nodes.get(node_name)
 group_output = next((candidate for candidate in group.nodes if candidate.bl_idname == "NodeGroupOutput" and candidate.is_active_output), None)
 if node is None or group_output is None:
     raise RuntimeError(f"missing node/group output: {node_name!r}")
+node_overrides = json.loads(os.environ.get("NODE_DOJO_PROBE_NODE_OVERRIDES", "{}"))
+for name, value in node_overrides.items():
+    socket = node.inputs.get(name)
+    if socket is None:
+        raise KeyError(f"node input not found: {node_name}.{name}")
+    socket.default_value = value
 source = node.outputs.get(socket_name)
 target = next((socket for socket in group_output.inputs if socket.type == "GEOMETRY"), None)
 if source is None or target is None:

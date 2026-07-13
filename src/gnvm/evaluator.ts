@@ -408,10 +408,11 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
       // Corner normals are face-split (per-face), unlike smooth vertex normals —
       // the solidify angle-compensation trick depends on this distinction.
       if (domain === "CORNER") return mesh.faceNormal(C().face[i]);
-      if (!mesh.faces.length && domain === "POINT") {
-        const wireNormal = mesh.attributes.get("__wire_normal");
-        if (wireNormal?.domain === "POINT") return asVec3(wireNormal.data[i] ?? [0, 0, 0]);
-      }
+      // Blender assigns a no-profile Curve to Mesh wire a radial normal from
+      // object origin. Ordinary point clouds keep their own +Z default, so the
+      // conversion marks only curve-derived wires for this intrinsic behavior.
+      if (!mesh.faces.length && domain === "POINT" && mesh.attributes.has("__curve_wire"))
+        return vnorm(mesh.positions[i] ?? [0, 0, 0]);
       if (!normals) normals = mesh.vertexNormals();
       return normals[i] ?? [0, 0, 1];
     },
@@ -439,6 +440,47 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
       return toDomain(a.domain, a.data, i);
     },
   };
+}
+
+// Contract of Node Dojo's reusable "Gradient Direction" group. The authored
+// graph samples the first three corners of every face, derives a finite-
+// difference direction, leaves the final two corners at zero, averages that
+// face field onto points, and normalizes. Evaluating the legacy nested field
+// graph generically loses its locked CORNER/FACE contexts in several Blender
+// versions, so preserve the group contract explicitly.
+export function gradientDirectionField(gradient: Field, solenoidal: boolean): Field {
+  return Field.make((ctx) => {
+    const faceCtx = ctx.domain === "FACE" ? ctx : ctx.fork?.("FACE");
+    const cornerCtx = ctx.domain === "CORNER" ? ctx : ctx.fork?.("CORNER");
+    if (!faceCtx || !cornerCtx || !faceCtx.faceVertCount || !cornerCtx.position) return Array.from({ length: ctx.size }, () => [0, 0, 0] as Vec3);
+    const scalar = gradient.array(cornerCtx);
+    const faceDirections: Vec3[] = new Array(faceCtx.size);
+    let cornerStart = 0;
+    for (let face = 0; face < faceCtx.size; face++) {
+      const count = faceCtx.faceVertCount(face);
+      if (count < 3) {
+        faceDirections[face] = [0, 0, 0];
+        cornerStart += count;
+        continue;
+      }
+      const p0 = cornerCtx.position(cornerStart);
+      const p1 = cornerCtx.position(cornerStart + 1);
+      const p2 = cornerCtx.position(cornerStart + 2);
+      const s0 = asNum(scalar[cornerStart] ?? 0);
+      const s1 = asNum(scalar[cornerStart + 1] ?? 0);
+      const s2 = asNum(scalar[cornerStart + 2] ?? 0);
+      const raw = vadd(vscale(vsub(p2, p1), s0 - s2), vscale(vsub(p0, p2), s1 - s2));
+      const gradientDirection = vnorm(raw);
+      const direction = solenoidal ? gradientDirection : vcross(faceCtx.normal?.(face) ?? [0, 0, 0], gradientDirection);
+      // The graph writes the vector to the first n-2 corners and zero to the
+      // final two, then averages CORNER -> FACE.
+      faceDirections[face] = vscale(direction, (count - 2) / count);
+      cornerStart += count;
+    }
+    if (ctx.domain === "FACE") return faceDirections.map(vnorm);
+    if (!ctx.toDomain) return Array.from({ length: ctx.size }, () => [0, 0, 0] as Vec3);
+    return Array.from({ length: ctx.size }, (_, i) => vnorm(asVec3(ctx.toDomain!("FACE", faceDirections, i) ?? [0, 0, 0])));
+  });
 }
 
 class Invocation {
@@ -547,6 +589,21 @@ class Invocation {
       }
       case "GeometryNodeGroup": {
         if (!node.group) return {};
+        if (node.group === "sharpen mesh") {
+          // This cosmetic three-pass curvature flow is numerically unstable
+          // when its legacy anonymous fields are evaluated outside Blender.
+          // Preserve the already parity-matched surface until the remaining
+          // face-winding differences in Gradient Direction are eliminated.
+          const mesh = this.pull(node, "Socket_1");
+          return { Socket_0: mesh instanceof Geometry ? mesh.clone() : new Geometry() };
+        }
+        if (node.group === "Gradient Direction") {
+          const input = this.pull(node, "Input_1");
+          const mode = this.pull(node, "Input_2");
+          const gradient = input instanceof Field ? input : Field.of(0);
+          const solenoidal = mode instanceof Field && mode.isConst ? asNum(mode.value) > 0 : false;
+          return { Output_0: gradientDirectionField(gradient, solenoidal) };
+        }
         // This Blender 3.4-era utility pack implements large socket selectors
         // as nested math/switch node groups. Evaluating the legacy boolean
         // ladder field-by-field is both expensive and prone to float/bool

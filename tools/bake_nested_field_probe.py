@@ -5,6 +5,7 @@ Usage: blender --background FILE.blend --python tools/bake_nested_field_probe.py
 """
 import bpy
 import json
+import os
 import sys
 
 
@@ -40,11 +41,21 @@ nested.links.new(field, store.inputs["Value"])
 
 nested_output = next(n for n in nested.nodes if n.bl_idname == "NodeGroupOutput" and n.is_active_output)
 nested_geometry = next(s for s in nested_output.inputs if s.bl_idname == "NodeSocketGeometry")
-for link in list(nested_geometry.links):
-    nested.links.remove(link)
-nested.links.new(store.outputs["Geometry"], nested_geometry)
+if os.environ.get("NODE_DOJO_PROBE_IN_PLACE") == "1":
+    for link in list(geometry_input.links):
+        nested.links.remove(link)
+    nested.links.new(store.outputs["Geometry"], geometry_input)
+else:
+    for link in list(nested_geometry.links):
+        nested.links.remove(link)
+    nested.links.new(store.outputs["Geometry"], nested_geometry)
 
 instance = root.nodes[instance_name]
+for name, value in json.loads(os.environ.get("NODE_DOJO_NESTED_INSTANCE_OVERRIDES", "{}")).items():
+    socket = instance.inputs.get(name)
+    if socket is None:
+        raise KeyError(f"nested instance input not found: {instance_name}.{name}")
+    socket.default_value = value
 instance_geometry = next(s for s in instance.outputs if s.bl_idname == "NodeSocketGeometry")
 root_output = next(n for n in root.nodes if n.bl_idname == "NodeGroupOutput" and n.is_active_output)
 root_geometry = next(s for s in root_output.inputs if s.bl_idname == "NodeSocketGeometry")

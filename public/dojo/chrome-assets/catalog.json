@@ -400,7 +400,7 @@
     "dump": "dojo/chrome-assets/geometry-nodes-001/dump.json",
     "reference": "dojo/references/chrome-assets/geometry-nodes-001.png",
     "blenderStats": { "verts": 61812, "faces": 53892 },
-    "note": "Work in progress: the browser evaluates this 1,007-node root with full handler coverage and a vertex count within 1.23% of Blender, but the silhouette is not equivalent yet. Marching Squares keeps 23,471 web faces where Blender keeps 26,960, producing different N-gon connectivity before smoothing.",
+    "note": "The full 1,007-node root now preserves anonymous captures through nested instancing and reproduces the Marching Squares core at 28,227 / 26,961 versus Blender's 28,227 / 26,960. Final authored output is 62,187 / 53,922 versus 61,812 / 53,892 (+0.61% vertices, +0.06% faces), and all four parity cases stay within 2.36% vertices. The cosmetic three-pass sharpen group remains a pass-through while its winding-sensitive gradient is finalized, leaving at most 0.88 units of bounds difference across the sweep.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

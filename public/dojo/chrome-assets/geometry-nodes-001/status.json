@@ -4,7 +4,7 @@
   "root": "Geometry Nodes.001",
   "status": "partial-parity",
   "blender": { "verts": 61812, "faces": 53892 },
-  "gnvm": { "verts": 62572, "faces": 46941 },
+  "gnvm": { "verts": 62187, "faces": 53922 },
   "coverage": "100% of reachable node types; the browser evaluates all 1,007 nodes in the root closure.",
-  "validation": "Four Blender/VM cases cover authored settings, wrapper switching, thickness, and wrapper dimensions. Authored vertices differ by 1.23%; the altered cases remain within 8.72%. Visual comparison is not yet equivalent: the Marching Squares branch keeps 23,471 web faces versus 26,960 in Blender, changing connectivity before the 444-iteration smoothing pass and producing a clustered silhouette."
+  "validation": "Four Blender/VM cases cover authored settings, wrapper switching, thickness, and wrapper dimensions. Unique anonymous capture IDs preserve the Marching Squares prototype indices through instancing, and radial no-profile Curve to Mesh normals restore the projection field. The authored Marching Squares surface is now 28,227 / 26,961 versus Blender's 28,227 / 26,960 with near-identical bounds. Final authored output is 62,187 / 53,922 versus 61,812 / 53,892 (+0.61% vertices, +0.06% faces); all four cases stay within 2.36% vertices and 0.88 units in bounds. The legacy three-pass sharpen group is intentionally held as a pass-through pending its final winding-sensitive gradient correction, leaving the authored +Z bound 0.48 units high."
 }
