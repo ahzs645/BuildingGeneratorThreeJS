@@ -26,6 +26,7 @@ export interface RawNode {
   inputs: RawSocket[];
   outputs: RawOutput[];
   props?: Record<string, any>;
+  baked_instances?: { position: Vec3; rotation?: Vec3; scale: Vec3 }[];
   group?: string;
   // Repeat/simulation zones: name of the paired output node (on the input node).
   paired_output?: string;

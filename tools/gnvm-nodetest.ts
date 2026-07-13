@@ -1394,6 +1394,15 @@ function meshSignedAreaXY(m: Mesh): number {
   }, {}, ["Points", "Instance"]).Instances as Geometry;
   check("unlinked Pick Instance index cycles by point", placed.instances[0].geometry === sourceA && placed.instances[1].geometry === sourceB);
   check("Pick Instance preserves child transforms", approx(placed.instances[0].position, [1, 0, 0]) && approx(placed.instances[1].position, [0, 0, 0]));
+  const baked = runNode("GeometryNodeInstanceOnPoints", {
+    Points: new Geometry(), Selection: true, Instance: sourceA, "Pick Instance": false,
+    "Instance Index": 0, Rotation: [0, 0, 0], Scale: [1, 1, 1],
+  }, { baked_instances: [
+    { position: [2, 3, 4], scale: [.5, .5, .5] },
+    { position: [-1, 0, 1], rotation: [0, 0, 1], scale: [2, 2, 2] },
+  ] }).Instances as Geometry;
+  check("Instance on Points restores extracted authored transforms",
+    baked.instances.length === 2 && approx(baked.instances[0].position, [2, 3, 4]) && approx(baked.instances[1].scale, [2, 2, 2]));
   const overflowPoints = curve([[0, 0, 0], [1, 0, 0], [2, 0, 0]], false);
   const overflow = runNode("GeometryNodeInstanceOnPoints", {
     Points: overflowPoints, Selection: true, Instance: choices, "Pick Instance": true,

@@ -8,9 +8,9 @@
     "faces": 4675
   },
   "gnvm": {
-    "verts": 1352,
-    "faces": 2700
+    "verts": 4994,
+    "faces": 10088
   },
   "coverage": "100% of the reachable node types across the 46-group, 828-node closure.",
-  "validation": "The browser reproduces the relative three-object structure, welded quad-sphere seed, repeated tight-wrap/dual-mesh deformation, and finalized shell. Structure-preview topology is exact at 8,040 / 9,300. The finalized shell retains the intended wrapped mass and cavities but is lower density than Blender at 1,352 / 2,700 versus 3,302 / 4,675. Missing Budokan and Avenir fonts belong to auxiliary label graphs and are not required by the putty surface."
+  "validation": "The browser reproduces the relative three-object structure, welded quad-sphere seed, repeated tight-wrap/dual-mesh deformation, and finalized boolean shell. Structure-preview topology is exact at 8,040 / 9,300. The authored stochastic bubble layout is extracted from Blender and now matches exactly before deformation at 10,272 / 20,480; the finalized browser shell is 4,994 vertices / 10,088 triangles versus Blender's 3,302 vertices / 4,675 polygons (6,608 triangles), with a 0.6464-unit maximum bounds difference. The remaining gap is procedural noise/tight-wrap field sampling and boolean tessellation, not missing bubbles. Missing Budokan and Avenir fonts belong to auxiliary label graphs and are not required by the putty surface."
 }

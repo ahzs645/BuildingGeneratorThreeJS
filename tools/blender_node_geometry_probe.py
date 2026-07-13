@@ -30,6 +30,21 @@ bpy.context.window.scene = probe_scene
 obj.hide_viewport = False
 obj.hide_render = False
 obj.hide_set(False)
+probe_overrides = json.loads(os.environ.get("NODE_DOJO_PROBE_OVERRIDES", "{}"))
+if probe_overrides:
+    modifier = next((candidate for candidate in obj.modifiers if candidate.type == "NODES" and candidate.node_group is not None), None)
+    if modifier is None:
+        raise RuntimeError(f'no Geometry Nodes modifier on {object_name!r}')
+    identifiers = {
+        item.name: item.identifier
+        for item in modifier.node_group.interface.items_tree
+        if item.item_type == "SOCKET" and item.in_out == "INPUT"
+    }
+    for name, value in probe_overrides.items():
+        identifier = identifiers.get(name)
+        if identifier is None:
+            raise KeyError(f"modifier input not found: {name}")
+        modifier[identifier] = value
 node = group.nodes.get(node_name)
 group_output = next((candidate for candidate in group.nodes if candidate.bl_idname == "NodeGroupOutput" and candidate.is_active_output), None)
 if node is None or group_output is None:
@@ -72,6 +87,7 @@ payload = {
     "socket": socket_name,
     "verts": len(mesh.vertices) if mesh else 0,
     "faces": len(mesh.polygons) if mesh else 0,
+    "triangles": sum(max(0, len(polygon.vertices) - 2) for polygon in mesh.polygons) if mesh else 0,
     "bbox": {"min": minimum, "max": maximum},
 }
 if os.environ.get("NODE_DOJO_PROBE_GEOMETRY") == "1":

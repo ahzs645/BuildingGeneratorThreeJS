@@ -789,7 +789,7 @@
     "dump": "dojo/joints/bubble-putty/dump.json",
     "reference": "dojo/references/joints/bubble-putty.png",
     "blenderStats": { "verts": 3302, "faces": 4675 },
-    "note": "The full 46-group, 828-node putty generator now runs in-browser. Relative collection transforms and a welded subdivided cube restore the wrapped mass and cavities. Structure preview is exact at 8,040 / 9,300; the finalized browser shell is a lower-density partial match at 1,352 / 2,700 versus Blender's 3,302 / 4,675.",
+    "note": "The full 46-group, 828-node putty generator runs in-browser. Structure preview is exact at 8,040 / 9,300, and the authored 16-bubble stochastic layout is now exact before deformation at 10,272 / 20,480. The finalized browser boolean is 4,994 vertices / 10,088 triangles versus Blender's 3,302 vertices / 6,608 triangles; remaining differences are tight-wrap noise and boolean tessellation.",
     "controls": [
       { "type": "checkbox", "name": "finalize for export", "label": "Finalized shell", "value": true },
       { "name": "Puttiness", "label": "Puttiness", "min": 0, "max": 1, "step": 0.01, "value": 0.6353210806846619 },

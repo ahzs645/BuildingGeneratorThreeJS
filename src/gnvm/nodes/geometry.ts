@@ -338,6 +338,22 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
   const points = api.geo("Points");
   const instance = api.geo("Instance");
   const out = new Geometry();
+  // Some supplied products use Blender's version-specific stochastic point
+  // distribution as an authored layout rather than as an exposed control.
+  // The extraction pipeline can preserve those evaluated transforms directly
+  // on this node, just as it preserves packed glyph outlines. Downstream graph
+  // controls still operate on the resulting instances in the browser.
+  const bakedInstances = api.node.baked_instances
+    ?? api.prop<{ position: Vec3; rotation?: Vec3; scale: Vec3 }[]>("baked_instances", []);
+  if (bakedInstances.length) {
+    for (const baked of bakedInstances) out.instances.push({
+      geometry: instance,
+      position: [...baked.position] as Vec3,
+      rotation: [...(baked.rotation ?? [0, 0, 0])] as Vec3,
+      scale: [...baked.scale] as Vec3,
+    });
+    return { Instances: out };
+  }
   // Points come from either a mesh (vertex positions) or a curve (control points).
   const pts: Vec3[] = points.mesh
     ? points.mesh.positions
