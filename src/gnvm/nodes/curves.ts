@@ -39,6 +39,33 @@ reg("GeometryNodeCurvePrimitiveLine", (api) => {
   return { Curve: curveGeo([{ points: [s, e], cyclic: false }]) };
 });
 
+reg("GeometryNodeCurveArc", (api) => {
+  const resolution = Math.max(2, Math.round(api.num("Resolution") || 16));
+  const mode = api.prop<string>("mode", "RADIUS");
+  if (mode !== "RADIUS") {
+    // Three-points mode is retained as the authored polyline until a graph
+    // requires its circumcircle outputs.
+    const points = [api.vec("Start"), api.vec("Middle"), api.vec("End")];
+    return { Curve: curveGeo([{ points, cyclic: false }]), Center: Field.of([0, 0, 0]), Normal: Field.of([0, 0, 1]), Radius: Field.of(0) };
+  }
+  const radius = api.num("Radius");
+  const start = api.num("Start Angle");
+  const sweep = api.num("Sweep Angle");
+  const invert = api.bool("Invert Arc");
+  const points: Vec3[] = [];
+  for (let i = 0; i < resolution; i++) {
+    const factor = i / (resolution - 1);
+    const angle = start + sweep * (invert ? 1 - factor : factor);
+    points.push([Math.cos(angle) * radius, Math.sin(angle) * radius, 0]);
+  }
+  const connect = api.bool("Connect Center");
+  if (connect) points.push([0, 0, 0]);
+  return {
+    Curve: curveGeo([{ points, cyclic: connect }]),
+    Center: Field.of([0, 0, 0]), Normal: Field.of([0, 0, 1]), Radius: Field.of(radius),
+  };
+});
+
 // ---- resample / fillet ----------------------------------------------------
 reg("GeometryNodeResampleCurve", (api) => {
   const g = api.geo("Curve");

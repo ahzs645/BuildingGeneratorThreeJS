@@ -118,6 +118,15 @@ function meshSignedAreaXY(m: Mesh): number {
   check("CurveCircle p1=(0,1,0) CCW", approx(s.points[1], [0, 1, 0]), JSON.stringify(s.points[1]));
 }
 
+{
+  const arc = runNode("GeometryNodeCurveArc", {
+    Resolution: 4, Radius: 2, "Start Angle": 0, "Sweep Angle": Math.PI / 2,
+    "Connect Center": true, "Invert Arc": false,
+  }, { mode: "RADIUS" }).Curve as Geometry;
+  check("Curve Arc connects center into a cyclic fill loop", arc.curves[0].cyclic && arc.curves[0].points.length === 5);
+  check("Curve Arc preserves radius endpoints", approx(arc.curves[0].points[0], [2, 0, 0]) && approx(arc.curves[0].points[3], [0, 2, 0]));
+}
+
 // (B) CombineXYZ / SeparateXYZ round-trip
 {
   const v = runNode("ShaderNodeCombineXYZ", { X: 2, Y: 3, Z: 4 }).Vector as Field;

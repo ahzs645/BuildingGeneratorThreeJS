@@ -1,0 +1,29 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/period-pack-shape/dump.json",
+  "object": "1",
+  "results": [
+    {
+      "combo": {
+        "name": "authored baseline",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 28,
+      "faces": 1,
+      "bbox": {
+        "min": [
+          -11.5583,
+          -11.5583,
+          0
+        ],
+        "max": [
+          11.5583,
+          11.5583,
+          0
+        ]
+      },
+      "elapsed_ms": 19
+    }
+  ]
+}

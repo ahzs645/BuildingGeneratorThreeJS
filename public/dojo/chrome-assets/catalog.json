@@ -12,6 +12,24 @@
     ]
   },
   {
+    "id": "period-pack-shape",
+    "title": "Period Pack Shape",
+    "object": "1",
+    "dump": "dojo/chrome-assets/period-pack-shape/dump.json",
+    "reference": "dojo/references/chrome-assets/period-pack-shape.png",
+    "blenderStats": { "verts": 28, "faces": 1 },
+    "controls": []
+  },
+  {
+    "id": "polarity-sticker",
+    "title": "Polarity Sticker",
+    "object": "Vert.017",
+    "dump": "dojo/chrome-assets/polarity-sticker/dump.json",
+    "reference": "dojo/references/chrome-assets/polarity-sticker.png",
+    "blenderStats": { "verts": 68, "faces": 4 },
+    "controls": []
+  },
+  {
     "id": "flat-stickie-pack",
     "title": "Flat Stickie Pack",
     "object": "Flat Stickie Pack.001",
