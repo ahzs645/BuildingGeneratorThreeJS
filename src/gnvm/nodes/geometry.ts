@@ -398,7 +398,11 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
     // produced by Geometry to Instance, despite the socket displaying 0, and
     // wraps beyond the source count. Text Soup exposes this when a short edited
     // string is repeated over its fixed 14-point guide.
-    const requestedIndex = instanceIndexLinked ? Math.round(asNum(instanceIndices[i] ?? 0)) : i;
+    // A field linked directly to the integer Instance Index socket truncates
+    // toward zero. Group-interface Int sockets use Blender's separate rounded
+    // coercion; conflating the two made Bit Stand select its larger cutters
+    // four points too early.
+    const requestedIndex = instanceIndexLinked ? Math.trunc(asNum(instanceIndices[i] ?? 0)) : i;
     const picked = pickInstance && instance.instances.length
       ? instance.instances[((requestedIndex % instance.instances.length) + instance.instances.length) % instance.instances.length]
       : null;

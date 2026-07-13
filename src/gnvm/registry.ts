@@ -10,6 +10,7 @@ export interface RawSocket {
   idx?: number;
   type: string;
   linked: boolean;
+  enabled?: boolean;
   value: any;
 }
 export interface RawOutput {

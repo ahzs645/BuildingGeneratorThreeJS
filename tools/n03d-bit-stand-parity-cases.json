@@ -1,0 +1,10 @@
+[
+  { "name": "authored stand", "overrides": {} },
+  { "name": "holder only", "overrides": { "Switch": false } },
+  { "name": "thin wall", "overrides": { "wall thic": 0.5 } },
+  { "name": "thick wall", "overrides": { "wall thic": 1.5 } },
+  { "name": "compact offset", "overrides": { "Offset Scale": 12.0 } },
+  { "name": "wide offset", "overrides": { "Offset Scale": 28.0 } },
+  { "name": "holder compact offset", "overrides": { "Switch": false, "Offset Scale": 12.0 } },
+  { "name": "holder wide offset", "overrides": { "Switch": false, "Offset Scale": 28.0 } }
+]

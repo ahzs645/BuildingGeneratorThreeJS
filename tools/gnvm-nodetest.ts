@@ -309,6 +309,17 @@ function meshSignedAreaXY(m: Mesh): number {
     volume += (a[0] * (b[1] * c[2] - b[2] * c[1]) + a[1] * (b[2] * c[0] - b[0] * c[2]) + a[2] * (b[0] * c[1] - b[1] * c[0])) / 6;
   }
   check("Dual Mesh keeps a closed surface outward", dual.mesh?.positions.length === 6 && dual.mesh.faces.length === 8 && volume > 0, `${dual.mesh?.positions.length}v/${dual.mesh?.faces.length}f volume=${volume}`);
+
+  const openGrid = new Geometry();
+  openGrid.mesh = new Mesh();
+  for (let y = 0; y < 3; y++) for (let x = 0; x < 3; x++) openGrid.mesh.positions.push([x, y, 0]);
+  const gi = (x: number, y: number) => y * 3 + x;
+  for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) {
+    openGrid.mesh.faces.push([gi(x, y), gi(x + 1, y), gi(x + 1, y + 1)], [gi(x, y), gi(x + 1, y + 1), gi(x, y + 1)]);
+  }
+  const openDual = runNode("GeometryNodeDualMesh", { Mesh: openGrid })["Dual Mesh"] as Geometry;
+  check("Dual Mesh omits open boundary fans by default", openDual.mesh?.positions.length === 8 && openDual.mesh.faces.length === 1 && openDual.mesh.faces[0].length === 6,
+    `${openDual.mesh?.positions.length}v/${openDual.mesh?.faces.length}f ${JSON.stringify(openDual.mesh?.faces[0])}`);
 }
 
 // (D) FilletCurve: 90deg open corner A(0,0,0) B(1,0,0) C(1,1,0), radius .5, count 2
@@ -910,6 +921,25 @@ function meshSignedAreaXY(m: Mesh): number {
   const capFaces = sliced.mesh!.faces.filter((face) => face.every((vertex) => Math.abs(sliced.mesh!.positions[vertex][1]) < 1e-6));
   check("MeshBoolean EXACT planar knife keeps oriented half-space", slicedMinY >= -1e-6, `minY=${slicedMinY}`);
   check("MeshBoolean EXACT planar grid contributes four cap faces", capFaces.length === 4, `caps=${capFaces.length}`);
+
+  // A planar first operand is a surface difference, not a solid CSG. Preserve
+  // its face accounting, remove enclosed lattice vertices, and expose the
+  // clipped wire network consumed by a following Mesh to Curve node.
+  const plate = new Geometry();
+  plate.mesh = new Mesh();
+  for (const y of [-1, 0, 1]) for (const x of [-1, 0, 1]) plate.mesh.positions.push([x, y, 0]);
+  const pi = (x: number, y: number) => y * 3 + x;
+  for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) plate.mesh.faces.push([
+    pi(x, y), pi(x + 1, y), pi(x + 1, y + 1), pi(x, y + 1),
+  ]);
+  const perforated = runNode(
+    "GeometryNodeMeshBoolean",
+    { "Mesh 1": plate, "Mesh 2": box([-.4, -.4, -1], [.4, .4, 1]) },
+    { operation: "DIFFERENCE", solver: "EXACT" },
+  ).Mesh as Geometry;
+  check("MeshBoolean EXACT planar difference removes enclosed source points",
+    !perforated.mesh!.positions.some(([x, y]) => Math.abs(x) < 1e-8 && Math.abs(y) < 1e-8) && perforated.mesh!.faces.length === 4,
+    `${perforated.mesh!.positions.length}v/${perforated.mesh!.faces.length}f`);
 }
 
 // (Q) Critical-path: ValueToString / StringJoin / StringToCurves
@@ -1479,6 +1509,11 @@ function meshSignedAreaXY(m: Mesh): number {
     "Instance Index": 0, Rotation: [0, 0, 0], Scale: [1, 1, 1],
   }, {}, ["Points", "Instance"]).Instances as Geometry;
   check("unlinked Pick Instance wraps overflow points", overflow.instances.length === 3 && overflow.instances[2].geometry === sourceA, `got ${overflow.instances.length}`);
+  const fractionalPick = runNode("GeometryNodeInstanceOnPoints", {
+    Points: overflowPoints, Selection: true, Instance: choices, "Pick Instance": true,
+    "Instance Index": Field.perElem((i) => i < 2 ? 0.9 : 1.9), Rotation: [0, 0, 0], Scale: [1, 1, 1],
+  }, {}, ["Points", "Instance", "Instance Index"]).Instances as Geometry;
+  check("linked Instance Index truncates fractional fields", fractionalPick.instances[0].geometry === sourceA && fractionalPick.instances[2].geometry === sourceB);
 }
 
 // (AF) Nested asset generators depend on Object Info's evaluated modifier mesh,
@@ -1604,6 +1639,13 @@ function meshSignedAreaXY(m: Mesh): number {
   const quad = box([0, 0, 0], [1, 1, 0]);
   const triangulated = runNode("GeometryNodeTriangulate", { Mesh: quad, Selection: true }).Mesh as Geometry;
   check("Triangulate splits six box quads", triangulated.mesh?.faces.length === 12 && triangulated.mesh.faces.every((face) => face.length === 3));
+  const symmetricQuad = new Geometry();
+  symmetricQuad.mesh = new Mesh();
+  symmetricQuad.mesh.positions = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]];
+  symmetricQuad.mesh.faces = [[0, 1, 2, 3]];
+  symmetricQuad.mesh.faceMaterial = [0];
+  const symmetricTriangles = runNode("GeometryNodeTriangulate", { Mesh: symmetricQuad, Selection: true }).Mesh as Geometry;
+  check("Triangulate BEAUTY ties use Blender's 1-3 diagonal", JSON.stringify(symmetricTriangles.mesh!.faces) === JSON.stringify([[0, 1, 3], [1, 2, 3]]), JSON.stringify(symmetricTriangles.mesh!.faces));
 
   const line = curve([[0, 0, 0], [2, 0, 0]], false);
   line.curveAttributes.set("weight", { domain: "POINT", data: [0, 2] });

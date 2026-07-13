@@ -1067,6 +1067,238 @@ function clipToPlanarKnife(g: Geometry, cutter: PlanarCutter): Geometry {
   return geometry;
 }
 
+function clipPlanarToConvexVolume(planar: Geometry, solid: Geometry): Geometry | null {
+  const source = planar.mesh, volume = solid.mesh;
+  // Extrude Mesh can omit the source cap when the input is already a filled
+  // face (Bit Stand's prism is 16v/9f). Its side planes still define the same
+  // convex clipping volume, so a closed-manifold requirement is too strict.
+  if (!source || !volume?.faces.length) return null;
+  const frame = planarCutter(planar);
+  if (!frame) return null;
+  const center = volume.positions.reduce((sum, point) => vadd(sum, point), [0, 0, 0] as Vec3);
+  for (let axis = 0; axis < 3; axis++) center[axis] /= volume.positions.length;
+  const planes: { point: Vec3; normal: Vec3 }[] = [];
+  for (const face of volume.faces) {
+    if (face.length < 3) continue;
+    const point = volume.positions[face[0]];
+    let normal = vnorm(vcross(vsub(volume.positions[face[1]], point), vsub(volume.positions[face[2]], point)));
+    if (vlen(normal) < 1e-9) continue;
+    if (vdot(vsub(center, point), normal) > 0) normal = vscale(normal, -1);
+    planes.push({ point, normal });
+  }
+  const out = new Mesh();
+  out.materialSlots = [...source.materialSlots];
+  const weld = new Map<string, number>();
+  const scale = Math.max(1, meshDiag(volume));
+  const tolerance = scale * 1e-7;
+  const add = (point: Vec3): number => {
+    const key = point.map((value) => Math.round(value / tolerance)).join(":");
+    const existing = weld.get(key);
+    if (existing !== undefined) return existing;
+    const index = out.positions.length;
+    out.positions.push(point);
+    weld.set(key, index);
+    return index;
+  };
+  for (let faceIndex = 0; faceIndex < source.faces.length; faceIndex++) {
+    let polygon = source.faces[faceIndex].map((index) => [...source.positions[index]] as Vec3);
+    for (const plane of planes) {
+      if (polygon.length < 3) break;
+      const clipped: Vec3[] = [];
+      for (let i = 0; i < polygon.length; i++) {
+        const a = polygon[i], b = polygon[(i + 1) % polygon.length];
+        const da = vdot(vsub(a, plane.point), plane.normal), db = vdot(vsub(b, plane.point), plane.normal);
+        const insideA = da <= tolerance, insideB = db <= tolerance;
+        if (insideA) clipped.push(a);
+        if (insideA !== insideB) {
+          const t = da / (da - db);
+          clipped.push(vadd(a, vscale(vsub(b, a), t)));
+        }
+      }
+      polygon = clipped;
+    }
+    const indices = polygon.map(add).filter((value, index, values) => index === 0 || value !== values[index - 1]);
+    if (indices.length > 2 && indices[0] === indices[indices.length - 1]) indices.pop();
+    if (new Set(indices).size < 3) continue;
+    out.faces.push(indices);
+    out.faceMaterial.push(source.faceMaterial[faceIndex] ?? 0);
+  }
+  const geometry = new Geometry();
+  geometry.mesh = out;
+  return geometry;
+}
+
+function imprintPlanarDifference(planar: Geometry, cutter: Geometry): Geometry | null {
+  const source = planar.mesh, tool = cutter.mesh;
+  if (!source?.faces.length || !tool?.faces.length) return null;
+  const frame = planarCutter(planar);
+  if (!frame) return null;
+  const tolerance = Math.max(1e-7, meshDiag(source) * 1e-8);
+  const signed = (point: Vec3) => vdot(vsub(point, frame.point), frame.normal);
+  const out = new Mesh();
+  out.materialSlots = [...source.materialSlots];
+  out.positions = source.positions.map((point) => [...point] as Vec3);
+  out.faces = source.faces.map((face) => [...face]);
+  out.faceMaterial = [...source.faceMaterial];
+  out.edges = source.edges.map((edge) => [...edge] as [number, number]);
+
+  const toolIntersections = new Map<string, number>();
+  const intersectToolEdge = (a: number, b: number): number | null => {
+    const da = signed(tool.positions[a]), db = signed(tool.positions[b]);
+    if (da * db > 0 || Math.abs(da - db) < 1e-12) return null;
+    const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+    const existing = toolIntersections.get(key);
+    if (existing !== undefined) return existing;
+    const t = da / (da - db);
+    const point = vadd(tool.positions[a], vscale(vsub(tool.positions[b], tool.positions[a]), t));
+    const snapped = vsub(point, vscale(frame.normal, signed(point)));
+    const index = out.positions.length;
+    out.positions.push(snapped);
+    toolIntersections.set(key, index);
+    return index;
+  };
+  const contours: [number, number][] = [];
+  for (const face of tool.faces) {
+    const intersections: number[] = [];
+    for (let i = 0; i < face.length; i++) {
+      const index = intersectToolEdge(face[i], face[(i + 1) % face.length]);
+      if (index !== null && !intersections.includes(index)) intersections.push(index);
+    }
+    if (intersections.length === 2) contours.push([intersections[0], intersections[1]]);
+  }
+  if (!contours.length) return null;
+
+  // The plane/solid intersection arrives as unordered line segments. Rebuild
+  // its closed loops so source vertices and edge fragments inside a cutter can
+  // be removed, rather than merely drawing the cutter wire over the source.
+  const contourAdj = new Map<number, number[]>();
+  for (const [a, b] of contours) {
+    contourAdj.set(a, [...(contourAdj.get(a) ?? []), b]);
+    contourAdj.set(b, [...(contourAdj.get(b) ?? []), a]);
+  }
+  const contourLoops: number[][] = [];
+  const visitedContourEdges = new Set<string>();
+  const contourKey = (a: number, b: number) => a < b ? `${a}:${b}` : `${b}:${a}`;
+  for (const [start, neighbors] of contourAdj) for (const first of neighbors) {
+    if (visitedContourEdges.has(contourKey(start, first))) continue;
+    const loop = [start];
+    let previous = start, current = first;
+    visitedContourEdges.add(contourKey(previous, current));
+    while (current !== start && loop.length <= contours.length + 1) {
+      loop.push(current);
+      const next = (contourAdj.get(current) ?? []).find((candidate) =>
+        candidate !== previous && !visitedContourEdges.has(contourKey(current, candidate)));
+      if (next === undefined) break;
+      previous = current;
+      current = next;
+      visitedContourEdges.add(contourKey(previous, current));
+    }
+    if (current === start && loop.length >= 3) contourLoops.push(loop);
+  }
+
+  const project = (point: Vec3): [number, number] => {
+    const relative = vsub(point, frame.center);
+    return [vdot(relative, frame.u), vdot(relative, frame.v)];
+  };
+  const insideContour = (point: Vec3): boolean => {
+    const [x, y] = project(point);
+    for (const loop of contourLoops) {
+      let inside = false;
+      for (let i = 0, j = loop.length - 1; i < loop.length; j = i++) {
+        const [xi, yi] = project(out.positions[loop[i]]);
+        const [xj, yj] = project(out.positions[loop[j]]);
+        if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+      }
+      if (inside) return true;
+    }
+    return false;
+  };
+  const segmentIntersection = (a: Vec3, b: Vec3, c: Vec3, d: Vec3): { ta: number; tb: number; point: Vec3 } | null => {
+    const [ax, ay] = project(a), [bx, by] = project(b), [cx, cy] = project(c), [dx, dy] = project(d);
+    const abx = bx - ax, aby = by - ay, cdx = dx - cx, cdy = dy - cy;
+    const denominator = abx * cdy - aby * cdx;
+    if (Math.abs(denominator) < 1e-10) return null;
+    const acx = cx - ax, acy = cy - ay;
+    const ta = (acx * cdy - acy * cdx) / denominator;
+    const tb = (acx * aby - acy * abx) / denominator;
+    if (ta <= 1e-7 || ta >= 1 - 1e-7 || tb <= 1e-7 || tb >= 1 - 1e-7) return null;
+    return { ta, tb, point: vadd(a, vscale(vsub(b, a), ta)) };
+  };
+  const sourceTopology = buildTopology(source);
+  const sourceSplits = new Map<string, { t: number; vertex: number }[]>();
+  const contourSplits = new Map<number, { t: number; vertex: number }[]>();
+  const crossingWeld = new Map<string, number>();
+  for (let contourIndex = 0; contourIndex < contours.length; contourIndex++) {
+    const [ca, cb] = contours[contourIndex];
+    for (const edge of sourceTopology.edges) {
+      const hit = segmentIntersection(out.positions[edge.verts[0]], out.positions[edge.verts[1]], out.positions[ca], out.positions[cb]);
+      if (!hit) continue;
+      const key = hit.point.map((value) => Math.round(value / tolerance)).join(":");
+      let vertex = crossingWeld.get(key);
+      if (vertex === undefined) {
+        vertex = out.positions.length;
+        out.positions.push(hit.point);
+        crossingWeld.set(key, vertex);
+      }
+      const edgeKey = edge.verts[0] < edge.verts[1] ? `${edge.verts[0]}:${edge.verts[1]}` : `${edge.verts[1]}:${edge.verts[0]}`;
+      const sourceT = edge.verts[0] < edge.verts[1] ? hit.ta : 1 - hit.ta;
+      sourceSplits.set(edgeKey, [...(sourceSplits.get(edgeKey) ?? []), { t: sourceT, vertex }]);
+      contourSplits.set(contourIndex, [...(contourSplits.get(contourIndex) ?? []), { t: hit.tb, vertex }]);
+    }
+  }
+  const expandedFaces = out.faces.map((face) => {
+    const expanded: number[] = [];
+    for (let i = 0; i < face.length; i++) {
+      const a = face[i], b = face[(i + 1) % face.length];
+      expanded.push(a);
+      const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+      const splits = [...(sourceSplits.get(key) ?? [])].sort((x, y) => x.t - y.t);
+      if (a > b) splits.reverse();
+      for (const split of splits) expanded.push(split.vertex);
+    }
+    // Exact planar difference removes lattice vertices enclosed by a cutter.
+    // Keeping them was the 31-vertex Bit Stand overcount and left the removed
+    // grid segments visible after Mesh to Curve.
+    return expanded.filter((vertex) => !insideContour(out.positions[vertex]));
+  });
+  const wireEdges: [number, number][] = [];
+  for (const edge of sourceTopology.edges) {
+    const [a, b] = edge.verts;
+    const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+    const splits = [...(sourceSplits.get(key) ?? [])].sort((x, y) => x.t - y.t);
+    if (a > b) splits.reverse();
+    const chain = [a, ...splits.map((split) => split.vertex), b];
+    for (let i = 0; i + 1 < chain.length; i++) {
+      const midpoint = vscale(vadd(out.positions[chain[i]], out.positions[chain[i + 1]]), .5);
+      if (!insideContour(midpoint)) wireEdges.push([chain[i], chain[i + 1]]);
+    }
+  }
+  for (let contourIndex = 0; contourIndex < contours.length; contourIndex++) {
+    const [a, b] = contours[contourIndex];
+    const chain = [a, ...(contourSplits.get(contourIndex) ?? []).sort((x, y) => x.t - y.t).map((split) => split.vertex), b];
+    for (let i = 0; i + 1 < chain.length; i++) wireEdges.push([chain[i], chain[i + 1]]);
+  }
+  const live = new Set<number>();
+  for (const [a, b] of wireEdges) { live.add(a); live.add(b); }
+  for (const face of expandedFaces) for (const vertex of face) live.add(vertex);
+  const remap = new Map<number, number>();
+  const positions: Vec3[] = [];
+  for (let vertex = 0; vertex < out.positions.length; vertex++) if (live.has(vertex)) {
+    remap.set(vertex, positions.length);
+    positions.push(out.positions[vertex]);
+  }
+  out.positions = positions;
+  out.edges = wireEdges.map(([a, b]) => [remap.get(a)!, remap.get(b)!]);
+  out.faces = expandedFaces.filter((face) => face.length >= 3).map((face) => face.map((vertex) => remap.get(vertex)!));
+  out.faceMaterial = out.faces.map((_, face) => source.faceMaterial[face] ?? 0);
+  // Placeholder face loops retain Blender's 40-face boolean accounting, while
+  // this marker tells Mesh to Curve to consume the exact clipped wire network.
+  out.attributes.set("__gnvm_explicit_edges_only", { domain: "CORNER", data: [] });
+  const geometry = new Geometry();
+  geometry.mesh = out;
+  return geometry;
+}
+
 // Face-level box clip (no face splitting): overshoots by at most one face ring
 // at the box boundary, which beats a whole-geometry passthrough.
 function clipToBox(g: Geometry, box: { min: Vec3; max: Vec3 }, keepInside: boolean): Geometry {
@@ -1355,8 +1587,15 @@ reg("GeometryNodeMeshBoolean", (api) => {
   // the vase routes its open shell through the FLOAT branch of DOJO_BOOL.001;
   // feeding that branch to a solid-only CSG library changes its envelope.
   const solver = (api.prop<string>("solver", "FLOAT") || "FLOAT").toUpperCase();
-  const mesh1 = api.geo("Mesh 1");
-  const mesh2s = api.geoInputs("Mesh 2");
+  let mesh1 = api.geo("Mesh 1");
+  let mesh2s = api.geoInputs("Mesh 2");
+  // In Blender 4+/5, UNION and INTERSECT expose one multi-input "Mesh" socket
+  // and disable Mesh 1. Treat the first multi-input value as the accumulator.
+  const mesh1Enabled = api.node.inputs.find((socket) => socket.identifier === "Mesh 1")?.enabled !== false;
+  if ((!mesh1Enabled || (!mesh1.mesh && !mesh1.curves.length && !mesh1.instances.length)) && mesh2s.length > 1) {
+    mesh1 = mesh2s[0];
+    mesh2s = mesh2s.slice(1);
+  }
   const manifoldReady = isManifoldReady();
   const useExactSolver = solver === "EXACT" && manifoldReady;
   // Blender's FLOAT solver also performs a real solid boolean when both
@@ -1369,6 +1608,20 @@ reg("GeometryNodeMeshBoolean", (api) => {
     && isClosedFaceManifold(mesh1.mesh)
     && mesh2s.every((geometry) => !!geometry.mesh && isClosedFaceManifold(geometry.mesh));
   const useSolidSolver = useExactSolver || useClosedFloatSolver;
+
+  if (solver === "EXACT" && mesh1.mesh && mesh2s.length === 1) {
+    if (op === "INTERSECT") {
+      const planarSecond = planarCutter(mesh2s[0]);
+      if (planarSecond) {
+        const clipped = clipPlanarToConvexVolume(mesh2s[0], mesh1);
+        if (clipped) return { Mesh: clipped, "Intersecting Edges": Field.of(0) };
+      }
+    }
+    if (op === "DIFFERENCE" && planarCutter(mesh1)) {
+      const imprinted = imprintPlanarDifference(mesh1, mesh2s[0]);
+      if (imprinted) return { Mesh: imprinted, "Intersecting Edges": Field.of(0) };
+    }
+  }
 
   if (solver === "EXACT" && op === "DIFFERENCE" && mesh1.mesh && mesh2s.length === 1) {
     const knife = planarCutter(mesh2s[0]);

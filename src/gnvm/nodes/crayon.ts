@@ -560,11 +560,12 @@ reg("GeometryNodeDualMesh", (api) => {
       previous = current;
       current = next;
     }
-    // Non-manifold data can have multiple fans. Retain every source face in a
-    // stable fallback order, while closed manifold inputs take the exact cycle.
-    const face = ordered.length === adjacent.length
-      ? ordered
-      : [...ordered, ...adjacent.filter((candidate) => !ordered.includes(candidate))];
+    // With Keep Boundaries disabled (the Blender default), only a closed fan
+    // produces a dual face. Boundary vertices can still have three or more
+    // incident triangles, but their fan is open; emitting it created an extra
+    // strip of boundary triangles around Bit Stand's otherwise-hexagonal grid.
+    if (current !== start || ordered.length !== adjacent.length) continue;
+    const face = ordered;
     const normal = mesh.vertexNormals()[vi] ?? [0, 0, 1] as Vec3;
     if (face.length >= 3) {
       const faceNormal = vnorm(vcross(vsub(dual.positions[face[1]], dual.positions[face[0]]), vsub(dual.positions[face[2]], dual.positions[face[0]])));

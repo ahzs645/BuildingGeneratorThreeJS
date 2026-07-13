@@ -966,7 +966,10 @@ reg("GeometryNodeTriangulate", (api) => {
       const p = face.map((vi) => mesh.positions[vi]);
       const d02 = Math.hypot(p[0][0] - p[2][0], p[0][1] - p[2][1], p[0][2] - p[2][2]);
       const d13 = Math.hypot(p[1][0] - p[3][0], p[1][1] - p[3][1], p[1][2] - p[3][2]);
-      if (d02 <= d13) {
+      // Blender's BEAUTY tie-break chooses the 1-3 diagonal on symmetric
+      // quads. Dual Mesh exposes that choice by swapping every triangle
+      // centroid in a regular grid (Bit Stand's lattice shifted half a cell).
+      if (d02 < d13) {
         push([face[0], face[1], face[2]], fi, [0, 1, 2]);
         push([face[0], face[2], face[3]], fi, [0, 2, 3]);
       } else {

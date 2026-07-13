@@ -600,7 +600,7 @@
     "dump": "dojo/n03d/bit-stand/dump.json",
     "reference": "dojo/references/n03d/bit-stand.png",
     "blenderStats": { "verts": 8718, "faces": 5270 },
-    "note": "Work in progress: all 21 staggered bit columns, the outer holder, authored height, and Y extent run in-browser at 1,632 / 858. Blender's 8,718 / 5,270 result uses two exact booleans on a planar dual mesh to build the perforated top lattice; the current solid-only WASM fallback leaves that top as a simplified plate.",
+    "note": "Exact Blender geometry across all eight validation cases: authored output is 8,718 vertices / 5,270 faces and holder-only is 7,374 / 4,556, with identical four-decimal bounds. Dual Mesh boundary semantics and Exact planar booleans reproduce the rounded lattice and all 21 circular bit openings; wall thickness, staggered bit instances, and visibility remain editable in-browser.",
     "controls": [
       { "type": "checkbox", "name": "Switch", "label": "Show bit columns", "value": true },
       { "name": "wall thic", "label": "Wall thickness", "min": 0.2, "max": 3, "step": 0.05, "value": 0.97064208984375 }

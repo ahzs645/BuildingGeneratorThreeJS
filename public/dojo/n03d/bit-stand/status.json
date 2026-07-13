@@ -2,9 +2,9 @@
   "id": "n03d-bit-stand",
   "object": "Plane.005",
   "root": "BIT STAND nodes",
-  "status": "work-in-progress",
+  "status": "topology-and-bounds-exact",
   "blender": { "verts": 8718, "faces": 5270 },
-  "gnvm": { "verts": 1632, "faces": 858 },
+  "gnvm": { "verts": 8718, "faces": 5270 },
   "coverage": "100% of reachable node types across the 5-group, 173-node closure.",
-  "validation": "Eight Blender/VM cases confirm the 21 staggered bit instances, full 60-unit bit height, Y extent, bit visibility switch, and wall-thickness response. Blender's two exact planar booleans create the perforated top lattice; the current solid-only Manifold fallback keeps a simplified outer plate, which is the remaining major parity gap. Offset Scale is a no-op in all supplied Blender cases and is intentionally not exposed."
+  "validation": "All eight Blender/VM cases have exact topology and four-decimal bounds, including authored 8,718 / 5,270 and holder-only 7,374 / 4,556. Blender-compatible Dual Mesh boundary handling and Exact planar surface booleans reproduce the rounded lattice, 21 circular openings, wall thickness, staggered bit instances, and visibility switch. Offset Scale is a no-op in all supplied Blender cases and is intentionally not exposed."
 }
