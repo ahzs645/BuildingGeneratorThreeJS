@@ -477,7 +477,7 @@
     "dump": "dojo/n03d/bolt-watertight/dump.json",
     "reference": "dojo/references/n03d/bolt-watertight.png",
     "blenderStats": { "verts": 16570, "faces": 16572 },
-    "note": "Visual near-parity for the distinct 13-pass watertighten root. The browser produces a closed 16,774 / 16,776 mesh versus Blender's 16,570 / 16,572, with matching healed thread silhouette and bounds within 0.012 units before the supplied object's residual Z placement. This high-resolution volume workflow takes about 68 seconds to evaluate.",
+    "note": "Visual near-parity for the distinct 13-pass watertighten root. The browser produces a closed 17,098 / 17,100 mesh versus Blender's 16,570 / 16,572 (3.19% topology delta), with matching healed thread silhouette and radial bounds within 0.00004 units. This high-resolution volume workflow evaluates in about 27 seconds.",
     "controls": [
       { "name": "length", "label": "Bolt length", "min": 8, "max": 60, "step": 0.1, "value": 24.632158279418945 },
       { "name": "thread dia", "label": "Thread diameter", "min": 5, "max": 40, "step": 0.1, "value": 14.95798110961914 },

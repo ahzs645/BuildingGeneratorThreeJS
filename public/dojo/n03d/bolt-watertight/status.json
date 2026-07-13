@@ -4,7 +4,7 @@
   "root": "BOLT GEN DHTS v03_Thru Head_1JUL2024.005",
   "status": "visual-near-parity",
   "blender": { "verts": 16570, "faces": 16572 },
-  "gnvm": { "verts": 16774, "faces": 16776 },
+  "gnvm": { "verts": 17098, "faces": 17100 },
   "coverage": "100% of reachable node types across the 43-group watertight Bolt closure.",
-  "validation": "The authored 13-pass heal branch is manifold in both Blender and GN-VM. Pass 2 is 15,730/15,800 versus Blender 15,538/15,642; pass 3 is 16,686/16,719 versus Blender 16,568/16,590. The final browser topology differs by 1.23% vertices and 1.23% faces, with local bounds within 0.012 units before the supplied object's residual Z placement. Evaluation takes about 68 seconds on the validation machine."
+  "validation": "The authored 13-pass heal branch is manifold in both Blender and GN-VM. With two-stage Blender volume resampling, the final browser topology is 17,098 / 17,100 versus Blender's 16,570 / 16,572 (3.19% vertices and 3.19% faces). Radial local bounds differ by less than 0.00004 units; the remaining Z offset is the supplied object's residual placement. Evaluation takes about 27 seconds on the validation machine."
 }

@@ -11,10 +11,10 @@ The complete machine-readable mapping is in `public/dojo/n03d/root-classificatio
 `BOLT GEN DHTS v03_Thru Head_1JUL2024.005` adds the saved `watertighten` branch and is materially different from the original published Bolt root. It is now published as `n03d-bolt-watertight`. In the authored 13-pass comparison:
 
 - Blender: 16,570 vertices / 16,572 faces.
-- GN-VM: 16,774 vertices / 16,776 faces.
-- GN-VM evaluation: about 68 seconds.
+- GN-VM: 17,098 vertices / 17,100 faces.
+- GN-VM evaluation: about 27 seconds.
 
-Both outputs are closed manifolds with matching healed thread silhouette. The 1.23% topology difference comes from OpenVDB versus the browser surface-net cell placement; local bounds are within 0.012 units before the supplied object's residual Z placement.
+Both outputs are closed manifolds with matching healed thread silhouette. The 3.19% topology difference comes from OpenVDB versus the browser surface-net cell placement; radial local bounds are within 0.00004 units, and the Z offset is the supplied object's residual placement.
 
 The `.001` and `.002` compact Bolt roots are not separate targets: both contain the same 59-node root shape and the same saved modifier values. Their only measured difference is the source profile's Z placement. The old v02 active root produces one loose point and no surface.
 
