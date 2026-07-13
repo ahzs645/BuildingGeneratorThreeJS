@@ -454,6 +454,15 @@ function convertCurveGeometrySplineType(g: Geometry, type: string, seen: Map<Geo
   const out = g.clone();
   seen.set(g, out);
   if (type === "POLY") {
+    const sourceIndex: number[] = [];
+    let offset = 0;
+    out.curves = g.curves.map((s) => {
+      const points = s.controlPoints?.length ? s.controlPoints : s.points;
+      for (const point of points) sourceIndex.push(offset + nearestControlPointIndex(s.points, point));
+      offset += s.points.length;
+      return { cyclic: s.cyclic, points: points.map((point) => [...point] as Vec3) };
+    });
+    remapCurvePointAttributes(g, out, sourceIndex);
     out.instances = g.instances.map((inst) => ({ ...inst, geometry: convertCurveGeometrySplineType(inst.geometry, type, seen) }));
     return out;
   }

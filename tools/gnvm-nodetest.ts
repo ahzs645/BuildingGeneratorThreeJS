@@ -189,6 +189,16 @@ function meshSignedAreaXY(m: Mesh): number {
   check("SetSplineType NURBS cuts inward from control corner", maxX < 0.76 && maxX > 0.74, `maxX=${maxX}`);
 }
 
+// Imported Bezier objects retain both evaluated samples and authored controls.
+// Converting them to Poly uses the controls, matching Blender's 14-point Text
+// Soup guide instead of instancing over all 157 evaluated Bezier samples.
+{
+  const source = curve([[0, 0, 0], [.25, 0, 0], [.5, 0, 0], [.75, 0, 0], [1, 0, 0]], false);
+  source.curves[0].controlPoints = [[0, 0, 0], [1, 0, 0]];
+  const converted = runNode("GeometryNodeCurveSplineType", { Curve: source }, { spline_type: "POLY" }).Curve as Geometry;
+  check("SetSplineType POLY restores authored controls", converted.curves[0].points.length === 2, `got ${converted.curves[0].points.length}`);
+}
+
 // (E) CurveToMesh: straight Z rail (open) + diamond profile (cyclic), no caps
 {
   const rail = curve([[0, 0, 0], [0, 0, 2]], false);
@@ -920,6 +930,20 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Set Position offsets instance points", approx(moved.instances[2].position, [2, 0, .02]));
 }
 
+// Bounding Box does not realize/open instances. Text Soup depends on the zero
+// bounds here so its Set Center group leaves glyph instances in place.
+{
+  const instances = new Geometry();
+  instances.instances = [{
+    geometry: box([-2, -3, -4], [5, 6, 7]),
+    position: [10, 20, 30], rotation: [0, 0, 0], scale: [1, 1, 1],
+  }];
+  const bounds = runNode("GeometryNodeBoundBox", { Geometry: instances });
+  const min = (bounds.Min as Field).value as Vec3;
+  const max = (bounds.Max as Field).value as Vec3;
+  check("Bounding Box ignores unrealized instances", approx(min, [0, 0, 0]) && approx(max, [0, 0, 0]), `${JSON.stringify(min)}..${JSON.stringify(max)}`);
+}
+
 // (AD) Collection Info materializes evaluated child geometry as pickable
 // instances and Reset Children strips authored object transforms.
 {
@@ -941,22 +965,29 @@ function meshSignedAreaXY(m: Mesh): number {
   DUMP_CONTEXT.collections = savedCollections;
 }
 
-// (AE) Curve Tilt is a point field, and an unlinked Instance Index cycles the
+// (AE) Curve Tilt and Radius are point fields, and an unlinked Instance Index cycles the
 // Geometry-to-Instance list in Blender's authored Flat Stickie Pack.
 {
   const points = curve([[0, 0, 0], [2, 0, 0]], false);
   points.curveAttributes.set("tilt", { domain: "POINT", data: [.2, -.4] });
+  points.curveAttributes.set("radius", { domain: "POINT", data: [.75, 1.25] });
   const tilt = runNode("GeometryNodeInputCurveTilt", {}).Tilt as Field;
+  const radius = runNode("GeometryNodeInputRadius", {}).Radius as Field;
   check("Curve Tilt reads curve point attributes", approx(tilt.array(makeFieldCtx(points, "POINT")) as number[], [.2, -.4]));
+  check("Curve Radius reads curve point attributes", approx(radius.array(makeFieldCtx(points, "POINT")) as number[], [.75, 1.25]));
+  const defaultRadius = runNode("GeometryNodeInputRadius", {}).Radius as Field;
+  const plainPoints = curve([[0, 0, 0]], false);
+  check("Curve Radius defaults to one", approx(defaultRadius.array(makeFieldCtx(plainPoints, "POINT")) as number[], [1]));
   const sourceA = box([0, 0, 0], [1, 1, 1]);
   const sourceB = box([0, 0, 0], [2, 2, 2]);
   const choices = new Geometry();
-  choices.instances = [sourceA, sourceB].map((geometry) => ({ geometry, position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }));
+  choices.instances = [sourceA, sourceB].map((geometry, i) => ({ geometry, position: [i ? -2 : 1, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3, scale: [1, 1, 1] as Vec3 }));
   const placed = runNode("GeometryNodeInstanceOnPoints", {
     Points: points, Selection: true, Instance: choices, "Pick Instance": true,
     "Instance Index": 0, Rotation: [0, 0, 0], Scale: [1, 1, 1],
   }, {}, ["Points", "Instance"]).Instances as Geometry;
   check("unlinked Pick Instance index cycles by point", placed.instances[0].geometry === sourceA && placed.instances[1].geometry === sourceB);
+  check("Pick Instance preserves child transforms", approx(placed.instances[0].position, [1, 0, 0]) && approx(placed.instances[1].position, [0, 0, 0]));
 }
 
 // (AF) Nested asset generators depend on Object Info's evaluated modifier mesh,

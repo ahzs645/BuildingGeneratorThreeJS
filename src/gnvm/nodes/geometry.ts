@@ -28,6 +28,7 @@ function geometryOfDumpObject(obj: (typeof DUMP_CONTEXT.objects)[number] | undef
   if (obj?.curves && (!evaluated || !source)) {
     out.curves = obj.curves.map((spline) => ({
       cyclic: Boolean(spline.cyclic), points: spline.points.map((p) => [p[0], p[1], p[2]] as Vec3),
+      controlPoints: spline.control_points?.map((p) => [p[0], p[1], p[2]] as Vec3),
     }));
     const tilts = obj.curves.flatMap((spline) => spline.tilts ?? spline.points.map(() => 0));
     if (tilts.some((value) => value !== 0)) out.curveAttributes.set("tilt", { domain: "POINT", data: tilts });
@@ -122,7 +123,10 @@ reg(["GeometryNodeTransform", "GeometryNodeTransformGeometry"], (api) => {
   const g = api.geo("Geometry").clone();
   const t = api.vec("Translation"), r = api.vec("Rotation"), s = api.vec("Scale");
   if (g.mesh) g.mesh.positions = g.mesh.positions.map((p) => transformPoint(p, t, r, s));
-  for (const spline of g.curves) spline.points = spline.points.map((p) => transformPoint(p, t, r, s));
+  for (const spline of g.curves) {
+    spline.points = spline.points.map((p) => transformPoint(p, t, r, s));
+    if (spline.controlPoints) spline.controlPoints = spline.controlPoints.map((p) => transformPoint(p, t, r, s));
+  }
   for (const inst of g.instances) {
     inst.position = transformPoint(inst.position, t, r, s);
     // Transform Geometry composes with the complete instance transform, not
@@ -197,7 +201,11 @@ reg("GeometryNodeJoinGeometry", (api) => {
   for (const g of parts) {
     if (g.mesh) mergeMeshInto(out.mesh, g.mesh);
     for (const inst of g.instances) out.instances.push({ ...inst });
-    for (const s of g.curves) out.curves.push({ cyclic: s.cyclic, points: s.points.map((p) => [...p] as Vec3) });
+    for (const s of g.curves) out.curves.push({
+      cyclic: s.cyclic,
+      points: s.points.map((p) => [...p] as Vec3),
+      controlPoints: s.controlPoints?.map((p) => [...p] as Vec3),
+    });
   }
   return { Geometry: out };
 });
@@ -261,10 +269,13 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
     const picked = pickInstance && instance.instances.length
       ? instance.instances[((requestedIndex % instance.instances.length) + instance.instances.length) % instance.instances.length]
       : null;
+    const outerRotation = asVec3(rot[i] ?? [0, 0, 0]);
     out.instances.push({
       geometry: picked?.geometry ?? instance,
-      position: pts[i],
-      rotation: picked ? vadd(asVec3(rot[i] ?? [0, 0, 0]), picked.rotation) : asVec3(rot[i] ?? [0, 0, 0]),
+      // A picked child keeps its own transform. Compose its origin through the
+      // point transform before placing it in the parent geometry.
+      position: picked ? transformPoint(picked.position, pts[i], outerRotation, s) : pts[i],
+      rotation: picked ? vadd(outerRotation, picked.rotation) : outerRotation,
       scale: picked ? [s[0] * picked.scale[0], s[1] * picked.scale[1], s[2] * picked.scale[2]] : s,
       attributes,
     } as InstanceRef);
@@ -451,9 +462,11 @@ reg("GeometryNodeProximity", (api) => {
 reg("GeometryNodeBoundBox", (api) => {
   const g = api.geo("Geometry");
   let min: Vec3 = [Infinity, Infinity, Infinity], max: Vec3 = [-Infinity, -Infinity, -Infinity];
-  // Blender's bbox spans all components: mesh verts, curve control points, and
-  // instances. Curve-only geometry returned a zero box, which zeroed the bubble
-  // vase's whole density chain (bbox dim -> resample count = 0).
+  // Blender computes bounds for realized mesh/curve components, but does not
+  // open an Instances component. Text Soup deliberately sends glyph instances
+  // through Bounding Box before realization, so Blender returns a zero box and
+  // its Set Center group becomes a no-op. Curve-only realized geometry must
+  // still contribute (the bubble vase derives its resample density from it).
   let count = 0;
   const eat = (p: Vec3) => {
     count++;
@@ -461,11 +474,6 @@ reg("GeometryNodeBoundBox", (api) => {
   };
   for (const p of g.mesh?.positions ?? []) eat(p);
   for (const s of g.curves) for (const p of s.points) eat(p);
-  for (const inst of g.instances) {
-    const child = inst.geometry;
-    for (const p of child.mesh?.positions ?? []) eat(transformPoint(p, inst.position, inst.rotation, inst.scale));
-    for (const s of child.curves) for (const p of s.points) eat(transformPoint(p, inst.position, inst.rotation, inst.scale));
-  }
   if (!count) { min = [0, 0, 0]; max = [0, 0, 0]; }
   const size: Vec3 = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
   const center: Vec3 = [(max[0] + min[0]) / 2, (max[1] + min[1]) / 2, (max[2] + min[2]) / 2];

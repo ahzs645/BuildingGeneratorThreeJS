@@ -13,6 +13,7 @@ import {
   SRGBColorSpace, NoColorSpace, RepeatWrapping,
 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { publicUrl } from "./base-url";
 import type { Placement } from "./generator";
 
 function tex(loader: TextureLoader, url: string, srgb = false): Texture {
@@ -27,29 +28,29 @@ function buildMaterials(): Record<string, Material> {
   const loader = new TextureLoader();
   const building = new MeshStandardMaterial({
     name: "building",
-    map: tex(loader, "/textures/Material_Base_color.png", true),
-    normalMap: tex(loader, "/textures/Material_Normal_OpenGL.png"),
-    roughnessMap: tex(loader, "/textures/Material_Roughness.png"),
+    map: tex(loader, publicUrl("textures/Material_Base_color.png"), true),
+    normalMap: tex(loader, publicUrl("textures/Material_Normal_OpenGL.png")),
+    roughnessMap: tex(loader, publicUrl("textures/Material_Roughness.png")),
     roughness: 1,
-    metalnessMap: tex(loader, "/textures/Material_Metallic.png"),
+    metalnessMap: tex(loader, publicUrl("textures/Material_Metallic.png")),
     metalness: 1,
-    emissiveMap: tex(loader, "/textures/Material_Emissive.png", true),
+    emissiveMap: tex(loader, publicUrl("textures/Material_Emissive.png"), true),
     emissive: new Color(0xffffff),
     emissiveIntensity: 1.4,
     side: DoubleSide,
   });
   const floor = new MeshStandardMaterial({
     name: "floor",
-    map: tex(loader, "/textures/floor_Base_color.png", true),
-    normalMap: tex(loader, "/textures/floor_Normal_OpenGL.png"),
-    roughnessMap: tex(loader, "/textures/floor_Roughness.png"),
+    map: tex(loader, publicUrl("textures/floor_Base_color.png"), true),
+    normalMap: tex(loader, publicUrl("textures/floor_Normal_OpenGL.png")),
+    roughnessMap: tex(loader, publicUrl("textures/floor_Roughness.png")),
     roughness: 1,
-    metalnessMap: tex(loader, "/textures/floor_Metallic.png"),
+    metalnessMap: tex(loader, publicUrl("textures/floor_Metallic.png")),
     metalness: 1,
-    emissiveMap: tex(loader, "/textures/floor_Base_Emissive.png", true),
+    emissiveMap: tex(loader, publicUrl("textures/floor_Base_Emissive.png"), true),
     emissive: new Color(0xffffff),
     emissiveIntensity: 1, // driven by the "emissive" slider in building settings (1–50)
-    alphaMap: tex(loader, "/textures/floor_alpha.png"),
+    alphaMap: tex(loader, publicUrl("textures/floor_alpha.png")),
     alphaTest: 0.5, // cutout — no blend-sorting artifacts
     side: DoubleSide,
   });

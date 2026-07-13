@@ -88,6 +88,9 @@ export interface InstanceRef {
 export interface Spline {
   points: Vec3[];
   cyclic: boolean;
+  // Evaluated polyline points may be denser than the authored spline knots.
+  // Set Spline Type -> Poly must retain the original control-point count.
+  controlPoints?: Vec3[];
 }
 
 // A geometry set: mesh + curves (splines) + instances.
@@ -110,7 +113,11 @@ export class Geometry {
   clone(): Geometry {
     const g = new Geometry();
     if (this.mesh) g.mesh = this.mesh.clone();
-    g.curves = this.curves.map((s) => ({ cyclic: s.cyclic, points: s.points.map((p) => [...p] as Vec3) }));
+    g.curves = this.curves.map((s) => ({
+      cyclic: s.cyclic,
+      points: s.points.map((p) => [...p] as Vec3),
+      controlPoints: s.controlPoints?.map((p) => [...p] as Vec3),
+    }));
     g.instances = this.instances.map((i) => ({
       ...i,
       position: [...i.position] as Vec3, rotation: [...i.rotation] as Vec3, scale: [...i.scale] as Vec3,
@@ -532,7 +539,11 @@ export function realizeInstances(g: Geometry): Geometry {
   const out = new Geometry();
   const mesh = g.mesh ? g.mesh.clone() : new Mesh();
   // base curves pass through; instanced curves get appended transformed below
-  out.curves = g.curves.map((s) => ({ cyclic: s.cyclic, points: s.points.map((p) => [...p] as Vec3) }));
+  out.curves = g.curves.map((s) => ({
+    cyclic: s.cyclic,
+    points: s.points.map((p) => [...p] as Vec3),
+    controlPoints: s.controlPoints?.map((p) => [...p] as Vec3),
+  }));
   for (const [k, a] of g.curveAttributes) out.curveAttributes.set(k, { domain: a.domain, data: [...a.data] });
   for (const inst of g.instances) {
     const rg = realizeInstances(inst.geometry); // recursive
@@ -553,7 +564,11 @@ export function realizeInstances(g: Geometry): Geometry {
     // Curve-only payloads must survive realize — the bubble vase's proximity
     // target is 58 instanced curves; `if (!rg.mesh) continue` emptied the field.
     for (const s of rg.curves)
-      out.curves.push({ cyclic: s.cyclic, points: s.points.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale)) });
+      out.curves.push({
+        cyclic: s.cyclic,
+        points: s.points.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale)),
+        controlPoints: s.controlPoints?.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale)),
+      });
   }
   if (g.mesh || mesh.positions.length || mesh.faces.length || mesh.edges.length) out.mesh = mesh;
   return out;

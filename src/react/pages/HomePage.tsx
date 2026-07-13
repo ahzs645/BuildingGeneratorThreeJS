@@ -3,6 +3,7 @@ import { appHref } from "../../base-url";
 import "./index.css";
 
 const cards = [
+  { href: "/surface-draw", tag: "Surface Lab · Upload", title: "Draw on a Model", badge: "new", copy: "Upload a GLB, OBJ, or STL, raycast an editable stroke onto its surface, and evaluate a Blender-authored brush through the browser GN-VM.", action: "Open surface lab" },
   { href: "/blendbridge", tag: "Importer · Local", title: "BlendBridge", badge: "new", copy: "Drop in a Blender file. Extract its Geometry Nodes graph, inspect browser coverage, generate controls, run a worker-isolated preview, and export reusable graph JSON.", action: "Import a .blend" },
   { href: "/gallery", tag: "Node Dojo · Gallery", title: "More Node Dojo Studies", badge: "new", copy: "Chrome Crayon, Schoen Gyroid, Schwarz P-Surface, the procedural hat, and the recursive bin in one selectable browser viewer.", action: "Open gallery" },
   { href: "/typewriter", tag: "Node Dojo · Live", title: "Procedural Typewriter", badge: "new", copy: "The authored Typewriter Geometry Nodes graph with editable text, frame-by-frame Slice String animation, spacing, wrapping, and portable vector glyphs.", action: "Open typewriter" },

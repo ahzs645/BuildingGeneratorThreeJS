@@ -5,6 +5,7 @@ type Request = {
   dump: Dump;
   object: string;
   overrides: Record<string, number | boolean>;
+  curves?: { points: number[][]; cyclic: boolean; tilts?: number[] }[];
 };
 
 type WorkerScope = {
@@ -14,8 +15,13 @@ type WorkerScope = {
 const scope = self as unknown as WorkerScope;
 
 scope.onmessage = async (event: MessageEvent<Request>) => {
-  const { id, dump, object, overrides } = event.data;
+  const { id, dump, object, overrides, curves } = event.data;
   try {
+    if (curves) {
+      const target = dump.objects?.find((candidate) => candidate.name === object);
+      if (!target) throw new Error(`curve target object not found: ${object}`);
+      target.curves = curves;
+    }
     const result = await runGenerator(dump, { object, overrides });
     const payload = {
       id,

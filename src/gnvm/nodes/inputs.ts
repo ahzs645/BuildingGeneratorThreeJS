@@ -10,6 +10,13 @@ reg("GeometryNodeInputCurveTilt", () => ({
   Tilt: Field.perElem((i, ctx) => ctx.attr?.("tilt", i) ?? 0),
 }));
 
+// Curve Radius is 1.0 when no authored per-point radius attribute exists.
+// It is also available on point clouds, where downstream Instance on Points
+// commonly uses it as a uniform scale field.
+reg("GeometryNodeInputRadius", () => ({
+  Radius: Field.perElem((i, ctx) => ctx.attr?.("radius", i) ?? 1),
+}));
+
 reg("GeometryNodeImageInfo", (api) => {
   const image = DUMP_CONTEXT.images.find((candidate) => candidate.name === api.ref("Image")?.name);
   return {

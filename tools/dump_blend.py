@@ -383,6 +383,7 @@ for obj in bpy.data.objects:
             tangents = []
             if spline.type == "BEZIER":
                 bp = list(spline.bezier_points)
+                control_points = [[round(v, 6) for v in point.co] for point in bp]
                 segments = len(bp) if cyclic else max(0, len(bp) - 1)
                 resolution = max(2, int(getattr(spline, "resolution_u", 0) or obj.data.resolution_u or 12))
                 for segment in range(segments):
@@ -403,11 +404,15 @@ for obj in bpy.data.objects:
                     else:
                         tangents.append([0.0, 0.0, 1.0])
             else:
+                control_points = None
                 points = [[round(p.co.x, 6), round(p.co.y, 6), round(p.co.z, 6)] for p in spline.points]
                 tilts = [round(p.tilt, 6) for p in spline.points]
                 radii = [round(p.radius, 6) for p in spline.points]
             if points:
-                splines.append({"points": points, "cyclic": cyclic, "tilts": tilts, "radii": radii, "tangents": tangents})
+                entry = {"points": points, "cyclic": cyclic, "tilts": tilts, "radii": radii, "tangents": tangents}
+                if control_points is not None:
+                    entry["control_points"] = control_points
+                splines.append(entry)
         o["curves"] = splines
     if obj.name in dependency_object_names and obj.type in ("MESH", "CURVE"):
         evaluated = obj.evaluated_get(depsgraph)

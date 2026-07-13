@@ -44,7 +44,14 @@ export interface Dump {
     rotation?: number[];
     scale?: number[];
     modifiers?: { type: string; node_group?: string; input_values?: Record<string, any> }[];
-    curves?: { points: number[][]; cyclic: boolean; tilts?: number[] }[];
+    curves?: {
+      points: number[][];
+      control_points?: number[][];
+      cyclic: boolean;
+      tilts?: number[];
+      radii?: number[];
+      tangents?: number[][];
+    }[];
   }[];
   materials?: Record<string, { nodes?: { type: string; inputs?: { name: string; identifier: string; linked: boolean; value: unknown }[] }[] }>;
 }
@@ -79,7 +86,11 @@ function baseGeometryOf(dump: Dump, objectName: string): Geometry | null {
     g.mesh = m;
   }
   if (obj?.curves) {
-    g.curves = obj.curves.map((s: any) => ({ cyclic: Boolean(s.cyclic), points: s.points.map((p: number[]) => [p[0], p[1], p[2]]) }));
+    g.curves = obj.curves.map((s: any) => ({
+      cyclic: Boolean(s.cyclic),
+      points: s.points.map((p: number[]) => [p[0], p[1], p[2]]),
+      controlPoints: s.control_points?.map((p: number[]) => [p[0], p[1], p[2]]),
+    }));
     const tilts = obj.curves.flatMap((s: any) => s.tilts ?? s.points.map(() => 0));
     if (tilts.some((value: number) => value !== 0)) g.curveAttributes.set("tilt", { domain: "POINT", data: tilts });
     const radii = obj.curves.flatMap((s: any) => s.radii ?? s.points.map(() => 1));
