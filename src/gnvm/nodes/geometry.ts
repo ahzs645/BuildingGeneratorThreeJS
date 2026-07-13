@@ -222,6 +222,14 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
   const sel = api.field("Selection").array(ctx);
   const rot = api.field("Rotation").array(ctx);
   const scl = api.field("Scale").array(ctx);
+  if (FIELD_PROBE.node === api.node.name) {
+    const requested = FIELD_PROBE.socket ?? "Rotation";
+    FIELD_PROBE.batches.push({
+      domain: "POINT",
+      positions: pts.map((point) => [...point] as Vec3),
+      values: requested === "Scale" ? scl : requested === "Selection" ? sel : rot,
+    });
+  }
   const pickInstance = api.bool("Pick Instance");
   const instanceIndices = api.field("Instance Index").array(ctx);
   const instanceIndexLinked = api.node.inputs.find((socket) => socket.identifier === "Instance Index")?.linked;

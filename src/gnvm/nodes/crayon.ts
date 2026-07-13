@@ -147,34 +147,120 @@ reg("GeometryNodeCurveToPoints", (api) => {
   const mode = api.prop<string>("mode", "COUNT");
   const count = Math.max(1, Math.round(api.num("Count")));
   const length = Math.max(1e-9, api.num("Length") || 0.1);
+  let inputOffset = 0;
+  const sourceTangents = input.curveAttributes.get("__curve_tangent")?.data;
+  const sourceNormals = input.curveAttributes.get("__curve_normal")?.data;
+  const sampledTangents: Vec3[][] = [];
+  const sampledNormals: Vec3[][] = [];
+  const sampleVectors = (s: { points: Vec3[]; cyclic: boolean }, sampledPoints: Vec3[], values?: Elem[]): Vec3[] => {
+    if (!values?.length || s.points.length < 2) return [];
+    return sampledPoints.map((point) => {
+      let bestDistance = Infinity;
+      let best: Vec3 = asVec3(values[0]);
+      const segmentCount = s.cyclic ? s.points.length : s.points.length - 1;
+      for (let i = 0; i < segmentCount; i++) {
+        const j = (i + 1) % s.points.length;
+        const a = s.points[i], delta = vsub(s.points[j], a);
+        const denom = Math.max(1e-12, vdot(delta, delta));
+        const t = Math.max(0, Math.min(1, vdot(vsub(point, a), delta) / denom));
+        const closest = vadd(a, vscale(delta, t));
+        const distance = vlen(vsub(point, closest));
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          best = vnorm(vadd(vscale(asVec3(values[i]), 1 - t), vscale(asVec3(values[j]), t)));
+        }
+      }
+      return best;
+    });
+  };
   const sampled = input.curves.map((s) => {
-    if (mode === "EVALUATED") return { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
-    if (mode === "LENGTH") {
+    const values = sourceTangents?.slice(inputOffset, inputOffset + s.points.length);
+    const normalValues = sourceNormals?.slice(inputOffset, inputOffset + s.points.length);
+    inputOffset += s.points.length;
+    let result: { points: Vec3[]; cyclic: boolean };
+    if (mode === "EVALUATED") {
+      result = { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
+    } else if (mode === "LENGTH") {
       const n = Math.max(2, Math.round((makeFieldCtx(new Geometry(), "POINT"), s.points.reduce((sum, p, i) => i ? sum + vlen(vsub(p, s.points[i - 1])) : sum, 0)) / length));
-      return resampleSpline(s, n);
+      result = resampleSpline(s, n);
+    } else {
+      result = resampleSpline(s, count);
     }
-    return resampleSpline(s, count);
+    sampledTangents.push(sampleVectors(s, result.points, values));
+    sampledNormals.push(sampleVectors(s, result.points, normalValues));
+    return result;
   });
   const out = new Geometry();
   const mesh = new Mesh();
-  const tangents: Vec3[] = [], normals: Vec3[] = [];
-  for (const s of sampled) {
-    const frames = splineFrames(s.points, s.cyclic);
+  const tangents: Vec3[] = [], normals: Vec3[] = [], rotations: Vec3[] = [];
+  const frameRotation = (normal: Vec3, binormal: Vec3, tangent: Vec3): Vec3 => {
+    // Matrix columns are the rotated local X/Y/Z axes. Blender's curve-point
+    // rotation uses X=normal, Y=binormal, Z=tangent.
+    const m = [
+      [normal[0], binormal[0], tangent[0]],
+      [normal[1], binormal[1], tangent[1]],
+      [normal[2], binormal[2], tangent[2]],
+    ];
+    const y = Math.asin(Math.max(-1, Math.min(1, -m[2][0])));
+    const cy = Math.cos(y);
+    return Math.abs(cy) > 1e-6
+      ? [Math.atan2(m[2][1], m[2][2]), y, Math.atan2(m[1][0], m[0][0])]
+      : [Math.atan2(-m[1][2], m[1][1]), y, 0];
+  };
+  const transportedFrames = (points: Vec3[], supplied: Vec3[], cyclic: boolean) => {
+    if (!supplied.length) return splineFrames(points, cyclic);
+    const ts = supplied.map((t) => vnorm(t));
+    const rotate = (v: Vec3, axis: Vec3, angle: number): Vec3 => {
+      const c = Math.cos(angle), sn = Math.sin(angle);
+      return vadd(vadd(vscale(v, c), vscale(vcross(axis, v), sn)), vscale(axis, vdot(axis, v) * (1 - c)));
+    };
+    let normal = vcross(ts[0], [0, 0, 1]);
+    if (vlen(normal) < 1e-8) normal = [1, 0, 0];
+    normal = vnorm(normal);
+    const frames: { tangent: Vec3; normal: Vec3; binormal: Vec3 }[] = [];
+    for (let i = 0; i < ts.length; i++) {
+      if (i) {
+        const axis = vcross(ts[i - 1], ts[i]);
+        const sin = vlen(axis);
+        if (sin > 1e-8) normal = rotate(normal, vscale(axis, 1 / sin), Math.atan2(sin, vdot(ts[i - 1], ts[i])));
+        normal = vnorm(vsub(normal, vscale(ts[i], vdot(normal, ts[i]))));
+      }
+      frames.push({ tangent: ts[i], normal, binormal: vnorm(vcross(ts[i], normal)) });
+    }
+    return frames;
+  };
+  for (let splineIndex = 0; splineIndex < sampled.length; splineIndex++) {
+    const s = sampled[splineIndex];
+    let frames = transportedFrames(s.points, sampledTangents[splineIndex] ?? [], s.cyclic);
+    const retainedNormals = sampledNormals[splineIndex] ?? [];
+    if (retainedNormals.length === frames.length) {
+      frames = frames.map((frame, i) => {
+        const normal = vnorm(vsub(retainedNormals[i], vscale(frame.tangent, vdot(retainedNormals[i], frame.tangent))));
+        return { tangent: frame.tangent, normal, binormal: vnorm(vcross(frame.tangent, normal)) };
+      });
+    }
     for (let i = 0; i < s.points.length; i++) {
       mesh.positions.push([...s.points[i]] as Vec3);
       tangents.push(frames[i]?.tangent ?? [1, 0, 0]);
       normals.push(frames[i]?.normal ?? [0, 0, 1]);
+      rotations.push(frameRotation(frames[i]?.normal ?? [1, 0, 0], frames[i]?.binormal ?? [0, 1, 0], frames[i]?.tangent ?? [0, 0, 1]));
     }
   }
   mesh.attributes.set("__curve_tangent", { domain: "POINT", data: tangents });
   mesh.attributes.set("__curve_normal", { domain: "POINT", data: normals });
+  mesh.attributes.set("__curve_rotation", { domain: "POINT", data: rotations });
   out.mesh = mesh;
+  if (FIELD_PROBE.node === api.node.name) {
+    const requested = FIELD_PROBE.socket ?? "Rotation";
+    const values = requested === "Tangent" ? tangents : requested === "Normal" ? normals : rotations;
+    FIELD_PROBE.batches.push({ domain: "POINT", positions: mesh.positions, values });
+  }
   const attr = (name: string, fallback: Vec3) => Field.perElem((i, ctx) => ctx.attr?.(name, i) ?? fallback).tagged("POINT");
   return {
     Points: out,
     Tangent: attr("__curve_tangent", [1, 0, 0]),
     Normal: attr("__curve_normal", [0, 0, 1]),
-    Rotation: Field.of([0, 0, 0]),
+    Rotation: attr("__curve_rotation", [0, 0, 0]),
   };
 });
 

@@ -119,7 +119,12 @@ export async function runGenerator(dump: Dump, opts: { object?: string; override
       if (base) dependencyInputs[geometrySocket.identifier] = base;
     }
     DUMP_CONTEXT.activeObject = object;
-    DUMP_CONTEXT.evaluatedObjects.set(object.name, ev.evalModifierGroup(modifier.node_group, dependencyInputs).geometry);
+    const dependencyGeometry = ev.evalModifierGroup(modifier.node_group, dependencyInputs).geometry;
+    // Prefer the procedural runtime result when it produced a component. If an
+    // unsupported structural node leaves it empty, Object Info can still use
+    // the exact evaluated mesh embedded by Blender extraction.
+    if (dependencyGeometry.mesh?.positions.length || dependencyGeometry.curves.length || dependencyGeometry.instances.length || !object.evaluated_mesh)
+      DUMP_CONTEXT.evaluatedObjects.set(object.name, dependencyGeometry);
   }
   DUMP_CONTEXT.activeObject = DUMP_CONTEXT.objects.find((object) => object.name === found.objectName);
   const groupDef: any = dump.node_groups[found.group];

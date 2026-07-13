@@ -1,5 +1,5 @@
 // Field-plumbing nodes: sample-at-index, evaluate-on-domain, align-euler.
-import { Field, Vec3, Elem, Domain, asNum, asVec3, vnorm, vcross, vdot, vlen } from "../core";
+import { Field, fieldMap, Vec3, Elem, Domain, asNum, asVec3, vnorm, vcross, vdot, vlen } from "../core";
 import { reg } from "../registry";
 import { buildTopology } from "../geometry";
 
@@ -81,6 +81,66 @@ function matrixToEulerXYZ(M: number[][]): Vec3 {
   return [Math.atan2(-M[1][2], M[1][1]), ey, 0]; // gimbal
 }
 
+type Quat = [number, number, number, number];
+const quatNormalize = (q: Quat): Quat => {
+  const length = Math.hypot(q[0], q[1], q[2], q[3]) || 1;
+  return [q[0] / length, q[1] / length, q[2] / length, q[3] / length];
+};
+const quatMultiply = (a: Quat, b: Quat): Quat => [
+  a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+  a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+  a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
+  a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],
+];
+function quatFromEulerXYZ(e: Vec3): Quat {
+  const [sx, cx] = [Math.sin(e[0] / 2), Math.cos(e[0] / 2)];
+  const [sy, cy] = [Math.sin(e[1] / 2), Math.cos(e[1] / 2)];
+  const [sz, cz] = [Math.sin(e[2] / 2), Math.cos(e[2] / 2)];
+  return quatNormalize([
+    sx * cy * cz - cx * sy * sz,
+    cx * sy * cz + sx * cy * sz,
+    cx * cy * sz - sx * sy * cz,
+    cx * cy * cz + sx * sy * sz,
+  ]);
+}
+function quatToMatrix(q0: Quat): number[][] {
+  const [x, y, z, w] = quatNormalize(q0);
+  return [
+    [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+    [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+    [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+  ];
+}
+const quatToEulerXYZ = (q: Quat): Vec3 => matrixToEulerXYZ(quatToMatrix(q));
+function quatRotate(q: Quat, v: Vec3): Vec3 {
+  const u: Vec3 = [q[0], q[1], q[2]];
+  const s = q[3];
+  const uv = vcross(u, v);
+  const uuv = vcross(u, uv);
+  return [v[0] + 2 * (s * uv[0] + uuv[0]), v[1] + 2 * (s * uv[1] + uuv[1]), v[2] + 2 * (s * uv[2] + uuv[2])];
+}
+function quatFromTo(from0: Vec3, to0: Vec3, axisSel: string): Quat {
+  const from = vnorm(from0), to = vnorm(to0);
+  const dot = Math.max(-1, Math.min(1, vdot(from, to)));
+  if (dot > 1 - 1e-10) return [0, 0, 0, 1];
+  if (dot < -1 + 1e-10) {
+    let pivot: Vec3 = axisSel === "Y" ? [0, 0, 1] : axisSel === "Z" ? [1, 0, 0] : [0, 1, 0];
+    pivot = vnorm(vcross(from, pivot));
+    return [pivot[0], pivot[1], pivot[2], 0];
+  }
+  const cross = vcross(from, to);
+  return quatNormalize([cross[0], cross[1], cross[2], 1 + dot]);
+}
+function quatSlerpIdentity(q0: Quat, factor: number): Quat {
+  let q = quatNormalize(q0);
+  if (q[3] < 0) q = [-q[0], -q[1], -q[2], -q[3]];
+  const t = Math.max(0, Math.min(1, factor));
+  const angle = Math.acos(Math.max(-1, Math.min(1, q[3])));
+  if (angle < 1e-8) return [0, 0, 0, 1];
+  const scale = Math.sin(angle * t) / Math.sin(angle);
+  return quatNormalize([q[0] * scale, q[1] * scale, q[2] * scale, Math.cos(angle * t)]);
+}
+
 reg("FunctionNodeAlignEulerToVector", (api) => {
   const axisSel = api.prop<string>("axis", "X");
   const a: Vec3 = axisSel === "Y" ? [0, 1, 0] : axisSel === "Z" ? [0, 0, 1] : [1, 0, 0];
@@ -106,6 +166,36 @@ reg("FunctionNodeAlignEulerToVector", (api) => {
         out[i] = matrixToEulerXYZ(axisAngleMatrix(axis, ang));
       }
       return out;
+    }),
+  };
+});
+
+// Blender 4.2+ rotation-socket replacement for Align Euler to Vector. Align the
+// chosen local axis of the incoming rotation while preserving its existing
+// twist, then blend the corrective rotation by Factor.
+reg("FunctionNodeAlignRotationToVector", (api) => {
+  const axisSel = api.prop<string>("axis", "X");
+  const localAxis: Vec3 = axisSel === "Y" ? [0, 1, 0] : axisSel === "Z" ? [0, 0, 1] : [1, 0, 0];
+  const rotation = api.field("Rotation");
+  const vector = api.field("Vector");
+  const factor = api.field("Factor");
+  return {
+    Rotation: fieldMap([rotation, vector, factor], (r, v, f) => {
+      const base = quatFromEulerXYZ(asVec3(r));
+      const currentAxis = quatRotate(base, localAxis);
+      const delta = quatSlerpIdentity(quatFromTo(currentAxis, asVec3(v), axisSel), asNum(f));
+      return quatToEulerXYZ(quatMultiply(delta, base));
+    }),
+  };
+});
+
+reg("FunctionNodeRotateRotation", (api) => {
+  const global = api.prop<string>("rotation_space", "GLOBAL") === "GLOBAL";
+  return {
+    Rotation: fieldMap([api.field("Rotation"), api.field("Rotate By")], (r, by) => {
+      const base = quatFromEulerXYZ(asVec3(r));
+      const secondary = quatFromEulerXYZ(asVec3(by));
+      return quatToEulerXYZ(global ? quatMultiply(secondary, base) : quatMultiply(base, secondary));
     }),
   };
 });

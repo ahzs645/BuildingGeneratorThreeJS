@@ -1,9 +1,9 @@
 // Curve subsystem handlers: primitives, resample, fillet, sweep-to-mesh, fill.
-import { Field, Vec3, Elem, asNum } from "../core";
+import { Field, Vec3, Elem, asNum, asVec3, vadd, vsub, vscale, vdot, vcross, vlen, vnorm } from "../core";
 import { Geometry, Mesh, Spline, buildTopology } from "../geometry";
 import { reg } from "../registry";
 import { makeFieldCtx } from "../evaluator";
-import { resampleSpline, filletSpline, sweep, fillCurves, meshEdgesToChains, splineLength } from "../curves";
+import { resampleSpline, filletSpline, sweep, fillCurves, meshEdgesToChains, splineLength, splineFrames } from "../curves";
 
 function curveGeo(splines: Spline[]): Geometry {
   const g = new Geometry();
@@ -94,7 +94,72 @@ reg("GeometryNodeResampleCurve", (api) => {
     const o = geo.clone();
     seen.set(geo, o);
     o.curves = geo.curves.map(resampleOne);
-    if (o.curvePointCount() !== geo.curvePointCount()) o.curveAttributes.clear();
+    if (o.curvePointCount() !== geo.curvePointCount()) {
+      const samplePointAttribute = (s: Spline, targets: Vec3[], values: Elem[]): Elem[] => targets.map((point) => {
+        let bestDistance = Infinity;
+        let best: Elem = values[0] ?? 0;
+        const segmentCount = s.cyclic ? s.points.length : Math.max(0, s.points.length - 1);
+        for (let i = 0; i < segmentCount; i++) {
+          const j = (i + 1) % s.points.length;
+          const a = s.points[i], delta = vsub(s.points[j], a);
+          const denom = Math.max(1e-12, vdot(delta, delta));
+          const t = Math.max(0, Math.min(1, vdot(vsub(point, a), delta) / denom));
+          const distance = vlen(vsub(point, vadd(a, vscale(delta, t))));
+          if (distance >= bestDistance) continue;
+          bestDistance = distance;
+          const va = values[i] ?? values[0] ?? 0;
+          const vb = values[j] ?? va;
+          best = Array.isArray(va) || Array.isArray(vb)
+            ? vnorm(vadd(vscale(asVec3(va), 1 - t), vscale(asVec3(vb), t)))
+            : asNum(va) * (1 - t) + asNum(vb) * t;
+        }
+        return best;
+      });
+      o.curveAttributes.clear();
+      for (const [name, attribute] of geo.curveAttributes) {
+        if (attribute.domain !== "POINT") {
+          o.curveAttributes.set(name, { domain: attribute.domain, data: [...attribute.data] });
+          continue;
+        }
+        const data: Elem[] = [];
+        let offset = 0;
+        for (let splineIndex = 0; splineIndex < geo.curves.length; splineIndex++) {
+          const source = geo.curves[splineIndex];
+          const values = attribute.data.slice(offset, offset + source.points.length);
+          data.push(...samplePointAttribute(source, o.curves[splineIndex].points, values));
+          offset += source.points.length;
+        }
+        o.curveAttributes.set(name, { domain: "POINT", data });
+      }
+      // Resample Curve outputs a poly spline. Blender derives its tangent frame
+      // from that new polyline, and later Curve to Points interpolates this
+      // frame instead of deriving a fresh chord from its coarser samples.
+      const tangents: Vec3[] = [];
+      const normals: Vec3[] = [];
+      const rotate = (v: Vec3, axis: Vec3, angle: number): Vec3 => {
+        const c = Math.cos(angle), sn = Math.sin(angle);
+        return vadd(vadd(vscale(v, c), vscale(vcross(axis, v), sn)), vscale(axis, vdot(axis, v) * (1 - c)));
+      };
+      for (const spline of o.curves) {
+        const frames = splineFrames(spline.points, spline.cyclic);
+        const localTangents = frames.map((frame) => frame.tangent);
+        let normal = vcross(localTangents[0] ?? [0, 0, 1], [0, 0, 1]);
+        if (vlen(normal) < 1e-8) normal = [1, 0, 0];
+        normal = vnorm(normal);
+        for (let i = 0; i < localTangents.length; i++) {
+          if (i) {
+            const axis = vcross(localTangents[i - 1], localTangents[i]);
+            const sin = vlen(axis);
+            if (sin > 1e-8) normal = rotate(normal, vscale(axis, 1 / sin), Math.atan2(sin, vdot(localTangents[i - 1], localTangents[i])));
+            normal = vnorm(vsub(normal, vscale(localTangents[i], vdot(normal, localTangents[i]))));
+          }
+          tangents.push(localTangents[i]);
+          normals.push(normal);
+        }
+      }
+      o.curveAttributes.set("__curve_tangent", { domain: "POINT", data: tangents });
+      o.curveAttributes.set("__curve_normal", { domain: "POINT", data: normals });
+    }
     o.instances = geo.instances.map((inst) => ({ ...inst, geometry: resampleGeo(inst.geometry, seen) }));
     return o;
   };
@@ -116,6 +181,27 @@ reg("GeometryNodeSetSplineCyclic", (api) => {
   const cyclic = api.bool("Cyclic");
   for (const s of g.curves) s.cyclic = cyclic;
   return { Geometry: g };
+});
+
+reg("GeometryNodeReverseCurve", (api) => {
+  const g = api.geo("Curve").clone();
+  const ctx = makeFieldCtx(g, "CURVE");
+  const selected = api.field("Selection").array(ctx);
+  let pointOffset = 0;
+  for (let splineIndex = 0; splineIndex < g.curves.length; splineIndex++) {
+    const spline = g.curves[splineIndex];
+    const count = spline.points.length;
+    if (asNum(selected[splineIndex] ?? 1) > 0) {
+      spline.points.reverse();
+      for (const attribute of g.curveAttributes.values()) {
+        if (attribute.domain !== "POINT") continue;
+        const reversed = attribute.data.slice(pointOffset, pointOffset + count).reverse();
+        attribute.data.splice(pointOffset, count, ...reversed);
+      }
+    }
+    pointOffset += count;
+  }
+  return { Curve: g };
 });
 
 // ---- curve -> mesh --------------------------------------------------------

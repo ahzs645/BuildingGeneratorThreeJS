@@ -19,7 +19,7 @@ import {
   vnorm,
 } from "../core";
 import { Geometry, Mesh, mergeMeshInto, rotateEulerXYZ, Spline, buildTopology } from "../geometry";
-import { fillCurves, meshEdgesToChains, splineLength, splineSegments } from "../curves";
+import { fillCurves, meshEdgesToChains, splineLength, splineSegments, splineFrames } from "../curves";
 import { makeFieldCtx } from "../evaluator";
 import { reg, EvalAPI } from "../registry";
 import { isManifoldReady, manifoldBoolean, manifoldBooleanBox } from "../boolean";
@@ -160,6 +160,10 @@ reg("ShaderNodeVectorRotate", (api) => {
     }),
   };
 });
+
+// Bake is an evaluation cache boundary; live browser evaluation passes its
+// current items through unchanged.
+reg("GeometryNodeBake", (api) => ({ Item_0: api.input("Item_0") }));
 
 function pointTopologyField(kind: "VERTEX" | "FACE"): Field {
   return Field.make((ctx) => {
@@ -386,14 +390,19 @@ function convertCurveGeometrySplineType(g: Geometry, type: string, seen: Map<Geo
     return out;
   }
   const sourceIndex: number[] = [];
+  const evaluatedTangents: Vec3[] = [];
   let offset = 0;
   out.curves = g.curves.map((s) => {
     const converted = convertSplineType(s, type);
+    if (type === "NURBS" && !s.cyclic) evaluatedTangents.push(...splineFrames(converted.points, false).map((frame) => frame.tangent));
     for (const p of converted.points) sourceIndex.push(offset + nearestControlPointIndex(s.points, p));
     offset += s.points.length;
     return converted;
   });
   remapCurvePointAttributes(g, out, sourceIndex);
+  if (evaluatedTangents.length === out.curvePointCount()) {
+    out.curveAttributes.set("__curve_tangent", { domain: "POINT", data: evaluatedTangents });
+  }
   out.instances = g.instances.map((inst) => ({ ...inst, geometry: convertCurveGeometrySplineType(inst.geometry, type, seen) }));
   return out;
 }

@@ -31,8 +31,8 @@
         "overrides": {}
       },
       "status": "ok",
-      "verts": 35724,
-      "faces": 33332,
+      "verts": 35886,
+      "faces": 33474,
       "bbox": {
         "min": [
           -245.6776,
@@ -45,7 +45,8 @@
           62.1638
         ]
       },
-      "elapsed_ms": 29.5
+      "elapsed_ms": 40.4,
+      "export": "00-authored-default.glb"
     },
     {
       "combo": {
@@ -55,8 +56,8 @@
         }
       },
       "status": "ok",
-      "verts": 17703,
-      "faces": 16078,
+      "verts": 17865,
+      "faces": 16220,
       "bbox": {
         "min": [
           -245.222,
@@ -69,7 +70,8 @@
           62.1638
         ]
       },
-      "elapsed_ms": 18.2
+      "elapsed_ms": 29.8,
+      "export": "01-subdivide-1.glb"
     },
     {
       "combo": {
@@ -79,8 +81,8 @@
         }
       },
       "status": "ok",
-      "verts": 3230,
-      "faces": 3024,
+      "verts": 3392,
+      "faces": 3166,
       "bbox": {
         "min": [
           -244.9552,
@@ -90,13 +92,14 @@
         "max": [
           -54.8219,
           85.7218,
-          45.5378
+          48.9214
         ]
       },
-      "elapsed_ms": 2.8
+      "elapsed_ms": 11.4,
+      "export": "02-subdivide-0.glb"
     }
   ],
-  "export_dir": "",
+  "export_dir": "/tmp/ui-window-blender",
   "cosmetic_geometry": {
     "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
     "combo": {
@@ -105,8 +108,8 @@
     },
     "materials": {
       "flat.nodes": {
-        "faces": 22464,
-        "verts": 23363
+        "faces": 22606,
+        "verts": 23525
       },
       "grey ui": {
         "faces": 10868,
@@ -128,8 +131,8 @@
       "verts": 0
     },
     "total": {
-      "faces": 33332,
-      "verts": 35724
+      "faces": 33474,
+      "verts": 35886
     }
   }
 }

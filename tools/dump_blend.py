@@ -2,11 +2,32 @@
 import bpy
 import base64
 import json
+import os
 import sys
 
 tool_args = sys.argv[sys.argv.index("--") + 1:]
 out_path = tool_args[0]
 target_object = tool_args[1] if len(tool_args) > 1 else None
+
+
+def apply_font_override():
+    path = os.environ.get("NODE_DOJO_FONT_OVERRIDE")
+    if not path:
+        return
+    replacement = bpy.data.fonts.load(path, check_existing=True)
+    basename = os.path.basename(path).lower()
+    for group in bpy.data.node_groups:
+        for node in group.nodes:
+            for socket in node.inputs:
+                current = getattr(socket, "default_value", None)
+                if getattr(socket, "type", "") != "FONT" or current is None:
+                    continue
+                if os.path.basename(bpy.path.abspath(current.filepath)).lower() == basename:
+                    socket.default_value = replacement
+    print(f"NODE_DOJO_FONT_OVERRIDE_OK {replacement.name} <- {path}")
+
+
+apply_font_override()
 
 def socket_value(sock):
     try:
@@ -143,10 +164,12 @@ result = {
 dependency_collection_names = set()
 dependency_object_names = set()
 dependency_image_names = set()
+trees_to_dump = {}
 if target_object and bpy.data.objects.get(target_object):
     for modifier in bpy.data.objects[target_object].modifiers:
         if modifier.type != "NODES" or not modifier.node_group:
             continue
+        trees_to_dump[modifier.node_group.name] = modifier.node_group
         for item in modifier.node_group.interface.items_tree:
             if item.item_type != "SOCKET" or item.in_out != "INPUT":
                 continue
@@ -165,10 +188,41 @@ dependency_object_names.update({
     for name in dependency_collection_names
     for obj in bpy.data.collections[name].objects
 })
+
+# Targeted dumps must include dependencies referenced inside the graph too,
+# especially Object Info payloads whose own Geometry Nodes modifiers generate
+# the real asset (for example Chrome's spikey chain link). Traverse nested
+# groups and referenced object/collection modifiers to a fixed point.
+pending_dependency_trees = list(trees_to_dump.values())
+scanned_dependency_trees = set()
+while pending_dependency_trees:
+    tree = pending_dependency_trees.pop()
+    if tree.name in scanned_dependency_trees:
+        continue
+    scanned_dependency_trees.add(tree.name)
+    trees_to_dump[tree.name] = tree
+    for node in tree.nodes:
+        if node.bl_idname == "GeometryNodeGroup" and node.node_tree:
+            pending_dependency_trees.append(node.node_tree)
+        for socket in node.inputs:
+            value = getattr(socket, "default_value", None)
+            objects = []
+            if isinstance(value, bpy.types.Object):
+                dependency_object_names.add(value.name)
+                objects.append(value)
+            elif isinstance(value, bpy.types.Collection):
+                dependency_collection_names.add(value.name)
+                objects.extend(value.objects)
+                dependency_object_names.update(obj.name for obj in value.objects)
+            elif isinstance(value, bpy.types.Image):
+                dependency_image_names.add(value.name)
+            for dependency_object in objects:
+                for modifier in dependency_object.modifiers:
+                    if modifier.type == "NODES" and modifier.node_group:
+                        pending_dependency_trees.append(modifier.node_group)
+
 result["dependency_objects"] = sorted(dependency_object_names)
 depsgraph = bpy.context.evaluated_depsgraph_get()
-
-trees_to_dump = {}
 
 for obj in bpy.data.objects:
     o = {"name": obj.name, "type": obj.type, "location": list(obj.location),

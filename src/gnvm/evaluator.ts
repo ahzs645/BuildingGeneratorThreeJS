@@ -8,8 +8,8 @@
 //    recorded in MISSING and fall back to passing the first geometry input through,
 //    so evaluation never crashes and we get a coverage report + partial mesh.
 
-import { Field, Vec3, Domain, FieldCtx, asNum, fieldMap, vadd, vscale } from "./core";
-import { Geometry, topologyOf, Topology } from "./geometry";
+import { Field, Vec3, Domain, FieldCtx, asNum, fieldMap, vadd, vcross, vdot, vnorm, vscale, vsub } from "./core";
+import { Geometry, realizeInstances, topologyOf, Topology } from "./geometry";
 import { splineFrames, splineLength } from "./curves";
 import { EvalAPI, RawNode, REGISTRY, MISSING, SockVal, DataRef } from "./registry";
 
@@ -31,7 +31,8 @@ export const FIELD_PROBE: {
 } = { node: null, socket: null, batches: [] };
 
 function bboxOf(g: Geometry): string {
-  const pts: Vec3[] = [...(g.mesh?.positions ?? []), ...g.curves.flatMap((s) => s.points)];
+  const realized = g.instances.length ? realizeInstances(g) : g;
+  const pts: Vec3[] = [...(realized.mesh?.positions ?? []), ...realized.curves.flatMap((s) => s.points)];
   if (!pts.length) return "-";
   const mn: Vec3 = [Infinity, Infinity, Infinity];
   const mx: Vec3 = [-Infinity, -Infinity, -Infinity];
@@ -248,12 +249,24 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
   return {
     size,
     domain,
+    component: mesh ? "MESH" : geo.curves.length ? "CURVE" : geo.instances.length ? "INSTANCE" : "EMPTY",
     fork: (d) => makeFieldCtx(geo, d),
     toDomain,
     faceVertCount: (i) => (mesh ? mesh.faces[i]?.length ?? 0 : 0),
     faceNeighborCount: (i) => (mesh ? T().faceNeighbors[i] ?? 0 : 0),
     edgeVerts: (i) => (mesh ? T().edges[i]?.verts ?? [0, 0] : [0, 0]),
     edgeFaceCount: (i) => (mesh ? T().edges[i]?.faces.length ?? 0 : 0),
+    edgeAngle: (i, signed = false) => {
+      if (!mesh) return 0;
+      const edge = T().edges[i];
+      if (!edge || edge.faces.length < 2) return 0;
+      const first = mesh.faceNormal(edge.faces[0]);
+      const second = mesh.faceNormal(edge.faces[1]);
+      const angle = Math.acos(Math.max(-1, Math.min(1, vdot(first, second))));
+      if (!signed) return angle;
+      const direction = vnorm(vsub(mesh.positions[edge.verts[1]], mesh.positions[edge.verts[0]]));
+      return vdot(vcross(first, second), direction) < 0 ? -angle : angle;
+    },
     islandIndex: (i) => (mesh ? (domain === "FACE" ? T().faceIsland[i] : T().pointIsland[i]) ?? 0 : 0),
     islandCount: () => (mesh ? (domain === "FACE" ? T().faceIslandCount : T().pointIslandCount) : 0),
     splineIndex: (i) => splineLocalIdx[i] ?? 0,

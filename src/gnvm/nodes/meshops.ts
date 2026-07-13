@@ -200,6 +200,20 @@ reg("GeometryNodeSeparateGeometry", (api) => {
   const sel = api.field("Selection");
   const selG = new Geometry();
   const invG = new Geometry();
+  if (domain === "INSTANCE" && g.instances.length) {
+    const ctx = makeFieldCtx(g, "INSTANCE");
+    const values = sel.array(ctx);
+    g.instances.forEach((instance, i) => {
+      const target = asNum(values[i] ?? 0) > 0 ? selG : invG;
+      target.instances.push({
+        ...instance,
+        position: [...instance.position] as Vec3,
+        rotation: [...instance.rotation] as Vec3,
+        scale: [...instance.scale] as Vec3,
+      });
+    });
+    return { Selection: selG, Inverted: invG };
+  }
   if (!hasMeshComponent && g.curves.length) {
     if (domain === "CURVE") {
       const ctx = makeFieldCtx(g, "CURVE");

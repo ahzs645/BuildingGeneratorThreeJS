@@ -6,10 +6,30 @@ Usage:
 """
 import json
 import math
+import os
 import sys
 
 import bpy
 from mathutils import Vector
+
+
+def apply_font_override():
+    path = os.environ.get("NODE_DOJO_FONT_OVERRIDE")
+    if not path:
+        return
+    replacement = bpy.data.fonts.load(path, check_existing=True)
+    basename = os.path.basename(path).lower()
+    for group in bpy.data.node_groups:
+        for node in group.nodes:
+            for socket in node.inputs:
+                current = getattr(socket, "default_value", None)
+                if getattr(socket, "type", "") == "FONT" and current is not None:
+                    if os.path.basename(bpy.path.abspath(current.filepath)).lower() == basename:
+                        socket.default_value = replacement
+    print(f"NODE_DOJO_FONT_OVERRIDE_OK {replacement.name} <- {path}")
+
+
+apply_font_override()
 
 
 args = sys.argv[sys.argv.index("--") + 1:]
@@ -29,6 +49,21 @@ bpy.context.window.scene = scene
 obj.hide_render = False
 obj.hide_viewport = False
 obj.hide_set(False)
+
+# Object.to_mesh() can return an allocated but empty mesh when the Geometry
+# Nodes result contains only instances (or omit instances beside a mesh
+# component). Append a temporary realization pass so the reference image and
+# topology report represent what Blender actually renders.
+realize_group = bpy.data.node_groups.new("__REFERENCE_REALIZE_INSTANCES", "GeometryNodeTree")
+realize_group.interface.new_socket(name="Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")
+realize_group.interface.new_socket(name="Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
+realize_input = realize_group.nodes.new("NodeGroupInput")
+realize = realize_group.nodes.new("GeometryNodeRealizeInstances")
+realize_output = realize_group.nodes.new("NodeGroupOutput")
+realize_group.links.new(realize_input.outputs["Geometry"], realize.inputs["Geometry"])
+realize_group.links.new(realize.outputs["Geometry"], realize_output.inputs["Geometry"])
+realize_modifier = obj.modifiers.new(name="__REFERENCE_REALIZE_INSTANCES", type="NODES")
+realize_modifier.node_group = realize_group
 
 depsgraph = bpy.context.evaluated_depsgraph_get()
 depsgraph.update()

@@ -14,6 +14,25 @@ import time
 import bpy
 
 
+def apply_font_override():
+    path = os.environ.get("NODE_DOJO_FONT_OVERRIDE")
+    if not path:
+        return
+    replacement = bpy.data.fonts.load(path, check_existing=True)
+    basename = os.path.basename(path).lower()
+    for group in bpy.data.node_groups:
+        for node in group.nodes:
+            for socket in node.inputs:
+                current = getattr(socket, "default_value", None)
+                if getattr(socket, "type", "") == "FONT" and current is not None:
+                    if os.path.basename(bpy.path.abspath(current.filepath)).lower() == basename:
+                        socket.default_value = replacement
+    print(f"NODE_DOJO_FONT_OVERRIDE_OK {replacement.name} <- {path}")
+
+
+apply_font_override()
+
+
 TIMEOUT_SECONDS = 180
 
 CASES = [
@@ -139,19 +158,8 @@ def set_modifier_inputs(mod, name_to_identifier, saved_values, overrides):
 
 
 def evaluated_mesh(obj):
-    obj.update_tag()
-    bpy.context.view_layer.update()
-    depsgraph = bpy.context.evaluated_depsgraph_get()
-    depsgraph.update()
-    ev = obj.evaluated_get(depsgraph)
-    mesh = ev.to_mesh()
-    if mesh is not None:
-        return ev, mesh, None
-
-    # Curve objects whose Geometry Nodes output still contains instances can
-    # return None from Object.to_mesh(). Add a temporary pass-through modifier
-    # that realizes the geometry set, matching what render/export eventually
-    # consumes without changing the saved node group.
+    # Always realize first. Object.to_mesh() may return an allocated mesh for a
+    # mixed geometry set while silently omitting its instance component.
     realize_group = bpy.data.node_groups.new("__PARITY_REALIZE_INSTANCES", "GeometryNodeTree")
     realize_group.interface.new_socket(name="Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")
     realize_group.interface.new_socket(name="Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
@@ -168,11 +176,12 @@ def evaluated_mesh(obj):
     depsgraph.update()
     ev = obj.evaluated_get(depsgraph)
     mesh = ev.to_mesh()
-    if mesh is None:
-        obj.modifiers.remove(realize_mod)
-        bpy.data.node_groups.remove(realize_group)
-        raise RuntimeError(f'could not create evaluated mesh for "{obj.name}"')
-    return ev, mesh, (obj, realize_mod, realize_group)
+    if mesh is not None:
+        return ev, mesh, (obj, realize_mod, realize_group)
+
+    obj.modifiers.remove(realize_mod)
+    bpy.data.node_groups.remove(realize_group)
+    raise RuntimeError(f'could not create evaluated mesh for "{obj.name}"')
 
 
 def clear_evaluated_mesh(ev, _mesh, temporary_realize):

@@ -16,6 +16,11 @@ reg("GeometryNodeInputMeshEdgeNeighbors", () => ({
   "Face Count": Field.perElem((i, ctx) => (ctx.edgeFaceCount ? ctx.edgeFaceCount(i) : 0)).tagged("EDGE"),
 }));
 
+reg("GeometryNodeInputMeshEdgeAngle", () => ({
+  "Unsigned Angle": Field.perElem((i, ctx) => ctx.edgeAngle?.(i, false) ?? 0).tagged("EDGE"),
+  "Signed Angle": Field.perElem((i, ctx) => ctx.edgeAngle?.(i, true) ?? 0).tagged("EDGE"),
+}));
+
 // Edge Vertices: endpoint indices + positions of each edge.
 reg("GeometryNodeInputMeshEdgeVertices", () => ({
   "Vertex Index 1": Field.perElem((i, ctx) => (ctx.edgeVerts ? ctx.edgeVerts(i)[0] : 0)).tagged("EDGE"),

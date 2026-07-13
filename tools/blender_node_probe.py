@@ -79,6 +79,16 @@ def main():
             cases = json.load(handle)
 
     obj, mod = modifier_for(object_name)
+    realize_group = bpy.data.node_groups.new("__NODE_PROBE_REALIZE_INSTANCES", "GeometryNodeTree")
+    realize_group.interface.new_socket(name="Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")
+    realize_group.interface.new_socket(name="Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
+    realize_input = realize_group.nodes.new("NodeGroupInput")
+    realize = realize_group.nodes.new("GeometryNodeRealizeInstances")
+    realize_output = realize_group.nodes.new("NodeGroupOutput")
+    realize_group.links.new(realize_input.outputs["Geometry"], realize.inputs["Geometry"])
+    realize_group.links.new(realize.outputs["Geometry"], realize_output.inputs["Geometry"])
+    realize_modifier = obj.modifiers.new(name="__NODE_PROBE_REALIZE_INSTANCES", type="NODES")
+    realize_modifier.node_group = realize_group
     tree = mod.node_group
     group_output = next(n for n in tree.nodes if n.bl_idname == "NodeGroupOutput" and n.is_active_output)
     geometry_input = next(s for s in group_output.inputs if s.type == "GEOMETRY")

@@ -41,6 +41,7 @@ export const asNum = (e: Elem): number => (isVec3(e) ? e[0] : e);
 export interface FieldCtx {
   size: number; // number of elements in the target domain
   domain: Domain;
+  component?: "MESH" | "CURVE" | "INSTANCE" | "EMPTY";
   // Same geometry evaluated on another domain, for nodes like Field at Index.
   fork?: (domain: Domain) => FieldCtx;
   // Map element i of this ctx's domain from an array resolved on another domain
@@ -57,6 +58,7 @@ export interface FieldCtx {
   faceNeighborCount?: (i: number) => number; // faces sharing an edge with face i
   edgeVerts?: (i: number) => [number, number]; // endpoints of edge i (EDGE domain)
   edgeFaceCount?: (i: number) => number; // faces using edge i
+  edgeAngle?: (i: number, signed?: boolean) => number; // angle between adjacent face normals
   islandIndex?: (i: number) => number; // connected-component id of element i
   islandCount?: () => number; // number of connected components
   // Curve spline queries (for SplineParameter): index/factor WITHIN each spline.

@@ -1,0 +1,7 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "smaller links", "overrides": { "link size": 1.25 } },
+  { "name": "more twist", "overrides": { "chain twist": 15 } },
+  { "name": "ball only", "overrides": { "ball?": true } },
+  { "name": "opposite end", "overrides": { "Switch Ball End": false } }
+]

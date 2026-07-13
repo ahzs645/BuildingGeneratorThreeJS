@@ -63,10 +63,11 @@ reg("GeometryNodeInputNormal", () => ({
   Normal: Field.perElem((i, ctx) => (ctx.normal ? ctx.normal(i) : [0, 0, 1])),
 }));
 
-// Curve tangent (and a mesh-point finite-difference fallback). Prefer the
-// context's spline frames via a small neighbor delta on curve POINT domain.
+// Curve Tangent is defined only on a curve component. Blender returns zero
+// when the same field is evaluated on a mesh/point-cloud component.
 reg("GeometryNodeInputTangent", () => ({
   Tangent: Field.perElem((i, ctx) => {
+    if (ctx.component !== "CURVE") return [0, 0, 0] as Vec3;
     // Use position of neighbors on the same domain to form a tangent.
     // For curves, control points are sequential; for mesh edges this is approximate.
     const p = ctx.position ? ctx.position(i) : ([0, 0, 0] as Vec3);

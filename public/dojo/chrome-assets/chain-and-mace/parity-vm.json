@@ -1,0 +1,130 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/chain-and-mace/dump.json",
+  "object": "spikey chain and mace.005",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 119450,
+      "faces": 214718,
+      "bbox": {
+        "min": [
+          -64.3856,
+          -73.0594,
+          -33.874
+        ],
+        "max": [
+          64.2019,
+          53.9346,
+          109.2253
+        ]
+      },
+      "elapsed_ms": 952,
+      "export": "00-authored-default.json"
+    },
+    {
+      "combo": {
+        "name": "smaller links",
+        "overrides": {
+          "link size": 1.25
+        }
+      },
+      "status": "ok",
+      "verts": 193992,
+      "faces": 354494,
+      "bbox": {
+        "min": [
+          -62.5124,
+          -71.2088,
+          -29.8543
+        ],
+        "max": [
+          61.8048,
+          53.558,
+          112.321
+        ]
+      },
+      "elapsed_ms": 1385,
+      "export": "01-smaller-links.json"
+    },
+    {
+      "combo": {
+        "name": "more twist",
+        "overrides": {
+          "chain twist": 15
+        }
+      },
+      "status": "ok",
+      "verts": 119450,
+      "faces": 214718,
+      "bbox": {
+        "min": [
+          -64.2358,
+          -72.807,
+          -35.4161
+        ],
+        "max": [
+          63.5165,
+          53.9346,
+          109.2253
+        ]
+      },
+      "elapsed_ms": 856,
+      "export": "02-more-twist.json"
+    },
+    {
+      "combo": {
+        "name": "ball only",
+        "overrides": {
+          "ball?": true
+        }
+      },
+      "status": "ok",
+      "verts": 108946,
+      "faces": 204288,
+      "bbox": {
+        "min": [
+          -64.3856,
+          -73.0594,
+          -33.874
+        ],
+        "max": [
+          64.2019,
+          37.827,
+          53.3839
+        ]
+      },
+      "elapsed_ms": 725,
+      "export": "03-ball-only.json"
+    },
+    {
+      "combo": {
+        "name": "opposite end",
+        "overrides": {
+          "Switch Ball End": false
+        }
+      },
+      "status": "ok",
+      "verts": 119450,
+      "faces": 214718,
+      "bbox": {
+        "min": [
+          -62.7751,
+          -73.9845,
+          -57.4785
+        ],
+        "max": [
+          101.2449,
+          39.2096,
+          65.9206
+        ]
+      },
+      "elapsed_ms": 832,
+      "export": "04-opposite-end.json"
+    }
+  ]
+}
