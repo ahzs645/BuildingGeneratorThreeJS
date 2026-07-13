@@ -505,7 +505,7 @@
     "dump": "dojo/n03d/clevis-pin/dump.json",
     "reference": "dojo/references/n03d/clevis-pin.png",
     "blenderStats": { "verts": 36390, "faces": 34198 },
-    "note": "The authored Clevis Pin now matches Blender exactly at 36,390 / 34,198 with identical four-decimal bounds. Correct profile winding restores the Solidify head, retained NURBS controls reproduce the 2,916 / 974 retaining clip, and planar-knife clipping brings Split to Print within 0.15% vertices.",
+    "note": "Exact Blender geometry across all six validation cases: authored output is 36,390 / 34,198 and Split to Print is 34,548 / 32,094, with identical four-decimal bounds. Correct profile winding restores the Solidify head, retained NURBS controls reproduce the 2,916 / 974 retaining clip, and generated Edge Extrude ordering restores the exact printable shaft split.",
     "controls": [
       { "name": "head height", "label": "Head height", "min": 2, "max": 10, "step": 0.1, "value": 4 },
       { "name": "shaft diameter", "label": "Shaft diameter", "min": 3, "max": 16, "step": 0.1, "value": 7.108998775482178 },

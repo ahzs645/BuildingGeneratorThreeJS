@@ -450,11 +450,14 @@ function computeTopology(mesh: Mesh): Topology {
     if (!e) { e = { verts: [Math.min(a, b), Math.max(a, b)], faces: [] }; emap.set(k, e); }
     if (fi >= 0) e.faces.push(fi);
   };
+  // Blender's Edge Index follows the mesh's stored edge order. Generated
+  // meshes often carry that order explicitly (notably Edge Extrude); seed the
+  // topology map from it before adding any implicit polygon boundaries.
+  for (const [a, b] of mesh.edges) addFaceEdge(a, b, -1);
   for (let fi = 0; fi < mesh.faces.length; fi++) {
     const f = mesh.faces[fi];
     for (let i = 0; i < f.length; i++) addFaceEdge(f[i], f[(i + 1) % f.length], fi);
   }
-  for (const [a, b] of mesh.edges) addFaceEdge(a, b, -1);
   const edges = [...emap.values()];
 
   // Most consumers only need canonical edges. Build adjacency and connected

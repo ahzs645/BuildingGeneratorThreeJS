@@ -1,5 +1,6 @@
 """Dump evaluated positions/tangents/normals from a curve geometry socket."""
 import json
+import os
 import sys
 
 import bpy
@@ -9,8 +10,29 @@ args = sys.argv[sys.argv.index("--") + 1 :]
 object_name, out_path, spec = args
 node_name, socket_name = spec.split(":", 1)
 obj = bpy.data.objects[object_name]
+# Node Dojo assets can live in excluded library collections. Probe them in a
+# clean scene so modifier overrides and temporary output links are evaluated,
+# matching the geometry-probe/parity workflow.
+probe_scene = bpy.data.scenes.new("__NODE_DOJO_CURVE_PROBE_SCENE")
+probe_scene.collection.objects.link(obj)
+bpy.context.window.scene = probe_scene
+obj.hide_viewport = False
+obj.hide_render = False
+obj.hide_set(False)
 mod = next(m for m in obj.modifiers if m.type == "NODES" and m.node_group)
 tree = mod.node_group
+probe_overrides = json.loads(os.environ.get("NODE_DOJO_PROBE_OVERRIDES", "{}"))
+if probe_overrides:
+    identifiers = {
+        item.name: item.identifier
+        for item in tree.interface.items_tree
+        if item.item_type == "SOCKET" and item.in_out == "INPUT"
+    }
+    for name, value in probe_overrides.items():
+        identifier = identifiers.get(name)
+        if identifier is None:
+            raise KeyError(f"modifier input not found: {name}")
+        mod[identifier] = value
 group_output = next(n for n in tree.nodes if n.bl_idname == "NodeGroupOutput" and n.is_active_output)
 geometry_output = next(s for s in group_output.inputs if s.type == "GEOMETRY")
 original = geometry_output.links[0].from_socket if geometry_output.is_linked else None

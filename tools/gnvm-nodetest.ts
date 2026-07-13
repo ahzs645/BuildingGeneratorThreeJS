@@ -1224,6 +1224,20 @@ function meshSignedAreaXY(m: Mesh): number {
 // first; alternating the direction makes the two faces at an odd-step closure
 // both point inward, producing a bad seam normal after Solidify.
 {
+  const wire = new Geometry();
+  wire.mesh = new Mesh();
+  wire.mesh.positions = [[0, 0, 0], [1, 0, 0]];
+  wire.mesh.edges = [[0, 1]];
+  const edgeExtrude = runNode(
+    "GeometryNodeExtrudeMesh",
+    { Mesh: wire, Selection: true, Offset: [0, 0, 0], "Offset Scale": 1, Individual: true },
+    { mode: "EDGES" },
+  ).Mesh as Geometry;
+  check("EDGE extrude stores Blender's generated edge order",
+    JSON.stringify(edgeExtrude.mesh!.edges) === JSON.stringify([[0, 1], [0, 2], [1, 3], [2, 3]])
+      && JSON.stringify(topologyOf(edgeExtrude.mesh!).edges.map((edge) => edge.verts)) === JSON.stringify([[0, 1], [0, 2], [1, 3], [2, 3]]),
+    JSON.stringify(edgeExtrude.mesh!.edges));
+
   const m = new Mesh();
   // At -X, a top-to-bottom profile extruded around +Z produces outward faces.
   m.positions = [[-1, 0, 3], [-1, 0, 2], [-1, 0, 1], [-1, 0, 0]];

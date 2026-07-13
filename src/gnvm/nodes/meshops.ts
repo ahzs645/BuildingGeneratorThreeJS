@@ -574,6 +574,16 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
       out.faceMaterial.push(inEdges[ei].faces.length ? out.faceMaterial[inEdges[ei].faces[0]] ?? 0 : 0);
       newEdgePairs.push([na, nb]);
     }
+    // Preserve Blender's generated edge order: inherited/source edges first,
+    // then one connecting edge per duplicated vertex, then the duplicated Top
+    // edges. Edge Index fields downstream rely on this order; retaining only
+    // the input's loose edge made Clevis select a horizontal edge on its second
+    // extrusion instead of the authored vertical side.
+    out.edges = [
+      ...inEdges.map((edge) => [...edge.verts] as [number, number]),
+      ...[...dup.entries()].map(([source, duplicate]) => [source, duplicate] as [number, number]),
+      ...newEdgePairs,
+    ];
     // carry POINT attributes onto the duplicated verts
     for (const [name, a] of mesh.attributes) {
       if (isStaleExtrudeMask(name)) { out.attributes.delete(name); continue; }

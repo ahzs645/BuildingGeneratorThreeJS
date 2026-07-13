@@ -6,5 +6,5 @@
   "blender": { "verts": 36390, "faces": 34198 },
   "gnvm": { "verts": 36390, "faces": 34198 },
   "coverage": "100% of reachable node types across the 10-group, 414-node closure.",
-  "validation": "Curve to Mesh now matches Blender's profile direction and face winding, NURBS resolution retessellates retained controls, and the retaining clip and Solidify head branches match. Authored output and the head-height, shaft-diameter, head-offset, and clip-thickness cases have exact topology and four-decimal bounds. Exact planar-knife clipping restores Split to Print within 0.15% vertices, 52 faces, and 0.0706 bounds units."
+  "validation": "All six Blender/VM cases have exact topology and four-decimal bounds, including authored 36,390 / 34,198 and Split to Print 34,548 / 32,094. Curve to Mesh profile winding, retained NURBS controls, cyclic Length resampling, Exact planar-knife clipping, and Blender's generated Edge Extrude ordering reproduce the retaining clip, Solidify head, shaft, and printable split."
 }
