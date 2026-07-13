@@ -12,6 +12,21 @@
     ]
   },
   {
+    "id": "sticker-noodle-star",
+    "title": "Sticker Noodle Star",
+    "object": "Sticker Noodle Brush",
+    "dump": "dojo/chrome-assets/sticker-noodle-star/dump.json",
+    "reference": "dojo/references/chrome-assets/sticker-noodle-star.png",
+    "blenderStats": { "verts": 716079, "faces": 715520 },
+    "controls": [
+      { "name": "Dot Distance", "label": "Dot distance", "min": 0.25, "max": 2, "step": 0.000001, "value": 0.5356634855270386 },
+      { "name": "dot size", "label": "Dot size", "min": 0.2, "max": 2.5, "step": 0.01, "value": 1.8435211181640625 },
+      { "name": "outer", "label": "Outer radius", "min": 0, "max": 2, "step": 0.01, "value": 0 },
+      { "name": "inner", "label": "Inner inset", "min": 0, "max": 1.5, "step": 0.01, "value": 0 },
+      { "name": "Points", "label": "Star points", "min": 3, "max": 12, "step": 1, "value": 5 }
+    ]
+  },
+  {
     "id": "sticker-noodle-brush",
     "title": "Sticker Noodle Brush",
     "object": "Sticker Noodle Brush.001",

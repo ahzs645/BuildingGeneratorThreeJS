@@ -257,6 +257,24 @@ reg("GeometryNodeSplineParameter", () => ({
   Index: Field.perElem((i, ctx) => (ctx.splineIndex ? ctx.splineIndex(i) : i)),
 }));
 
+reg("GeometryNodeCurveStar", (api) => {
+  const count = Math.max(2, Math.round(api.num("Points") || 8));
+  const inner = api.num("Inner Radius");
+  const outer = api.num("Outer Radius");
+  const twist = api.num("Twist");
+  const points: Vec3[] = [];
+  for (let i = 0; i < count * 2; i++) {
+    const isOuter = i % 2 === 0;
+    const angle = twist + (i / (count * 2)) * Math.PI * 2;
+    const radius = isOuter ? outer : inner;
+    points.push([Math.cos(angle) * radius, Math.sin(angle) * radius, 0]);
+  }
+  return {
+    Curve: curveGeo([{ points, cyclic: true }]),
+    "Outer Points": Field.perElem((i) => i % 2 === 0 ? 1 : 0).tagged("POINT"),
+  };
+});
+
 reg("GeometryNodeCurveEndpointSelection", (api) => {
   const startN = Math.max(0, Math.round(api.num("Start Size")));
   const endN = Math.max(0, Math.round(api.num("End Size")));

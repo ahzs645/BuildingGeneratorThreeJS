@@ -127,6 +127,17 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Curve Arc preserves radius endpoints", approx(arc.curves[0].points[0], [2, 0, 0]) && approx(arc.curves[0].points[3], [0, 2, 0]));
 }
 
+{
+  const star = runNode("GeometryNodeCurveStar", { Points: 5, "Inner Radius": .5, "Outer Radius": 1, Twist: 0 }).Curve as Geometry;
+  check("Curve Star alternates ten cyclic points", star.curves[0].cyclic && star.curves[0].points.length === 10);
+  check("Curve Star starts on outer +X", approx(star.curves[0].points[0], [1, 0, 0]));
+  const collapsed = curve([[0, 0, 0], [0, 0, 0], [0, 0, 0]], true);
+  const filleted = runNode("GeometryNodeFilletCurve", { Curve: collapsed, Radius: .2, Count: 3, "Limit Radius": true }).Curve as Geometry;
+  check("Fillet Curve retains count on collapsed corners", filleted.curvePointCount() === 12, `points=${filleted.curvePointCount()}`);
+  const filled = runNode("GeometryNodeFillCurve", { Curve: filleted, Mode: "Triangles" as any }).Mesh as Geometry;
+  check("Fill Curve retains one collapsed center point", filled.mesh?.positions.length === 1 && filled.mesh.faces.length === 0);
+}
+
 // (B) CombineXYZ / SeparateXYZ round-trip
 {
   const v = runNode("ShaderNodeCombineXYZ", { X: 2, Y: 3, Z: 4 }).Vector as Field;

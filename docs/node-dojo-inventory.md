@@ -21,7 +21,7 @@ The pack contains **16 Blender projects**, **499 active Geometry Nodes modifiers
 | Chrome Crayon | 1 | 1 | Live Blender/GN-VM comparison |
 | Math Clay | 33 | 14 | Two baked TPMS gallery references |
 | Bubble Vessel | 6 | 3 | Live Blender/GN-VM comparison |
-| Chrome Asset Library | 43 | 26 | Five root families exact; nine Period Pack objects share one verified root |
+| Chrome Asset Library | 43 | 26 | Six root families exact; shared roots cover 17 Period/Sticker objects |
 
 ## Evidence standard for each port
 

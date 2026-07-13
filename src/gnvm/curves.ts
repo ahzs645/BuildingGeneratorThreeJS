@@ -67,7 +67,14 @@ export function filletSpline(s: Spline, radius: number, count: number, limitRadi
     let d = tanHalf > 1e-6 ? radius / tanHalf : 0;
     d = Math.min(d, lenBA * 0.999, lenBC * 0.999); // safety: don't overshoot the neighbor vertex
     if (limitRadius) d = Math.min(d, lenBA * 0.5, lenBC * 0.5); // Blender Limit Radius: stop at midpoints
-    if (d < 1e-6) { out.push([...B] as Vec3); continue; }
+    if (d < 1e-6) {
+      // Blender preserves the requested poly-fillet control-point count even
+      // for a collapsed corner. The star-noodle fallback intentionally feeds
+      // a zero-radius star through Fillet Curve and relies on those duplicate
+      // points to determine the subsequent Curve to Mesh topology.
+      for (let k = 0; k <= count; k++) out.push([...B] as Vec3);
+      continue;
+    }
     const p0 = vadd(B, vscale(dirBA, d)); // tangent point on BA
     const p1 = vadd(B, vscale(dirBC, d)); // tangent point on BC
     // arc center: along the internal bisector
@@ -106,7 +113,8 @@ export function splineFrames(pts: Vec3[], cyclic: boolean): { tangent: Vec3; nor
     if (!cyclic && i === 0) t = vsub(pts[1], pts[0]);
     else if (!cyclic && i === n - 1) t = vsub(pts[n - 1], pts[n - 2]);
     else t = vsub(next, prev);
-    tangents.push(vnorm(t));
+    const normalized = vnorm(t);
+    tangents.push(vlen(normalized) < 1e-9 ? [0, 0, 1] : normalized);
   }
   // initial normal: any vector perpendicular to tangent[0]
   let ref: Vec3 = Math.abs(tangents[0][0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
@@ -192,6 +200,11 @@ export function fillCurves(curves: Spline[], mode: "NGONS" | "TRIANGLES"): Mesh 
   const mesh = new Mesh();
   const plane = fillPlane(curves);
   if (!plane) {
+    // Blender retains one point for a collapsed cyclic fill instead of
+    // returning a completely empty mesh. The star-noodle fallback uses this
+    // degenerate center alongside its swept outline.
+    const collapsed = curves.find((s) => s.cyclic && s.points.length);
+    if (collapsed) mesh.positions.push([...collapsed.points[0]] as Vec3);
     mesh.materialSlots = [null];
     return mesh;
   }
@@ -238,13 +251,11 @@ function emitSimpleFill(mesh: Mesh, points: Vec3[], mode: "NGONS" | "TRIANGLES")
   for (const p of points) mesh.positions.push([...p] as Vec3);
   const n = points.length;
   if (mode === "TRIANGLES") {
-    // fan from centroid for robustness on concave-ish shapes
-    let c: Vec3 = [0, 0, 0];
-    for (const p of points) c = vadd(c, p);
-    c = vscale(c, 1 / n);
-    const ci = mesh.positions.length;
-    mesh.positions.push(c);
-    for (let i = 0; i < n; i++) { mesh.faces.push([ci, base + i, base + ((i + 1) % n)]); mesh.faceMaterial.push(0); }
+    // Blender triangulates using the existing loop vertices (n-2 faces), not
+    // a newly inserted centroid. Ear clipping preserves concave star outlines.
+    let refs: PolyRef[] = points.map((p, i) => ({ p: [p[0], p[1]], vi: base + i }));
+    if (signedArea2(refs.map((ref) => ref.p)) < 0) refs = [...refs].reverse();
+    for (const face of earClip(refs)) { mesh.faces.push(face); mesh.faceMaterial.push(0); }
   } else {
     mesh.faces.push(Array.from({ length: n }, (_, i) => base + i));
     mesh.faceMaterial.push(0);

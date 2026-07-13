@@ -1,0 +1,102 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/sticker-noodle-star/dump.json",
+  "object": "Sticker Noodle Brush",
+  "results": [
+    {
+      "combo": {
+        "name": "authored baseline",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 716079,
+      "faces": 715520,
+      "bbox": {
+        "min": [
+          67.6707,
+          98.0942,
+          0.3116
+        ],
+        "max": [
+          154.4427,
+          173.5102,
+          8.3875
+        ]
+      },
+      "elapsed_ms": 846
+    },
+    {
+      "combo": {
+        "name": "wider spacing",
+        "overrides": {
+          "Dot Distance": 1
+        }
+      },
+      "status": "ok",
+      "verts": 384300,
+      "faces": 384000,
+      "bbox": {
+        "min": [
+          67.6851,
+          98.1031,
+          0.3116
+        ],
+        "max": [
+          154.4018,
+          173.3806,
+          5.8002
+        ]
+      },
+      "elapsed_ms": 469
+    },
+    {
+      "combo": {
+        "name": "open star",
+        "overrides": {
+          "outer": 1,
+          "inner": 0.45
+        }
+      },
+      "status": "ok",
+      "verts": 737880,
+      "faces": 736762,
+      "bbox": {
+        "min": [
+          66.2568,
+          96.6012,
+          0.3116
+        ],
+        "max": [
+          155.9112,
+          174.9072,
+          8.3875
+        ]
+      },
+      "elapsed_ms": 2160
+    },
+    {
+      "combo": {
+        "name": "six points",
+        "overrides": {
+          "Points": 6
+        }
+      },
+      "status": "ok",
+      "verts": 859183,
+      "faces": 858624,
+      "bbox": {
+        "min": [
+          67.6707,
+          98.0942,
+          0.3116
+        ],
+        "max": [
+          154.4427,
+          173.5102,
+          8.3875
+        ]
+      },
+      "elapsed_ms": 974
+    }
+  ]
+}
