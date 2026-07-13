@@ -564,5 +564,18 @@
     "blenderStats": { "verts": 4736, "faces": 4096 },
     "note": "Surface parity: all 4,096 faces and the 4×4 raised-lattice silhouette match Blender, with face-referenced bounds within 0.0004 units. The browser reports 4,752 vertices because it retains the graph's invisible 16-point Points component; Blender's evaluated mesh count reports only the 4,736 surface vertices.",
     "controls": []
+  },
+  {
+    "id": "n03d-bit-stand",
+    "title": "N03D · Bit Stand",
+    "object": "Plane.005",
+    "dump": "dojo/n03d/bit-stand/dump.json",
+    "reference": "dojo/references/n03d/bit-stand.png",
+    "blenderStats": { "verts": 8718, "faces": 5270 },
+    "note": "Work in progress: all 21 staggered bit columns, the outer holder, authored height, and Y extent run in-browser at 1,632 / 858. Blender's 8,718 / 5,270 result uses two exact booleans on a planar dual mesh to build the perforated top lattice; the current solid-only WASM fallback leaves that top as a simplified plate.",
+    "controls": [
+      { "type": "checkbox", "name": "Switch", "label": "Show bit columns", "value": true },
+      { "name": "wall thic", "label": "Wall thickness", "min": 0.2, "max": 3, "step": 0.05, "value": 0.97064208984375 }
+    ]
   }
 ]

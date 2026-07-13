@@ -1,0 +1,10 @@
+{
+  "id": "n03d-bit-stand",
+  "object": "Plane.005",
+  "root": "BIT STAND nodes",
+  "status": "work-in-progress",
+  "blender": { "verts": 8718, "faces": 5270 },
+  "gnvm": { "verts": 1632, "faces": 858 },
+  "coverage": "100% of reachable node types across the 5-group, 173-node closure.",
+  "validation": "Eight Blender/VM cases confirm the 21 staggered bit instances, full 60-unit bit height, Y extent, bit visibility switch, and wall-thickness response. Blender's two exact planar booleans create the perforated top lattice; the current solid-only Manifold fallback keeps a simplified outer plate, which is the remaining major parity gap. Offset Scale is a no-op in all supplied Blender cases and is intentionally not exposed."
+}

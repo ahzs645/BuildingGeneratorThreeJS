@@ -1,0 +1,199 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/bit-stand/dump.json",
+  "object": "Plane.005",
+  "results": [
+    {
+      "combo": {
+        "name": "authored stand",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 1632,
+      "faces": 858,
+      "bbox": {
+        "min": [
+          -22.8202,
+          -55.0344,
+          -3.8361
+        ],
+        "max": [
+          22.8202,
+          55.0344,
+          56.1639
+        ]
+      },
+      "elapsed_ms": 53
+    },
+    {
+      "combo": {
+        "name": "holder only",
+        "overrides": {
+          "Switch": false
+        }
+      },
+      "status": "ok",
+      "verts": 288,
+      "faces": 144,
+      "bbox": {
+        "min": [
+          -22.8202,
+          -55.0344,
+          -0.9706
+        ],
+        "max": [
+          22.8202,
+          55.0344,
+          34.0239
+        ]
+      },
+      "elapsed_ms": 5
+    },
+    {
+      "combo": {
+        "name": "thin wall",
+        "overrides": {
+          "wall thic": 0.5
+        }
+      },
+      "status": "ok",
+      "verts": 1632,
+      "faces": 858,
+      "bbox": {
+        "min": [
+          -22.8202,
+          -54.5637,
+          -3.8361
+        ],
+        "max": [
+          22.8202,
+          54.5637,
+          56.1639
+        ]
+      },
+      "elapsed_ms": 9
+    },
+    {
+      "combo": {
+        "name": "thick wall",
+        "overrides": {
+          "wall thic": 1.5
+        }
+      },
+      "status": "ok",
+      "verts": 1632,
+      "faces": 858,
+      "bbox": {
+        "min": [
+          -22.8202,
+          -55.5637,
+          -3.8361
+        ],
+        "max": [
+          22.8202,
+          55.5637,
+          56.1639
+        ]
+      },
+      "elapsed_ms": 8
+    },
+    {
+      "combo": {
+        "name": "compact offset",
+        "overrides": {
+          "Offset Scale": 12
+        }
+      },
+      "status": "ok",
+      "verts": 1632,
+      "faces": 858,
+      "bbox": {
+        "min": [
+          -22.8202,
+          -55.0344,
+          -3.8361
+        ],
+        "max": [
+          22.8202,
+          55.0344,
+          56.1639
+        ]
+      },
+      "elapsed_ms": 9
+    },
+    {
+      "combo": {
+        "name": "wide offset",
+        "overrides": {
+          "Offset Scale": 28
+        }
+      },
+      "status": "ok",
+      "verts": 1632,
+      "faces": 858,
+      "bbox": {
+        "min": [
+          -22.8202,
+          -55.0344,
+          -3.8361
+        ],
+        "max": [
+          22.8202,
+          55.0344,
+          56.1639
+        ]
+      },
+      "elapsed_ms": 7
+    },
+    {
+      "combo": {
+        "name": "holder compact offset",
+        "overrides": {
+          "Switch": false,
+          "Offset Scale": 12
+        }
+      },
+      "status": "ok",
+      "verts": 288,
+      "faces": 144,
+      "bbox": {
+        "min": [
+          -22.8202,
+          -55.0344,
+          -0.9706
+        ],
+        "max": [
+          22.8202,
+          55.0344,
+          25.8249
+        ]
+      },
+      "elapsed_ms": 5
+    },
+    {
+      "combo": {
+        "name": "holder wide offset",
+        "overrides": {
+          "Switch": false,
+          "Offset Scale": 28
+        }
+      },
+      "status": "ok",
+      "verts": 288,
+      "faces": 144,
+      "bbox": {
+        "min": [
+          -22.8202,
+          -55.0344,
+          -0.9706
+        ],
+        "max": [
+          22.8202,
+          55.0344,
+          41.8249
+        ]
+      },
+      "elapsed_ms": 3
+    }
+  ]
+}

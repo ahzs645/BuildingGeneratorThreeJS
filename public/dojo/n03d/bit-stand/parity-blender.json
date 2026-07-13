@@ -1,0 +1,238 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Plane.005",
+  "modifier": "BIT STAND nodes",
+  "node_group": "BIT STAND nodes",
+  "saved_values": {
+    "Switch": true,
+    "wall thic": 0.97064208984375,
+    "Offset Scale": 20.198974609375
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored stand",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 8718,
+      "faces": 5270,
+      "bbox": {
+        "min": [
+          -23.7908,
+          -55.0344,
+          -3.8361
+        ],
+        "max": [
+          23.7908,
+          55.0344,
+          56.1639
+        ]
+      },
+      "elapsed_ms": 117.6
+    },
+    {
+      "combo": {
+        "name": "holder only",
+        "overrides": {
+          "Switch": false
+        }
+      },
+      "status": "ok",
+      "verts": 7374,
+      "faces": 4556,
+      "bbox": {
+        "min": [
+          -23.7908,
+          -55.0344,
+          0.0
+        ],
+        "max": [
+          23.7908,
+          55.0344,
+          20.199
+        ]
+      },
+      "elapsed_ms": 139.5
+    },
+    {
+      "combo": {
+        "name": "thin wall",
+        "overrides": {
+          "wall thic": 0.5
+        }
+      },
+      "status": "ok",
+      "verts": 8718,
+      "faces": 5270,
+      "bbox": {
+        "min": [
+          -23.3202,
+          -54.5637,
+          -3.8361
+        ],
+        "max": [
+          23.3202,
+          54.5637,
+          56.1639
+        ]
+      },
+      "elapsed_ms": 118.2
+    },
+    {
+      "combo": {
+        "name": "thick wall",
+        "overrides": {
+          "wall thic": 1.5
+        }
+      },
+      "status": "ok",
+      "verts": 8718,
+      "faces": 5270,
+      "bbox": {
+        "min": [
+          -24.3202,
+          -55.5637,
+          -3.8361
+        ],
+        "max": [
+          24.3202,
+          55.5637,
+          56.1639
+        ]
+      },
+      "elapsed_ms": 116.7
+    },
+    {
+      "combo": {
+        "name": "compact offset",
+        "overrides": {
+          "Offset Scale": 12.0
+        }
+      },
+      "status": "ok",
+      "verts": 8718,
+      "faces": 5270,
+      "bbox": {
+        "min": [
+          -23.7908,
+          -55.0344,
+          -3.8361
+        ],
+        "max": [
+          23.7908,
+          55.0344,
+          56.1639
+        ]
+      },
+      "elapsed_ms": 113.2
+    },
+    {
+      "combo": {
+        "name": "wide offset",
+        "overrides": {
+          "Offset Scale": 28.0
+        }
+      },
+      "status": "ok",
+      "verts": 8718,
+      "faces": 5270,
+      "bbox": {
+        "min": [
+          -23.7908,
+          -55.0344,
+          -3.8361
+        ],
+        "max": [
+          23.7908,
+          55.0344,
+          56.1639
+        ]
+      },
+      "elapsed_ms": 115.0
+    },
+    {
+      "combo": {
+        "name": "holder compact offset",
+        "overrides": {
+          "Switch": false,
+          "Offset Scale": 12.0
+        }
+      },
+      "status": "ok",
+      "verts": 7374,
+      "faces": 4556,
+      "bbox": {
+        "min": [
+          -23.7908,
+          -55.0344,
+          0.0
+        ],
+        "max": [
+          23.7908,
+          55.0344,
+          12.0
+        ]
+      },
+      "elapsed_ms": 113.3
+    },
+    {
+      "combo": {
+        "name": "holder wide offset",
+        "overrides": {
+          "Switch": false,
+          "Offset Scale": 28.0
+        }
+      },
+      "status": "ok",
+      "verts": 7374,
+      "faces": 4556,
+      "bbox": {
+        "min": [
+          -23.7908,
+          -55.0344,
+          0.0
+        ],
+        "max": [
+          23.7908,
+          55.0344,
+          28.0
+        ]
+      },
+      "elapsed_ms": 105.1
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "<none>": {
+        "faces": 5270,
+        "verts": 8718
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 5270,
+      "verts": 8718
+    }
+  }
+}
