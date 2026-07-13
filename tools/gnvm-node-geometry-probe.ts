@@ -23,5 +23,14 @@ GEOMETRY_PROBE.socket = null;
 if (!geometry) throw new Error(`no geometry captured from ${nodeName}:${socketName}`);
 const positions = geometry.mesh?.positions ?? geometry.curves.flatMap((curve) => curve.points);
 const faces = geometry.mesh?.faces ?? [];
-writeFileSync(outPath, `${JSON.stringify({ positions, faces, curves: geometry.curves.length, curve_lengths: geometry.curves.map((curve) => curve.points.length), instances: geometry.instances.length }, null, 2)}\n`);
+const instance_payloads = geometry.instances.map((instance) => ({
+  verts: instance.geometry.mesh?.positions.length ?? 0,
+  faces: instance.geometry.mesh?.faces.length ?? 0,
+  curves: instance.geometry.curves.length,
+  instances: instance.geometry.instances.length,
+  position: instance.position,
+  rotation: instance.rotation,
+  scale: instance.scale,
+}));
+writeFileSync(outPath, `${JSON.stringify({ positions, faces, curves: geometry.curves.length, curve_lengths: geometry.curves.map((curve) => curve.points.length), instances: geometry.instances.length, instance_payloads }, null, 2)}\n`);
 console.log(`GNVM_NODE_GEOMETRY_PROBE_OK ${positions.length}v/${faces.length}f ${geometry.curves.length}c/${geometry.instances.length}i -> ${outPath}`);

@@ -1,0 +1,64 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "spikey link",
+  "modifier": "GeometryNodes",
+  "node_group": "chain link_spikey",
+  "saved_values": {},
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 2867,
+      "faces": 5376,
+      "bbox": {
+        "min": [
+          -6.24,
+          -4.2448,
+          -0.8483
+        ],
+        "max": [
+          6.2345,
+          4.2449,
+          0.8503
+        ]
+      },
+      "elapsed_ms": 36.6
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "<none>": {
+        "faces": 5368,
+        "verts": 2863
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 5368,
+      "verts": 2863
+    }
+  }
+}

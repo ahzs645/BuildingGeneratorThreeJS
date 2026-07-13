@@ -139,10 +139,11 @@ export async function runGenerator(dump: Dump, opts: { object?: string; override
     }
     DUMP_CONTEXT.activeObject = object;
     const dependencyGeometry = ev.evalModifierGroup(modifier.node_group, dependencyInputs).geometry;
-    // Prefer the procedural runtime result when it produced a component. If an
-    // unsupported structural node leaves it empty, Object Info can still use
-    // the exact evaluated mesh embedded by Blender extraction.
-    if (dependencyGeometry.mesh?.positions.length || dependencyGeometry.curves.length || dependencyGeometry.instances.length || !object.evaluated_mesh)
+    // Pure-mesh dependencies already have Blender's exact evaluated mesh in the
+    // portable dump. Keep that authoritative snapshot for Object Info; evaluate
+    // at runtime only when a dependency carries curves/instances that the mesh
+    // snapshot cannot represent, or when no snapshot was extracted.
+    if (dependencyGeometry.curves.length || dependencyGeometry.instances.length || !object.evaluated_mesh)
       DUMP_CONTEXT.evaluatedObjects.set(object.name, dependencyGeometry);
   }
   DUMP_CONTEXT.activeObject = DUMP_CONTEXT.objects.find((object) => object.name === found.objectName);

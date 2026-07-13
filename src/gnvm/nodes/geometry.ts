@@ -133,7 +133,7 @@ reg("GeometryNodeMeshCylinder", (api) => {
   const radius = api.num("Radius") || 1;
   const depth = api.num("Depth") || 2;
   const fill = api.prop<string>("fill_type", "NGON") as "NONE" | "NGON" | "TRIANGLE_FAN";
-  const mesh = meshCone(verts, radius, radius, depth, sideSeg, fillSeg, fill);
+  const mesh = meshCone(verts, radius, radius, depth, sideSeg, fillSeg, fill, true);
   const yes = Field.of(1);
   return { Mesh: mesh, Top: yes, Bottom: yes, Side: yes, "UV Map": Field.of([0, 0, 0]) };
 });
@@ -258,16 +258,22 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
   const sel = api.field("Selection").array(ctx);
   const rot = api.field("Rotation").array(ctx);
   const scl = api.field("Scale").array(ctx);
+  const instanceIndices = api.field("Instance Index").array(ctx);
   if (FIELD_PROBE.node === api.node.name) {
     const requested = FIELD_PROBE.socket ?? "Rotation";
     FIELD_PROBE.batches.push({
       domain: "POINT",
       positions: pts.map((point) => [...point] as Vec3),
-      values: requested === "Scale" ? scl : requested === "Selection" ? sel : rot,
+      values: requested === "Scale"
+        ? scl
+        : requested === "Selection"
+          ? sel
+          : requested === "Instance Index"
+            ? instanceIndices
+            : rot,
     });
   }
   const pickInstance = api.bool("Pick Instance");
-  const instanceIndices = api.field("Instance Index").array(ctx);
   const instanceIndexLinked = api.node.inputs.find((socket) => socket.identifier === "Instance Index")?.linked;
   const scaleLinked = api.node.inputs.find((s) => s.identifier === "Scale")?.linked;
   const scaleConst = api.vec("Scale");

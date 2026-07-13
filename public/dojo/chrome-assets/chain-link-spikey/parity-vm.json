@@ -1,0 +1,30 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/chain-link-spikey/dump.json",
+  "object": "spikey link",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 2745,
+      "faces": 4896,
+      "bbox": {
+        "min": [
+          -5.6811,
+          -4.2346,
+          -0.8474
+        ],
+        "max": [
+          5.6991,
+          4.2345,
+          0.8442
+        ]
+      },
+      "elapsed_ms": 654,
+      "export": "00-authored-default.json"
+    }
+  ]
+}

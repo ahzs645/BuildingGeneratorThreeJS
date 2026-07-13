@@ -124,8 +124,17 @@ function quatFromTo(from0: Vec3, to0: Vec3, axisSel: string): Quat {
   const dot = Math.max(-1, Math.min(1, vdot(from, to)));
   if (dot > 1 - 1e-10) return [0, 0, 0, 1];
   if (dot < -1 + 1e-10) {
-    let pivot: Vec3 = axisSel === "Y" ? [0, 0, 1] : axisSel === "Z" ? [1, 0, 0] : [0, 1, 0];
-    pivot = vnorm(vcross(from, pivot));
+    // AUTO keeps the named axis' conventional roll reference stable. Project
+    // that reference onto the perpendicular plane so Y -> -Y rotates around Z,
+    // matching Blender's outward-facing cyclic-curve instances.
+    const reference: Vec3 = axisSel === "Y" ? [0, 0, 1] : axisSel === "Z" ? [1, 0, 0] : [0, 1, 0];
+    let pivot: Vec3 = [
+      reference[0] - from[0] * vdot(reference, from),
+      reference[1] - from[1] * vdot(reference, from),
+      reference[2] - from[2] * vdot(reference, from),
+    ];
+    if (vlen(pivot) < 1e-10) pivot = vnorm(vcross(from, Math.abs(from[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]));
+    else pivot = vnorm(pivot);
     return [pivot[0], pivot[1], pivot[2], 0];
   }
   const cross = vcross(from, to);

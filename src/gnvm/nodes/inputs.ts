@@ -83,27 +83,20 @@ reg("GeometryNodeInputNormal", () => ({
 reg("GeometryNodeInputTangent", () => ({
   Tangent: Field.perElem((i, ctx) => {
     if (ctx.component !== "CURVE") return [0, 0, 0] as Vec3;
-    // Use position of neighbors on the same domain to form a tangent.
-    // For curves, control points are sequential; for mesh edges this is approximate.
     const p = ctx.position ? ctx.position(i) : ([0, 0, 0] as Vec3);
-    const prev = ctx.position && i > 0 ? ctx.position(i - 1) : p;
-    const next = ctx.position && i + 1 < ctx.size ? ctx.position(i + 1) : p;
+    const neighbors = ctx.neighbors?.(i) ?? [];
+    let prev = p, next = p;
+    if (ctx.position && neighbors.length >= 2) {
+      prev = ctx.position(neighbors[0]);
+      next = ctx.position(neighbors[1]);
+    } else if (ctx.position && neighbors.length === 1) {
+      const neighbor = ctx.position(neighbors[0]);
+      if (neighbors[0] > i) next = neighbor;
+      else prev = neighbor;
+    }
     const dx = next[0] - prev[0], dy = next[1] - prev[1], dz = next[2] - prev[2];
     const len = Math.hypot(dx, dy, dz);
     if (len > 1e-12) return [dx / len, dy / len, dz / len] as Vec3;
-    // single-point / endpoint: try one-sided
-    if (ctx.position && i + 1 < ctx.size) {
-      const n = ctx.position(i + 1);
-      const sx = n[0] - p[0], sy = n[1] - p[1], sz = n[2] - p[2];
-      const sl = Math.hypot(sx, sy, sz);
-      if (sl > 1e-12) return [sx / sl, sy / sl, sz / sl] as Vec3;
-    }
-    if (ctx.position && i > 0) {
-      const n = ctx.position(i - 1);
-      const sx = p[0] - n[0], sy = p[1] - n[1], sz = p[2] - n[2];
-      const sl = Math.hypot(sx, sy, sz);
-      if (sl > 1e-12) return [sx / sl, sy / sl, sz / sl] as Vec3;
-    }
     return [0, 0, 1] as Vec3;
   }),
 }));

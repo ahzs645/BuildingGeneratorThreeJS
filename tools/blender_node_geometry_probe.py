@@ -1,0 +1,68 @@
+"""Route one Geometry Nodes output socket to the modifier output and report it.
+
+Usage:
+  blender --background FILE.blend --python tools/blender_node_geometry_probe.py -- \
+    OBJECT GROUP NODE SOCKET OUT.json
+"""
+import json
+import sys
+
+import bpy
+
+
+args = sys.argv[sys.argv.index("--") + 1 :]
+if len(args) != 5:
+    raise SystemExit("usage: OBJECT GROUP NODE SOCKET OUT.json")
+object_name, group_name, node_name, socket_name, out_path = args
+
+obj = bpy.data.objects.get(object_name)
+group = bpy.data.node_groups.get(group_name)
+if obj is None or group is None:
+    raise RuntimeError(f"missing object/group: {object_name!r} / {group_name!r}")
+node = group.nodes.get(node_name)
+group_output = next((candidate for candidate in group.nodes if candidate.bl_idname == "NodeGroupOutput" and candidate.is_active_output), None)
+if node is None or group_output is None:
+    raise RuntimeError(f"missing node/group output: {node_name!r}")
+source = node.outputs.get(socket_name)
+target = next((socket for socket in group_output.inputs if socket.type == "GEOMETRY"), None)
+if source is None or target is None:
+    raise RuntimeError(f"missing geometry socket: {socket_name!r}")
+group.links.new(source, target)
+
+realize_group = bpy.data.node_groups.new("__PROBE_REALIZE_INSTANCES", "GeometryNodeTree")
+realize_group.interface.new_socket(name="Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")
+realize_group.interface.new_socket(name="Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
+realize_input = realize_group.nodes.new("NodeGroupInput")
+realize = realize_group.nodes.new("GeometryNodeRealizeInstances")
+realize_output = realize_group.nodes.new("NodeGroupOutput")
+realize_group.links.new(realize_input.outputs["Geometry"], realize.inputs["Geometry"])
+realize_group.links.new(realize.outputs["Geometry"], realize_output.inputs["Geometry"])
+realize_modifier = obj.modifiers.new(name="__PROBE_REALIZE_INSTANCES", type="NODES")
+realize_modifier.node_group = realize_group
+
+obj.update_tag()
+bpy.context.view_layer.update()
+depsgraph = bpy.context.evaluated_depsgraph_get()
+depsgraph.update()
+evaluated = obj.evaluated_get(depsgraph)
+mesh = evaluated.to_mesh()
+positions = [list(vertex.co) for vertex in mesh.vertices] if mesh else []
+if positions:
+    minimum = [min(position[axis] for position in positions) for axis in range(3)]
+    maximum = [max(position[axis] for position in positions) for axis in range(3)]
+else:
+    minimum = maximum = [0.0, 0.0, 0.0]
+payload = {
+    "object": object_name,
+    "group": group_name,
+    "node": node_name,
+    "socket": socket_name,
+    "verts": len(mesh.vertices) if mesh else 0,
+    "faces": len(mesh.polygons) if mesh else 0,
+    "bbox": {"min": minimum, "max": maximum},
+}
+with open(out_path, "w", encoding="utf-8") as handle:
+    json.dump(payload, handle, indent=2)
+if mesh:
+    evaluated.to_mesh_clear()
+print(f"BLENDER_NODE_GEOMETRY_PROBE_OK -> {out_path}")

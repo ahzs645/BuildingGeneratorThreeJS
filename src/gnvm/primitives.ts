@@ -123,7 +123,7 @@ export function meshLine(count: number, start: Vec3, offset: Vec3): Geometry {
   return g;
 }
 
-/** Cone / frustum along Z, centered at origin (Blender Mesh Cone). */
+/** Cone / frustum along +Z, starting at the origin (Blender Mesh Cone). */
 export function meshCone(
   verts: number,
   radiusTop: number,
@@ -132,32 +132,47 @@ export function meshCone(
   sideSegments = 1,
   fillSegments = 1,
   fillType: "NONE" | "NGON" | "TRIANGLE_FAN" = "NGON",
+  centered = false,
 ): Geometry {
   const m = new Mesh();
   verts = Math.max(3, Math.floor(verts));
   sideSegments = Math.max(1, Math.floor(sideSegments));
   fillSegments = Math.max(1, Math.floor(fillSegments));
-  const z0 = -depth / 2;
-  const z1 = depth / 2;
+  const z0 = centered ? -depth / 2 : 0;
+  const z1 = centered ? depth / 2 : depth;
   // Rings from bottom to top (sideSegments+1 rings)
   const ringStart: number[] = [];
+  const ringCount: number[] = [];
   for (let s = 0; s <= sideSegments; s++) {
     const t = s / sideSegments;
     const r = radiusBottom + (radiusTop - radiusBottom) * t;
     const z = z0 + (z1 - z0) * t;
     ringStart.push(m.positions.length);
-    for (let i = 0; i < verts; i++) {
-      const a = (i / verts) * Math.PI * 2;
-      m.positions.push([Math.cos(a) * r, Math.sin(a) * r, z]);
+    if (Math.abs(r) <= 1e-12) {
+      ringCount.push(1);
+      m.positions.push([0, 0, z]);
+    } else {
+      ringCount.push(verts);
+      for (let i = 0; i < verts; i++) {
+        const a = (i / verts) * Math.PI * 2;
+        m.positions.push([Math.cos(a) * r, Math.sin(a) * r, z]);
+      }
     }
   }
-  // Side quads
+  // Side quads, or triangle fans where a radius collapses to an apex.
   for (let s = 0; s < sideSegments; s++) {
     const a0 = ringStart[s];
     const a1 = ringStart[s + 1];
-    for (let i = 0; i < verts; i++) {
-      const j = (i + 1) % verts;
-      m.faces.push([a0 + i, a0 + j, a1 + j, a1 + i]);
+    if (ringCount[s] === 1 && ringCount[s + 1] === 1) continue;
+    if (ringCount[s] === 1) {
+      for (let i = 0; i < verts; i++) m.faces.push([a0, a1 + ((i + 1) % verts), a1 + i]);
+    } else if (ringCount[s + 1] === 1) {
+      for (let i = 0; i < verts; i++) m.faces.push([a0 + i, a0 + ((i + 1) % verts), a1]);
+    } else {
+      for (let i = 0; i < verts; i++) {
+        const j = (i + 1) % verts;
+        m.faces.push([a0 + i, a0 + j, a1 + j, a1 + i]);
+      }
     }
   }
   // Caps

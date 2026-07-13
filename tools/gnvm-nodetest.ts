@@ -149,6 +149,13 @@ function meshSignedAreaXY(m: Mesh): number {
     Value: 2, "From Min": 0, "From Max": 1, "To Min": 0, "To Max": 3,
   }, { interpolation_type: "SMOOTHERSTEP", clamp: false }).Result as Field;
   check("Map Range Smoother Step clamps its interpolation factor", Math.abs(Number(mapped.value) - 3) < 1e-9, `got ${mapped.value}`);
+
+  const mappedVector = runNode("ShaderNodeMapRange", {
+    Vector: [0.5, 0.25, 0.75],
+    From_Min_FLOAT3: [0, 0, 0], From_Max_FLOAT3: [1, 1, 1],
+    To_Min_FLOAT3: [-2, 10, 100], To_Max_FLOAT3: [2, 14, 108],
+  }, { data_type: "FLOAT_VECTOR", interpolation_type: "LINEAR", clamp: false }).Vector as Field;
+  check("Map Range vector mode uses FLOAT3 sockets component-wise", approx(mappedVector.value as number[], [0, 11, 106]), `got ${mappedVector.value}`);
 }
 
 // (B2) Align Euler antiparallel AUTO pivot remains a proper rotation. A tiny
@@ -161,6 +168,14 @@ function meshSignedAreaXY(m: Mesh): number {
   ).Rotation as Field;
   const value = rotation.array({ size: 1, domain: "POINT" })[0] as Vec3;
   check("AlignEuler antiparallel Y uses stable Z pivot", Math.abs(Math.abs(value[2]) - Math.PI) < 1e-6 && Math.abs(value[0]) < 1e-6, JSON.stringify(value));
+
+  const modernRotation = runNode(
+    "FunctionNodeAlignRotationToVector",
+    { Rotation: [0, 0, 0], Vector: [0, -1, 0], Factor: 1 },
+    { axis: "Y", pivot_axis: "AUTO" },
+  ).Rotation as Field;
+  const modernValue = modernRotation.array({ size: 1, domain: "POINT" })[0] as Vec3;
+  check("AlignRotation antiparallel Y keeps AUTO roll around Z", Math.abs(Math.abs(modernValue[2]) - Math.PI) < 1e-6 && Math.abs(modernValue[0]) < 1e-6, JSON.stringify(modernValue));
 }
 
 // (C) MeshCube size (1,1,1) -> 8 verts, spans +/-0.5
@@ -709,6 +724,10 @@ function meshSignedAreaXY(m: Mesh): number {
   const tan = runNode("GeometryNodeInputTangent", {}).Tangent as Field;
   const arr = tan.array(makeFieldCtx(c, "POINT")) as number[][];
   check("InputTangent mid-point ~ +X", arr.length === 3 && approx(arr[1] as number[], [1, 0, 0]), JSON.stringify(arr[1]));
+
+  const loop = curve([[1, 0, 0], [0, 1, 0], [-1, 0, 0], [0, -1, 0]], true);
+  const cyclic = tan.array(makeFieldCtx(loop, "POINT")) as number[][];
+  check("InputTangent wraps cyclic endpoints", approx(cyclic[0], [0, 1, 0]) && approx(cyclic[3], [1, 0, 0]), JSON.stringify(cyclic));
 }
 
 // Planar cyclic curve normals stay in the curve plane and point inward, as in
@@ -728,9 +747,9 @@ function meshSignedAreaXY(m: Mesh): number {
     "Radius Top": 0, "Radius Bottom": 1, Depth: 2,
   }, { fill_type: "NGON" }).Mesh as Geometry;
   const m = cone.mesh!;
-  check("MeshCone has verts and faces", m.positions.length >= 9 && m.faces.length >= 8, `v=${m.positions.length} f=${m.faces.length}`);
+  check("MeshCone collapses its zero-radius apex", m.positions.length === 9 && m.faces.length === 9, `v=${m.positions.length} f=${m.faces.length}`);
   const zs = m.positions.map((p) => p[2]);
-  check("MeshCone spans depth +/-1", Math.abs(Math.min(...zs) + 1) < 1e-6 && Math.abs(Math.max(...zs) - 1) < 1e-6);
+  check("MeshCone spans depth from zero", Math.abs(Math.min(...zs)) < 1e-6 && Math.abs(Math.max(...zs) - 2) < 1e-6);
 }
 
 // (T) FloatToInt floor mode
@@ -1115,6 +1134,8 @@ function meshSignedAreaXY(m: Mesh): number {
   }, { fill_type: "NGON" }).Mesh as Geometry;
   check("Mesh Cylinder builds rings and caps", cylinder.mesh?.positions.length === 24 && cylinder.mesh.faces.length === 18,
     `verts=${cylinder.mesh?.positions.length} faces=${cylinder.mesh?.faces.length}`);
+  const cylinderZ = cylinder.mesh!.positions.map((position) => position[2]);
+  check("Mesh Cylinder remains centered on Z", Math.abs(Math.min(...cylinderZ) + 2) < 1e-6 && Math.abs(Math.max(...cylinderZ) - 2) < 1e-6);
 
   const quad = box([0, 0, 0], [1, 1, 0]);
   const triangulated = runNode("GeometryNodeTriangulate", { Mesh: quad, Selection: true }).Mesh as Geometry;

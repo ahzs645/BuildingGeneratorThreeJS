@@ -250,26 +250,44 @@ reg("FunctionNodeBooleanMath", (api) => {
   };
 });
 
-// ---- Map Range (float) ----------------------------------------------------
+// ---- Map Range ------------------------------------------------------------
 reg("ShaderNodeMapRange", (api) => {
   const clamp = api.prop<boolean>("clamp", true);
   const interp = api.prop<string>("interpolation_type", "LINEAR");
+  const dataType = api.prop<string>("data_type", "FLOAT");
+  const mapFactor = (x: number, fromMin: number, fromMax: number) => {
+    let factor = fromMax - fromMin === 0 ? 0 : (x - fromMin) / (fromMax - fromMin);
+    if (interp === "SMOOTHSTEP") factor = factor <= 0 ? 0 : factor >= 1 ? 1 : factor * factor * (3 - 2 * factor);
+    else if (interp === "SMOOTHERSTEP")
+      factor = factor <= 0 ? 0 : factor >= 1 ? 1 : factor * factor * factor * (factor * (factor * 6 - 15) + 10);
+    return factor;
+  };
+  const mapComponent = (x: number, fromMin: number, fromMax: number, toMin: number, toMax: number) => {
+    let result = toMin + mapFactor(x, fromMin, fromMax) * (toMax - toMin);
+    if (clamp) result = toMax >= toMin ? Math.max(toMin, Math.min(toMax, result)) : Math.max(toMax, Math.min(toMin, result));
+    return result;
+  };
+  if (dataType === "FLOAT_VECTOR") {
+    const vector = api.field("Vector");
+    const fromMin = api.field("From_Min_FLOAT3");
+    const fromMax = api.field("From_Max_FLOAT3");
+    const toMin = api.field("To_Min_FLOAT3");
+    const toMax = api.field("To_Max_FLOAT3");
+    const result = fieldMap([vector, fromMin, fromMax, toMin, toMax], (value, f0, f1, t0, t1) => {
+      const x = asVec3(value), a = asVec3(f0), b = asVec3(f1), c = asVec3(t0), d = asVec3(t1);
+      return [
+        mapComponent(x[0], a[0], b[0], c[0], d[0]),
+        mapComponent(x[1], a[1], b[1], c[1], d[1]),
+        mapComponent(x[2], a[2], b[2], c[2], d[2]),
+      ] as Vec3;
+    });
+    return { Vector: result, Result: result };
+  }
   const v = api.field("Value"), fmin = api.field("From Min"), fmax = api.field("From Max"), tmin = api.field("To Min"), tmax = api.field("To Max");
   return {
     Result: fieldMap([v, fmin, fmax, tmin, tmax], (a, b, c, d, e) => {
       const x = num(a), b0 = num(b), b1 = num(c), t0 = num(d), t1 = num(e);
-      let f = b1 - b0 === 0 ? 0 : (x - b0) / (b1 - b0);
-      if (interp === "SMOOTHSTEP") f = f <= 0 ? 0 : f >= 1 ? 1 : f * f * (3 - 2 * f);
-      else if (interp === "SMOOTHERSTEP") {
-        // Blender clamps the interpolation factor for Smoother Step even when
-        // the Map Range node's output Clamp option is disabled. Text Soup's
-        // distance field intentionally exceeds From Max; treating this mode as
-        // linear made the raised surface overshoot its authored peak height.
-        f = f <= 0 ? 0 : f >= 1 ? 1 : f * f * f * (f * (f * 6 - 15) + 10);
-      }
-      let r = t0 + f * (t1 - t0);
-      if (clamp) r = t1 >= t0 ? Math.max(t0, Math.min(t1, r)) : Math.max(t1, Math.min(t0, r));
-      return r;
+      return mapComponent(x, b0, b1, t0, t1);
     }),
   };
 });
