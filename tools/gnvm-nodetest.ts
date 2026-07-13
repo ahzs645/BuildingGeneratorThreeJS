@@ -1127,6 +1127,7 @@ function meshSignedAreaXY(m: Mesh): number {
 // then rotate those payloads as instances.
 {
   const savedObjects = DUMP_CONTEXT.objects;
+  const savedActiveObject = DUMP_CONTEXT.activeObject;
   DUMP_CONTEXT.objects = [{
     name: "nested", mesh: { verts: [[0, 0, 0]], faces: [] },
     evaluated_mesh: { verts: [[0, 0, 0], [1, 0, 0]], faces: [] },
@@ -1135,7 +1136,19 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Object Info uses evaluated modifier geometry", nested.mesh?.positions.length === 2, `verts=${nested.mesh?.positions.length}`);
   const nestedInstance = runNode("GeometryNodeObjectInfo", { Object: { datablock: "Object", name: "nested" }, "As Instance": true }).Geometry as Geometry;
   check("Object Info As Instance preserves an instance component", !nestedInstance.mesh && nestedInstance.instances.length === 1 && nestedInstance.instances[0].geometry.mesh?.positions.length === 2);
+  DUMP_CONTEXT.objects = [{
+    name: "parented", mesh: { verts: [[1, 2, 3]], faces: [] },
+    matrix_world: [[0, 2, 0, 10], [3, 0, 0, 20], [0, 0, 4, 30], [0, 0, 0, 1]],
+  } as any];
+  DUMP_CONTEXT.activeObject = {
+    name: "active", matrix_world: [[1, 0, 0, 4], [0, 1, 0, 5], [0, 0, 1, 6], [0, 0, 0, 1]],
+  } as any;
+  const relative = runNode("GeometryNodeObjectInfo", {
+    Object: { datablock: "Object", name: "parented" }, "As Instance": false,
+  }, { transform_space: "RELATIVE" }).Geometry as Geometry;
+  check("Object Info uses inherited world matrix", approx(relative.mesh?.positions[0] ?? [], [10, 18, 36]), JSON.stringify(relative.mesh?.positions[0]));
   DUMP_CONTEXT.objects = savedObjects;
+  DUMP_CONTEXT.activeObject = savedActiveObject;
   const instances = new Geometry();
   instances.instances = [{ geometry: box([0, 0, 0], [1, 1, 1]), position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }];
   const rotated = runNode("GeometryNodeRotateInstances", {

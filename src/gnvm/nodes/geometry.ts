@@ -37,6 +37,33 @@ function geometryOfDumpObject(obj: (typeof DUMP_CONTEXT.objects)[number] | undef
   return out;
 }
 
+type Matrix4Rows = number[][];
+
+function transformByMatrix(point: Vec3, matrix: Matrix4Rows): Vec3 {
+  return [
+    matrix[0][0] * point[0] + matrix[0][1] * point[1] + matrix[0][2] * point[2] + matrix[0][3],
+    matrix[1][0] * point[0] + matrix[1][1] * point[1] + matrix[1][2] * point[2] + matrix[1][3],
+    matrix[2][0] * point[0] + matrix[2][1] * point[1] + matrix[2][2] * point[2] + matrix[2][3],
+  ];
+}
+
+function inverseTransformByMatrix(point: Vec3, matrix: Matrix4Rows): Vec3 {
+  const x = point[0] - matrix[0][3];
+  const y = point[1] - matrix[1][3];
+  const z = point[2] - matrix[2][3];
+  const a = matrix[0][0], b = matrix[0][1], c = matrix[0][2];
+  const d = matrix[1][0], e = matrix[1][1], f = matrix[1][2];
+  const g = matrix[2][0], h = matrix[2][1], i = matrix[2][2];
+  const determinant = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+  if (Math.abs(determinant) < 1e-12) return [0, 0, 0];
+  const inverse = 1 / determinant;
+  return [
+    ((e * i - f * h) * x + (c * h - b * i) * y + (b * f - c * e) * z) * inverse,
+    ((f * g - d * i) * x + (a * i - c * g) * y + (c * d - a * f) * z) * inverse,
+    ((d * h - e * g) * x + (b * g - a * h) * y + (a * e - b * d) * z) * inverse,
+  ];
+}
+
 reg("GeometryNodeObjectInfo", (api) => {
   const ref = api.ref("Object");
   const obj = DUMP_CONTEXT.objects.find((o) => o.name === ref?.name);
@@ -52,7 +79,14 @@ reg("GeometryNodeObjectInfo", (api) => {
     const activeLoc = (active?.location ?? [0, 0, 0]) as Vec3;
     const activeRot = (active?.rotation ?? [0, 0, 0]) as Vec3;
     const activeScale = (active?.scale ?? [1, 1, 1]) as Vec3;
-    const relative = (point: Vec3) => inverseTransformPoint(transformPoint(point, loc, rot, scl), activeLoc, activeRot, activeScale);
+    // Local TRS is insufficient for parented objects. Blender's Relative mode
+    // evaluates object.matrix_world in the active modifier object's space, so
+    // retain and use the extracted affine matrices whenever they are present.
+    const objectMatrix = (obj as { matrix_world?: Matrix4Rows } | undefined)?.matrix_world;
+    const activeMatrix = (active as { matrix_world?: Matrix4Rows } | undefined)?.matrix_world;
+    const relative = objectMatrix && activeMatrix
+      ? (point: Vec3) => inverseTransformByMatrix(transformByMatrix(point, objectMatrix), activeMatrix)
+      : (point: Vec3) => inverseTransformPoint(transformPoint(point, loc, rot, scl), activeLoc, activeRot, activeScale);
     if (out.mesh) out.mesh.positions = out.mesh.positions.map(relative);
     for (const spline of out.curves) spline.points = spline.points.map(relative);
     for (const instance of out.instances) instance.position = relative(instance.position);

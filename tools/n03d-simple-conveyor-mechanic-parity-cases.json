@@ -1,0 +1,9 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "fully closed", "overrides": { "CLOSE - OPEN": 0 } },
+  { "name": "fully open", "overrides": { "CLOSE - OPEN": 100 } },
+  { "name": "opening 40", "overrides": { "max opening": 40 } },
+  { "name": "x direction", "overrides": { "Direction": 0 } },
+  { "name": "z direction", "overrides": { "Direction": 2 } },
+  { "name": "show guide", "overrides": { "show guide": true } }
+]

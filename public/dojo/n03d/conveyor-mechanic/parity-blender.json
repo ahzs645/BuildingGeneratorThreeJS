@@ -1,0 +1,213 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Cube.011",
+  "modifier": "simple conveyor mechanic",
+  "node_group": "simple conveyor mechanic",
+  "saved_values": {
+    "Direction": 1,
+    "max opening": 26.74571990966797,
+    "CLOSE - OPEN": 64,
+    "show guide": false
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -33.3117,
+          -15.13
+        ],
+        "max": [
+          25.927,
+          -3.4774,
+          15.13
+        ]
+      },
+      "elapsed_ms": 1.0
+    },
+    {
+      "combo": {
+        "name": "fully closed",
+        "overrides": {
+          "CLOSE - OPEN": 0
+        }
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -16.1945,
+          -15.13
+        ],
+        "max": [
+          25.927,
+          13.6399,
+          15.13
+        ]
+      },
+      "elapsed_ms": 1.1
+    },
+    {
+      "combo": {
+        "name": "fully open",
+        "overrides": {
+          "CLOSE - OPEN": 100
+        }
+      },
+      "status": "ok",
+      "verts": 178,
+      "faces": 169,
+      "bbox": {
+        "min": [
+          -25.927,
+          -46.827,
+          -37.8987
+        ],
+        "max": [
+          113.9087,
+          -13.1058,
+          36.7755
+        ]
+      },
+      "elapsed_ms": 1.2
+    },
+    {
+      "combo": {
+        "name": "opening 40",
+        "overrides": {
+          "max opening": 40
+        }
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -41.7945,
+          -15.13
+        ],
+        "max": [
+          25.927,
+          -11.9601,
+          15.13
+        ]
+      },
+      "elapsed_ms": 0.9
+    },
+    {
+      "combo": {
+        "name": "x direction",
+        "overrides": {
+          "Direction": 0
+        }
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -43.0443,
+          -16.1945,
+          -15.13
+        ],
+        "max": [
+          8.8098,
+          13.6399,
+          15.13
+        ]
+      },
+      "elapsed_ms": 0.9
+    },
+    {
+      "combo": {
+        "name": "z direction",
+        "overrides": {
+          "Direction": 2
+        }
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -16.1945,
+          -32.2473
+        ],
+        "max": [
+          25.927,
+          13.6399,
+          -1.9873
+        ]
+      },
+      "elapsed_ms": 1.2
+    },
+    {
+      "combo": {
+        "name": "show guide",
+        "overrides": {
+          "show guide": true
+        }
+      },
+      "status": "ok",
+      "verts": 18,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -42.9402,
+          -15.13
+        ],
+        "max": [
+          25.927,
+          -3.4774,
+          15.13
+        ]
+      },
+      "elapsed_ms": 2.1
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "Filament PLA .02 mm layer height": {
+        "faces": 13,
+        "verts": 16
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 13,
+      "verts": 16
+    }
+  }
+}

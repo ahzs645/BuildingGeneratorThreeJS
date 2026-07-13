@@ -3,3 +3,4 @@
 .assets-panel #assets-note{margin:-2px 0 13px;color:#929f95;font:9px/1.5 ui-monospace,monospace}
 .assets-panel{max-height:calc(100vh - 36px);overflow:auto}.assets-control.assets-text div{grid-template-columns:1fr}.assets-control input[type="text"]{box-sizing:border-box;padding:9px;border:1px solid #343b35;border-radius:8px;background:#121612;color:#eff5ec;font:11px/1.2 ui-monospace,monospace}@media(max-width:760px){.assets-panel{max-height:45vh}}
 .assets-control.assets-vector div{grid-template-columns:repeat(3,1fr)}.assets-control input[type="number"]{box-sizing:border-box;min-width:0;padding:7px;border:1px solid #343b35;border-radius:7px;background:#121612;color:#eff5ec;font:10px/1.2 ui-monospace,monospace}
+.assets-control.assets-select div{grid-template-columns:1fr}

@@ -1,0 +1,16 @@
+{
+  "id": "n03d-conveyor-mechanic",
+  "object": "Cube.011",
+  "root": "simple conveyor mechanic",
+  "status": "exact-parity",
+  "blender": {
+    "verts": 16,
+    "faces": 13
+  },
+  "gnvm": {
+    "verts": 16,
+    "faces": 13
+  },
+  "coverage": "100% of reachable node types across the 5-group, 75-node closure.",
+  "validation": "Seven Blender/VM cases cover authored travel, fully closed/open positions, alternate maximum opening, X/Y/Z direction selection, the guide line, and the parented completion-marker object. Every case has exact vertex and face counts; the maximum local-bounds difference is 0.0006 units."
+}

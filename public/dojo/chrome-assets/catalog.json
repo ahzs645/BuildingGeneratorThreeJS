@@ -677,5 +677,32 @@
       { "type": "checkbox", "name": "roundsquare", "label": "Round-square profile", "value": false },
       { "name": "cutter offset", "label": "Cutter offset", "min": 0, "max": 4, "step": 0.05, "value": 0.4000000059604645 }
     ]
+  },
+  {
+    "id": "n03d-conveyor-mechanic",
+    "title": "N03D · Conveyor Mechanic",
+    "object": "Cube.011",
+    "dump": "dojo/n03d/conveyor-mechanic/dump.json",
+    "reference": "dojo/references/n03d/conveyor-mechanic.png",
+    "blenderStats": { "verts": 16, "faces": 13 },
+    "flatShading": true,
+    "localSpace": true,
+    "note": "Exact Blender topology across seven validation cases. The full 75-node mechanic moves the supplied drawer along X, Y, or Z, exposes maximum travel and open percentage, optionally shows its guide line, and adds the parented lightbulb completion marker above 80% open.",
+    "controls": [
+      {
+        "type": "select",
+        "name": "Direction",
+        "label": "Travel direction",
+        "value": 1,
+        "options": [
+          { "label": "X axis", "value": 0 },
+          { "label": "Y axis", "value": 1 },
+          { "label": "Z axis", "value": 2 }
+        ]
+      },
+      { "name": "max opening", "label": "Maximum opening", "min": 0, "max": 100, "step": 0.1, "value": 26.74571990966797 },
+      { "name": "CLOSE - OPEN", "label": "Closed → open", "min": 0, "max": 100, "step": 1, "value": 64 },
+      { "type": "checkbox", "name": "show guide", "label": "Show guide line", "value": false }
+    ]
   }
 ]

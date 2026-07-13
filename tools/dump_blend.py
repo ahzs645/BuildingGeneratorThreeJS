@@ -331,9 +331,28 @@ while pending_dependency_trees:
 result["dependency_objects"] = sorted(dependency_object_names)
 depsgraph = bpy.context.evaluated_depsgraph_get()
 
+# Objects inside excluded asset-library collections can retain a stale
+# matrix_world until they are linked into an active scene. Recompose ordinary
+# object-parent chains from matrix_basis so targeted dumps preserve the same
+# transform Blender evaluates after activation.
+world_matrix_cache = {}
+def resolved_world_matrix(obj):
+    cached = world_matrix_cache.get(obj.name)
+    if cached is not None:
+        return cached
+    if obj.parent is not None and obj.parent_type == "OBJECT":
+        matrix = resolved_world_matrix(obj.parent) @ obj.matrix_parent_inverse @ obj.matrix_basis
+    elif obj.parent is None:
+        matrix = obj.matrix_basis.copy()
+    else:
+        matrix = obj.matrix_world.copy()
+    world_matrix_cache[obj.name] = matrix
+    return matrix
+
 for obj in bpy.data.objects:
     o = {"name": obj.name, "type": obj.type, "location": list(obj.location),
          "rotation": list(obj.rotation_euler), "scale": list(obj.scale),
+         "matrix_world": [[round(float(value), 9) for value in row] for row in resolved_world_matrix(obj)],
          "visible": not obj.hide_render, "modifiers": [], "materials": [m.name for m in obj.data.materials if m is not None] if obj.type in ("MESH", "CURVE") and obj.data else []}
     if obj.type == "MESH" and obj.data:
         o["mesh_stats"] = {"verts": len(obj.data.vertices), "faces": len(obj.data.polygons)}

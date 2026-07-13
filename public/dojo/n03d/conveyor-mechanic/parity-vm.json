@@ -1,0 +1,173 @@
+{
+  "source": "gnvm",
+  "dump": "/tmp/cube011-dump-matrix2.json",
+  "object": "Cube.011",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -33.3117,
+          -15.13
+        ],
+        "max": [
+          25.927,
+          -3.4774,
+          15.13
+        ]
+      },
+      "elapsed_ms": 20
+    },
+    {
+      "combo": {
+        "name": "fully closed",
+        "overrides": {
+          "CLOSE - OPEN": 0
+        }
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -16.1945,
+          -15.13
+        ],
+        "max": [
+          25.927,
+          13.6399,
+          15.13
+        ]
+      },
+      "elapsed_ms": 0
+    },
+    {
+      "combo": {
+        "name": "fully open",
+        "overrides": {
+          "CLOSE - OPEN": 100
+        }
+      },
+      "status": "ok",
+      "verts": 178,
+      "faces": 169,
+      "bbox": {
+        "min": [
+          -25.927,
+          -46.8272,
+          -37.8992
+        ],
+        "max": [
+          113.9093,
+          -13.1058,
+          36.7749
+        ]
+      },
+      "elapsed_ms": 2
+    },
+    {
+      "combo": {
+        "name": "opening 40",
+        "overrides": {
+          "max opening": 40
+        }
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -41.7945,
+          -15.13
+        ],
+        "max": [
+          25.927,
+          -11.9601,
+          15.13
+        ]
+      },
+      "elapsed_ms": 1
+    },
+    {
+      "combo": {
+        "name": "x direction",
+        "overrides": {
+          "Direction": 0
+        }
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -43.0443,
+          -16.1945,
+          -15.13
+        ],
+        "max": [
+          8.8098,
+          13.6399,
+          15.13
+        ]
+      },
+      "elapsed_ms": 0
+    },
+    {
+      "combo": {
+        "name": "z direction",
+        "overrides": {
+          "Direction": 2
+        }
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -16.1945,
+          -32.2473
+        ],
+        "max": [
+          25.927,
+          13.6399,
+          -1.9873
+        ]
+      },
+      "elapsed_ms": 0
+    },
+    {
+      "combo": {
+        "name": "show guide",
+        "overrides": {
+          "show guide": true
+        }
+      },
+      "status": "ok",
+      "verts": 18,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -42.9402,
+          -15.13
+        ],
+        "max": [
+          25.927,
+          -3.4774,
+          15.13
+        ]
+      },
+      "elapsed_ms": 4
+    }
+  ]
+}
