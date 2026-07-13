@@ -1,0 +1,29 @@
+{
+  "source": "gnvm",
+  "dump": "/tmp/n03d-tutorial-dump.json",
+  "object": "tutorial",
+  "results": [
+    {
+      "combo": {
+        "name": "authored tutorial",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 4512,
+      "faces": 3032,
+      "bbox": {
+        "min": [
+          -62.5315,
+          -63.1044,
+          0
+        ],
+        "max": [
+          30.2942,
+          63.1044,
+          74.758
+        ]
+      },
+      "elapsed_ms": 50
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "tutorial",
+  "modifier": "GeometryNodes",
+  "node_group": "Geometry Nodes.031",
+  "saved_values": {
+    "width": 0.0,
+    "top": 0.0,
+    "depth": 0.0
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored tutorial",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 4512,
+      "faces": 3032,
+      "bbox": {
+        "min": [
+          -62.5315,
+          -63.1044,
+          0.0
+        ],
+        "max": [
+          30.2942,
+          63.1044,
+          74.758
+        ]
+      },
+      "elapsed_ms": 4.0
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "<none>": {
+        "faces": 1718,
+        "verts": 2612
+      },
+      "filament visualizer .02 mm layer height.001": {
+        "faces": 1314,
+        "verts": 1894
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 3032,
+      "verts": 4512
+    }
+  }
+}

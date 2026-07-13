@@ -635,5 +635,17 @@
     "controls": [
       { "name": "close > open", "label": "Close → open", "min": 0, "max": 1, "step": 0.01, "value": 0 }
     ]
+  },
+  {
+    "id": "n03d-layer-height-case",
+    "title": "N03D · Layer-Height Case Preview",
+    "object": "tutorial",
+    "dump": "dojo/n03d/layer-height-case/dump.json",
+    "reference": "dojo/references/n03d/layer-height-case.png",
+    "blenderStats": { "verts": 4512, "faces": 3032 },
+    "flatShading": true,
+    "localSpace": true,
+    "note": "Exact authored geometry and local bounds at 4,512 vertices / 3,032 faces. This 14-node tutorial graph offsets the supplied hard-case mesh from its named layer-height attributes. The browser uses per-face comparison shading because the triangle soup does not yet carry Blender's split normals, and it normalizes the filament-visualizer shader.",
+    "controls": []
   }
 ]
