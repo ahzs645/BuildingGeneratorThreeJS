@@ -226,9 +226,11 @@ reg("GeometryNodeCurveToMesh", (api) => {
   const mesh = new Mesh();
   mesh.materialSlots = [null];
   const profiles = prof.curves;
+  const tangentAttribute = rail.curveAttributes.get("__curve_tangent")?.data;
   let flatBase = 0;
   for (const r of rail.curves) {
     const scales = scaleArr ? scaleArr.slice(flatBase, flatBase + r.points.length) : undefined;
+    const tangentOverrides = tangentAttribute?.slice(flatBase, flatBase + r.points.length).map(asVec3);
     flatBase += r.points.length;
     if (!profiles.length) {
       // no profile: emit the rail as an edge-only wire
@@ -239,7 +241,20 @@ reg("GeometryNodeCurveToMesh", (api) => {
       continue;
     }
     for (const p of profiles) {
-      const sm = sweep(r, p, caps, scales);
+      if (r.points.length === 1) {
+        // Blender retains one transformed profile ring for an isolated curve
+        // point. It has vertices but no faces; downstream Bounding Box nodes
+        // still use it to size grids (Soft Pixel Marker relies on this).
+        const center = r.points[0];
+        const scale = scales?.[0] ?? 1;
+        for (const point of p.points) mesh.positions.push([
+          center[0] + point[0] * scale,
+          center[1] + point[1] * scale,
+          center[2] + point[2] * scale,
+        ]);
+        continue;
+      }
+      const sm = sweep(r, p, caps, scales, tangentOverrides);
       const base = mesh.positions.length;
       for (const pos of sm.positions) mesh.positions.push(pos);
       for (let fi = 0; fi < sm.faces.length; fi++) { mesh.faces.push(sm.faces[fi].map((v) => v + base)); mesh.faceMaterial.push(0); }

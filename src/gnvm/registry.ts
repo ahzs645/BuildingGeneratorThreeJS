@@ -15,12 +15,14 @@ export interface RawSocket {
 export interface RawOutput {
   name: string;
   identifier: string;
+  type?: string;
   default?: any;
 }
 export interface RawNode {
   name: string;
   type: string;
   label: string | null;
+  ui?: { mute?: boolean };
   inputs: RawSocket[];
   outputs: RawOutput[];
   props?: Record<string, any>;
@@ -69,7 +71,7 @@ export interface DumpObject {
   materials?: string[];
   mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][] };
   evaluated_mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][]; materials?: (string | null)[] };
-  curves?: { points: number[][]; cyclic: boolean; tilts?: number[] }[];
+  curves?: { points: number[][]; cyclic: boolean; tilts?: number[]; radii?: number[]; tangents?: number[][] }[];
   modifiers?: { type: string; node_group?: string; input_values?: Record<string, any> }[];
 }
 export const DUMP_CONTEXT: {

@@ -805,8 +805,57 @@ reg("GeometryNodeSplitEdges", (api) => {
   const m = g.mesh;
   const ctx = makeFieldCtx(g, "EDGE");
   const selArr = api.field("Selection").array(ctx);
+  if (FIELD_PROBE.node === api.node.name) FIELD_PROBE.batches.push({
+    domain: "EDGE",
+    positions: Array.from({ length: ctx.size }, (_, i) => ctx.position?.(i) ?? [0, 0, 0]),
+    values: FIELD_PROBE.socket === "Face Count"
+      ? Array.from({ length: ctx.size }, (_, i) => ctx.edgeFaceCount?.(i) ?? 0)
+      : selArr,
+  });
   const allSelected = selArr.length === 0 || selArr.every((s) => asNum(s ?? 1));
-  if (!allSelected) return { Mesh: g }; // partial edge splits: leave as-is (rare)
+  if (!allSelected) {
+    const topology = buildTopology(m);
+    const split = new Mesh();
+    split.materialSlots = [...m.materialSlots];
+    const splitPointAttributes = [...m.attributes].filter(([, attribute]) => attribute.domain === "POINT");
+    const splitPointData = new Map(splitPointAttributes.map(([name]) => [name, [] as Elem[]]));
+    const incidentCorners = m.positions.map(() => [] as { face: number; corner: number }[]);
+    for (let face = 0; face < m.faces.length; face++) for (let corner = 0; corner < m.faces[face].length; corner++) incidentCorners[m.faces[face][corner]].push({ face, corner });
+    const cornerVertex = new Map<string, number>();
+    for (let vertex = 0; vertex < m.positions.length; vertex++) {
+      const corners = incidentCorners[vertex];
+      if (!corners.length) continue;
+      const parent = corners.map((_, index) => index);
+      const find = (index: number): number => { while (parent[index] !== index) { parent[index] = parent[parent[index]]; index = parent[index]; } return index; };
+      const unite = (a: number, b: number) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[rb] = ra; };
+      const cornerByFace = new Map(corners.map((corner, index) => [corner.face, index]));
+      for (let edgeIndex = 0; edgeIndex < topology.edges.length; edgeIndex++) {
+        const edge = topology.edges[edgeIndex];
+        if (edge.verts[0] !== vertex && edge.verts[1] !== vertex) continue;
+        if (asNum(selArr[edgeIndex] ?? 0) > 0) continue;
+        const connected = edge.faces.map((face) => cornerByFace.get(face)).filter((index): index is number => index !== undefined);
+        for (let i = 1; i < connected.length; i++) unite(connected[0], connected[i]);
+      }
+      const copies = new Map<number, number>();
+      for (let index = 0; index < corners.length; index++) {
+        const root = find(index);
+        let outputVertex = copies.get(root);
+        if (outputVertex === undefined) {
+          outputVertex = split.positions.length;
+          copies.set(root, outputVertex);
+          split.positions.push([...m.positions[vertex]] as Vec3);
+          for (const [name, attribute] of splitPointAttributes) splitPointData.get(name)!.push(attribute.data[vertex] ?? 0);
+        }
+        cornerVertex.set(`${corners[index].face}:${corners[index].corner}`, outputVertex);
+      }
+    }
+    split.faces = m.faces.map((face, faceIndex) => face.map((_vertex, corner) => cornerVertex.get(`${faceIndex}:${corner}`)!));
+    split.faceMaterial = [...m.faceMaterial];
+    for (const [name, data] of splitPointData) split.attributes.set(name, { domain: "POINT", data });
+    for (const [name, attribute] of m.attributes) if (attribute.domain === "FACE" || attribute.domain === "CORNER") split.attributes.set(name, { domain: attribute.domain, data: [...attribute.data] });
+    g.mesh = split;
+    return { Mesh: g };
+  }
   const nm = new Mesh();
   nm.materialSlots = [...m.materialSlots];
   // carry POINT attributes by duplicating the source vertex's value
@@ -860,13 +909,15 @@ reg("GeometryNodeSubdivisionSurface", (api) => {
   const g = api.geo("Mesh").clone();
   const level = Math.max(0, Math.min(4, Math.round(api.num("Level"))));
   if (!g.mesh || level === 0) return { Mesh: g };
+  const edgeCrease = Math.max(0, Math.min(1, api.num("Edge Crease")));
+  const edgeSharpness = edgeCrease * edgeCrease * 10;
   let mesh = g.mesh;
-  for (let l = 0; l < level; l++) mesh = subdivideOnce(mesh, true);
+  for (let l = 0; l < level; l++) mesh = subdivideOnce(mesh, true, Math.max(0, Math.min(1, edgeSharpness - l)));
   g.mesh = mesh;
   return { Mesh: g };
 });
 
-function subdivideOnce(mesh: Mesh, catmullClark: boolean): Mesh {
+function subdivideOnce(mesh: Mesh, catmullClark: boolean, edgeCrease = 0): Mesh {
   const out = new Mesh();
   out.materialSlots = [...mesh.materialSlots];
   const nV = mesh.positions.length;
@@ -891,17 +942,19 @@ function subdivideOnce(mesh: Mesh, catmullClark: boolean): Mesh {
 
   // Edge points
   const edgePts: Vec3[] = edges.map((e) => {
+    const midpoint = vscale(vadd(mesh.positions[e.a], mesh.positions[e.b]), 0.5);
     if (!catmullClark || e.faces.length < 2) {
-      return vscale(vadd(mesh.positions[e.a], mesh.positions[e.b]), 0.5);
+      return midpoint;
     }
     // avg of endpoints + adjacent face points
     const fa = facePts[e.faces[0]], fb = facePts[e.faces[1]];
-    return vscale(
+    const smooth = vscale(
       [mesh.positions[e.a][0] + mesh.positions[e.b][0] + fa[0] + fb[0],
        mesh.positions[e.a][1] + mesh.positions[e.b][1] + fa[1] + fb[1],
        mesh.positions[e.a][2] + mesh.positions[e.b][2] + fa[2] + fb[2]],
       0.25,
     );
+    return vadd(vscale(smooth, 1 - edgeCrease), vscale(midpoint, edgeCrease));
   });
   const edgeIdx = new Map<string, number>();
   edges.forEach((e, i) => edgeIdx.set(ekey(e.a, e.b), i));
@@ -931,7 +984,8 @@ function subdivideOnce(mesh: Mesh, catmullClark: boolean): Mesh {
       }
       if (c === 0) return [...p] as Vec3;
       const mid = vscale(acc, 1 / c);
-      return vscale(vadd(p, mid), 0.5);
+      const smooth = vscale(vadd(p, mid), 0.5);
+      return vadd(vscale(smooth, 1 - edgeCrease), vscale(p, edgeCrease));
     }
     // F = avg face points, R = avg midpoints of incident edges, S = original
     let F: Vec3 = [0, 0, 0];
@@ -941,10 +995,12 @@ function subdivideOnce(mesh: Mesh, catmullClark: boolean): Mesh {
     for (const ei of vertEdges[vi]) R = vadd(R, vscale(vadd(mesh.positions[edges[ei].a], mesh.positions[edges[ei].b]), 0.5));
     R = vscale(R, 1 / vertEdges[vi].length);
     // (F + 2R + (n-3)S) / n
-    return vscale(
+    const smooth = vscale(
       [F[0] + 2 * R[0] + (n - 3) * p[0], F[1] + 2 * R[1] + (n - 3) * p[1], F[2] + 2 * R[2] + (n - 3) * p[2]],
       1 / n,
     );
+    const sharp = vertEdges[vi].length >= 3 ? p : smooth;
+    return vadd(vscale(smooth, 1 - edgeCrease), vscale(sharp, edgeCrease));
   });
 
   out.positions = [...newVerts];

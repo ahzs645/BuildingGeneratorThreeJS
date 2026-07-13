@@ -1,0 +1,8 @@
+{
+  "object": "PIXEL CRAYON.004",
+  "root": "soft pixel marker",
+  "status": "near-exact",
+  "blender": { "verts": 8455, "faces": 5664 },
+  "gnvm": { "verts": 8450, "faces": 5664 },
+  "validation": "Authored face topology is exact and bounds differ by 0.0001 units. Across six control cases, maximum vertex delta is 1.93%."
+}

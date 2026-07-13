@@ -276,12 +276,18 @@ for obj in bpy.data.objects:
         def bezier(a, b, c, d, t):
             u = 1.0 - t
             return [u*u*u*a[i] + 3*u*u*t*b[i] + 3*u*t*t*c[i] + t*t*t*d[i] for i in range(3)]
+        def bezier_tangent(a, b, c, d, t):
+            u = 1.0 - t
+            value = [3*u*u*(b[i]-a[i]) + 6*u*t*(c[i]-b[i]) + 3*t*t*(d[i]-c[i]) for i in range(3)]
+            length = sum(component * component for component in value) ** 0.5
+            return [component / length for component in value] if length > 1e-12 else [0.0, 0.0, 1.0]
         splines = []
         for spline in obj.data.splines:
             cyclic = bool(spline.use_cyclic_u)
             points = []
             tilts = []
             radii = []
+            tangents = []
             if spline.type == "BEZIER":
                 bp = list(spline.bezier_points)
                 segments = len(bp) if cyclic else max(0, len(bp) - 1)
@@ -294,16 +300,21 @@ for obj in bpy.data.objects:
                         points.append([round(v, 6) for v in bezier(p0.co, p0.handle_right, p1.handle_left, p1.co, factor)])
                         tilts.append(round((1.0 - factor) * p0.tilt + factor * p1.tilt, 6))
                         radii.append(round((1.0 - factor) * p0.radius + factor * p1.radius, 6))
+                        tangents.append([round(v, 9) for v in bezier_tangent(p0.co, p0.handle_right, p1.handle_left, p1.co, factor)])
                 if not cyclic and bp:
                     points.append([round(v, 6) for v in bp[-1].co])
                     tilts.append(round(bp[-1].tilt, 6))
                     radii.append(round(bp[-1].radius, 6))
+                    if len(bp) > 1:
+                        tangents.append([round(v, 9) for v in bezier_tangent(bp[-2].co, bp[-2].handle_right, bp[-1].handle_left, bp[-1].co, 1.0)])
+                    else:
+                        tangents.append([0.0, 0.0, 1.0])
             else:
                 points = [[round(p.co.x, 6), round(p.co.y, 6), round(p.co.z, 6)] for p in spline.points]
                 tilts = [round(p.tilt, 6) for p in spline.points]
                 radii = [round(p.radius, 6) for p in spline.points]
             if points:
-                splines.append({"points": points, "cyclic": cyclic, "tilts": tilts, "radii": radii})
+                splines.append({"points": points, "cyclic": cyclic, "tilts": tilts, "radii": radii, "tangents": tangents})
         o["curves"] = splines
     if obj.name in dependency_object_names and obj.type in ("MESH", "CURVE"):
         evaluated = obj.evaluated_get(depsgraph)

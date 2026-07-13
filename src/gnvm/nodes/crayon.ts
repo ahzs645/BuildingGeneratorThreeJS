@@ -408,13 +408,28 @@ function rayTriangle(origin: Vec3, direction: Vec3, maxDistance: number, tri: Tr
   const inv = 1 / det;
   const s = vsub(origin, tri.a);
   const u = inv * vdot(s, h);
-  if (u < 0 || u > 1) return null;
+  const barycentricEpsilon = 1e-9;
+  if (u < -barycentricEpsilon || u > 1 + barycentricEpsilon) return null;
   const q = vcross(s, e1);
   const v = inv * vdot(direction, q);
-  if (v < 0 || u + v > 1) return null;
+  if (v < -barycentricEpsilon || u + v > 1 + barycentricEpsilon) return null;
   const distance = inv * vdot(e2, q);
   if (distance < 0 || distance > maxDistance) return null;
   return { hit: 1, position: vadd(origin, vscale(direction, distance)), normal: tri.normal, distance };
+}
+
+function pointSegmentDistance2D(point: Vec3, a: Vec3, b: Vec3): number {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  const denominator = dx * dx + dy * dy;
+  const t = denominator > 1e-20 ? Math.max(0, Math.min(1, ((point[0] - a[0]) * dx + (point[1] - a[1]) * dy) / denominator)) : 0;
+  return Math.hypot(point[0] - (a[0] + dx * t), point[1] - (a[1] + dy * t));
+}
+
+function projectedTriangleDistance(point: Vec3, triangle: Triangle): number {
+  const sign = (a: Vec3, b: Vec3, c: Vec3) => (a[0] - c[0]) * (b[1] - c[1]) - (b[0] - c[0]) * (a[1] - c[1]);
+  const d1 = sign(point, triangle.a, triangle.b), d2 = sign(point, triangle.b, triangle.c), d3 = sign(point, triangle.c, triangle.a);
+  if (!((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0))) return 0;
+  return Math.min(pointSegmentDistance2D(point, triangle.a, triangle.b), pointSegmentDistance2D(point, triangle.b, triangle.c), pointSegmentDistance2D(point, triangle.c, triangle.a));
 }
 
 reg("GeometryNodeRaycast", (api) => {
@@ -441,6 +456,20 @@ reg("GeometryNodeRaycast", (api) => {
       return rayBvh(origin, dirs[i] ?? [0, 0, 1], lengths[i] ?? 100, bvh)
         ?? { hit: 0, position: origin, normal: [0, 0, 0] as Vec3, distance: 0 };
     });
+    if (FIELD_PROBE.node === api.node.name) {
+      const requested = FIELD_PROBE.socket ?? "Is Hit";
+      const values = requested === "Hit Position" ? result.map((hit) => hit.position)
+        : requested === "Hit Normal" ? result.map((hit) => hit.normal)
+        : requested === "Hit Distance" ? result.map((hit) => hit.distance)
+        : result.map((hit) => hit.hit);
+      const targets = FIELD_PROBE.socket === "Miss Distance" ? origins.map((origin, i) => {
+        if (result[i].hit) return [0, 0, 0] as Vec3;
+        let distance = Infinity;
+        for (const triangle of triangles) distance = Math.min(distance, projectedTriangleDistance(origin, triangle));
+        return [distance, 0, 0] as Vec3;
+      }) : undefined;
+      FIELD_PROBE.batches.push({ domain: ctx.domain, positions: origins, values, targets });
+    }
     cache.set(ctx, result);
     return result;
   };

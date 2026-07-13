@@ -30,6 +30,12 @@ export const FIELD_PROBE: {
   batches: { domain: Domain; positions: Vec3[]; values: import("./core").Elem[]; targets?: Vec3[] }[];
 } = { node: null, socket: null, batches: [] };
 
+export const GEOMETRY_PROBE: { node: string | null; socket: string | null; geometry: Geometry | null } = {
+  node: null,
+  socket: null,
+  geometry: null,
+};
+
 function bboxOf(g: Geometry): string {
   const realized = g.instances.length ? realizeInstances(g) : g;
   const pts: Vec3[] = [...(realized.mesh?.positions ?? []), ...realized.curves.flatMap((s) => s.points)];
@@ -462,6 +468,10 @@ class Invocation {
     if (node) outs = this.dispatch(node);
     this.visiting.delete(name);
     this.memo.set(name, outs);
+    if (node && GEOMETRY_PROBE.node === node.name) {
+      const value = GEOMETRY_PROBE.socket ? outs[GEOMETRY_PROBE.socket] : Object.values(outs).find((output) => output instanceof Geometry);
+      if (value instanceof Geometry) GEOMETRY_PROBE.geometry = value.clone();
+    }
     if (TRACE.on && node) {
       for (const k in outs) {
         const v = outs[k];
@@ -473,6 +483,7 @@ class Invocation {
   }
 
   private dispatch(node: RawNode): Record<string, SockVal> {
+    if (node.ui?.mute) return this.mutedPassthrough(node);
     switch (node.type) {
       case "NodeReroute":
         return { [node.outputs[0]?.identifier ?? "Output"]: this.pull(node, node.inputs[0]?.identifier ?? "Input") };
@@ -511,6 +522,18 @@ class Invocation {
       return this.fallback(node);
     }
     return handler(this.api(node));
+  }
+
+  private mutedPassthrough(node: RawNode): Record<string, SockVal> {
+    const out: Record<string, SockVal> = {};
+    for (const output of node.outputs) {
+      const input = node.inputs.find((socket) => socket.identifier === output.identifier)
+        ?? node.inputs.find((socket) => socket.name === output.name && (!output.type || socket.type === output.type))
+        ?? node.inputs.find((socket) => output.type && socket.type === output.type && socket.identifier !== "__extend__")
+        ?? node.inputs.find((socket) => socket.identifier !== "__extend__");
+      out[output.identifier] = input ? this.pull(node, input.identifier) : Field.of(0);
+    }
+    return out;
   }
 
   // Run a repeat zone to completion. State items are keyed by socket identifier

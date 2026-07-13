@@ -83,6 +83,8 @@ function baseGeometryOf(dump: Dump, objectName: string): Geometry | null {
     if (tilts.some((value: number) => value !== 0)) g.curveAttributes.set("tilt", { domain: "POINT", data: tilts });
     const radii = obj.curves.flatMap((s: any) => s.radii ?? s.points.map(() => 1));
     if (radii.some((value: number) => value !== 1)) g.curveAttributes.set("radius", { domain: "POINT", data: radii });
+    const tangents = obj.curves.flatMap((s: any) => s.tangents ?? []);
+    if (tangents.length === g.curvePointCount()) g.curveAttributes.set("__curve_tangent", { domain: "POINT", data: tangents });
   }
   return g.mesh || g.curves.length ? g : null;
 }

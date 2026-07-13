@@ -103,10 +103,11 @@ function rotateAboutAxis(v: Vec3, axis: Vec3, ang: number): Vec3 {
 }
 
 // Rotation-minimizing frames along a spline (double reflection method).
-export function splineFrames(pts: Vec3[], cyclic: boolean): { tangent: Vec3; normal: Vec3; binormal: Vec3 }[] {
+export function splineFrames(pts: Vec3[], cyclic: boolean, tangentOverrides?: Vec3[]): { tangent: Vec3; normal: Vec3; binormal: Vec3 }[] {
   const n = pts.length;
   const tangents: Vec3[] = [];
   for (let i = 0; i < n; i++) {
+    if (tangentOverrides?.[i] && vlen(tangentOverrides[i]) > 1e-9) { tangents.push(vnorm(tangentOverrides[i])); continue; }
     const prev = pts[(i - 1 + n) % n];
     const next = pts[(i + 1) % n];
     let t: Vec3;
@@ -117,8 +118,15 @@ export function splineFrames(pts: Vec3[], cyclic: boolean): { tangent: Vec3; nor
     tangents.push(vlen(normalized) < 1e-9 ? [0, 0, 1] : normalized);
   }
   // initial normal: any vector perpendicular to tangent[0]
-  let ref: Vec3 = Math.abs(tangents[0][0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
-  let normal = vnorm(vsub(ref, vscale(tangents[0], vdot(ref, tangents[0]))));
+  let normal: Vec3;
+  if (tangentOverrides?.length) {
+    normal = vcross(tangents[0], [0, 0, 1]);
+    if (vlen(normal) < 1e-9) normal = [1, 0, 0];
+    normal = vnorm(normal);
+  } else {
+    const ref: Vec3 = Math.abs(tangents[0][0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+    normal = vnorm(vsub(ref, vscale(tangents[0], vdot(ref, tangents[0]))));
+  }
   const frames = [] as { tangent: Vec3; normal: Vec3; binormal: Vec3 }[];
   for (let i = 0; i < n; i++) {
     if (i > 0) {
@@ -155,12 +163,12 @@ export function splineFrames(pts: Vec3[], cyclic: boolean): { tangent: Vec3; nor
 
 // Sweep a profile spline along a rail spline -> mesh. `scales` (optional) is a
 // per-rail-point profile scale (Blender's Curve to Mesh "Scale" / curve radius).
-export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?: number[]): Mesh {
+export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?: number[], tangentOverrides?: Vec3[]): Mesh {
   const mesh = new Mesh();
   const rp = rail.points;
   const pp = profile.points;
   if (rp.length < 2 || pp.length < 2) return mesh;
-  const frames = splineFrames(rp, rail.cyclic);
+  const frames = splineFrames(rp, rail.cyclic, tangentOverrides);
   const nr = rp.length;
   const np = pp.length;
   // place profile at each rail point (profile local: x->binormal, y->normal)

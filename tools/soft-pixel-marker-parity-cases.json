@@ -1,0 +1,8 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "line weight 15", "overrides": { "line weight": 15 } },
+  { "name": "pixel size 0.2", "overrides": { "pixel size": 0.2 } },
+  { "name": "subdivision level 1", "overrides": { "subdiv level": 1 } },
+  { "name": "edge crease 0", "overrides": { "Edge Crease": 0 } },
+  { "name": "height 10", "overrides": { "height": 10 } }
+]

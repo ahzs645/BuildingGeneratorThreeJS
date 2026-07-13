@@ -1,0 +1,155 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/soft-pixel-marker/dump.json",
+  "object": "PIXEL CRAYON.004",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 8450,
+      "faces": 5664,
+      "bbox": {
+        "min": [
+          -75.6891,
+          -81.6578,
+          11.2569
+        ],
+        "max": [
+          44.0727,
+          38.2757,
+          33.2569
+        ]
+      },
+      "elapsed_ms": 742,
+      "export": "00-authored-default.json"
+    },
+    {
+      "combo": {
+        "name": "line weight 15",
+        "overrides": {
+          "line weight": 15
+        }
+      },
+      "status": "ok",
+      "verts": 7954,
+      "faces": 4992,
+      "bbox": {
+        "min": [
+          -75.6891,
+          -73.6639,
+          11.2569
+        ],
+        "max": [
+          44.0727,
+          38.2735,
+          33.2569
+        ]
+      },
+      "elapsed_ms": 564,
+      "export": "01-line-weight-15.json"
+    },
+    {
+      "combo": {
+        "name": "pixel size 0.2",
+        "overrides": {
+          "pixel size": 0.2
+        }
+      },
+      "status": "ok",
+      "verts": 15146,
+      "faces": 12192,
+      "bbox": {
+        "min": [
+          -78.6316,
+          -80.2802,
+          11.2569
+        ],
+        "max": [
+          47.4354,
+          41.209,
+          33.2569
+        ]
+      },
+      "elapsed_ms": 2899,
+      "export": "02-pixel-size-0-2.json"
+    },
+    {
+      "combo": {
+        "name": "subdivision level 1",
+        "overrides": {
+          "subdiv level": 1
+        }
+      },
+      "status": "ok",
+      "verts": 2380,
+      "faces": 1416,
+      "bbox": {
+        "min": [
+          -75.6914,
+          -81.6623,
+          11.2569
+        ],
+        "max": [
+          44.075,
+          38.278,
+          33.2569
+        ]
+      },
+      "elapsed_ms": 80,
+      "export": "03-subdivision-level-1.json"
+    },
+    {
+      "combo": {
+        "name": "edge crease 0",
+        "overrides": {
+          "Edge Crease": 0
+        }
+      },
+      "status": "ok",
+      "verts": 6238,
+      "faces": 5664,
+      "bbox": {
+        "min": [
+          -75.4419,
+          -81.1764,
+          11.2569
+        ],
+        "max": [
+          43.8255,
+          38.0282,
+          33.2569
+        ]
+      },
+      "elapsed_ms": 599,
+      "export": "04-edge-crease-0.json"
+    },
+    {
+      "combo": {
+        "name": "height 10",
+        "overrides": {
+          "height": 10
+        }
+      },
+      "status": "ok",
+      "verts": 7488,
+      "faces": 5664,
+      "bbox": {
+        "min": [
+          -75.6891,
+          -81.6578,
+          11.2569
+        ],
+        "max": [
+          44.0727,
+          38.2757,
+          21.2569
+        ]
+      },
+      "elapsed_ms": 699,
+      "export": "05-height-10.json"
+    }
+  ]
+}

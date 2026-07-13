@@ -108,6 +108,71 @@ reg("GeometryNodeMenuSwitch", (api) => {
   return { Output: Field.of(0) };
 });
 
+reg("GeometryNodeIndexSwitch", (api) => {
+  const items = api.node.inputs
+    .filter((socket) => itemIndex(socket.identifier) >= 0)
+    .sort((a, b) => itemIndex(a.identifier) - itemIndex(b.identifier));
+  const index = Math.max(0, Math.min(items.length - 1, Math.round(api.num("Index"))));
+  const picked = api.input(items[index]?.identifier ?? "Item_0");
+  if (api.prop<string>("data_type", "") === "GEOMETRY") return { Output: picked instanceof Geometry ? picked : new Geometry() };
+  return { Output: picked instanceof Field ? picked : Field.of(0) };
+});
+
+function smoothNoiseFade(t: number): number { return t * t * t * (t * (t * 6 - 15) + 10); }
+function noiseHash(x: number, y: number, z: number): number {
+  const value = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453123;
+  return value - Math.floor(value);
+}
+function valueNoise3(p: Vec3): number {
+  const ix = Math.floor(p[0]), iy = Math.floor(p[1]), iz = Math.floor(p[2]);
+  const fx = smoothNoiseFade(p[0] - ix), fy = smoothNoiseFade(p[1] - iy), fz = smoothNoiseFade(p[2] - iz);
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  const plane = (z: number) => lerp(
+    lerp(noiseHash(ix, iy, z), noiseHash(ix + 1, iy, z), fx),
+    lerp(noiseHash(ix, iy + 1, z), noiseHash(ix + 1, iy + 1, z), fx),
+    fy,
+  );
+  return lerp(plane(iz), plane(iz + 1), fz);
+}
+
+reg("ShaderNodeTexNoise", (api) => {
+  const linkedVector = api.node.inputs.find((socket) => socket.identifier === "Vector")?.linked ?? false;
+  const vector = api.field("Vector");
+  const scale = api.field("Scale");
+  const detail = api.field("Detail");
+  const roughness = api.field("Roughness");
+  const lacunarity = api.field("Lacunarity");
+  const distortion = api.field("Distortion");
+  const factor = Field.make((ctx) => {
+    const vectors = vector.array(ctx), scales = scale.array(ctx), details = detail.array(ctx);
+    const roughnesses = roughness.array(ctx), lacunarities = lacunarity.array(ctx), distortions = distortion.array(ctx);
+    return Array.from({ length: ctx.size }, (_, i) => {
+      let p = linkedVector ? asVec3(vectors[i] ?? 0) : ctx.position?.(i) ?? [0, 0, 0];
+      const frequencyScale = asNum(scales[i] ?? 5);
+      p = vscale(p, frequencyScale);
+      const warp = asNum(distortions[i] ?? 0);
+      if (Math.abs(warp) > EPS) {
+        const d = valueNoise3(vadd(p, [13.5, 7.1, 19.7]));
+        p = vadd(p, [warp * (d - .5), warp * (valueNoise3(vadd(p, [3.7, 29.1, 5.3])) - .5), warp * (valueNoise3(vadd(p, [41.3, 2.9, 11.7])) - .5)]);
+      }
+      const octaves = Math.max(1, Math.min(16, Math.ceil(asNum(details[i] ?? 2))));
+      const fractional = Math.max(0, Math.min(1, asNum(details[i] ?? 2) - Math.floor(asNum(details[i] ?? 2))));
+      const persistence = Math.max(0, Math.min(1, asNum(roughnesses[i] ?? .5)));
+      const lac = Math.max(1e-4, asNum(lacunarities[i] ?? 2));
+      let amplitude = 1, total = 0, weight = 0;
+      for (let octave = 0; octave < octaves; octave++) {
+        const blend = octave === octaves - 1 && fractional > 0 ? fractional : 1;
+        total += valueNoise3(p) * amplitude * blend;
+        weight += amplitude * blend;
+        p = vscale(p, lac);
+        amplitude *= persistence;
+      }
+      return weight > EPS ? total / weight : 0;
+    });
+  });
+  return { Fac: factor, Factor: factor, Color: Field.make((ctx) => factor.array(ctx).map((value) => [asNum(value), asNum(value), asNum(value)])) };
+});
+
 function rotX(p: Vec3, a: number): Vec3 {
   const c = Math.cos(a), s = Math.sin(a);
   return [p[0], p[1] * c - p[2] * s, p[1] * s + p[2] * c];

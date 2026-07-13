@@ -3,6 +3,7 @@
 // wall thickening (edge neighbors), and bin selection (islands).
 import { Field, asNum } from "../core";
 import { reg } from "../registry";
+import { FIELD_PROBE } from "../evaluator";
 
 // Face Neighbors: Vertex Count = verts in the face; Face Count = adjacent faces.
 // The subdivision uses Vertex Count==4 to find quad faces to split.
@@ -16,10 +17,16 @@ reg("GeometryNodeInputMeshEdgeNeighbors", () => ({
   "Face Count": Field.perElem((i, ctx) => (ctx.edgeFaceCount ? ctx.edgeFaceCount(i) : 0)).tagged("EDGE"),
 }));
 
-reg("GeometryNodeInputMeshEdgeAngle", () => ({
-  "Unsigned Angle": Field.perElem((i, ctx) => ctx.edgeAngle?.(i, false) ?? 0).tagged("EDGE"),
-  "Signed Angle": Field.perElem((i, ctx) => ctx.edgeAngle?.(i, true) ?? 0).tagged("EDGE"),
-}));
+reg("GeometryNodeInputMeshEdgeAngle", (api) => {
+  const angle = (signed: boolean, socket: string) => Field.make((ctx) => {
+    const values = Array.from({ length: ctx.size }, (_, i) => ctx.edgeAngle?.(i, signed) ?? 0);
+    if (FIELD_PROBE.node === api.node.name && (FIELD_PROBE.socket === socket || (!signed && FIELD_PROBE.socket === "Angle"))) {
+      FIELD_PROBE.batches.push({ domain: ctx.domain, positions: Array.from({ length: ctx.size }, (_, i) => ctx.position?.(i) ?? [0, 0, 0]), values });
+    }
+    return values;
+  }).tagged("EDGE");
+  return { "Unsigned Angle": angle(false, "Unsigned Angle"), "Signed Angle": angle(true, "Signed Angle") };
+});
 
 // Edge Vertices: endpoint indices + positions of each edge.
 reg("GeometryNodeInputMeshEdgeVertices", () => ({

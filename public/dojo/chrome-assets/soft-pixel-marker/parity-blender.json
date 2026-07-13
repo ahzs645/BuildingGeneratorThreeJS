@@ -1,0 +1,217 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "PIXEL CRAYON.004",
+  "modifier": "CHROME CRAYON 3D",
+  "node_group": "soft pixel marker",
+  "saved_values": {
+    "Show Pt Count": false,
+    "crv preview": false,
+    "line weight": 22.796825408935547,
+    "Resolution": 120,
+    "Smooth": 85,
+    "Soften": 0,
+    "3D material": "chrome.002",
+    "FLATTEN": true,
+    "Flat Color": [
+      0.0,
+      0.08843331038951874,
+      2.0043182373046875,
+      1.0
+    ],
+    "pixel size": 0.12744140625,
+    "subdiv level": 2,
+    "Edge Crease": 0.31476595997810364,
+    "Value": [
+      0.7404510974884033,
+      0.8003553152084351,
+      0.0,
+      1.0
+    ],
+    "height": 22.0,
+    "flat/chrome/custom": 1,
+    "custommaterial": null
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 8455,
+      "faces": 5664,
+      "bbox": {
+        "min": [
+          -75.6891,
+          -81.6578,
+          11.2569
+        ],
+        "max": [
+          44.0727,
+          38.2758,
+          33.2569
+        ]
+      },
+      "elapsed_ms": 16.4,
+      "export": "00-authored-default.glb"
+    },
+    {
+      "combo": {
+        "name": "line weight 15",
+        "overrides": {
+          "line weight": 15
+        }
+      },
+      "status": "ok",
+      "verts": 7976,
+      "faces": 4992,
+      "bbox": {
+        "min": [
+          -75.6891,
+          -73.664,
+          11.2569
+        ],
+        "max": [
+          44.0727,
+          38.2736,
+          33.2569
+        ]
+      },
+      "elapsed_ms": 15.2,
+      "export": "01-line-weight-15.glb"
+    },
+    {
+      "combo": {
+        "name": "pixel size 0.2",
+        "overrides": {
+          "pixel size": 0.2
+        }
+      },
+      "status": "ok",
+      "verts": 15020,
+      "faces": 12160,
+      "bbox": {
+        "min": [
+          -78.6316,
+          -80.2802,
+          11.2569
+        ],
+        "max": [
+          47.4354,
+          41.209,
+          33.2569
+        ]
+      },
+      "elapsed_ms": 23.3,
+      "export": "02-pixel-size-0-2.glb"
+    },
+    {
+      "combo": {
+        "name": "subdivision level 1",
+        "overrides": {
+          "subdiv level": 1
+        }
+      },
+      "status": "ok",
+      "verts": 2335,
+      "faces": 1416,
+      "bbox": {
+        "min": [
+          -75.6914,
+          -81.6623,
+          11.2569
+        ],
+        "max": [
+          44.075,
+          38.278,
+          33.2569
+        ]
+      },
+      "elapsed_ms": 10.8,
+      "export": "03-subdivision-level-1.glb"
+    },
+    {
+      "combo": {
+        "name": "edge crease 0",
+        "overrides": {
+          "Edge Crease": 0
+        }
+      },
+      "status": "ok",
+      "verts": 6157,
+      "faces": 5664,
+      "bbox": {
+        "min": [
+          -75.4419,
+          -81.1764,
+          11.2569
+        ],
+        "max": [
+          43.8255,
+          38.0282,
+          33.2569
+        ]
+      },
+      "elapsed_ms": 16.2,
+      "export": "04-edge-crease-0.glb"
+    },
+    {
+      "combo": {
+        "name": "height 10",
+        "overrides": {
+          "height": 10
+        }
+      },
+      "status": "ok",
+      "verts": 7413,
+      "faces": 5664,
+      "bbox": {
+        "min": [
+          -75.6891,
+          -81.6578,
+          11.2569
+        ],
+        "max": [
+          44.0727,
+          38.2758,
+          21.2569
+        ]
+      },
+      "elapsed_ms": 15.4,
+      "export": "05-height-10.glb"
+    }
+  ],
+  "export_dir": "/tmp/soft-marker-blender",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "chrome.002": {
+        "faces": 5664,
+        "verts": 8455
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 5664,
+      "verts": 8455
+    }
+  }
+}

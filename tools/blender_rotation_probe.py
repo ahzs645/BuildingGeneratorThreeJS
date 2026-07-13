@@ -12,9 +12,13 @@ import bpy
 
 def main():
     args = sys.argv[sys.argv.index("--") + 1 :]
-    if len(args) != 4:
-        raise SystemExit("usage: OBJECT OUT.json POINTS_NODE:SOCKET ROTATION_NODE:SOCKET")
-    object_name, out_path, points_spec, rotation_spec = args
+    if len(args) not in (4, 5, 6):
+        raise SystemExit("usage: OBJECT OUT.json GEOMETRY_NODE:SOCKET FIELD_NODE:SOCKET [DIRECT] [DOMAIN]")
+    object_name, out_path, points_spec, rotation_spec = args[:4]
+    direct_geometry = len(args) == 5 and args[4].upper() == "DIRECT"
+    if len(args) == 6:
+        direct_geometry = args[4].upper() == "DIRECT"
+    probe_domain = args[5].upper() if len(args) == 6 else "POINT"
     obj = bpy.data.objects[object_name]
     mod = next(m for m in obj.modifiers if m.type == "NODES" and m.node_group)
     tree = mod.node_group
@@ -29,7 +33,7 @@ def main():
     store = tree.nodes.new("GeometryNodeStoreNamedAttribute")
     to_vertices = tree.nodes.new("GeometryNodePointsToVertices")
     store.data_type = "FLOAT_VECTOR"
-    store.domain = "POINT"
+    store.domain = probe_domain
     store.inputs["Name"].default_value = "__rotation_probe"
     tree.links.new(tree.nodes[points_node].outputs[points_socket], store.inputs["Geometry"])
     if to_euler is not None:
@@ -40,7 +44,7 @@ def main():
     tree.links.new(store.outputs["Geometry"], to_vertices.inputs["Points"])
     for link in list(geometry_output.links):
         tree.links.remove(link)
-    tree.links.new(to_vertices.outputs["Mesh"], geometry_output)
+    tree.links.new(store.outputs["Geometry"] if direct_geometry else to_vertices.outputs["Mesh"], geometry_output)
 
     obj.update_tag()
     bpy.context.view_layer.update()
@@ -52,7 +56,7 @@ def main():
         attribute = mesh.attributes.get("__rotation_probe")
         values = [list(item.vector) for item in attribute.data] if attribute else []
         payload = {
-            "positions": [list(vertex.co) for vertex in mesh.vertices],
+            "positions": [list(polygon.center) for polygon in mesh.polygons] if probe_domain == "FACE" else [list(vertex.co) for vertex in mesh.vertices],
             "rotations": values,
         }
     finally:
