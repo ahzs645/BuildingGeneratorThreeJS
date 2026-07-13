@@ -1,0 +1,164 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Pill Hole_cylindrical",
+  "modifier": "GeometryNodes",
+  "node_group": "pill hole cylindrical",
+  "saved_values": {
+    "top diameter": 8.0,
+    "bottom diameter": 3.0,
+    "Vertices": 66
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 200,
+      "faces": 176,
+      "bbox": {
+        "min": [
+          -4.0,
+          -11.9906,
+          -1.0
+        ],
+        "max": [
+          4.0,
+          11.4854,
+          1.0
+        ]
+      },
+      "elapsed_ms": 1.1
+    },
+    {
+      "combo": {
+        "name": "top diameter 6",
+        "overrides": {
+          "top diameter": 6
+        }
+      },
+      "status": "ok",
+      "verts": 200,
+      "faces": 180,
+      "bbox": {
+        "min": [
+          -3.0,
+          -10.9918,
+          -1.0
+        ],
+        "max": [
+          3.0,
+          10.4865,
+          1.0
+        ]
+      },
+      "elapsed_ms": 0.9
+    },
+    {
+      "combo": {
+        "name": "bottom diameter 5",
+        "overrides": {
+          "bottom diameter": 5
+        }
+      },
+      "status": "ok",
+      "verts": 200,
+      "faces": 176,
+      "bbox": {
+        "min": [
+          -4.0,
+          -11.9906,
+          -1.0
+        ],
+        "max": [
+          4.0,
+          11.4854,
+          1.0
+        ]
+      },
+      "elapsed_ms": 0.9
+    },
+    {
+      "combo": {
+        "name": "vertices 32",
+        "overrides": {
+          "Vertices": 32
+        }
+      },
+      "status": "ok",
+      "verts": 98,
+      "faces": 72,
+      "bbox": {
+        "min": [
+          -4.0,
+          -11.9952,
+          -1.0
+        ],
+        "max": [
+          4.0,
+          11.4899,
+          1.0
+        ]
+      },
+      "elapsed_ms": 0.8
+    },
+    {
+      "combo": {
+        "name": "vertices 96",
+        "overrides": {
+          "Vertices": 96
+        }
+      },
+      "status": "ok",
+      "verts": 290,
+      "faces": 202,
+      "bbox": {
+        "min": [
+          -4.0,
+          -11.9952,
+          -1.0
+        ],
+        "max": [
+          4.0,
+          11.4899,
+          1.0
+        ]
+      },
+      "elapsed_ms": 0.9
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "Filament PLA .02 mm layer height": {
+        "faces": 176,
+        "verts": 200
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 176,
+      "verts": 200
+    }
+  }
+}

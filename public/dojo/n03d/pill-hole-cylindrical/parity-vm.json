@@ -1,0 +1,125 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/pill-hole-cylindrical/dump.json",
+  "object": "Pill Hole_cylindrical",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 137,
+      "faces": 270,
+      "bbox": {
+        "min": [
+          -4,
+          -11.9906,
+          -1
+        ],
+        "max": [
+          4,
+          11.4854,
+          1
+        ]
+      },
+      "elapsed_ms": 32
+    },
+    {
+      "combo": {
+        "name": "top diameter 6",
+        "overrides": {
+          "top diameter": 6
+        }
+      },
+      "status": "ok",
+      "verts": 137,
+      "faces": 270,
+      "bbox": {
+        "min": [
+          -3,
+          -10.9918,
+          -1
+        ],
+        "max": [
+          3,
+          10.4865,
+          1
+        ]
+      },
+      "elapsed_ms": 3
+    },
+    {
+      "combo": {
+        "name": "bottom diameter 5",
+        "overrides": {
+          "bottom diameter": 5
+        }
+      },
+      "status": "ok",
+      "verts": 137,
+      "faces": 270,
+      "bbox": {
+        "min": [
+          -4,
+          -11.9906,
+          -1
+        ],
+        "max": [
+          4,
+          11.4854,
+          1
+        ]
+      },
+      "elapsed_ms": 2
+    },
+    {
+      "combo": {
+        "name": "vertices 32",
+        "overrides": {
+          "Vertices": 32
+        }
+      },
+      "status": "ok",
+      "verts": 68,
+      "faces": 132,
+      "bbox": {
+        "min": [
+          -4,
+          -11.9952,
+          -1
+        ],
+        "max": [
+          4,
+          11.4899,
+          1
+        ]
+      },
+      "elapsed_ms": 1
+    },
+    {
+      "combo": {
+        "name": "vertices 96",
+        "overrides": {
+          "Vertices": 96
+        }
+      },
+      "status": "ok",
+      "verts": 196,
+      "faces": 388,
+      "bbox": {
+        "min": [
+          -4,
+          -11.9952,
+          -1
+        ],
+        "max": [
+          4,
+          11.4899,
+          1
+        ]
+      },
+      "elapsed_ms": 3
+    }
+  ]
+}

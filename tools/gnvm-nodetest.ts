@@ -546,6 +546,13 @@ function meshSignedAreaXY(m: Mesh): number {
   const { ensureManifold } = await import("../src/gnvm/boolean");
   await ensureManifold();
 
+  const hullSource = box([-1, -1, -1], [1, 1, 1]);
+  hullSource.mesh!.positions.push(...box([3, -1, -1], [5, 1, 1]).mesh!.positions);
+  const hull = runNode("GeometryNodeConvexHull", { Geometry: hullSource })["Convex Hull"] as Geometry;
+  const hullX = hull.mesh?.positions.map((point) => point[0]) ?? [];
+  check("Convex Hull encloses disconnected point sets", (hull.mesh?.faces.length ?? 0) > 0 && Math.min(...hullX) === -1 && Math.max(...hullX) === 5,
+    `verts=${hull.mesh?.positions.length} faces=${hull.mesh?.faces.length}`);
+
   // With a non-AABB cutter, FLOAT must retain its topology-preserving fallback
   // while EXACT is allowed to use Manifold's solid CSG.
   const a = box([-1, -1, -1], [1, 1, 1]);

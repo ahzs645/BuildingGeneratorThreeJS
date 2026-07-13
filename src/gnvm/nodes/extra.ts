@@ -18,14 +18,27 @@ import {
   vlen,
   vnorm,
 } from "../core";
-import { Geometry, Mesh, mergeMeshInto, rotateEulerXYZ, Spline, buildTopology } from "../geometry";
+import { Geometry, Mesh, mergeMeshInto, realizeInstances, rotateEulerXYZ, Spline, buildTopology } from "../geometry";
 import { fillCurves, meshEdgesToChains, splineLength, splineSegments, splineFrames } from "../curves";
 import { makeFieldCtx } from "../evaluator";
 import { reg, EvalAPI } from "../registry";
-import { isManifoldReady, manifoldBoolean, manifoldBooleanBox } from "../boolean";
+import { isManifoldReady, manifoldBoolean, manifoldBooleanBox, manifoldHull } from "../boolean";
 
 const DOMAINS = new Set<Domain>(["POINT", "EDGE", "FACE", "CORNER", "CURVE", "INSTANCE"]);
 const EPS = 1e-9;
+
+reg("GeometryNodeConvexHull", (api) => {
+  const source = realizeInstances(api.geo("Geometry"));
+  const points: Vec3[] = [
+    ...(source.mesh?.positions ?? []),
+    ...source.curves.flatMap((spline) => spline.points),
+  ];
+  const mesh = manifoldHull(points);
+  if (!mesh) return { "Convex Hull": new Geometry() };
+  const geometry = new Geometry();
+  geometry.mesh = mesh;
+  return { "Convex Hull": geometry };
+});
 
 // Blender 5.1 migrated legacy Separate/Combine RGB nodes to the Function
 // variants during file versioning. The bin's recursive subdivision carries

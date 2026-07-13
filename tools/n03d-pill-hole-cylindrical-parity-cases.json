@@ -1,0 +1,7 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "top diameter 6", "overrides": { "top diameter": 6 } },
+  { "name": "bottom diameter 5", "overrides": { "bottom diameter": 5 } },
+  { "name": "vertices 32", "overrides": { "Vertices": 32 } },
+  { "name": "vertices 96", "overrides": { "Vertices": 96 } }
+]

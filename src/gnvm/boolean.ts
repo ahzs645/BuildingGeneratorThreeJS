@@ -15,6 +15,7 @@ type ManifoldMod = {
     union: (a: any, b: any) => any;
     difference: (a: any, b: any) => any;
     intersection: (a: any, b: any) => any;
+    hull: (points: readonly Vec3[]) => any;
   };
   Mesh: new (opts: {
     numProp?: number;
@@ -226,6 +227,23 @@ export function manifoldBooleanBox(a: Mesh, box: { min: Vec3; max: Vec3 }, op: B
   } catch {
     ma.delete?.();
     mb.delete?.();
+    return null;
+  }
+}
+
+/** Convex hull of an arbitrary point set through the already-loaded WASM. */
+export function manifoldHull(points: Vec3[]): Mesh | null {
+  if (!mod || points.length < 4) return null;
+  try {
+    const result = mod.Manifold.hull(points);
+    if (typeof result.isEmpty === "function" && result.isEmpty()) {
+      result.delete?.();
+      return null;
+    }
+    const mesh = manifoldGLToMesh(result.getMesh());
+    result.delete?.();
+    return mesh.faces.length ? mesh : null;
+  } catch {
     return null;
   }
 }

@@ -1,0 +1,10 @@
+{
+  "id": "n03d-pill-hole-cylindrical",
+  "object": "Pill Hole_cylindrical",
+  "root": "pill hole cylindrical",
+  "status": "visual-near-parity",
+  "blender": { "verts": 200, "faces": 176 },
+  "gnvm": { "verts": 137, "faces": 270 },
+  "coverage": "100% of reachable node types across the 3-group, 33-node closure.",
+  "validation": "A generic Manifold-WASM Convex Hull handler restores the authored capsule cutter. Five diameter and resolution cases have exact local bounds. Manifold emits a minimal triangulated hull, so its topology differs from Blender's less-dissolved polygon mesh while the rendered solid and dimensions match."
+}
