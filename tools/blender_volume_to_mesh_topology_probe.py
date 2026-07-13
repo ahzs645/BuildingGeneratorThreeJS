@@ -45,7 +45,16 @@ try:
     face_sizes = {}
     for polygon in result.polygons:
         face_sizes[str(len(polygon.vertices))] = face_sizes.get(str(len(polygon.vertices)), 0) + 1
-    payload = {"verts": len(result.vertices), "faces": len(result.polygons), "face_sizes": face_sizes}
+    positions = [list(vertex.co) for vertex in result.vertices]
+    payload = {
+        "verts": len(result.vertices),
+        "faces": len(result.polygons),
+        "face_sizes": face_sizes,
+        "bbox": {
+            "min": [min(position[axis] for position in positions) for axis in range(3)],
+            "max": [max(position[axis] for position in positions) for axis in range(3)],
+        },
+    }
 finally:
     evaluated.to_mesh_clear()
 

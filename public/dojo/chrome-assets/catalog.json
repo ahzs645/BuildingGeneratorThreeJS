@@ -861,7 +861,7 @@
     "reference": "dojo/references/math-clay/lorenze-001.png",
     "blenderStats": { "verts": 23968, "faces": 23966 },
     "localSpace": true,
-    "note": "Near-exact 16-group, 223-node Lorenz surface. Native quad surface nets produce 23,360 / 23,358 versus Blender's 23,968 / 23,966; the forked crown aligns within 0.8896 bounds units.",
+    "note": "Near-exact 16-group, 223-node Lorenz surface. Blender-style cached volume resampling produces 23,328 / 23,326 versus Blender's 23,968 / 23,966; the forked crown aligns within 0.8873 bounds units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -876,7 +876,7 @@
     "reference": "dojo/references/math-clay/lorenze.png",
     "blenderStats": { "verts": 30644, "faces": 30642 },
     "localSpace": true,
-    "note": "Near-exact 16-group, 224-node surface. Native quad surface nets produce 29,792 / 29,790 versus Blender's 30,644 / 30,642; the nested saddle aligns within 0.8955 bounds units.",
+    "note": "Near-exact 16-group, 224-node surface. Cached volume resampling produces 29,708 / 29,706 versus Blender's 30,644 / 30,642; the nested saddle aligns within 0.8942 bounds units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 3 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -891,7 +891,7 @@
     "reference": "dojo/references/math-clay/lorenze-007.png",
     "blenderStats": { "verts": 16249, "faces": 15459 },
     "localSpace": true,
-    "note": "Near-exact rounded curl after closed-solid FLOAT boolean support. Browser bounds are within 0.3947 units and vertex count is 16,725 versus Blender's 16,249; its 33,446 faces are triangulated boolean output, while Blender retains 15,459 mixed polygons.",
+    "note": "Near-exact rounded curl after closed-solid FLOAT boolean support. Browser bounds are within 0.5432 units and vertex count is 16,553 versus Blender's 16,249; its 33,102 faces are triangulated boolean output, while Blender retains 15,459 mixed polygons.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 3 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -906,7 +906,7 @@
     "reference": "dojo/references/math-clay/lorenze-003.png",
     "blenderStats": { "verts": 29226, "faces": 29226 },
     "localSpace": true,
-    "note": "Near-exact 16-group, 234-node loop shell. Browser topology is within 0.10% of Blender at 29,254 / 29,254 and bounds differ by only 0.0824 units.",
+    "note": "Near-exact 16-group, 234-node loop shell. Cached volume resampling produces 28,746 / 28,746 versus Blender's 29,226 / 29,226, with matching authored form and bounds within 0.4783 units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -921,7 +921,7 @@
     "reference": "dojo/references/math-clay/lorenze-005.png",
     "blenderStats": { "verts": 108958, "faces": 108924 },
     "localSpace": true,
-    "note": "Near-exact 238-node nested spike field after Blender-compatible safe logarithms. Browser bounds are within 0.1811 units at 124,076 / 123,770 versus Blender's 108,958 / 108,924; the authored ordered shells and spikes are restored.",
+    "note": "Near-exact 238-node nested spike field after Blender-compatible safe logarithms and cached volume resampling. Browser output is 107,786 / 107,752 versus Blender's 108,958 / 108,924, with the authored ordered shells and spikes restored within 0.3952 bounds units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -936,7 +936,7 @@
     "reference": "dojo/references/math-clay/tpms-017.png",
     "blenderStats": { "verts": 155474, "faces": 155472 },
     "localSpace": true,
-    "note": "Recognizable lower-density parity for the 240-node star cell. The six-lobed form and central chamber align; browser surface nets produce 31,976 / 31,974 versus Blender's 155,474 / 155,472.",
+    "note": "Close live parity for the 240-node star cell after Blender-style two-stage volume sampling. The six-lobed form and central chamber align within 0.4571 bounds units; browser surface nets produce 151,688 / 138,771 versus Blender's 155,474 / 155,472, with remaining face-connectivity differences.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.212766408920288 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.4, "max": 1.5, "step": 0.02, "value": 0.4216800034046173 },
@@ -951,7 +951,7 @@
     "reference": "dojo/references/math-clay/tpms-019.png",
     "blenderStats": { "verts": 42770, "faces": 42768 },
     "localSpace": true,
-    "note": "Work in progress: the complete 242-node root runs, but the browser resolves a planar star-cell field instead of Blender's spiked orb. The root's Factor-driven specialized field is not semantically equivalent yet.",
+    "note": "Near-exact 242-node spiked orb after matching Blender's Volume Cube cache boundary and Volume to Mesh resampling. The six-spike silhouette is restored at 42,728 / 42,726 versus Blender's 42,770 / 42,768—only 42 vertices and 42 faces apart—with bounds within 0.5319 units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.5531917810440063 },
       { "name": "Factor", "label": "Shape factor", "min": 0, "max": 1, "step": 0.01, "value": 0.9678784012794495 },
@@ -966,7 +966,7 @@
     "reference": "dojo/references/math-clay/tpms-020.png",
     "blenderStats": { "verts": 153602, "faces": 153600 },
     "localSpace": true,
-    "note": "Recognizable lower-density parity for the rounded star cell. The silhouette and cavities align within 0.7217 units; browser surface nets use 31,976 / 31,974 versus Blender's 153,602 / 153,600.",
+    "note": "Close live parity for the rounded star cell after Blender-style two-stage volume sampling. The silhouette and cavities align within 0.2925 bounds units; browser surface nets use 151,664 / 140,583 versus Blender's 153,602 / 153,600, with remaining face-connectivity differences.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.5531917810440063 },
       { "name": "Factor", "label": "Shape factor", "min": 0, "max": 1, "step": 0.01, "value": 0 },
@@ -981,7 +981,7 @@
     "reference": "dojo/references/math-clay/tpms-016.png",
     "blenderStats": { "verts": 87099, "faces": 85390 },
     "localSpace": true,
-    "note": "The authored cross-section lattice and rounded enclosing lobes now align within 0.4942 bounds units. Browser output is lower density at 20,254 vertices and 40,504 triangulated faces versus Blender's 87,099 / 85,390.",
+    "note": "Near-exact cross-section lattice and rounded enclosing lobes after cached volume resampling and closed-solid FLOAT booleans. Browser output is 83,687 vertices and 167,370 triangulated faces versus Blender's 87,099 / 85,390 mixed polygons, with bounds within 0.4929 units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.0638302564620972 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.4, "max": 1.5, "step": 0.02, "value": 0.4216800034046173 },
@@ -996,7 +996,7 @@
     "reference": "dojo/references/math-clay/tpms-018.png",
     "blenderStats": { "verts": 14190, "faces": 13558 },
     "localSpace": true,
-    "note": "Near-exact twin-bowl surface after closed-solid FLOAT boolean support. Browser bounds are within 0.1407 units and vertex count is 14,764 versus Blender's 14,190; its 29,524 faces are triangulated boolean output, while Blender retains 13,558 mixed polygons.",
+    "note": "Near-exact twin-bowl surface after closed-solid FLOAT boolean support. Browser bounds are within 0.2151 units and vertex count is 14,722 versus Blender's 14,190; its 29,440 faces are triangulated boolean output, while Blender retains 13,558 mixed polygons.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.0638302564620972 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -1011,7 +1011,7 @@
     "reference": "dojo/references/math-clay/lorenze-002.png",
     "blenderStats": { "verts": 35200, "faces": 35198 },
     "localSpace": true,
-    "note": "Near-exact 271-node layered arch: browser topology is within 0.03% at 35,192 / 35,190 and bounds within 0.0824 units of Blender.",
+    "note": "Near-exact 271-node layered arch after cached volume resampling: browser topology is 34,668 / 34,666 versus Blender's 35,200 / 35,198, with bounds within 0.2676 units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -1026,7 +1026,7 @@
     "reference": "dojo/references/math-clay/lorenze-004.png",
     "blenderStats": { "verts": 61098, "faces": 61124 },
     "localSpace": true,
-    "note": "Near-exact 273-node porous stack: browser topology is within 0.12% at 61,026 / 61,052 and bounds within 0.0839 units of Blender, with matching openings and layered silhouette.",
+    "note": "Near-exact 273-node porous stack after cached volume resampling: browser topology is 59,430 / 59,452 versus Blender's 61,098 / 61,124, with matching openings and layered silhouette within 0.3029 bounds units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -1041,7 +1041,7 @@
     "reference": "dojo/references/math-clay/tpms-main.png",
     "blenderStats": { "verts": 35054, "faces": 35052 },
     "localSpace": true,
-    "note": "The full 22-group, 421-node TPMS generator reproduces the authored D-surface silhouette with lower-density surface nets: 28,952 / 28,950 versus Blender's 35,054 / 35,052 and bounds within 1.2489 units.",
+    "note": "The full 22-group, 421-node TPMS generator reproduces the authored D-surface silhouette after cached volume resampling: 32,792 / 32,790 versus Blender's 35,054 / 35,052, with bounds within 0.7993 units.",
     "controls": [
       { "type": "select", "name": "Menu", "label": "TPMS formula", "value": 2, "options": [
         { "label": "Schwarz P", "value": 0 },

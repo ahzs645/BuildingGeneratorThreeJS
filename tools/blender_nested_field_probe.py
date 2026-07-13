@@ -31,7 +31,8 @@ mesh = evaluated.to_mesh()
 try:
     attribute = mesh.attributes.get("__nested_probe")
     values = [float(item.value) for item in attribute.data] if attribute else []
-    payload = {"domain": domain.upper(), "values": values, "verts": len(mesh.vertices), "faces": len(mesh.polygons), "edges": len(mesh.edges)}
+    positions = [[float(vertex.co.x), float(vertex.co.y), float(vertex.co.z)] for vertex in mesh.vertices]
+    payload = {"domain": domain.upper(), "values": values, "positions": positions, "verts": len(mesh.vertices), "faces": len(mesh.polygons), "edges": len(mesh.edges)}
 finally:
     evaluated.to_mesh_clear()
     for link in list(geometry_output.links):

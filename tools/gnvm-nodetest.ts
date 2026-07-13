@@ -432,6 +432,30 @@ function meshSignedAreaXY(m: Mesh): number {
     volumeEdges.set(key, (volumeEdges.get(key) ?? 0) + 1);
   }
   check("Volume to Mesh surface nets are manifold", [...volumeEdges.values()].every((uses) => uses === 2));
+
+  // Volume Cube stores voxel-center samples when it executes. Later changes to
+  // a source field closure must not leak through the cache boundary.
+  let cachedRadius = 0.45;
+  const cachedDensity = Field.perElem((i, ctx) => {
+    const point = ctx.position?.(i) ?? [0, 0, 0];
+    return Math.hypot(point[0], point[1], point[2]) - cachedRadius;
+  });
+  const cachedVolume = runNode("GeometryNodeVolumeCube", {
+    Density: cachedDensity, Background: 1, Min: [-1, -1, -1], Max: [1, 1, 1],
+    "Resolution X": 18, "Resolution Y": 18, "Resolution Z": 18,
+  }).Volume as any;
+  cachedRadius = 0.9;
+  const cachedSurface = runNode("GeometryNodeVolumeToMesh", {
+    Volume: cachedVolume, "Resolution Mode": "Grid", "Voxel Size": 0.1, Threshold: 0,
+  }).Mesh as Geometry;
+  const cachedExtent = Math.max(...cachedSurface.mesh!.positions.flatMap((point) => point.map(Math.abs)));
+  check("Volume Cube caches voxel-center field samples", cachedExtent < 0.6, `extent=${cachedExtent}`);
+
+  const refinedSurface = runNode("GeometryNodeVolumeToMesh", {
+    Volume: volume, "Resolution Mode": "Size", "Voxel Size": 0.04, Threshold: 0.5,
+  }).Mesh as Geometry;
+  check("Volume to Mesh Size mode resamples the stored grid", (refinedSurface.mesh?.faces.length ?? 0) > (surface.mesh?.faces.length ?? 0),
+    `grid=${surface.mesh?.faces.length} size=${refinedSurface.mesh?.faces.length}`);
 }
 
 {

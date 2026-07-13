@@ -5,11 +5,13 @@ import { reg, SockVal } from "../registry";
 
 interface VolumeGrid {
   kind: "GNVM_VOLUME_GRID";
-  density: Field;
   background: number;
   min: Vec3;
   max: Vec3;
   resolution: Vec3;
+  origin: Vec3;
+  voxelSize: Vec3;
+  values: Float32Array;
 }
 
 function isVolumeGrid(value: unknown): value is VolumeGrid {
@@ -73,7 +75,7 @@ function splitNonManifoldFans(mesh: Mesh): void {
 // active voxel cell and one quad around every crossed grid edge. Building that
 // topology directly is both smaller and more faithful than pairing triangles
 // emitted by Marching Cubes.
-function surfaceNets(values: Float32Array, resolution: number, isolation: number, center: Vec3, spacing: number): Mesh {
+function surfaceNets(values: Float32Array, resolution: number, isolation: number, origin: Vec3, spacing: number): Mesh {
   const mesh = new Mesh();
   const sample = (x: number, y: number, z: number) => values[z * resolution * resolution + y * resolution + x];
   const cellResolution = resolution - 1;
@@ -88,8 +90,9 @@ function surfaceNets(values: Float32Array, resolution: number, isolation: number
     [0, 4], [1, 5], [2, 6], [3, 7],
   ];
   // Each face lists its corners cyclically and the corresponding perimeter
-  // edges. Ambiguous checkerboards are resolved with the bilinear face-center
-  // sign, consistently on both cells sharing the face.
+  // edges. Ambiguous checkerboards use the bilinear asymptotic determinant,
+  // consistently on both cells sharing the face. A center-value average is
+  // not equivalent when the two diagonal sign pairs have unequal magnitude.
   const cellFaces: { corners: [number, number, number, number]; edges: [number, number, number, number] }[] = [
     { corners: [0, 1, 3, 2], edges: [0, 5, 1, 4] },
     { corners: [4, 6, 7, 5], edges: [6, 3, 7, 2] },
@@ -100,9 +103,9 @@ function surfaceNets(values: Float32Array, resolution: number, isolation: number
   ];
   const cellEdgeVertices = new Map<number, Int32Array>();
   const gridPoint = (x: number, y: number, z: number): Vec3 => [
-    center[0] + (x - resolution * 0.5) * spacing,
-    center[1] + (y - resolution * 0.5) * spacing,
-    center[2] + (z - resolution * 0.5) * spacing,
+    origin[0] + x * spacing,
+    origin[1] + y * spacing,
+    origin[2] + z * spacing,
   ];
 
   for (let z = 0; z < cellResolution; z++) for (let y = 0; y < cellResolution; y++) for (let x = 0; x < cellResolution; x++) {
@@ -131,11 +134,19 @@ function surfaceNets(values: Float32Array, resolution: number, isolation: number
       const crossed = face.edges.filter((edge) => edgePoints[edge] !== null);
       if (crossed.length === 2) join(crossed[0], crossed[1]);
       else if (crossed.length === 4) {
-        const centerInside = face.corners.reduce((sum, corner) => sum + cornerValues[corner], 0) * 0.25 < isolation;
-        const firstInside = cornerValues[face.corners[0]] < isolation;
+        const shifted = face.corners.map((corner) => cornerValues[corner] - isolation);
+        const determinant = shifted[0] * shifted[2] - shifted[1] * shifted[3];
         const [e0, e1, e2, e3] = face.edges;
-        if (centerInside === firstInside) { join(e0, e1); join(e2, e3); }
-        else { join(e3, e0); join(e1, e2); }
+        if (determinant > 0) { join(e0, e1); join(e2, e3); }
+        else if (determinant < 0) { join(e3, e0); join(e1, e2); }
+        else {
+          // Exact symmetric saddle: the face center supplies a deterministic
+          // tie-break without disagreeing across the two incident cells.
+          const centerInside = shifted.reduce((sum, value) => sum + value, 0) < 0;
+          const firstInside = shifted[0] < 0;
+          if (centerInside === firstInside) { join(e0, e1); join(e2, e3); }
+          else { join(e3, e0); join(e1, e2); }
+        }
       }
     }
     const components = new Map<number, number[]>();
@@ -181,20 +192,82 @@ function surfaceNets(values: Float32Array, resolution: number, isolation: number
 }
 
 reg("GeometryNodeVolumeCube", (api) => {
+  const min = api.vec("Min");
+  const max = api.vec("Max");
+  const resolution: Vec3 = [
+    Math.max(4, Math.round(api.num("Resolution X"))),
+    Math.max(4, Math.round(api.num("Resolution Y"))),
+    Math.max(4, Math.round(api.num("Resolution Z"))),
+  ];
+  const voxelSize: Vec3 = [
+    Math.max(1e-9, (max[0] - min[0]) / resolution[0]),
+    Math.max(1e-9, (max[1] - min[1]) / resolution[1]),
+    Math.max(1e-9, (max[2] - min[2]) / resolution[2]),
+  ];
+  const origin: Vec3 = [
+    min[0] + voxelSize[0] * 0.5,
+    min[1] + voxelSize[1] * 0.5,
+    min[2] + voxelSize[2] * 0.5,
+  ];
+  const background = api.num("Background");
+  const values = new Float32Array(resolution[0] * resolution[1] * resolution[2]);
+  const density = api.field("Density");
+  // Volume Cube is a cache boundary in Blender: evaluate the incoming field at
+  // voxel centers once. Volume to Mesh subsequently interpolates this stored
+  // grid instead of re-evaluating the original field at unrelated positions.
+  for (let z = 0; z < resolution[2]; z++) {
+    const sampleGeometry = new Geometry();
+    const sampleMesh = new Mesh();
+    sampleGeometry.mesh = sampleMesh;
+    for (let y = 0; y < resolution[1]; y++) for (let x = 0; x < resolution[0]; x++) {
+      sampleMesh.positions.push([
+        origin[0] + x * voxelSize[0],
+        origin[1] + y * voxelSize[1],
+        origin[2] + z * voxelSize[2],
+      ]);
+    }
+    const slice = density.array(makeFieldCtx(sampleGeometry, "POINT"));
+    for (let y = 0; y < resolution[1]; y++) for (let x = 0; x < resolution[0]; x++) {
+      const local = y * resolution[0] + x;
+      const sampled = asNum(slice[local] ?? background);
+      values[z * resolution[0] * resolution[1] + local] = Number.isFinite(sampled) ? sampled : background;
+    }
+  }
   const volume: VolumeGrid = {
     kind: "GNVM_VOLUME_GRID",
-    density: api.field("Density"),
-    background: api.num("Background"),
-    min: api.vec("Min"),
-    max: api.vec("Max"),
-    resolution: [
-      Math.max(4, Math.round(api.num("Resolution X"))),
-      Math.max(4, Math.round(api.num("Resolution Y"))),
-      Math.max(4, Math.round(api.num("Resolution Z"))),
-    ],
+    background,
+    min,
+    max,
+    resolution,
+    origin,
+    voxelSize,
+    values,
   };
   return { Volume: volume as unknown as SockVal };
 });
+
+function sampleVolume(volume: VolumeGrid, position: Vec3): number {
+  const coordinates: Vec3 = [
+    (position[0] - volume.origin[0]) / volume.voxelSize[0],
+    (position[1] - volume.origin[1]) / volume.voxelSize[1],
+    (position[2] - volume.origin[2]) / volume.voxelSize[2],
+  ];
+  const base = coordinates.map(Math.floor) as Vec3;
+  const fraction: Vec3 = [coordinates[0] - base[0], coordinates[1] - base[1], coordinates[2] - base[2]];
+  const value = (x: number, y: number, z: number) => {
+    if (x < 0 || y < 0 || z < 0 || x >= volume.resolution[0] || y >= volume.resolution[1] || z >= volume.resolution[2])
+      return volume.background;
+    return volume.values[z * volume.resolution[0] * volume.resolution[1] + y * volume.resolution[0] + x];
+  };
+  let result = 0;
+  for (let dz = 0; dz <= 1; dz++) for (let dy = 0; dy <= 1; dy++) for (let dx = 0; dx <= 1; dx++) {
+    const weight = (dx ? fraction[0] : 1 - fraction[0])
+      * (dy ? fraction[1] : 1 - fraction[1])
+      * (dz ? fraction[2] : 1 - fraction[2]);
+    result += value(base[0] + dx, base[1] + dy, base[2] + dz) * weight;
+  }
+  return result;
+}
 
 reg("GeometryNodeVolumeToMesh", (api) => {
   const volume = api.input("Volume") as unknown;
@@ -211,48 +284,38 @@ reg("GeometryNodeVolumeToMesh", (api) => {
     (volume.min[2] + volume.max[2]) * 0.5,
   ];
   const maxSpan = Math.max(...spans);
-  const sampleSpacing = Math.max(...spans.map((span, axis) => span / Math.max(1, volume.resolution[axis] - 1)));
-  const voxelSize = Math.max(1e-6, api.num("Voxel Size") || sampleSpacing);
-  const spacing = Math.max(sampleSpacing, voxelSize);
-  const coreResolution = Math.max(8, Math.min(140, Math.ceil(maxSpan / spacing) + 1));
+  // Volume Cube resolutions count voxels, whose samples lie at cell centers;
+  // dividing by (resolution - 1) incorrectly treats them as endpoint samples.
+  const sampleSpacing = Math.max(...volume.voxelSize);
+  const resolutionMode = api.str("Resolution Mode").toUpperCase();
+  const requestedSpacing = resolutionMode === "SIZE"
+    ? Math.max(1e-6, api.num("Voxel Size") || sampleSpacing)
+    : sampleSpacing;
+  const coreResolution = Math.max(8, Math.min(180, Math.ceil(maxSpan / requestedSpacing)));
+  const spacing = Math.max(requestedSpacing, maxSpan / coreResolution);
   // Keep two background samples around the authored cube, matching the old
   // mesher's padding and ensuring every crossed edge has four adjacent cells.
   const resolution = coreResolution + 4;
-  const halfResolution = resolution * 0.5;
+  const coreOrigin: Vec3 = [
+    center[0] - (coreResolution - 1) * spacing * 0.5,
+    center[1] - (coreResolution - 1) * spacing * 0.5,
+    center[2] - (coreResolution - 1) * spacing * 0.5,
+  ];
+  const origin: Vec3 = [coreOrigin[0] - 2 * spacing, coreOrigin[1] - 2 * spacing, coreOrigin[2] - 2 * spacing];
   const sampledGrid = new Float32Array(resolution * resolution * resolution);
 
-  // Resolve the density field a slice at a time. This keeps the temporary
-  // position/field arrays small even for Node Dojo's million-voxel pipe wrap.
-  for (let z = 0; z < resolution; z++) {
-    const sampleGeometry = new Geometry();
-    const sampleMesh = new Mesh();
-    sampleGeometry.mesh = sampleMesh;
-    for (let y = 0; y < resolution; y++) {
-      for (let x = 0; x < resolution; x++) {
-        sampleMesh.positions.push([
-          center[0] + (x - halfResolution) * spacing,
-          center[1] + (y - halfResolution) * spacing,
-          center[2] + (z - halfResolution) * spacing,
-        ]);
-      }
-    }
-    const values = volume.density.array(makeFieldCtx(sampleGeometry, "POINT"));
-    for (let y = 0; y < resolution; y++) for (let x = 0; x < resolution; x++) {
-      const local = y * resolution + x;
-      const point = sampleMesh.positions[local];
-      const inside = point[0] >= volume.min[0] && point[0] <= volume.max[0]
-        && point[1] >= volume.min[1] && point[1] <= volume.max[1]
-        && point[2] >= volume.min[2] && point[2] <= volume.max[2];
-      const sampled = inside ? asNum(values[local] ?? volume.background) : volume.background;
-      sampledGrid[z * resolution * resolution + local] = Number.isFinite(sampled) ? sampled : volume.background;
-    }
-  }
+  for (let z = 0; z < resolution; z++) for (let y = 0; y < resolution; y++) for (let x = 0; x < resolution; x++)
+    sampledGrid[z * resolution * resolution + y * resolution + x] = sampleVolume(volume, [
+      origin[0] + x * spacing,
+      origin[1] + y * spacing,
+      origin[2] + z * spacing,
+    ]);
 
   // A deterministic half-open tie break prevents exact-zero SDF samples from
   // producing four faces on one dual edge. The offset is far below the voxel
   // scale and mirrors Blender/OpenVDB's stable treatment of the zero level set.
   const isolation = api.num("Threshold") - Math.max(1e-7, spacing * 1e-6);
-  const mesh = surfaceNets(sampledGrid, resolution, isolation, center, spacing);
+  const mesh = surfaceNets(sampledGrid, resolution, isolation, origin, spacing);
   mesh.materialSlots = [null];
   const geometry = new Geometry();
   geometry.mesh = mesh;
