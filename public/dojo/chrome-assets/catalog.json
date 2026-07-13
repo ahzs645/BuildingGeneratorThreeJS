@@ -861,7 +861,7 @@
     "reference": "dojo/references/math-clay/lorenze-001.png",
     "blenderStats": { "verts": 23968, "faces": 23966 },
     "localSpace": true,
-    "note": "Near-exact 16-group, 223-node Lorenz surface. The forked crown silhouette aligns with Blender; browser vertices are 2.55% lower and bounds differ by at most 1.1468 units.",
+    "note": "Near-exact 16-group, 223-node Lorenz surface. Native quad surface nets produce 23,360 / 23,358 versus Blender's 23,968 / 23,966; the forked crown aligns within 0.8896 bounds units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -876,7 +876,7 @@
     "reference": "dojo/references/math-clay/lorenze.png",
     "blenderStats": { "verts": 30644, "faces": 30642 },
     "localSpace": true,
-    "note": "Near-exact 16-group, 224-node surface. The nested saddle and opening align visually; browser vertices are 2.79% lower and bounds differ by 1.0572 units.",
+    "note": "Near-exact 16-group, 224-node surface. Native quad surface nets produce 29,792 / 29,790 versus Blender's 30,644 / 30,642; the nested saddle aligns within 0.8955 bounds units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 3 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -906,7 +906,7 @@
     "reference": "dojo/references/math-clay/lorenze-003.png",
     "blenderStats": { "verts": 29226, "faces": 29226 },
     "localSpace": true,
-    "note": "Near-exact 16-group, 234-node loop shell. Browser vertices are within 0.10% of Blender and bounds differ by only 0.2715 units.",
+    "note": "Near-exact 16-group, 234-node loop shell. Browser topology is within 0.10% of Blender at 29,254 / 29,254 and bounds differ by only 0.0824 units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -936,7 +936,7 @@
     "reference": "dojo/references/math-clay/tpms-017.png",
     "blenderStats": { "verts": 155474, "faces": 155472 },
     "localSpace": true,
-    "note": "Recognizable lower-density parity for the 240-node star cell. The six-lobed form and central chamber align, but browser marching cubes produce 31,974 vertices versus Blender's 155,474.",
+    "note": "Recognizable lower-density parity for the 240-node star cell. The six-lobed form and central chamber align; browser surface nets produce 31,976 / 31,974 versus Blender's 155,474 / 155,472.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.212766408920288 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.4, "max": 1.5, "step": 0.02, "value": 0.4216800034046173 },
@@ -966,7 +966,7 @@
     "reference": "dojo/references/math-clay/tpms-020.png",
     "blenderStats": { "verts": 153602, "faces": 153600 },
     "localSpace": true,
-    "note": "Recognizable lower-density parity for the rounded star cell. The silhouette and cavities align within 0.9377 units; browser marching cubes use 31,974 vertices versus Blender's 153,602.",
+    "note": "Recognizable lower-density parity for the rounded star cell. The silhouette and cavities align within 0.7217 units; browser surface nets use 31,976 / 31,974 versus Blender's 153,602 / 153,600.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.5531917810440063 },
       { "name": "Factor", "label": "Shape factor", "min": 0, "max": 1, "step": 0.01, "value": 0 },
@@ -996,7 +996,7 @@
     "reference": "dojo/references/math-clay/tpms-018.png",
     "blenderStats": { "verts": 14190, "faces": 13558 },
     "localSpace": true,
-    "note": "Work in progress: the 267-node root produces the paired bowl family, but rotation and clipping differ visibly from Blender and the maximum bound delta is 5.6959 units.",
+    "note": "Work in progress: the 267-node root produces the paired bowl family at 22,548 / 22,546, but rotation and clipping differ visibly from Blender and the maximum bound delta is 5.5971 units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.0638302564620972 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -1011,7 +1011,7 @@
     "reference": "dojo/references/math-clay/lorenze-002.png",
     "blenderStats": { "verts": 35200, "faces": 35198 },
     "localSpace": true,
-    "note": "Near-exact 271-node layered arch: browser vertices are within 0.03% and bounds within 0.1141 units of Blender.",
+    "note": "Near-exact 271-node layered arch: browser topology is within 0.03% at 35,192 / 35,190 and bounds within 0.0824 units of Blender.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -1026,7 +1026,7 @@
     "reference": "dojo/references/math-clay/lorenze-004.png",
     "blenderStats": { "verts": 61098, "faces": 61124 },
     "localSpace": true,
-    "note": "Near-exact 273-node porous stack: browser vertices are within 0.08% and bounds within 0.1945 units of Blender, with matching openings and layered silhouette.",
+    "note": "Near-exact 273-node porous stack: browser topology is within 0.12% at 61,026 / 61,052 and bounds within 0.0839 units of Blender, with matching openings and layered silhouette.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -1041,7 +1041,7 @@
     "reference": "dojo/references/math-clay/tpms-main.png",
     "blenderStats": { "verts": 35054, "faces": 35052 },
     "localSpace": true,
-    "note": "The full 22-group, 421-node TPMS generator reproduces the authored D-surface silhouette with lower-density marching cubes: 28,926 live browser vertices versus Blender's 35,054 and bounds within 1.2157 units.",
+    "note": "The full 22-group, 421-node TPMS generator reproduces the authored D-surface silhouette with lower-density surface nets: 28,952 / 28,950 versus Blender's 35,054 / 35,052 and bounds within 1.2489 units.",
     "controls": [
       { "type": "select", "name": "Menu", "label": "TPMS formula", "value": 2, "options": [
         { "label": "Schwarz P", "value": 0 },
