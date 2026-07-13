@@ -70,14 +70,17 @@ export interface DumpObject {
   mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][] };
   evaluated_mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][]; materials?: (string | null)[] };
   curves?: { points: number[][]; cyclic: boolean; tilts?: number[] }[];
+  modifiers?: { type: string; node_group?: string; input_values?: Record<string, any> }[];
 }
 export const DUMP_CONTEXT: {
   objects: DumpObject[];
   collections: { name: string; objects: string[] }[];
   images: { name: string; filepath?: string; size: number[]; pixels_rgba8?: string; channels?: number; decoded?: Uint8Array }[];
+  activeObject?: DumpObject;
+  evaluatedObjects: Map<string, Geometry>;
   frame: number;
   fps: number;
-} = { objects: [], collections: [], images: [], frame: 0, fps: 24 };
+} = { objects: [], collections: [], images: [], evaluatedObjects: new Map(), frame: 0, fps: 24 };
 
 export function reg(types: string | string[], handler: Handler): void {
   for (const t of Array.isArray(types) ? types : [types]) REGISTRY.set(t, handler);

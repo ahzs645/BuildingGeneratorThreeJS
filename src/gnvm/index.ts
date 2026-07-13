@@ -36,6 +36,7 @@ export interface Dump {
   scene?: { frame_current?: number; fps?: number; fps_base?: number };
   collections?: { name: string; objects: string[] }[];
   images?: { name: string; filepath?: string; size: number[]; pixels_rgba8?: string; channels?: number }[];
+  dependency_objects?: string[];
   objects?: {
     name: string;
     location?: number[];
@@ -91,14 +92,36 @@ export async function runGenerator(dump: Dump, opts: { object?: string; override
   DUMP_CONTEXT.objects = (dump.objects ?? []) as any;
   DUMP_CONTEXT.collections = dump.collections ?? [];
   DUMP_CONTEXT.images = dump.images ?? [];
+  DUMP_CONTEXT.evaluatedObjects.clear();
   DUMP_CONTEXT.frame = Number(opts.overrides?.__frame ?? dump.scene?.frame_current ?? 0);
   DUMP_CONTEXT.fps = Number(dump.scene?.fps ?? 24) / Math.max(Number(dump.scene?.fps_base ?? 1), 1e-9);
   const found = findModifierGroup(dump, opts.object);
   if (!found) throw new Error("no geometry-nodes modifier found in dump");
+  DUMP_CONTEXT.activeObject = DUMP_CONTEXT.objects.find((object) => object.name === found.objectName);
   // Note: Solidify N++ Thickness in this dump is intentionally ~0.1 (unlinked).
   // "Wall thiccness" drives bubble displacement, NOT solidify depth — do not
   // rebind it onto Solidify or dual walls balloon into self-intersecting shells.
   const ev = new Evaluator(dump.node_groups);
+  // Evaluate reachable referenced-object modifier roots before the main root.
+  // Object Info sees Blender's evaluated geometry set, including curve-only
+  // outputs that cannot be represented by Object.to_mesh() during extraction.
+  const dependencyNames = new Set(dump.dependency_objects ?? []);
+  for (const object of DUMP_CONTEXT.objects) {
+    if (object.name === found.objectName) continue;
+    if (!dependencyNames.has(object.name)) continue;
+    const modifier = object.modifiers?.find((candidate) => candidate.type === "NODES" && candidate.node_group && dump.node_groups[candidate.node_group]);
+    if (!modifier?.node_group) continue;
+    const dependencyGroup: any = dump.node_groups[modifier.node_group];
+    const dependencyInputs: Record<string, any> = { ...(modifier.input_values ?? {}) };
+    const geometrySocket = dependencyGroup?.interface?.find((item: any) => item.item_type === "SOCKET" && item.in_out === "INPUT" && item.socket_type === "NodeSocketGeometry");
+    if (geometrySocket) {
+      const base = baseGeometryOf(dump, object.name);
+      if (base) dependencyInputs[geometrySocket.identifier] = base;
+    }
+    DUMP_CONTEXT.activeObject = object;
+    DUMP_CONTEXT.evaluatedObjects.set(object.name, ev.evalModifierGroup(modifier.node_group, dependencyInputs).geometry);
+  }
+  DUMP_CONTEXT.activeObject = DUMP_CONTEXT.objects.find((object) => object.name === found.objectName);
   const groupDef: any = dump.node_groups[found.group];
   const merged: Record<string, any> = { ...found.inputs };
   for (const [key, value] of Object.entries(opts.overrides ?? {})) {

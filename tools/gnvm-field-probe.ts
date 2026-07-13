@@ -10,7 +10,8 @@ if (!dumpPath || !objectName || !nodeName || !socketName || !outPath) {
 }
 
 const dump = JSON.parse(readFileSync(dumpPath, "utf8")) as Dump;
-const overrides = overridesPath ? JSON.parse(readFileSync(overridesPath, "utf8")) : {};
+const rawOverrides = overridesPath ? JSON.parse(readFileSync(overridesPath, "utf8")) : {};
+const overrides = Array.isArray(rawOverrides) ? rawOverrides[0]?.overrides ?? {} : rawOverrides;
 FIELD_PROBE.node = nodeName;
 FIELD_PROBE.socket = socketName;
 FIELD_PROBE.batches = [];

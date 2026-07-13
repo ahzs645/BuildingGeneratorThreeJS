@@ -19,10 +19,11 @@ Inventory date: 2026-07-12. The source pack contains 16 `.blend` projects.
 - Chrome Asset Library: `gn.sticker control` and `gn.sticker control.001` — the 10pt Spoke and Soft Star flat-stickie roots match their Blender quads exactly (4 vertices / 1 face each).
 - Chrome Asset Library: Outline Sticker — the `Geometry Nodes.009` root matches Blender across authored scale and outline controls (1,056 vertices / 1,025 faces).
 - Chrome Asset Library: Image Pixel Stippler — packed image extraction, image sampling, field memoization, and BVH raycasting match Blender across authored/coarse image cases (72,094 vertices / 71,550 faces authored).
+- Chrome Asset Library: UI Window Generator — nested Object Info dependencies, relative transforms, boundary-only Mesh to Curve selection, and vector-to-scalar socket conversion now run in-browser. The authored case is within 10 vertices and 63 faces of Blender (35,714 / 33,269 versus 35,724 / 33,332); the browser also supplies title glyphs because the referenced `Pixels.ttf` is absent from the pack.
 
 ## Recommended next targets
 
-1. **Chrome Asset Library** — 43 active objects, 26 modifier roots, 404 groups. Ten root families are complete; continue in increasing reachable-node complexity. `soft pixel marker.001` is source-blocked by the missing Budokan font; `Dojo_STRING TO TEXT` is extracted with Blender evidence but remains pending exact Bfont outline/layout parity.
+1. **Chrome Asset Library** — 43 active objects, 26 modifier roots, 404 groups. Ten root families are exact and UI Window Generator is near-exact; continue in increasing reachable-node complexity. `soft pixel marker.001` is source-blocked by the missing Budokan font; `Dojo_STRING TO TEXT` is extracted with Blender evidence but remains pending exact Bfont outline/layout parity.
 2. **N03D 3D-printing Utilities** — 73 active objects, 39 roots, 639 groups. Start with one isolated bolt, dowel, or clevis-pin generator rather than loading the whole library.
 3. **New Joint Generators** — 32 active objects, 13 roots, 572 groups. Pipe and dowel generators are the clearest individual products; Bubble Putty is a larger field/volume target.
 4. **More Math Clay surfaces** — 33 active objects and 14 root families. Low-risk as baked gallery pieces; substantially more work for a live TPMS evaluator.

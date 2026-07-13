@@ -1,0 +1,77 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/ui-window-generator/dump.json",
+  "object": "Vert.057",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 35714,
+      "faces": 33269,
+      "bbox": {
+        "min": [
+          -246.3287,
+          -130.9045,
+          40.0733
+        ],
+        "max": [
+          -53.4482,
+          105.5084,
+          62.1637
+        ]
+      },
+      "elapsed_ms": 1600
+    },
+    {
+      "combo": {
+        "name": "subdivide=1",
+        "overrides": {
+          "subdivide": 1
+        }
+      },
+      "status": "ok",
+      "verts": 17763,
+      "faces": 16081,
+      "bbox": {
+        "min": [
+          -246.2213,
+          -130.8002,
+          40.0733
+        ],
+        "max": [
+          -53.5555,
+          105.5084,
+          62.1637
+        ]
+      },
+      "elapsed_ms": 573
+    },
+    {
+      "combo": {
+        "name": "subdivide=0",
+        "overrides": {
+          "subdivide": 0
+        }
+      },
+      "status": "ok",
+      "verts": 3459,
+      "faces": 3150,
+      "bbox": {
+        "min": [
+          -244.9451,
+          67.7459,
+          40.0733
+        ],
+        "max": [
+          -54.8318,
+          105.5084,
+          62.1637
+        ]
+      },
+      "elapsed_ms": 21
+    }
+  ]
+}

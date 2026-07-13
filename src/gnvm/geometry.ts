@@ -439,6 +439,15 @@ export function rotateEulerXYZ(p: Vec3, e: Vec3): Vec3 {
   return [x, y, z];
 }
 
+export function inverseTransformPoint(p: Vec3, pos: Vec3, rot: Vec3, scl: Vec3): Vec3 {
+  let [x, y, z] = vsub(p, pos);
+  // Invert Blender XYZ by applying the opposite rotations in reverse order.
+  let c = Math.cos(-rot[2]), s = Math.sin(-rot[2]); [x, y] = [x * c - y * s, x * s + y * c];
+  c = Math.cos(-rot[1]); s = Math.sin(-rot[1]); [x, z] = [x * c + z * s, -x * s + z * c];
+  c = Math.cos(-rot[0]); s = Math.sin(-rot[0]); [y, z] = [y * c - z * s, y * s + z * c];
+  return [x / (scl[0] || 1), y / (scl[1] || 1), z / (scl[2] || 1)];
+}
+
 export function transformPoint(p: Vec3, pos: Vec3, rot: Vec3, scl: Vec3): Vec3 {
   return vadd(rotateEulerXYZ([p[0] * scl[0], p[1] * scl[1], p[2] * scl[2]], rot), pos);
 }

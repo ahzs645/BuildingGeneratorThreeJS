@@ -235,8 +235,16 @@ reg("GeometryNodeSeparateGeometry", (api) => {
   if (domain === "FACE") {
     const ctx = makeFieldCtx(g, "FACE");
     const s = sel.array(ctx);
-    selG.mesh = keepFaces(g.mesh, (fi) => !!asNum(s[fi] ?? 0));
-    invG.mesh = keepFaces(g.mesh, (fi) => !asNum(s[fi] ?? 0));
+    if (FIELD_PROBE.node === api.node.name && FIELD_PROBE.socket === "Selection") FIELD_PROBE.batches.push({
+      domain: "FACE",
+      positions: Array.from({ length: ctx.size }, (_, i) => ctx.position?.(i) ?? [0, 0, 0]),
+      values: s,
+    });
+    // Blender's numeric-to-boolean socket conversion is positive/non-positive,
+    // not JavaScript truthiness: negative float masks are false.
+    const on = (fi: number) => asNum(s[fi] ?? 0) > 0;
+    selG.mesh = keepFaces(g.mesh, on);
+    invG.mesh = keepFaces(g.mesh, (fi) => !on(fi));
   } else if (domain === "EDGE") {
     const ctx = makeFieldCtx(g, "EDGE");
     const s = sel.array(ctx);

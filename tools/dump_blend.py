@@ -137,7 +137,7 @@ result = {
         "fps": bpy.context.scene.render.fps,
         "fps_base": bpy.context.scene.render.fps_base,
     },
-    "objects": [], "collections": [], "node_groups": {}, "materials": {}, "images": []
+    "objects": [], "collections": [], "node_groups": {}, "materials": {}, "images": [], "dependency_objects": []
 }
 
 dependency_collection_names = set()
@@ -165,6 +165,7 @@ dependency_object_names.update({
     for name in dependency_collection_names
     for obj in bpy.data.collections[name].objects
 })
+result["dependency_objects"] = sorted(dependency_object_names)
 depsgraph = bpy.context.evaluated_depsgraph_get()
 
 trees_to_dump = {}
@@ -263,7 +264,7 @@ for obj in bpy.data.objects:
         m = {"name": mod.name, "type": mod.type}
         if mod.type == "NODES" and mod.node_group:
             m["node_group"] = mod.node_group.name
-            if target_object is None or obj.name == target_object:
+            if target_object is None or obj.name == target_object or obj.name in dependency_object_names:
                 trees_to_dump[mod.node_group.name] = mod.node_group
             # modifier input overrides
             inputs = {}

@@ -8,7 +8,7 @@
 //    recorded in MISSING and fall back to passing the first geometry input through,
 //    so evaluation never crashes and we get a coverage report + partial mesh.
 
-import { Field, Vec3, Domain, FieldCtx, asNum, vadd, vscale } from "./core";
+import { Field, Vec3, Domain, FieldCtx, asNum, fieldMap, vadd, vscale } from "./core";
 import { Geometry, topologyOf, Topology } from "./geometry";
 import { splineFrames, splineLength } from "./curves";
 import { EvalAPI, RawNode, REGISTRY, MISSING, SockVal, DataRef } from "./registry";
@@ -76,17 +76,25 @@ function wrapConst(socketType: string, value: any): SockVal {
 // particular, the vase's Spin group receives a fractional density as `Steps`.
 // Without this coercion Repeat Input rounded its iteration count while the
 // in-group angle division kept the fraction, leaving a visible open seam.
-function coerceGroupInput(value: SockVal, socketType: string): SockVal {
+function coerceSocketValue(value: SockVal, socketType: string): SockVal {
   if (!(value instanceof Field)) return value;
-  if (socketType.includes("Int")) {
-    const toInt = (v: import("./core").Elem) => Math.round(asNum(v));
-    return value.isConst ? Field.of(toInt(value.value)) : Field.make((ctx) => value.array(ctx).map(toInt));
-  }
+  const average = (v: import("./core").Elem) => Array.isArray(v) ? (v[0] + v[1] + v[2]) / 3 : v;
   if (socketType.includes("Bool")) {
-    const toBool = (v: import("./core").Elem) => (asNum(v) > 0 ? 1 : 0);
-    return value.isConst ? Field.of(toBool(value.value)) : Field.make((ctx) => value.array(ctx).map(toBool));
+    return fieldMap([value], (v) => average(v) > 0 ? 1 : 0);
   }
+  // Blender converts a vector feeding a scalar Value socket to the average of
+  // its XYZ components (the UI-window Fit Size graph relies on its zero Z).
+  if (socketType.includes("Float")) return fieldMap([value], average);
+  if (socketType.includes("Vector") || socketType.includes("Rotation"))
+    return fieldMap([value], (v) => Array.isArray(v) ? v : [v, v, v]);
   return value;
+}
+
+function coerceGroupInput(value: SockVal, socketType: string): SockVal {
+  const coerced = coerceSocketValue(value, socketType);
+  if (!(coerced instanceof Field)) return coerced;
+  if (socketType.includes("Int")) return fieldMap([coerced], (v) => Math.round(asNum(v)));
+  return coerced;
 }
 
 // Average a set of field elements (numbers or vec3), for domain interpolation.
@@ -404,12 +412,12 @@ class Invocation {
   // Pull the value feeding node.socket (from the first link, or the constant).
   pull(node: RawNode, key: string): SockVal {
     const id = this.socketId(node, key);
+    const sock = node.inputs.find((s) => s.identifier === id);
     const links = this.incoming.get(KEY(node.name, id));
     if (links && links.length) {
       const outs = this.evalNode(links[0].from_node);
-      return outs[links[0].from_socket] ?? firstGeoOr0(outs);
+      return coerceSocketValue(outs[links[0].from_socket] ?? firstGeoOr0(outs), sock?.type ?? "NodeSocketFloat");
     }
-    const sock = node.inputs.find((s) => s.identifier === id);
     return wrapConst(sock?.type ?? "NodeSocketFloat", sock?.value);
   }
 

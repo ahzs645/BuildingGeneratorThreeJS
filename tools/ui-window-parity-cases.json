@@ -1,0 +1,5 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "subdivide=1", "overrides": { "subdivide": 1 } },
+  { "name": "subdivide=0", "overrides": { "subdivide": 0 } }
+]

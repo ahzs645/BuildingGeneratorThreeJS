@@ -1,6 +1,6 @@
 // Curve subsystem handlers: primitives, resample, fillet, sweep-to-mesh, fill.
 import { Field, Vec3, Elem, asNum } from "../core";
-import { Geometry, Mesh, Spline } from "../geometry";
+import { Geometry, Mesh, Spline, buildTopology } from "../geometry";
 import { reg } from "../registry";
 import { makeFieldCtx } from "../evaluator";
 import { resampleSpline, filletSpline, sweep, fillCurves, meshEdgesToChains, splineLength } from "../curves";
@@ -205,7 +205,22 @@ reg("GeometryNodeMeshToCurve", (api) => {
   const g = api.geo("Mesh");
   const out = new Geometry();
   if (!g.mesh) return { Curve: out };
-  const chains = meshEdgesToChains(g.mesh);
+  let source = g.mesh;
+  const selectionLinked = api.node.inputs.find((s) => s.identifier === "Selection")?.linked ?? false;
+  if (selectionLinked) {
+    const ctx = makeFieldCtx(g, "EDGE");
+    const selected = api.field("Selection").array(ctx);
+    const topology = buildTopology(g.mesh);
+    const filtered = new Mesh();
+    filtered.positions = g.mesh.positions.map((p) => [...p] as Vec3);
+    filtered.edges = topology.edges
+      .filter((_, i) => asNum(selected[i] ?? 0) > 0)
+      .map((edge) => [...edge.verts] as [number, number]);
+    filtered.materialSlots = [...g.mesh.materialSlots];
+    filtered.attributes = new Map([...g.mesh.attributes].filter(([, attr]) => attr.domain === "POINT"));
+    source = filtered;
+  }
+  const chains = meshEdgesToChains(source);
   out.curves = chains.map((c) => c.spline);
   // carry the mesh's POINT attributes onto the flattened curve control points
   const pointAttrs = [...g.mesh.attributes].filter(([, a]) => a.domain === "POINT");

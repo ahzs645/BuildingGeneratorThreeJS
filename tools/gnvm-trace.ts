@@ -1,17 +1,20 @@
 // Print geometry-bearing nodes from a full GN-VM run, scoped by an optional
 // case-insensitive substring. Useful when a mesh-diff identifies a local error.
-// Usage: npx tsx tools/gnvm-trace.ts <dump.json> [ObjectName] [filter]
+// Usage: npx tsx tools/gnvm-trace.ts <dump.json> [ObjectName] [filter] [overrides.json]
 import { readFileSync } from "node:fs";
 import { runGenerator, Dump } from "../src/gnvm/index";
 import { TRACE } from "../src/gnvm/evaluator";
 
-const [, , dumpPath, objectName, filter] = process.argv;
+const [, , dumpPath, objectName, filter, overridesPath] = process.argv;
 if (!dumpPath) throw new Error("usage: npx tsx tools/gnvm-trace.ts <dump.json> [ObjectName] [filter]");
 
 const dump = JSON.parse(readFileSync(dumpPath, "utf8")) as Dump;
 TRACE.on = true;
 TRACE.log = [];
-const result = await runGenerator(dump, { object: objectName });
+const overrides = overridesPath
+  ? JSON.parse(readFileSync(overridesPath, "utf8"))[0]?.overrides ?? {}
+  : undefined;
+const result = await runGenerator(dump, { object: objectName, overrides });
 TRACE.on = false;
 
 const needle = filter?.toLowerCase();

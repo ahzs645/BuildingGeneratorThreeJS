@@ -1,0 +1,135 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Vert.057",
+  "modifier": "UI Window Generator.001",
+  "node_group": "UI Window Generator.001",
+  "saved_values": {
+    "Object": "Plane.018",
+    "subdivide": 1.5221697092056274,
+    "line thiccness": 2.462169885635376,
+    "color overlay": [
+      0.39341622591018677,
+      0.39341622591018677,
+      0.39341622591018677,
+      1.0
+    ],
+    "color": [
+      0.0,
+      0.01574067212641239,
+      0.16279783844947815,
+      1.0
+    ],
+    "menu bar size": 16.311508178710938,
+    "soften": 0.18675890564918518,
+    "MENU TITLE": "DOJO.JPG"
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 35724,
+      "faces": 33332,
+      "bbox": {
+        "min": [
+          -245.6776,
+          -130.2534,
+          40.0735
+        ],
+        "max": [
+          -54.0995,
+          86.4437,
+          62.1638
+        ]
+      },
+      "elapsed_ms": 29.5
+    },
+    {
+      "combo": {
+        "name": "subdivide=1",
+        "overrides": {
+          "subdivide": 1
+        }
+      },
+      "status": "ok",
+      "verts": 17703,
+      "faces": 16078,
+      "bbox": {
+        "min": [
+          -245.222,
+          -129.8013,
+          40.0735
+        ],
+        "max": [
+          -54.5551,
+          85.9917,
+          62.1638
+        ]
+      },
+      "elapsed_ms": 18.2
+    },
+    {
+      "combo": {
+        "name": "subdivide=0",
+        "overrides": {
+          "subdivide": 0
+        }
+      },
+      "status": "ok",
+      "verts": 3230,
+      "faces": 3024,
+      "bbox": {
+        "min": [
+          -244.9552,
+          67.7559,
+          40.0735
+        ],
+        "max": [
+          -54.8219,
+          85.7218,
+          45.5378
+        ]
+      },
+      "elapsed_ms": 2.8
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "flat.nodes": {
+        "faces": 22464,
+        "verts": 23363
+      },
+      "grey ui": {
+        "faces": 10868,
+        "verts": 12361
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 33332,
+      "verts": 35724
+    }
+  }
+}

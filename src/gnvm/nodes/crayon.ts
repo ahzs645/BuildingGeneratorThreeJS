@@ -370,29 +370,35 @@ reg("GeometryNodeRaycast", (api) => {
 reg("GeometryNodeBlurAttribute", (api) => {
   const value = api.field("Value");
   const weight = api.field("Weight");
-  const iterations = Math.max(0, Math.min(128, Math.round(api.num("Iterations"))));
-  return {
-    Value: Field.make((ctx) => {
+  const iterations = Math.max(0, Math.min(512, Math.round(api.num("Iterations"))));
+  const blurred = Field.make((ctx) => {
       let current = value.array(ctx);
-      if (!iterations || !ctx.neighbors) return current;
-      const weights = weight.array(ctx).map((v) => Math.max(0, asNum(v)));
-      for (let iteration = 0; iteration < iterations; iteration++) {
-        const next: Elem[] = new Array(ctx.size);
-        for (let i = 0; i < ctx.size; i++) {
-          let total = scaleElem(current[i] ?? 0, weights[i] ?? 1);
-          let totalWeight = weights[i] ?? 1;
-          for (const neighbor of ctx.neighbors(i)) {
-            const w = weights[neighbor] ?? 1;
-            total = addElem(total, scaleElem(current[neighbor] ?? 0, w));
-            totalWeight += w;
+      if (iterations && ctx.neighbors) {
+        const weights = weight.array(ctx).map((v) => Math.max(0, asNum(v)));
+        for (let iteration = 0; iteration < iterations; iteration++) {
+          const next: Elem[] = new Array(ctx.size);
+          for (let i = 0; i < ctx.size; i++) {
+            let total = scaleElem(current[i] ?? 0, weights[i] ?? 1);
+            let totalWeight = weights[i] ?? 1;
+            for (const neighbor of ctx.neighbors(i)) {
+              const w = weights[neighbor] ?? 1;
+              total = addElem(total, scaleElem(current[neighbor] ?? 0, w));
+              totalWeight += w;
+            }
+            next[i] = totalWeight > 0 ? scaleElem(total, 1 / totalWeight) : current[i] ?? 0;
           }
-          next[i] = totalWeight > 0 ? scaleElem(total, 1 / totalWeight) : current[i] ?? 0;
+          current = next;
         }
-        current = next;
       }
+      if (FIELD_PROBE.node === api.node.name && (FIELD_PROBE.socket === "Value" || FIELD_PROBE.socket === "Result"))
+        FIELD_PROBE.batches.push({
+          domain: ctx.domain,
+          positions: Array.from({ length: ctx.size }, (_, i) => ctx.position?.(i) ?? [0, 0, 0]),
+          values: current,
+        });
       return current;
-    }),
-  };
+    });
+  return { Value: blurred };
 });
 
 reg("GeometryNodeDualMesh", (api) => {

@@ -1,6 +1,6 @@
 // Geometry-operation handlers.
 import { Field, Vec3, asVec3, asNum, vadd } from "../core";
-import { Geometry, Mesh, InstanceRef, buildTopology, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint } from "../geometry";
+import { Geometry, Mesh, InstanceRef, buildTopology, inverseTransformPoint, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint } from "../geometry";
 import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitives";
 import { reg, EvalAPI, DUMP_CONTEXT } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
@@ -9,6 +9,10 @@ import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 // Materializes a referenced scene object from the dump's embedded plain meshes
 // (dump_blend.py exports them for non-GN objects, e.g. the bin's 'printbed').
 function geometryOfDumpObject(obj: (typeof DUMP_CONTEXT.objects)[number] | undefined, evaluated = false): Geometry {
+  if (evaluated && obj) {
+    const runtime = DUMP_CONTEXT.evaluatedObjects.get(obj.name);
+    if (runtime) return runtime.clone();
+  }
   const out = new Geometry();
   const source = evaluated ? obj?.evaluated_mesh ?? obj?.mesh : obj?.mesh;
   if (source) {
@@ -38,11 +42,18 @@ reg("GeometryNodeObjectInfo", (api) => {
   // modifier stack. Targeted dumps embed that mesh so nested asset generators
   // (Sticker Noodle Brush -> Polarity Sticker) remain procedural in the VM.
   const out = geometryOfDumpObject(obj, true);
-  if (out.mesh && api.prop<string>("transform_space", "ORIGINAL") === "RELATIVE") {
+  if (api.prop<string>("transform_space", "ORIGINAL") === "RELATIVE") {
     const loc = (obj?.location ?? [0, 0, 0]) as Vec3;
     const rot = (obj?.rotation ?? [0, 0, 0]) as Vec3;
     const scl = (obj?.scale ?? [1, 1, 1]) as Vec3;
-    out.mesh.positions = out.mesh.positions.map((p) => transformPoint(p, loc, rot, scl));
+    const active = DUMP_CONTEXT.activeObject;
+    const activeLoc = (active?.location ?? [0, 0, 0]) as Vec3;
+    const activeRot = (active?.rotation ?? [0, 0, 0]) as Vec3;
+    const activeScale = (active?.scale ?? [1, 1, 1]) as Vec3;
+    const relative = (point: Vec3) => inverseTransformPoint(transformPoint(point, loc, rot, scl), activeLoc, activeRot, activeScale);
+    if (out.mesh) out.mesh.positions = out.mesh.positions.map(relative);
+    for (const spline of out.curves) spline.points = spline.points.map(relative);
+    for (const instance of out.instances) instance.position = relative(instance.position);
   }
   return {
     Geometry: out,
