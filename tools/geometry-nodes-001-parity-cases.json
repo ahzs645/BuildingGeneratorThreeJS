@@ -1,0 +1,6 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "wrapper enabled", "overrides": { "Switch": true } },
+  { "name": "thickness 6", "overrides": { "Thiccness": 6 } },
+  { "name": "wrapper 60 by 45", "overrides": { "Size X": 60, "Size Y": 45 } }
+]

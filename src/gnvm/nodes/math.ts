@@ -66,6 +66,56 @@ reg("ShaderNodeMath", (api) => {
   return { Value: fieldMap([a, b, c], (x, y, z) => f(num(x), num(y), num(z))) };
 });
 
+type CurvePoint = { location: [number, number]; handle_type?: string };
+function floatCurveSample(points: CurvePoint[], value: number, extend: string): number {
+  if (points.length < 2) return value;
+  const sorted = [...points].sort((a, b) => a.location[0] - b.location[0]);
+  const slope = (a: CurvePoint, b: CurvePoint) => {
+    const dx = b.location[0] - a.location[0];
+    return Math.abs(dx) > 1e-12 ? (b.location[1] - a.location[1]) / dx : 0;
+  };
+  if (value <= sorted[0].location[0]) return extend === "HORIZONTAL"
+    ? sorted[0].location[1]
+    : sorted[0].location[1] + (value - sorted[0].location[0]) * slope(sorted[0], sorted[1]);
+  const last = sorted.length - 1;
+  if (value >= sorted[last].location[0]) return extend === "HORIZONTAL"
+    ? sorted[last].location[1]
+    : sorted[last].location[1] + (value - sorted[last].location[0]) * slope(sorted[last - 1], sorted[last]);
+  let segment = 0;
+  while (segment + 1 < sorted.length && value > sorted[segment + 1].location[0]) segment++;
+  const p0 = sorted[segment], p1 = sorted[segment + 1];
+  const span = Math.max(1e-12, p1.location[0] - p0.location[0]);
+  const t = (value - p0.location[0]) / span;
+  // CurveMapping AUTO handles use a smooth cubic through neighboring points.
+  // Hermite tangents reproduce the authored S-ramp closely while preserving
+  // exact point values and linear two-point mappings.
+  const m0 = segment > 0 ? slope(sorted[segment - 1], p1) : slope(p0, p1);
+  const m1 = segment + 2 < sorted.length ? slope(p0, sorted[segment + 2]) : slope(p0, p1);
+  const t2 = t * t, t3 = t2 * t;
+  return (2 * t3 - 3 * t2 + 1) * p0.location[1]
+    + (t3 - 2 * t2 + t) * span * m0
+    + (-2 * t3 + 3 * t2) * p1.location[1]
+    + (t3 - t2) * span * m1;
+}
+
+reg("ShaderNodeFloatCurve", (api) => {
+  const mapping = api.prop<any>("curve_mapping", null);
+  const points: CurvePoint[] = mapping?.curves?.[0] ?? [
+    { location: [0, 0] }, { location: [1, 1] },
+  ];
+  const factor = api.field("Factor");
+  const value = api.field("Value");
+  return {
+    Value: fieldMap([factor, value], (factorValue, inputValue) => {
+      const f = Math.max(0, Math.min(1, num(factorValue)));
+      const x = num(inputValue);
+      let mapped = floatCurveSample(points, x, mapping?.extend ?? "EXTRAPOLATED");
+      if (mapping?.use_clip && Array.isArray(mapping.clip)) mapped = Math.max(mapping.clip[2], Math.min(mapping.clip[3], mapped));
+      return x * (1 - f) + mapped * f;
+    }),
+  };
+});
+
 // ---- Vector Math ----------------------------------------------------------
 const VECTOR_MATH_OPS = new Set([
   "ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "SCALE", "CROSS_PRODUCT", "NORMALIZE",

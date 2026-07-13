@@ -17,6 +17,14 @@ reg("GeometryNodeInputRadius", () => ({
   Radius: Field.perElem((i, ctx) => ctx.attr?.("radius", i) ?? 1),
 }));
 
+reg("GeometryNodeInputSplineResolution", () => ({
+  Resolution: Field.perElem((i, ctx) => ctx.splineResolution?.(i) ?? 1),
+}));
+
+// Browser evaluation is the viewport path. A future offline renderer can expose
+// an explicit render-mode override without changing portable graph semantics.
+reg("GeometryNodeIsViewport", () => ({ "Is Viewport": Field.of(1) }));
+
 reg("GeometryNodeImageInfo", (api) => {
   const image = DUMP_CONTEXT.images.find((candidate) => candidate.name === api.ref("Image")?.name);
   return {

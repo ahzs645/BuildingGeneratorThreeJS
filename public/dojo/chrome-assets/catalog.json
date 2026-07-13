@@ -392,5 +392,30 @@
       "fallback": "using the embedded Blender-extracted outline fallback"
     },
     "controls": []
+  },
+  {
+    "id": "geometry-nodes-001",
+    "title": "3D Chrome Grill Crayon",
+    "object": "3D CHROME CRAYON.001",
+    "dump": "dojo/chrome-assets/geometry-nodes-001/dump.json",
+    "reference": "dojo/references/chrome-assets/geometry-nodes-001.png",
+    "blenderStats": { "verts": 61812, "faces": 53892 },
+    "note": "Work in progress: the browser evaluates this 1,007-node root with full handler coverage and a vertex count within 1.23% of Blender, but the silhouette is not equivalent yet. Marching Squares keeps 23,471 web faces where Blender keeps 26,960, producing different N-gon connectivity before smoothing.",
+    "font": {
+      "url": "dojo/fonts/pixels.ttf",
+      "family": "Pixels Medium",
+      "requiredFor": "the nested instruction-string component",
+      "fallback": "using the embedded Blender-extracted outline fallback"
+    },
+    "controls": [
+      { "name": "SIGILIZE", "label": "Surface smoothing", "min": 32, "max": 444, "step": 1, "value": 444 },
+      { "name": "wrap resolution", "label": "Wrap resolution", "min": 1, "max": 5, "step": 0.25, "value": 3 },
+      { "name": "soften", "label": "Final soften", "min": 0, "max": 8, "step": 1, "value": 0 },
+      { "name": "Thiccness", "label": "Thickness", "min": 4, "max": 14, "step": 0.000001, "value": 9.579200744628906 },
+      { "name": "depth", "label": "Depth", "min": 0, "max": 2, "step": 0.000001, "value": 1 },
+      { "name": "Size X", "label": "Wrapper size X", "min": 45, "max": 100, "step": 0.000001, "value": 86.35643768310547 },
+      { "name": "wrapper size", "label": "Wrapper density", "min": 25, "max": 75, "step": 1, "value": 50 },
+      { "name": "Size Y", "label": "Wrapper size Y", "min": 35, "max": 90, "step": 0.000001, "value": 74.38009643554688 }
+    ]
   }
 ]

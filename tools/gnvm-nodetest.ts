@@ -462,6 +462,33 @@ function meshSignedAreaXY(m: Mesh): number {
   check("MergeByDistance leaves unselected coincident verts separate", out.mesh!.positions.length === 2 && out.mesh!.edges.length === 1);
 }
 
+// All-selected Split Edges reconstructs face boundaries in linear time and
+// retains only genuinely loose explicit edges outside those boundaries.
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [2, 0, 0], [3, 0, 0]];
+  m.faces = [[0, 1, 2], [0, 2, 3]];
+  m.faceMaterial = [0, 0];
+  m.edges = [[0, 1], [1, 2], [2, 0], [2, 3], [3, 0], [4, 5]];
+  const g = new Geometry();
+  g.mesh = m;
+  const out = runNode("GeometryNodeSplitEdges", { Mesh: g, Selection: true }).Mesh as Geometry;
+  check("Split Edges rebuilds selected face edges without quadratic duplicates", out.mesh?.positions.length === 8 && out.mesh.faces.length === 2 && out.mesh.edges.length === 7, `got ${out.mesh?.positions.length}v/${out.mesh?.edges.length}e`);
+}
+
+// EDGE-domain deletion removes faces incident to selected edges but preserves
+// the other face boundaries as loose wire geometry.
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]];
+  m.faces = [[0, 1, 2], [0, 2, 3]];
+  const g = new Geometry();
+  g.mesh = m;
+  const interior = Field.perElem((i, ctx) => (ctx.edgeFaceCount?.(i) === 2 ? 1 : 0)).tagged("EDGE");
+  const out = runNode("GeometryNodeDeleteGeometry", { Geometry: g, Selection: interior }, { domain: "EDGE" }).Geometry as Geometry;
+  check("Delete Geometry EDGE retains unselected boundary wire", out.mesh?.positions.length === 4 && out.mesh.edges.length === 4 && out.mesh.faces.length === 0, `got ${out.mesh?.positions.length}v/${out.mesh?.edges.length}e/${out.mesh?.faces.length}f`);
+}
+
 // (N) MergeByDistance checks neighboring hash cells
 {
   const d = 1e-5;
@@ -955,6 +982,10 @@ function meshSignedAreaXY(m: Mesh): number {
   const source = curve([[0, 0, 0], [4.9, 0, 0]], false);
   const sampled = runNode("GeometryNodeResampleCurve", { Curve: source, Mode: "Length" as any, Count: 12, Length: 2 }).Curve as Geometry;
   check("Resample Curve length mode floors fitted segments", sampled.curvePointCount() === 3, `points=${sampled.curvePointCount()}`);
+  const degenerate = new Geometry();
+  degenerate.curves = [{ points: [], cyclic: false }, { points: [[2, 3, 4]], cyclic: false }];
+  const degenerateSampled = runNode("GeometryNodeResampleCurve", { Curve: degenerate, Mode: "Count" as any, Count: 8, Length: 1 }).Curve as Geometry;
+  check("Resample Curve preserves empty and single-point splines", degenerateSampled.curves[0].points.length === 0 && degenerateSampled.curves[1].points.length === 1);
 }
 
 // (AC) Blender 5 treats an instances component as position-bearing points.
@@ -1075,6 +1106,45 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Image Texture samples CLIP edge pixels", approx(colorsA[0] as number[], [1, 0, 0]) && approx(colorsA[1] as number[], [0, 1, 0]));
   check("field arrays memoize per context", colorsA === colorsB);
   DUMP_CONTEXT.images = savedImages;
+}
+
+// (AH) Bradley/printing-library parity nodes.
+{
+  const cylinder = runNode("GeometryNodeMeshCylinder", {
+    Vertices: 8, "Side Segments": 2, "Fill Segments": 1, Radius: 2, Depth: 4,
+  }, { fill_type: "NGON" }).Mesh as Geometry;
+  check("Mesh Cylinder builds rings and caps", cylinder.mesh?.positions.length === 24 && cylinder.mesh.faces.length === 18,
+    `verts=${cylinder.mesh?.positions.length} faces=${cylinder.mesh?.faces.length}`);
+
+  const quad = box([0, 0, 0], [1, 1, 0]);
+  const triangulated = runNode("GeometryNodeTriangulate", { Mesh: quad, Selection: true }).Mesh as Geometry;
+  check("Triangulate splits six box quads", triangulated.mesh?.faces.length === 12 && triangulated.mesh.faces.every((face) => face.length === 3));
+
+  const line = curve([[0, 0, 0], [2, 0, 0]], false);
+  line.curveAttributes.set("weight", { domain: "POINT", data: [0, 2] });
+  const subdivided = runNode("GeometryNodeSubdivideCurve", { Curve: line, Cuts: 1 }).Curve as Geometry;
+  check("Subdivide Curve inserts linear cuts", subdivided.curves[0].points.length === 3 && approx(subdivided.curves[0].points[1], [1, 0, 0]));
+  check("Subdivide Curve interpolates attributes", approx(subdivided.curveAttributes.get("weight")!.data as number[], [0, 1, 2]));
+
+  const spiral = runNode("GeometryNodeCurveSpiral", {
+    Resolution: 8, Rotations: 2, "Start Radius": 1, "End Radius": 2, Height: 4, Reverse: false,
+  }).Curve as Geometry;
+  check("Curve Spiral uses samples per rotation", spiral.curves[0].points.length === 17, `got ${spiral.curves[0].points.length}`);
+  check("Curve Spiral endpoints", approx(spiral.curves[0].points[0], [1, 0, 0]) && approx(spiral.curves[0].points[16], [2, 0, 4]));
+
+  line.curves[0].resolution = 7;
+  const splineResolution = runNode("GeometryNodeInputSplineResolution", {}).Resolution as Field;
+  check("Spline Resolution reads authored value", approx(splineResolution.array(makeFieldCtx(line, "POINT")) as number[], [7, 7]));
+  const handles = runNode("GeometryNodeCurveSetHandles", { Curve: line, Selection: true }, { handle_type: "AUTO" }).Curve as Geometry;
+  check("Set Handle Type preserves evaluated curve", handles !== line && approx(handles.curves[0].points[1], [2, 0, 0]));
+  check("Is Viewport selects browser path", (runNode("GeometryNodeIsViewport", {})["Is Viewport"] as Field).value === 1);
+
+  const mapped = runNode("ShaderNodeFloatCurve", { Factor: 1, Value: Field.of(0.5) }, {
+    curve_mapping: { extend: "EXTRAPOLATED", use_clip: true, clip: [0, 1, 0, 1], curves: [[
+      { location: [0, 0] }, { location: [0.25, 0.1] }, { location: [0.75, 0.9] }, { location: [1, 1] },
+    ]] },
+  }).Value as Field;
+  check("Float Curve evaluates portable mapping", Math.abs((mapped.value as number) - 0.5) < 1e-6, `got ${mapped.value}`);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

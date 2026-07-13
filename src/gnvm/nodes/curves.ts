@@ -39,6 +39,26 @@ reg("GeometryNodeCurvePrimitiveLine", (api) => {
   return { Curve: curveGeo([{ points: [s, e], cyclic: false }]) };
 });
 
+reg("GeometryNodeCurveSpiral", (api) => {
+  const resolution = Math.max(1, Math.round(api.num("Resolution") || 8));
+  const rotations = api.num("Rotations") || 1;
+  const startRadius = api.num("Start Radius");
+  const endRadius = api.num("End Radius");
+  const height = api.num("Height");
+  const direction = api.bool("Reverse") ? -1 : 1;
+  // Blender defines Resolution as samples per full rotation and includes both
+  // endpoints of the open spiral.
+  const segments = Math.max(1, Math.round(Math.abs(rotations) * resolution));
+  const points: Vec3[] = [];
+  for (let i = 0; i <= segments; i++) {
+    const factor = i / segments;
+    const radius = startRadius + (endRadius - startRadius) * factor;
+    const angle = direction * rotations * Math.PI * 2 * factor;
+    points.push([Math.cos(angle) * radius, Math.sin(angle) * radius, height * factor]);
+  }
+  return { Curve: curveGeo([{ points, cyclic: false, resolution: 1 }]) };
+});
+
 reg("GeometryNodeCurveArc", (api) => {
   const resolution = Math.max(2, Math.round(api.num("Resolution") || 16));
   const mode = api.prop<string>("mode", "RADIUS");
@@ -184,10 +204,74 @@ reg("GeometryNodeSetSplineCyclic", (api) => {
 });
 
 reg("GeometryNodeSetSplineResolution", (api) => {
-  // Imported object curves already carry Blender's evaluated samples at their
-  // authored spline resolution. Preserve those samples here; re-tessellating
-  // the polyline would double-apply resolution downstream.
-  return { Geometry: api.geo("Geometry").clone() };
+  // Imported object curves already carry Blender's evaluated samples. Record
+  // the authored value for Spline Resolution fields, but do not tessellate a
+  // second time here.
+  const g = api.geo("Geometry").clone();
+  const selection = api.resolve(api.field("Selection"), g, "CURVE");
+  const resolution = api.resolve(api.field("Resolution"), g, "CURVE");
+  for (let i = 0; i < g.curves.length; i++) {
+    if (asNum(selection[i] ?? 1) > 0) g.curves[i].resolution = Math.max(1, Math.round(asNum(resolution[i] ?? 12)));
+  }
+  return { Geometry: g };
+});
+
+reg("GeometryNodeCurveSetHandles", (api) => {
+  // The VM stores evaluated polylines rather than editable Bezier handles.
+  // AUTO/ALIGNED handle effects are already baked into imported samples and
+  // Set Spline Type's Bezier conversion; retaining the samples is exact there.
+  return { Curve: api.geo("Curve").clone() };
+});
+
+reg("GeometryNodeSubdivideCurve", (api) => {
+  const source = api.geo("Curve");
+  const cutsField = api.resolve(api.field("Cuts"), source, "POINT");
+  const out = source.clone();
+  const mappings: { a: number; b: number; t: number }[] = [];
+  let flatOffset = 0;
+  out.curves = source.curves.map((spline) => {
+    if (spline.points.length < 2) {
+      mappings.push(...spline.points.map((_, i) => ({ a: flatOffset + i, b: flatOffset + i, t: 0 })));
+      flatOffset += spline.points.length;
+      return { ...spline, points: spline.points.map((p) => [...p] as Vec3), controlPoints: undefined };
+    }
+    const points: Vec3[] = [];
+    const segmentCount = spline.cyclic ? spline.points.length : spline.points.length - 1;
+    for (let segment = 0; segment < segmentCount; segment++) {
+      const next = (segment + 1) % spline.points.length;
+      const cuts = Math.max(0, Math.round(asNum(cutsField[flatOffset + segment] ?? 0)));
+      const pieces = cuts + 1;
+      for (let step = 0; step < pieces; step++) {
+        const t = step / pieces;
+        points.push(vadd(spline.points[segment], vscale(vsub(spline.points[next], spline.points[segment]), t)));
+        mappings.push({ a: flatOffset + segment, b: flatOffset + next, t });
+      }
+    }
+    if (!spline.cyclic) {
+      const last = spline.points.length - 1;
+      points.push([...spline.points[last]] as Vec3);
+      mappings.push({ a: flatOffset + last, b: flatOffset + last, t: 0 });
+    }
+    flatOffset += spline.points.length;
+    return { points, cyclic: spline.cyclic, resolution: spline.resolution };
+  });
+  out.curveAttributes.clear();
+  for (const [name, attribute] of source.curveAttributes) {
+    if (attribute.domain !== "POINT") {
+      out.curveAttributes.set(name, { domain: attribute.domain, data: [...attribute.data] });
+      continue;
+    }
+    out.curveAttributes.set(name, {
+      domain: "POINT",
+      data: mappings.map(({ a, b, t }) => {
+        const av = attribute.data[a] ?? 0, bv = attribute.data[b] ?? av;
+        return Array.isArray(av) || Array.isArray(bv)
+          ? vadd(vscale(asVec3(av), 1 - t), vscale(asVec3(bv), t))
+          : asNum(av) * (1 - t) + asNum(bv) * t;
+      }),
+    });
+  }
+  return { Curve: out };
 });
 
 reg("GeometryNodeReverseCurve", (api) => {

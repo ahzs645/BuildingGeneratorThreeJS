@@ -1,0 +1,102 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/geometry-nodes-001/dump.json",
+  "object": "3D CHROME CRAYON.001",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 62572,
+      "faces": 46941,
+      "bbox": {
+        "min": [
+          -40.6235,
+          -32.6236,
+          -8.1608
+        ],
+        "max": [
+          40.1393,
+          26.4018,
+          26.6611
+        ]
+      },
+      "elapsed_ms": 23719
+    },
+    {
+      "combo": {
+        "name": "wrapper enabled",
+        "overrides": {
+          "Switch": true
+        }
+      },
+      "status": "ok",
+      "verts": 62572,
+      "faces": 46941,
+      "bbox": {
+        "min": [
+          -40.6235,
+          -32.6236,
+          -8.1608
+        ],
+        "max": [
+          40.1393,
+          26.4018,
+          26.6611
+        ]
+      },
+      "elapsed_ms": 25691
+    },
+    {
+      "combo": {
+        "name": "thickness 6",
+        "overrides": {
+          "Thiccness": 6
+        }
+      },
+      "status": "ok",
+      "verts": 38641,
+      "faces": 26731,
+      "bbox": {
+        "min": [
+          -36.386,
+          -31.0889,
+          -4.1816
+        ],
+        "max": [
+          40.5417,
+          21.3202,
+          24.0341
+        ]
+      },
+      "elapsed_ms": 17381
+    },
+    {
+      "combo": {
+        "name": "wrapper 60 by 45",
+        "overrides": {
+          "Size X": 60,
+          "Size Y": 45
+        }
+      },
+      "status": "ok",
+      "verts": 41639,
+      "faces": 31108,
+      "bbox": {
+        "min": [
+          -31.9936,
+          -23.4355,
+          -0.4396
+        ],
+        "max": [
+          27.1509,
+          21.9973,
+          25.3657
+        ]
+      },
+      "elapsed_ms": 12550
+    }
+  ]
+}

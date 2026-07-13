@@ -98,6 +98,20 @@ def dump_node(node):
             pass
     if props:
         d["props"] = props
+    # Float Curve stores its authored ramp in a nested CurveMapping RNA object,
+    # not in the node's ordinary scalar properties. Without this explicit dump
+    # every portable graph silently degenerates to an identity curve.
+    if node.bl_idname == "ShaderNodeFloatCurve" and getattr(node, "mapping", None):
+        mapping = node.mapping
+        d.setdefault("props", {})["curve_mapping"] = {
+            "extend": mapping.extend,
+            "use_clip": bool(mapping.use_clip),
+            "clip": [mapping.clip_min_x, mapping.clip_max_x, mapping.clip_min_y, mapping.clip_max_y],
+            "curves": [[
+                {"location": list(point.location), "handle_type": point.handle_type}
+                for point in curve.points
+            ] for curve in mapping.curves],
+        }
     if node.bl_idname == "GeometryNodeGroup" and node.node_tree:
         d["group"] = node.node_tree.name
     # Repeat/simulation zones: record the paired output node so the evaluator can
@@ -409,7 +423,8 @@ for obj in bpy.data.objects:
                 tilts = [round(p.tilt, 6) for p in spline.points]
                 radii = [round(p.radius, 6) for p in spline.points]
             if points:
-                entry = {"points": points, "cyclic": cyclic, "tilts": tilts, "radii": radii, "tangents": tangents}
+                entry = {"points": points, "cyclic": cyclic, "tilts": tilts, "radii": radii, "tangents": tangents,
+                         "resolution": int(getattr(spline, "resolution_u", 0) or obj.data.resolution_u or 12)}
                 if control_points is not None:
                     entry["control_points"] = control_points
                 splines.append(entry)

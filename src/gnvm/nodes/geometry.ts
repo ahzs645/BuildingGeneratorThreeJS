@@ -28,6 +28,7 @@ function geometryOfDumpObject(obj: (typeof DUMP_CONTEXT.objects)[number] | undef
   if (obj?.curves && (!evaluated || !source)) {
     out.curves = obj.curves.map((spline) => ({
       cyclic: Boolean(spline.cyclic), points: spline.points.map((p) => [p[0], p[1], p[2]] as Vec3),
+      resolution: spline.resolution,
       controlPoints: spline.control_points?.map((p) => [p[0], p[1], p[2]] as Vec3),
     }));
     const tilts = obj.curves.flatMap((spline) => spline.tilts ?? spline.points.map(() => 0));
@@ -125,6 +126,17 @@ reg("GeometryNodeMeshCone", (api) => {
   const yes = Field.of(1);
   return { Mesh: mesh, Top: yes, Bottom: yes, Side: yes, "UV Map": Field.of([0, 0, 0]) };
 });
+reg("GeometryNodeMeshCylinder", (api) => {
+  const verts = api.num("Vertices") || 32;
+  const sideSeg = api.num("Side Segments") || 1;
+  const fillSeg = api.num("Fill Segments") || 1;
+  const radius = api.num("Radius") || 1;
+  const depth = api.num("Depth") || 2;
+  const fill = api.prop<string>("fill_type", "NGON") as "NONE" | "NGON" | "TRIANGLE_FAN";
+  const mesh = meshCone(verts, radius, radius, depth, sideSeg, fillSeg, fill);
+  const yes = Field.of(1);
+  return { Mesh: mesh, Top: yes, Bottom: yes, Side: yes, "UV Map": Field.of([0, 0, 0]) };
+});
 
 // ---- transform ------------------------------------------------------------
 reg(["GeometryNodeTransform", "GeometryNodeTransformGeometry"], (api) => {
@@ -211,6 +223,7 @@ reg("GeometryNodeJoinGeometry", (api) => {
     for (const inst of g.instances) out.instances.push({ ...inst });
     for (const s of g.curves) out.curves.push({
       cyclic: s.cyclic,
+      resolution: s.resolution,
       points: s.points.map((p) => [...p] as Vec3),
       controlPoints: s.controlPoints?.map((p) => [...p] as Vec3),
     });

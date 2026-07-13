@@ -48,6 +48,7 @@ export interface Dump {
       points: number[][];
       control_points?: number[][];
       cyclic: boolean;
+      resolution?: number;
       tilts?: number[];
       radii?: number[];
       tangents?: number[][];
@@ -88,6 +89,7 @@ function baseGeometryOf(dump: Dump, objectName: string): Geometry | null {
   if (obj?.curves) {
     g.curves = obj.curves.map((s: any) => ({
       cyclic: Boolean(s.cyclic),
+      resolution: s.resolution,
       points: s.points.map((p: number[]) => [p[0], p[1], p[2]]),
       controlPoints: s.control_points?.map((p: number[]) => [p[0], p[1], p[2]]),
     }));

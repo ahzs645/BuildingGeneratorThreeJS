@@ -112,6 +112,16 @@ function rotateAboutAxis(v: Vec3, axis: Vec3, ang: number): Vec3 {
 // Rotation-minimizing frames along a spline (double reflection method).
 export function splineFrames(pts: Vec3[], cyclic: boolean, tangentOverrides?: Vec3[]): { tangent: Vec3; normal: Vec3; binormal: Vec3 }[] {
   const n = pts.length;
+  if (n === 0) return [];
+  if (n === 1) {
+    const tangent = tangentOverrides?.[0] && vlen(tangentOverrides[0]) > 1e-9
+      ? vnorm(tangentOverrides[0])
+      : [0, 0, 1] as Vec3;
+    const normal: Vec3 = Math.abs(tangent[0]) < 0.9
+      ? vnorm(vsub([1, 0, 0], vscale(tangent, tangent[0])))
+      : vnorm(vsub([0, 1, 0], vscale(tangent, tangent[1])));
+    return [{ tangent, normal, binormal: vnorm(vcross(tangent, normal)) }];
+  }
   const tangents: Vec3[] = [];
   for (let i = 0; i < n; i++) {
     if (tangentOverrides?.[i] && vlen(tangentOverrides[i]) > 1e-9) { tangents.push(vnorm(tangentOverrides[i])); continue; }

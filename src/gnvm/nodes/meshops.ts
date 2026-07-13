@@ -92,16 +92,36 @@ reg("GeometryNodeDeleteGeometry", (api) => {
     // drop selected edges, plus faces using them (selection resolved per-edge)
     const ctx = makeFieldCtx(g, "EDGE");
     const sel = api.field("Selection").array(ctx);
-    const edges = buildTopology(g.mesh).edges;
+    const topology = buildTopology(g.mesh);
+    const edges = topology.edges;
     const dead = new Set<string>();
     for (let ei = 0; ei < edges.length; ei++) if (on(sel[ei])) dead.add(ekey(edges[ei].verts[0], edges[ei].verts[1]));
     const faceDead = (f: number[]) => {
       for (let i = 0; i < f.length; i++) if (dead.has(ekey(f[i], f[(i + 1) % f.length]))) return true;
       return false;
     };
-    const m = g.mesh;
-    m.edges = m.edges.filter(([a, b]) => !dead.has(ekey(a, b)));
-    g.mesh = keepFaces(m, (fi) => !faceDead(m.faces[fi]));
+    const source = g.mesh;
+    const keptEdgeIndices = edges.map((_, index) => index).filter((index) => !dead.has(ekey(edges[index].verts[0], edges[index].verts[1])));
+    const keptFaceIndices = source.faces.map((_, index) => index).filter((index) => !faceDead(source.faces[index]));
+    const out = new Mesh();
+    out.positions = source.positions.map((position) => [...position] as Vec3);
+    out.edges = keptEdgeIndices.map((index) => [...edges[index].verts] as [number, number]);
+    out.faces = keptFaceIndices.map((index) => [...source.faces[index]]);
+    out.faceMaterial = keptFaceIndices.map((index) => source.faceMaterial[index] ?? 0);
+    out.materialSlots = [...source.materialSlots];
+    const cornerStarts: number[] = [];
+    let cornerStart = 0;
+    for (const face of source.faces) { cornerStarts.push(cornerStart); cornerStart += face.length; }
+    const keptCorners = keptFaceIndices.flatMap((faceIndex) => source.faces[faceIndex].map((_, corner) => cornerStarts[faceIndex] + corner));
+    for (const [name, attribute] of source.attributes) {
+      if (attribute.domain === "POINT") out.attributes.set(name, { domain: "POINT", data: [...attribute.data] });
+      else if (attribute.domain === "EDGE") out.attributes.set(name, { domain: "EDGE", data: keptEdgeIndices.map((index) => attribute.data[index] ?? 0) });
+      else if (attribute.domain === "FACE") out.attributes.set(name, { domain: "FACE", data: keptFaceIndices.map((index) => attribute.data[index] ?? 0) });
+      else if (attribute.domain === "CORNER") out.attributes.set(name, { domain: "CORNER", data: keptCorners.map((index) => attribute.data[index] ?? 0) });
+    }
+    // EDGE deletion must retain unselected face-boundary edges as loose wire.
+    // Geometry Proximity uses that wire to measure distance from the boundary.
+    g.mesh = compact(out);
   } else {
     // POINT/CURVE: drop selected points, plus faces AND loose edges using them.
     // Loose edges must be filtered too — otherwise compact() keeps the dead
@@ -844,6 +864,11 @@ reg("GeometryNodeSplitEdges", (api) => {
     const splitPointData = new Map(splitPointAttributes.map(([name]) => [name, [] as Elem[]]));
     const incidentCorners = m.positions.map(() => [] as { face: number; corner: number }[]);
     for (let face = 0; face < m.faces.length; face++) for (let corner = 0; corner < m.faces[face].length; corner++) incidentCorners[m.faces[face][corner]].push({ face, corner });
+    const incidentEdges = m.positions.map(() => [] as number[]);
+    topology.edges.forEach((edge, edgeIndex) => {
+      incidentEdges[edge.verts[0]].push(edgeIndex);
+      incidentEdges[edge.verts[1]].push(edgeIndex);
+    });
     const cornerVertex = new Map<string, number>();
     for (let vertex = 0; vertex < m.positions.length; vertex++) {
       const corners = incidentCorners[vertex];
@@ -852,9 +877,8 @@ reg("GeometryNodeSplitEdges", (api) => {
       const find = (index: number): number => { while (parent[index] !== index) { parent[index] = parent[parent[index]]; index = parent[index]; } return index; };
       const unite = (a: number, b: number) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[rb] = ra; };
       const cornerByFace = new Map(corners.map((corner, index) => [corner.face, index]));
-      for (let edgeIndex = 0; edgeIndex < topology.edges.length; edgeIndex++) {
+      for (const edgeIndex of incidentEdges[vertex]) {
         const edge = topology.edges[edgeIndex];
-        if (edge.verts[0] !== vertex && edge.verts[1] !== vertex) continue;
         if (asNum(selArr[edgeIndex] ?? 0) > 0) continue;
         const connected = edge.faces.map((face) => cornerByFace.get(face)).filter((index): index is number => index !== undefined);
         for (let i = 1; i < connected.length; i++) unite(connected[0], connected[i]);
@@ -885,28 +909,31 @@ reg("GeometryNodeSplitEdges", (api) => {
   const pointAttrNames = [...m.attributes].filter(([, a]) => a.domain === "POINT").map(([k]) => k);
   const newPointAttrs = new Map<string, Elem[]>();
   for (const name of pointAttrNames) newPointAttrs.set(name, []);
-  const faceCopies: Map<number, number>[] = [];
+  const originalFaceEdges = new Set<string>();
   for (let fi = 0; fi < m.faces.length; fi++) {
     const f = m.faces[fi];
     const base = nm.positions.length;
-    const copies = new Map<number, number>();
-    for (const vi of f) {
+    for (let corner = 0; corner < f.length; corner++) {
+      const vi = f[corner];
       nm.positions.push([...m.positions[vi]] as Vec3);
-      copies.set(vi, base + copies.size);
       for (const name of pointAttrNames) newPointAttrs.get(name)!.push(m.attributes.get(name)!.data[vi]);
+      nm.edges.push([base + corner, base + ((corner + 1) % f.length)]);
+      originalFaceEdges.add(ekey(vi, f[(corner + 1) % f.length]));
     }
-    faceCopies.push(copies);
     nm.faces.push(f.map((_, k) => base + k));
     nm.faceMaterial.push(m.faceMaterial[fi] ?? 0);
   }
-  if (m.edges.length) {
-    for (const [a, b] of m.edges)
-      for (const copies of faceCopies) {
-        const na = copies.get(a), nb = copies.get(b);
-        if (na !== undefined && nb !== undefined) nm.edges.push([na, nb]);
-      }
-  } else {
-    for (const f of nm.faces) for (let k = 0; k < f.length; k++) nm.edges.push([f[k], f[(k + 1) % f.length]]);
+  // Explicit face edges are already represented by each unwelded face
+  // boundary. Only carry genuinely loose edges separately. The previous
+  // edge×face search was quadratic and exhausted memory on Chrome Crayon.
+  for (const [a, b] of m.edges) {
+    if (originalFaceEdges.has(ekey(a, b))) continue;
+    const na = nm.positions.length;
+    for (const vi of [a, b]) {
+      nm.positions.push([...m.positions[vi]] as Vec3);
+      for (const name of pointAttrNames) newPointAttrs.get(name)!.push(m.attributes.get(name)!.data[vi]);
+    }
+    nm.edges.push([na, na + 1]);
   }
   for (const [name, data] of newPointAttrs) nm.attributes.set(name, { domain: "POINT", data });
   // carry FACE attributes unchanged (same face count/order)
@@ -924,6 +951,54 @@ reg("GeometryNodeSubdivideMesh", (api) => {
   let mesh = g.mesh;
   for (let l = 0; l < level; l++) mesh = subdivideOnce(mesh, false);
   g.mesh = mesh;
+  return { Mesh: g };
+});
+
+reg("GeometryNodeTriangulate", (api) => {
+  const g = api.geo("Mesh").clone();
+  const mesh = g.mesh;
+  if (!mesh) return { Mesh: g };
+  const selection = api.resolve(api.field("Selection"), g, "FACE");
+  const faces: number[][] = [];
+  const materials: number[] = [];
+  const faceSources: number[] = [];
+  const cornerSources: number[] = [];
+  let sourceCorner = 0;
+  const push = (face: number[], sourceFace: number, corners: number[]) => {
+    faces.push(face); materials.push(mesh.faceMaterial[sourceFace] ?? 0); faceSources.push(sourceFace);
+    cornerSources.push(...corners.map((corner) => sourceCorner + corner));
+  };
+  for (let fi = 0; fi < mesh.faces.length; fi++) {
+    const face = mesh.faces[fi];
+    if (face.length <= 3 || asNum(selection[fi] ?? 1) <= 0) {
+      push([...face], fi, face.map((_, i) => i));
+    } else if (face.length === 4) {
+      const p = face.map((vi) => mesh.positions[vi]);
+      const d02 = Math.hypot(p[0][0] - p[2][0], p[0][1] - p[2][1], p[0][2] - p[2][2]);
+      const d13 = Math.hypot(p[1][0] - p[3][0], p[1][1] - p[3][1], p[1][2] - p[3][2]);
+      if (d02 <= d13) {
+        push([face[0], face[1], face[2]], fi, [0, 1, 2]);
+        push([face[0], face[2], face[3]], fi, [0, 2, 3]);
+      } else {
+        push([face[0], face[1], face[3]], fi, [0, 1, 3]);
+        push([face[1], face[2], face[3]], fi, [1, 2, 3]);
+      }
+    } else {
+      // Deterministic fan. Bolt's triangulated inputs are convex circular caps;
+      // this matches Blender there and retains original vertices/attributes.
+      for (let corner = 1; corner + 1 < face.length; corner++)
+        push([face[0], face[corner], face[corner + 1]], fi, [0, corner, corner + 1]);
+    }
+    sourceCorner += face.length;
+  }
+  mesh.faces = faces;
+  mesh.faceMaterial = materials;
+  mesh.edges = [];
+  for (const [name, attribute] of mesh.attributes) {
+    if (attribute.domain === "FACE") mesh.attributes.set(name, { domain: "FACE", data: faceSources.map((fi) => attribute.data[fi] ?? 0) });
+    else if (attribute.domain === "CORNER") mesh.attributes.set(name, { domain: "CORNER", data: cornerSources.map((ci) => attribute.data[ci] ?? 0) });
+  }
+  invalidateMeshCaches(mesh);
   return { Mesh: g };
 });
 

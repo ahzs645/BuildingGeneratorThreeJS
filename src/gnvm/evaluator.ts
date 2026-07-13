@@ -291,6 +291,10 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
       const si = domain === "CURVE" ? i : splineOfPoint[i] ?? 0;
       return geo.curves[si]?.points.length ?? 0;
     },
+    splineResolution: (i) => {
+      const si = domain === "CURVE" ? i : splineOfPoint[i] ?? 0;
+      return Math.max(1, Math.round(geo.curves[si]?.resolution ?? 1));
+    },
     neighbors: (i) => {
       if (mesh) {
         if (domain === "POINT") {

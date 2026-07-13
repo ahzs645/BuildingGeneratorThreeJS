@@ -1,0 +1,10 @@
+{
+  "id": "geometry-nodes-001",
+  "object": "3D CHROME CRAYON.001",
+  "root": "Geometry Nodes.001",
+  "status": "partial-parity",
+  "blender": { "verts": 61812, "faces": 53892 },
+  "gnvm": { "verts": 62572, "faces": 46941 },
+  "coverage": "100% of reachable node types; the browser evaluates all 1,007 nodes in the root closure.",
+  "validation": "Four Blender/VM cases cover authored settings, wrapper switching, thickness, and wrapper dimensions. Authored vertices differ by 1.23%; the altered cases remain within 8.72%. Visual comparison is not yet equivalent: the Marching Squares branch keeps 23,471 web faces versus 26,960 in Blender, changing connectivity before the 444-iteration smoothing pass and producing a clustered silhouette."
+}

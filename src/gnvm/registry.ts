@@ -77,7 +77,7 @@ export interface DumpObject {
   materials?: string[];
   mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][] };
   evaluated_mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][]; materials?: (string | null)[] };
-  curves?: { points: number[][]; control_points?: number[][]; cyclic: boolean; tilts?: number[]; radii?: number[]; tangents?: number[][] }[];
+  curves?: { points: number[][]; control_points?: number[][]; cyclic: boolean; resolution?: number; tilts?: number[]; radii?: number[]; tangents?: number[][] }[];
   modifiers?: { type: string; node_group?: string; input_values?: Record<string, any> }[];
 }
 export const DUMP_CONTEXT: {

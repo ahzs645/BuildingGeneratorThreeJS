@@ -11,6 +11,15 @@ if (!dumpPath) throw new Error("usage: npx tsx tools/gnvm-trace.ts <dump.json> [
 const dump = JSON.parse(readFileSync(dumpPath, "utf8")) as Dump;
 TRACE.on = true;
 TRACE.log = [];
+if (process.env.GNVM_TRACE_STREAM) {
+  const append = TRACE.log.push.bind(TRACE.log);
+  TRACE.log.push = (...entries) => {
+    for (const entry of entries) {
+      console.error(`TRACE_STREAM ${entry.group} :: ${entry.node} — ${entry.verts}v/${entry.faces}f ${entry.curves}c ${entry.inst}i`);
+    }
+    return append(...entries);
+  };
+}
 const overrides = overridesPath
   ? JSON.parse(readFileSync(overridesPath, "utf8"))[0]?.overrides ?? {}
   : undefined;

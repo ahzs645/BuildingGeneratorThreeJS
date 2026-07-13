@@ -67,6 +67,7 @@ export interface FieldCtx {
   splineCyclic?: (i: number) => boolean;
   splineLength?: (i: number) => number;
   splinePointCount?: (i: number) => number;
+  splineResolution?: (i: number) => number;
   // Explicit neighborhood on the active domain (Blur Attribute).
   neighbors?: (i: number) => number[];
 }

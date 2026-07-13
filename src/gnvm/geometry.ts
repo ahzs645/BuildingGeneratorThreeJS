@@ -88,6 +88,8 @@ export interface InstanceRef {
 export interface Spline {
   points: Vec3[];
   cyclic: boolean;
+  // Blender's evaluated points-per-segment setting. Poly splines use 1.
+  resolution?: number;
   // Evaluated polyline points may be denser than the authored spline knots.
   // Set Spline Type -> Poly must retain the original control-point count.
   controlPoints?: Vec3[];
@@ -115,6 +117,7 @@ export class Geometry {
     if (this.mesh) g.mesh = this.mesh.clone();
     g.curves = this.curves.map((s) => ({
       cyclic: s.cyclic,
+      resolution: s.resolution,
       points: s.points.map((p) => [...p] as Vec3),
       controlPoints: s.controlPoints?.map((p) => [...p] as Vec3),
     }));
