@@ -1,0 +1,238 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Print Bed Previewer_Object",
+  "modifier": "GeometryNodes",
+  "node_group": "Print Bed Previewer.001",
+  "saved_values": {
+    "Size Select": 1,
+    "Select Object to Print": null,
+    "Filament Color": [
+      0.6640819907188416,
+      0.8000473976135254,
+      0.0,
+      1.0
+    ],
+    "LAYER": 1.0,
+    "slice": false,
+    "Scale": 1.0,
+    "Translation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "Rotation": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored bed",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 10692,
+      "faces": 95,
+      "bbox": {
+        "min": [
+          -127.8021,
+          -136.3182,
+          -1.8833
+        ],
+        "max": [
+          127.8021,
+          136.3182,
+          235.0
+        ]
+      },
+      "elapsed_ms": 8.7
+    },
+    {
+      "combo": {
+        "name": "alternate size",
+        "overrides": {
+          "Size Select": 0
+        }
+      },
+      "status": "ok",
+      "verts": 10692,
+      "faces": 95,
+      "bbox": {
+        "min": [
+          -127.8021,
+          -136.3182,
+          -1.8833
+        ],
+        "max": [
+          127.8021,
+          136.3182,
+          200.0
+        ]
+      },
+      "elapsed_ms": 8.4
+    },
+    {
+      "combo": {
+        "name": "slice preview",
+        "overrides": {
+          "slice": true
+        }
+      },
+      "status": "ok",
+      "verts": 10692,
+      "faces": 95,
+      "bbox": {
+        "min": [
+          -127.8021,
+          -136.3182,
+          -1.8833
+        ],
+        "max": [
+          127.8021,
+          136.3182,
+          235.0
+        ]
+      },
+      "elapsed_ms": 8.3
+    },
+    {
+      "combo": {
+        "name": "half layer",
+        "overrides": {
+          "LAYER": 0.5
+        }
+      },
+      "status": "ok",
+      "verts": 10692,
+      "faces": 95,
+      "bbox": {
+        "min": [
+          -127.8021,
+          -136.3182,
+          -1.8833
+        ],
+        "max": [
+          127.8021,
+          136.3182,
+          235.0
+        ]
+      },
+      "elapsed_ms": 8.9
+    },
+    {
+      "combo": {
+        "name": "object scale",
+        "overrides": {
+          "Scale": 1.5
+        }
+      },
+      "status": "ok",
+      "verts": 10692,
+      "faces": 95,
+      "bbox": {
+        "min": [
+          -127.8021,
+          -136.3182,
+          -1.8833
+        ],
+        "max": [
+          127.8021,
+          136.3182,
+          235.0
+        ]
+      },
+      "elapsed_ms": 8.4
+    },
+    {
+      "combo": {
+        "name": "object translation",
+        "overrides": {
+          "Translation": [
+            20,
+            -10,
+            5
+          ]
+        }
+      },
+      "status": "ok",
+      "verts": 10692,
+      "faces": 95,
+      "bbox": {
+        "min": [
+          -127.8021,
+          -136.3182,
+          -1.8833
+        ],
+        "max": [
+          127.8021,
+          136.3182,
+          235.0
+        ]
+      },
+      "elapsed_ms": 9.2
+    },
+    {
+      "combo": {
+        "name": "object rotation",
+        "overrides": {
+          "Rotation": [
+            0,
+            0,
+            0.7853981633974483
+          ]
+        }
+      },
+      "status": "ok",
+      "verts": 10692,
+      "faces": 95,
+      "bbox": {
+        "min": [
+          -127.8021,
+          -136.3182,
+          -1.8833
+        ],
+        "max": [
+          127.8021,
+          136.3182,
+          235.0
+        ]
+      },
+      "elapsed_ms": 9.3
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "build plate": {
+        "faces": 95,
+        "verts": 156
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 95,
+      "verts": 10692
+    }
+  }
+}

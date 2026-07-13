@@ -1,0 +1,16 @@
+{
+  "id": "n03d-print-bed-previewer",
+  "object": "Print Bed Previewer_Object",
+  "root": "Print Bed Previewer.001",
+  "status": "exact-geometry-parity",
+  "blender": {
+    "verts": 10692,
+    "faces": 95
+  },
+  "gnvm": {
+    "verts": 10692,
+    "faces": 95
+  },
+  "coverage": "100% of reachable node types across the 7-group, 147-node closure.",
+  "validation": "Seven Blender/VM cases have exact topology and local bounds. The supplied file has no object assigned to Select Object to Print, so its slice, layer, scale, translation, and rotation inputs are Blender no-ops and are intentionally not exposed. Geometry and material assignment are preserved; the original build-plate shader references a missing logo_600x600_crop_center.webp and is normalized by the comparison renderer. The missing Archivo SemiBold font does not affect this authored bed-only result."
+}

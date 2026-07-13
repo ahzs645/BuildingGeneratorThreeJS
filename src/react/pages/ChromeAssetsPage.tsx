@@ -16,6 +16,7 @@ export default function ChromeAssetsPage(): React.JSX.Element {
     <aside className="assets-panel">
       <label><span>Ported asset</span><select id="assets-select" /></label>
       <div id="assets-font-status" hidden />
+      <p id="assets-note" />
       <div id="assets-controls" />
       <button id="assets-reset" type="button">Reset authored values</button>
       <small id="assets-runtime">Worker idle</small>

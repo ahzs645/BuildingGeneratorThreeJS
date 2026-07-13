@@ -577,5 +577,16 @@
       { "type": "checkbox", "name": "Switch", "label": "Show bit columns", "value": true },
       { "name": "wall thic", "label": "Wall thickness", "min": 0.2, "max": 3, "step": 0.05, "value": 0.97064208984375 }
     ]
+  },
+  {
+    "id": "n03d-print-bed-previewer",
+    "title": "N03D · Print Bed Previewer",
+    "object": "Print Bed Previewer_Object",
+    "dump": "dojo/n03d/print-bed-previewer/dump.json",
+    "reference": "dojo/references/n03d/print-bed-previewer.png",
+    "blenderStats": { "verts": 10692, "faces": 95 },
+    "flatShading": true,
+    "note": "Exact Blender geometry across seven validation cases: 10,692 vertices / 95 faces with identical local bounds. No print object is assigned in the supplied file, so slice/layer/transform inputs are Blender no-ops and are not exposed. The neutral comparison preserves material assignment but does not reproduce the original build-plate shader because its logo_600x600_crop_center.webp is missing from the pack.",
+    "controls": []
   }
 ]

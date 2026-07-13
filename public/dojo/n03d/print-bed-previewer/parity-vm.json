@@ -1,0 +1,181 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/print-bed-previewer/dump.json",
+  "object": "Print Bed Previewer_Object",
+  "results": [
+    {
+      "combo": {
+        "name": "authored bed",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 10692,
+      "faces": 95,
+      "bbox": {
+        "min": [
+          -127.8021,
+          -136.3182,
+          -1.8833
+        ],
+        "max": [
+          127.8021,
+          136.3182,
+          235
+        ]
+      },
+      "elapsed_ms": 85
+    },
+    {
+      "combo": {
+        "name": "alternate size",
+        "overrides": {
+          "Size Select": 0
+        }
+      },
+      "status": "ok",
+      "verts": 10692,
+      "faces": 95,
+      "bbox": {
+        "min": [
+          -127.8021,
+          -136.3182,
+          -1.8833
+        ],
+        "max": [
+          127.8021,
+          136.3182,
+          200
+        ]
+      },
+      "elapsed_ms": 49
+    },
+    {
+      "combo": {
+        "name": "slice preview",
+        "overrides": {
+          "slice": true
+        }
+      },
+      "status": "ok",
+      "verts": 10692,
+      "faces": 95,
+      "bbox": {
+        "min": [
+          -127.8021,
+          -136.3182,
+          -1.8833
+        ],
+        "max": [
+          127.8021,
+          136.3182,
+          235
+        ]
+      },
+      "elapsed_ms": 39
+    },
+    {
+      "combo": {
+        "name": "half layer",
+        "overrides": {
+          "LAYER": 0.5
+        }
+      },
+      "status": "ok",
+      "verts": 10692,
+      "faces": 95,
+      "bbox": {
+        "min": [
+          -127.8021,
+          -136.3182,
+          -1.8833
+        ],
+        "max": [
+          127.8021,
+          136.3182,
+          235
+        ]
+      },
+      "elapsed_ms": 35
+    },
+    {
+      "combo": {
+        "name": "object scale",
+        "overrides": {
+          "Scale": 1.5
+        }
+      },
+      "status": "ok",
+      "verts": 10692,
+      "faces": 95,
+      "bbox": {
+        "min": [
+          -127.8021,
+          -136.3182,
+          -1.8833
+        ],
+        "max": [
+          127.8021,
+          136.3182,
+          235
+        ]
+      },
+      "elapsed_ms": 30
+    },
+    {
+      "combo": {
+        "name": "object translation",
+        "overrides": {
+          "Translation": [
+            20,
+            -10,
+            5
+          ]
+        }
+      },
+      "status": "ok",
+      "verts": 10692,
+      "faces": 95,
+      "bbox": {
+        "min": [
+          -127.8021,
+          -136.3182,
+          -1.8833
+        ],
+        "max": [
+          127.8021,
+          136.3182,
+          235
+        ]
+      },
+      "elapsed_ms": 30
+    },
+    {
+      "combo": {
+        "name": "object rotation",
+        "overrides": {
+          "Rotation": [
+            0,
+            0,
+            0.7853981633974483
+          ]
+        }
+      },
+      "status": "ok",
+      "verts": 10692,
+      "faces": 95,
+      "bbox": {
+        "min": [
+          -127.8021,
+          -136.3182,
+          -1.8833
+        ],
+        "max": [
+          127.8021,
+          136.3182,
+          235
+        ]
+      },
+      "elapsed_ms": 30
+    }
+  ]
+}

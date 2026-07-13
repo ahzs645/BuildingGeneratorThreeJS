@@ -1,0 +1,23 @@
+{
+  "object": "Print Bed Previewer_Object",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -127.8021011352539,
+      -136.3181610107422,
+      -1.8833426237106323
+    ],
+    "max": [
+      127.8021011352539,
+      136.3181610107422,
+      235.00001525878906
+    ]
+  },
+  "verts": 10692,
+  "faces": 95,
+  "materials": [
+    "build plate",
+    "Filament PLA .02 mm layer height",
+    "cross section.002"
+  ]
+}
