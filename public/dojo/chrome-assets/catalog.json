@@ -96,7 +96,7 @@
     "dump": "dojo/chrome-assets/string-to-text-002/dump.json",
     "reference": "dojo/references/chrome-assets/string-to-text-002.png",
     "blenderStats": { "verts": 4446, "faces": 26 },
-    "note": "Authored face topology is exact; the browser differs by 5.62% vertices because its poly-fillet bookkeeping is approximate, while local bounds remain within 0.17 units.",
+    "note": "Authored face topology is exact; the browser differs by 5.62% vertices because its poly-fillet bookkeeping is approximate, while local bounds remain within 0.60 units.",
     "controls": [
       { "type": "text", "name": "String", "label": "Text", "value": "3D Chrome Crayon" },
       { "name": "Align", "label": "Align: left / center / right", "min": 0, "max": 2, "step": 1, "value": 1 },
@@ -109,13 +109,34 @@
     ]
   },
   {
+    "id": "text-006",
+    "title": "Chrome Tools Text Plate",
+    "object": "text",
+    "dump": "dojo/chrome-assets/text-006/dump.json",
+    "reference": "dojo/references/chrome-assets/text-006.png",
+    "blenderStats": { "verts": 1373, "faces": 1135 },
+    "note": "Authored raised-text topology and bounds match realized Blender output exactly. Twelve of thirteen validation cases are exact; extreme character expansion remains within 0.76% vertices.",
+    "controls": [
+      { "type": "text", "name": "String", "label": "Text", "value": "CHROME TOOLS" },
+      { "name": "Size", "label": "Size", "min": 5, "max": 60, "step": 0.000001, "value": 30.688175201416016 },
+      { "name": "Character Spacing", "label": "Character spacing", "min": 0.25, "max": 2, "step": 0.000001, "value": 1 },
+      { "name": "Word Spacing", "label": "Word spacing", "min": 0.25, "max": 2, "step": 0.000001, "value": 1 },
+      { "name": "Line Spacing", "label": "Line spacing", "min": 0.1, "max": 2, "step": 0.000001, "value": 1 },
+      { "name": "Text Box Width", "label": "Text box width (0 = no wrap)", "min": 0, "max": 300, "step": 0.01, "value": 0 },
+      { "type": "vector", "name": "Translation", "label": "Translation XYZ", "value": [0, 0, 0], "step": 0.1 },
+      { "type": "vector", "name": "Rotation", "label": "Rotation XYZ (radians)", "value": [0, 0, 0], "step": 0.01 },
+      { "type": "vector", "name": "Scale", "label": "Scale XYZ", "value": [1, 1, 1], "step": 0.01 },
+      { "type": "checkbox", "name": "Switch", "label": "Show background plate", "value": true }
+    ]
+  },
+  {
     "id": "string-to-text",
     "title": "String to Text",
     "object": "Vert.001",
     "dump": "dojo/chrome-assets/string-to-text/dump.json",
     "reference": "dojo/references/chrome-assets/string-to-text.png",
     "blenderStats": { "verts": 246, "faces": 20 },
-    "note": "The packed SF Intermosaic glyph outlines and all authored faces match Blender; the VM omits 24 loose/bookkeeping vertices and keeps the authored bounds within 1.16 units.",
+    "note": "The packed SF Intermosaic glyph outlines and all authored faces match Blender; the VM omits 24 loose/bookkeeping vertices and keeps the authored bounds within 0.39 units.",
     "controls": [
       { "type": "text", "name": "String", "label": "Text", "value": "3D Chrome Crayon" },
       { "name": "Align", "label": "Align: left / center / right", "min": 0, "max": 2, "step": 1, "value": 1 },

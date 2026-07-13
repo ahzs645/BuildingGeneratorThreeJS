@@ -1,9 +1,9 @@
 {
   "root": "_TEXT.006",
   "objects": ["text", "txt"],
-  "status": "near-parity",
-  "blender": { "object": "text", "verts": 1053, "faces": 960 },
-  "gnvmEmbeddedFont": { "verts": 1213, "faces": 975 },
+  "status": "exact-authored",
+  "blender": { "object": "text", "verts": 1373, "faces": 1135 },
+  "gnvmEmbeddedFont": { "verts": 1373, "faces": 1135 },
   "coverage": { "missingNodeTypes": 0 },
-  "remaining": "The packed SF Intermosaic glyph outlines and raw point counts are exact. Downstream N-gon/instance processing still accounts for the remaining 160 vertices and 15 faces."
+  "validation": "The supplied SF Intermosaic glyph atlas, raised glyph extrusion, background plate, and authored bounds match realized Blender output exactly. Twelve of thirteen text/layout/transform cases are topology- and bounds-exact; Character Spacing 1.5 differs by 0.76% vertices and 0.8525 bounds units."
 }

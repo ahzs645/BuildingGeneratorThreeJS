@@ -1,0 +1,329 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/text-006/dump.json",
+  "object": "text",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 1373,
+      "faces": 1135,
+      "bbox": {
+        "min": [
+          -13.0717,
+          -25.0059,
+          0
+        ],
+        "max": [
+          251.7575,
+          18.1864,
+          1
+        ]
+      },
+      "elapsed_ms": 34
+    },
+    {
+      "combo": {
+        "name": "short text",
+        "overrides": {
+          "String": "NODE DOJO"
+        }
+      },
+      "status": "ok",
+      "verts": 1047,
+      "faces": 871,
+      "bbox": {
+        "min": [
+          -13.0717,
+          -25.0059,
+          0
+        ],
+        "max": [
+          193.7909,
+          18.1864,
+          1
+        ]
+      },
+      "elapsed_ms": 7
+    },
+    {
+      "combo": {
+        "name": "size=20",
+        "overrides": {
+          "Size": 20
+        }
+      },
+      "status": "ok",
+      "verts": 925,
+      "faces": 715,
+      "bbox": {
+        "min": [
+          -13.0717,
+          -20.8494,
+          0
+        ],
+        "max": [
+          168.6272,
+          16.405,
+          1
+        ]
+      },
+      "elapsed_ms": 5
+    },
+    {
+      "combo": {
+        "name": "size=40",
+        "overrides": {
+          "Size": 40
+        }
+      },
+      "status": "ok",
+      "verts": 1762,
+      "faces": 1501,
+      "bbox": {
+        "min": [
+          -13.0717,
+          -28.6272,
+          0
+        ],
+        "max": [
+          324.1828,
+          19.7383,
+          1
+        ]
+      },
+      "elapsed_ms": 6
+    },
+    {
+      "combo": {
+        "name": "character spacing=0.7",
+        "overrides": {
+          "Character Spacing": 0.7
+        }
+      },
+      "status": "ok",
+      "verts": 1100,
+      "faces": 883,
+      "bbox": {
+        "min": [
+          -13.0717,
+          -25.0059,
+          0
+        ],
+        "max": [
+          185.2664,
+          18.1864,
+          1
+        ]
+      },
+      "elapsed_ms": 2
+    },
+    {
+      "combo": {
+        "name": "character spacing=1.5",
+        "overrides": {
+          "Character Spacing": 1.5
+        }
+      },
+      "status": "ok",
+      "verts": 1698,
+      "faces": 1435,
+      "bbox": {
+        "min": [
+          -13.0717,
+          -25.0059,
+          0
+        ],
+        "max": [
+          335.2975,
+          18.1864,
+          1
+        ]
+      },
+      "elapsed_ms": 4
+    },
+    {
+      "combo": {
+        "name": "word spacing=0.5",
+        "overrides": {
+          "Word Spacing": 0.5
+        }
+      },
+      "status": "ok",
+      "verts": 1334,
+      "faces": 1099,
+      "bbox": {
+        "min": [
+          -13.0717,
+          -25.0059,
+          0
+        ],
+        "max": [
+          241.5281,
+          18.1864,
+          1
+        ]
+      },
+      "elapsed_ms": 4
+    },
+    {
+      "combo": {
+        "name": "line spacing=0.5",
+        "overrides": {
+          "Line Spacing": 0.5
+        }
+      },
+      "status": "ok",
+      "verts": 1373,
+      "faces": 1135,
+      "bbox": {
+        "min": [
+          -13.0717,
+          -25.0059,
+          0
+        ],
+        "max": [
+          251.7575,
+          18.1864,
+          1
+        ]
+      },
+      "elapsed_ms": 3
+    },
+    {
+      "combo": {
+        "name": "text box width=80",
+        "overrides": {
+          "Text Box Width": 80
+        }
+      },
+      "status": "ok",
+      "verts": 1288,
+      "faces": 1078,
+      "bbox": {
+        "min": [
+          -13.0717,
+          -40.35,
+          0
+        ],
+        "max": [
+          132.4146,
+          33.5304,
+          1
+        ]
+      },
+      "elapsed_ms": 4
+    },
+    {
+      "combo": {
+        "name": "translation",
+        "overrides": {
+          "Translation": [
+            5,
+            -3,
+            2
+          ]
+        }
+      },
+      "status": "ok",
+      "verts": 1373,
+      "faces": 1135,
+      "bbox": {
+        "min": [
+          -13.0717,
+          -25.0059,
+          0
+        ],
+        "max": [
+          251.7575,
+          18.1864,
+          3
+        ]
+      },
+      "elapsed_ms": 3
+    },
+    {
+      "combo": {
+        "name": "rotation z=0.25",
+        "overrides": {
+          "Rotation": [
+            0,
+            0,
+            0.25
+          ]
+        }
+      },
+      "status": "ok",
+      "verts": 1373,
+      "faces": 1135,
+      "bbox": {
+        "min": [
+          -13.0717,
+          -25.0059,
+          0
+        ],
+        "max": [
+          251.7575,
+          64.0075,
+          1
+        ]
+      },
+      "elapsed_ms": 3
+    },
+    {
+      "combo": {
+        "name": "nonuniform scale",
+        "overrides": {
+          "Scale": [
+            0.8,
+            1.2,
+            1
+          ]
+        }
+      },
+      "status": "ok",
+      "verts": 1373,
+      "faces": 1135,
+      "bbox": {
+        "min": [
+          -13.0717,
+          -25.0059,
+          0
+        ],
+        "max": [
+          251.7575,
+          18.1864,
+          1
+        ]
+      },
+      "elapsed_ms": 3
+    },
+    {
+      "combo": {
+        "name": "background off",
+        "overrides": {
+          "Switch": false
+        }
+      },
+      "status": "ok",
+      "verts": 320,
+      "faces": 175,
+      "bbox": {
+        "min": [
+          0,
+          -11.9343,
+          0
+        ],
+        "max": [
+          238.6858,
+          5.1147,
+          1
+        ]
+      },
+      "elapsed_ms": 2
+    }
+  ]
+}

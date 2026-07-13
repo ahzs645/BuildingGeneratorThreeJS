@@ -533,7 +533,30 @@ reg("GeometryNodeStringToCurves", (api) => {
   const fontName = api.ref("Font")?.name;
   const atlas = fontName ? DUMP_CONTEXT.fonts[fontName] : undefined;
   const alignYOffset = size * (atlas?.align_offsets?.[alignY] ?? 0);
-  const advanceOf = (ch: string) => size * (atlas?.glyphs[ch]?.advance ?? .7) * advanceScale * (ch === " " ? wordSpacing : 1);
+  const inkWidths = new Map<string, number>();
+  const inkWidthOf = (ch: string): number => {
+    const cached = inkWidths.get(ch);
+    if (cached !== undefined) return cached;
+    const curves = atlas?.glyphs[ch]?.curves ?? [];
+    let min = Infinity, max = -Infinity;
+    for (const curve of curves) for (const point of curve.points) {
+      min = Math.min(min, Number(point[0] ?? 0));
+      max = Math.max(max, Number(point[0] ?? 0));
+    }
+    // Use the forward ink extent from the glyph origin. A negative left-side
+    // overhang does not push the following glyph to the right in Blender.
+    const width = Number.isFinite(min) && Number.isFinite(max) ? Math.max(0, max) : 0;
+    inkWidths.set(ch, width);
+    return width;
+  };
+  const advanceOf = (ch: string) => {
+    const base = size * (atlas?.glyphs[ch]?.advance ?? .7) * (ch === " " ? wordSpacing : 1);
+    if (advanceScale <= 1 || !atlas) return base * advanceScale;
+    // Blender compresses using the full advance below 1.0, but extra spacing
+    // above 1.0 is based on the glyph's visible ink width. This preserves
+    // overhanging fonts and does not add character spacing to blank spaces.
+    return base + size * inkWidthOf(ch) * (advanceScale - 1);
+  };
 
   const wrapLine = (line: string): string[] => {
     if (textBoxWidth <= 0 || !line.includes(" ")) return [line];
@@ -564,6 +587,11 @@ reg("GeometryNodeStringToCurves", (api) => {
   const lines = text.split("\n").flatMap(wrapLine);
   const out = new Geometry();
   const cellH = size * lineSpacing;
+  const blockHeight = Math.max(0, lines.length - 1) * cellH;
+  const alignYKey = alignY.toUpperCase().replace(/[^A-Z]/g, "");
+  const blockOffset = alignYKey === "MIDDLE" || alignYKey === "CENTER"
+    ? blockHeight / 2
+    : alignYKey.startsWith("BOTTOM") ? blockHeight : 0;
 
   let lineIdx = 0;
   for (const line of lines) {
@@ -576,7 +604,7 @@ reg("GeometryNodeStringToCurves", (api) => {
     let x = 0;
     if (alignX === "CENTER") x = -lineWidth / 2;
     else if (alignX === "RIGHT") x = -lineWidth;
-    const y = alignYOffset - lineIdx * cellH;
+    const y = alignYOffset + blockOffset - lineIdx * cellH;
     for (const ch of chars) {
       if (ch === " ") {
         x += advanceOf(ch);

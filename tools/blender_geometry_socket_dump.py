@@ -27,6 +27,11 @@ if mode == "fill":
     tree.links.new(fill.outputs["Mesh"], realize.inputs["Geometry"])
     source_socket = realize.outputs["Geometry"]
     temporary_nodes.extend([realize, fill])
+elif mode == "realize":
+    realize = tree.nodes.new("GeometryNodeRealizeInstances")
+    tree.links.new(source_socket, realize.inputs["Geometry"])
+    source_socket = realize.outputs["Geometry"]
+    temporary_nodes.append(realize)
 tree.links.new(source_socket, geometry_socket)
 obj.update_tag()
 bpy.context.view_layer.update()

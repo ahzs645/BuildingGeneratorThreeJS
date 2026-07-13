@@ -3,7 +3,7 @@
 // delete/separate, weld, flip).
 import { Field, Vec3, Elem, Domain, asVec3, asNum, vadd, vscale, vnorm } from "../core";
 import { Geometry, Mesh, buildTopology, invalidateMeshCaches } from "../geometry";
-import { reg } from "../registry";
+import { reg, type EvalAPI } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 
 const ekey = (a: number, b: number) => (a < b ? `${a}_${b}` : `${b}_${a}`);
@@ -446,8 +446,21 @@ function faceMaskField(name: string): Field {
 // dropped when unreferenced; consumers of a mask always read it before the
 // next extrude in every graph we run.
 const isStaleExtrudeMask = (name: string) => name.startsWith("__extrude_top_") || name.startsWith("__extrude_side_");
-reg("GeometryNodeExtrudeMesh", (api) => {
+function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
   const g = api.geo("Mesh").clone();
+  if (g.instances.length) {
+    g.instances = g.instances.map((instance) => {
+      const nestedApi: EvalAPI = {
+        ...api,
+        geo: (name) => name === "Mesh" ? instance.geometry : api.geo(name),
+      };
+      const nested = extrudeMesh(nestedApi).Mesh;
+      return {
+        ...instance,
+        geometry: nested instanceof Geometry ? nested : instance.geometry.clone(),
+      };
+    });
+  }
   if (!g.mesh) return { Mesh: g, Top: Field.of(0), Side: Field.of(0) };
   const mode = api.prop<string>("mode", "FACES");
   const scale = api.num("Offset Scale");
@@ -794,7 +807,8 @@ reg("GeometryNodeExtrudeMesh", (api) => {
     Top: faceMaskField(topName),
     Side: faceMaskField(sideName),
   };
-});
+}
+reg("GeometryNodeExtrudeMesh", extrudeMesh);
 
 // ---- Split Edges ----------------------------------------------------------
 // Split all selected edges. The bin subdivision uses Selection=all, which fully

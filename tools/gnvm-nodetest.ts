@@ -595,12 +595,23 @@ function meshSignedAreaXY(m: Mesh): number {
   })["Curve Instances"] as Geometry;
   check("StringToCurves uses extracted font outlines", atlasCurves.instances[0].geometry.curves[0].points[2][1] === 2);
   check("StringToCurves uses extracted font advances", Math.abs(atlasCurves.instances[1].position[0] - 1.6) < 1e-9);
+  const expandedAtlasCurves = runNode("GeometryNodeStringToCurves", {
+    String: "AB", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
+    "Align X": "Left", "Character Spacing": 1.5, "Word Spacing": 1, "Line Spacing": 1,
+  })["Curve Instances"] as Geometry;
+  check("StringToCurves expands spacing by glyph ink width above one", Math.abs(expandedAtlasCurves.instances[1].position[0] - 2.2) < 1e-9);
   const wrappedAtlasCurves = runNode("GeometryNodeStringToCurves", {
     String: "A B", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
     "Align X": "Left", "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": .5,
     "Text Box Width": 2,
   })["Curve Instances"] as Geometry;
   check("StringToCurves wraps whole words at Text Box Width", wrappedAtlasCurves.instances.length === 2 && Math.abs(wrappedAtlasCurves.instances[1].position[1] + 1) < 1e-9);
+  const centeredWrappedAtlas = runNode("GeometryNodeStringToCurves", {
+    String: "A B", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
+    "Align X": "Left", "Align Y": "Middle", "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": .5,
+    "Text Box Width": 2,
+  })["Curve Instances"] as Geometry;
+  check("StringToCurves vertically centers wrapped Middle text", Math.abs(centeredWrappedAtlas.instances[0].position[1] - .5) < 1e-9 && Math.abs(centeredWrappedAtlas.instances[1].position[1] + .5) < 1e-9);
   DUMP_CONTEXT.fonts = savedFonts;
 
   const outlinedGlyph = new Geometry();
@@ -743,6 +754,37 @@ function meshSignedAreaXY(m: Mesh): number {
   };
   const result = new Evaluator(program).evalGroup("outer", { Density: Field.of(349.38) }).Result as Field;
   check("Group input coerces linked float to Int", result.value === 349, `got ${result.value}`);
+}
+
+// Mesh nodes operate on mesh components inside instances. String to Curves
+// keeps one instance per glyph, and Blender extrudes each filled glyph payload
+// before the instances are realized downstream.
+{
+  const payload = new Geometry();
+  payload.mesh = new Mesh();
+  payload.mesh.positions = [[0, 0, 0], [1, 0, 0], [0, 1, 0]];
+  payload.mesh.faces = [[0, 1, 2]];
+  const instanced = new Geometry();
+  instanced.instances = [{ geometry: payload, position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }];
+  const out = runNode(
+    "GeometryNodeExtrudeMesh",
+    { Mesh: instanced, Selection: true, Offset: [0, 0, 0], "Offset Scale": 1, Individual: false },
+    { mode: "FACES" },
+  ).Mesh as Geometry;
+  const extruded = out.instances[0]?.geometry.mesh;
+  check("Extrude Mesh evaluates instance payloads", extruded?.positions.length === 6 && extruded.faces.length === 4, `got ${extruded?.positions.length ?? 0}v/${extruded?.faces.length ?? 0}f`);
+}
+
+{
+  const payload = curve([[1, 0, 0], [2, 0, 0]], false);
+  const instanced = new Geometry();
+  instanced.instances = [{ geometry: payload, position: [1, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }];
+  const out = runNode("GeometryNodeTransform", {
+    Geometry: instanced, Translation: [0, 0, 0], Rotation: [0, 0, Math.PI / 2], Scale: [2, 3, 1],
+  }).Geometry as Geometry;
+  check("Transform Geometry composes instance rotation", approx(out.instances[0].rotation, [0, 0, Math.PI / 2]));
+  check("Transform Geometry composes instance scale", approx(out.instances[0].scale, [2, 3, 1]));
+  check("Transform Geometry transforms instance origin", approx(out.instances[0].position, [0, 2, 0]));
 }
 
 // (Y) Repeated EDGE extrude must carry the source profile's direction through

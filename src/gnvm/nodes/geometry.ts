@@ -125,6 +125,13 @@ reg(["GeometryNodeTransform", "GeometryNodeTransformGeometry"], (api) => {
   for (const spline of g.curves) spline.points = spline.points.map((p) => transformPoint(p, t, r, s));
   for (const inst of g.instances) {
     inst.position = transformPoint(inst.position, t, r, s);
+    // Transform Geometry composes with the complete instance transform, not
+    // only its origin. The Dojo text assets rotate/scale glyph instances before
+    // Extrude Mesh and expose the difference in their raised letter bounds.
+    // Component-wise Euler composition is exact for the single-axis rotations
+    // used by these graphs (and matches Rotate Instances' current semantics).
+    inst.rotation = vadd(inst.rotation, r);
+    inst.scale = [inst.scale[0] * s[0], inst.scale[1] * s[1], inst.scale[2] * s[2]];
   }
   return { Geometry: g };
 });
