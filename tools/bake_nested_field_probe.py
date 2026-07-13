@@ -94,7 +94,15 @@ elif store.data_type == "FLOAT_VECTOR":
     values = [list(item.vector) for item in attribute.data]
 else:
     values = [item.value for item in attribute.data]
-positions = [[round(v.co.x, 7), round(v.co.y, 7), round(v.co.z, 7)] for v in mesh.vertices]
+if domain == "FACE":
+    positions = [[round(p.center.x, 7), round(p.center.y, 7), round(p.center.z, 7)] for p in mesh.polygons]
+elif domain == "EDGE":
+    positions = [
+        [round((mesh.vertices[e.vertices[0]].co[i] + mesh.vertices[e.vertices[1]].co[i]) * 0.5, 7) for i in range(3)]
+        for e in mesh.edges
+    ]
+else:
+    positions = [[round(v.co.x, 7), round(v.co.y, 7), round(v.co.z, 7)] for v in mesh.vertices]
 histogram = {}
 for value in values:
     key = str(value)

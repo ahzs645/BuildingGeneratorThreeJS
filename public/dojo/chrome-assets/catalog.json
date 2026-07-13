@@ -1386,7 +1386,7 @@
   "reference": "dojo/references/n03d/stackable-bin.png",
   "blenderStats": { "verts": 11288, "faces": 10410 },
   "localSpace": true,
-  "note": "Exact authored topology and bounds for the complete 302-node bin graph. Six control cases remain topology-exact; optional grid lines are live partial parity at 12,840 / 11,957 versus Blender 13,328 / 12,449.",
+  "note": "Exact authored topology and bounds for the complete 302-node bin graph. Six control cases remain topology-exact; optional grid lines are near-exact at 13,322 / 12,443 versus Blender 13,328 / 12,449 (-0.05%), with bounds within 0.0004 units.",
   "controls": [
     { "name": "x", "label": "Grid X", "min": 1, "max": 8, "step": 1, "value": 4 },
     { "name": "y", "label": "Grid Y", "min": 1, "max": 8, "step": 1, "value": 2 },

@@ -282,6 +282,14 @@ export function fillCurves(curves: Spline[], mode: "NGONS" | "TRIANGLES"): Mesh 
     return mesh;
   }
   const loops = fillLoops(fillInput, plane);
+  // Blender resolves crossings between cyclic outlines before triangulating.
+  // This matters for same-winding overlaps such as Stackable Bin's 13x13
+  // groove cells crossing its rounded clip outline. Preserve the inexpensive
+  // legacy path when there are no proper intersections (the common case).
+  if (mode === "TRIANGLES" && emitIntersectingFill(mesh, loops, plane)) {
+    mesh.materialSlots = [null];
+    return mesh;
+  }
   if (mode === "NGONS") {
     for (const loop of loops) emitSimpleFill(mesh, loop.points, "NGONS");
     mesh.materialSlots = [null];
@@ -322,7 +330,141 @@ type PolyRef = {
   vi: number;
 };
 
-const FILL_EPS = 1e-9;
+const FILL_EPS = 1e-12;
+
+function emitIntersectingFill(mesh: Mesh, loops: FillLoop[], plane: FillPlane): boolean {
+  if (loops.length < 2) return false;
+  type Split = { t: number; vi: number };
+  const bases: number[] = [];
+  for (const loop of loops) {
+    bases.push(mesh.positions.length);
+    for (const point of loop.points) mesh.positions.push([...point] as Vec3);
+  }
+  const splits = loops.map((loop) => loop.points.map(() => [] as Split[]));
+  const bounds = loops.map((loop) => ({
+    minX: Math.min(...loop.points2.map((point) => point[0])),
+    minY: Math.min(...loop.points2.map((point) => point[1])),
+    maxX: Math.max(...loop.points2.map((point) => point[0])),
+    maxY: Math.max(...loop.points2.map((point) => point[1])),
+  }));
+  const intersectionByKey = new Map<string, number>();
+  let intersectionCount = 0;
+  const properIntersection = (a: Vec2, b: Vec2, c: Vec2, d: Vec2): { ta: number; tb: number } | null => {
+    const abx = b[0] - a[0], aby = b[1] - a[1];
+    const cdx = d[0] - c[0], cdy = d[1] - c[1];
+    const denominator = abx * cdy - aby * cdx;
+    if (Math.abs(denominator) <= FILL_EPS) return null;
+    const acx = c[0] - a[0], acy = c[1] - a[1];
+    const ta = (acx * cdy - acy * cdx) / denominator;
+    const tb = (acx * aby - acy * abx) / denominator;
+    const endpointEpsilon = 1e-8;
+    return ta > endpointEpsilon && ta < 1 - endpointEpsilon && tb > endpointEpsilon && tb < 1 - endpointEpsilon
+      ? { ta, tb }
+      : null;
+  };
+  for (let ai = 0; ai < loops.length; ai++) for (let bi = ai + 1; bi < loops.length; bi++) {
+    const ab = bounds[ai], bb = bounds[bi];
+    if (ab.maxX < bb.minX || bb.maxX < ab.minX || ab.maxY < bb.minY || bb.maxY < ab.minY) continue;
+    const a = loops[ai], b = loops[bi];
+    for (let ase = 0; ase < a.points2.length; ase++) {
+      const a0 = a.points2[ase], a1 = a.points2[(ase + 1) % a.points2.length];
+      const aminX = Math.min(a0[0], a1[0]), amaxX = Math.max(a0[0], a1[0]);
+      const aminY = Math.min(a0[1], a1[1]), amaxY = Math.max(a0[1], a1[1]);
+      for (let bse = 0; bse < b.points2.length; bse++) {
+        const b0 = b.points2[bse], b1 = b.points2[(bse + 1) % b.points2.length];
+        if (amaxX < Math.min(b0[0], b1[0]) || Math.max(b0[0], b1[0]) < aminX
+          || amaxY < Math.min(b0[1], b1[1]) || Math.max(b0[1], b1[1]) < aminY) continue;
+        const hit = properIntersection(a0, a1, b0, b1);
+        if (!hit) continue;
+        const point2: Vec2 = [a0[0] + (a1[0] - a0[0]) * hit.ta, a0[1] + (a1[1] - a0[1]) * hit.ta];
+        const key = `${Math.round(point2[0] * 1e10)}:${Math.round(point2[1] * 1e10)}`;
+        let vi = intersectionByKey.get(key);
+        if (vi === undefined) {
+          vi = mesh.positions.length;
+          mesh.positions.push(vadd(a.points[ase], vscale(vsub(a.points[(ase + 1) % a.points.length], a.points[ase]), hit.ta)));
+          intersectionByKey.set(key, vi);
+          intersectionCount++;
+        }
+        splits[ai][ase].push({ t: hit.ta, vi });
+        splits[bi][bse].push({ t: hit.tb, vi });
+      }
+    }
+  }
+  if (!intersectionCount) {
+    mesh.positions.length = bases[0] ?? 0;
+    return false;
+  }
+
+  const positions2: Vec2[] = mesh.positions.map((point) => projectFillPoint(point, plane));
+  const edges: [number, number][] = [];
+  const edgeKeys = new Set<string>();
+  const addEdge = (a: number, b: number) => {
+    if (a === b) return;
+    const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+    if (edgeKeys.has(key)) return;
+    edgeKeys.add(key);
+    edges.push([a, b]);
+  };
+  for (let li = 0; li < loops.length; li++) {
+    const loop = loops[li];
+    for (let segment = 0; segment < loop.points.length; segment++) {
+      const start = bases[li] + segment;
+      const end = bases[li] + (segment + 1) % loop.points.length;
+      const chain = [start, ...splits[li][segment].sort((a, b) => a.t - b.t).map((split) => split.vi), end];
+      for (let i = 0; i + 1 < chain.length; i++) addEdge(chain[i], chain[i + 1]);
+    }
+  }
+  const adjacency = new Map<number, number[]>();
+  for (const [a, b] of edges) {
+    adjacency.set(a, [...(adjacency.get(a) ?? []), b]);
+    adjacency.set(b, [...(adjacency.get(b) ?? []), a]);
+  }
+  for (const [vertex, neighbors] of adjacency) neighbors.sort((a, b) =>
+    Math.atan2(positions2[a][1] - positions2[vertex][1], positions2[a][0] - positions2[vertex][0])
+    - Math.atan2(positions2[b][1] - positions2[vertex][1], positions2[b][0] - positions2[vertex][0]));
+  const visited = new Set<string>();
+  const directedKey = (a: number, b: number) => `${a}:${b}`;
+  const windingAt = (point: Vec2): number => {
+    let winding = 0;
+    for (const loop of loops) {
+      for (let i = 0; i < loop.points2.length; i++) {
+        const a = loop.points2[i], b = loop.points2[(i + 1) % loop.points2.length];
+        if (a[1] <= point[1]) {
+          if (b[1] > point[1] && cross2(a, b, point) > 0) winding++;
+        } else if (b[1] <= point[1] && cross2(a, b, point) < 0) winding--;
+      }
+    }
+    return winding;
+  };
+  for (const [start, neighbors] of adjacency) for (const first of neighbors) {
+    if (visited.has(directedKey(start, first))) continue;
+    const face: number[] = [];
+    let previous = start, current = first;
+    while (!visited.has(directedKey(previous, current)) && face.length <= edges.length + 1) {
+      visited.add(directedKey(previous, current));
+      face.push(previous);
+      const around = adjacency.get(current) ?? [];
+      const reverse = around.indexOf(previous);
+      if (reverse < 0 || !around.length) break;
+      const next = around[(reverse - 1 + around.length) % around.length];
+      previous = current;
+      current = next;
+      if (previous === start && current === first) break;
+    }
+    if (previous !== start || current !== first || face.length < 3) continue;
+    const refs = face.map((vi) => ({ p: positions2[vi], vi }));
+    if (signedAreaRefs(refs) <= FILL_EPS) continue;
+    const center = avg2(refs.map((ref) => ref.p));
+    // Fill Curve's Triangles mode uses the even-odd rule: overlap regions with
+    // winding two are holes, while each singly covered side remains filled.
+    if (Math.abs(windingAt(center)) % 2 === 0) continue;
+    for (const triangle of earClip(refs)) {
+      mesh.faces.push(triangle);
+      mesh.faceMaterial.push(0);
+    }
+  }
+  return true;
+}
 
 function emitSimpleFill(mesh: Mesh, points: Vec3[], mode: "NGONS" | "TRIANGLES") {
   const base = mesh.positions.length;
@@ -553,12 +695,17 @@ function earContainsPoint(a: Vec2, b: Vec2, c: Vec2, verts: PolyRef[], ai: numbe
 }
 
 function loopContainsLoop(outer: FillLoop, inner: FillLoop): boolean {
+  let strictlyInside = false;
   for (const p of inner.points2) {
     const r = pointInPolygon(p, outer.points2);
-    if (r > 0) return true;
+    // Partial overlap is not containment. The old first-inside-point shortcut
+    // classified every groove crossing Stackable Bin's rounded boundary as a
+    // hole, dropping the whole 68-point loop instead of letting Fill Curve
+    // resolve its boundary intersections.
     if (r < 0) return false;
+    if (r > 0) strictlyInside = true;
   }
-  return pointInPolygon(avg2(inner.points2), outer.points2) > 0;
+  return strictlyInside || pointInPolygon(avg2(inner.points2), outer.points2) > 0;
 }
 
 function pointInPolygon(p: Vec2, poly: Vec2[]): number {

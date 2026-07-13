@@ -432,6 +432,20 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Fill Curve welds adjacent cyclic duplicates", welded.mesh?.positions.length === 4 && welded.mesh.faces[0]?.length === 4, `${welded.mesh?.positions.length}/${welded.mesh?.faces[0]?.length}`);
 }
 
+// Blender splits crossing cyclic outlines before its even-odd triangle fill.
+// Two overlapping 2x2 squares therefore retain their eight authored corners,
+// add two boundary intersections, and omit the doubly covered unit square.
+{
+  const crossing = curves([
+    { points: [[0, 0, 0], [2, 0, 0], [2, 2, 0], [0, 2, 0]], cyclic: true },
+    { points: [[1, -1, 0], [3, -1, 0], [3, 1, 0], [1, 1, 0]], cyclic: true },
+  ]);
+  const filled = runNode("GeometryNodeFillCurve", { Curve: crossing }, { mode: "TRIANGLES" }).Mesh as Geometry;
+  const m = filled.mesh!;
+  check("Fill Curve splits crossing cyclic outlines", m.positions.length === 10, `${m.positions.length} verts`);
+  check("Fill Curve applies even-odd overlap fill", Math.abs(meshSignedAreaXY(m) - 6) < 1e-6, `${m.faces.length} faces / area ${meshSignedAreaXY(m)}`);
+}
+
 // Fill Curve is defined in the curve component's local XY plane.
 {
   const g = runNode("GeometryNodeFillCurve", { Curve: curve([[0, 0, -0.019], [1, 0, -0.019], [0, 1, -0.019]], true) }, { mode: "NGONS" }).Mesh as Geometry;
