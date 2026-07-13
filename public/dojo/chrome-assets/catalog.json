@@ -12,6 +12,24 @@
     ]
   },
   {
+    "id": "soft-star-flat-stickie",
+    "title": "Soft Star Flat Stickie",
+    "object": "8pt soft star flat stickie.001",
+    "dump": "dojo/chrome-assets/soft-star-flat-stickie/dump.json",
+    "reference": "dojo/references/chrome-assets/soft-star-flat-stickie.png",
+    "blenderStats": { "verts": 4, "faces": 1 },
+    "controls": []
+  },
+  {
+    "id": "spoke-flat-stickie",
+    "title": "10pt Spoke Flat Stickie",
+    "object": "10pt spoke flat stickie",
+    "dump": "dojo/chrome-assets/spoke-flat-stickie/dump.json",
+    "reference": "dojo/references/chrome-assets/spoke-flat-stickie.png",
+    "blenderStats": { "verts": 4, "faces": 1 },
+    "controls": []
+  },
+  {
     "id": "sticker-noodle-star",
     "title": "Sticker Noodle Star",
     "object": "Sticker Noodle Brush",

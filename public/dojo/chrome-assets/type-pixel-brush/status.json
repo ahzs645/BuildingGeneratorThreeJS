@@ -1,0 +1,9 @@
+{
+  "id": "type-pixel-brush",
+  "object": "Type Pixel Brush Chrome",
+  "root": "soft pixel marker.001",
+  "status": "source-blocked",
+  "reason": "Blender evaluates the supplied object to no mesh because its external BudokanRoundedBold-WyyeO.ttf font is missing.",
+  "missing": ["/Users/ahmadjalil/Fonts/BudokanRoundedBold-WyyeO.ttf"],
+  "portableDump": "dojo/chrome-assets/type-pixel-brush/dump.json"
+}
