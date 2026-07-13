@@ -64,17 +64,6 @@ reg(["GeometryNodeFieldOnDomain", "GeometryNodeAttributeDomainSize"], (api) => {
 });
 
 // ---- Align Euler to Vector ------------------------------------------------
-// Matrix aligning unit axis `a` onto target `t` (Rodrigues), then euler XYZ
-// extracted for M = Rz*Ry*Rx (the convention rotateEulerXYZ uses).
-function axisAngleMatrix(axis: Vec3, angle: number): number[][] {
-  const [x, y, z] = vnorm(axis);
-  const c = Math.cos(angle), s = Math.sin(angle), t = 1 - c;
-  return [
-    [t * x * x + c, t * x * y - s * z, t * x * z + s * y],
-    [t * x * y + s * z, t * y * y + c, t * y * z - s * x],
-    [t * x * z - s * y, t * y * z + s * x, t * z * z + c],
-  ];
-}
 function matrixToEulerXYZ(M: number[][]): Vec3 {
   const sy = -M[2][0];
   const ey = Math.asin(Math.max(-1, Math.min(1, sy)));
@@ -156,29 +145,13 @@ function quatSlerpIdentity(q0: Quat, factor: number): Quat {
 
 reg("FunctionNodeAlignEulerToVector", (api) => {
   const axisSel = api.prop<string>("axis", "X");
-  const a: Vec3 = axisSel === "Y" ? [0, 1, 0] : axisSel === "Z" ? [0, 0, 1] : [1, 0, 0];
-  const vecF = api.field("Vector");
-  const facF = api.field("Factor");
+  const localAxis: Vec3 = axisSel === "Y" ? [0, 1, 0] : axisSel === "Z" ? [0, 0, 1] : [1, 0, 0];
   return {
-    Rotation: Field.make((ctx) => {
-      const vArr = vecF.array(ctx);
-      const fArr = facF.array(ctx);
-      const out: Elem[] = new Array(ctx.size);
-      for (let i = 0; i < ctx.size; i++) {
-        const t = vnorm(asVec3(vArr[i] ?? [0, 0, 1]));
-        const f = asNum(fArr[i] ?? 1);
-        const d = Math.max(-1, Math.min(1, vdot(a, t)));
-        let ang = Math.acos(d) * f;
-        let axis = vcross(a, t);
-        if (vlen(axis) <= 1e-12) {
-          // Antiparallel vectors have infinitely many valid rotation axes.
-          // Blender's AUTO pivot keeps Z stable when aligning Y (the radial
-          // array's -Y point); choosing X reflects the instanced curve in Z.
-          axis = axisSel === "Y" ? [0, 0, 1] : axisSel === "Z" ? [1, 0, 0] : [0, 1, 0];
-        }
-        out[i] = matrixToEulerXYZ(axisAngleMatrix(axis, ang));
-      }
-      return out;
+    Rotation: fieldMap([api.field("Rotation"), api.field("Vector"), api.field("Factor")], (r, v, f) => {
+      const base = quatFromEulerXYZ(asVec3(r));
+      const currentAxis = quatRotate(base, localAxis);
+      const delta = quatSlerpIdentity(quatFromTo(currentAxis, asVec3(v), axisSel), asNum(f));
+      return quatToEulerXYZ(quatMultiply(delta, base));
     }),
   };
 });

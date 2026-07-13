@@ -178,6 +178,14 @@ function meshSignedAreaXY(m: Mesh): number {
   const value = rotation.array({ size: 1, domain: "POINT" })[0] as Vec3;
   check("AlignEuler antiparallel Y uses stable Z pivot", Math.abs(Math.abs(value[2]) - Math.PI) < 1e-6 && Math.abs(value[0]) < 1e-6, JSON.stringify(value));
 
+  const twistedRotation = runNode(
+    "FunctionNodeAlignEulerToVector",
+    { Rotation: [0, 0, Math.PI / 2], Vector: [0, 0, 1], Factor: 1 },
+    { axis: "Z", pivot_axis: "AUTO" },
+  ).Rotation as Field;
+  const twistedValue = twistedRotation.array({ size: 1, domain: "POINT" })[0] as Vec3;
+  check("AlignEuler preserves incoming roll around the aligned axis", Math.abs(twistedValue[2] - Math.PI / 2) < 1e-6, JSON.stringify(twistedValue));
+
   const modernRotation = runNode(
     "FunctionNodeAlignRotationToVector",
     { Rotation: [0, 0, 0], Vector: [0, -1, 0], Factor: 1 },
