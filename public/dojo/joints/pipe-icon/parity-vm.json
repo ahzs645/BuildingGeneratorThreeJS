@@ -1,0 +1,18 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/joints/pipe-icon/dump.json",
+  "object": "pipe icon",
+  "results": [
+    {
+      "combo": { "name": "authored default", "overrides": {} },
+      "status": "ok",
+      "verts": 73062,
+      "faces": 72486,
+      "bbox": {
+        "min": [-42.222286224365234, -42.949951171875, -44.72629165649414],
+        "max": [43.986083984375, 39.532432556152344, 37.01131057739258]
+      },
+      "elapsed_ms": 887
+    }
+  ]
+}

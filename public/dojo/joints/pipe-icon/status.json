@@ -1,0 +1,16 @@
+{
+  "id": "joint-pipe-icon",
+  "object": "pipe icon",
+  "root": "pipe icon.001",
+  "status": "exact-parity",
+  "blender": {
+    "verts": 73062,
+    "faces": 72486
+  },
+  "gnvm": {
+    "verts": 73062,
+    "faces": 72486
+  },
+  "coverage": "100% of reachable node types across the 2-group, 24-node closure.",
+  "validation": "The authored fixed five-way pipe icon has exact topology and bit-for-bit matching local bounds. Cylinder.006 was audited alongside it and intentionally evaluates to empty geometry in both Blender and GN-VM; it is an attribute/material helper rather than a gallery generator."
+}

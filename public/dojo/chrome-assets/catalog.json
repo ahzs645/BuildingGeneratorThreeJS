@@ -768,5 +768,16 @@
       { "name": "Soften", "label": "Soften iterations", "min": 0, "max": 10, "step": 1, "value": 5 },
       { "name": "Max bubble size", "label": "Maximum bubble size", "min": 0.25, "max": 3, "step": 0.01, "value": 1.456024169921875 }
     ]
+  },
+  {
+    "id": "joint-pipe-icon",
+    "title": "New Joint · Five-Way Pipe Icon",
+    "object": "pipe icon",
+    "dump": "dojo/joints/pipe-icon/dump.json",
+    "reference": "dojo/references/joints/pipe-icon.png",
+    "blenderStats": { "verts": 73062, "faces": 72486 },
+    "localSpace": true,
+    "note": "Exact Blender topology and bit-for-bit matching local bounds for the fixed 2-group, 24-node five-way pipe icon. The web comparison preserves all generated faces and material assignments; its normalized reference renderer does not carry Blender's split smooth normals.",
+    "controls": []
   }
 ]
