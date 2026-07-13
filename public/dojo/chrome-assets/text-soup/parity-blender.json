@@ -1,0 +1,186 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "TEXT SOUP",
+  "modifier": "CHROME CRAYON 3D",
+  "node_group": "CHROME text.001",
+  "saved_values": {
+    "TEXT INPUT": "YOUR TEXT HERE",
+    "crv preview": true,
+    "peak tuning": 0.528076171875,
+    "tuning factor": 0.24869564175605774,
+    "holdout": false,
+    "Show Pt Count": false,
+    "Line Thiccness": 14.72320556640625,
+    "Peak Height": 1.6194915771484375,
+    "subdivide": 21.917526245117188,
+    "edge smoorth": 1.611846923828125,
+    "peak soften": 28,
+    "body soften": 38,
+    "FLATTEN": false,
+    "Flat Color": [
+      2.0014684200286865,
+      2.0014684200286865,
+      2.0014684200286865,
+      1.0
+    ],
+    "SELECT FONT": 0,
+    "Size": 39.85003662109375,
+    "Character Spacing": 0.1129312515258789,
+    "Word Spacing": 1.0,
+    "Line Spacing": 0.5062166452407837,
+    "Text Box Width": 2.93999981880188
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 11971,
+      "faces": 11199,
+      "bbox": {
+        "min": [
+          -63.5989,
+          -66.1031,
+          -14.5822
+        ],
+        "max": [
+          92.7919,
+          59.2012,
+          -13.4734
+        ]
+      },
+      "elapsed_ms": 29.7
+    },
+    {
+      "combo": {
+        "name": "text NODE DOJO",
+        "overrides": {
+          "TEXT INPUT": "NODE DOJO"
+        }
+      },
+      "status": "ok",
+      "verts": 13242,
+      "faces": 12432,
+      "bbox": {
+        "min": [
+          -68.6678,
+          -54.9684,
+          -14.5822
+        ],
+        "max": [
+          83.4988,
+          59.3,
+          -13.4734
+        ]
+      },
+      "elapsed_ms": 30.5
+    },
+    {
+      "combo": {
+        "name": "peak height 0.8",
+        "overrides": {
+          "Peak Height": 0.8
+        }
+      },
+      "status": "ok",
+      "verts": 11971,
+      "faces": 11199,
+      "bbox": {
+        "min": [
+          -63.5989,
+          -66.1031,
+          -14.5822
+        ],
+        "max": [
+          92.7919,
+          59.2012,
+          -14.0344
+        ]
+      },
+      "elapsed_ms": 28.6
+    },
+    {
+      "combo": {
+        "name": "line thickness 10",
+        "overrides": {
+          "Line Thiccness": 10
+        }
+      },
+      "status": "ok",
+      "verts": 9591,
+      "faces": 8855,
+      "bbox": {
+        "min": [
+          -62.321,
+          -65.3622,
+          -14.5822
+        ],
+        "max": [
+          91.6032,
+          58.299,
+          -13.4734
+        ]
+      },
+      "elapsed_ms": 66.3
+    },
+    {
+      "combo": {
+        "name": "subdivide 12",
+        "overrides": {
+          "subdivide": 12
+        }
+      },
+      "status": "ok",
+      "verts": 3971,
+      "faces": 3548,
+      "bbox": {
+        "min": [
+          -62.1765,
+          -64.939,
+          -14.5822
+        ],
+        "max": [
+          91.8333,
+          57.9265,
+          -13.4734
+        ]
+      },
+      "elapsed_ms": 37.8
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "chrome.002": {
+        "faces": 11199,
+        "verts": 11971
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 11199,
+      "verts": 11971
+    }
+  }
+}

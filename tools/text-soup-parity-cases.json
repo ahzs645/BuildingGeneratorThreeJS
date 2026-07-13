@@ -1,0 +1,7 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "text NODE DOJO", "overrides": { "TEXT INPUT": "NODE DOJO" } },
+  { "name": "peak height 0.8", "overrides": { "Peak Height": 0.8 } },
+  { "name": "line thickness 10", "overrides": { "Line Thiccness": 10 } },
+  { "name": "subdivide 12", "overrides": { "subdivide": 12 } }
+]

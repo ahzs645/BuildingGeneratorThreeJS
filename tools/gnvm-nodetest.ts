@@ -144,6 +144,13 @@ function meshSignedAreaXY(m: Mesh): number {
   check("CombineXYZ -> (2,3,4)", approx(v.value as number[], [2, 3, 4]));
 }
 
+{
+  const mapped = runNode("ShaderNodeMapRange", {
+    Value: 2, "From Min": 0, "From Max": 1, "To Min": 0, "To Max": 3,
+  }, { interpolation_type: "SMOOTHERSTEP", clamp: false }).Result as Field;
+  check("Map Range Smoother Step clamps its interpolation factor", Math.abs(Number(mapped.value) - 3) < 1e-9, `got ${mapped.value}`);
+}
+
 // (B2) Align Euler antiparallel AUTO pivot remains a proper rotation. A tiny
 // Mesh Circle cosine at -Y must not normalize to a zero axis / reflection.
 {
@@ -588,6 +595,8 @@ function meshSignedAreaXY(m: Mesh): number {
   const curves = runNode("GeometryNodeStringToCurves", { String: "AB", Size: 1, "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": 1 }, { align_x: "LEFT" })["Curve Instances"] as Geometry;
   check("StringToCurves yields one instance per char", curves.instances.length === 2, `got ${curves.instances.length}`);
   check("StringToCurves instances carry glyph curves", curves.instances.every((inst) => inst.geometry.curves.length > 0));
+  const spaced = runNode("GeometryNodeStringToCurves", { String: "A B", Size: 1, "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": 1 }, { align_x: "LEFT" })["Curve Instances"] as Geometry;
+  check("StringToCurves preserves whitespace as empty instances", spaced.instances.length === 3 && spaced.instances[1].geometry.curves.length === 0, `got ${spaced.instances.length}`);
 
   const savedFonts = DUMP_CONTEXT.fonts;
   DUMP_CONTEXT.fonts = {
@@ -615,13 +624,13 @@ function meshSignedAreaXY(m: Mesh): number {
     "Align X": "Left", "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": .5,
     "Text Box Width": 2,
   })["Curve Instances"] as Geometry;
-  check("StringToCurves wraps whole words at Text Box Width", wrappedAtlasCurves.instances.length === 2 && Math.abs(wrappedAtlasCurves.instances[1].position[1] + 1) < 1e-9);
+  check("StringToCurves wraps whole words at Text Box Width", wrappedAtlasCurves.instances.length === 3 && wrappedAtlasCurves.instances[1].geometry.curves.length === 0 && Math.abs(wrappedAtlasCurves.instances[2].position[1] + 1) < 1e-9);
   const centeredWrappedAtlas = runNode("GeometryNodeStringToCurves", {
     String: "A B", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
     "Align X": "Left", "Align Y": "Middle", "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": .5,
     "Text Box Width": 2,
   })["Curve Instances"] as Geometry;
-  check("StringToCurves vertically centers wrapped Middle text", Math.abs(centeredWrappedAtlas.instances[0].position[1] - .5) < 1e-9 && Math.abs(centeredWrappedAtlas.instances[1].position[1] + .5) < 1e-9);
+  check("StringToCurves vertically centers wrapped Middle text", Math.abs(centeredWrappedAtlas.instances[0].position[1] - .5) < 1e-9 && Math.abs(centeredWrappedAtlas.instances[2].position[1] + .5) < 1e-9);
   DUMP_CONTEXT.fonts = savedFonts;
 
   const outlinedGlyph = new Geometry();
@@ -965,8 +974,8 @@ function meshSignedAreaXY(m: Mesh): number {
   DUMP_CONTEXT.collections = savedCollections;
 }
 
-// (AE) Curve Tilt and Radius are point fields, and an unlinked Instance Index cycles the
-// Geometry-to-Instance list in Blender's authored Flat Stickie Pack.
+// (AE) Curve Tilt and Radius are point fields, and an unlinked Instance Index
+// follows point index and wraps beyond a Geometry-to-Instance list.
 {
   const points = curve([[0, 0, 0], [2, 0, 0]], false);
   points.curveAttributes.set("tilt", { domain: "POINT", data: [.2, -.4] });
@@ -988,6 +997,12 @@ function meshSignedAreaXY(m: Mesh): number {
   }, {}, ["Points", "Instance"]).Instances as Geometry;
   check("unlinked Pick Instance index cycles by point", placed.instances[0].geometry === sourceA && placed.instances[1].geometry === sourceB);
   check("Pick Instance preserves child transforms", approx(placed.instances[0].position, [1, 0, 0]) && approx(placed.instances[1].position, [0, 0, 0]));
+  const overflowPoints = curve([[0, 0, 0], [1, 0, 0], [2, 0, 0]], false);
+  const overflow = runNode("GeometryNodeInstanceOnPoints", {
+    Points: overflowPoints, Selection: true, Instance: choices, "Pick Instance": true,
+    "Instance Index": 0, Rotation: [0, 0, 0], Scale: [1, 1, 1],
+  }, {}, ["Points", "Instance"]).Instances as Geometry;
+  check("unlinked Pick Instance wraps overflow points", overflow.instances.length === 3 && overflow.instances[2].geometry === sourceA, `got ${overflow.instances.length}`);
 }
 
 // (AF) Nested asset generators depend on Object Info's evaluated modifier mesh,

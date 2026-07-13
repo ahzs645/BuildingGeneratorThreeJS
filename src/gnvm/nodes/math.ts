@@ -210,6 +210,13 @@ reg("ShaderNodeMapRange", (api) => {
       const x = num(a), b0 = num(b), b1 = num(c), t0 = num(d), t1 = num(e);
       let f = b1 - b0 === 0 ? 0 : (x - b0) / (b1 - b0);
       if (interp === "SMOOTHSTEP") f = f <= 0 ? 0 : f >= 1 ? 1 : f * f * (3 - 2 * f);
+      else if (interp === "SMOOTHERSTEP") {
+        // Blender clamps the interpolation factor for Smoother Step even when
+        // the Map Range node's output Clamp option is disabled. Text Soup's
+        // distance field intentionally exceeds From Max; treating this mode as
+        // linear made the raised surface overshoot its authored peak height.
+        f = f <= 0 ? 0 : f >= 1 ? 1 : f * f * f * (f * (f * 6 - 15) + 10);
+      }
       let r = t0 + f * (t1 - t0);
       if (clamp) r = t1 >= t0 ? Math.max(t0, Math.min(t1, r)) : Math.max(t1, Math.min(t0, r));
       return r;

@@ -269,5 +269,37 @@
     "blenderStats": { "verts": 0, "faces": 0 },
     "note": "Exact non-surface helper: both runtimes preserve one cyclic four-point curve, intentionally rendering no surface.",
     "controls": []
+  },
+  {
+    "id": "text-soup",
+    "title": "Text Soup",
+    "object": "TEXT SOUP",
+    "dump": "dojo/chrome-assets/text-soup/dump.json",
+    "reference": "dojo/references/chrome-assets/text-soup.png",
+    "blenderStats": { "verts": 11971, "faces": 11199 },
+    "note": "The authored Pixels comparison is near-exact at 11,974 / 11,218 in the browser. The original 1CamBam Stick fonts are missing from the pack, so both Blender and the browser use the supplied Pixels Medium TTF; shorter edited strings retain a known instance-placement difference.",
+    "font": {
+      "url": "dojo/fonts/pixels.ttf",
+      "family": "Pixels Medium",
+      "requiredFor": "the Text Soup replacement typeface",
+      "fallback": "using the embedded Blender-extracted outline fallback"
+    },
+    "controls": [
+      { "type": "text", "name": "TEXT INPUT", "label": "Text", "value": "YOUR TEXT HERE" },
+      { "name": "Line Thiccness", "label": "Line thickness", "min": 4, "max": 24, "step": 0.000001, "value": 14.72320556640625 },
+      { "name": "Peak Height", "label": "Peak height", "min": 0, "max": 4, "step": 0.000001, "value": 1.6194915771484375 },
+      { "name": "peak tuning", "label": "Peak tuning", "min": 0, "max": 1, "step": 0.000001, "value": 0.528076171875 },
+      { "name": "tuning factor", "label": "Tuning factor", "min": 0, "max": 1, "step": 0.000001, "value": 0.24869564175605774 },
+      { "name": "subdivide", "label": "Subdivision density", "min": 6, "max": 36, "step": 1, "value": 21.917526245117188 },
+      { "name": "edge smoorth", "label": "Edge smoothing", "min": 0, "max": 4, "step": 0.000001, "value": 1.611846923828125 },
+      { "name": "peak soften", "label": "Peak soften", "min": 0, "max": 60, "step": 1, "value": 28 },
+      { "name": "body soften", "label": "Body soften", "min": 0, "max": 80, "step": 1, "value": 38 },
+      { "name": "Size", "label": "Glyph size", "min": 10, "max": 70, "step": 0.000001, "value": 39.85003662109375 },
+      { "name": "Character Spacing", "label": "Character spacing", "min": 0.05, "max": 1, "step": 0.000001, "value": 0.1129312515258789 },
+      { "name": "Word Spacing", "label": "Word spacing", "min": 0.25, "max": 2, "step": 0.000001, "value": 1 },
+      { "name": "Line Spacing", "label": "Line spacing", "min": 0.1, "max": 2, "step": 0.000001, "value": 0.5062166452407837 },
+      { "name": "Text Box Width", "label": "Text box width", "min": 0, "max": 20, "step": 0.01, "value": 2.93999981880188 },
+      { "type": "checkbox", "name": "FLATTEN", "label": "Flatten", "value": false }
+    ]
   }
 ]

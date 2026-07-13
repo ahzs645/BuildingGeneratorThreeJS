@@ -1,0 +1,125 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/text-soup/dump.json",
+  "object": "TEXT SOUP",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 11974,
+      "faces": 11218,
+      "bbox": {
+        "min": [
+          -63.5041,
+          -66.0438,
+          -14.5822
+        ],
+        "max": [
+          92.7444,
+          59.1342,
+          -13.4734
+        ]
+      },
+      "elapsed_ms": 5616
+    },
+    {
+      "combo": {
+        "name": "text NODE DOJO",
+        "overrides": {
+          "TEXT INPUT": "NODE DOJO"
+        }
+      },
+      "status": "ok",
+      "verts": 13280,
+      "faces": 12478,
+      "bbox": {
+        "min": [
+          -67.6674,
+          -57.3021,
+          -14.5822
+        ],
+        "max": [
+          63.9138,
+          59.0824,
+          -13.4734
+        ]
+      },
+      "elapsed_ms": 8327
+    },
+    {
+      "combo": {
+        "name": "peak height 0.8",
+        "overrides": {
+          "Peak Height": 0.8
+        }
+      },
+      "status": "ok",
+      "verts": 11974,
+      "faces": 11218,
+      "bbox": {
+        "min": [
+          -63.5041,
+          -66.0438,
+          -14.5822
+        ],
+        "max": [
+          92.7444,
+          59.1342,
+          -14.0344
+        ]
+      },
+      "elapsed_ms": 12515
+    },
+    {
+      "combo": {
+        "name": "line thickness 10",
+        "overrides": {
+          "Line Thiccness": 10
+        }
+      },
+      "status": "ok",
+      "verts": 9682,
+      "faces": 8960,
+      "bbox": {
+        "min": [
+          -62.2506,
+          -65.2864,
+          -14.5822
+        ],
+        "max": [
+          91.5023,
+          58.3297,
+          -13.4734
+        ]
+      },
+      "elapsed_ms": 11804
+    },
+    {
+      "combo": {
+        "name": "subdivide 12",
+        "overrides": {
+          "subdivide": 12
+        }
+      },
+      "status": "ok",
+      "verts": 4022,
+      "faces": 3606,
+      "bbox": {
+        "min": [
+          -62.0489,
+          -64.6429,
+          -14.5822
+        ],
+        "max": [
+          91.5604,
+          57.8407,
+          -13.4734
+        ]
+      },
+      "elapsed_ms": 1463
+    }
+  ]
+}

@@ -263,8 +263,9 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
       for (const [name, a] of pointAttrs) attributes.set(name, a.data[i]);
     }
     // Blender's unlinked Instance Index follows the point index for a list
-    // produced by Geometry to Instance (verified by Flat Stickie Pack's seven
-    // distinct sources on seven points), despite the socket displaying 0.
+    // produced by Geometry to Instance, despite the socket displaying 0, and
+    // wraps beyond the source count. Text Soup exposes this when a short edited
+    // string is repeated over its fixed 14-point guide.
     const requestedIndex = instanceIndexLinked ? Math.round(asNum(instanceIndices[i] ?? 0)) : i;
     const picked = pickInstance && instance.instances.length
       ? instance.instances[((requestedIndex % instance.instances.length) + instance.instances.length) % instance.instances.length]

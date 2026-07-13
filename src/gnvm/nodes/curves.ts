@@ -570,7 +570,10 @@ reg("GeometryNodeStringToCurves", (api) => {
       // remains intact on its own line instead of being split into glyphs.
       const wordWidth = [...word].reduce((total, ch) => total + advanceOf(ch), 0);
       if (current && currentWidth + spaceWidth + wordWidth > textBoxWidth) {
-        wrapped.push(current);
+        // Wrapping changes layout, but Blender keeps the separator as an empty
+        // character instance in the domain. Preserve it at the end of the
+        // previous line so downstream indexing follows the original string.
+        wrapped.push(`${current} `);
         current = word;
         currentWidth = wordWidth;
       } else if (current) {
@@ -606,10 +609,10 @@ reg("GeometryNodeStringToCurves", (api) => {
     else if (alignX === "RIGHT") x = -lineWidth;
     const y = alignYOffset + blockOffset - lineIdx * cellH;
     for (const ch of chars) {
-      if (ch === " ") {
-        x += advanceOf(ch);
-        continue;
-      }
+      // Blender keeps whitespace as an empty instance. It has no visible
+      // curves, but it remains part of the instance domain and therefore of
+      // Pick Instance indexing. Text Soup maps "YOUR TEXT HERE" onto 14 guide
+      // points and relies on the two empty space entries staying in the list.
       const glyph = atlasGlyphGeometry(fontName, ch, size) ?? glyphGeometry(ch, size);
       out.instances.push({
         geometry: glyph,

@@ -1,0 +1,9 @@
+{
+  "object": "TEXT SOUP",
+  "root": "CHROME text.001",
+  "status": "near-exact",
+  "fontSubstitution": "The source references nine missing 1CamBam Stick fonts. Validation replaces them with the supplied Pixels Medium TTF in both Blender and GN-VM, with embedded outlines as the browser fallback.",
+  "blender": { "verts": 11971, "faces": 11199 },
+  "gnvm": { "verts": 11974, "faces": 11218 },
+  "validation": "Authored bounds differ by at most 0.0948 units and peak Z by less than 0.000003. Four surface-control cases stay within 1.28% vertices; the shorter NODE DOJO case is within 0.29% topology but retains a known instance-placement difference."
+}
