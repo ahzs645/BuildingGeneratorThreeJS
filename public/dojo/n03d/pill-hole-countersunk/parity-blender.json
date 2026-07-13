@@ -1,0 +1,190 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Pill Hole_counter sunk",
+  "modifier": "GeometryNodes",
+  "node_group": "pill hole countersunk",
+  "saved_values": {
+    "top diameter": 8.0,
+    "bottom diameter": 3.0,
+    "head height": 1.0,
+    "shaft depth": 1.0,
+    "Vertices": 66
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 336,
+      "faces": 362,
+      "bbox": {
+        "min": [
+          -4.0,
+          -10.9099,
+          -1.0
+        ],
+        "max": [
+          4.0,
+          10.9099,
+          3.0
+        ]
+      },
+      "elapsed_ms": 1.3
+    },
+    {
+      "combo": {
+        "name": "top diameter 6",
+        "overrides": {
+          "top diameter": 6
+        }
+      },
+      "status": "ok",
+      "verts": 336,
+      "faces": 354,
+      "bbox": {
+        "min": [
+          -3.0,
+          -9.911,
+          -1.0
+        ],
+        "max": [
+          3.0,
+          9.911,
+          3.0
+        ]
+      },
+      "elapsed_ms": 1.1
+    },
+    {
+      "combo": {
+        "name": "bottom diameter 5",
+        "overrides": {
+          "bottom diameter": 5
+        }
+      },
+      "status": "ok",
+      "verts": 336,
+      "faces": 372,
+      "bbox": {
+        "min": [
+          -4.0,
+          -10.9099,
+          -1.0
+        ],
+        "max": [
+          4.0,
+          10.9099,
+          3.0
+        ]
+      },
+      "elapsed_ms": 1.0
+    },
+    {
+      "combo": {
+        "name": "head height 2",
+        "overrides": {
+          "head height": 2
+        }
+      },
+      "status": "ok",
+      "verts": 336,
+      "faces": 362,
+      "bbox": {
+        "min": [
+          -4.0,
+          -10.9099,
+          -1.0
+        ],
+        "max": [
+          4.0,
+          10.9099,
+          4.0
+        ]
+      },
+      "elapsed_ms": 1.1
+    },
+    {
+      "combo": {
+        "name": "shaft depth 3",
+        "overrides": {
+          "shaft depth": 3
+        }
+      },
+      "status": "ok",
+      "verts": 336,
+      "faces": 362,
+      "bbox": {
+        "min": [
+          -4.0,
+          -10.9099,
+          -3.0
+        ],
+        "max": [
+          4.0,
+          10.9099,
+          3.0
+        ]
+      },
+      "elapsed_ms": 1.0
+    },
+    {
+      "combo": {
+        "name": "vertices 32",
+        "overrides": {
+          "Vertices": 32
+        }
+      },
+      "status": "ok",
+      "verts": 166,
+      "faces": 178,
+      "bbox": {
+        "min": [
+          -4.0,
+          -10.9144,
+          -1.0
+        ],
+        "max": [
+          4.0,
+          10.9144,
+          3.0
+        ]
+      },
+      "elapsed_ms": 0.9
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "Filament PLA .02 mm layer height": {
+        "faces": 362,
+        "verts": 336
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 362,
+      "verts": 336
+    }
+  }
+}

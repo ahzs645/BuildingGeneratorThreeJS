@@ -498,5 +498,21 @@
       { "name": "bottom diameter", "label": "Bottom diameter", "min": 2, "max": 20, "step": 0.1, "value": 3 },
       { "name": "Vertices", "label": "Hull resolution", "min": 8, "max": 128, "step": 1, "value": 66 }
     ]
+  },
+  {
+    "id": "n03d-pill-hole-countersunk",
+    "title": "N03D · Countersunk Pill Hole",
+    "object": "Pill Hole_counter sunk",
+    "dump": "dojo/n03d/pill-hole-countersunk/dump.json",
+    "reference": "dojo/references/n03d/pill-hole-countersunk.png",
+    "blenderStats": { "verts": 336, "faces": 362 },
+    "note": "Visual parity with exact bounds across six cases. The browser's 274 / 408 Manifold hull is more aggressively triangulated than Blender's 336 / 362 polygon mesh, while both reproduce the same stepped countersunk cutter.",
+    "controls": [
+      { "name": "top diameter", "label": "Head diameter", "min": 2, "max": 20, "step": 0.1, "value": 8 },
+      { "name": "bottom diameter", "label": "Shaft diameter", "min": 2, "max": 20, "step": 0.1, "value": 3 },
+      { "name": "head height", "label": "Head height", "min": 0.2, "max": 8, "step": 0.1, "value": 1 },
+      { "name": "shaft depth", "label": "Shaft depth", "min": 0.2, "max": 12, "step": 0.1, "value": 1 },
+      { "name": "Vertices", "label": "Hull resolution", "min": 8, "max": 128, "step": 1, "value": 66 }
+    ]
   }
 ]
