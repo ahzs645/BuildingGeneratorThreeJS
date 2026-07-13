@@ -1,0 +1,192 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "hole punch obj",
+  "modifier": "hole punch",
+  "node_group": "hole punch",
+  "saved_values": {
+    "crv length": true,
+    "non crv length": 16.1549072265625,
+    "head top dia": 6.0,
+    "shaft diameter": 3.0,
+    "head height": 2.0,
+    "resolution": 51
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 153,
+      "faces": 104,
+      "bbox": {
+        "min": [
+          -2.9943,
+          -2.9986,
+          -7.5404
+        ],
+        "max": [
+          3.0,
+          2.9986,
+          0.25
+        ]
+      },
+      "elapsed_ms": 0.7
+    },
+    {
+      "combo": {
+        "name": "manual length",
+        "overrides": {
+          "crv length": false,
+          "non crv length": 12
+        }
+      },
+      "status": "ok",
+      "verts": 153,
+      "faces": 104,
+      "bbox": {
+        "min": [
+          -2.9943,
+          -2.9986,
+          -11.75
+        ],
+        "max": [
+          3.0,
+          2.9986,
+          0.25
+        ]
+      },
+      "elapsed_ms": 0.7
+    },
+    {
+      "combo": {
+        "name": "head diameter 8",
+        "overrides": {
+          "head top dia": 8
+        }
+      },
+      "status": "ok",
+      "verts": 153,
+      "faces": 104,
+      "bbox": {
+        "min": [
+          -3.9924,
+          -3.9981,
+          -7.5404
+        ],
+        "max": [
+          4.0,
+          3.9981,
+          0.25
+        ]
+      },
+      "elapsed_ms": 0.6
+    },
+    {
+      "combo": {
+        "name": "shaft diameter 4",
+        "overrides": {
+          "shaft diameter": 4
+        }
+      },
+      "status": "ok",
+      "verts": 153,
+      "faces": 104,
+      "bbox": {
+        "min": [
+          -2.9943,
+          -2.9986,
+          -7.5404
+        ],
+        "max": [
+          3.0,
+          2.9986,
+          0.25
+        ]
+      },
+      "elapsed_ms": 0.6
+    },
+    {
+      "combo": {
+        "name": "head height 3",
+        "overrides": {
+          "head height": 3
+        }
+      },
+      "status": "ok",
+      "verts": 153,
+      "faces": 104,
+      "bbox": {
+        "min": [
+          -2.9943,
+          -2.9986,
+          -8.5404
+        ],
+        "max": [
+          3.0,
+          2.9986,
+          0.25
+        ]
+      },
+      "elapsed_ms": 0.6
+    },
+    {
+      "combo": {
+        "name": "resolution 32",
+        "overrides": {
+          "resolution": 32
+        }
+      },
+      "status": "ok",
+      "verts": 96,
+      "faces": 66,
+      "bbox": {
+        "min": [
+          -3.0,
+          -3.0,
+          -7.5404
+        ],
+        "max": [
+          3.0,
+          3.0,
+          0.25
+        ]
+      },
+      "elapsed_ms": 0.6
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "Filament PLA .02 mm layer height": {
+        "faces": 104,
+        "verts": 153
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 104,
+      "verts": 153
+    }
+  }
+}

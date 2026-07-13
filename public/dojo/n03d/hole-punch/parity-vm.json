@@ -1,0 +1,150 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/hole-punch/dump.json",
+  "object": "hole punch obj",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 153,
+      "faces": 104,
+      "bbox": {
+        "min": [
+          -2.9943,
+          -2.9986,
+          -7.5404
+        ],
+        "max": [
+          3,
+          2.9986,
+          0.25
+        ]
+      },
+      "elapsed_ms": 21
+    },
+    {
+      "combo": {
+        "name": "manual length",
+        "overrides": {
+          "crv length": false,
+          "non crv length": 12
+        }
+      },
+      "status": "ok",
+      "verts": 153,
+      "faces": 104,
+      "bbox": {
+        "min": [
+          -2.9943,
+          -2.9986,
+          -11.75
+        ],
+        "max": [
+          3,
+          2.9986,
+          0.25
+        ]
+      },
+      "elapsed_ms": 1
+    },
+    {
+      "combo": {
+        "name": "head diameter 8",
+        "overrides": {
+          "head top dia": 8
+        }
+      },
+      "status": "ok",
+      "verts": 153,
+      "faces": 104,
+      "bbox": {
+        "min": [
+          -3.9924,
+          -3.9981,
+          -7.5404
+        ],
+        "max": [
+          4,
+          3.9981,
+          0.25
+        ]
+      },
+      "elapsed_ms": 1
+    },
+    {
+      "combo": {
+        "name": "shaft diameter 4",
+        "overrides": {
+          "shaft diameter": 4
+        }
+      },
+      "status": "ok",
+      "verts": 153,
+      "faces": 104,
+      "bbox": {
+        "min": [
+          -2.9943,
+          -2.9986,
+          -7.5404
+        ],
+        "max": [
+          3,
+          2.9986,
+          0.25
+        ]
+      },
+      "elapsed_ms": 1
+    },
+    {
+      "combo": {
+        "name": "head height 3",
+        "overrides": {
+          "head height": 3
+        }
+      },
+      "status": "ok",
+      "verts": 153,
+      "faces": 104,
+      "bbox": {
+        "min": [
+          -2.9943,
+          -2.9986,
+          -8.5404
+        ],
+        "max": [
+          3,
+          2.9986,
+          0.25
+        ]
+      },
+      "elapsed_ms": 1
+    },
+    {
+      "combo": {
+        "name": "resolution 32",
+        "overrides": {
+          "resolution": 32
+        }
+      },
+      "status": "ok",
+      "verts": 96,
+      "faces": 66,
+      "bbox": {
+        "min": [
+          -3,
+          -3,
+          -7.5404
+        ],
+        "max": [
+          3,
+          3,
+          0.25
+        ]
+      },
+      "elapsed_ms": 0
+    }
+  ]
+}

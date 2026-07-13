@@ -1,0 +1,8 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "manual length", "overrides": { "crv length": false, "non crv length": 12 } },
+  { "name": "head diameter 8", "overrides": { "head top dia": 8 } },
+  { "name": "shaft diameter 4", "overrides": { "shaft diameter": 4 } },
+  { "name": "head height 3", "overrides": { "head height": 3 } },
+  { "name": "resolution 32", "overrides": { "resolution": 32 } }
+]

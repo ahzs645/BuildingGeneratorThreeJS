@@ -1,0 +1,10 @@
+{
+  "id": "n03d-hole-punch",
+  "object": "hole punch obj",
+  "root": "hole punch",
+  "status": "exact-parity",
+  "blender": { "verts": 153, "faces": 104 },
+  "gnvm": { "verts": 153, "faces": 104 },
+  "coverage": "100% of reachable node types across the 7-group, 79-node closure.",
+  "validation": "All six Blender/VM cases are topology- and bounds-exact, covering curve-derived versus manual length, head diameter, shaft diameter, head height, and resolution."
+}

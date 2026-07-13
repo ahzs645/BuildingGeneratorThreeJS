@@ -514,5 +514,22 @@
       { "name": "shaft depth", "label": "Shaft depth", "min": 0.2, "max": 12, "step": 0.1, "value": 1 },
       { "name": "Vertices", "label": "Hull resolution", "min": 8, "max": 128, "step": 1, "value": 66 }
     ]
+  },
+  {
+    "id": "n03d-hole-punch",
+    "title": "N03D · Hole Punch",
+    "object": "hole punch obj",
+    "dump": "dojo/n03d/hole-punch/dump.json",
+    "reference": "dojo/references/n03d/hole-punch.png",
+    "blenderStats": { "verts": 153, "faces": 104 },
+    "note": "Exact Blender parity across all six validation cases: authored 153 / 104 topology and bounds match, as do manual/curve length, head and shaft dimensions, and the 32-segment resolution case.",
+    "controls": [
+      { "type": "checkbox", "name": "crv length", "label": "Use curve length", "value": true },
+      { "name": "non crv length", "label": "Manual length", "min": 2, "max": 30, "step": 0.1, "value": 16.1549072265625 },
+      { "name": "head top dia", "label": "Head diameter", "min": 2, "max": 16, "step": 0.1, "value": 6 },
+      { "name": "shaft diameter", "label": "Shaft diameter", "min": 1, "max": 12, "step": 0.1, "value": 3 },
+      { "name": "head height", "label": "Head height", "min": 0.2, "max": 8, "step": 0.1, "value": 2 },
+      { "name": "resolution", "label": "Resolution", "min": 8, "max": 128, "step": 1, "value": 51 }
+    ]
   }
 ]
