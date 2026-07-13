@@ -772,7 +772,7 @@
     "blenderStats": { "verts": 11163, "faces": 8064 },
     "localSpace": true,
     "surfaceBounds": true,
-    "note": "The complete 296-group, 2,413-node neupipe product now builds its six-way pipe layout, per-instance sleeves, signed-distance joint shell, and dual-mesh smoothing in-browser. Correct relative collection transforms improve live partial parity to 20,190 / 18,098 in the browser versus Blender's 11,163 / 8,064, with denser tessellation and visible SDF roughness at the central junction.",
+    "note": "The complete 296-group, 2,413-node neupipe product builds its six-way pipe layout, per-instance sleeves, signed-distance joint shell, and dual-mesh smoothing in-browser. Native manifold surface nets improve the authored result to 11,826 / 8,538 versus Blender's 11,163 / 8,064 (5.94% vertex delta), with a much smoother central junction; smaller-joint variants remain denser.",
     "controls": [
       { "type": "checkbox", "name": "keep structure geo", "label": "Keep structure pipes", "value": true },
       { "name": "joint size", "label": "Joint size", "min": 10, "max": 40, "step": 0.1, "value": 23.177337646484375 },

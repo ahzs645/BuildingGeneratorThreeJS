@@ -8,9 +8,9 @@
     "faces": 8064
   },
   "gnvm": {
-    "verts": 20190,
-    "faces": 18098
+    "verts": 11826,
+    "faces": 8538
   },
   "coverage": "100% of reachable node types across the 296-group, 2,413-node closure, including its six-object pipe structure collection.",
-  "validation": "The authored six-way pipe layout, generated sleeves, SDF joint shell, dual-mesh smoothing, and structure toggle run in-browser. Correct relative collection transforms improve the live browser/WASM result to 20,190 / 18,098; the reproducible Node parity sweep is 20,697 / 18,370. Both remain more densely tessellated and rougher at the central junction than Blender, while bone-preview topology stays within 1.06% in the sweep."
+  "validation": "The authored six-way pipe layout, generated sleeves, SDF joint shell, dual-mesh smoothing, and structure toggle run in-browser. Native manifold surface nets improve the authored result from 20,190 / 18,098 to 11,826 / 8,538 versus Blender's 11,163 / 8,064, reducing the vertex delta to 5.94% and smoothing the central junction. Bone-preview topology remains within 1.06% of Blender; the smaller-joint and hidden-structure cases remain 10.70-20.08% denser, and the portable Node sweep still carries the documented collection-coordinate bounds offset."
 }
