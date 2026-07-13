@@ -320,7 +320,7 @@ depsgraph = bpy.context.evaluated_depsgraph_get()
 for obj in bpy.data.objects:
     o = {"name": obj.name, "type": obj.type, "location": list(obj.location),
          "rotation": list(obj.rotation_euler), "scale": list(obj.scale),
-         "visible": not obj.hide_render, "modifiers": [], "materials": [m.name for m in obj.data.materials] if obj.type in ("MESH", "CURVE") and obj.data else []}
+         "visible": not obj.hide_render, "modifiers": [], "materials": [m.name for m in obj.data.materials if m is not None] if obj.type in ("MESH", "CURVE") and obj.data else []}
     if obj.type == "MESH" and obj.data:
         o["mesh_stats"] = {"verts": len(obj.data.vertices), "faces": len(obj.data.polygons)}
         # Embed small BASE meshes (pre-modifier obj.data): ObjectInfo materializes
