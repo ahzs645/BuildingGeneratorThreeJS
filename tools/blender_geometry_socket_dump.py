@@ -32,6 +32,18 @@ elif mode == "realize":
     tree.links.new(source_socket, realize.inputs["Geometry"])
     source_socket = realize.outputs["Geometry"]
     temporary_nodes.append(realize)
+elif mode == "instance_points":
+    to_points = tree.nodes.new("GeometryNodeInstancesToPoints")
+    vertex = tree.nodes.new("GeometryNodeMeshLine")
+    vertex.inputs["Count"].default_value = 1
+    instance = tree.nodes.new("GeometryNodeInstanceOnPoints")
+    realize = tree.nodes.new("GeometryNodeRealizeInstances")
+    tree.links.new(source_socket, to_points.inputs["Instances"])
+    tree.links.new(to_points.outputs["Points"], instance.inputs["Points"])
+    tree.links.new(vertex.outputs["Mesh"], instance.inputs["Instance"])
+    tree.links.new(instance.outputs["Instances"], realize.inputs["Geometry"])
+    source_socket = realize.outputs["Geometry"]
+    temporary_nodes.extend([realize, instance, vertex, to_points])
 tree.links.new(source_socket, geometry_socket)
 obj.update_tag()
 bpy.context.view_layer.update()

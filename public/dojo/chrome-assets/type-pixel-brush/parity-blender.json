@@ -1,0 +1,203 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Type Pixel Brush Chrome",
+  "modifier": "CHROME CRAYON 3D",
+  "node_group": "soft pixel marker.001",
+  "saved_values": {
+    "String": "YOUR TEXT HERE",
+    "height": 29.554641723632812,
+    "resolution subdivid": 2,
+    "pixel size": 0.08929443359375,
+    "Edge Crease": 0.3153700828552246,
+    "flat color": [
+      0.7404510974884033,
+      0.8003553152084351,
+      0.0,
+      1.0
+    ],
+    "flat/chrome/custom": 1,
+    "Material": null,
+    "Size": 186.3249969482422,
+    "Character Spacing": 0.9694662690162659,
+    "Line Spacing": 0.6393332481384277,
+    "Word Spacing": 1.0,
+    "Text Box Width": 0.356999933719635
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 17860,
+      "faces": 11296,
+      "bbox": {
+        "min": [
+          -145.186,
+          -242.9198,
+          0.0
+        ],
+        "max": [
+          129.07,
+          84.5972,
+          29.5546
+        ]
+      },
+      "elapsed_ms": 24.3
+    },
+    {
+      "combo": {
+        "name": "text NODE DOJO",
+        "overrides": {
+          "String": "NODE DOJO"
+        }
+      },
+      "status": "ok",
+      "verts": 14193,
+      "faces": 9152,
+      "bbox": {
+        "min": [
+          -143.9658,
+          -123.7959,
+          0.0
+        ],
+        "max": [
+          130.7783,
+          84.5971,
+          29.5546
+        ]
+      },
+      "elapsed_ms": 21.3
+    },
+    {
+      "combo": {
+        "name": "height 15",
+        "overrides": {
+          "height": 15
+        }
+      },
+      "status": "ok",
+      "verts": 14680,
+      "faces": 11296,
+      "bbox": {
+        "min": [
+          -145.186,
+          -242.9198,
+          0.0
+        ],
+        "max": [
+          129.07,
+          84.5972,
+          15.0
+        ]
+      },
+      "elapsed_ms": 23.6
+    },
+    {
+      "combo": {
+        "name": "resolution 1",
+        "overrides": {
+          "resolution subdivid": 1
+        }
+      },
+      "status": "ok",
+      "verts": 4596,
+      "faces": 2824,
+      "bbox": {
+        "min": [
+          -145.188,
+          -242.9217,
+          0.0
+        ],
+        "max": [
+          129.072,
+          84.5991,
+          29.5546
+        ]
+      },
+      "elapsed_ms": 13.5
+    },
+    {
+      "combo": {
+        "name": "pixel size 0.14",
+        "overrides": {
+          "pixel size": 0.14
+        }
+      },
+      "status": "ok",
+      "verts": 27948,
+      "faces": 23008,
+      "bbox": {
+        "min": [
+          -137.7744,
+          -235.4768,
+          0.0
+        ],
+        "max": [
+          121.6583,
+          77.1542,
+          29.5546
+        ]
+      },
+      "elapsed_ms": 36.3
+    },
+    {
+      "combo": {
+        "name": "character spacing 0.7",
+        "overrides": {
+          "Character Spacing": 0.7
+        }
+      },
+      "status": "ok",
+      "verts": 14933,
+      "faces": 9728,
+      "bbox": {
+        "min": [
+          -117.1878,
+          -242.9198,
+          0.0
+        ],
+        "max": [
+          96.7644,
+          84.5971,
+          29.5546
+        ]
+      },
+      "elapsed_ms": 21.9
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "chrome.002": {
+        "faces": 11296,
+        "verts": 17860
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 11296,
+      "verts": 17860
+    }
+  }
+}

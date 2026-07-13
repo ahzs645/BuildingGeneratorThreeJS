@@ -599,9 +599,13 @@ reg("GeometryNodeStringToCurves", (api) => {
   let lineIdx = 0;
   for (const line of lines) {
     const chars = [...line];
-    // measure line width for alignment
+    // Blender retains trailing whitespace as empty instances but excludes its
+    // advance from horizontal alignment. Wrapped Type Pixel Brush lines end in
+    // a space; including it shifted each centered line left by half its width.
+    let alignmentEnd = chars.length;
+    while (alignmentEnd > 0 && chars[alignmentEnd - 1] === " ") alignmentEnd--;
     let lineWidth = 0;
-    for (const ch of chars) {
+    for (const ch of chars.slice(0, alignmentEnd)) {
       lineWidth += advanceOf(ch);
     }
     let x = 0;

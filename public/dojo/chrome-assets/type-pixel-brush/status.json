@@ -2,8 +2,9 @@
   "id": "type-pixel-brush",
   "object": "Type Pixel Brush Chrome",
   "root": "soft pixel marker.001",
-  "status": "source-blocked",
-  "reason": "Blender evaluates the supplied object to no mesh because its external BudokanRoundedBold-WyyeO.ttf font is missing.",
-  "missing": ["/Users/ahmadjalil/Fonts/BudokanRoundedBold-WyyeO.ttf"],
-  "portableDump": "dojo/chrome-assets/type-pixel-brush/dump.json"
+  "status": "near-exact",
+  "fontSubstitution": "The source references a missing BudokanRoundedBold-WyyeO.ttf. Validation substitutes the supplied Pixels Medium TTF in Blender and GN-VM, with embedded outlines as the browser fallback.",
+  "blender": { "verts": 17860, "faces": 11296 },
+  "gnvm": { "verts": 17736, "faces": 11808 },
+  "validation": "Authored vertex delta is 0.69%; Y/Z bounds match and X bounds differ by 1.0417 units. Across six cases, maximum vertex delta is 5.11%; Character Spacing 0.7 retains an 11.81-unit horizontal-layout difference."
 }

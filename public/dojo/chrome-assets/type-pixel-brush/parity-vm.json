@@ -1,0 +1,149 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/type-pixel-brush/dump.json",
+  "object": "Type Pixel Brush Chrome",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 17736,
+      "faces": 11808,
+      "bbox": {
+        "min": [
+          -144.1443,
+          -242.9197,
+          0
+        ],
+        "max": [
+          130.1117,
+          84.5971,
+          29.5546
+        ]
+      },
+      "elapsed_ms": 3113
+    },
+    {
+      "combo": {
+        "name": "text NODE DOJO",
+        "overrides": {
+          "String": "NODE DOJO"
+        }
+      },
+      "status": "ok",
+      "verts": 13892,
+      "faces": 9440,
+      "bbox": {
+        "min": [
+          -144.1443,
+          -123.7959,
+          0
+        ],
+        "max": [
+          130.5997,
+          84.597,
+          29.5546
+        ]
+      },
+      "elapsed_ms": 1854
+    },
+    {
+      "combo": {
+        "name": "height 15",
+        "overrides": {
+          "height": 15
+        }
+      },
+      "status": "ok",
+      "verts": 15050,
+      "faces": 11808,
+      "bbox": {
+        "min": [
+          -144.1443,
+          -242.9197,
+          0
+        ],
+        "max": [
+          130.1117,
+          84.5971,
+          15
+        ]
+      },
+      "elapsed_ms": 2704
+    },
+    {
+      "combo": {
+        "name": "resolution 1",
+        "overrides": {
+          "resolution subdivid": 1
+        }
+      },
+      "status": "ok",
+      "verts": 4662,
+      "faces": 2952,
+      "bbox": {
+        "min": [
+          -144.1463,
+          -242.9217,
+          0
+        ],
+        "max": [
+          130.1137,
+          84.5991,
+          29.5546
+        ]
+      },
+      "elapsed_ms": 196
+    },
+    {
+      "combo": {
+        "name": "pixel size 0.14",
+        "overrides": {
+          "pixel size": 0.14
+        }
+      },
+      "status": "ok",
+      "verts": 29376,
+      "faces": 24736,
+      "bbox": {
+        "min": [
+          -136.7327,
+          -235.4768,
+          0
+        ],
+        "max": [
+          122.7,
+          77.1542,
+          29.5546
+        ]
+      },
+      "elapsed_ms": 9999
+    },
+    {
+      "combo": {
+        "name": "character spacing 0.7",
+        "overrides": {
+          "Character Spacing": 0.7
+        }
+      },
+      "status": "ok",
+      "verts": 14882,
+      "faces": 10464,
+      "bbox": {
+        "min": [
+          -105.3776,
+          -242.9197,
+          0
+        ],
+        "max": [
+          108.5746,
+          84.5971,
+          29.5546
+        ]
+      },
+      "elapsed_ms": 2190
+    }
+  ]
+}

@@ -68,12 +68,17 @@ realize_modifier.node_group = realize_group
 depsgraph = bpy.context.evaluated_depsgraph_get()
 depsgraph.update()
 evaluated = obj.evaluated_get(depsgraph)
-corners = []
-try:
-    for corner in evaluated.bound_box:
-        corners.append(evaluated.matrix_world @ Vector(corner))
-except Exception:
-    pass
+mesh = evaluated.to_mesh()
+corners = [evaluated.matrix_world @ vertex.co for vertex in mesh.vertices] if mesh else []
+# Evaluated Curve objects can retain their pre-modifier/invalid bound_box even
+# when Geometry Nodes produces a large mesh. Prefer realized mesh vertices and
+# use the object bounds only as a fallback for non-mesh outputs.
+if not corners:
+    try:
+        for corner in evaluated.bound_box:
+            corners.append(evaluated.matrix_world @ Vector(corner))
+    except Exception:
+        pass
 if not corners or all(abs(value + 1.0) < 1e-6 for corner in corners for value in corner):
     corners = [obj.matrix_world.translation.copy()]
 
@@ -111,7 +116,6 @@ scene.view_settings.look = "AgX - Medium High Contrast"
 bpy.ops.render.render(write_still=True)
 
 if meta_path:
-    mesh = evaluated.to_mesh()
     stats = {
         "object": obj.name,
         "type": obj.type,
@@ -120,9 +124,10 @@ if meta_path:
         "faces": len(mesh.polygons) if mesh else None,
         "materials": [slot.material.name if slot.material else None for slot in obj.material_slots],
     }
-    if mesh:
-        evaluated.to_mesh_clear()
     with open(meta_path, "w", encoding="utf-8") as handle:
         json.dump(stats, handle, indent=2)
+
+if mesh:
+    evaluated.to_mesh_clear()
 
 print(f"BLENDER_REFERENCE_OK -> {out_path}")

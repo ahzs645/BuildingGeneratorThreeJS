@@ -1,0 +1,8 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "text NODE DOJO", "overrides": { "String": "NODE DOJO" } },
+  { "name": "height 15", "overrides": { "height": 15 } },
+  { "name": "resolution 1", "overrides": { "resolution subdivid": 1 } },
+  { "name": "pixel size 0.14", "overrides": { "pixel size": 0.14 } },
+  { "name": "character spacing 0.7", "overrides": { "Character Spacing": 0.7 } }
+]
