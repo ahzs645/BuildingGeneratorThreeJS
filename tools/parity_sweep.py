@@ -287,6 +287,13 @@ def main():
     obj.hide_render = False
     obj.hide_viewport = False
     obj.hide_set(False)
+    if os.environ.get("NODE_DOJO_LOCAL_SPACE") == "1":
+        # Object Info in Relative mode is evaluated against the modifier
+        # object's transform. Match the browser gallery's local-space preview
+        # by evaluating the source at an identity transform.
+        obj.location = (0, 0, 0)
+        obj.rotation_euler = (0, 0, 0)
+        obj.scale = (1, 1, 1)
     name_to_identifier, saved_values = modifier_interface(mod)
     results = []
     cosmetic_geometry = estimate_cosmetic_geometry(obj, mod, name_to_identifier, saved_values)

@@ -1,0 +1,16 @@
+{
+  "id": "joint-three-way-pipe",
+  "object": "old pipe",
+  "root": "pipe joint generator.003",
+  "status": "authored-exact",
+  "blender": {
+    "verts": 48708,
+    "faces": 48318
+  },
+  "gnvm": {
+    "verts": 48708,
+    "faces": 48318
+  },
+  "coverage": "100% of reachable node types across the 20-group, 319-node root closure; three evaluated dowel dependencies are included.",
+  "validation": "Authored output and five non-cutter control variants have exact topology and bounds. Cutter mode has identical bounds but GN-VM's Manifold solid boolean simplifies the internal result to 24,354 / 24,156 versus Blender's 29,705 / 27,431."
+}

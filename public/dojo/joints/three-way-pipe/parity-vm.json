@@ -1,0 +1,173 @@
+{
+  "source": "gnvm",
+  "dump": "/tmp/joint-old-pipe-dump.json",
+  "object": "old pipe",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 48708,
+      "faces": 48318,
+      "bbox": {
+        "min": [
+          -68.5882,
+          50.3683,
+          6.1456
+        ],
+        "max": [
+          -0.3418,
+          118.6147,
+          74.392
+        ]
+      },
+      "elapsed_ms": 227
+    },
+    {
+      "combo": {
+        "name": "diameter 18",
+        "overrides": {
+          "diameter": 18
+        }
+      },
+      "status": "ok",
+      "verts": 48708,
+      "faces": 48318,
+      "bbox": {
+        "min": [
+          -68.5882,
+          50.3683,
+          6.1456
+        ],
+        "max": [
+          -0.3418,
+          118.6147,
+          74.392
+        ]
+      },
+      "elapsed_ms": 147
+    },
+    {
+      "combo": {
+        "name": "size 45",
+        "overrides": {
+          "size": 45
+        }
+      },
+      "status": "ok",
+      "verts": 48708,
+      "faces": 48318,
+      "bbox": {
+        "min": [
+          -79.465,
+          39.4915,
+          -4.7312
+        ],
+        "max": [
+          10.535,
+          129.4915,
+          85.2688
+        ]
+      },
+      "elapsed_ms": 134
+    },
+    {
+      "combo": {
+        "name": "cutter",
+        "overrides": {
+          "cutter": true
+        }
+      },
+      "status": "ok",
+      "verts": 24354,
+      "faces": 24156,
+      "bbox": {
+        "min": [
+          -66.8282,
+          52.1282,
+          7.9056
+        ],
+        "max": [
+          -2.1018,
+          116.8547,
+          72.632
+        ]
+      },
+      "elapsed_ms": 104
+    },
+    {
+      "combo": {
+        "name": "square",
+        "overrides": {
+          "round/square": false
+        }
+      },
+      "status": "ok",
+      "verts": 25830,
+      "faces": 25626,
+      "bbox": {
+        "min": [
+          -68.5882,
+          50.3683,
+          6.1456
+        ],
+        "max": [
+          -0.3418,
+          118.6147,
+          74.392
+        ]
+      },
+      "elapsed_ms": 91
+    },
+    {
+      "combo": {
+        "name": "factor 0.6",
+        "overrides": {
+          "Factor": 0.6
+        }
+      },
+      "status": "ok",
+      "verts": 48708,
+      "faces": 48318,
+      "bbox": {
+        "min": [
+          -68.5882,
+          50.3683,
+          6.1456
+        ],
+        "max": [
+          -0.3418,
+          118.6147,
+          74.392
+        ]
+      },
+      "elapsed_ms": 130
+    },
+    {
+      "combo": {
+        "name": "high resolution",
+        "overrides": {
+          "hi rez": true
+        }
+      },
+      "status": "ok",
+      "verts": 48708,
+      "faces": 48318,
+      "bbox": {
+        "min": [
+          -68.5882,
+          50.3683,
+          6.1456
+        ],
+        "max": [
+          -0.3418,
+          118.6147,
+          74.392
+        ]
+      },
+      "elapsed_ms": 139
+    }
+  ]
+}

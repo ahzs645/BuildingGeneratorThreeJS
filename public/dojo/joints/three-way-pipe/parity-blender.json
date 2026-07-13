@@ -1,0 +1,223 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "old pipe",
+  "modifier": "pipe joint generator.002",
+  "node_group": "pipe joint generator.003",
+  "saved_values": {
+    "Object": "Dowel 22mm Diameter.005",
+    "diameter": 25.0,
+    "size": 32.36322021484375,
+    "cutter": false,
+    "Material": "procedural filament.001",
+    "round/square": true,
+    "Factor": 0.16170205175876617,
+    "hi rez": false,
+    "Value": [
+      0.8000156879425049,
+      0.8000156879425049,
+      0.8000156879425049,
+      1.0
+    ]
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 48708,
+      "faces": 48318,
+      "bbox": {
+        "min": [
+          -68.5882,
+          50.3683,
+          6.1456
+        ],
+        "max": [
+          -0.3418,
+          118.6147,
+          74.392
+        ]
+      },
+      "elapsed_ms": 26.3
+    },
+    {
+      "combo": {
+        "name": "diameter 18",
+        "overrides": {
+          "diameter": 18
+        }
+      },
+      "status": "ok",
+      "verts": 48708,
+      "faces": 48318,
+      "bbox": {
+        "min": [
+          -68.5882,
+          50.3683,
+          6.1456
+        ],
+        "max": [
+          -0.3418,
+          118.6147,
+          74.392
+        ]
+      },
+      "elapsed_ms": 25.0
+    },
+    {
+      "combo": {
+        "name": "size 45",
+        "overrides": {
+          "size": 45
+        }
+      },
+      "status": "ok",
+      "verts": 48708,
+      "faces": 48318,
+      "bbox": {
+        "min": [
+          -79.465,
+          39.4915,
+          -4.7312
+        ],
+        "max": [
+          10.535,
+          129.4915,
+          85.2688
+        ]
+      },
+      "elapsed_ms": 24.1
+    },
+    {
+      "combo": {
+        "name": "cutter",
+        "overrides": {
+          "cutter": true
+        }
+      },
+      "status": "ok",
+      "verts": 29705,
+      "faces": 27431,
+      "bbox": {
+        "min": [
+          -66.8282,
+          52.1282,
+          7.9056
+        ],
+        "max": [
+          -2.1018,
+          116.8547,
+          72.632
+        ]
+      },
+      "elapsed_ms": 152.8
+    },
+    {
+      "combo": {
+        "name": "square",
+        "overrides": {
+          "round/square": false
+        }
+      },
+      "status": "ok",
+      "verts": 25830,
+      "faces": 25626,
+      "bbox": {
+        "min": [
+          -68.5882,
+          50.3683,
+          6.1456
+        ],
+        "max": [
+          -0.3418,
+          118.6147,
+          74.392
+        ]
+      },
+      "elapsed_ms": 14.5
+    },
+    {
+      "combo": {
+        "name": "factor 0.6",
+        "overrides": {
+          "Factor": 0.6
+        }
+      },
+      "status": "ok",
+      "verts": 48708,
+      "faces": 48318,
+      "bbox": {
+        "min": [
+          -68.5882,
+          50.3683,
+          6.1456
+        ],
+        "max": [
+          -0.3418,
+          118.6147,
+          74.392
+        ]
+      },
+      "elapsed_ms": 23.4
+    },
+    {
+      "combo": {
+        "name": "high resolution",
+        "overrides": {
+          "hi rez": true
+        }
+      },
+      "status": "ok",
+      "verts": 48708,
+      "faces": 48318,
+      "bbox": {
+        "min": [
+          -68.5882,
+          50.3683,
+          6.1456
+        ],
+        "max": [
+          -0.3418,
+          118.6147,
+          74.392
+        ]
+      },
+      "elapsed_ms": 23.4
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "Filament and Cross Section 1OCT2024": {
+        "faces": 48318,
+        "verts": 48708
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 48318,
+      "verts": 48708
+    }
+  }
+}

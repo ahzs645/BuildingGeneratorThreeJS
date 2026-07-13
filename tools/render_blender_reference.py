@@ -75,6 +75,8 @@ depsgraph = bpy.context.evaluated_depsgraph_get()
 depsgraph.update()
 evaluated = obj.evaluated_get(depsgraph)
 mesh = evaluated.to_mesh()
+mesh_verts = len(mesh.vertices) if mesh else None
+mesh_faces = len(mesh.polygons) if mesh else None
 corners = [evaluated.matrix_world @ vertex.co for vertex in mesh.vertices] if mesh else []
 # Evaluated Curve objects can retain their pre-modifier/invalid bound_box even
 # when Geometry Nodes produces a large mesh. Prefer realized mesh vertices and
@@ -126,8 +128,10 @@ if meta_path:
         "object": obj.name,
         "type": obj.type,
         "bbox": {"min": list(minimum), "max": list(maximum)},
-        "verts": len(mesh.vertices) if mesh else None,
-        "faces": len(mesh.polygons) if mesh else None,
+        # Blender 5.1 can invalidate the temporary evaluated mesh while the
+        # Workbench render runs, so retain its counts before rendering.
+        "verts": mesh_verts,
+        "faces": mesh_faces,
         "materials": [slot.material.name if slot.material else None for slot in obj.material_slots],
     }
     with open(meta_path, "w", encoding="utf-8") as handle:

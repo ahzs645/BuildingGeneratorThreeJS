@@ -1,0 +1,9 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "diameter 18", "overrides": { "diameter": 18 } },
+  { "name": "size 45", "overrides": { "size": 45 } },
+  { "name": "cutter", "overrides": { "cutter": true } },
+  { "name": "square", "overrides": { "round/square": false } },
+  { "name": "factor 0.6", "overrides": { "Factor": 0.6 } },
+  { "name": "high resolution", "overrides": { "hi rez": true } }
+]
