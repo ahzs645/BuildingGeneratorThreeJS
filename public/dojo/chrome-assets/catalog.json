@@ -891,7 +891,7 @@
     "reference": "dojo/references/math-clay/lorenze-007.png",
     "blenderStats": { "verts": 16249, "faces": 15459 },
     "localSpace": true,
-    "note": "Work in progress: all 224 nodes execute, but the browser currently produces a forked saddle instead of Blender's rounded curled shell. Hard-sphere clipping and this root's specialized field branch still differ.",
+    "note": "Near-exact rounded curl after closed-solid FLOAT boolean support. Browser bounds are within 0.3947 units and vertex count is 16,725 versus Blender's 16,249; its 33,446 faces are triangulated boolean output, while Blender retains 15,459 mixed polygons.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 3 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -981,7 +981,7 @@
     "reference": "dojo/references/math-clay/tpms-016.png",
     "blenderStats": { "verts": 87099, "faces": 85390 },
     "localSpace": true,
-    "note": "Work in progress: all 250 nodes run and preserve the nested cross-section bands, but the browser clips with planar slabs instead of Blender's rounded enclosing lobes.",
+    "note": "The authored cross-section lattice and rounded enclosing lobes now align within 0.4942 bounds units. Browser output is lower density at 20,254 vertices and 40,504 triangulated faces versus Blender's 87,099 / 85,390.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.0638302564620972 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.4, "max": 1.5, "step": 0.02, "value": 0.4216800034046173 },
@@ -996,7 +996,7 @@
     "reference": "dojo/references/math-clay/tpms-018.png",
     "blenderStats": { "verts": 14190, "faces": 13558 },
     "localSpace": true,
-    "note": "Work in progress: the 267-node root produces the paired bowl family at 22,548 / 22,546, but rotation and clipping differ visibly from Blender and the maximum bound delta is 5.5971 units.",
+    "note": "Near-exact twin-bowl surface after closed-solid FLOAT boolean support. Browser bounds are within 0.1407 units and vertex count is 14,764 versus Blender's 14,190; its 29,524 faces are triangulated boolean output, while Blender retains 13,558 mixed polygons.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.0638302564620972 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },

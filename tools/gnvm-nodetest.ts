@@ -744,8 +744,8 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Convex Hull encloses disconnected point sets", (hull.mesh?.faces.length ?? 0) > 0 && Math.min(...hullX) === -1 && Math.max(...hullX) === 5,
     `verts=${hull.mesh?.positions.length} faces=${hull.mesh?.faces.length}`);
 
-  // With a non-AABB cutter, FLOAT must retain its topology-preserving fallback
-  // while EXACT is allowed to use Manifold's solid CSG.
+  // Blender's FLOAT solver performs solid CSG for closed operands too. The VM
+  // uses Manifold for that safe subset, including curved/non-AABB cutters.
   const a = box([-1, -1, -1], [1, 1, 1]);
   const tilted = box([-1, -1, -1], [1, 1, 1]);
   const c = Math.cos(Math.PI / 4), s = Math.sin(Math.PI / 4);
@@ -760,7 +760,7 @@ function meshSignedAreaXY(m: Mesh): number {
     { operation: "INTERSECT", solver: "FLOAT" },
   ).Mesh as Geometry;
   const floatMinX = Math.min(...floatInter.mesh!.positions.map((p) => p[0]));
-  check("MeshBoolean FLOAT keeps non-AABB input topology", floatInter.mesh!.faces.length === a.mesh!.faces.length && floatMinX === -1, `faces=${floatInter.mesh!.faces.length} minX=${floatMinX}`);
+  check("MeshBoolean FLOAT intersects closed non-AABB solids", floatInter.mesh!.faces.length > 0 && floatMinX > -0.99, `faces=${floatInter.mesh!.faces.length} minX=${floatMinX}`);
 
   const exactInter = runNode(
     "GeometryNodeMeshBoolean",
@@ -818,6 +818,16 @@ function meshSignedAreaXY(m: Mesh): number {
   });
   const cutMinRadius = Math.min(...cutFaces.flatMap((f) => f.map((vi) => Math.hypot(tubeClip.mesh!.positions[vi][0], tubeClip.mesh!.positions[vi][1]))));
   check("MeshBoolean FLOAT caps a clipped hollow shell with an annulus", cutFaces.length > 0 && cutMinRadius > 0.9, `faces=${cutFaces.length} minRadius=${cutMinRadius}`);
+
+  // A non-AABB cutter must still leave an open shell on the guarded fallback;
+  // passing either operand through solid-only CSG would erase or cap it.
+  const tiltedOpenClip = runNode(
+    "GeometryNodeMeshBoolean",
+    { "Mesh 1": openCylinder(12, [-1, 0, 1], 1), "Mesh 2": tilted },
+    { operation: "INTERSECT", solver: "FLOAT" },
+  ).Mesh as Geometry;
+  check("MeshBoolean FLOAT preserves open shell for non-AABB cutter", tiltedOpenClip.mesh!.faces.length === 24,
+    `faces=${tiltedOpenClip.mesh!.faces.length}`);
 
   // EXACT gracefully falls back when Manifold rejects an open shell.
   const cyl = openCylinder(12, [-2, -1, 0.5, 1.5], 1);

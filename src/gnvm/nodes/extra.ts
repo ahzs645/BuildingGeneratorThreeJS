@@ -1185,19 +1185,36 @@ function compactFaceVertsLocal(mesh: Mesh): Mesh {
   return out;
 }
 
+/** True when every polygon edge belongs to exactly two faces. */
+function isClosedFaceManifold(mesh: Mesh): boolean {
+  if (!mesh.faces.length) return false;
+  return buildTopology(mesh).edges.every((edge) => edge.faces.length === 2);
+}
+
 reg("GeometryNodeMeshBoolean", (api) => {
   const op = (api.prop<string>("operation", "DIFFERENCE") || "DIFFERENCE").toUpperCase() as "UNION" | "DIFFERENCE" | "INTERSECT";
   // Blender's FLOAT and EXACT solvers are different operations. In particular,
   // the vase routes its open shell through the FLOAT branch of DOJO_BOOL.001;
   // feeding that branch to a solid-only CSG library changes its envelope.
   const solver = (api.prop<string>("solver", "FLOAT") || "FLOAT").toUpperCase();
-  const useExactSolver = solver === "EXACT" && isManifoldReady();
   const mesh1 = api.geo("Mesh 1");
   const mesh2s = api.geoInputs("Mesh 2");
+  const manifoldReady = isManifoldReady();
+  const useExactSolver = solver === "EXACT" && manifoldReady;
+  // Blender's FLOAT solver also performs a real solid boolean when both
+  // operands are closed. Restrict Manifold to that case so open vase/tube
+  // shells retain the topology-preserving FLOAT fallback below.
+  const useClosedFloatSolver = solver === "FLOAT"
+    && manifoldReady
+    && !!mesh1.mesh
+    && mesh2s.length > 0
+    && isClosedFaceManifold(mesh1.mesh)
+    && mesh2s.every((geometry) => !!geometry.mesh && isClosedFaceManifold(geometry.mesh));
+  const useSolidSolver = useExactSolver || useClosedFloatSolver;
 
-  // Manifold represents closed solids, so use it only for Blender's EXACT
-  // solver. FLOAT remains on the VM's existing topology-preserving fallback.
-  if (useExactSolver && mesh1.mesh && mesh2s.length) {
+  // Manifold represents closed solids. EXACT may attempt it for any input and
+  // gracefully fall back; FLOAT uses it only after the closed-manifold guard.
+  if (useSolidSolver && mesh1.mesh && mesh2s.length) {
     const out = new Geometry();
     const boxes = mesh2s.map(axisBox);
     // Single AABB cutter: dedicated path (vase bottom-cut / bin clips).
@@ -1237,9 +1254,8 @@ reg("GeometryNodeMeshBoolean", (api) => {
     }
   }
 
-  // FLOAT solver fallback: preserve the prior VM behavior. It can clip a
-  // simple axis-aligned box, but must not reinterpret a non-solid shell as a
-  // closed CSG operand.
+  // FLOAT solver fallback for open/non-manifold inputs. It can clip a simple
+  // axis-aligned box, but must not reinterpret a shell as a closed CSG operand.
   const boxes = mesh2s.map(axisBox).filter((b): b is { min: Vec3; max: Vec3 } => !!b);
   const box = boxes.length === 1 ? boxes[0] : null;
   if (op === "UNION") {
