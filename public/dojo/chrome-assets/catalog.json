@@ -140,5 +140,15 @@
     "reference": "dojo/references/chrome-assets/flat-stickie-pack.png",
     "blenderStats": { "verts": 28, "faces": 7 },
     "controls": []
+  },
+  {
+    "id": "mesh-to-curve-helper",
+    "title": "Mesh to Curve Helper",
+    "object": "Plane.018",
+    "dump": "dojo/chrome-assets/mesh-to-curve-helper/dump.json",
+    "reference": "dojo/references/chrome-assets/mesh-to-curve-helper.png",
+    "blenderStats": { "verts": 0, "faces": 0 },
+    "note": "Exact non-surface helper: both runtimes preserve one cyclic four-point curve, intentionally rendering no surface.",
+    "controls": []
   }
 ]

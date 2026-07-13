@@ -1,0 +1,8 @@
+{
+  "object": "Plane.018",
+  "root": "Geometry Nodes.014",
+  "status": "exact-non-surface-helper",
+  "blender": { "curves": 1, "curvePoints": 4, "verts": 0, "faces": 0 },
+  "gnvm": { "curves": 1, "curvePoints": 4, "verts": 0, "faces": 0 },
+  "note": "The root converts the source quad boundary into a cyclic curve without a bevel or profile, so it intentionally has no renderable surface in Blender or the browser."
+}
