@@ -428,6 +428,8 @@ for obj in bpy.data.objects:
             if spline.type == "BEZIER":
                 bp = list(spline.bezier_points)
                 control_points = [[round(v, 6) for v in point.co] for point in bp]
+                bezier_left = [[round(v, 6) for v in point.handle_left] for point in bp]
+                bezier_right = [[round(v, 6) for v in point.handle_right] for point in bp]
                 segments = len(bp) if cyclic else max(0, len(bp) - 1)
                 resolution = max(2, int(getattr(spline, "resolution_u", 0) or obj.data.resolution_u or 12))
                 for segment in range(segments):
@@ -449,6 +451,8 @@ for obj in bpy.data.objects:
                         tangents.append([0.0, 0.0, 1.0])
             else:
                 control_points = None
+                bezier_left = None
+                bezier_right = None
                 points = [[round(p.co.x, 6), round(p.co.y, 6), round(p.co.z, 6)] for p in spline.points]
                 tilts = [round(p.tilt, 6) for p in spline.points]
                 radii = [round(p.radius, 6) for p in spline.points]
@@ -457,6 +461,8 @@ for obj in bpy.data.objects:
                          "resolution": int(getattr(spline, "resolution_u", 0) or obj.data.resolution_u or 12)}
                 if control_points is not None:
                     entry["control_points"] = control_points
+                    entry["bezier_left"] = bezier_left
+                    entry["bezier_right"] = bezier_right
                 splines.append(entry)
         o["curves"] = splines
     if obj.name in dependency_object_names and obj.type in ("MESH", "CURVE"):
@@ -474,6 +480,11 @@ for obj in bpy.data.objects:
             evaluated.to_mesh_clear()
     for mod in obj.modifiers:
         m = {"name": mod.name, "type": mod.type}
+        if mod.type == "HOOK" and mod.object:
+            m["object"] = mod.object.name
+            m["vertex_indices"] = list(mod.vertex_indices)
+            m["matrix_inverse"] = [[round(float(value), 9) for value in row] for row in mod.matrix_inverse]
+            m["strength"] = float(mod.strength)
         if mod.type == "NODES" and mod.node_group:
             m["node_group"] = mod.node_group.name
             if target_object is None or obj.name == target_object or obj.name in dependency_object_names:

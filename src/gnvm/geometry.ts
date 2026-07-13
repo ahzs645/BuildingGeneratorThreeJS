@@ -100,8 +100,9 @@ export interface InstanceRef {
   attributes?: Map<string, Elem>; // per-instance attribute values (broadcast on realize)
 }
 
-// A single spline (control-point polyline). We treat all splines as poly after
-// resample; bezier handles are not modelled.
+// A single spline. `points` is the evaluated polyline consumed by downstream
+// mesh operations; Bézier splines additionally retain their authored knots and
+// handles so handle-editing nodes can regenerate that evaluated polyline.
 export interface Spline {
   points: Vec3[];
   cyclic: boolean;
@@ -110,6 +111,8 @@ export interface Spline {
   // Evaluated polyline points may be denser than the authored spline knots.
   // Set Spline Type -> Poly must retain the original control-point count.
   controlPoints?: Vec3[];
+  bezierLeft?: Vec3[];
+  bezierRight?: Vec3[];
 }
 
 // A geometry set: mesh + curves (splines) + instances.
@@ -137,6 +140,8 @@ export class Geometry {
       resolution: s.resolution,
       points: s.points.map((p) => [...p] as Vec3),
       controlPoints: s.controlPoints?.map((p) => [...p] as Vec3),
+      bezierLeft: s.bezierLeft?.map((p) => [...p] as Vec3),
+      bezierRight: s.bezierRight?.map((p) => [...p] as Vec3),
     }));
     g.instances = this.instances.map((i) => ({
       ...i,
@@ -563,6 +568,8 @@ export function realizeInstances(g: Geometry): Geometry {
     cyclic: s.cyclic,
     points: s.points.map((p) => [...p] as Vec3),
     controlPoints: s.controlPoints?.map((p) => [...p] as Vec3),
+    bezierLeft: s.bezierLeft?.map((p) => [...p] as Vec3),
+    bezierRight: s.bezierRight?.map((p) => [...p] as Vec3),
   }));
   for (const [k, a] of g.curveAttributes) out.curveAttributes.set(k, { domain: a.domain, data: [...a.data] });
   for (const inst of g.instances) {
@@ -588,6 +595,8 @@ export function realizeInstances(g: Geometry): Geometry {
         cyclic: s.cyclic,
         points: s.points.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale)),
         controlPoints: s.controlPoints?.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale)),
+        bezierLeft: s.bezierLeft?.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale)),
+        bezierRight: s.bezierRight?.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale)),
       });
   }
   if (g.mesh || mesh.positions.length || mesh.faces.length || mesh.edges.length) out.mesh = mesh;

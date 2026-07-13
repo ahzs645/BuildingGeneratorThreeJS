@@ -23,6 +23,7 @@ import { fillCurves, meshEdgesToChains, splineLength, splineSegments, splineFram
 import { makeFieldCtx } from "../evaluator";
 import { reg, EvalAPI } from "../registry";
 import { isManifoldReady, manifoldBoolean, manifoldBooleanBox, manifoldHull } from "../boolean";
+import { asBezierSpline } from "../bezier";
 
 const DOMAINS = new Set<Domain>(["POINT", "EDGE", "FACE", "CORNER", "CURVE", "INSTANCE"]);
 const EPS = 1e-9;
@@ -376,7 +377,14 @@ reg("GeometryNodeInputMeshVertexNeighbors", () => ({
 const SPLINE_TYPE_SAMPLES_PER_SEGMENT = 12;
 
 function cloneSpline(s: Spline): Spline {
-  return { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
+  return {
+    points: s.points.map((p) => [...p] as Vec3),
+    cyclic: s.cyclic,
+    resolution: s.resolution,
+    controlPoints: s.controlPoints?.map((p) => [...p] as Vec3),
+    bezierLeft: s.bezierLeft?.map((p) => [...p] as Vec3),
+    bezierRight: s.bezierRight?.map((p) => [...p] as Vec3),
+  };
 }
 
 function lerpVec(a: Vec3, b: Vec3, t: number): Vec3 {
@@ -529,9 +537,7 @@ function convertSplineType(s: Spline, type: string): Spline {
   switch (type) {
     case "NURBS": return nurbsSpline(s);
     case "CATMULL_ROM": return catmullRomSpline(s);
-    // Bezier handles are not stored in the VM. Auto-handle Bezier conversion is
-    // approximated with Catmull-Rom because it interpolates the supplied knots.
-    case "BEZIER": return catmullRomSpline(s);
+    case "BEZIER": return asBezierSpline(s);
     case "POLY":
     default: return cloneSpline(s);
   }
