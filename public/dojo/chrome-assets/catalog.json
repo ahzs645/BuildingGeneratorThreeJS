@@ -1026,5 +1026,137 @@
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
       { "type": "checkbox", "name": "cross section view", "label": "Cross-section view", "value": false }
     ]
+  },
+  {
+    "id": "nodes-node-check",
+    "title": "The Nodes Node · Curve Check Helper",
+    "object": "check",
+    "dump": "dojo/nodes-node/dump.json",
+    "reference": "dojo/references/nodes-node/check.png",
+    "blenderStats": { "verts": 3, "faces": 0 },
+    "localSpace": true,
+    "note": "Exact structural helper: Blender retains a three-point curve and the browser retains no renderable surface. It is included because it is a distinct active modifier root, not because it produces a visible mesh.",
+    "controls": []
+  },
+  {
+    "id": "nodes-node-source-cube",
+    "title": "The Nodes Node · Source Cube",
+    "object": "Cube.002",
+    "dump": "dojo/nodes-node/dump.json",
+    "reference": "dojo/references/nodes-node/cube-002.png",
+    "blenderStats": { "verts": 8, "faces": 6 },
+    "localSpace": true,
+    "note": "Exact two-node passthrough root: 8 vertices and 6 faces in Blender and the browser.",
+    "controls": []
+  },
+  {
+    "id": "nodes-node-base-plate",
+    "title": "The Nodes Node · Base Plate",
+    "object": "Plane",
+    "dump": "dojo/nodes-node/dump.json",
+    "reference": "dojo/references/nodes-node/plane.png",
+    "blenderStats": { "verts": 47652, "faces": 2813 },
+    "localSpace": true,
+    "note": "Exact eleven-node source plate, including the supplied dense triangulation: 47,652 vertices and 2,813 faces in both engines.",
+    "controls": []
+  },
+  {
+    "id": "nodes-node-noodle-pair",
+    "title": "The Nodes Node · Noodle Pair",
+    "object": "Point.001",
+    "dump": "dojo/nodes-node/dump.json",
+    "reference": "dojo/references/nodes-node/point-001.png",
+    "blenderStats": { "verts": 4736, "faces": 4672 },
+    "localSpace": true,
+    "note": "Exact topology and visual parity. Portable Bézier handles, Set Handle Positions, and the two pre-Geometry-Nodes Hook modifiers reproduce Blender's paired socket noodles at 4,736 vertices and 4,672 faces.",
+    "controls": []
+  },
+  {
+    "id": "nodes-node-stamp-guide",
+    "title": "The Nodes Node · Stamp Wire Guide",
+    "object": "STAMP.001",
+    "dump": "dojo/nodes-node/dump.json",
+    "reference": "dojo/references/nodes-node/stamp.png",
+    "blenderStats": { "verts": 490, "faces": 0 },
+    "localSpace": true,
+    "note": "Exact wire-only stamp helper: both engines produce 490 vertices and no faces, so the normal surface viewer intentionally appears empty.",
+    "controls": []
+  },
+  {
+    "id": "nodes-node-noodle-segment",
+    "title": "The Nodes Node · Noodle Segment",
+    "object": "Cube.001",
+    "dump": "dojo/nodes-node/dump.json",
+    "reference": "dojo/references/nodes-node/cube-001.png",
+    "blenderStats": { "verts": 2240, "faces": 2208 },
+    "localSpace": true,
+    "note": "Exact 151-node mesh-line-to-Bézier noodle: 2,240 vertices and 2,208 faces in Blender and the browser, with matching authored curvature.",
+    "controls": []
+  },
+  {
+    "id": "nodes-node-full-panel",
+    "title": "The Nodes Node · Full Geometry Panel",
+    "object": "Cube",
+    "dump": "dojo/nodes-node/dump.json",
+    "reference": "dojo/references/nodes-node/cube.png",
+    "blenderStats": { "verts": 769, "faces": 435 },
+    "localSpace": true,
+    "note": "Work in progress: all 895 reachable nodes execute and the browser now builds the body, sockets, toggles, and labels. Legacy cumulative switches are supported, but row placement, text transforms, and bottom-edge filling remain visibly different (2,680 / 1,430 browser versus 769 / 435 Blender).",
+    "controls": []
+  },
+  {
+    "id": "nodes-node-group-output",
+    "title": "The Nodes Node · Group Output Bar",
+    "object": "Cube.006",
+    "dump": "dojo/nodes-node/dump.json",
+    "reference": "dojo/references/nodes-node/cube-006.png",
+    "blenderStats": { "verts": 89, "faces": 45 },
+    "localSpace": true,
+    "note": "Work in progress: the main bar and left socket are present, but browser label geometry is still retained above the body (388 / 96 versus Blender 89 / 45).",
+    "controls": []
+  },
+  {
+    "id": "nodes-node-group-io",
+    "title": "The Nodes Node · Group I/O Bar",
+    "object": "Cube.007",
+    "dump": "dojo/nodes-node/dump.json",
+    "reference": "dojo/references/nodes-node/cube-007.png",
+    "blenderStats": { "verts": 1177, "faces": 1103 },
+    "localSpace": true,
+    "note": "Partial parity: the browser preserves the long node body and both end sockets. Text/row placement remains under correction (1,304 / 1,111 versus Blender 1,177 / 1,103).",
+    "controls": []
+  },
+  {
+    "id": "nodes-node-selection-bar",
+    "title": "The Nodes Node · Selection Bar",
+    "object": "Cube.005",
+    "dump": "dojo/nodes-node/dump.json",
+    "reference": "dojo/references/nodes-node/cube-005.png",
+    "blenderStats": { "verts": 233, "faces": 124 },
+    "localSpace": true,
+    "note": "Partial parity: the panel and three authored socket/control shapes execute in-browser, while label geometry and switch accumulation remain denser (505 / 164 versus Blender 233 / 124).",
+    "controls": []
+  },
+  {
+    "id": "nodes-node-checkbox-panel",
+    "title": "The Nodes Node · Checkbox Panel",
+    "object": "Cube.004",
+    "dump": "dojo/nodes-node/dump.json",
+    "reference": "dojo/references/nodes-node/cube-004.png",
+    "blenderStats": { "verts": 1465, "faces": 1275 },
+    "localSpace": true,
+    "note": "Partial parity: the tall body, socket family, and checkbox branch are recognizable. Browser row/text transforms still add geometry and alter placement (2,111 / 1,375 versus Blender 1,465 / 1,275).",
+    "controls": []
+  },
+  {
+    "id": "nodes-node-dual-input-bar",
+    "title": "The Nodes Node · Dual Input Bar",
+    "object": "Cube.003",
+    "dump": "dojo/nodes-node/dump.json",
+    "reference": "dojo/references/nodes-node/cube-003.png",
+    "blenderStats": { "verts": 1177, "faces": 1103 },
+    "localSpace": true,
+    "note": "Work in progress: the long body and paired input sockets execute, but the legacy label branch remains incomplete (280 / 87 versus Blender 1,177 / 1,103).",
+    "controls": []
   }
 ]

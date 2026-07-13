@@ -11,7 +11,7 @@ The pack contains **16 Blender projects**, **499 active Geometry Nodes modifiers
 | N03D 3D-printing Utilities | 77 | 39 | Inventory complete |
 | Recursive Bin | 1 | 1 | Live Blender/GN-VM comparison |
 | Dusty Crystal Cocoon | 2 | 1 | Active roots are Auto Smooth only |
-| The Nodes Node | 17 | 12 | Inventory complete |
+| The Nodes Node | 17 | 12 | All 12 roots live; 6 exact/structural, 6 legacy UI-panel variants partial |
 | Knit Graphic | 0 | 0 | No active Geometry Nodes modifier |
 | Typewriter | 1 | 1 | Live GN-VM; supplied Pixels TTF with embedded outline fallback |
 | Send Nodes Hat | 5 | 4 | Baked gallery reference |
@@ -19,9 +19,9 @@ The pack contains **16 Blender projects**, **499 active Geometry Nodes modifiers
 | Module 3 | 28 | 20 | Inventory complete |
 | Module 4 | 68 | 35 | Inventory complete |
 | Chrome Crayon | 1 | 1 | Live Blender/GN-VM comparison |
-| Math Clay | 33 | 14 | Two baked TPMS gallery references |
+| Math Clay | 33 | 14 | All 13 distinct surface roots live; shared helper represented through its consumer |
 | Bubble Vessel | 6 | 3 | Live Blender/GN-VM comparison |
-| Chrome Asset Library | 43 | 26 | Fourteen browser-visible roots; both Pixel Marker users authored-exact, Soft Pixel Marker surface-exact, Mesh to Curve helper exact, Chain and Mace surface-exact, UI Window near-exact |
+| Chrome Asset Library | 43 | 26 | All 26 active modifier roots represented in the browser library |
 
 ## Evidence standard for each port
 

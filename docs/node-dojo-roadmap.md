@@ -60,6 +60,7 @@ Inventory date: 2026-07-12. The source pack contains 16 `.blend` projects.
 - New Joint Generators: Five-Way Pipe Icon — the fixed 2-group, 24-node `pipe icon.001` closure matches Blender exactly at 73,062 / 72,486 with bit-for-bit matching local bounds. The adjacent 23-node `Cylinder.006` root was also audited and intentionally evaluates to empty geometry in both Blender and GN-VM; it is an attribute/material helper, not a missing generator.
 - Chrome Asset Library: 2.5D Chrome Crayon — the final distinct Chrome root, `CHROME CRAYON 3D _4.3_DEC2024`, now runs all 22 groups and 559 nodes in-browser. The authored eight-form surface is visually aligned at 97,448 / 97,448 versus Blender's 97,784 / 97,776 (-0.34% vertices), and flattened mode has an exact 46,866-face count. Dense evaluation takes about 36 seconds and local bounds differ by at most 1.9542 units.
 - Math Clay: all thirteen distinct surface roots now have live Blender/web comparisons from one shared portable scene dump. Five Lorenz-derived roots are near-exact (0.03%–2.79% vertex deltas), three TPMS roots preserve the authored form at lower marching-cubes density, and five roots are deliberately labeled divergent where specialized rotated fields or hard-sphere clipping still differ. Every reachable node type across the collection has a handler.
+- The Nodes Node: all twelve distinct active roots now have live comparisons from one shared portable dump. The source cube, dense base plate, paired Hook-deformed noodles, wire stamp guide, and mesh-line noodle are exact or structurally exact. The six 895–900-node UI-panel variants now execute their full reachable graphs with legacy geometry/material switch support; their body/socket branches are visible, while cumulative row placement, text transforms, and bottom-edge curve filling remain explicitly labeled partial or divergent.
 
 ## Recommended next targets
 
@@ -67,7 +68,7 @@ Inventory date: 2026-07-12. The source pack contains 16 `.blend` projects.
 2. **N03D 3D-printing Utilities** — 73 active objects, 39 roots, 639 groups. Dowel and Bolt are complete; Clevis Pin is live with a documented screw/sweep parity gap. Continue with the next isolated print utility.
 3. **New Joint Generators** — 32 active objects, 13 roots, 572 groups. All distinct product roots are now represented: Three-Way Pipe, the 2,413-node modern `neupipe` product, Bubble Putty, and the exact Five-Way Pipe Icon. The remaining roots are empty helpers, primitive tests, or duplicates of the existing Chrome/N03D assets; revisit Modern Pipe and Bubble Putty for final surface parity after the broader pack audit.
 4. **Math Clay surfaces** — all thirteen distinct surface roots plus the shared Soft Pixel Marker dependency are represented. Continue semantic correction on the five visibly divergent roots: `lorenze.007`, `lorenze.005`, `TPMS generator.019`, `.016`, and `.018`.
-5. **The Nodes Node** — 17 active objects, 12 roots, 5,498 total nodes. Treat as a collection, not one graph.
+5. **The Nodes Node** — all 12 distinct roots are represented in the live library. Continue semantic correction on the six legacy UI-panel variants; six smaller roots already have exact or structural parity.
 
 ## Needs source or scope clarification
 

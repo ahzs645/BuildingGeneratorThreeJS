@@ -1,0 +1,30 @@
+{
+  "object": "Cube.006",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -5.910610675811768,
+      -1.1809724569320679,
+      5.459438800811768
+    ],
+    "max": [
+      -1.306410551071167,
+      -0.8217724561691284,
+      6.9755167961120605
+    ]
+  },
+  "verts": 89,
+  "faces": 45,
+  "materials": [
+    "node color.group",
+    "node color.geometry",
+    "node color.input",
+    "node color.attributes",
+    "node color.color",
+    "node color.texture",
+    "node base",
+    "node color.integer",
+    "socket.001",
+    "Material"
+  ]
+}

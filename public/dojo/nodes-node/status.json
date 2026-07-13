@@ -1,0 +1,20 @@
+{
+  "source": "The Nodes Node_.blend",
+  "status": "12-distinct-roots-live",
+  "coverage": "Every reachable node type across all twelve active modifier roots has a browser handler.",
+  "variants": [
+    { "id": "nodes-node-check", "object": "check", "root": "Geometry Nodes.013", "nodes": 2, "status": "structural-wire-helper", "blender": { "verts": 3, "faces": 0 }, "gnvm": { "verts": 0, "faces": 0 } },
+    { "id": "nodes-node-source-cube", "object": "Cube.002", "root": "Geometry Nodes.006", "nodes": 9, "status": "exact", "blender": { "verts": 8, "faces": 6 }, "gnvm": { "verts": 8, "faces": 6 } },
+    { "id": "nodes-node-base-plate", "object": "Plane", "root": "Geometry Nodes.007", "nodes": 11, "status": "exact", "blender": { "verts": 47652, "faces": 2813 }, "gnvm": { "verts": 47652, "faces": 2813 } },
+    { "id": "nodes-node-noodle-pair", "object": "Point.001", "root": "Geometry Nodes.011", "nodes": 16, "status": "exact", "blender": { "verts": 4736, "faces": 4672 }, "gnvm": { "verts": 4736, "faces": 4672 } },
+    { "id": "nodes-node-stamp-guide", "object": "STAMP.001", "root": "_Stamp Tool", "nodes": 76, "status": "exact-wire-only", "blender": { "verts": 490, "faces": 0 }, "gnvm": { "verts": 490, "faces": 0 } },
+    { "id": "nodes-node-noodle-segment", "object": "Cube.001", "root": "Geometry Nodes.012", "nodes": 151, "status": "exact", "blender": { "verts": 2240, "faces": 2208 }, "gnvm": { "verts": 2240, "faces": 2208 } },
+    { "id": "nodes-node-full-panel", "object": "Cube", "root": "Geometry Nodes.009", "nodes": 895, "status": "live-divergent-layout", "blender": { "verts": 769, "faces": 435 }, "gnvm": { "verts": 2680, "faces": 1430 } },
+    { "id": "nodes-node-group-output", "object": "Cube.006", "root": "Geometry Nodes.001", "nodes": 895, "status": "live-divergent-layout", "blender": { "verts": 89, "faces": 45 }, "gnvm": { "verts": 388, "faces": 96 } },
+    { "id": "nodes-node-group-io", "object": "Cube.007", "root": "Geometry Nodes.002", "nodes": 895, "status": "live-partial-parity", "blender": { "verts": 1177, "faces": 1103 }, "gnvm": { "verts": 1304, "faces": 1111 } },
+    { "id": "nodes-node-selection-bar", "object": "Cube.005", "root": "Geometry Nodes.004", "nodes": 897, "status": "live-partial-parity", "blender": { "verts": 233, "faces": 124 }, "gnvm": { "verts": 505, "faces": 164 } },
+    { "id": "nodes-node-checkbox-panel", "object": "Cube.004", "root": "Geometry Nodes.015", "nodes": 898, "status": "live-partial-parity", "blender": { "verts": 1465, "faces": 1275 }, "gnvm": { "verts": 2111, "faces": 1375 } },
+    { "id": "nodes-node-dual-input-bar", "object": "Cube.003", "root": "Geometry Nodes.003", "nodes": 900, "status": "live-divergent-layout", "blender": { "verts": 1177, "faces": 1103 }, "gnvm": { "verts": 280, "faces": 87 } }
+  ],
+  "validation": "Six roots are exact or structurally exact. The six large legacy UI-node variants now build their bodies and socket/control branches, but remain deliberately labeled partial or divergent while cumulative row layout, text transforms, and bottom-edge curve filling are corrected."
+}

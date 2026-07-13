@@ -1,0 +1,25 @@
+{
+  "object": "Plane",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -22.43798828125,
+      -0.17001917958259583,
+      -12.668478012084961
+    ],
+    "max": [
+      6.788012504577637,
+      -0.1600181758403778,
+      16.557519912719727
+    ]
+  },
+  "verts": 47652,
+  "faces": 2813,
+  "materials": [
+    "node base.001",
+    "grid dots",
+    "node color.input",
+    "socket.001",
+    "node color.color"
+  ]
+}
