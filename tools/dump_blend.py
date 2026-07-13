@@ -112,6 +112,17 @@ def dump_node(node):
                 for point in curve.points
             ] for curve in mapping.curves],
         }
+    if node.bl_idname == "ShaderNodeValToRGB" and getattr(node, "color_ramp", None):
+        ramp = node.color_ramp
+        d.setdefault("props", {})["color_ramp"] = {
+            "color_mode": ramp.color_mode,
+            "hue_interpolation": ramp.hue_interpolation,
+            "interpolation": ramp.interpolation,
+            "elements": [
+                {"position": float(element.position), "color": list(element.color)}
+                for element in ramp.elements
+            ],
+        }
     if node.bl_idname == "GeometryNodeGroup" and node.node_tree:
         d["group"] = node.node_tree.name
     # Repeat/simulation zones: record the paired output node so the evaluator can
@@ -552,24 +563,27 @@ for img in bpy.data.images:
 # cannot recover from a .blend. Export the referenced ASCII glyphs as cyclic
 # polylines so the GN-VM can reproduce packed fonts and explicitly supplied
 # font overrides without shipping Blender or a TTF parser.
-referenced_fonts = {}
-for tree_name in result["node_groups"]:
-    tree = bpy.data.node_groups.get(tree_name)
-    if tree is None:
-        continue
-    for node in tree.nodes:
-        if node.bl_idname != "GeometryNodeStringToCurves":
+if os.environ.get("NODE_DOJO_SKIP_FONT_ATLAS") == "1":
+    print("FONT_ATLAS_SKIPPED")
+else:
+    referenced_fonts = {}
+    for tree_name in result["node_groups"]:
+        tree = bpy.data.node_groups.get(tree_name)
+        if tree is None:
             continue
-        socket = next((candidate for candidate in node.inputs if candidate.name == "Font"), None)
-        font = getattr(socket, "default_value", None) if socket else None
-        if isinstance(font, bpy.types.VectorFont):
-            referenced_fonts[font.name] = font
-for font_name, font in referenced_fonts.items():
-    try:
-        result["fonts"][font_name] = dump_font_atlas(font)
-    except Exception as error:
-        result["fonts"][font_name] = {"name": font_name, "error": repr(error), "glyphs": {}}
-        print(f"FONT_ATLAS_ERROR {font_name}: {error!r}")
+        for node in tree.nodes:
+            if node.bl_idname != "GeometryNodeStringToCurves":
+                continue
+            socket = next((candidate for candidate in node.inputs if candidate.name == "Font"), None)
+            font = getattr(socket, "default_value", None) if socket else None
+            if isinstance(font, bpy.types.VectorFont):
+                referenced_fonts[font.name] = font
+    for font_name, font in referenced_fonts.items():
+        try:
+            result["fonts"][font_name] = dump_font_atlas(font)
+        except Exception as error:
+            result["fonts"][font_name] = {"name": font_name, "error": repr(error), "glyphs": {}}
+            print(f"FONT_ATLAS_ERROR {font_name}: {error!r}")
 
 with open(out_path, "w", encoding="utf-8") as f:
     json.dump(result, f, indent=1, default=str)

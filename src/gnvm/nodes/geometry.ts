@@ -64,6 +64,26 @@ function inverseTransformByMatrix(point: Vec3, matrix: Matrix4Rows): Vec3 {
   ];
 }
 
+function relativeInstanceTransform(objectMatrix: Matrix4Rows, activeMatrix: Matrix4Rows): { position: Vec3; rotation: Vec3; scale: Vec3 } {
+  const relativePoint = (point: Vec3): Vec3 => inverseTransformByMatrix(transformByMatrix(point, objectMatrix), activeMatrix);
+  const position = relativePoint([0, 0, 0]);
+  const endpoints = [relativePoint([1, 0, 0]), relativePoint([0, 1, 0]), relativePoint([0, 0, 1])];
+  const axes = endpoints.map((endpoint) => [
+    endpoint[0] - position[0], endpoint[1] - position[1], endpoint[2] - position[2],
+  ] as Vec3);
+  const scale = axes.map((axis) => Math.hypot(axis[0], axis[1], axis[2]) || 1) as Vec3;
+  const r = axes.map((axis, column) => axis.map((value) => value / scale[column])) as Vec3[];
+  // The normalized basis vectors are matrix columns. Extract XYZ Euler for
+  // the Rz*Ry*Rx convention used by rotateEulerXYZ.
+  const m11 = r[0][0], m12 = r[1][0], m13 = r[2][0];
+  const m22 = r[1][1], m23 = r[2][1], m32 = r[1][2], m33 = r[2][2];
+  const y = Math.asin(Math.max(-1, Math.min(1, m13)));
+  const rotation: Vec3 = Math.abs(m13) < .9999999
+    ? [Math.atan2(-m23, m33), y, Math.atan2(-m12, m11)]
+    : [Math.atan2(m32, m22), y, 0];
+  return { position, rotation, scale };
+}
+
 reg("GeometryNodeObjectInfo", (api) => {
   const ref = api.ref("Object");
   const obj = DUMP_CONTEXT.objects.find((o) => o.name === ref?.name);
@@ -116,11 +136,16 @@ reg("GeometryNodeCollectionInfo", (api) => {
     const object = DUMP_CONTEXT.objects.find((entry) => entry.name === name);
     const geometry = geometryOfDumpObject(object, true);
     if (!geometry.mesh && !geometry.curves.length && !geometry.instances.length) continue;
+    const objectMatrix = (object as { matrix_world?: Matrix4Rows } | undefined)?.matrix_world;
+    const activeMatrix = (DUMP_CONTEXT.activeObject as { matrix_world?: Matrix4Rows } | undefined)?.matrix_world;
+    const relative = api.prop<string>("transform_space", "ORIGINAL") === "RELATIVE" && objectMatrix && activeMatrix
+      ? relativeInstanceTransform(objectMatrix, activeMatrix)
+      : null;
     out.instances.push({
       geometry,
-      position: resetChildren ? [0, 0, 0] : ((object?.location ?? [0, 0, 0]) as Vec3),
-      rotation: resetChildren ? [0, 0, 0] : ((object?.rotation ?? [0, 0, 0]) as Vec3),
-      scale: resetChildren ? [1, 1, 1] : ((object?.scale ?? [1, 1, 1]) as Vec3),
+      position: resetChildren ? [0, 0, 0] : relative?.position ?? ((object?.location ?? [0, 0, 0]) as Vec3),
+      rotation: resetChildren ? [0, 0, 0] : relative?.rotation ?? ((object?.rotation ?? [0, 0, 0]) as Vec3),
+      scale: resetChildren ? [1, 1, 1] : relative?.scale ?? ((object?.scale ?? [1, 1, 1]) as Vec3),
     });
   }
   return { Instances: out };

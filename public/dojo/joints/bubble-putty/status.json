@@ -1,0 +1,16 @@
+{
+  "id": "joint-bubble-putty",
+  "object": "PUTTY.002",
+  "root": "Bubble Putty Generator_9OCT2024_01",
+  "status": "live-partial-parity",
+  "blender": {
+    "verts": 3302,
+    "faces": 4675
+  },
+  "gnvm": {
+    "verts": 1352,
+    "faces": 2700
+  },
+  "coverage": "100% of the reachable node types across the 46-group, 828-node closure.",
+  "validation": "The browser reproduces the relative three-object structure, welded quad-sphere seed, repeated tight-wrap/dual-mesh deformation, and finalized shell. Structure-preview topology is exact at 8,040 / 9,300. The finalized shell retains the intended wrapped mass and cavities but is lower density than Blender at 1,352 / 2,700 versus 3,302 / 4,675. Missing Budokan and Avenir fonts belong to auxiliary label graphs and are not required by the putty surface."
+}

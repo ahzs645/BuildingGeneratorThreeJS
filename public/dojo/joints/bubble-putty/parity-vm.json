@@ -1,0 +1,105 @@
+{
+  "source": "gnvm",
+  "dump": "/tmp/joint-bubble-putty-002-dump.json",
+  "object": "PUTTY.002",
+  "results": [
+    {
+      "combo": {
+        "name": "finalized authored",
+        "overrides": {
+          "finalize for export": true
+        }
+      },
+      "status": "ok",
+      "verts": 1352,
+      "faces": 2700,
+      "bbox": {
+        "min": [
+          -1.2119,
+          -2.1312,
+          -3.3515
+        ],
+        "max": [
+          4.1265,
+          3.7024,
+          2.6836
+        ]
+      },
+      "elapsed_ms": 572
+    },
+    {
+      "combo": {
+        "name": "finalized puttiness 0.35",
+        "overrides": {
+          "finalize for export": true,
+          "Puttiness": 0.35
+        }
+      },
+      "status": "ok",
+      "verts": 1352,
+      "faces": 2700,
+      "bbox": {
+        "min": [
+          -1.2119,
+          -2.1312,
+          -3.3515
+        ],
+        "max": [
+          4.1265,
+          3.7024,
+          2.6836
+        ]
+      },
+      "elapsed_ms": 478
+    },
+    {
+      "combo": {
+        "name": "finalized soften 2",
+        "overrides": {
+          "finalize for export": true,
+          "Soften": 2
+        }
+      },
+      "status": "ok",
+      "verts": 1352,
+      "faces": 2700,
+      "bbox": {
+        "min": [
+          -1.2119,
+          -2.1312,
+          -3.3515
+        ],
+        "max": [
+          4.1265,
+          3.7024,
+          2.6836
+        ]
+      },
+      "elapsed_ms": 447
+    },
+    {
+      "combo": {
+        "name": "structure preview",
+        "overrides": {
+          "finalize for export": false
+        }
+      },
+      "status": "ok",
+      "verts": 8040,
+      "faces": 9300,
+      "bbox": {
+        "min": [
+          -1.4065,
+          -7.2579,
+          -5.7723
+        ],
+        "max": [
+          4.8039,
+          5.3398,
+          5.3533
+        ]
+      },
+      "elapsed_ms": 445
+    }
+  ]
+}

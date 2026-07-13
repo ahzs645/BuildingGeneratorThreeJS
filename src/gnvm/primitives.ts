@@ -20,31 +20,38 @@ export function meshCube(size: Vec3, vx = 2, vy = 2, vz = 2): Geometry {
       [3, 0, 4, 7], // -x
     ];
   } else {
-    // Subdivided box: 6 independent face grids (edges unwelded — fine for render).
-    const face = (o: Vec3, u: Vec3, vv: Vec3, nu: number, nv: number) => {
-      const base = m.positions.length;
-      for (let j = 0; j < nv; j++)
-        for (let i = 0; i < nu; i++) {
-          const fu = nu > 1 ? i / (nu - 1) - 0.5 : 0;
-          const fv = nv > 1 ? j / (nv - 1) - 0.5 : 0;
-          m.positions.push([
-            o[0] + u[0] * fu * 2 + vv[0] * fv * 2,
-            o[1] + u[1] * fu * 2 + vv[1] * fv * 2,
-            o[2] + u[2] * fu * 2 + vv[2] * fv * 2,
-          ]);
-        }
-      for (let j = 0; j + 1 < nv; j++)
-        for (let i = 0; i + 1 < nu; i++) {
-          const a = base + j * nu + i;
-          m.faces.push([a, a + 1, a + nu + 1, a + nu]);
-        }
+    // Blender's subdivided Cube is a single closed surface. Sharing the twelve
+    // border rows is essential: Dual Mesh and repeated smoothing otherwise see
+    // six open grids and progressively delete the entire shell.
+    vx = Math.max(2, Math.floor(vx));
+    vy = Math.max(2, Math.floor(vy));
+    vz = Math.max(2, Math.floor(vz));
+    const vertices = new Map<string, number>();
+    const vertex = (x: number, y: number, z: number): number => {
+      const key = `${x}_${y}_${z}`;
+      const existing = vertices.get(key);
+      if (existing !== undefined) return existing;
+      const index = m.positions.length;
+      m.positions.push([
+        (x / (vx - 1) - .5) * sx * 2,
+        (y / (vy - 1) - .5) * sy * 2,
+        (z / (vz - 1) - .5) * sz * 2,
+      ]);
+      vertices.set(key, index);
+      return index;
     };
-    face([0, 0, sz], [sx, 0, 0], [0, sy, 0], vx, vy); // +z
-    face([0, 0, -sz], [sx, 0, 0], [0, -sy, 0], vx, vy); // -z
-    face([0, sy, 0], [sx, 0, 0], [0, 0, sz], vx, vz); // +y
-    face([0, -sy, 0], [sx, 0, 0], [0, 0, -sz], vx, vz); // -y
-    face([sx, 0, 0], [0, sy, 0], [0, 0, sz], vy, vz); // +x
-    face([-sx, 0, 0], [0, -sy, 0], [0, 0, sz], vy, vz); // -x
+    for (let x = 0; x + 1 < vx; x++) for (let y = 0; y + 1 < vy; y++) {
+      m.faces.push([vertex(x, y, 0), vertex(x, y + 1, 0), vertex(x + 1, y + 1, 0), vertex(x + 1, y, 0)]);
+      m.faces.push([vertex(x, y, vz - 1), vertex(x + 1, y, vz - 1), vertex(x + 1, y + 1, vz - 1), vertex(x, y + 1, vz - 1)]);
+    }
+    for (let x = 0; x + 1 < vx; x++) for (let z = 0; z + 1 < vz; z++) {
+      m.faces.push([vertex(x, 0, z), vertex(x + 1, 0, z), vertex(x + 1, 0, z + 1), vertex(x, 0, z + 1)]);
+      m.faces.push([vertex(x, vy - 1, z), vertex(x, vy - 1, z + 1), vertex(x + 1, vy - 1, z + 1), vertex(x + 1, vy - 1, z)]);
+    }
+    for (let y = 0; y + 1 < vy; y++) for (let z = 0; z + 1 < vz; z++) {
+      m.faces.push([vertex(0, y, z), vertex(0, y, z + 1), vertex(0, y + 1, z + 1), vertex(0, y + 1, z)]);
+      m.faces.push([vertex(vx - 1, y, z), vertex(vx - 1, y + 1, z), vertex(vx - 1, y + 1, z + 1), vertex(vx - 1, y, z + 1)]);
+    }
   }
   m.faceMaterial = m.faces.map(() => 0);
   m.materialSlots = [null];
@@ -118,6 +125,55 @@ export function meshLine(count: number, start: Vec3, offset: Vec3): Geometry {
     m.positions.push([start[0] + offset[0] * i, start[1] + offset[1] * i, start[2] + offset[2] * i]);
     if (i > 0) m.edges.push([i - 1, i]);
   }
+  const g = new Geometry();
+  g.mesh = m;
+  return g;
+}
+
+/** Welded icosphere matching Blender's subdivision counts (12/20, 42/80, ...). */
+export function meshIcoSphere(radius = 1, subdivisions = 2): Geometry {
+  const m = new Mesh();
+  const phi = (1 + Math.sqrt(5)) / 2;
+  const seed: Vec3[] = [
+    [-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0],
+    [0, -1, phi], [0, 1, phi], [0, -1, -phi], [0, 1, -phi],
+    [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1],
+  ];
+  m.positions = seed.map((point) => {
+    const length = Math.hypot(point[0], point[1], point[2]);
+    return [point[0] / length, point[1] / length, point[2] / length] as Vec3;
+  });
+  m.faces = [
+    [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+    [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+    [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+    [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1],
+  ];
+  const levels = Math.max(1, Math.min(8, Math.floor(subdivisions)));
+  for (let level = 1; level < levels; level++) {
+    const midpointCache = new Map<string, number>();
+    const midpoint = (a: number, b: number): number => {
+      const key = a < b ? `${a}_${b}` : `${b}_${a}`;
+      const cached = midpointCache.get(key);
+      if (cached !== undefined) return cached;
+      const pa = m.positions[a], pb = m.positions[b];
+      const point: Vec3 = [(pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2, (pa[2] + pb[2]) / 2];
+      const length = Math.hypot(point[0], point[1], point[2]);
+      const index = m.positions.length;
+      m.positions.push([point[0] / length, point[1] / length, point[2] / length]);
+      midpointCache.set(key, index);
+      return index;
+    };
+    const faces: number[][] = [];
+    for (const [a, b, c] of m.faces) {
+      const ab = midpoint(a, b), bc = midpoint(b, c), ca = midpoint(c, a);
+      faces.push([a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]);
+    }
+    m.faces = faces;
+  }
+  m.positions = m.positions.map((point) => [point[0] * radius, point[1] * radius, point[2] * radius]);
+  m.faceMaterial = m.faces.map(() => 0);
+  m.materialSlots = [null];
   const g = new Geometry();
   g.mesh = m;
   return g;

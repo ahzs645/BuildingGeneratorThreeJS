@@ -118,6 +118,27 @@ function meshSignedAreaXY(m: Mesh): number {
   check("CurveCircle p1=(0,1,0) CCW", approx(s.points[1], [0, 1, 0]), JSON.stringify(s.points[1]));
 }
 
+{
+  const sphere = runNode("GeometryNodeMeshIcoSphere", { Radius: 2, Subdivisions: 3 }).Mesh as Geometry;
+  check("Ico Sphere subdivision 3 topology", sphere.mesh?.positions.length === 162 && sphere.mesh.faces.length === 320);
+  check("Ico Sphere applies radius", !!sphere.mesh && sphere.mesh.positions.every((point) => Math.abs(Math.hypot(...point) - 2) < 1e-6));
+}
+
+{
+  const cube = runNode("GeometryNodeMeshCube", { Size: [2, 3, 4], "Vertices X": 4, "Vertices Y": 3, "Vertices Z": 2 }).Mesh as Geometry;
+  const topology = topologyOf(cube.mesh!);
+  check("Subdivided Cube welds shared face borders", cube.mesh?.positions.length === 24 && cube.mesh.faces.length === 22);
+  check("Subdivided Cube is a closed manifold", topology.edges.every((edge) => edge.faces.length === 2));
+}
+
+{
+  const random = runNode("FunctionNodeRandomValue", {
+    Min_001: 2, Max_001: 4, ID: Field.perElem((index) => index), Seed: 17,
+  }, { data_type: "FLOAT" }).Value_001 as Field;
+  const values = random.array({ size: 3, domain: "POINT", index: (index) => index });
+  check("Random Value is deterministic and index-varying", values.every((value) => Number(value) >= 2 && Number(value) < 4) && new Set(values).size === 3);
+}
+
 // Curve Line Direction mode stores the second input as a vector from Start,
 // rather than an absolute End point.
 {

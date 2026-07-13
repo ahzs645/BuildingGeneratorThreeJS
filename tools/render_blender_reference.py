@@ -41,6 +41,26 @@ obj = bpy.data.objects.get(object_name)
 if obj is None:
     raise RuntimeError(f'object not found: "{object_name}"')
 
+override_payload = os.environ.get("NODE_DOJO_OVERRIDES")
+if override_payload:
+    overrides = json.loads(override_payload)
+    modifier = next((candidate for candidate in obj.modifiers if candidate.type == "NODES" and candidate.node_group), None)
+    if modifier is None:
+        raise RuntimeError(f'Geometry Nodes modifier not found: "{object_name}"')
+    identifiers = {
+        item.name: item.identifier
+        for item in modifier.node_group.interface.items_tree
+        if item.item_type == "SOCKET" and item.in_out == "INPUT"
+    }
+    for name, value in overrides.items():
+        identifier = identifiers.get(name)
+        if identifier is None:
+            raise KeyError(f"modifier input not found: {name}")
+        modifier[identifier] = value
+    obj.update_tag()
+    bpy.context.view_layer.update()
+    print(f"NODE_DOJO_OVERRIDES_OK {json.dumps(overrides, sort_keys=True)}")
+
 if local_space:
     obj.location = (0, 0, 0)
     obj.rotation_euler = (0, 0, 0)
@@ -77,7 +97,11 @@ evaluated = obj.evaluated_get(depsgraph)
 mesh = evaluated.to_mesh()
 mesh_verts = len(mesh.vertices) if mesh else None
 mesh_faces = len(mesh.polygons) if mesh else None
-corners = [evaluated.matrix_world @ vertex.co for vertex in mesh.vertices] if mesh else []
+if mesh and os.environ.get("NODE_DOJO_SURFACE_BOUNDS") == "1" and mesh.polygons:
+    surface_indices = {index for polygon in mesh.polygons for index in polygon.vertices}
+    corners = [evaluated.matrix_world @ mesh.vertices[index].co for index in surface_indices]
+else:
+    corners = [evaluated.matrix_world @ vertex.co for vertex in mesh.vertices] if mesh else []
 # Evaluated Curve objects can retain their pre-modifier/invalid bound_box even
 # when Geometry Nodes produces a large mesh. Prefer realized mesh vertices and
 # use the object bounds only as a fallback for non-mesh outputs.

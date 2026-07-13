@@ -1,0 +1,156 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "PUTTY.002",
+  "modifier": "GeometryNodes",
+  "node_group": "Bubble Putty Generator_9OCT2024_01",
+  "saved_values": {
+    "MESH OBJECTS": "putty structure1",
+    "Puttiness": 0.6353210806846619,
+    "Soften": 5,
+    "Max bubble size": 1.456024169921875,
+    "Filament Color": [
+      0.0008284280193038285,
+      0.8002511262893677,
+      0.0,
+      1.0
+    ],
+    "finalize for export": false
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "finalized authored",
+        "overrides": {
+          "finalize for export": true
+        }
+      },
+      "status": "ok",
+      "verts": 3302,
+      "faces": 4675,
+      "bbox": {
+        "min": [
+          -1.5862,
+          -2.1273,
+          -3.4024
+        ],
+        "max": [
+          3.5734,
+          3.5198,
+          3.4078
+        ]
+      },
+      "elapsed_ms": 6714.8
+    },
+    {
+      "combo": {
+        "name": "finalized puttiness 0.35",
+        "overrides": {
+          "finalize for export": true,
+          "Puttiness": 0.35
+        }
+      },
+      "status": "ok",
+      "verts": 3302,
+      "faces": 4675,
+      "bbox": {
+        "min": [
+          -1.5862,
+          -2.1273,
+          -3.4024
+        ],
+        "max": [
+          3.5734,
+          3.5198,
+          3.4078
+        ]
+      },
+      "elapsed_ms": 6733.5
+    },
+    {
+      "combo": {
+        "name": "finalized soften 2",
+        "overrides": {
+          "finalize for export": true,
+          "Soften": 2
+        }
+      },
+      "status": "ok",
+      "verts": 3302,
+      "faces": 4675,
+      "bbox": {
+        "min": [
+          -1.5862,
+          -2.1273,
+          -3.4024
+        ],
+        "max": [
+          3.5734,
+          3.5198,
+          3.4078
+        ]
+      },
+      "elapsed_ms": 6786.5
+    },
+    {
+      "combo": {
+        "name": "structure preview",
+        "overrides": {
+          "finalize for export": false
+        }
+      },
+      "status": "ok",
+      "verts": 8040,
+      "faces": 9300,
+      "bbox": {
+        "min": [
+          -2.6908,
+          -5.6934,
+          -5.4196
+        ],
+        "max": [
+          8.6475,
+          5.4913,
+          5.3532
+        ]
+      },
+      "elapsed_ms": 51.3
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "Filament and Cross Section 1OCT2024": {
+        "faces": 2700,
+        "verts": 1352
+      },
+      "proc_ mahogany.001": {
+        "faces": 6600,
+        "verts": 6688
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 9300,
+      "verts": 8040
+    }
+  }
+}

@@ -15,6 +15,8 @@ import "./nodes/topology";
 import "./nodes/extra";
 import "./nodes/crayon";
 import "./nodes/volume";
+import "./nodes/points";
+import "./nodes/color";
 
 export { Evaluator } from "./evaluator";
 export { Geometry, toTriSoup } from "./geometry";
