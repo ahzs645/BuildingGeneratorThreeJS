@@ -22,7 +22,10 @@ const MATH: Record<string, (a: number, b: number, c: number) => number> = {
   DIVIDE: (a, b) => (b === 0 ? 0 : a / b),
   MULTIPLY_ADD: (a, b, c) => a * b + c,
   POWER: (a, b) => Math.pow(a, b),
-  LOGARITHM: (a, b) => (b > 0 && b !== 1 ? Math.log(a) / Math.log(b) : Math.log(a)),
+  // Blender's compatible logarithm returns zero outside its real-valued
+  // domain. Propagating JavaScript NaN here tears sparse holes through volume
+  // fields that intentionally feed signed trigonometric values into Logarithm.
+  LOGARITHM: (a, b) => (a > 0 && b > 0 && b !== 1 ? Math.log(a) / Math.log(b) : 0),
   SQRT: (a) => Math.sqrt(Math.max(0, a)),
   INVERSE_SQRT: (a) => (a > 0 ? 1 / Math.sqrt(a) : 0),
   ABSOLUTE: (a) => Math.abs(a),

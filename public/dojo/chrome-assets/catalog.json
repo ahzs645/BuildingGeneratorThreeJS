@@ -921,7 +921,7 @@
     "reference": "dojo/references/math-clay/lorenze-005.png",
     "blenderStats": { "verts": 108958, "faces": 108924 },
     "localSpace": true,
-    "note": "Work in progress: the 238-node rotated field executes, but the web surface fragments into thin sheets instead of Blender's ordered nested spikes. Rotation-aware field sampling remains the blocker.",
+    "note": "Near-exact 238-node nested spike field after Blender-compatible safe logarithms. Browser bounds are within 0.1811 units at 124,076 / 123,770 versus Blender's 108,958 / 108,924; the authored ordered shells and spikes are restored.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 2.5106382369995117 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },

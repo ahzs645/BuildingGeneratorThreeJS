@@ -1017,12 +1017,18 @@ function meshSignedAreaXY(m: Mesh): number {
   check("SubdivisionSurface densifies verts", (sub.mesh?.positions.length ?? 0) > 8, `verts=${sub.mesh?.positions.length}`);
 }
 
-// (W) SMOOTH_MIN is softer than min; unknown VectorMath is not ADD
+// (W) Scalar math follows Blender's safe domains; unknown VectorMath is not ADD
 {
   // |a-b| < k so the smooth term subtracts from min
   const sm = runNode("ShaderNodeMath", { Value: 0.4, Value_001: 0.5, Value_002: 0.5 }, { operation: "SMOOTH_MIN" }).Value as Field;
   const mn = runNode("ShaderNodeMath", { Value: 0.4, Value_001: 0.5, Value_002: 0.5 }, { operation: "MINIMUM" }).Value as Field;
   check("SMOOTH_MIN finite and < raw min for close values", Number.isFinite(sm.value as number) && (sm.value as number) < (mn.value as number), `smooth=${sm.value} min=${mn.value}`);
+  const validLog = runNode("ShaderNodeMath", { Value: 8, Value_001: 2, Value_002: 0 }, { operation: "LOGARITHM" }).Value as Field;
+  const negativeLog = runNode("ShaderNodeMath", { Value: -8, Value_001: 2, Value_002: 0 }, { operation: "LOGARITHM" }).Value as Field;
+  const invalidBaseLog = runNode("ShaderNodeMath", { Value: 8, Value_001: -2, Value_002: 0 }, { operation: "LOGARITHM" }).Value as Field;
+  check("Logarithm evaluates valid real domain", Math.abs((validLog.value as number) - 3) < 1e-6, `value=${validLog.value}`);
+  check("Logarithm zeroes invalid real domains", negativeLog.value === 0 && invalidBaseLog.value === 0,
+    `negative=${negativeLog.value} base=${invalidBaseLog.value}`);
   const unk = runNode("ShaderNodeVectorMath", { Vector: [1, 2, 3], Vector_001: [10, 20, 30] }, { operation: "NOT_A_REAL_OP" }).Vector as Field;
   const got = unk.value as number[];
   check("unknown VectorMath does not ADD", !approx(got, [11, 22, 33]) && approx(got, [1, 2, 3]), JSON.stringify(got));
