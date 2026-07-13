@@ -1,0 +1,175 @@
+{
+  "source": "gnvm",
+  "dump": "/tmp/n03d-stackable-bin-dump-v3.json",
+  "object": "BIN_ Stackable Gridfinity 31MAY2024",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 11288,
+      "faces": 10410,
+      "bbox": {
+        "min": [
+          0.5005,
+          0.5005,
+          0
+        ],
+        "max": [
+          83.5835,
+          41.5415,
+          29.983
+        ]
+      },
+      "elapsed_ms": 118
+    },
+    {
+      "combo": {
+        "name": "three by three",
+        "overrides": {
+          "x": 3,
+          "y": 3
+        }
+      },
+      "status": "ok",
+      "verts": 12556,
+      "faces": 11568,
+      "bbox": {
+        "min": [
+          0.5005,
+          0.5005,
+          0
+        ],
+        "max": [
+          62.5625,
+          62.5625,
+          29.983
+        ]
+      },
+      "elapsed_ms": 92
+    },
+    {
+      "combo": {
+        "name": "depth 40",
+        "overrides": {
+          "depth": 40
+        }
+      },
+      "status": "ok",
+      "verts": 11288,
+      "faces": 10410,
+      "bbox": {
+        "min": [
+          0.5005,
+          0.5005,
+          0
+        ],
+        "max": [
+          83.5835,
+          41.5415,
+          44.998
+        ]
+      },
+      "elapsed_ms": 76
+    },
+    {
+      "combo": {
+        "name": "horizontal divider",
+        "overrides": {
+          "h.dividers": 1
+        }
+      },
+      "status": "ok",
+      "verts": 11296,
+      "faces": 10416,
+      "bbox": {
+        "min": [
+          0.5005,
+          0.5005,
+          0
+        ],
+        "max": [
+          83.5835,
+          41.5415,
+          29.983
+        ]
+      },
+      "elapsed_ms": 69
+    },
+    {
+      "combo": {
+        "name": "two vertical dividers",
+        "overrides": {
+          "v.dividers": 2
+        }
+      },
+      "status": "ok",
+      "verts": 11304,
+      "faces": 10422,
+      "bbox": {
+        "min": [
+          0.5005,
+          0.5005,
+          0
+        ],
+        "max": [
+          83.5835,
+          41.5415,
+          29.983
+        ]
+      },
+      "elapsed_ms": 75
+    },
+    {
+      "combo": {
+        "name": "raised divider offset",
+        "overrides": {
+          "h.dividers": 1,
+          "divider offset height": 6
+        }
+      },
+      "status": "ok",
+      "verts": 11296,
+      "faces": 10416,
+      "bbox": {
+        "min": [
+          0.5005,
+          0.5005,
+          0
+        ],
+        "max": [
+          83.5835,
+          41.5415,
+          29.983
+        ]
+      },
+      "elapsed_ms": 72
+    },
+    {
+      "combo": {
+        "name": "grid lines",
+        "overrides": {
+          "grid lines": true
+        }
+      },
+      "status": "ok",
+      "verts": 12840,
+      "faces": 11957,
+      "bbox": {
+        "min": [
+          0.2102,
+          0.5005,
+          0
+        ],
+        "max": [
+          83.5835,
+          41.8318,
+          29.983
+        ]
+      },
+      "elapsed_ms": 195
+    }
+  ]
+}

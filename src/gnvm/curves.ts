@@ -188,13 +188,31 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?:
   const frames = splineFrames(rp, rail.cyclic, tangentOverrides);
   const nr = rp.length;
   const np = pp.length;
-  // place profile at each rail point (profile local: x->binormal, y->normal)
+  // Blender treats the rail tangent as profile-local +Z. An open +X rail maps
+  // profile (2,3) to world (0,-2,-3), while a closed planar loop establishes a
+  // stable in-plane normal toward its interior. The latter prevents an
+  // all-positive wall profile from expanding outside its authored footprint.
+  const planarCyclic = rail.cyclic && rp.length > 2
+    && rp.every((point) => Math.abs(point[2] - rp[0][2]) < 1e-8);
+  let planarOrientation = 1;
+  if (planarCyclic) {
+    let area2 = 0;
+    for (let i = 0; i < rp.length; i++) {
+      const a = rp[i], b = rp[(i + 1) % rp.length];
+      area2 += a[0] * b[1] - b[0] * a[1];
+    }
+    planarOrientation = area2 >= 0 ? 1 : -1;
+  }
   for (let i = 0; i < nr; i++) {
-    const { normal, binormal } = frames[i];
+    const frame = frames[i];
+    const normal = planarCyclic
+      ? vnorm([-frame.tangent[1] * planarOrientation, frame.tangent[0] * planarOrientation, 0])
+      : vscale(frame.normal, -1);
+    const binormal = vscale(frame.binormal, -1);
     const s = scales?.[i] ?? 1;
     for (let j = 0; j < np; j++) {
       const px = pp[j][0] * s, py = pp[j][1] * s;
-      mesh.positions.push(vadd(rp[i], vadd(vscale(binormal, px), vscale(normal, py))));
+      mesh.positions.push(vadd(rp[i], vadd(vscale(normal, px), vscale(binormal, py))));
     }
   }
   const ringCount = rail.cyclic ? nr : nr - 1;

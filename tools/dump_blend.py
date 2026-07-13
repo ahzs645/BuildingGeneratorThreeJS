@@ -486,6 +486,13 @@ for obj in bpy.data.objects:
                 splines.append(entry)
         o["curves"] = splines
     if obj.name in dependency_object_names and obj.type in ("MESH", "CURVE"):
+        # Referenced asset-library objects can live in collections excluded from
+        # the active scene. Link them temporarily so evaluated_get() captures
+        # their Geometry Nodes result rather than silently returning seed data.
+        if obj.name not in bpy.context.view_layer.objects and bpy.context.scene.collection.objects.get(obj.name) is None:
+            bpy.context.scene.collection.objects.link(obj)
+            bpy.context.view_layer.update()
+            depsgraph.update()
         evaluated = obj.evaluated_get(depsgraph)
         mesh = evaluated.to_mesh()
         try:
@@ -528,6 +535,16 @@ for obj in bpy.data.objects:
                         v = {"datablock": type(v).__name__, "name": v.name}
                     elif hasattr(v, "__len__") and not isinstance(v, str):
                         v = list(v)
+                    # Field-capable modifier sockets can be bound to a named
+                    # mesh attribute. Preserve that binding instead of dumping
+                    # only the fallback constant shown beside the attribute UI.
+                    try:
+                        if bool(mod.get(f"{key}_use_attribute", False)):
+                            attribute_name = str(mod.get(f"{key}_attribute_name", ""))
+                            if attribute_name:
+                                v = {"attribute": attribute_name, "value": v}
+                    except Exception:
+                        pass
                     # Identifier keys preserve duplicate interface names;
                     # friendly names remain available when unambiguous.
                     inputs[item.identifier] = v

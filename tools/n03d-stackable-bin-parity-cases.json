@@ -1,0 +1,9 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "three by three", "overrides": { "x": 3, "y": 3 } },
+  { "name": "depth 40", "overrides": { "depth": 40 } },
+  { "name": "horizontal divider", "overrides": { "h.dividers": 1 } },
+  { "name": "two vertical dividers", "overrides": { "v.dividers": 2 } },
+  { "name": "raised divider offset", "overrides": { "h.dividers": 1, "divider offset height": 6 } },
+  { "name": "grid lines", "overrides": { "grid lines": true } }
+]

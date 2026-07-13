@@ -59,6 +59,14 @@ const KEY = (n: string, s: string) => `${n}::${s}`;
 
 function wrapConst(socketType: string, value: any): SockVal {
   const t = socketType;
+  if (value && typeof value === "object" && !Array.isArray(value) && typeof value.attribute === "string") {
+    const fallback = t.includes("Vector") || t.includes("Rotation") || t.includes("Color")
+      ? (Array.isArray(value.value) ? value.value.slice(0, 3) as Vec3 : [0, 0, 0] as Vec3)
+      : t.includes("Bool")
+        ? (value.value ? 1 : 0)
+        : (typeof value.value === "number" ? value.value : Number(value.value) || 0);
+    return Field.perElem((index, context) => context.attr?.(value.attribute, index) ?? fallback);
+  }
   if (value == null) {
     if (t === "NodeSocketGeometry") return new Geometry();
     if (t.includes("Vector") || t.includes("Rotation")) return Field.of([0, 0, 0]);

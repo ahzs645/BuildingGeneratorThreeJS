@@ -1,0 +1,12 @@
+{
+  "id": "n03d-stackable-bin",
+  "object": "BIN_ Stackable Gridfinity 31MAY2024",
+  "root": "bin.stackable",
+  "status": "topology-and-bounds-exact",
+  "blender": { "verts": 11288, "faces": 10410, "bounds": { "min": [0.5005, 0.5005, 0], "max": [83.5835, 41.5415, 29.9826] } },
+  "gnvm": { "verts": 11288, "faces": 10410, "bounds": { "min": [0.5005, 0.5005, 0], "max": [83.5835, 41.5415, 29.983] } },
+  "coverage": "100% of all reachable node types across 14 groups and 302 nodes.",
+  "parameter_sweep": "Authored, 3x3, depth 40, horizontal divider, two vertical dividers, and raised-divider cases match topology exactly. Grid-lines mode is live partial parity at 12,840 / 11,957 versus Blender 13,328 / 12,449.",
+  "reference": "dojo/references/n03d/stackable-bin.png",
+  "validation": "Modifier named-attribute bindings preserve the source profile's top-edge and inner-wall selections; closed planar Curve to Mesh frames and the evaluated hollow-foot dependency reproduce Blender's complete bin shell and placement."
+}

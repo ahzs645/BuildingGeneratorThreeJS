@@ -1,0 +1,220 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "BIN_ Stackable Gridfinity 31MAY2024",
+  "modifier": "GeometryNodes",
+  "node_group": "bin.stackable",
+  "saved_values": {
+    "String": "",
+    "x": 4,
+    "y": 2,
+    "depth": 25.0,
+    "h.dividers": 0,
+    "v.dividers": 0,
+    "divider offset height": 3.859999895095825,
+    "Selection": false,
+    "grid lines": false
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 11288,
+      "faces": 10410,
+      "bbox": {
+        "min": [
+          0.5005,
+          0.5005,
+          0.0
+        ],
+        "max": [
+          83.5835,
+          41.5415,
+          29.9826
+        ]
+      },
+      "elapsed_ms": 8.4
+    },
+    {
+      "combo": {
+        "name": "three by three",
+        "overrides": {
+          "x": 3,
+          "y": 3
+        }
+      },
+      "status": "ok",
+      "verts": 12556,
+      "faces": 11568,
+      "bbox": {
+        "min": [
+          0.5005,
+          0.5005,
+          0.0
+        ],
+        "max": [
+          62.5625,
+          62.5625,
+          29.9826
+        ]
+      },
+      "elapsed_ms": 9.0
+    },
+    {
+      "combo": {
+        "name": "depth 40",
+        "overrides": {
+          "depth": 40
+        }
+      },
+      "status": "ok",
+      "verts": 11288,
+      "faces": 10410,
+      "bbox": {
+        "min": [
+          0.5005,
+          0.5005,
+          0.0
+        ],
+        "max": [
+          83.5835,
+          41.5415,
+          44.9976
+        ]
+      },
+      "elapsed_ms": 8.4
+    },
+    {
+      "combo": {
+        "name": "horizontal divider",
+        "overrides": {
+          "h.dividers": 1
+        }
+      },
+      "status": "ok",
+      "verts": 11296,
+      "faces": 10416,
+      "bbox": {
+        "min": [
+          0.5005,
+          0.5005,
+          0.0
+        ],
+        "max": [
+          83.5835,
+          41.5415,
+          29.9826
+        ]
+      },
+      "elapsed_ms": 8.3
+    },
+    {
+      "combo": {
+        "name": "two vertical dividers",
+        "overrides": {
+          "v.dividers": 2
+        }
+      },
+      "status": "ok",
+      "verts": 11304,
+      "faces": 10422,
+      "bbox": {
+        "min": [
+          0.5005,
+          0.5005,
+          0.0
+        ],
+        "max": [
+          83.5835,
+          41.5415,
+          29.9826
+        ]
+      },
+      "elapsed_ms": 7.9
+    },
+    {
+      "combo": {
+        "name": "raised divider offset",
+        "overrides": {
+          "h.dividers": 1,
+          "divider offset height": 6
+        }
+      },
+      "status": "ok",
+      "verts": 11296,
+      "faces": 10416,
+      "bbox": {
+        "min": [
+          0.5005,
+          0.5005,
+          0.0
+        ],
+        "max": [
+          83.5835,
+          41.5415,
+          29.9826
+        ]
+      },
+      "elapsed_ms": 8.4
+    },
+    {
+      "combo": {
+        "name": "grid lines",
+        "overrides": {
+          "grid lines": true
+        }
+      },
+      "status": "ok",
+      "verts": 13328,
+      "faces": 12449,
+      "bbox": {
+        "min": [
+          0.5005,
+          0.5005,
+          0.0
+        ],
+        "max": [
+          83.5835,
+          41.5415,
+          29.9826
+        ]
+      },
+      "elapsed_ms": 106.1
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "Filament PLA .02 mm layer height": {
+        "faces": 10410,
+        "verts": 11288
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 10410,
+      "verts": 11288
+    }
+  }
+}

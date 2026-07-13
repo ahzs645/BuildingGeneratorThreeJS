@@ -1349,5 +1349,24 @@
     { "type": "checkbox", "name": "mirror", "label": "Mirror", "value": false },
     { "type": "checkbox", "name": "wavy", "label": "Wavy", "value": false }
   ]
+},
+{
+  "id": "n03d-stackable-bin",
+  "title": "N03D · Stackable Gridfinity Bin",
+  "object": "BIN_ Stackable Gridfinity 31MAY2024",
+  "dump": "dojo/n03d/stackable-bin/dump.json",
+  "reference": "dojo/references/n03d/stackable-bin.png",
+  "blenderStats": { "verts": 11288, "faces": 10410 },
+  "localSpace": true,
+  "note": "Exact authored topology and bounds for the complete 302-node bin graph. Six control cases remain topology-exact; optional grid lines are live partial parity at 12,840 / 11,957 versus Blender 13,328 / 12,449.",
+  "controls": [
+    { "name": "x", "label": "Grid X", "min": 1, "max": 8, "step": 1, "value": 4 },
+    { "name": "y", "label": "Grid Y", "min": 1, "max": 8, "step": 1, "value": 2 },
+    { "name": "depth", "label": "Depth", "min": 10, "max": 80, "step": 0.1, "value": 25 },
+    { "name": "h.dividers", "label": "Horizontal dividers", "min": 0, "max": 8, "step": 1, "value": 0 },
+    { "name": "v.dividers", "label": "Vertical dividers", "min": 0, "max": 8, "step": 1, "value": 0 },
+    { "name": "divider offset height", "label": "Divider height offset", "min": 0, "max": 15, "step": 0.01, "value": 3.859999895095825 },
+    { "type": "checkbox", "name": "grid lines", "label": "Grid lines", "value": false }
+  ]
 }
 ]

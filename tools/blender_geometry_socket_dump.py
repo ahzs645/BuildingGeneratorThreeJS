@@ -10,6 +10,11 @@ object_name, out_path, spec = args[:3]
 mode = args[3] if len(args) > 3 else "direct"
 node_name, socket_name = spec.split(":", 1)
 obj = bpy.data.objects[object_name]
+# Asset-library objects are often stored outside the active scene. Blender's
+# dependency graph otherwise returns only the seed mesh, hiding the probed
+# Geometry Nodes result.
+if obj.name not in bpy.context.view_layer.objects and bpy.context.scene.collection.objects.get(obj.name) is None:
+    bpy.context.scene.collection.objects.link(obj)
 mod = next(modifier for modifier in obj.modifiers if modifier.type == "NODES" and modifier.node_group)
 tree = mod.node_group
 output = next(node for node in tree.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output)

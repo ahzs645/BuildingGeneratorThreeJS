@@ -329,6 +329,31 @@ function meshSignedAreaXY(m: Mesh): number {
   check("CurveToMesh spans rail z 0..2", Math.abs(Math.min(...zs)) < 1e-6 && Math.abs(Math.max(...zs) - 2) < 1e-6);
 }
 
+// Blender maps a profile's local +X to the negative transported normal and
+// local +Y to the negative binormal. This intentionally asymmetric case was
+// measured with tools/blender_curve_to_mesh_axes_probe.py.
+{
+  const rail = curve([[0, 0, 0], [1, 0, 0]], false);
+  const profile = curve([[2, 3, 0], [4, 5, 0]], false);
+  const mesh = (runNode("GeometryNodeCurveToMesh", { Curve: rail, "Profile Curve": profile, "Fill Caps": false }).Mesh as Geometry).mesh!;
+  check(
+    "CurveToMesh preserves Blender profile axes",
+    approx(mesh.positions.flat(), [0, -2, -3, 0, -4, -5, 1, -2, -3, 1, -4, -5]),
+    JSON.stringify(mesh.positions),
+  );
+}
+
+{
+  const rail = curve([[0, 0, 0], [4, 0, 0], [4, 3, 0], [0, 3, 0]], true);
+  const profile = curve([[0, 0, 0], [1, 0, 0]], false);
+  const mesh = (runNode("GeometryNodeCurveToMesh", { Curve: rail, "Profile Curve": profile, "Fill Caps": false }).Mesh as Geometry).mesh!;
+  check(
+    "CurveToMesh sweeps positive planar profiles toward loop interior",
+    mesh.positions.every((point) => point[0] >= -1e-6 && point[0] <= 4 + 1e-6 && point[1] >= -1e-6 && point[1] <= 3 + 1e-6),
+    JSON.stringify(mesh.positions),
+  );
+}
+
 // Blender Grid is X-major, and Mesh to Curve follows its stored edge order.
 {
   const grid = runNode("GeometryNodeMeshGrid", { "Size X": 2, "Size Y": 2, "Vertices X": 2, "Vertices Y": 2 }).Mesh as Geometry;
@@ -1281,6 +1306,47 @@ function meshSignedAreaXY(m: Mesh): number {
 
 // (AH) Bradley/printing-library parity nodes.
 {
+  const attributed = box([0, 0, 0], [1, 1, 1]);
+  attributed.mesh!.attributes.set("top edge", { domain: "POINT", data: attributed.mesh!.positions.map((_, index) => index < 4 ? 0 : 1) });
+  const modifierProgram: any = {
+    modifier_attribute_test: {
+      name: "modifier_attribute_test",
+      type: "GeometryNodeTree",
+      interface: [
+        { item_type: "SOCKET", in_out: "INPUT", name: "Geometry", identifier: "Geometry", socket_type: "NodeSocketGeometry", default: null },
+        { item_type: "SOCKET", in_out: "INPUT", name: "Selection", identifier: "Selection", socket_type: "NodeSocketBool", default: false },
+        { item_type: "SOCKET", in_out: "OUTPUT", name: "Geometry", identifier: "Output", socket_type: "NodeSocketGeometry", default: null },
+      ],
+      nodes: [
+        { name: "Group Input", type: "NodeGroupInput", inputs: [], outputs: [
+          { name: "Geometry", identifier: "Geometry", type: "NodeSocketGeometry" },
+          { name: "Selection", identifier: "Selection", type: "NodeSocketBool" },
+        ] },
+        { name: "Set Position", type: "GeometryNodeSetPosition", inputs: [
+          { name: "Geometry", identifier: "Geometry", type: "NodeSocketGeometry", linked: true, value: null },
+          { name: "Selection", identifier: "Selection", type: "NodeSocketBool", linked: true, value: null },
+          { name: "Position", identifier: "Position", type: "NodeSocketVector", linked: false, value: [0, 0, 0] },
+          { name: "Offset", identifier: "Offset", type: "NodeSocketVector", linked: false, value: [0, 0, 2] },
+        ], outputs: [{ name: "Geometry", identifier: "Geometry", type: "NodeSocketGeometry" }] },
+        { name: "Group Output", type: "NodeGroupOutput", props: { is_active_output: true }, inputs: [
+          { name: "Geometry", identifier: "Output", type: "NodeSocketGeometry", linked: true, value: null },
+        ], outputs: [] },
+      ],
+      links: [
+        { from_node: "Group Input", from_socket: "Geometry", to_node: "Set Position", to_socket: "Geometry" },
+        { from_node: "Group Input", from_socket: "Selection", to_node: "Set Position", to_socket: "Selection" },
+        { from_node: "Set Position", from_socket: "Geometry", to_node: "Group Output", to_socket: "Output" },
+      ],
+    },
+  };
+  const modifierResult = new Evaluator(modifierProgram).evalModifierGroup("modifier_attribute_test", {
+    Geometry: attributed,
+    Selection: { attribute: "top edge", value: false },
+  }).geometry;
+  check("modifier named-attribute inputs preserve per-point selections",
+    modifierResult.mesh!.positions.slice(0, 4).every((point) => point[2] <= 1)
+      && modifierResult.mesh!.positions.slice(4).every((point) => point[2] >= 2));
+
   const cylinder = runNode("GeometryNodeMeshCylinder", {
     Vertices: 8, "Side Segments": 2, "Fill Segments": 1, Radius: 2, Depth: 4,
   }, { fill_type: "NGON" }).Mesh as Geometry;
