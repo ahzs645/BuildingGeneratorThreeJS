@@ -1,0 +1,131 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "2.5D CHROME CRAYON OBJECT",
+  "modifier": "CHROME CRAYON 3D",
+  "node_group": "CHROME CRAYON 3D _4.3_DEC2024",
+  "saved_values": {
+    "Show Pt Count": false,
+    "crv preview": false,
+    "Line Thiccness": 30.0,
+    "Peak Height": 404.7418212890625,
+    "resolution": 0.8351974487304688,
+    "Sigilize": 665,
+    "Soften": 0,
+    "3D material": "chrome.003",
+    "FLATTEN": false,
+    "Flat Color": [
+      2.0014684200286865,
+      2.0014684200286865,
+      2.0014684200286865,
+      1.0
+    ],
+    "Material": "chrome.003",
+    "Extrude Base": 1.0,
+    "SPIRO": 3
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored 3D",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 97784,
+      "faces": 97776,
+      "bbox": {
+        "min": [
+          -148.5252,
+          -161.5179,
+          -1.0
+        ],
+        "max": [
+          203.1326,
+          190.9897,
+          21.2222
+        ]
+      },
+      "elapsed_ms": 139.5
+    },
+    {
+      "combo": {
+        "name": "flattened",
+        "overrides": {
+          "FLATTEN": true
+        }
+      },
+      "status": "ok",
+      "verts": 48896,
+      "faces": 46866,
+      "bbox": {
+        "min": [
+          -148.5252,
+          -161.5179,
+          0.0
+        ],
+        "max": [
+          203.1326,
+          190.9897,
+          0.0
+        ]
+      },
+      "elapsed_ms": 92.8
+    },
+    {
+      "combo": {
+        "name": "curve preview",
+        "overrides": {
+          "crv preview": true
+        }
+      },
+      "status": "ok",
+      "verts": 97784,
+      "faces": 97776,
+      "bbox": {
+        "min": [
+          -148.5252,
+          -161.5179,
+          -1.0
+        ],
+        "max": [
+          203.1326,
+          190.9897,
+          21.2222
+        ]
+      },
+      "elapsed_ms": 150.3
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "chrome.003": {
+        "faces": 97776,
+        "verts": 97784
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 97776,
+      "verts": 97784
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "object": "2.5D CHROME CRAYON OBJECT",
+  "type": "CURVE",
+  "bbox": {
+    "min": [
+      -148.5251922607422,
+      -161.5178680419922,
+      -1.0
+    ],
+    "max": [
+      203.13262939453125,
+      190.98974609375,
+      21.22222328186035
+    ]
+  },
+  "verts": 97784,
+  "faces": 97776,
+  "materials": [
+    "grain shader_dojo.001",
+    "flat crayon.004"
+  ]
+}

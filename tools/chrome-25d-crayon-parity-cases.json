@@ -1,0 +1,5 @@
+[
+  { "name": "authored 3D", "overrides": {} },
+  { "name": "flattened", "overrides": { "FLATTEN": true } },
+  { "name": "curve preview", "overrides": { "crv preview": true } }
+]

@@ -1,0 +1,77 @@
+{
+  "source": "gnvm",
+  "dump": "/tmp/chrome-25d-crayon-dump.json",
+  "object": "2.5D CHROME CRAYON OBJECT",
+  "results": [
+    {
+      "combo": {
+        "name": "authored 3D",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 97448,
+      "faces": 97448,
+      "bbox": {
+        "min": [
+          -150.2453,
+          -163.2294,
+          -1
+        ],
+        "max": [
+          205.086,
+          192.9439,
+          22.2165
+        ]
+      },
+      "elapsed_ms": 36001
+    },
+    {
+      "combo": {
+        "name": "flattened",
+        "overrides": {
+          "FLATTEN": true
+        }
+      },
+      "status": "ok",
+      "verts": 48724,
+      "faces": 46866,
+      "bbox": {
+        "min": [
+          -150.2453,
+          -163.2294,
+          0
+        ],
+        "max": [
+          205.086,
+          192.9439,
+          0
+        ]
+      },
+      "elapsed_ms": 50212
+    },
+    {
+      "combo": {
+        "name": "curve preview",
+        "overrides": {
+          "crv preview": true
+        }
+      },
+      "status": "ok",
+      "verts": 97448,
+      "faces": 97448,
+      "bbox": {
+        "min": [
+          -150.2453,
+          -163.2294,
+          -1
+        ],
+        "max": [
+          205.086,
+          192.9439,
+          22.2165
+        ]
+      },
+      "elapsed_ms": 52178
+    }
+  ]
+}

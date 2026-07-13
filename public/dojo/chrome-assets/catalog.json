@@ -811,5 +811,18 @@
       { "name": "screw", "label": "Screw position", "min": 0, "max": 1, "step": 0.01, "value": 1 },
       { "type": "checkbox", "name": "SPLIT TO PRINT", "label": "Split for print", "value": false }
     ]
+  },
+  {
+    "id": "25d-chrome-crayon",
+    "title": "2.5D Chrome Crayon",
+    "object": "2.5D CHROME CRAYON OBJECT",
+    "dump": "dojo/chrome-assets/25d-chrome-crayon/dump.json",
+    "reference": "dojo/references/chrome-assets/25d-chrome-crayon.png",
+    "blenderStats": { "verts": 97784, "faces": 97776 },
+    "localSpace": true,
+    "note": "The Chrome library's final distinct 22-group, 559-node root reproduces its eight spiro-like raised forms in-browser. Authored topology is within 0.34% of Blender, flattened mode has an exact 46,866-face count, and the maximum bound difference is 1.9542 units. The dense graph takes about 36 seconds to evaluate, so only its structural flatten toggle is exposed here.",
+    "controls": [
+      { "type": "checkbox", "name": "FLATTEN", "label": "Flatten surface", "value": false }
+    ]
   }
 ]
