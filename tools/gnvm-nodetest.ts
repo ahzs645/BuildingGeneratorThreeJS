@@ -1306,6 +1306,9 @@ function meshSignedAreaXY(m: Mesh): number {
   const source = curve([[0, 0, 0], [4.9, 0, 0]], false);
   const sampled = runNode("GeometryNodeResampleCurve", { Curve: source, Mode: "Length" as any, Count: 12, Length: 2 }).Curve as Geometry;
   check("Resample Curve length mode floors fitted segments", sampled.curvePointCount() === 3, `points=${sampled.curvePointCount()}`);
+  const cyclic = curve([[0, 0, 0], [2, 0, 0], [2, 2, 0], [0, 2, 0]], true);
+  const cyclicSampled = runNode("GeometryNodeResampleCurve", { Curve: cyclic, Mode: "Length" as any, Count: 12, Length: 2 }).Curve as Geometry;
+  check("Resample Curve cyclic length mode adds a redistributed sample", cyclicSampled.curvePointCount() === 5, `points=${cyclicSampled.curvePointCount()}`);
   const degenerate = new Geometry();
   degenerate.curves = [{ points: [], cyclic: false }, { points: [[2, 3, 4]], cyclic: false }];
   const degenerateSampled = runNode("GeometryNodeResampleCurve", { Curve: degenerate, Mode: "Count" as any, Count: 8, Length: 1 }).Curve as Geometry;

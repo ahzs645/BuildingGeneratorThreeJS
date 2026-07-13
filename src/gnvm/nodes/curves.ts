@@ -117,7 +117,10 @@ reg("GeometryNodeResampleCurve", (api) => {
       // Blender fits the largest whole number of segments at or below the
       // requested spacing, then includes both endpoints for open splines.
       const n = Math.max(1, Math.floor(splineLength(s) / Math.max(1e-9, length)));
-      return resampleSpline(s, s.cyclic ? n : n + 1);
+      // Blender adds one sample after fitting whole requested-length segments
+      // for both open and cyclic splines. The cyclic sample is not a duplicated
+      // endpoint; it redistributes n+1 points around the loop.
+      return resampleSpline(s, n + 1);
     }
     return resampleSpline(s, count);
   };

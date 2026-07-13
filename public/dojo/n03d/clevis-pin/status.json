@@ -4,7 +4,7 @@
   "root": "CLEVIS PIN 31MAY2024_v1",
   "status": "topology-and-bounds-exact",
   "blender": { "verts": 36390, "faces": 34198 },
-  "gnvm": { "verts": 36388, "faces": 34198 },
+  "gnvm": { "verts": 36390, "faces": 34198 },
   "coverage": "100% of reachable node types across the 10-group, 414-node closure.",
-  "validation": "Curve to Mesh now matches Blender's profile direction and face winding, NURBS resolution retessellates retained controls, and the retaining clip and Solidify head branches match. Authored output is 36,388 / 34,198 versus Blender's 36,390 / 34,198 with bounds identical to four decimals. Head height, shaft diameter, and clip thickness cases are likewise topology-exact within two vertices. Exact planar-knife clipping restores Split to Print within 0.45% vertices and 0.1034 bounds units; head-offset topology remains the documented refinement."
+  "validation": "Curve to Mesh now matches Blender's profile direction and face winding, NURBS resolution retessellates retained controls, and the retaining clip and Solidify head branches match. Authored output and the head-height, shaft-diameter, head-offset, and clip-thickness cases have exact topology and four-decimal bounds. Exact planar-knife clipping restores Split to Print within 0.15% vertices, 52 faces, and 0.0706 bounds units."
 }
