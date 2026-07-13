@@ -1,0 +1,20 @@
+{
+  "id": "n03d-mesh-line-dowel",
+  "object": "Plane.003",
+  "root": "Shelf_dowel from mesh line",
+  "status": "exact-topology",
+  "blender": {
+    "verts": 1887,
+    "faces": 1778
+  },
+  "gnvm": {
+    "verts": 1887,
+    "faces": 1778
+  },
+  "equivalent_roots": [
+    "Shelf_dowel from mesh line.001",
+    "dowel from mesh line"
+  ],
+  "coverage": "100% of reachable node types across the 3-group, 42-node closure.",
+  "validation": "Six Blender/VM cases cover the authored mesh-line length, diameter, midpoint placement, cutter mode, round-square profile, and cutter offset. Every case has exact vertex and face counts; the maximum local-bounds difference is 0.0039 units. Plane.001 is an identical saved shelf-dowel copy, while Vert.003 uses the same graph over a longer source line."
+}

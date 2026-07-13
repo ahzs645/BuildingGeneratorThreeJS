@@ -1,0 +1,191 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Plane.003",
+  "modifier": "GeometryNodes",
+  "node_group": "Shelf_dowel from mesh line",
+  "saved_values": {
+    "dia/width": 22.0,
+    "from mid": false,
+    "activate boolean object": false,
+    "roundsquare": false,
+    "cutter offset": 0.4000000059604645
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 1887,
+      "faces": 1778,
+      "bbox": {
+        "min": [
+          -10.9956,
+          -10.9989,
+          -142.713
+        ],
+        "max": [
+          11.0,
+          10.9989,
+          26.1745
+        ]
+      },
+      "elapsed_ms": 1.8
+    },
+    {
+      "combo": {
+        "name": "diameter 12",
+        "overrides": {
+          "dia/width": 12
+        }
+      },
+      "status": "ok",
+      "verts": 1887,
+      "faces": 1778,
+      "bbox": {
+        "min": [
+          -5.9976,
+          -5.9994,
+          -142.713
+        ],
+        "max": [
+          6.0,
+          5.9994,
+          26.1745
+        ]
+      },
+      "elapsed_ms": 2.1
+    },
+    {
+      "combo": {
+        "name": "from midpoint",
+        "overrides": {
+          "from mid": true
+        }
+      },
+      "status": "ok",
+      "verts": 444,
+      "faces": 226,
+      "bbox": {
+        "min": [
+          -10.9956,
+          -10.9989,
+          -142.713
+        ],
+        "max": [
+          11.0,
+          10.9989,
+          142.713
+        ]
+      },
+      "elapsed_ms": 1.2
+    },
+    {
+      "combo": {
+        "name": "cutter",
+        "overrides": {
+          "activate boolean object": true
+        }
+      },
+      "status": "ok",
+      "verts": 1887,
+      "faces": 1778,
+      "bbox": {
+        "min": [
+          -11.3954,
+          -11.3989,
+          -142.713
+        ],
+        "max": [
+          11.4,
+          11.3989,
+          26.1745
+        ]
+      },
+      "elapsed_ms": 2.3
+    },
+    {
+      "combo": {
+        "name": "round square",
+        "overrides": {
+          "roundsquare": true
+        }
+      },
+      "status": "ok",
+      "verts": 68,
+      "faces": 66,
+      "bbox": {
+        "min": [
+          -11.0,
+          -11.0,
+          -142.713
+        ],
+        "max": [
+          11.0,
+          11.0,
+          26.1745
+        ]
+      },
+      "elapsed_ms": 0.8
+    },
+    {
+      "combo": {
+        "name": "cutter offset 2",
+        "overrides": {
+          "activate boolean object": true,
+          "cutter offset": 2
+        }
+      },
+      "status": "ok",
+      "verts": 1887,
+      "faces": 1778,
+      "bbox": {
+        "min": [
+          -12.9948,
+          -12.9987,
+          -142.713
+        ],
+        "max": [
+          13.0,
+          12.9987,
+          26.1745
+        ]
+      },
+      "elapsed_ms": 1.8
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "proc_ mahogany.003": {
+        "faces": 1778,
+        "verts": 1887
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 1778,
+      "verts": 1887
+    }
+  }
+}

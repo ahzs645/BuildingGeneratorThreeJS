@@ -1,0 +1,150 @@
+{
+  "source": "gnvm",
+  "dump": "/tmp/plane003-dump.json",
+  "object": "Plane.003",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 1887,
+      "faces": 1778,
+      "bbox": {
+        "min": [
+          -10.9989,
+          -10.9956,
+          -142.713
+        ],
+        "max": [
+          10.9989,
+          11,
+          26.1745
+        ]
+      },
+      "elapsed_ms": 35
+    },
+    {
+      "combo": {
+        "name": "diameter 12",
+        "overrides": {
+          "dia/width": 12
+        }
+      },
+      "status": "ok",
+      "verts": 1887,
+      "faces": 1778,
+      "bbox": {
+        "min": [
+          -5.9994,
+          -5.9976,
+          -142.713
+        ],
+        "max": [
+          5.9994,
+          6,
+          26.1745
+        ]
+      },
+      "elapsed_ms": 8
+    },
+    {
+      "combo": {
+        "name": "from midpoint",
+        "overrides": {
+          "from mid": true
+        }
+      },
+      "status": "ok",
+      "verts": 444,
+      "faces": 226,
+      "bbox": {
+        "min": [
+          -10.9989,
+          -11,
+          -142.713
+        ],
+        "max": [
+          10.9989,
+          11,
+          142.713
+        ]
+      },
+      "elapsed_ms": 2
+    },
+    {
+      "combo": {
+        "name": "cutter",
+        "overrides": {
+          "activate boolean object": true
+        }
+      },
+      "status": "ok",
+      "verts": 1887,
+      "faces": 1778,
+      "bbox": {
+        "min": [
+          -11.3989,
+          -11.3954,
+          -142.713
+        ],
+        "max": [
+          11.3989,
+          11.4,
+          26.1745
+        ]
+      },
+      "elapsed_ms": 5
+    },
+    {
+      "combo": {
+        "name": "round square",
+        "overrides": {
+          "roundsquare": true
+        }
+      },
+      "status": "ok",
+      "verts": 68,
+      "faces": 66,
+      "bbox": {
+        "min": [
+          -11,
+          -11,
+          -142.713
+        ],
+        "max": [
+          11,
+          11,
+          26.1745
+        ]
+      },
+      "elapsed_ms": 1
+    },
+    {
+      "combo": {
+        "name": "cutter offset 2",
+        "overrides": {
+          "activate boolean object": true,
+          "cutter offset": 2
+        }
+      },
+      "status": "ok",
+      "verts": 1887,
+      "faces": 1778,
+      "bbox": {
+        "min": [
+          -12.9987,
+          -12.9948,
+          -142.713
+        ],
+        "max": [
+          12.9987,
+          13,
+          26.1745
+        ]
+      },
+      "elapsed_ms": 4
+    }
+  ]
+}

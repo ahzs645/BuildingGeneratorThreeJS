@@ -659,5 +659,23 @@
     "localSpace": true,
     "note": "Exact authored topology and local bounds at 12 vertices / 10 faces. The 24-node graph uses two directional Wave Texture fields to deform the seed block into the sloped vice-jaw profile. Cube.008 and vice plate reuse the same root inside longer downstream modifier stacks.",
     "controls": []
+  },
+  {
+    "id": "n03d-mesh-line-dowel",
+    "title": "N03D · Mesh-Line Shelf Dowel",
+    "object": "Plane.003",
+    "dump": "dojo/n03d/mesh-line-dowel/dump.json",
+    "reference": "dojo/references/n03d/mesh-line-dowel.png",
+    "blenderStats": { "verts": 1887, "faces": 1778 },
+    "flatShading": true,
+    "localSpace": true,
+    "note": "Exact Blender topology across all six validation cases. This variant derives the dowel length and direction from the supplied mesh line, then exposes diameter, midpoint placement, cutter mode, round-square profile, and cutter offset. Plane.001 is an identical saved copy; Vert.003 reuses the same graph over a longer line.",
+    "controls": [
+      { "name": "dia/width", "label": "Diameter / width", "min": 2, "max": 40, "step": 0.1, "value": 22 },
+      { "type": "checkbox", "name": "from mid", "label": "Build from midpoint", "value": false },
+      { "type": "checkbox", "name": "activate boolean object", "label": "Cutter mode", "value": false },
+      { "type": "checkbox", "name": "roundsquare", "label": "Round-square profile", "value": false },
+      { "name": "cutter offset", "label": "Cutter offset", "min": 0, "max": 4, "step": 0.05, "value": 0.4000000059604645 }
+    ]
   }
 ]
