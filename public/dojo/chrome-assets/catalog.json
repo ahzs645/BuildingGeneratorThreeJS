@@ -647,5 +647,17 @@
     "localSpace": true,
     "note": "Exact authored geometry and local bounds at 4,512 vertices / 3,032 faces. This 14-node tutorial graph offsets the supplied hard-case mesh from its named layer-height attributes. The browser uses per-face comparison shading because the triangle soup does not yet carry Blender's split normals, and it normalizes the filament-visualizer shader.",
     "controls": []
+  },
+  {
+    "id": "n03d-vice-profile",
+    "title": "N03D · Vice Jaw Profile",
+    "object": "Cube.010",
+    "dump": "dojo/n03d/vice-profile/dump.json",
+    "reference": "dojo/references/n03d/vice-profile.png",
+    "blenderStats": { "verts": 12, "faces": 10 },
+    "flatShading": true,
+    "localSpace": true,
+    "note": "Exact authored topology and local bounds at 12 vertices / 10 faces. The 24-node graph uses two directional Wave Texture fields to deform the seed block into the sloped vice-jaw profile. Cube.008 and vice plate reuse the same root inside longer downstream modifier stacks.",
+    "controls": []
   }
 ]

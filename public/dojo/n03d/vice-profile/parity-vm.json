@@ -1,0 +1,29 @@
+{
+  "source": "gnvm",
+  "dump": "/tmp/n03d-vice-shape-dump.json",
+  "object": "Cube.010",
+  "results": [
+    {
+      "combo": {
+        "name": "authored vice profile",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 12,
+      "faces": 10,
+      "bbox": {
+        "min": [
+          -42.769,
+          -25.2153,
+          -29.2711
+        ],
+        "max": [
+          17.5144,
+          25.2153,
+          -4.4414
+        ]
+      },
+      "elapsed_ms": 25
+    }
+  ]
+}

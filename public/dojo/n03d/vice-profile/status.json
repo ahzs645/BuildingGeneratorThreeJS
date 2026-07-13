@@ -1,0 +1,17 @@
+{
+  "id": "n03d-vice-profile",
+  "object": "Cube.010",
+  "root": "Geometry Nodes.028",
+  "status": "exact-parity",
+  "blender": {
+    "verts": 12,
+    "faces": 10
+  },
+  "gnvm": {
+    "verts": 12,
+    "faces": 10
+  },
+  "shared_users": ["Cube.008", "Cube.010", "vice plate"],
+  "coverage": "100% of reachable node types across the 1-group, 24-node closure.",
+  "validation": "The standalone Cube.010 user has exact authored topology and local bounds. Wave Texture bands and Rotate Vector fields reproduce the sloped vice-jaw flares that were absent from the passthrough fallback. Cube.008 and vice plate reuse this root inside longer modifier stacks."
+}

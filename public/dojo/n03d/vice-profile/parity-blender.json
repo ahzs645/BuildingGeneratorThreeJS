@@ -1,0 +1,64 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Cube.010",
+  "modifier": "GeometryNodes",
+  "node_group": "Geometry Nodes.028",
+  "saved_values": {},
+  "results": [
+    {
+      "combo": {
+        "name": "authored vice profile",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 12,
+      "faces": 10,
+      "bbox": {
+        "min": [
+          -42.769,
+          -25.2153,
+          -29.2711
+        ],
+        "max": [
+          17.5144,
+          25.2153,
+          -4.4414
+        ]
+      },
+      "elapsed_ms": 70.4
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "<none>": {
+        "faces": 10,
+        "verts": 12
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 10,
+      "verts": 12
+    }
+  }
+}
