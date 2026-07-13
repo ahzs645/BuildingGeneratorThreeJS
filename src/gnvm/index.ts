@@ -20,6 +20,7 @@ import "./nodes/points";
 import "./nodes/color";
 import "./nodes/curve-handles";
 import "./nodes/edge-paths";
+import "./nodes/surface-sampling";
 
 export { Evaluator } from "./evaluator";
 export { Geometry, toTriSoup } from "./geometry";
