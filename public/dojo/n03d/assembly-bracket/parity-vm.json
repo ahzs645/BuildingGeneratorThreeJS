@@ -1,0 +1,126 @@
+{
+  "source": "gnvm",
+  "dump": "/tmp/n03d-assembly-bracket-dump.json",
+  "object": "Cube.035",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 5486,
+      "faces": 6242,
+      "bbox": {
+        "min": [
+          -193.9592,
+          -17,
+          -17
+        ],
+        "max": [
+          20.8494,
+          87.1023,
+          180.8749
+        ]
+      },
+      "elapsed_ms": 282
+    },
+    {
+      "combo": {
+        "name": "solid bracket",
+        "overrides": {
+          "hole cut": false
+        }
+      },
+      "status": "ok",
+      "verts": 5486,
+      "faces": 6242,
+      "bbox": {
+        "min": [
+          -193.9592,
+          -17,
+          -17
+        ],
+        "max": [
+          20.8494,
+          87.1023,
+          180.8749
+        ]
+      },
+      "elapsed_ms": 94
+    },
+    {
+      "combo": {
+        "name": "compact diameters",
+        "overrides": {
+          "outer dia.": 28,
+          "cutout dia": 16
+        }
+      },
+      "status": "ok",
+      "verts": 5462,
+      "faces": 6194,
+      "bbox": {
+        "min": [
+          -190.9602,
+          -14.1669,
+          -14.1674
+        ],
+        "max": [
+          17.8494,
+          84.1025,
+          177.8752
+        ]
+      },
+      "elapsed_ms": 189
+    },
+    {
+      "combo": {
+        "name": "half screw",
+        "overrides": {
+          "screw": 0.5
+        }
+      },
+      "status": "ok",
+      "verts": 5486,
+      "faces": 6242,
+      "bbox": {
+        "min": [
+          -193.9592,
+          -17,
+          -17
+        ],
+        "max": [
+          29.9247,
+          87.1023,
+          180.8749
+        ]
+      },
+      "elapsed_ms": 166
+    },
+    {
+      "combo": {
+        "name": "split for print",
+        "overrides": {
+          "SPLIT TO PRINT": true
+        }
+      },
+      "status": "ok",
+      "verts": 9636,
+      "faces": 10299,
+      "bbox": {
+        "min": [
+          -193.9592,
+          -17,
+          -17
+        ],
+        "max": [
+          26.9389,
+          87.1023,
+          180.8749
+        ]
+      },
+      "elapsed_ms": 216
+    }
+  ]
+}

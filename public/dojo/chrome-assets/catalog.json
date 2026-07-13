@@ -790,5 +790,26 @@
     "localSpace": true,
     "note": "Exact topology for the fixed 13-node mesh-line guide: a beveled center line with instanced square endpoint markers. Local bounds agree with Blender to sub-micro-unit floating-point precision.",
     "controls": []
+  },
+  {
+    "id": "n03d-assembly-bracket",
+    "title": "N03D · Assembly Bracket",
+    "object": "Cube.035",
+    "dump": "dojo/n03d/assembly-bracket/dump.json",
+    "reference": "dojo/references/n03d/assembly-bracket.png",
+    "blenderStats": { "verts": 1743, "faces": 1816 },
+    "localSpace": true,
+    "note": "The complete 54-group, 1,662-node bracket builds the long pivot arm, cutout, clamp end, and screw components in-browser. Authored, diameter, and screw variants match Blender bounds exactly; topology is denser because browser booleans retain split faces, and split-for-print still extends 11.09 units too far on +X.",
+    "controls": [
+      { "name": "outer dia.", "label": "Outer diameter", "min": 20, "max": 50, "step": 0.1, "value": 34 },
+      { "name": "cutout dia", "label": "Cutout diameter", "min": 5, "max": 32, "step": 0.1, "value": 22.5 },
+      { "name": "length", "label": "Screw length", "min": 5, "max": 60, "step": 0.1, "value": 7 },
+      { "name": "thread dia", "label": "Thread diameter", "min": 5, "max": 30, "step": 0.1, "value": 15 },
+      { "name": "head dia", "label": "Head diameter", "min": 10, "max": 45, "step": 0.1, "value": 32.82167434692383 },
+      { "name": "head height", "label": "Head height", "min": 5, "max": 20, "step": 0.1, "value": 5 },
+      { "type": "checkbox", "name": "hole cut", "label": "Cut pivot hole", "value": true },
+      { "name": "screw", "label": "Screw position", "min": 0, "max": 1, "step": 0.01, "value": 1 },
+      { "type": "checkbox", "name": "SPLIT TO PRINT", "label": "Split for print", "value": false }
+    ]
   }
 ]

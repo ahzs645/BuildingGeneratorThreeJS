@@ -1,0 +1,7 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "solid bracket", "overrides": { "hole cut": false } },
+  { "name": "compact diameters", "overrides": { "outer dia.": 28, "cutout dia": 16 } },
+  { "name": "half screw", "overrides": { "screw": 0.5 } },
+  { "name": "split for print", "overrides": { "SPLIT TO PRINT": true } }
+]
