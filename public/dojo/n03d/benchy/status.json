@@ -1,0 +1,16 @@
+{
+  "id": "n03d-benchy-material-preview",
+  "object": "Benchy",
+  "root": "benchy",
+  "status": "exact-wrapper-parity",
+  "blender": {
+    "verts": 112569,
+    "faces": 225154
+  },
+  "gnvm": {
+    "verts": 112569,
+    "faces": 225154
+  },
+  "coverage": "100% of reachable node types across the 3-group, 28-node closure.",
+  "validation": "Two Blender/VM filament-color cases have exact topology and local bounds. This graph wraps the supplied high-resolution Benchy mesh with filament material, named-attribute, and smooth-shading logic; it is not a procedural Benchy hull generator. The browser comparison normalizes the shader while preserving the complete source geometry and material assignment."
+}

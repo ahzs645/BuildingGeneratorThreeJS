@@ -1,0 +1,58 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/benchy/dump.json",
+  "object": "Benchy",
+  "results": [
+    {
+      "combo": {
+        "name": "authored filament",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 112569,
+      "faces": 225154,
+      "bbox": {
+        "min": [
+          -68.7102,
+          -35.9303,
+          -16.2419
+        ],
+        "max": [
+          70.3592,
+          35.9303,
+          95.0118
+        ]
+      },
+      "elapsed_ms": 638
+    },
+    {
+      "combo": {
+        "name": "alternate filament color",
+        "overrides": {
+          "Filament Color": [
+            0.15,
+            0.75,
+            1,
+            1
+          ]
+        }
+      },
+      "status": "ok",
+      "verts": 112569,
+      "faces": 225154,
+      "bbox": {
+        "min": [
+          -68.7102,
+          -35.9303,
+          -16.2419
+        ],
+        "max": [
+          70.3592,
+          35.9303,
+          95.0118
+        ]
+      },
+      "elapsed_ms": 491
+    }
+  ]
+}

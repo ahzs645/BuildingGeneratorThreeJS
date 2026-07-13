@@ -340,7 +340,7 @@ for obj in bpy.data.objects:
         # Embed small BASE meshes (pre-modifier obj.data): ObjectInfo materializes
         # referenced objects (e.g. 'printbed'), and GN modifiers need the object's
         # own mesh bound to their Geometry input (e.g. the bubble vase's seed).
-        if len(obj.data.vertices) <= 10000:
+        if obj.name == target_object or len(obj.data.vertices) <= 10000:
             me = obj.data
             o["mesh"] = {
                 "verts": [[round(v.co.x, 6), round(v.co.y, 6), round(v.co.z, 6)] for v in me.vertices],

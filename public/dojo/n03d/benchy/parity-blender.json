@@ -1,0 +1,100 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Benchy",
+  "modifier": "GeometryNodes",
+  "node_group": "benchy",
+  "saved_values": {
+    "Filament Color": [
+      0.6700667142868042,
+      0.5528289675712585,
+      0.0,
+      1.0
+    ]
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored filament",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 112569,
+      "faces": 225154,
+      "bbox": {
+        "min": [
+          -68.7102,
+          -35.9303,
+          -16.2419
+        ],
+        "max": [
+          70.3592,
+          35.9303,
+          95.0118
+        ]
+      },
+      "elapsed_ms": 57.5
+    },
+    {
+      "combo": {
+        "name": "alternate filament color",
+        "overrides": {
+          "Filament Color": [
+            0.15,
+            0.75,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "status": "ok",
+      "verts": 112569,
+      "faces": 225154,
+      "bbox": {
+        "min": [
+          -68.7102,
+          -35.9303,
+          -16.2419
+        ],
+        "max": [
+          70.3592,
+          35.9303,
+          95.0118
+        ]
+      },
+      "elapsed_ms": 57.1
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "Filament PLA .02 mm layer height": {
+        "faces": 225154,
+        "verts": 112569
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 225154,
+      "verts": 112569
+    }
+  }
+}

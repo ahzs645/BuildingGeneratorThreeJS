@@ -611,5 +611,16 @@
     "localSpace": true,
     "note": "Exact Geometry Nodes parity at 16,751 vertices / 9,065 faces with identical local bounds, including the non-manifold edge tubes and tetrahedral diagnostic markers. The supplied Blender object adds a separate Bevel modifier afterward (25,719 / 18,182 full-stack); the reference disables that non-GN step for a fair GN-VM comparison.",
     "controls": []
+  },
+  {
+    "id": "n03d-benchy-material-preview",
+    "title": "N03D · Benchy Material Preview",
+    "object": "Benchy",
+    "dump": "dojo/n03d/benchy/dump.json",
+    "reference": "dojo/references/n03d/benchy.png",
+    "blenderStats": { "verts": 112569, "faces": 225154 },
+    "localSpace": true,
+    "note": "Exact topology and bounds across two filament-color cases at 112,569 vertices / 225,154 faces. This 28-node graph wraps the supplied high-resolution Benchy mesh with filament material, named-attribute, and smooth-shading logic; it does not procedurally generate the boat. The web comparison preserves geometry and material assignment while normalizing the shader.",
+    "controls": []
   }
 ]
