@@ -1,0 +1,8 @@
+{
+  "object": "Vert.002",
+  "root": "Dojo_STRING TO TEXT.002",
+  "status": "near-exact",
+  "blender": { "verts": 4446, "faces": 26 },
+  "gnvm": { "verts": 4696, "faces": 26 },
+  "validation": "Authored face topology is exact, vertex count differs by 5.62%, and maximum local-bounds difference is 0.1667 units. Fourteen Blender/browser cases cover editable text, size, alignment, character spacing, text-box wrapping, and fill modes; the maximum vertex delta is 6.97%."
+}

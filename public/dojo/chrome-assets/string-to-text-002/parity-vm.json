@@ -1,0 +1,341 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/string-to-text-002/dump.json",
+  "object": "Vert.002",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 4696,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -22.008,
+          -12.231,
+          0
+        ],
+        "max": [
+          22.008,
+          12.231,
+          0
+        ]
+      },
+      "elapsed_ms": 49
+    },
+    {
+      "combo": {
+        "name": "short text",
+        "overrides": {
+          "String": "NODE DOJO"
+        }
+      },
+      "status": "ok",
+      "verts": 3534,
+      "faces": 15,
+      "bbox": {
+        "min": [
+          -16.5214,
+          -9.1359,
+          0
+        ],
+        "max": [
+          16.5214,
+          9.1359,
+          0
+        ]
+      },
+      "elapsed_ms": 11
+    },
+    {
+      "combo": {
+        "name": "size=8",
+        "overrides": {
+          "Size": 8
+        }
+      },
+      "status": "ok",
+      "verts": 4756,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -12.6279,
+          -7.0785,
+          0
+        ],
+        "max": [
+          12.6279,
+          7.0785,
+          0
+        ]
+      },
+      "elapsed_ms": 15
+    },
+    {
+      "combo": {
+        "name": "size=20",
+        "overrides": {
+          "Size": 20
+        }
+      },
+      "status": "ok",
+      "verts": 4696,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -31.0974,
+          -17.2239,
+          0
+        ],
+        "max": [
+          31.0974,
+          17.2239,
+          0
+        ]
+      },
+      "elapsed_ms": 13
+    },
+    {
+      "combo": {
+        "name": "align=0",
+        "overrides": {
+          "Align": 0
+        }
+      },
+      "status": "ok",
+      "verts": 4696,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          0,
+          -12.231,
+          0
+        ],
+        "max": [
+          44.016,
+          12.231,
+          0
+        ]
+      },
+      "elapsed_ms": 12
+    },
+    {
+      "combo": {
+        "name": "align=2",
+        "overrides": {
+          "Align": 2
+        }
+      },
+      "status": "ok",
+      "verts": 4696,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -44.016,
+          -12.231,
+          0
+        ],
+        "max": [
+          0,
+          12.231,
+          0
+        ]
+      },
+      "elapsed_ms": 11
+    },
+    {
+      "combo": {
+        "name": "character spacing=0.7",
+        "overrides": {
+          "Character Spacing": 0.7
+        }
+      },
+      "status": "ok",
+      "verts": 4696,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -14.057,
+          -12.231,
+          0
+        ],
+        "max": [
+          14.057,
+          12.231,
+          0
+        ]
+      },
+      "elapsed_ms": 11
+    },
+    {
+      "combo": {
+        "name": "character spacing=1.5",
+        "overrides": {
+          "Character Spacing": 1.5
+        }
+      },
+      "status": "ok",
+      "verts": 4696,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -26.9622,
+          -12.231,
+          0
+        ],
+        "max": [
+          26.9622,
+          12.231,
+          0
+        ]
+      },
+      "elapsed_ms": 10
+    },
+    {
+      "combo": {
+        "name": "text box width=0",
+        "overrides": {
+          "Text Box Width": 0
+        }
+      },
+      "status": "ok",
+      "verts": 4696,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -57.7426,
+          -6.0408,
+          0
+        ],
+        "max": [
+          57.7426,
+          6.0408,
+          0
+        ]
+      },
+      "elapsed_ms": 12
+    },
+    {
+      "combo": {
+        "name": "text box width=10",
+        "overrides": {
+          "Text Box Width": 10
+        }
+      },
+      "status": "ok",
+      "verts": 4696,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -22.008,
+          -12.231,
+          0
+        ],
+        "max": [
+          22.008,
+          12.231,
+          0
+        ]
+      },
+      "elapsed_ms": 13
+    },
+    {
+      "combo": {
+        "name": "text box width=30",
+        "overrides": {
+          "Text Box Width": 30
+        }
+      },
+      "status": "ok",
+      "verts": 4696,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -22.008,
+          -12.231,
+          0
+        ],
+        "max": [
+          22.008,
+          12.231,
+          0
+        ]
+      },
+      "elapsed_ms": 11
+    },
+    {
+      "combo": {
+        "name": "text box width=60",
+        "overrides": {
+          "Text Box Width": 60
+        }
+      },
+      "status": "ok",
+      "verts": 4696,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -22.008,
+          -12.231,
+          0
+        ],
+        "max": [
+          22.008,
+          12.231,
+          0
+        ]
+      },
+      "elapsed_ms": 10
+    },
+    {
+      "combo": {
+        "name": "fill=0",
+        "overrides": {
+          "Fill": 0
+        }
+      },
+      "status": "ok",
+      "verts": 4696,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -22.008,
+          -12.231,
+          0
+        ],
+        "max": [
+          22.008,
+          12.231,
+          0
+        ]
+      },
+      "elapsed_ms": 10
+    },
+    {
+      "combo": {
+        "name": "fill=2",
+        "overrides": {
+          "Fill": 2
+        }
+      },
+      "status": "ok",
+      "verts": 4696,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -22.008,
+          -12.231,
+          0
+        ],
+        "max": [
+          22.008,
+          12.231,
+          0
+        ]
+      },
+      "elapsed_ms": 10
+    }
+  ]
+}

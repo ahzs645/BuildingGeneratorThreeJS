@@ -30,7 +30,8 @@ export const FIELD_PROBE: {
   batches: { domain: Domain; positions: Vec3[]; values: import("./core").Elem[]; targets?: Vec3[] }[];
 } = { node: null, socket: null, batches: [] };
 
-export const GEOMETRY_PROBE: { node: string | null; socket: string | null; geometry: Geometry | null } = {
+export const GEOMETRY_PROBE: { group: string | null; node: string | null; socket: string | null; geometry: Geometry | null } = {
+  group: null,
   node: null,
   socket: null,
   geometry: null,
@@ -364,7 +365,28 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
           curveNormals = [];
           for (const s of geo.curves) {
             const frames = splineFrames(s.points, s.cyclic);
-            for (const f of frames) curveNormals.push(f.normal);
+            const z = s.points[0]?.[2] ?? 0;
+            const planarXY = s.cyclic && s.points.length >= 3 && s.points.every((point) => Math.abs(point[2] - z) <= 1e-7);
+            let area2 = 0;
+            if (planarXY) {
+              for (let i = 0; i < s.points.length; i++) {
+                const a = s.points[i], b = s.points[(i + 1) % s.points.length];
+                area2 += a[0] * b[1] - b[0] * a[1];
+              }
+            }
+            if (planarXY && Math.abs(area2) > 1e-12) {
+              // Blender gives planar cyclic curves an in-plane normal pointing
+              // toward the loop interior. Reversing the spline reverses this
+              // normal, which keeps inner/counter-wound font outlines correct.
+              const orientation = area2 > 0 ? 1 : -1;
+              for (const frame of frames) curveNormals.push(vnorm([
+                -frame.tangent[1] * orientation,
+                frame.tangent[0] * orientation,
+                0,
+              ]));
+            } else {
+              for (const f of frames) curveNormals.push(f.normal);
+            }
           }
         }
         return curveNormals[i] ?? [0, 0, 1];
@@ -468,7 +490,7 @@ class Invocation {
     if (node) outs = this.dispatch(node);
     this.visiting.delete(name);
     this.memo.set(name, outs);
-    if (node && GEOMETRY_PROBE.node === node.name) {
+    if (node && (!GEOMETRY_PROBE.group || GEOMETRY_PROBE.group === this.group.name) && GEOMETRY_PROBE.node === node.name) {
       const value = GEOMETRY_PROBE.socket ? outs[GEOMETRY_PROBE.socket] : Object.values(outs).find((output) => output instanceof Geometry);
       if (value instanceof Geometry) GEOMETRY_PROBE.geometry = value.clone();
     }

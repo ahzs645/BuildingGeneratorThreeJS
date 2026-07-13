@@ -61,6 +61,13 @@ export function filletSpline(s: Spline, radius: number, count: number, limitRadi
     const lenBA = vlen(vsub(A, B));
     const lenBC = vlen(vsub(C, B));
     const cosT = Math.max(-1, Math.min(1, vdot(dirBA, dirBC)));
+    // A straight control point has no corner to round. Blender retains it once;
+    // expanding it into Count+1 coincident points massively over-tessellates
+    // rectilinear font outlines after their decimation pass.
+    if (lenBA > 1e-9 && lenBC > 1e-9 && cosT < -0.9) {
+      out.push([...B] as Vec3);
+      continue;
+    }
     const half = Math.acos(cosT) / 2;
     const tanHalf = Math.tan(half);
     // distance from corner to tangent points
@@ -202,8 +209,9 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?:
   return mesh;
 }
 
-// Fill cyclic splines with planar even-odd containment. Simple no-hole loops
-// intentionally use the old emit path so existing isolated fills stay identical.
+// Fill cyclic splines in their shared local plane. Blender's N-gons mode keeps
+// each cyclic spline as an independent polygon, including nested font outlines;
+// Triangles mode applies even-odd containment so inner loops become holes.
 export function fillCurves(curves: Spline[], mode: "NGONS" | "TRIANGLES"): Mesh {
   const mesh = new Mesh();
   const plane = fillPlane(curves);
@@ -217,6 +225,11 @@ export function fillCurves(curves: Spline[], mode: "NGONS" | "TRIANGLES"): Mesh 
     return mesh;
   }
   const loops = fillLoops(curves, plane);
+  if (mode === "NGONS") {
+    for (const loop of loops) emitSimpleFill(mesh, loop.points, "NGONS");
+    mesh.materialSlots = [null];
+    return mesh;
+  }
   classifyFillLoops(loops);
   for (let li = 0; li < loops.length; li++) {
     const loop = loops[li];

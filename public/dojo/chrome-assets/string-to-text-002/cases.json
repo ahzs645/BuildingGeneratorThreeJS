@@ -1,0 +1,84 @@
+[
+  {
+    "name": "authored default",
+    "overrides": {}
+  },
+  {
+    "name": "short text",
+    "overrides": {
+      "String": "NODE DOJO"
+    }
+  },
+  {
+    "name": "size=8",
+    "overrides": {
+      "Size": 8
+    }
+  },
+  {
+    "name": "size=20",
+    "overrides": {
+      "Size": 20
+    }
+  },
+  {
+    "name": "align=0",
+    "overrides": {
+      "Align": 0
+    }
+  },
+  {
+    "name": "align=2",
+    "overrides": {
+      "Align": 2
+    }
+  },
+  {
+    "name": "character spacing=0.7",
+    "overrides": {
+      "Character Spacing": 0.7
+    }
+  },
+  {
+    "name": "character spacing=1.5",
+    "overrides": {
+      "Character Spacing": 1.5
+    }
+  },
+  {
+    "name": "text box width=0",
+    "overrides": {
+      "Text Box Width": 0
+    }
+  },
+  {
+    "name": "text box width=10",
+    "overrides": {
+      "Text Box Width": 10
+    }
+  },
+  {
+    "name": "text box width=30",
+    "overrides": {
+      "Text Box Width": 30
+    }
+  },
+  {
+    "name": "text box width=60",
+    "overrides": {
+      "Text Box Width": 60
+    }
+  },
+  {
+    "name": "fill=0",
+    "overrides": {
+      "Fill": 0
+    }
+  },
+  {
+    "name": "fill=2",
+    "overrides": {
+      "Fill": 2
+    }
+  }
+]

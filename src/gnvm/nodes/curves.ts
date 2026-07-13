@@ -527,6 +527,7 @@ reg("GeometryNodeStringToCurves", (api) => {
   const advanceScale = charSpacing > 0 ? charSpacing : 1;
   const wordSpacing = api.num("Word Spacing") || 1;
   const lineSpacing = api.num("Line Spacing") || 1;
+  const textBoxWidth = Math.max(0, api.num("Text Box Width"));
   const alignX = (api.str("Align X") || api.prop<string>("align_x", "LEFT") || "LEFT").toUpperCase();
   const alignY = api.str("Align Y") || "Top Baseline";
   const fontName = api.ref("Font")?.name;
@@ -534,9 +535,35 @@ reg("GeometryNodeStringToCurves", (api) => {
   const alignYOffset = size * (atlas?.align_offsets?.[alignY] ?? 0);
   const advanceOf = (ch: string) => size * (atlas?.glyphs[ch]?.advance ?? .7) * advanceScale * (ch === " " ? wordSpacing : 1);
 
-  const lines = text.split("\n");
+  const wrapLine = (line: string): string[] => {
+    if (textBoxWidth <= 0 || !line.includes(" ")) return [line];
+    const words = line.split(" ");
+    const wrapped: string[] = [];
+    let current = "";
+    let currentWidth = 0;
+    const spaceWidth = advanceOf(" ");
+    for (const word of words) {
+      // Blender wraps only at word boundaries. A word wider than the text box
+      // remains intact on its own line instead of being split into glyphs.
+      const wordWidth = [...word].reduce((total, ch) => total + advanceOf(ch), 0);
+      if (current && currentWidth + spaceWidth + wordWidth > textBoxWidth) {
+        wrapped.push(current);
+        current = word;
+        currentWidth = wordWidth;
+      } else if (current) {
+        current += ` ${word}`;
+        currentWidth += spaceWidth + wordWidth;
+      } else {
+        current = word;
+        currentWidth = wordWidth;
+      }
+    }
+    wrapped.push(current);
+    return wrapped;
+  };
+  const lines = text.split("\n").flatMap(wrapLine);
   const out = new Geometry();
-  const cellH = size * 1.2 * lineSpacing;
+  const cellH = size * lineSpacing;
 
   let lineIdx = 0;
   for (const line of lines) {

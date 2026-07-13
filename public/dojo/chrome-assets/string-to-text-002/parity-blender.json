@@ -1,0 +1,386 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Vert.002",
+  "modifier": "Dojo_STRING TO TEXT.002",
+  "node_group": "Dojo_STRING TO TEXT.002",
+  "saved_values": {
+    "String": "3D Chrome Crayon",
+    "Align": 1,
+    "Size": 14.094398498535156,
+    "Character Spacing": 1.1959999799728394,
+    "Word Spacing": 1.0,
+    "Line Spacing": 0.43919986486434937,
+    "Text Box Width": 0.25760000944137573,
+    "Fill": 1,
+    "Reset Letters Position": false
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 4446,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -22.1747,
+          -12.1388,
+          0.0
+        ],
+        "max": [
+          22.1747,
+          12.1388,
+          0.0
+        ]
+      },
+      "elapsed_ms": 26.9
+    },
+    {
+      "combo": {
+        "name": "short text",
+        "overrides": {
+          "String": "NODE DOJO"
+        }
+      },
+      "status": "ok",
+      "verts": 3328,
+      "faces": 15,
+      "bbox": {
+        "min": [
+          -16.389,
+          -9.0437,
+          0.0
+        ],
+        "max": [
+          16.389,
+          9.0437,
+          0.0
+        ]
+      },
+      "elapsed_ms": 17.2
+    },
+    {
+      "combo": {
+        "name": "size=8",
+        "overrides": {
+          "Size": 8
+        }
+      },
+      "status": "ok",
+      "verts": 4446,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -12.6827,
+          -6.9863,
+          0.0
+        ],
+        "max": [
+          12.6827,
+          6.9863,
+          0.0
+        ]
+      },
+      "elapsed_ms": 25.7
+    },
+    {
+      "combo": {
+        "name": "size=20",
+        "overrides": {
+          "Size": 20
+        }
+      },
+      "status": "ok",
+      "verts": 4446,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -31.3727,
+          -17.1317,
+          0.0
+        ],
+        "max": [
+          31.3727,
+          17.1317,
+          0.0
+        ]
+      },
+      "elapsed_ms": 26.2
+    },
+    {
+      "combo": {
+        "name": "align=0",
+        "overrides": {
+          "Align": 0
+        }
+      },
+      "status": "ok",
+      "verts": 4446,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          0.0,
+          -12.1388,
+          0.0
+        ],
+        "max": [
+          44.3494,
+          12.1388,
+          0.0
+        ]
+      },
+      "elapsed_ms": 26.3
+    },
+    {
+      "combo": {
+        "name": "align=2",
+        "overrides": {
+          "Align": 2
+        }
+      },
+      "status": "ok",
+      "verts": 4446,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -44.3494,
+          -12.1388,
+          0.0
+        ],
+        "max": [
+          0.0,
+          12.1388,
+          0.0
+        ]
+      },
+      "elapsed_ms": 25.4
+    },
+    {
+      "combo": {
+        "name": "character spacing=0.7",
+        "overrides": {
+          "Character Spacing": 0.7
+        }
+      },
+      "status": "ok",
+      "verts": 4446,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -14.2951,
+          -12.1388,
+          0.0
+        ],
+        "max": [
+          14.2951,
+          12.1388,
+          0.0
+        ]
+      },
+      "elapsed_ms": 25.4
+    },
+    {
+      "combo": {
+        "name": "character spacing=1.5",
+        "overrides": {
+          "Character Spacing": 1.5
+        }
+      },
+      "status": "ok",
+      "verts": 4446,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -27.5306,
+          -12.1388,
+          0.0
+        ],
+        "max": [
+          27.5306,
+          12.1388,
+          0.0
+        ]
+      },
+      "elapsed_ms": 26.5
+    },
+    {
+      "combo": {
+        "name": "text box width=0",
+        "overrides": {
+          "Text Box Width": 0
+        }
+      },
+      "status": "ok",
+      "verts": 4446,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -59.0316,
+          -5.9485,
+          0.0
+        ],
+        "max": [
+          59.0316,
+          5.9485,
+          0.0
+        ]
+      },
+      "elapsed_ms": 25.3
+    },
+    {
+      "combo": {
+        "name": "text box width=10",
+        "overrides": {
+          "Text Box Width": 10
+        }
+      },
+      "status": "ok",
+      "verts": 4446,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -22.1747,
+          -12.1388,
+          0.0
+        ],
+        "max": [
+          22.1747,
+          12.1388,
+          0.0
+        ]
+      },
+      "elapsed_ms": 26.4
+    },
+    {
+      "combo": {
+        "name": "text box width=30",
+        "overrides": {
+          "Text Box Width": 30
+        }
+      },
+      "status": "ok",
+      "verts": 4446,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -22.1747,
+          -12.1388,
+          0.0
+        ],
+        "max": [
+          22.1747,
+          12.1388,
+          0.0
+        ]
+      },
+      "elapsed_ms": 26.2
+    },
+    {
+      "combo": {
+        "name": "text box width=60",
+        "overrides": {
+          "Text Box Width": 60
+        }
+      },
+      "status": "ok",
+      "verts": 4446,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -22.1747,
+          -12.1388,
+          0.0
+        ],
+        "max": [
+          22.1747,
+          12.1388,
+          0.0
+        ]
+      },
+      "elapsed_ms": 25.7
+    },
+    {
+      "combo": {
+        "name": "fill=0",
+        "overrides": {
+          "Fill": 0
+        }
+      },
+      "status": "ok",
+      "verts": 4446,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -22.1747,
+          -12.1388,
+          0.0
+        ],
+        "max": [
+          22.1747,
+          12.1388,
+          0.0
+        ]
+      },
+      "elapsed_ms": 28.6
+    },
+    {
+      "combo": {
+        "name": "fill=2",
+        "overrides": {
+          "Fill": 2
+        }
+      },
+      "status": "ok",
+      "verts": 4446,
+      "faces": 26,
+      "bbox": {
+        "min": [
+          -22.1747,
+          -12.1388,
+          0.0
+        ],
+        "max": [
+          22.1747,
+          12.1388,
+          0.0
+        ]
+      },
+      "elapsed_ms": 27.1
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "flat.nodes.003": {
+        "faces": 26,
+        "verts": 4446
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 26,
+      "verts": 4446
+    }
+  }
+}

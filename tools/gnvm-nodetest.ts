@@ -239,6 +239,18 @@ function meshSignedAreaXY(m: Mesh): number {
   check("FillCurve nested squares area subtracts hole", Math.abs(meshSignedAreaXY(m) - 12) < 1e-6, `area=${meshSignedAreaXY(m)}`);
 }
 
+// Blender's N-gons mode keeps nested outlines as independent faces. This is
+// important for glyphs: counters such as the center of O are separate N-gons,
+// while Triangles mode above treats them as holes.
+{
+  const outer: Vec3[] = [[-2, -2, 0], [2, -2, 0], [2, 2, 0], [-2, 2, 0]];
+  const inner: Vec3[] = [[-1, -1, 0], [1, -1, 0], [1, 1, 0], [-1, 1, 0]];
+  const g = runNode("GeometryNodeFillCurve", { Curve: curves([{ points: outer, cyclic: true }, { points: inner, cyclic: true }]) }, { mode: "NGONS" }).Mesh as Geometry;
+  const m = g.mesh!;
+  check("FillCurve NGONS keeps one face per nested outline", m.positions.length === 8 && m.faces.length === 2, `got ${m.positions.length}v/${m.faces.length}f`);
+  check("FillCurve NGONS preserves both outline orders", JSON.stringify(m.faces) === JSON.stringify([[0, 1, 2, 3], [4, 5, 6, 7]]));
+}
+
 // (F4) FillCurve three-level nesting: middle is a hole, inner is an island
 {
   const outer: Vec3[] = [[-3, -3, 0], [3, -3, 0], [3, 3, 0], [-3, 3, 0]];
@@ -572,6 +584,12 @@ function meshSignedAreaXY(m: Mesh): number {
   })["Curve Instances"] as Geometry;
   check("StringToCurves uses extracted font outlines", atlasCurves.instances[0].geometry.curves[0].points[2][1] === 2);
   check("StringToCurves uses extracted font advances", Math.abs(atlasCurves.instances[1].position[0] - 1.6) < 1e-9);
+  const wrappedAtlasCurves = runNode("GeometryNodeStringToCurves", {
+    String: "A B", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
+    "Align X": "Left", "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": .5,
+    "Text Box Width": 2,
+  })["Curve Instances"] as Geometry;
+  check("StringToCurves wraps whole words at Text Box Width", wrappedAtlasCurves.instances.length === 2 && Math.abs(wrappedAtlasCurves.instances[1].position[1] + 1) < 1e-9);
   DUMP_CONTEXT.fonts = savedFonts;
 
   const outlinedGlyph = new Geometry();
@@ -591,6 +609,16 @@ function meshSignedAreaXY(m: Mesh): number {
   const tan = runNode("GeometryNodeInputTangent", {}).Tangent as Field;
   const arr = tan.array(makeFieldCtx(c, "POINT")) as number[][];
   check("InputTangent mid-point ~ +X", arr.length === 3 && approx(arr[1] as number[], [1, 0, 0]), JSON.stringify(arr[1]));
+}
+
+// Planar cyclic curve normals stay in the curve plane and point inward, as in
+// Blender. This lets negative normal offsets expand font outlines in XY.
+{
+  const square = curve([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], true);
+  const normal = runNode("GeometryNodeInputNormal", {}).Normal as Field;
+  const arr = normal.array(makeFieldCtx(square, "POINT")) as number[][];
+  check("InputNormal planar loop stays in XY", arr.every((value) => Math.abs(value[2]) < 1e-9), JSON.stringify(arr));
+  check("InputNormal planar CCW loop points inward", arr[0][0] > 0 && arr[0][1] > 0, JSON.stringify(arr[0]));
 }
 
 // (S) MeshCone frustum
