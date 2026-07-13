@@ -376,5 +376,21 @@
       { "type": "checkbox", "name": "FLATTEN", "label": "Flatten", "value": true },
       { "name": "smooth", "label": "Smoothing", "min": 0, "max": 16, "step": 1, "value": 7 }
     ]
+  },
+  {
+    "id": "3d-chrome-crayon-generator",
+    "title": "3D Chrome Crayon Generator",
+    "object": "3D CHROME CRAYON.002",
+    "dump": "dojo/chrome-assets/3d-chrome-crayon-generator/dump.json",
+    "reference": "dojo/references/chrome-assets/3d-chrome-crayon-generator.png",
+    "blenderStats": { "verts": 161722, "faces": 88994 },
+    "note": "Object Info now preserves Blender's As Instance branch, bringing the browser to 153,018 / 83,846 with bounds within 0.0001 units. The supplied object's exposed settings do not alter Blender's evaluated result across six cases, so this entry intentionally has no misleading live controls.",
+    "font": {
+      "url": "dojo/fonts/pixels.ttf",
+      "family": "Pixels Medium",
+      "requiredFor": "the nested instruction-string component",
+      "fallback": "using the embedded Blender-extracted outline fallback"
+    },
+    "controls": []
   }
 ]

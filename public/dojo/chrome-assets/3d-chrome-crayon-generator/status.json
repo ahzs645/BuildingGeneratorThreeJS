@@ -1,0 +1,10 @@
+{
+  "id": "3d-chrome-crayon-generator",
+  "object": "3D CHROME CRAYON.002",
+  "root": "3D CHROME CRAYON generator",
+  "status": "near-exact-bounds",
+  "blender": { "verts": 161722, "faces": 88994 },
+  "gnvm": { "verts": 153018, "faces": 83846 },
+  "coverage": "100% of reachable node types; Object Info now preserves its As Instance component so the final wrapper switch matches Blender.",
+  "validation": "All six authored input cases produce the same supplied Blender result. Browser vertex delta is 5.38%, face delta is 5.78%, and local bounds match within 0.0001 units. The remaining topology is Blender Curve-object conversion of the graph's loose curve/instruction component."
+}

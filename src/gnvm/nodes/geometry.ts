@@ -56,8 +56,16 @@ reg("GeometryNodeObjectInfo", (api) => {
     for (const spline of out.curves) spline.points = spline.points.map(relative);
     for (const instance of out.instances) instance.position = relative(instance.position);
   }
+  // As Instance preserves the object as a one-element instance component.
+  // Returning its realized payload directly made Domain Size report zero
+  // instances and sent wrapper-style generators down their fallback branch.
+  let geometry = out;
+  if (api.bool("As Instance") && (out.mesh || out.curves.length || out.instances.length)) {
+    geometry = new Geometry();
+    geometry.instances.push({ geometry: out, position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] });
+  }
   return {
-    Geometry: out,
+    Geometry: geometry,
     Location: Field.of(((obj?.location ?? [0, 0, 0]) as Vec3)),
     Rotation: Field.of(((obj?.rotation ?? [0, 0, 0]) as Vec3)),
     Scale: Field.of(((obj?.scale ?? [1, 1, 1]) as Vec3)),

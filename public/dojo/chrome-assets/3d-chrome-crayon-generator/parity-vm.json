@@ -1,0 +1,149 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/3d-chrome-crayon-generator/dump.json",
+  "object": "3D CHROME CRAYON.002",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 153018,
+      "faces": 83846,
+      "bbox": {
+        "min": [
+          -46.4986,
+          -46.0224,
+          0
+        ],
+        "max": [
+          46.4986,
+          46.0224,
+          50
+        ]
+      },
+      "elapsed_ms": 3139
+    },
+    {
+      "combo": {
+        "name": "tool hidden",
+        "overrides": {
+          "show tool": false
+        }
+      },
+      "status": "ok",
+      "verts": 153018,
+      "faces": 83846,
+      "bbox": {
+        "min": [
+          -46.4986,
+          -46.0224,
+          0
+        ],
+        "max": [
+          46.4986,
+          46.0224,
+          50
+        ]
+      },
+      "elapsed_ms": 2938
+    },
+    {
+      "combo": {
+        "name": "switch on",
+        "overrides": {
+          "Switch": true
+        }
+      },
+      "status": "ok",
+      "verts": 153018,
+      "faces": 83846,
+      "bbox": {
+        "min": [
+          -46.4986,
+          -46.0224,
+          0
+        ],
+        "max": [
+          46.4986,
+          46.0224,
+          50
+        ]
+      },
+      "elapsed_ms": 2918
+    },
+    {
+      "combo": {
+        "name": "sigilize 96",
+        "overrides": {
+          "SIGILIZE": 96
+        }
+      },
+      "status": "ok",
+      "verts": 153018,
+      "faces": 83846,
+      "bbox": {
+        "min": [
+          -46.4986,
+          -46.0224,
+          0
+        ],
+        "max": [
+          46.4986,
+          46.0224,
+          50
+        ]
+      },
+      "elapsed_ms": 2870
+    },
+    {
+      "combo": {
+        "name": "wrap resolution 1",
+        "overrides": {
+          "wrap resolution": 1
+        }
+      },
+      "status": "ok",
+      "verts": 153018,
+      "faces": 83846,
+      "bbox": {
+        "min": [
+          -46.4986,
+          -46.0224,
+          0
+        ],
+        "max": [
+          46.4986,
+          46.0224,
+          50
+        ]
+      },
+      "elapsed_ms": 1749
+    },
+    {
+      "combo": {
+        "name": "thickness 7",
+        "overrides": {
+          "Thiccness": 7
+        }
+      },
+      "status": "ok",
+      "verts": 153018,
+      "faces": 83846,
+      "bbox": {
+        "min": [
+          -46.4986,
+          -46.0224,
+          0
+        ],
+        "max": [
+          46.4986,
+          46.0224,
+          50
+        ]
+      },
+      "elapsed_ms": 2902
+    }
+  ]
+}

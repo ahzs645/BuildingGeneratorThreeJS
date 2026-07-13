@@ -1047,6 +1047,8 @@ function meshSignedAreaXY(m: Mesh): number {
   }];
   const nested = runNode("GeometryNodeObjectInfo", { Object: { datablock: "Object", name: "nested" }, "As Instance": false }).Geometry as Geometry;
   check("Object Info uses evaluated modifier geometry", nested.mesh?.positions.length === 2, `verts=${nested.mesh?.positions.length}`);
+  const nestedInstance = runNode("GeometryNodeObjectInfo", { Object: { datablock: "Object", name: "nested" }, "As Instance": true }).Geometry as Geometry;
+  check("Object Info As Instance preserves an instance component", !nestedInstance.mesh && nestedInstance.instances.length === 1 && nestedInstance.instances[0].geometry.mesh?.positions.length === 2);
   DUMP_CONTEXT.objects = savedObjects;
   const instances = new Geometry();
   instances.instances = [{ geometry: box([0, 0, 0], [1, 1, 1]), position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }];

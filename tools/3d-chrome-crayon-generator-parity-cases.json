@@ -1,0 +1,8 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "tool hidden", "overrides": { "show tool": false } },
+  { "name": "switch on", "overrides": { "Switch": true } },
+  { "name": "sigilize 96", "overrides": { "SIGILIZE": 96 } },
+  { "name": "wrap resolution 1", "overrides": { "wrap resolution": 1 } },
+  { "name": "thickness 7", "overrides": { "Thiccness": 7 } }
+]

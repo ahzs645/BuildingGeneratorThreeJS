@@ -1,0 +1,196 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "3D CHROME CRAYON.002",
+  "modifier": "GeometryNodes",
+  "node_group": "3D CHROME CRAYON generator",
+  "saved_values": {
+    "Object": "Grill Teef Model",
+    "SIGILIZE": 192,
+    "wrap resolution": 2.0,
+    "soften": 0,
+    "Thiccness": 11.0,
+    "depth": 1.0,
+    "show tool": true,
+    "Switch": false,
+    "Size X": 92.99723815917969,
+    "wrapper size": 50.0,
+    "Size Y": 92.0448989868164
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 161722,
+      "faces": 88994,
+      "bbox": {
+        "min": [
+          -46.4986,
+          -46.0225,
+          0.0
+        ],
+        "max": [
+          46.4986,
+          46.0225,
+          50.0
+        ]
+      },
+      "elapsed_ms": 112.1
+    },
+    {
+      "combo": {
+        "name": "tool hidden",
+        "overrides": {
+          "show tool": false
+        }
+      },
+      "status": "ok",
+      "verts": 161722,
+      "faces": 88994,
+      "bbox": {
+        "min": [
+          -46.4986,
+          -46.0225,
+          0.0
+        ],
+        "max": [
+          46.4986,
+          46.0225,
+          50.0
+        ]
+      },
+      "elapsed_ms": 105.1
+    },
+    {
+      "combo": {
+        "name": "switch on",
+        "overrides": {
+          "Switch": true
+        }
+      },
+      "status": "ok",
+      "verts": 161722,
+      "faces": 88994,
+      "bbox": {
+        "min": [
+          -46.4986,
+          -46.0225,
+          0.0
+        ],
+        "max": [
+          46.4986,
+          46.0225,
+          50.0
+        ]
+      },
+      "elapsed_ms": 102.1
+    },
+    {
+      "combo": {
+        "name": "sigilize 96",
+        "overrides": {
+          "SIGILIZE": 96
+        }
+      },
+      "status": "ok",
+      "verts": 161722,
+      "faces": 88994,
+      "bbox": {
+        "min": [
+          -46.4986,
+          -46.0225,
+          0.0
+        ],
+        "max": [
+          46.4986,
+          46.0225,
+          50.0
+        ]
+      },
+      "elapsed_ms": 106.9
+    },
+    {
+      "combo": {
+        "name": "wrap resolution 1",
+        "overrides": {
+          "wrap resolution": 1
+        }
+      },
+      "status": "ok",
+      "verts": 161722,
+      "faces": 88994,
+      "bbox": {
+        "min": [
+          -46.4986,
+          -46.0225,
+          0.0
+        ],
+        "max": [
+          46.4986,
+          46.0225,
+          50.0
+        ]
+      },
+      "elapsed_ms": 105.1
+    },
+    {
+      "combo": {
+        "name": "thickness 7",
+        "overrides": {
+          "Thiccness": 7
+        }
+      },
+      "status": "ok",
+      "verts": 161722,
+      "faces": 88994,
+      "bbox": {
+        "min": [
+          -46.4986,
+          -46.0225,
+          0.0
+        ],
+        "max": [
+          46.4986,
+          46.0225,
+          50.0
+        ]
+      },
+      "elapsed_ms": 110.7
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "flat.nodes": {
+        "faces": 88994,
+        "verts": 105172
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 88994,
+      "verts": 161722
+    }
+  }
+}
