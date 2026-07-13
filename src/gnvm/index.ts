@@ -19,6 +19,7 @@ import "./nodes/volume";
 import "./nodes/points";
 import "./nodes/color";
 import "./nodes/curve-handles";
+import "./nodes/edge-paths";
 
 export { Evaluator } from "./evaluator";
 export { Geometry, toTriSoup } from "./geometry";
