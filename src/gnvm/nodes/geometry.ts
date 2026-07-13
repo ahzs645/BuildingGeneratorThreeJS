@@ -23,6 +23,19 @@ function geometryOfDumpObject(obj: (typeof DUMP_CONTEXT.objects)[number] | undef
     const evaluatedMaterials = (source as { materials?: (string | null)[] }).materials;
     m.materialSlots = evaluatedMaterials?.length ? [...evaluatedMaterials] : obj?.materials?.length ? [...obj.materials] : [null];
     m.edges = (source.edges ?? []).map((edge) => [...edge] as [number, number]);
+    for (const [name, attribute] of Object.entries(source.attributes ?? {})) {
+      m.attributes.set(name, { domain: attribute.domain, data: [...attribute.data] });
+    }
+    // Blender vertex groups are object-level data, so evaluated.to_mesh() may
+    // omit them even when evaluation kept identical point topology. Reattach
+    // the base POINT arrays in that safe one-to-one case (Procedural Box uses
+    // the `bolt` and `axel` groups as placement masks on top/bottom panels).
+    if (evaluated && obj?.mesh?.attributes && obj.mesh.verts.length === source.verts.length) {
+      for (const [name, attribute] of Object.entries(obj.mesh.attributes)) {
+        if (!m.attributes.has(name) && attribute.domain === "POINT" && attribute.data.length === m.positions.length)
+          m.attributes.set(name, { domain: "POINT", data: [...attribute.data] });
+      }
+    }
     out.mesh = m;
   }
   if (obj?.curves && (!evaluated || !source)) {
@@ -30,6 +43,8 @@ function geometryOfDumpObject(obj: (typeof DUMP_CONTEXT.objects)[number] | undef
       cyclic: Boolean(spline.cyclic), points: spline.points.map((p) => [p[0], p[1], p[2]] as Vec3),
       resolution: spline.resolution,
       controlPoints: spline.control_points?.map((p) => [p[0], p[1], p[2]] as Vec3),
+      bezierLeft: spline.bezier_left?.map((p) => [p[0], p[1], p[2]] as Vec3),
+      bezierRight: spline.bezier_right?.map((p) => [p[0], p[1], p[2]] as Vec3),
     }));
     const tilts = obj.curves.flatMap((spline) => spline.tilts ?? spline.points.map(() => 0));
     if (tilts.some((value) => value !== 0)) out.curveAttributes.set("tilt", { domain: "POINT", data: tilts });
@@ -181,9 +196,16 @@ reg("GeometryNodeMeshCone", (api) => {
   const depth = api.num("Depth") || 2;
   const fill = (api.prop<string>("fill_type", "NGON") as "NONE" | "NGON" | "TRIANGLE_FAN");
   const mesh = meshCone(verts, rTop, rBot, depth, sideSeg, fillSeg, fill);
-  // Selection fields (const true for whole mesh — enough for non-mask consumers)
-  const yes = Field.of(1);
-  return { Mesh: mesh, Top: yes, Bottom: yes, Side: yes, "UV Map": Field.of([0, 0, 0]) };
+  const sideFaces = Math.max(3, Math.floor(verts)) * Math.max(1, Math.floor(sideSeg));
+  const capFaces = fill === "NONE" ? 0 : fill === "NGON" && fillSeg <= 1 ? 1 : Math.max(3, Math.floor(verts));
+  const bottomCount = rBot > 1e-12 ? capFaces : 0;
+  const topCount = rTop > 1e-12 ? capFaces : 0;
+  const faceMask = (start: number, count: number) => Field.perElem((i) => i >= start && i < start + count ? 1 : 0).tagged("FACE");
+  return {
+    Mesh: mesh,
+    Bottom: faceMask(sideFaces, bottomCount), Top: faceMask(sideFaces + bottomCount, topCount), Side: faceMask(0, sideFaces),
+    "UV Map": Field.of([0, 0, 0]),
+  };
 });
 reg("GeometryNodeMeshCylinder", (api) => {
   const verts = api.num("Vertices") || 32;
@@ -193,8 +215,14 @@ reg("GeometryNodeMeshCylinder", (api) => {
   const depth = api.num("Depth") || 2;
   const fill = api.prop<string>("fill_type", "NGON") as "NONE" | "NGON" | "TRIANGLE_FAN";
   const mesh = meshCone(verts, radius, radius, depth, sideSeg, fillSeg, fill, true);
-  const yes = Field.of(1);
-  return { Mesh: mesh, Top: yes, Bottom: yes, Side: yes, "UV Map": Field.of([0, 0, 0]) };
+  const sideFaces = Math.max(3, Math.floor(verts)) * Math.max(1, Math.floor(sideSeg));
+  const capFaces = fill === "NONE" ? 0 : fill === "NGON" && fillSeg <= 1 ? 1 : Math.max(3, Math.floor(verts));
+  const faceMask = (start: number, count: number) => Field.perElem((i) => i >= start && i < start + count ? 1 : 0).tagged("FACE");
+  return {
+    Mesh: mesh,
+    Bottom: faceMask(sideFaces, capFaces), Top: faceMask(sideFaces + capFaces, capFaces), Side: faceMask(0, sideFaces),
+    "UV Map": Field.of([0, 0, 0]),
+  };
 });
 
 // ---- transform ------------------------------------------------------------
@@ -223,10 +251,11 @@ reg(["GeometryNodeTransform", "GeometryNodeTransformGeometry"], (api) => {
 reg("GeometryNodeSetPosition", (api) => {
   const g = api.geo("Geometry").clone();
   if (!g.mesh && !g.curves.length && !g.instances.length) return { Geometry: g };
+  const hasMeshPoints = !!g.mesh?.positions.length;
   // Blender 5 applies Set Position directly to the points represented by an
   // instances component as well as mesh/curve points. Periodic Brush uses this
   // to lift each successive dot instance slightly in Z.
-  const domain = !g.mesh && !g.curves.length && g.instances.length ? "INSTANCE" : "POINT";
+  const domain = !hasMeshPoints && !g.curves.length && g.instances.length ? "INSTANCE" : "POINT";
   const ctx = makeFieldCtx(g, domain);
   // Selection chains built entirely from FACE/EDGE-domain masks evaluate on
   // their source domain and convert ONCE at the end (Blender's order) —
@@ -260,8 +289,8 @@ reg("GeometryNodeSetPosition", (api) => {
     const base = posArr ? asVec3(posArr[i]) : p;
     return vadd(base, asVec3(off[i] ?? [0, 0, 0]));
   };
-  if (g.mesh) {
-    g.mesh.positions = g.mesh.positions.map(move);
+  if (hasMeshPoints) {
+    g.mesh!.positions = g.mesh!.positions.map(move);
   } else if (g.curves.length) {
     // curve geometry: the ctx flattens control points in spline order
     let i = 0;
@@ -370,6 +399,31 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
   return { Instances: out };
 });
 
+reg("GeometryNodeInstancesToPoints", (api) => {
+  const source = api.geo("Instances");
+  const ctx = makeFieldCtx(source, "INSTANCE");
+  const selection = api.field("Selection").array(ctx);
+  const positionLinked = api.node.inputs.find((socket) => socket.identifier === "Position")?.linked ?? false;
+  const positions = positionLinked ? api.field("Position").array(ctx) : null;
+  const radii = api.field("Radius").array(ctx);
+  const out = new Geometry();
+  const mesh = new Mesh();
+  const radiusData: import("../core").Elem[] = [];
+  const instanceAttributeNames = new Set<string>();
+  for (const instance of source.instances) for (const name of instance.attributes?.keys() ?? []) instanceAttributeNames.add(name);
+  const instanceAttributeData = new Map([...instanceAttributeNames].map((name) => [name, [] as import("../core").Elem[]]));
+  for (let i = 0; i < source.instances.length; i++) {
+    if (asNum(selection[i] ?? 1) <= 0) continue;
+    mesh.positions.push(positions ? asVec3(positions[i] ?? source.instances[i].position) : [...source.instances[i].position] as Vec3);
+    radiusData.push(radii[i] ?? 0.05);
+    for (const name of instanceAttributeNames) instanceAttributeData.get(name)!.push(source.instances[i].attributes?.get(name) ?? 0);
+  }
+  mesh.attributes.set("radius", { domain: "POINT", data: radiusData });
+  for (const [name, data] of instanceAttributeData) mesh.attributes.set(name, { domain: "POINT", data });
+  out.mesh = mesh;
+  return { Points: out };
+});
+
 reg("GeometryNodeTranslateInstances", (api) => {
   const g = api.geo("Instances").clone();
   const t = api.vec("Translation");
@@ -428,7 +482,7 @@ reg("GeometryNodeRealizeInstances", (api) => ({ Geometry: realizeInstances(api.g
 // ---- capture attribute ----------------------------------------------------
 reg("GeometryNodeCaptureAttribute", (api) => {
   const g = api.geo("Geometry").clone();
-  const domMap: Record<string, any> = { POINT: "POINT", EDGE: "EDGE", FACE: "FACE", CORNER: "CORNER", INSTANCE: "INSTANCE", CURVE: "POINT" };
+  const domMap: Record<string, any> = { POINT: "POINT", EDGE: "EDGE", FACE: "FACE", CORNER: "CORNER", INSTANCE: "INSTANCE", CURVE: "CURVE" };
   let domain = domMap[api.prop<string>("domain", "POINT")] ?? "POINT";
   const name = `__cap_${api.node.name}`;
   // A geometry set may contain an allocated but empty mesh beside a populated
@@ -474,9 +528,12 @@ reg("GeometryNodeCaptureAttribute", (api) => {
       }
     }
   } else if (g.curves.length) {
-    // curve geometry: capture over flattened control points (POINT domain)
-    const ctx = makeFieldCtx(g, "POINT");
-    g.curveAttributes.set(name, { domain: "POINT", data: api.field("Value").array(ctx) });
+    // Curve attributes may live either on flattened control points or once per
+    // spline. ETK_Loft Curves captures Index on CURVE so every point in one
+    // spline keeps the same row id after resampling.
+    const curveDomain = domain === "CURVE" ? "CURVE" : "POINT";
+    const ctx = makeFieldCtx(g, curveDomain);
+    g.curveAttributes.set(name, { domain: curveDomain, data: api.field("Value").array(ctx) });
   }
   return {
     Geometry: g,

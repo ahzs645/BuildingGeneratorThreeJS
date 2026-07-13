@@ -352,6 +352,16 @@ reg("GeometryNodeCurveToMesh", (api) => {
       for (const p of r.points) mesh.positions.push([...p] as Vec3);
       for (let i = 0; i + 1 < r.points.length; i++) mesh.edges.push([base + i, base + i + 1]);
       if (r.cyclic && r.points.length > 2) mesh.edges.push([base + r.points.length - 1, base]);
+      // Curve to Mesh without a profile is also Blender's curve-to-wire
+      // conversion. Anonymous POINT attributes survive that conversion one to
+      // one. ETK_Loft Curves captures the source Position, converts the curve
+      // to a wire, and immediately samples that captured value; dropping it
+      // collapses the loft to the origin.
+      for (const [name, attribute] of railPointAttributes) {
+        const target = mesh.attributes.get(name) ?? { domain: "POINT" as const, data: [] };
+        for (let i = 0; i < r.points.length; i++) target.data.push(attribute.data[railBase + i] ?? 0);
+        mesh.attributes.set(name, target);
+      }
       continue;
     }
     let profileBase = 0;

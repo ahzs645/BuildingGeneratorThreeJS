@@ -407,9 +407,19 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
     attr: (name, i) => {
       if (domain === "INSTANCE") return geo.instances[i]?.attributes?.get(name);
       if (!mesh) {
-        // curve geometry: read curve-component attributes (POINT over control points)
+        // Curve attributes can be stored once per spline or once per control
+        // point. Convert CURVE -> POINT by broadcasting the spline value; this
+        // is Blender's implicit domain adaptation used by loft/index graphs.
         const ca = geo.curveAttributes.get(name);
-        return ca ? ca.data[i] : undefined;
+        if (!ca) return undefined;
+        if (ca.domain === domain) return ca.data[i];
+        if (ca.domain === "CURVE" && domain === "POINT") return ca.data[splineOfPoint[i] ?? 0];
+        if (ca.domain === "POINT" && domain === "CURVE") {
+          let offset = 0;
+          for (let spline = 0; spline < i; spline++) offset += geo.curves[spline]?.points.length ?? 0;
+          return avgElems(ca.data.slice(offset, offset + (geo.curves[i]?.points.length ?? 0)));
+        }
+        return ca.data[i];
       }
       const a = mesh.attributes.get(name);
       if (!a) return undefined;

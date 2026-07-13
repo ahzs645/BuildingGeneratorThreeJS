@@ -132,20 +132,10 @@ reg("GeometryNodeDeleteGeometry", (api) => {
     for (let i = 0; i < g.mesh.positions.length; i++) if (on(sel[i])) dead.add(i);
     const m = g.mesh;
     m.edges = m.edges.filter(([a, b]) => !dead.has(a) && !dead.has(b));
-    if (!m.faces.length && !m.edges.length) {
-      // pure point cloud: filter positions directly (compact() keeps only
-      // face/edge-referenced verts and would delete everything).
-      const keep: number[] = [];
-      for (let i = 0; i < m.positions.length; i++) if (!dead.has(i)) keep.push(i);
-      const nm = new Mesh();
-      nm.materialSlots = [...m.materialSlots];
-      nm.positions = keep.map((i) => [...m.positions[i]] as Vec3);
-      for (const [k, a] of m.attributes)
-        if (a.domain === "POINT") nm.attributes.set(k, { domain: "POINT", data: keep.map((i) => a.data[i]) });
-      g.mesh = nm;
-    } else {
-      g.mesh = keepFaces(m, (fi) => !m.faces[fi].some((v) => dead.has(v)));
-    }
+    // POINT deletion retains surviving isolated points even when all incident
+    // faces disappear. Compacting only the kept faces erased the one-point
+    // `bolt`/`axel` placement masks used by Procedural Box.
+    g.mesh = keepPointsMesh(m, (vi) => !dead.has(vi));
   }
   return { Geometry: g };
 });

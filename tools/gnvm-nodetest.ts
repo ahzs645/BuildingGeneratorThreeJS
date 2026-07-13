@@ -139,6 +139,48 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Random Value is deterministic and index-varying", values.every((value) => Number(value) >= 2 && Number(value) < 4) && new Set(values).size === 3);
 }
 
+// Curve to Mesh without a profile must preserve curve POINT attributes. Loft
+// groups use this path to carry captured source positions into Sample Index.
+{
+  const source = curve([[1, 2, 3], [4, 5, 6]], false);
+  source.curveAttributes.set("captured_position", {
+    domain: "POINT",
+    data: [[1, 2, 3], [4, 5, 6]],
+  });
+  const wire = runNode("GeometryNodeCurveToMesh", {
+    Curve: source,
+    "Profile Curve": new Geometry(),
+    "Fill Caps": false,
+    Scale: 1,
+  }).Mesh as Geometry;
+  const captured = wire.mesh?.attributes.get("captured_position")?.data as Vec3[] | undefined;
+  check("CurveToMesh wire preserves POINT attributes", !!captured && approx(captured.flat(), [1, 2, 3, 4, 5, 6]));
+}
+
+{
+  const source = curves([
+    { points: [[0, 0, 0], [1, 0, 0]], cyclic: false },
+    { points: [[0, 1, 0], [1, 1, 0], [2, 1, 0]], cyclic: false },
+  ]);
+  const index = Field.make((ctx) => Array.from({ length: ctx.size }, (_, i) => i));
+  const captured = runNode("GeometryNodeCaptureAttribute", { Geometry: source, Value: index }, { domain: "CURVE" });
+  const values = (captured.Attribute as Field).array(makeFieldCtx(captured.Geometry as Geometry, "POINT")) as number[];
+  check("Capture Attribute broadcasts CURVE values to points", approx(values, [0, 0, 1, 1, 1]), JSON.stringify(values));
+}
+
+{
+  const source = curve([[5, 5, 0], [6, 5, 0]], false);
+  source.mesh = new Mesh(); // Join Geometry can leave this empty component.
+  const position = Field.make((ctx) => Array.from({ length: ctx.size }, (_, i) => [i, 0, 0] as Vec3));
+  const moved = runNode("GeometryNodeSetPosition", {
+    Geometry: source,
+    Selection: true,
+    Position: position,
+    Offset: [0, 0, 0],
+  }, {}, ["Position"]).Geometry as Geometry;
+  check("Set Position targets curves beside an empty mesh", approx(moved.curves[0].points.flat(), [0, 0, 0, 1, 0, 0]));
+}
+
 // Curve Line Direction mode stores the second input as a vector from Start,
 // rather than an absolute End point.
 {

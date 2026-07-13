@@ -42,6 +42,26 @@ def socket_value(sock):
     except Exception as e:
         return f"<err {e}>"
 
+def dump_mesh_attributes(mesh):
+    attrs = {}
+    for attribute in mesh.attributes:
+        if attribute.name.startswith(".") or attribute.name == "position":
+            continue
+        try:
+            if attribute.data_type in ("FLOAT", "INT", "BOOLEAN"):
+                attrs[attribute.name] = {
+                    "domain": attribute.domain,
+                    "data": [float(item.value) for item in attribute.data],
+                }
+            elif attribute.data_type == "FLOAT_VECTOR":
+                attrs[attribute.name] = {
+                    "domain": attribute.domain,
+                    "data": [[round(component, 6) for component in item.vector] for item in attribute.data],
+                }
+        except Exception:
+            pass
+    return attrs
+
 def dump_node(node):
     def socket_meta(socket):
         return {
@@ -475,6 +495,7 @@ for obj in bpy.data.objects:
                 "face_materials": [p.material_index for p in mesh.polygons],
                 "edges": [[e.vertices[0], e.vertices[1]] for e in mesh.edges if e.is_loose],
                 "materials": [material.name if material else None for material in mesh.materials],
+                "attributes": dump_mesh_attributes(mesh),
             }
         finally:
             evaluated.to_mesh_clear()
