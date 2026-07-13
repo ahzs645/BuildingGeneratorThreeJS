@@ -35,7 +35,23 @@ reg("GeometryNodeCurvePrimitiveCircle", (api) => {
 
 reg("GeometryNodeCurvePrimitiveLine", (api) => {
   const s = api.vec("Start");
-  const e = api.vec("End");
+  // Blender exposes Start/End and Start/Direction modes through the same node.
+  // In current dumps the active mode is most reliably represented by socket
+  // enablement (the GLUE GRID's Direction socket is enabled while End is not).
+  const endSocket = api.node.inputs.find((socket) => socket.name === "End" || socket.identifier === "End");
+  const directionSocket = api.node.inputs.find((socket) => socket.name === "Direction" || socket.identifier === "Direction");
+  const endEnabled = (endSocket as { enabled?: boolean } | undefined)?.enabled;
+  const directionEnabled = (directionSocket as { enabled?: boolean } | undefined)?.enabled;
+  const directionMode = api.prop<string>("mode", "").toUpperCase() === "DIRECTION"
+    || (endEnabled === false && directionEnabled !== false);
+  const lengthSocket = api.node.inputs.find((socket) => socket.name === "Length" || socket.identifier === "Length");
+  const direction = api.vec("Direction");
+  // Blender 5.1 separates Direction (orientation) from Length. Older versions
+  // encode the full displacement directly in Direction, so retain both forms.
+  const displacement = lengthSocket
+    ? vscale(vnorm(direction), api.num("Length"))
+    : direction;
+  const e = directionMode ? vadd(s, displacement) : api.vec("End");
   return { Curve: curveGeo([{ points: [s, e], cyclic: false }]) };
 });
 

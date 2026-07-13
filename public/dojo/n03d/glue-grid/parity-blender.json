@@ -1,0 +1,64 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "GLUE GRID",
+  "modifier": "GeometryNodes",
+  "node_group": "Geometry Nodes.012",
+  "saved_values": {},
+  "results": [
+    {
+      "combo": {
+        "name": "authored 4x4 grid",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 4736,
+      "faces": 4096,
+      "bbox": {
+        "min": [
+          -0.0,
+          -0.0,
+          0.0019
+        ],
+        "max": [
+          168.168,
+          168.168,
+          4.653
+        ]
+      },
+      "elapsed_ms": 4.5
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "<none>": {
+        "faces": 4096,
+        "verts": 4736
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 4096,
+      "verts": 4736
+    }
+  }
+}

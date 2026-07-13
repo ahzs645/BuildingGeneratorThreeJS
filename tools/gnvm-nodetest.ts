@@ -118,6 +118,15 @@ function meshSignedAreaXY(m: Mesh): number {
   check("CurveCircle p1=(0,1,0) CCW", approx(s.points[1], [0, 1, 0]), JSON.stringify(s.points[1]));
 }
 
+// Curve Line Direction mode stores the second input as a vector from Start,
+// rather than an absolute End point.
+{
+  const c = runNode("GeometryNodeCurvePrimitiveLine", {
+    Start: [1, 2, 3], End: [99, 99, 99], Direction: [0, -2, 0], Length: 6,
+  }, { mode: "DIRECTION" }).Curve as Geometry;
+  check("CurveLine direction mode applies normalized direction and length", approx(c.curves[0].points[1], [1, -4, 3]), JSON.stringify(c.curves[0].points));
+}
+
 {
   const arc = runNode("GeometryNodeCurveArc", {
     Resolution: 4, Radius: 2, "Start Angle": 0, "Sweep Angle": Math.PI / 2,

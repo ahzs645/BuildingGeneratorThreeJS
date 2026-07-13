@@ -1,0 +1,29 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/glue-grid/dump.json",
+  "object": "GLUE GRID",
+  "results": [
+    {
+      "combo": {
+        "name": "authored 4x4 grid",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 4752,
+      "faces": 4096,
+      "bbox": {
+        "min": [
+          0,
+          0,
+          0
+        ],
+        "max": [
+          168.168,
+          168.168,
+          4.6526
+        ]
+      },
+      "elapsed_ms": 59
+    }
+  ]
+}
