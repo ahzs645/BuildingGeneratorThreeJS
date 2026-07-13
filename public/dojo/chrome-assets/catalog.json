@@ -541,5 +541,18 @@
     "blenderStats": { "verts": 1268, "faces": 1158 },
     "note": "Exact 1,268 / 1,158 topology with local bounds within 0.0001 units. The saved Selection input does not alter Blender's output, so this asset is shown without a non-functional control. Its 20 mm-scale reference is rendered in local space for a useful comparison.",
     "controls": []
+  },
+  {
+    "id": "n03d-arrow",
+    "title": "N03D · Arrow Generator",
+    "object": "ARROW",
+    "dump": "dojo/n03d/arrow/dump.json",
+    "reference": "dojo/references/n03d/arrow.png",
+    "blenderStats": { "verts": 1155, "faces": 1153 },
+    "note": "Exact Blender topology across five validation cases, with local bounds within 0.0007 units. Preserving the source mesh's edge-domain tail masks restores the authored bent-arrow silhouette and keeps tail length and width editable in-browser.",
+    "controls": [
+      { "name": "tail length", "label": "Tail length", "min": 0, "max": 18, "step": 0.1, "value": 6.960296630859375 },
+      { "name": "tail width", "label": "Tail width", "min": 0, "max": 40, "step": 0.1, "value": 26.007339477539062 }
+    ]
   }
 ]

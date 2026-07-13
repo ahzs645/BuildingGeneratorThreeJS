@@ -1,0 +1,10 @@
+{
+  "id": "n03d-arrow",
+  "object": "ARROW",
+  "root": "arrow nodes",
+  "status": "exact-topology-parity",
+  "blender": { "verts": 1155, "faces": 1153 },
+  "gnvm": { "verts": 1155, "faces": 1153 },
+  "coverage": "100% of reachable node types across the 4-group, 58-node closure.",
+  "validation": "Five tail-length and tail-width cases match Blender topology exactly, with local bounds within 0.0007 units. The authored edge-domain tail masks are preserved so both deformation controls remain live in-browser."
+}

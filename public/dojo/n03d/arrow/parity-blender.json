@@ -1,0 +1,173 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "ARROW",
+  "modifier": "GeometryNodes",
+  "node_group": "arrow nodes",
+  "saved_values": {
+    "tail length": 6.960296630859375,
+    "tail width": 26.007339477539062,
+    "outline": "flat.b.001",
+    "fill": "flat.w"
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored arrow",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 1155,
+      "faces": 1153,
+      "bbox": {
+        "min": [
+          -5.5425,
+          -0.1297,
+          -7.1
+        ],
+        "max": [
+          5.5321,
+          0.1574,
+          7.8016
+        ]
+      },
+      "elapsed_ms": 1.6
+    },
+    {
+      "combo": {
+        "name": "short narrow tail",
+        "overrides": {
+          "tail length": 1.5,
+          "tail width": 3.0
+        }
+      },
+      "status": "ok",
+      "verts": 1155,
+      "faces": 1153,
+      "bbox": {
+        "min": [
+          -5.5425,
+          -0.1297,
+          -1.6397
+        ],
+        "max": [
+          5.5321,
+          0.1574,
+          7.8016
+        ]
+      },
+      "elapsed_ms": 1.8
+    },
+    {
+      "combo": {
+        "name": "long narrow tail",
+        "overrides": {
+          "tail length": 12.0,
+          "tail width": 3.0
+        }
+      },
+      "status": "ok",
+      "verts": 1155,
+      "faces": 1153,
+      "bbox": {
+        "min": [
+          -5.5425,
+          -0.1297,
+          -12.1397
+        ],
+        "max": [
+          5.5321,
+          0.1574,
+          7.8016
+        ]
+      },
+      "elapsed_ms": 1.8
+    },
+    {
+      "combo": {
+        "name": "short wide tail",
+        "overrides": {
+          "tail length": 1.5,
+          "tail width": 34.0
+        }
+      },
+      "status": "ok",
+      "verts": 1155,
+      "faces": 1153,
+      "bbox": {
+        "min": [
+          -5.5425,
+          -0.1297,
+          -1.6397
+        ],
+        "max": [
+          5.5321,
+          0.1574,
+          7.8016
+        ]
+      },
+      "elapsed_ms": 2.1
+    },
+    {
+      "combo": {
+        "name": "long wide tail",
+        "overrides": {
+          "tail length": 12.0,
+          "tail width": 34.0
+        }
+      },
+      "status": "ok",
+      "verts": 1155,
+      "faces": 1153,
+      "bbox": {
+        "min": [
+          -5.5425,
+          -0.1297,
+          -12.1397
+        ],
+        "max": [
+          5.5321,
+          0.1574,
+          7.8016
+        ]
+      },
+      "elapsed_ms": 1.6
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "flat.b.001": {
+        "faces": 1120,
+        "verts": 1120
+      },
+      "flat.w": {
+        "faces": 33,
+        "verts": 35
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 1153,
+      "verts": 1155
+    }
+  }
+}

@@ -39,6 +39,7 @@ Inventory date: 2026-07-12. The source pack contains 16 `.blend` projects.
 - N03D 3D-printing Utilities: Countersunk Pill Hole — the 45-node `pill hole countersunk` root runs live with editable head/shaft diameters, heights, depth, and resolution. Six cases have exact bounds and matching stepped-cutter silhouettes; the browser's minimal Manifold hull is 274 / 408 versus Blender's 336 / 362 polygon topology.
 - N03D 3D-printing Utilities: Hole Punch — the 7-group, 79-node `hole punch` closure matches Blender exactly across six curve/manual-length, head, shaft, height, and resolution cases. The authored result is 153 vertices / 104 faces with identical local bounds.
 - N03D 3D-printing Utilities: Hollow Magnet Foot — the 18-node `feet hollow` closure matches Blender's 1,268 / 1,158 topology with local bounds within 0.0001 units. The supplied Selection input is a no-op in Blender, so it is documented rather than exposed as a misleading control.
+- N03D 3D-printing Utilities: Arrow Generator — the 4-group, 58-node `arrow nodes` closure matches Blender's 1,155 / 1,153 topology across five tail-length and tail-width cases, with local bounds within 0.0007 units. Preserving its authored edge-domain masks restores the full bent-arrow silhouette rather than the undeformed triangular head.
 
 ## Recommended next targets
 

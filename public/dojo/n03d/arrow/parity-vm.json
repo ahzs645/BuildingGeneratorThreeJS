@@ -1,0 +1,129 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/arrow/dump.json",
+  "object": "ARROW",
+  "results": [
+    {
+      "combo": {
+        "name": "authored arrow",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 1155,
+      "faces": 1153,
+      "bbox": {
+        "min": [
+          -5.5425,
+          -0.1297,
+          -7.1007
+        ],
+        "max": [
+          5.5321,
+          0.1574,
+          7.8016
+        ]
+      },
+      "elapsed_ms": 35
+    },
+    {
+      "combo": {
+        "name": "short narrow tail",
+        "overrides": {
+          "tail length": 1.5,
+          "tail width": 3
+        }
+      },
+      "status": "ok",
+      "verts": 1155,
+      "faces": 1153,
+      "bbox": {
+        "min": [
+          -5.5425,
+          -0.1297,
+          -1.6403
+        ],
+        "max": [
+          5.5321,
+          0.1574,
+          7.8016
+        ]
+      },
+      "elapsed_ms": 6
+    },
+    {
+      "combo": {
+        "name": "long narrow tail",
+        "overrides": {
+          "tail length": 12,
+          "tail width": 3
+        }
+      },
+      "status": "ok",
+      "verts": 1155,
+      "faces": 1153,
+      "bbox": {
+        "min": [
+          -5.5425,
+          -0.1297,
+          -12.1403
+        ],
+        "max": [
+          5.5321,
+          0.1574,
+          7.8016
+        ]
+      },
+      "elapsed_ms": 5
+    },
+    {
+      "combo": {
+        "name": "short wide tail",
+        "overrides": {
+          "tail length": 1.5,
+          "tail width": 34
+        }
+      },
+      "status": "ok",
+      "verts": 1155,
+      "faces": 1153,
+      "bbox": {
+        "min": [
+          -5.5425,
+          -0.1297,
+          -1.6404
+        ],
+        "max": [
+          5.5321,
+          0.1574,
+          7.8016
+        ]
+      },
+      "elapsed_ms": 4
+    },
+    {
+      "combo": {
+        "name": "long wide tail",
+        "overrides": {
+          "tail length": 12,
+          "tail width": 34
+        }
+      },
+      "status": "ok",
+      "verts": 1155,
+      "faces": 1153,
+      "bbox": {
+        "min": [
+          -5.5425,
+          -0.1297,
+          -12.1404
+        ],
+        "max": [
+          5.5321,
+          0.1574,
+          7.8016
+        ]
+      },
+      "elapsed_ms": 3
+    }
+  ]
+}
