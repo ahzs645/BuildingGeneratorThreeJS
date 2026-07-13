@@ -704,5 +704,17 @@
       { "name": "CLOSE - OPEN", "label": "Closed → open", "min": 0, "max": 100, "step": 1, "value": 64 },
       { "type": "checkbox", "name": "show guide", "label": "Show guide line", "value": false }
     ]
+  },
+  {
+    "id": "n03d-filleted-print-preview",
+    "title": "N03D · Filleted Print Preview",
+    "object": "Plane.006",
+    "dump": "dojo/n03d/filleted-print-preview/dump.json",
+    "reference": "dojo/references/n03d/filleted-print-preview.png",
+    "blenderStats": { "verts": 1808, "faces": 905 },
+    "flatShading": true,
+    "localSpace": true,
+    "note": "Exact authored topology and local bounds at 1,808 vertices / 905 faces. This fixed 46-node demo rounds the supplied square with a high-resolution Poly Fillet at each corner, fills the outline, extrudes it, and passes it through the shared print-visualization group.",
+    "controls": []
   }
 ]

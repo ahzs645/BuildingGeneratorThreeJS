@@ -289,6 +289,12 @@ function meshSignedAreaXY(m: Mesh): number {
   check("FillCurve NGON single loop preserves vertex order", JSON.stringify(m.faces[0]) === JSON.stringify([0, 1, 2, 3]) && m.positions.every((p, i) => approx(p, pts[i])));
 }
 
+{
+  const duplicateCorners = curve([[0, 0, 0], [1, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 0]], true);
+  const welded = runNode("GeometryNodeFillCurve", { Curve: duplicateCorners }, { mode: "NGONS" }).Mesh as Geometry;
+  check("Fill Curve welds adjacent cyclic duplicates", welded.mesh?.positions.length === 4 && welded.mesh.faces[0]?.length === 4, `${welded.mesh?.positions.length}/${welded.mesh?.faces[0]?.length}`);
+}
+
 // Fill Curve is defined in the curve component's local XY plane.
 {
   const g = runNode("GeometryNodeFillCurve", { Curve: curve([[0, 0, -0.019], [1, 0, -0.019], [0, 1, -0.019]], true) }, { mode: "NGONS" }).Mesh as Geometry;

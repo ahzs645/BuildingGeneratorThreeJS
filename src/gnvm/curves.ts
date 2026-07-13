@@ -224,17 +224,30 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?:
 // Triangles mode applies even-odd containment so inner loops become holes.
 export function fillCurves(curves: Spline[], mode: "NGONS" | "TRIANGLES"): Mesh {
   const mesh = new Mesh();
-  const plane = fillPlane(curves);
+  // Limit Radius can make neighboring fillets meet at the exact same tangent
+  // point. Blender's Fill Curve welds those adjacent duplicates before it
+  // creates the polygon (the N03D print-preview square has one at every edge).
+  const fillInput = curves.map((spline) => {
+    if (!spline.cyclic || spline.points.length < 2) return spline;
+    const points: Vec3[] = [];
+    for (const point of spline.points) {
+      const previous = points[points.length - 1];
+      if (!previous || vlen(vsub(point, previous)) > 1e-7) points.push(point);
+    }
+    if (points.length > 1 && vlen(vsub(points[0], points[points.length - 1])) <= 1e-7) points.pop();
+    return { ...spline, points };
+  });
+  const plane = fillPlane(fillInput);
   if (!plane) {
     // Blender retains one point for a collapsed cyclic fill instead of
     // returning a completely empty mesh. The star-noodle fallback uses this
     // degenerate center alongside its swept outline.
-    const collapsed = curves.find((s) => s.cyclic && s.points.length);
+    const collapsed = fillInput.find((s) => s.cyclic && s.points.length);
     if (collapsed) mesh.positions.push([...collapsed.points[0]] as Vec3);
     mesh.materialSlots = [null];
     return mesh;
   }
-  const loops = fillLoops(curves, plane);
+  const loops = fillLoops(fillInput, plane);
   if (mode === "NGONS") {
     for (const loop of loops) emitSimpleFill(mesh, loop.points, "NGONS");
     mesh.materialSlots = [null];

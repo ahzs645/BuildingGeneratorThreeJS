@@ -1,0 +1,29 @@
+{
+  "source": "gnvm",
+  "dump": "/tmp/plane006-dump.json",
+  "object": "Plane.006",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 1808,
+      "faces": 905,
+      "bbox": {
+        "min": [
+          -21.0863,
+          -21.0863,
+          0
+        ],
+        "max": [
+          21.0863,
+          21.0863,
+          4.5051
+        ]
+      },
+      "elapsed_ms": 30
+    }
+  ]
+}

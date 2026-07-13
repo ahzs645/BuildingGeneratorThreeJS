@@ -1,0 +1,16 @@
+{
+  "id": "n03d-filleted-print-preview",
+  "object": "Plane.006",
+  "root": "Geometry Nodes.015",
+  "status": "exact-parity",
+  "blender": {
+    "verts": 1808,
+    "faces": 905
+  },
+  "gnvm": {
+    "verts": 1808,
+    "faces": 905
+  },
+  "coverage": "100% of reachable node types across the 3-group, 46-node closure.",
+  "validation": "The authored no-control output has exact topology and local bounds. Fill Curve now welds adjacent cyclic tangent duplicates created by Limit Radius, correcting the previous +8 vertex / +4 face delta after extrusion."
+}
