@@ -83,6 +83,7 @@ function soupToMesh(dump: Dump, soup: TriSoup): THREE.Mesh {
   geo.setAttribute("position", new THREE.BufferAttribute(soup.positions, 3));
   geo.setAttribute("normal", new THREE.BufferAttribute(soup.normals, 3));
   geo.setIndex(new THREE.BufferAttribute(soup.indices, 1));
+  for (const [name, attribute] of Object.entries(soup.attributes ?? {})) geo.setAttribute(name, new THREE.BufferAttribute(attribute.data, attribute.itemSize));
   const mats: THREE.Material[] = [];
   soup.groups.forEach((g, i) => {
     geo.addGroup(g.start, g.count, i);

@@ -27,6 +27,21 @@ import { isManifoldReady, manifoldBoolean, manifoldBooleanBox } from "../boolean
 const DOMAINS = new Set<Domain>(["POINT", "EDGE", "FACE", "CORNER", "CURVE", "INSTANCE"]);
 const EPS = 1e-9;
 
+// Blender 5.1 migrated legacy Separate/Combine RGB nodes to the Function
+// variants during file versioning. The bin's recursive subdivision carries
+// integer-like masks through RGB channels, so these are structural rather than
+// cosmetic shader nodes.
+reg("FunctionNodeSeparateColor", (api) => {
+  const color = api.field("Color");
+  const channel = (index: number) => fieldMap([color], (value) => asVec3(value)[index]);
+  return { Red: channel(0), Green: channel(1), Blue: channel(2), Alpha: Field.of(1) };
+});
+
+reg("FunctionNodeCombineColor", (api) => {
+  const red = api.field("Red"), green = api.field("Green"), blue = api.field("Blue");
+  return { Color: fieldMap([red, green, blue], (r, g, b) => [asNum(r), asNum(g), asNum(b)] as Vec3) };
+});
+
 function domainProp(api: EvalAPI, dflt: Domain = "POINT"): Domain {
   const d = api.prop<string>("domain", dflt);
   return DOMAINS.has(d as Domain) ? (d as Domain) : dflt;

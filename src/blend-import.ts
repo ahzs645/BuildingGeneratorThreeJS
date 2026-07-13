@@ -168,6 +168,7 @@ function showSoup(soup: TriSoup): void {
   geometry.setAttribute("position", new THREE.BufferAttribute(soup.positions, 3));
   geometry.setAttribute("normal", new THREE.BufferAttribute(soup.normals, 3));
   geometry.setIndex(new THREE.BufferAttribute(soup.indices, 1));
+  for (const [name, attribute] of Object.entries(soup.attributes ?? {})) geometry.setAttribute(name, new THREE.BufferAttribute(attribute.data, attribute.itemSize));
   const materials: THREE.Material[] = [];
   for (const [index, group] of soup.groups.entries()) {
     geometry.addGroup(group.start, group.count, index);

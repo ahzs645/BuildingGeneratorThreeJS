@@ -105,7 +105,13 @@ function avgElems(vals: (import("./core").Elem | undefined)[] | undefined): impo
 }
 
 export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
-  const mesh = geo.mesh;
+  // Geometry sets can carry an allocated but empty mesh alongside real curves
+  // (notably after Realize Instances). Blender resolves fields on the populated
+  // component; treating the empty mesh object as authoritative produced a
+  // zero-sized POINT context and deleted the entire Chrome Crayon SPIRO branch.
+  const mesh = geo.mesh && (geo.mesh.positions.length || geo.mesh.edges.length || geo.mesh.faces.length)
+    ? geo.mesh
+    : undefined;
   // Flattened curve control points (for curve geometry with no mesh), with the
   // per-spline local index/factor for SplineParameter.
   const curvePts: Vec3[] = [];

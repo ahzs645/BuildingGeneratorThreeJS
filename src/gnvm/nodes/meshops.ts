@@ -195,14 +195,18 @@ function keepEdgesMesh(mesh: Mesh, keep: (ei: number) => boolean): Mesh {
 
 reg("GeometryNodeSeparateGeometry", (api) => {
   const g = api.geo("Geometry");
+  const hasMeshComponent = Boolean(g.mesh && (g.mesh.positions.length || g.mesh.edges.length || g.mesh.faces.length));
   const domain = api.prop<string>("domain", "POINT");
   const sel = api.field("Selection");
   const selG = new Geometry();
   const invG = new Geometry();
-  if (!g.mesh && g.curves.length) {
+  if (!hasMeshComponent && g.curves.length) {
     if (domain === "CURVE") {
       const ctx = makeFieldCtx(g, "CURVE");
       const values = sel.array(ctx);
+      if (FIELD_PROBE.node === api.node.name && FIELD_PROBE.socket === "Selection") FIELD_PROBE.batches.push({
+        domain: "CURVE", positions: g.curves.map((spline) => spline.points[0] ?? [0, 0, 0]), values,
+      });
       g.curves.forEach((spline, i) => {
         const target = asNum(values[i] ?? 0) > 0 ? selG : invG;
         target.curves.push({ cyclic: spline.cyclic, points: spline.points.map((p) => [...p] as Vec3) });
@@ -210,6 +214,9 @@ reg("GeometryNodeSeparateGeometry", (api) => {
     } else {
       const ctx = makeFieldCtx(g, "POINT");
       const values = sel.array(ctx);
+      if (FIELD_PROBE.node === api.node.name && FIELD_PROBE.socket === "Selection") FIELD_PROBE.batches.push({
+        domain: "POINT", positions: g.curves.flatMap((spline) => spline.points), values,
+      });
       let offset = 0;
       for (const spline of g.curves) {
         const selected: Vec3[] = [], inverted: Vec3[] = [];
@@ -224,7 +231,7 @@ reg("GeometryNodeSeparateGeometry", (api) => {
     }
     return { Selection: selG, Inverted: invG };
   }
-  if (!g.mesh) return { Selection: selG, Inverted: invG };
+  if (!hasMeshComponent || !g.mesh) return { Selection: selG, Inverted: invG };
   if (domain === "FACE") {
     const ctx = makeFieldCtx(g, "FACE");
     const s = sel.array(ctx);
@@ -967,8 +974,17 @@ reg("GeometryNodeMeshToPoints", (api) => {
 reg("GeometryNodeSeparateComponents", (api) => {
   const g = api.geo("Geometry");
   const meshOnly = new Geometry();
-  if (g.mesh) meshOnly.mesh = g.mesh;
+  if (g.mesh) meshOnly.mesh = g.mesh.clone();
+  const curveOnly = new Geometry();
+  curveOnly.curves = g.curves.map((spline) => ({ cyclic: spline.cyclic, points: spline.points.map((point) => [...point] as Vec3) }));
+  for (const [name, attribute] of g.curveAttributes) curveOnly.curveAttributes.set(name, { domain: attribute.domain, data: [...attribute.data] });
   const inst = new Geometry();
-  inst.instances = g.instances;
-  return { Mesh: meshOnly, "Point Cloud": new Geometry(), Curve: new Geometry(), Instances: inst, Volume: new Geometry() };
+  inst.instances = g.instances.map((instance) => ({
+    ...instance,
+    position: [...instance.position] as Vec3,
+    rotation: [...instance.rotation] as Vec3,
+    scale: [...instance.scale] as Vec3,
+    attributes: instance.attributes ? new Map(instance.attributes) : undefined,
+  }));
+  return { Mesh: meshOnly, "Point Cloud": new Geometry(), Curve: curveOnly, Instances: inst, Volume: new Geometry() };
 });

@@ -2,7 +2,7 @@
 // engine runs under plain node/tsx for self-tests; the browser viewer converts
 // the triangle soup to a BufferGeometry.
 
-import { Vec3, Domain, Elem, vadd, vscale, vsub, vdot, vlen, vnorm } from "./core";
+import { Vec3, Domain, Elem, asNum, asVec3, vadd, vscale, vsub, vdot, vlen, vnorm } from "./core";
 
 export interface Attribute {
   domain: Domain;
@@ -555,6 +555,7 @@ export interface TriSoup {
   positions: Float32Array; // xyz per vertex (indexed)
   normals: Float32Array;
   indices: Uint32Array;
+  attributes: Record<string, { itemSize: 1 | 3; data: Float32Array }>;
   groups: { start: number; count: number; material: string | null }[]; // per material slot
   stats: { verts: number; faces: number; tris: number };
 }
@@ -725,10 +726,41 @@ export function toTriSoup(g: Geometry): TriSoup {
     indices.set(tri, cursor);
     cursor += tri.length;
   }
+  const attributes: TriSoup["attributes"] = {};
+  for (const [name, attribute] of source.attributes) {
+    if (name.startsWith("__") || !["POINT", "FACE", "CORNER"].includes(attribute.domain)) continue;
+    const itemSize: 1 | 3 = Array.isArray(attribute.data.find((value) => value !== undefined)) ? 3 : 1;
+    const pointValues: Elem[] = source.positions.map(() => itemSize === 3 ? [0, 0, 0] as Vec3 : 0);
+    const counts = source.positions.map(() => 0);
+    if (attribute.domain === "POINT") {
+      for (let i = 0; i < source.positions.length; i++) { pointValues[i] = attribute.data[i] ?? pointValues[i]; counts[i] = 1; }
+    } else if (attribute.domain === "FACE") {
+      for (let fi = 0; fi < source.faces.length; fi++) for (const vi of source.faces[fi]) {
+        pointValues[vi] = itemSize === 3 ? vadd(asVec3(pointValues[vi]), asVec3(attribute.data[fi] ?? [0, 0, 0])) : asNum(pointValues[vi]) + asNum(attribute.data[fi] ?? 0);
+        counts[vi]++;
+      }
+    } else {
+      let corner = 0;
+      for (const face of source.faces) for (const vi of face) {
+        pointValues[vi] = itemSize === 3 ? vadd(asVec3(pointValues[vi]), asVec3(attribute.data[corner] ?? [0, 0, 0])) : asNum(pointValues[vi]) + asNum(attribute.data[corner] ?? 0);
+        counts[vi]++; corner++;
+      }
+    }
+    const data = new Float32Array(source.positions.length * itemSize);
+    for (let i = 0; i < source.positions.length; i++) {
+      const value = counts[i] > 1 ? (itemSize === 3 ? vscale(asVec3(pointValues[i]), 1 / counts[i]) : asNum(pointValues[i]) / counts[i]) : pointValues[i];
+      if (itemSize === 3) {
+        const vector = asVec3(value ?? [0, 0, 0]);
+        data[i * 3] = vector[0]; data[i * 3 + 1] = vector[1]; data[i * 3 + 2] = vector[2];
+      } else data[i] = asNum(value ?? 0);
+    }
+    attributes[name] = { itemSize, data };
+  }
   return {
     positions,
     normals: normArr,
     indices,
+    attributes,
     groups,
     stats: { verts: mesh.positions.length, faces: mesh.faces.length, tris: triCount },
   };

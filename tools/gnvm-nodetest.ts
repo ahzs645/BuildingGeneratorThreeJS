@@ -744,5 +744,20 @@ function meshSignedAreaXY(m: Mesh): number {
   );
 }
 
+// (Z) A realized geometry set may retain an allocated empty Mesh alongside
+// populated curves. Field evaluation must select the populated component.
+{
+  const mixed = curve([[0, 0, 0], [1, 0, 0], [2, 0, 0]], false);
+  mixed.mesh = new Mesh();
+  const ctx = makeFieldCtx(mixed, "POINT");
+  const split = runNode(
+    "GeometryNodeSeparateGeometry",
+    { Geometry: mixed, Selection: Field.of(1) },
+    { domain: "POINT" },
+  ).Selection as Geometry;
+  check("empty mesh does not mask populated curve field domain", ctx.size === 3, `size=${ctx.size}`);
+  check("Separate Geometry retains curve points beside empty mesh", split.curvePointCount() === 3, `points=${split.curvePointCount()}`);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

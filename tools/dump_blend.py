@@ -19,22 +19,40 @@ def socket_value(sock):
         return f"<err {e}>"
 
 def dump_node(node):
+    def socket_meta(socket):
+        return {
+            "name": socket.name,
+            "identifier": socket.identifier,
+            "type": socket.bl_idname,
+            "linked": socket.is_linked,
+            "enabled": bool(getattr(socket, "enabled", True)),
+            "hide": bool(getattr(socket, "hide", False)),
+            "hide_value": bool(getattr(socket, "hide_value", False)),
+            "display_shape": getattr(socket, "display_shape", "CIRCLE"),
+        }
     d = {
         "name": node.name,
         "type": node.bl_idname,
         "label": node.label or None,
+        "ui": {
+            "location": list(node.location),
+            "location_absolute": list(getattr(node, "location_absolute", node.location)),
+            "width": float(node.width),
+            "height": float(node.height),
+            "dimensions": list(node.dimensions),
+            "hide": bool(node.hide),
+            "mute": bool(node.mute),
+            "use_custom_color": bool(node.use_custom_color),
+            "color": list(node.color),
+            "parent": node.parent.name if node.parent else None,
+        },
         "inputs": [],
-        "outputs": [{"name": o.name, "identifier": o.identifier,
-                     "default": socket_value(o) if not o.is_linked or True else None}
-                    for o in node.outputs],
+        "outputs": [{**socket_meta(o), "default": socket_value(o)} for o in node.outputs],
     }
     for i, s in enumerate(node.inputs):
         d["inputs"].append({
-            "name": s.name,
-            "identifier": s.identifier,
+            **socket_meta(s),
             "idx": i,
-            "type": s.bl_idname,
-            "linked": s.is_linked,
             "value": None if s.is_linked else socket_value(s),
         })
     # node-level props (operation, data_type, mode, etc.)
@@ -97,6 +115,8 @@ def dump_tree(tree):
             "from_node": l.from_node.name, "from_socket": l.from_socket.identifier,
             "to_node": l.to_node.name, "to_socket": l.to_socket.identifier,
             "to_idx": l.to_socket.index if hasattr(l.to_socket, "index") else None,
+            "from_type": l.from_socket.bl_idname,
+            "to_type": l.to_socket.bl_idname,
         }
         # Multi-input sockets (Join Geometry) evaluate from highest sort id to
         # lowest. Omit the common zero to keep dumps compact; any non-zero link

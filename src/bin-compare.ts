@@ -90,6 +90,76 @@ function namedMaterial(name: string | null, material: THREE.Material): THREE.Mat
   return material;
 }
 
+let bedTexture: THREE.CanvasTexture | null = null;
+function ankermakeBedTexture(): THREE.CanvasTexture {
+  if (bedTexture) return bedTexture;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 1024;
+  const context = canvas.getContext("2d")!;
+  context.fillStyle = "#111519";
+  context.fillRect(0, 0, 1024, 1024);
+  context.strokeStyle = "rgba(103, 156, 174, .34)";
+  context.lineWidth = 2;
+  for (let p = 64; p < 1024; p += 64) {
+    context.beginPath(); context.moveTo(p, 30); context.lineTo(p, 994); context.stroke();
+    context.beginPath(); context.moveTo(30, p); context.lineTo(994, p); context.stroke();
+  }
+  context.strokeStyle = "rgba(214, 235, 241, .62)";
+  context.lineWidth = 5;
+  context.strokeRect(24, 24, 976, 976);
+  context.strokeStyle = "rgba(90, 135, 150, .28)";
+  context.lineWidth = 3;
+  context.beginPath(); context.moveTo(24, 24); context.lineTo(1000, 1000); context.moveTo(1000, 24); context.lineTo(24, 1000); context.stroke();
+  context.fillStyle = "rgba(226, 239, 243, .78)";
+  context.textAlign = "center";
+  context.font = "700 54px system-ui, sans-serif";
+  context.fillText("ANKERMAKE", 512, 480);
+  context.font = "500 22px system-ui, sans-serif";
+  context.fillStyle = "rgba(161, 193, 203, .72)";
+  context.fillText("PRINT BED · PROCEDURAL FALLBACK", 512, 522);
+  bedTexture = new THREE.CanvasTexture(canvas);
+  bedTexture.colorSpace = THREE.SRGBColorSpace;
+  bedTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  bedTexture.needsUpdate = true;
+  return bedTexture;
+}
+
+function addAuthoredBinBump(material: THREE.MeshStandardMaterial, name: string): THREE.MeshStandardMaterial {
+  material.flatShading = false;
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nvarying vec3 vBinObjectPosition;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvBinObjectPosition = position;");
+    shader.fragmentShader = shader.fragmentShader.replace("#include <common>", `#include <common>
+varying vec3 vBinObjectPosition;
+float binHash(vec3 p) {
+  p = fract(p * 0.1031);
+  p += dot(p, p.yzx + 33.33);
+  return fract((p.x + p.y) * p.z);
+}
+float binNoise(vec3 p) {
+  vec3 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(binHash(i), binHash(i + vec3(1,0,0)), f.x), mix(binHash(i + vec3(0,1,0)), binHash(i + vec3(1,1,0)), f.x), f.y), mix(mix(binHash(i + vec3(0,0,1)), binHash(i + vec3(1,0,1)), f.x), mix(binHash(i + vec3(0,1,1)), binHash(i + vec3(1,1,1)), f.x), f.y), f.z);
+}
+`).replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
+vec3 binP = vBinObjectPosition;
+float binFine = binNoise(binP * 20.0);
+float binPhase = (binP.z * 11.83799896 + 3.1999998) * 6.2831853;
+float binWaveAA = clamp(1.0 - fwidth(binPhase) / 6.2831853, 0.0, 1.0);
+float binWave = 0.5 + 0.5 * sin(binPhase + binFine * 0.05) * binWaveAA;
+float binHeight = mix(binFine, binWave, 0.9431818);
+vec3 binSigmaX = dFdx(vBinObjectPosition), binSigmaY = dFdy(vBinObjectPosition);
+vec3 binR1 = cross(binSigmaY, normal), binR2 = cross(normal, binSigmaX);
+float binDet = dot(binSigmaX, binR1);
+vec3 binGrad = sign(binDet) * (dFdx(binHeight) * binR1 + dFdy(binHeight) * binR2);
+normal = normalize(abs(binDet) * normal - binGrad * 0.3588068);
+`);
+  };
+  material.customProgramCacheKey = () => `dojo-bin-wave-noise-bump-${name}-v1`;
+  return material;
+}
+
 function materialFor(name: string | null): THREE.Material {
   const tree = name ? dump.materials?.[name] : undefined;
   const principled = tree?.nodes?.find((node) => node.type === "ShaderNodeBsdfPrincipled");
@@ -105,11 +175,10 @@ function materialFor(name: string | null): THREE.Material {
     // Keeping the diffuse base white made the VM side visibly brighter.
     return namedMaterial(name, new THREE.MeshStandardMaterial({ color: 0x000000, emissive: c, emissiveIntensity: Number(input(emission, "Strength", 1)), roughness: 1, side: THREE.DoubleSide, flatShading: true }));
   }
-  // The print-bed graph is Transparent + Image through a Mix Shader. The
-  // checked-in Blender GLBs export that graph as an unlit white material.
-  if (tree && !principled) return namedMaterial(name, new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: name === "ankermake bed" }));
+  if (name === "ankermake bed") return namedMaterial(name, new THREE.MeshBasicMaterial({ color: 0xffffff, map: ankermakeBedTexture(), side: THREE.DoubleSide, transparent: true, opacity: .96 }));
+  if (tree && !principled) return namedMaterial(name, new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
   const alpha = Number(input(principled, "Alpha", 1));
-  return namedMaterial(name, new THREE.MeshStandardMaterial({
+  const material = new THREE.MeshStandardMaterial({
     color: color(input(principled, "Base Color", [1, 1, 1, 1]), [1, 1, 1]),
     metalness: Number(input(principled, "Metallic", 0)),
     roughness: Number(input(principled, "Roughness", 0.5)),
@@ -118,8 +187,9 @@ function materialFor(name: string | null): THREE.Material {
     opacity: alpha,
     transparent: alpha < 1,
     side: THREE.DoubleSide,
-    flatShading: true,
-  }));
+    flatShading: false,
+  });
+  return namedMaterial(name, name === "3D" || name === "3D.004" ? addAuthoredBinBump(material, name) : material);
 }
 
 function soupGeometry(soup: TriSoup): THREE.BufferGeometry {
@@ -127,6 +197,7 @@ function soupGeometry(soup: TriSoup): THREE.BufferGeometry {
   geometry.setAttribute("position", new THREE.BufferAttribute(soup.positions, 3));
   geometry.setAttribute("normal", new THREE.BufferAttribute(soup.normals, 3));
   geometry.setIndex(new THREE.BufferAttribute(soup.indices, 1));
+  for (const [name, attribute] of Object.entries(soup.attributes ?? {})) geometry.setAttribute(name, new THREE.BufferAttribute(attribute.data, attribute.itemSize));
   soup.groups.forEach((group, index) => geometry.addGroup(group.start, group.count, index));
   return geometry;
 }

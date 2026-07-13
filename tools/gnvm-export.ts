@@ -19,6 +19,7 @@ writeFileSync(
     positions: Array.from(soup.positions),
     normals: Array.from(soup.normals),
     indices: Array.from(soup.indices),
+    attributes: Object.fromEntries(Object.entries(soup.attributes ?? {}).map(([name, attribute]) => [name, { itemSize: attribute.itemSize, data: Array.from(attribute.data) }])),
     groups: soup.groups,
     stats: soup.stats,
     object: obj ? { name: obj.name, location: obj.location, rotation: obj.rotation, scale: obj.scale } : null,

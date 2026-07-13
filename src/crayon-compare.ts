@@ -46,6 +46,8 @@ let split = true;
 let dump: Dump;
 let baseline: Baseline;
 let runId = 0;
+let updateVersion = 0;
+let runtimeReady = false;
 let shaderMode: "diagnostic" | "chrome" = "diagnostic";
 
 const truthDiagnostic = new THREE.MeshStandardMaterial({ color: 0xe74f4c, metalness: .28, roughness: .32, transparent: true, opacity: .36, side: THREE.DoubleSide });
@@ -66,10 +68,11 @@ function chromeMaterial(): THREE.MeshPhysicalMaterial {
   material.name = "chrome.003 · WebGL reconstruction";
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", "#include <common>\nvarying vec3 vCrayonObjectPosition;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvCrayonObjectPosition = position;");
+      .replace("#include <common>", "#include <common>\nattribute float rough;\nvarying vec3 vCrayonObjectPosition;\nvarying float vCrayonRough;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvCrayonObjectPosition = position;\nvCrayonRough = rough;");
     shader.fragmentShader = shader.fragmentShader.replace("#include <common>", `#include <common>
 varying vec3 vCrayonObjectPosition;
+varying float vCrayonRough;
 float crayonHash(vec3 p) {
   p = fract(p * 0.1031);
   p += dot(p, p.yzx + 33.33);
@@ -82,7 +85,7 @@ float crayonNoise(vec3 p) {
 }
 `).replace(
       "#include <roughnessmap_fragment>",
-      "#include <roughnessmap_fragment>\nvec3 grainP = vCrayonObjectPosition * 0.58;\nfloat grain = crayonNoise(grainP + 8.0 * crayonNoise(grainP * 0.23));\nroughnessFactor = clamp(0.055 + grain * 0.46, 0.04, 0.58);",
+      "#include <roughnessmap_fragment>\nvec3 grainP = vCrayonObjectPosition * 0.58;\nfloat grain = crayonNoise(grainP + 8.0 * crayonNoise(grainP * 0.23));\nroughnessFactor = clamp(0.025 + grain * 0.5 * clamp(vCrayonRough, 0.0, 1.0), 0.02, 0.58);",
     );
   };
   material.customProgramCacheKey = () => "chrome-003-procedural-roughness-v1";
@@ -113,6 +116,7 @@ function soupObject(soup: TriSoup): THREE.Object3D {
   geometry.setAttribute("position", new THREE.BufferAttribute(soup.positions, 3));
   geometry.setAttribute("normal", new THREE.BufferAttribute(soup.normals, 3));
   geometry.setIndex(new THREE.BufferAttribute(soup.indices, 1));
+  for (const [name, attribute] of Object.entries(soup.attributes ?? {})) geometry.setAttribute(name, new THREE.BufferAttribute(attribute.data, attribute.itemSize));
   const solid = new THREE.Mesh(geometry, vmDiagnostic);
   const wire = new THREE.Mesh(geometry, vmWireMaterial);
   solid.userData.crayonPrimary = true;
@@ -135,6 +139,7 @@ function truthObject(source: THREE.Object3D): THREE.Object3D {
     if (mesh.isMesh) meshes.push(mesh);
   });
   for (const mesh of meshes) {
+    if (!mesh.geometry.getAttribute("rough")) mesh.geometry.setAttribute("rough", new THREE.BufferAttribute(new Float32Array(mesh.geometry.attributes.position.count), 1));
     mesh.material = truthDiagnostic;
     mesh.userData.crayonPrimary = true;
     const clone = new THREE.Mesh(mesh.geometry, truthWireMaterial);
@@ -179,11 +184,13 @@ function readOverrides(): Record<string, number> {
 }
 
 async function update(): Promise<void> {
+  const version = ++updateVersion;
   setStatus("Evaluating 22 nested node groups in the Web Worker…");
   updateButton.disabled = true;
   const started = performance.now();
   try {
     const result = await evaluate(readOverrides());
+    if (version !== updateVersion) return;
     vmGroup.clear(); vmGroup.add(soupObject(result.soup));
     applyShaderMode();
     const truth = baseline.results[0];
@@ -196,8 +203,8 @@ async function update(): Promise<void> {
     layoutAndFrame();
     setStatus("Both results loaded · graph executed end-to-end", true);
     (window as typeof window & { __CRAYON_COMPARE__?: unknown }).__CRAYON_COMPARE__ = { ready: true, stats: result.soup.stats, missing: result.coverage.missingTypes, overrides: readOverrides() };
-  } catch (error) { setStatus(`Evaluation failed · ${error instanceof Error ? error.message : String(error)}`); }
-  finally { updateButton.disabled = false; }
+  } catch (error) { if (version === updateVersion) setStatus(`Evaluation failed · ${error instanceof Error ? error.message : String(error)}`); }
+  finally { if (version === updateVersion) updateButton.disabled = false; }
 }
 
 async function main(): Promise<void> {
@@ -209,6 +216,7 @@ async function main(): Promise<void> {
   dump = await dumpResponse.json() as Dump;
   baseline = await baselineResponse.json() as Baseline;
   truthGroup.add(truthObject(glb.scene));
+  runtimeReady = true;
   await update();
 }
 
@@ -221,6 +229,12 @@ splitButton.addEventListener("click", () => { split = true; layoutAndFrame(); })
 overlayButton.addEventListener("click", () => { split = false; layoutAndFrame(); });
 debugShaderButton.addEventListener("click", () => { shaderMode = "diagnostic"; applyShaderMode(); });
 chromeShaderButton.addEventListener("click", () => { shaderMode = "chrome"; applyShaderMode(); });
+window.addEventListener("crayon-graph-change", (event) => {
+  const next = (event as CustomEvent<{ dump?: Dump }>).detail?.dump;
+  if (!next) return;
+  dump = next;
+  if (runtimeReady) void update();
+});
 addEventListener("resize", () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
 renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
 void main();

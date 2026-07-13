@@ -39,7 +39,8 @@ export default function BinComparePage(): React.JSX.Element {
         <section>
           <span className="panel-label">Comparison mode</span>
           <div className="segmented"><button id="mode-overlay" className="active" type="button">Overlay</button><button id="mode-split" type="button">Side by side</button></div>
-          <div className="segmented secondary"><button id="style-wire" className="active" type="button">Edges</button><button id="style-material" type="button">Materials</button></div>
+          <div className="segmented secondary"><button id="style-wire" className="active" type="button">Edges</button><button id="style-material" type="button">Authored shaders</button></div>
+          <p className="bin-shader-status">Reconstructs the authored Wave/Noise bump. The missing unpacked AnkerMake PNG uses a labeled procedural bed fallback.</p>
           <div className="segmented result-filter"><button id="show-both" className="active" type="button">Both</button><button id="show-truth" type="button">Blender</button><button id="show-vm" type="button">GN-VM</button></div>
           <a className="live-blender-link" href={appHref("/bin/live")}>Open all live Blender controls →</a>
         </section>

@@ -1,0 +1,22 @@
+[
+  {
+    "name": "browser baseline",
+    "overrides": { "Sigilize": 20, "Soften": 0, "SPIRO": 0, "resolution": 0.2 }
+  },
+  {
+    "name": "more sigils",
+    "overrides": { "Sigilize": 32, "Soften": 0, "SPIRO": 0, "resolution": 0.2 }
+  },
+  {
+    "name": "softened",
+    "overrides": { "Sigilize": 20, "Soften": 3, "SPIRO": 0, "resolution": 0.2 }
+  },
+  {
+    "name": "higher curve resolution",
+    "overrides": { "Sigilize": 20, "Soften": 0, "SPIRO": 0, "resolution": 0.35 }
+  },
+  {
+    "name": "spiro",
+    "overrides": { "Sigilize": 20, "Soften": 0, "SPIRO": 2, "resolution": 0.35 }
+  }
+]
