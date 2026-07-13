@@ -644,7 +644,13 @@ function trimSpline(s: Spline, startF: number, endF: number): Spline {
   if (s.points.length < 2 || total <= EPS) return { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
   const a = Math.max(0, Math.min(1, startF));
   const b = Math.max(0, Math.min(1, endF));
-  if (a <= EPS && b >= 1 - EPS) return { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
+  if (a <= EPS && b >= 1 - EPS) {
+    if (!s.cyclic) return { points: s.points.map((p) => [...p] as Vec3), cyclic: false };
+    // Trim Curve always opens a selected cyclic spline, even at the full 0..1
+    // factor range, and materializes the closing point as the final endpoint.
+    // ETK_Loft Curves relies on this duplicated endpoint to weld its U seam.
+    return { points: [...s.points.map((p) => [...p] as Vec3), [...s.points[0]] as Vec3], cyclic: false };
+  }
   const startD = Math.min(a, b) * total;
   const endD = Math.max(a, b) * total;
   const out: Vec3[] = [];

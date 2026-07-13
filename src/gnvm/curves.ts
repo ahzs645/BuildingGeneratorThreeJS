@@ -477,7 +477,12 @@ function emitSimpleFill(mesh: Mesh, points: Vec3[], mode: "NGONS" | "TRIANGLES")
     if (signedArea2(refs.map((ref) => ref.p)) < 0) refs = [...refs].reverse();
     for (const face of earClip(refs)) { mesh.faces.push(face); mesh.faceMaterial.push(0); }
   } else {
-    mesh.faces.push(Array.from({ length: n }, (_, i) => base + i));
+    // Fill Curve emits a +Z-facing polygon in its local XY plane regardless
+    // of the cyclic spline's authored direction. Keep vertex order stable for
+    // Index/Sample Index users and reverse only the polygon corners.
+    const face = Array.from({ length: n }, (_, i) => base + i);
+    if (signedArea2(points.map((point) => [point[0], point[1]])) < 0) face.reverse();
+    mesh.faces.push(face);
     mesh.faceMaterial.push(0);
   }
 }

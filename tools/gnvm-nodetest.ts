@@ -427,6 +427,14 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 {
+  const clockwise = [[-1, -1, 0], [-1, 1, 0], [1, 1, 0], [1, -1, 0]] as Vec3[];
+  const g = runNode("GeometryNodeFillCurve", { Curve: curve(clockwise, true) }, { mode: "NGONS" }).Mesh as Geometry;
+  check("FillCurve NGON normalizes clockwise loops to +Z",
+    JSON.stringify(g.mesh!.faces[0]) === JSON.stringify([3, 2, 1, 0]) && g.mesh!.positions.every((p, i) => approx(p, clockwise[i])),
+    JSON.stringify({ face: g.mesh!.faces[0], positions: g.mesh!.positions }));
+}
+
+{
   const duplicateCorners = curve([[0, 0, 0], [1, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 0]], true);
   const welded = runNode("GeometryNodeFillCurve", { Curve: duplicateCorners }, { mode: "NGONS" }).Mesh as Geometry;
   check("Fill Curve welds adjacent cyclic duplicates", welded.mesh?.positions.length === 4 && welded.mesh.faces[0]?.length === 4, `${welded.mesh?.positions.length}/${welded.mesh?.faces[0]?.length}`);
@@ -621,6 +629,18 @@ function meshSignedAreaXY(m: Mesh): number {
   const out = runNode("GeometryNodeTrimCurve", { Curve: curve([[0, 0, 0], [4, 0, 0]], false), Start: 0.25, End: 0.75, Start_001: 0, End_001: 1 }, { mode: "FACTOR" }).Curve as Geometry;
   const pts = out.curves[0].points;
   check("TrimCurve factor keeps two interpolated endpoints", pts.length === 2 && approx(pts[0], [1, 0, 0]) && approx(pts[1], [3, 0, 0]), JSON.stringify(pts));
+}
+
+{
+  const out = runNode("GeometryNodeTrimCurve", {
+    Curve: curve([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], true),
+    Start: 0,
+    End: 1,
+    Start_001: 0,
+    End_001: 1,
+  }, { mode: "FACTOR" }).Curve as Geometry;
+  check("TrimCurve full cyclic range opens at a duplicated endpoint",
+    !out.curves[0].cyclic && out.curves[0].points.length === 5 && approx(out.curves[0].points[0], out.curves[0].points[4]));
 }
 
 // (I5) ScaleElements: one selected quad scales as an island about its center
@@ -1198,7 +1218,7 @@ function meshSignedAreaXY(m: Mesh): number {
       ],
     },
   };
-  const result = new Evaluator(program).evalGroup("outer", { Density: Field.of(349.38) }).Result as Field;
+  const result = new Evaluator(program).evalGroup("outer", { Density: Field.of(349.78) }).Result as Field;
   check("Group input coerces linked float to Int", result.value === 349, `got ${result.value}`);
 }
 

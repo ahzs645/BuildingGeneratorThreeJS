@@ -458,20 +458,13 @@ reg("GeometryNodeFillCurve", (api) => {
     // matters when a translated mesh is converted to curves before filling (the
     // Dojo bin deliberately moves its source grid to z=-0.019, then Fill Curve
     // creates the bin floors back at z=0).
-    const planar = source.curves.map((s) => {
-      let points = s.points.map((p) => [p[0], p[1], 0] as Vec3);
-      if (s.cyclic && points.length >= 3) {
-        let area2 = 0;
-        for (let i = 0; i < points.length; i++) {
-          const a = points[i], b = points[(i + 1) % points.length];
-          area2 += a[0] * b[1] - b[0] * a[1];
-        }
-        // Fill Curve emits front-facing (+Z) polygons for local-XY loops even
-        // when Mesh to Curve supplied the boundary in clockwise order.
-        if (area2 < 0) points = [points[0], ...points.slice(1).reverse()];
-      }
-      return { cyclic: s.cyclic, points };
-    });
+    // Fill Curve preserves point indices. Clockwise outlines are made
+    // front-facing by reversing polygon corners later, not by reordering the
+    // vertices themselves; Sample Index consumers depend on that distinction.
+    const planar = source.curves.map((s) => ({
+      cyclic: s.cyclic,
+      points: s.points.map((p) => [p[0], p[1], 0] as Vec3),
+    }));
     if (planar.length) {
       if (instancePayload && mode === "NGONS") {
         // Fill Curve preserves String to Curves' glyph instances. In N-gon
@@ -485,7 +478,14 @@ reg("GeometryNodeFillCurve", (api) => {
           if (!spline.cyclic || spline.points.length < 3) continue;
           const base = mesh.positions.length;
           mesh.positions.push(...spline.points.map((point) => [...point] as Vec3));
-          mesh.faces.push(spline.points.map((_, index) => base + index));
+          const face = spline.points.map((_, index) => base + index);
+          let area2 = 0;
+          for (let index = 0; index < spline.points.length; index++) {
+            const a = spline.points[index], b = spline.points[(index + 1) % spline.points.length];
+            area2 += a[0] * b[1] - b[0] * a[1];
+          }
+          if (area2 < 0) face.reverse();
+          mesh.faces.push(face);
           mesh.faceMaterial.push(0);
         }
         out.mesh = mesh;

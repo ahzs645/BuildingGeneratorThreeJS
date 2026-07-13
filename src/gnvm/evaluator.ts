@@ -37,6 +37,15 @@ export const GEOMETRY_PROBE: { group: string | null; node: string | null; socket
   geometry: null,
 };
 
+// Const-value counterpart to GEOMETRY_PROBE, used to compare integer/float
+// control flow inside deeply nested asset groups without modifying the graph.
+export const VALUE_PROBE: { group: string | null; node: string | null; socket: string | null; values: import("./core").Elem[] } = {
+  group: null,
+  node: null,
+  socket: null,
+  values: [],
+};
+
 function bboxOf(g: Geometry): string {
   const realized = g.instances.length ? realizeInstances(g) : g;
   const pts: Vec3[] = [...(realized.mesh?.positions ?? []), ...realized.curves.flatMap((s) => s.points)];
@@ -109,7 +118,10 @@ function coerceSocketValue(value: SockVal, socketType: string): SockVal {
 function coerceGroupInput(value: SockVal, socketType: string): SockVal {
   const coerced = coerceSocketValue(value, socketType);
   if (!(coerced instanceof Field)) return coerced;
-  if (socketType.includes("Int")) return fieldMap([coerced], (v) => Math.round(asNum(v)));
+  // Linked Float -> Integer group sockets discard the fractional part. Split n
+  // Tap measures this directly: its 37.806 loft resolution enters Blender as
+  // 37, not 38. This is distinct from explicit Float to Integer node modes.
+  if (socketType.includes("Int")) return fieldMap([coerced], (v) => Math.trunc(asNum(v)));
   return coerced;
 }
 
@@ -564,6 +576,10 @@ class Invocation {
     if (node && (!GEOMETRY_PROBE.group || GEOMETRY_PROBE.group === this.group.name) && GEOMETRY_PROBE.node === node.name) {
       const value = GEOMETRY_PROBE.socket ? outs[GEOMETRY_PROBE.socket] : Object.values(outs).find((output) => output instanceof Geometry);
       if (value instanceof Geometry) GEOMETRY_PROBE.geometry = value.clone();
+    }
+    if (node && (!VALUE_PROBE.group || VALUE_PROBE.group === this.group.name) && VALUE_PROBE.node === node.name) {
+      const value = VALUE_PROBE.socket ? outs[VALUE_PROBE.socket] : undefined;
+      if (value instanceof Field && value.isConst) VALUE_PROBE.values.push(value.value);
     }
     if (TRACE.on && node) {
       for (const k in outs) {

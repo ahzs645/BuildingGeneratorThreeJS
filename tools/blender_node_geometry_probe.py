@@ -63,12 +63,29 @@ for link in list(target.links):
     group.links.remove(link)
 group.links.new(source, target)
 
-# When probing a node inside a nested group, optionally route the corresponding
-# root-level group node straight to the modifier output. This prevents the
-# product's downstream smoothing/boolean stages from obscuring the intermediate
-# topology being measured.
+# When probing a node inside nested groups, optionally route every containing
+# group instance outward to its active geometry output. The route is ordered
+# from the source's immediate parent to the modifier root, for example:
+# [{"group":"inner parent","node":"Group.001","socket":"Mesh"}, ...]
+# This prevents downstream smoothing/boolean stages from obscuring the
+# intermediate topology being measured.
+route = json.loads(os.environ.get("NODE_DOJO_PROBE_ROUTE", "[]"))
+for step in route:
+    route_group = bpy.data.node_groups.get(step["group"])
+    route_node = route_group.nodes.get(step["node"]) if route_group else None
+    route_output = next((candidate for candidate in route_group.nodes if candidate.bl_idname == "NodeGroupOutput" and candidate.is_active_output), None) if route_group else None
+    route_source = route_node.outputs.get(step["socket"]) if route_node else None
+    route_target = next((socket for socket in route_output.inputs if socket.type == "GEOMETRY"), None) if route_output else None
+    if route_source is None or route_target is None:
+        raise RuntimeError(f"missing probe route: {step!r}")
+    for link in list(route_target.links):
+        route_group.links.remove(link)
+    route_group.links.new(route_source, route_target)
+
+# Preserve the original one-level environment variables used by existing
+# parity investigations.
 root_node_name = os.environ.get("NODE_DOJO_PROBE_ROOT_NODE")
-if root_node_name:
+if root_node_name and not route:
     if modifier is None:
         raise RuntimeError(f'no Geometry Nodes modifier on {object_name!r}')
     root_group = modifier.node_group
