@@ -1,0 +1,115 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "Cube.005",
+  "modifier": "GeometryNodes",
+  "node_group": "simple conveyer",
+  "saved_values": {
+    "mesh line": "drawer path.001",
+    "close > open": 0.0
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored open",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -16.1945,
+          -15.13
+        ],
+        "max": [
+          25.927,
+          75.417,
+          15.13
+        ]
+      },
+      "elapsed_ms": 1.2
+    },
+    {
+      "combo": {
+        "name": "half close",
+        "overrides": {
+          "close > open": 0.5
+        }
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -59.9147,
+          -15.13
+        ],
+        "max": [
+          25.927,
+          31.6967,
+          15.13
+        ]
+      },
+      "elapsed_ms": 1.2
+    },
+    {
+      "combo": {
+        "name": "closed",
+        "overrides": {
+          "close > open": 1.0
+        }
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -103.6349,
+          -15.13
+        ],
+        "max": [
+          25.927,
+          -12.0235,
+          15.13
+        ]
+      },
+      "elapsed_ms": 1.3
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "<none>": {
+        "faces": 13,
+        "verts": 16
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 13,
+      "verts": 16
+    }
+  }
+}

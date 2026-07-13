@@ -622,5 +622,18 @@
     "localSpace": true,
     "note": "Exact topology and bounds across two filament-color cases at 112,569 vertices / 225,154 faces. This 28-node graph wraps the supplied high-resolution Benchy mesh with filament material, named-attribute, and smooth-shading logic; it does not procedurally generate the boat. The web comparison preserves geometry and material assignment while normalizing the shader.",
     "controls": []
+  },
+  {
+    "id": "n03d-simple-conveyor",
+    "title": "N03D · Simple Conveyor Drawer",
+    "object": "Cube.005",
+    "dump": "dojo/n03d/simple-conveyor/dump.json",
+    "reference": "dojo/references/n03d/simple-conveyor.png",
+    "blenderStats": { "verts": 16, "faces": 13 },
+    "localSpace": true,
+    "note": "Exact 16 / 13 topology and bounds across authored, half-close, and closed cases. The close/open control translates the drawer body over the referenced mesh-line distance. The loose String to Curves dimension annotation contributes no evaluated mesh faces in Blender or the browser. This root is shared by Cube.005 and Cube.019.",
+    "controls": [
+      { "name": "close > open", "label": "Close → open", "min": 0, "max": 1, "step": 0.01, "value": 0 }
+    ]
   }
 ]

@@ -1,0 +1,77 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/n03d/simple-conveyor/dump.json",
+  "object": "Cube.005",
+  "results": [
+    {
+      "combo": {
+        "name": "authored open",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -16.1945,
+          -15.13
+        ],
+        "max": [
+          25.927,
+          75.417,
+          15.13
+        ]
+      },
+      "elapsed_ms": 29
+    },
+    {
+      "combo": {
+        "name": "half close",
+        "overrides": {
+          "close > open": 0.5
+        }
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -59.9147,
+          -15.13
+        ],
+        "max": [
+          25.927,
+          31.6967,
+          15.13
+        ]
+      },
+      "elapsed_ms": 1
+    },
+    {
+      "combo": {
+        "name": "closed",
+        "overrides": {
+          "close > open": 1
+        }
+      },
+      "status": "ok",
+      "verts": 16,
+      "faces": 13,
+      "bbox": {
+        "min": [
+          -25.927,
+          -103.6349,
+          -15.13
+        ],
+        "max": [
+          25.927,
+          -12.0235,
+          15.13
+        ]
+      },
+      "elapsed_ms": 1
+    }
+  ]
+}

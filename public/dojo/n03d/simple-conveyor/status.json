@@ -1,0 +1,17 @@
+{
+  "id": "n03d-simple-conveyor",
+  "object": "Cube.005",
+  "root": "simple conveyer",
+  "status": "exact-parity",
+  "blender": {
+    "verts": 16,
+    "faces": 13
+  },
+  "gnvm": {
+    "verts": 16,
+    "faces": 13
+  },
+  "shared_users": ["Cube.005", "Cube.019"],
+  "coverage": "100% of reachable node types across the 2-group, 27-node closure.",
+  "validation": "Authored, half-close, and closed cases have exact topology and local bounds. The close/open input translates the drawer body over the referenced mesh-line distance. Its String to Curves branch is loose dimension annotation and contributes no evaluated mesh faces in Blender or the browser."
+}
