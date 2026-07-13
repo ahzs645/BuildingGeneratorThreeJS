@@ -228,6 +228,58 @@ reg("ShaderNodeTexNoise", (api) => {
   return { Fac: factor, Factor: factor, Color: Field.make((ctx) => factor.array(ctx).map((value) => [asNum(value), asNum(value), asNum(value)])) };
 });
 
+// Blender's Wave Texture uses a fixed factor of 20 before applying its
+// periodic profile. At Scale=1 the SIN profile is therefore
+// 0.5 - 0.5*cos(coordinate*20), not a one-cycle-per-unit sine wave.
+reg("ShaderNodeTexWave", (api) => {
+  const linkedVector = api.node.inputs.find((socket) => socket.identifier === "Vector")?.linked ?? false;
+  const vector = api.field("Vector");
+  const scale = api.field("Scale");
+  const phase = api.field("Phase Offset");
+  const distortion = api.field("Distortion");
+  const detail = api.field("Detail");
+  const detailScale = api.field("Detail Scale");
+  const detailRoughness = api.field("Detail Roughness");
+  const waveType = api.prop<string>("wave_type", "BANDS");
+  const direction = api.prop<string>(waveType === "RINGS" ? "rings_direction" : "bands_direction", "X");
+  const profile = api.prop<string>("wave_profile", "SIN");
+  const factor = Field.make((ctx) => {
+    const vectors = vector.array(ctx), scales = scale.array(ctx), phases = phase.array(ctx), distortions = distortion.array(ctx);
+    const details = detail.array(ctx), detailScales = detailScale.array(ctx), roughnesses = detailRoughness.array(ctx);
+    return Array.from({ length: ctx.size }, (_, i) => {
+      const p = linkedVector ? asVec3(vectors[i] ?? 0) : ctx.position?.(i) ?? [0, 0, 0];
+      let coordinate: number;
+      if (waveType === "RINGS") {
+        coordinate = direction === "X" ? Math.hypot(p[1], p[2])
+          : direction === "Y" ? Math.hypot(p[0], p[2])
+            : direction === "Z" ? Math.hypot(p[0], p[1]) : vlen(p);
+      } else {
+        coordinate = direction === "Y" ? p[1] : direction === "Z" ? p[2]
+          : direction === "DIAGONAL" ? p[0] + p[1] + p[2] : p[0];
+      }
+      const frequency = asNum(scales[i] ?? 5);
+      let wave = (coordinate * frequency + asNum(phases[i] ?? 0)) * 20;
+      const warp = asNum(distortions[i] ?? 0);
+      if (Math.abs(warp) > EPS) {
+        const noiseScale = Math.max(EPS, asNum(detailScales[i] ?? 1));
+        wave += warp * blenderFbm3(vscale(p, noiseScale), asNum(details[i] ?? 2), asNum(roughnesses[i] ?? .5), 2, false);
+      }
+      if (profile === "SAW") return wave / (2 * Math.PI) - Math.floor(wave / (2 * Math.PI));
+      if (profile === "TRI") {
+        const saw = wave / (2 * Math.PI) - Math.floor(wave / (2 * Math.PI));
+        return 1 - Math.abs(2 * saw - 1);
+      }
+      return .5 - .5 * Math.cos(wave);
+    });
+  });
+  return { Fac: factor, Factor: factor, Color: Field.make((ctx) => factor.array(ctx).map((value) => [asNum(value), asNum(value), asNum(value)])) };
+});
+
+reg("FunctionNodeRotateVector", (api) => ({
+  Vector: fieldMap([api.field("Vector"), api.field("Rotation")], (vector, rotation) =>
+    rotateEulerXYZ(asVec3(vector), asVec3(rotation))),
+}));
+
 function rotX(p: Vec3, a: number): Vec3 {
   const c = Math.cos(a), s = Math.sin(a);
   return [p[0], p[1] * c - p[2] * s, p[1] * s + p[2] * c];

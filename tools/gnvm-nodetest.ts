@@ -165,6 +165,18 @@ function meshSignedAreaXY(m: Mesh): number {
     To_Min_FLOAT3: [-2, 10, 100], To_Max_FLOAT3: [2, 14, 108],
   }, { data_type: "FLOAT_VECTOR", interpolation_type: "LINEAR", clamp: false }).Vector as Field;
   check("Map Range vector mode uses FLOAT3 sockets component-wise", approx(mappedVector.value as number[], [0, 11, 106]), `got ${mappedVector.value}`);
+
+  const wave = runNode("ShaderNodeTexWave", {
+    Vector: [0.5, 0, 0], Scale: 1, Distortion: 0, Detail: 2,
+    "Detail Scale": 1, "Detail Roughness": 0.5, "Phase Offset": 0,
+  }, { wave_type: "BANDS", bands_direction: "X", wave_profile: "SIN" }, ["Vector"]).Fac as Field;
+  const waveValue = Number(wave.array({ size: 1, domain: "POINT" })[0]);
+  check("Wave Texture SIN matches Blender's fixed-20 phase", Math.abs(waveValue - 0.91953576) < 1e-6, `got ${waveValue}`);
+
+  const rotatedVector = runNode("FunctionNodeRotateVector", {
+    Vector: [1, 0, 0], Rotation: [0, 0, Math.PI / 2],
+  }).Vector as Field;
+  check("Rotate Vector applies Euler rotation", approx(rotatedVector.value as number[], [0, 1, 0]), JSON.stringify(rotatedVector.value));
 }
 
 // (B2) Align Euler antiparallel AUTO pivot remains a proper rotation. A tiny
