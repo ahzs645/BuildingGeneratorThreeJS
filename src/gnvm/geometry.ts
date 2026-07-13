@@ -161,6 +161,10 @@ export interface InstanceRef {
 export interface Spline {
   points: Vec3[];
   cyclic: boolean;
+  // Retain the authored representation when a node converts the spline type.
+  // This lets a later Set Spline Resolution re-evaluate the same controls
+  // instead of treating the already tessellated polyline as new controls.
+  splineType?: "POLY" | "BEZIER" | "NURBS" | "CATMULL_ROM";
   // Blender's evaluated points-per-segment setting. Poly splines use 1.
   resolution?: number;
   // Evaluated polyline points may be denser than the authored spline knots.
@@ -193,6 +197,7 @@ export class Geometry {
     g.curves = this.curves.map((s) => ({
       cyclic: s.cyclic,
       resolution: s.resolution,
+      splineType: s.splineType,
       points: s.points.map((p) => [...p] as Vec3),
       controlPoints: s.controlPoints?.map((p) => [...p] as Vec3),
       bezierLeft: s.bezierLeft?.map((p) => [...p] as Vec3),

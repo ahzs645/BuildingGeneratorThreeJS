@@ -514,13 +514,25 @@ function nurbsSpline(s: Spline): Spline {
   const pts = s.points;
   const n = pts.length;
   if (n < 2) return cloneSpline(s);
-  if (!s.cyclic) return clampedNurbsSpline(s);
+  if (!s.cyclic) {
+    const out = clampedNurbsSpline(s);
+    out.controlPoints = pts.map((point) => [...point] as Vec3);
+    out.splineType = "NURBS";
+    out.resolution = SPLINE_TYPE_SAMPLES_PER_SEGMENT;
+    return out;
+  }
   if (n < 4) return catmullRomSpline(s);
   const out: Vec3[] = [];
   for (let i = 0; i < n; i++)
     for (let k = 0; k < SPLINE_TYPE_SAMPLES_PER_SEGMENT; k++)
       out.push(periodicCubicBSplinePoint(pts, i, k / SPLINE_TYPE_SAMPLES_PER_SEGMENT));
-  return { points: out, cyclic: true };
+  return {
+    points: out,
+    cyclic: true,
+    controlPoints: pts.map((point) => [...point] as Vec3),
+    splineType: "NURBS",
+    resolution: SPLINE_TYPE_SAMPLES_PER_SEGMENT,
+  };
 }
 
 function nearestControlPointIndex(points: Vec3[], p: Vec3): number {

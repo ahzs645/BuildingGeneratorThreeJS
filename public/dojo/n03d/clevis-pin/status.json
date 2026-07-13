@@ -2,9 +2,9 @@
   "id": "n03d-clevis-pin",
   "object": "CLEVIS PIN",
   "root": "CLEVIS PIN 31MAY2024_v1",
-  "status": "visual-partial-parity",
+  "status": "topology-and-bounds-exact",
   "blender": { "verts": 36390, "faces": 34198 },
-  "gnvm": { "verts": 45246, "faces": 37114 },
+  "gnvm": { "verts": 36388, "faces": 34198 },
   "coverage": "100% of reachable node types across the 10-group, 414-node closure.",
-  "validation": "Anonymous curve/profile attributes now survive Curve to Mesh, restoring the full shaft, head, and retaining-clip branches. Six Blender/VM cases cover the authored result, split layout, head height, shaft diameter, head offset, and clip thickness. The remaining screw/sweep tessellation is 22.5-24.3% heavier and radial bounds are short by about 0.763 units."
+  "validation": "Curve to Mesh now matches Blender's profile direction and face winding, NURBS resolution retessellates retained controls, and the retaining clip and Solidify head branches match. Authored output is 36,388 / 34,198 versus Blender's 36,390 / 34,198 with bounds identical to four decimals. Head height, shaft diameter, and clip thickness cases are likewise topology-exact within two vertices; Split to Print and the head-offset topology remain the documented refinements."
 }

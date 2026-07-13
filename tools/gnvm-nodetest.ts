@@ -374,6 +374,11 @@ function meshSignedAreaXY(m: Mesh): number {
     approx(mesh.positions.flat(), [0, -2, -3, 0, -4, -5, 1, -2, -3, 1, -4, -5]),
     JSON.stringify(mesh.positions),
   );
+  check(
+    "CurveToMesh preserves Blender face winding",
+    JSON.stringify(mesh.faces) === JSON.stringify([[0, 1, 3, 2]]),
+    JSON.stringify(mesh.faces),
+  );
 }
 
 {

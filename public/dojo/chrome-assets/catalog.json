@@ -505,7 +505,7 @@
     "dump": "dojo/n03d/clevis-pin/dump.json",
     "reference": "dojo/references/n03d/clevis-pin.png",
     "blenderStats": { "verts": 36390, "faces": 34198 },
-    "note": "Work in progress: captured profile attributes now survive Curve to Mesh, restoring the full pin instead of only its retaining clip. The browser produces 45,246 / 37,114 versus Blender's 36,390 / 34,198; six cases preserve the major control behavior, with radial bounds still short by about 0.763 units.",
+    "note": "The authored Clevis Pin now matches Blender's 34,198 faces and bounds exactly to four decimals: 36,388 browser vertices versus 36,390 in Blender. Correct profile winding restores the Solidify head, while retained NURBS controls reproduce the 2,916 / 974 retaining clip; Split to Print remains the main branch-level refinement.",
     "controls": [
       { "name": "head height", "label": "Head height", "min": 2, "max": 10, "step": 0.1, "value": 4 },
       { "name": "shaft diameter", "label": "Shaft diameter", "min": 3, "max": 16, "step": 0.1, "value": 7.108998775482178 },

@@ -220,14 +220,26 @@ reg("GeometryNodeSetSplineCyclic", (api) => {
 });
 
 reg("GeometryNodeSetSplineResolution", (api) => {
-  // Imported object curves already carry Blender's evaluated samples. Record
-  // the authored value for Spline Resolution fields, but do not tessellate a
-  // second time here.
+  // Imported object curves already carry Blender's evaluated samples. A NURBS
+  // created by Set Spline Type is different: it retains its authored controls,
+  // and changing Resolution must retessellate that curve. Resampling the dense
+  // evaluated result preserves its shape while matching Blender's evaluated
+  // point count (cyclic controls * resolution).
   const g = api.geo("Geometry").clone();
   const selection = api.resolve(api.field("Selection"), g, "CURVE");
   const resolution = api.resolve(api.field("Resolution"), g, "CURVE");
   for (let i = 0; i < g.curves.length; i++) {
-    if (asNum(selection[i] ?? 1) > 0) g.curves[i].resolution = Math.max(1, Math.round(asNum(resolution[i] ?? 12)));
+    if (asNum(selection[i] ?? 1) <= 0) continue;
+    const spline = g.curves[i];
+    const nextResolution = Math.max(1, Math.round(asNum(resolution[i] ?? 12)));
+    if (spline.splineType === "NURBS" && spline.controlPoints?.length && spline.resolution !== nextResolution) {
+      const count = spline.cyclic
+        ? spline.controlPoints.length * nextResolution
+        : Math.max(2, (spline.controlPoints.length - Math.min(3, spline.controlPoints.length - 1)) * nextResolution + 1);
+      const evaluated = resampleSpline(spline, count);
+      spline.points = evaluated.points;
+    }
+    spline.resolution = nextResolution;
   }
   return { Geometry: g };
 });

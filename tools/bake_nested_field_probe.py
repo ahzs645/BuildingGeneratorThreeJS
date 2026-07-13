@@ -65,6 +65,15 @@ root.links.new(instance_geometry, root_geometry)
 
 obj = bpy.data.objects[object_name]
 modifier = next(m for m in obj.modifiers if m.type == "NODES" and m.node_group == root)
+# Node Dojo library objects often live in excluded collections. Evaluate the
+# target in an isolated scene, as the geometry and parity probes do, otherwise
+# Blender can silently return only the object's two-point input wire.
+probe_scene = bpy.data.scenes.new("__NODE_DOJO_NESTED_FIELD_PROBE_SCENE")
+probe_scene.collection.objects.link(obj)
+bpy.context.window.scene = probe_scene
+obj.hide_viewport = False
+obj.hide_render = False
+obj.hide_set(False)
 overrides = json.load(open(overrides_path)) if overrides_path else {}
 inputs = {
     item.name: item.identifier

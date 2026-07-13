@@ -190,8 +190,9 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?:
   const np = pp.length;
   // Blender treats the rail tangent as profile-local +Z. An open +X rail maps
   // profile (2,3) to world (0,-2,-3), while a closed planar loop establishes a
-  // stable in-plane normal toward its interior. The latter prevents an
-  // all-positive wall profile from expanding outside its authored footprint.
+  // stable in-plane normal. Cyclic curves point profile +X toward their
+  // interior. A trimmed planar arc retains its source curve's outward normal;
+  // the Clevis retaining clip depends on that distinction.
   const planarCyclic = rail.cyclic && rp.length > 2
     && rp.every((point) => Math.abs(point[2] - rp[0][2]) < 1e-8);
   let planarOrientation = 1;
@@ -203,11 +204,23 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?:
     }
     planarOrientation = area2 >= 0 ? 1 : -1;
   }
+  const planarOpen = !rail.cyclic && rp.length > 2
+    && rp.every((point) => Math.abs(point[2] - rp[0][2]) < 1e-8);
+  let planarTurn = 0;
+  if (planarOpen) {
+    for (let i = 1; i + 1 < rp.length; i++) {
+      const a = vnorm(vsub(rp[i], rp[i - 1]));
+      const b = vnorm(vsub(rp[i + 1], rp[i]));
+      planarTurn += a[0] * b[1] - a[1] * b[0];
+    }
+  }
   for (let i = 0; i < nr; i++) {
     const frame = frames[i];
     const normal = planarCyclic
       ? vnorm([-frame.tangent[1] * planarOrientation, frame.tangent[0] * planarOrientation, 0])
-      : vscale(frame.normal, -1);
+      : planarOpen && Math.abs(planarTurn) > 1e-6
+        ? frame.normal
+        : vscale(frame.normal, -1);
     const binormal = vscale(frame.binormal, -1);
     const s = scales?.[i] ?? 1;
     for (let j = 0; j < np; j++) {
@@ -222,7 +235,10 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?:
     const b = ((i + 1) % nr) * np;
     for (let j = 0; j < profSeg; j++) {
       const j2 = (j + 1) % np;
-      mesh.faces.push([a + j, b + j, b + j2, a + j2]);
+      // Blender advances around the profile first, then the rail. The reverse
+      // winding flips the generated surface normals and makes downstream
+      // Solidify groups offset inward (the Clevis head lost 0.763 units).
+      mesh.faces.push([a + j, a + j2, b + j2, b + j]);
       mesh.faceMaterial.push(0);
     }
   }
