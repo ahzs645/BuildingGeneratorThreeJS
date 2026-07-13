@@ -1,0 +1,149 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/blunt-metal-marker/dump.json",
+  "object": "Chrome Marker Extruded",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 97444,
+      "faces": 97422,
+      "bbox": {
+        "min": [
+          -47.1084,
+          -52.7598,
+          -47.1296
+        ],
+        "max": [
+          144.8173,
+          83.0561,
+          -31.1841
+        ]
+      },
+      "elapsed_ms": 10096
+    },
+    {
+      "combo": {
+        "name": "extrude distance 8",
+        "overrides": {
+          "extrude distance": 8
+        }
+      },
+      "status": "ok",
+      "verts": 97444,
+      "faces": 97422,
+      "bbox": {
+        "min": [
+          -47.122,
+          -52.7753,
+          -47.1309
+        ],
+        "max": [
+          144.808,
+          83.0119,
+          -38.0698
+        ]
+      },
+      "elapsed_ms": 17725
+    },
+    {
+      "combo": {
+        "name": "line thickness 60",
+        "overrides": {
+          "Line Thiccness": 60
+        }
+      },
+      "status": "ok",
+      "verts": 77836,
+      "faces": 77818,
+      "bbox": {
+        "min": [
+          -45.0102,
+          -50.6414,
+          -47.1046
+        ],
+        "max": [
+          142.733,
+          80.6814,
+          -31.2004
+        ]
+      },
+      "elapsed_ms": 17247
+    },
+    {
+      "combo": {
+        "name": "resolution 220",
+        "overrides": {
+          "Resolution": 220
+        }
+      },
+      "status": "ok",
+      "verts": 49224,
+      "faces": 49202,
+      "bbox": {
+        "min": [
+          -45.9138,
+          -51.9742,
+          -47.1154
+        ],
+        "max": [
+          143.6338,
+          82.1826,
+          -31.1936
+        ]
+      },
+      "elapsed_ms": 5610
+    },
+    {
+      "combo": {
+        "name": "smooth 3",
+        "overrides": {
+          "smooth": 3
+        }
+      },
+      "status": "ok",
+      "verts": 97444,
+      "faces": 97422,
+      "bbox": {
+        "min": [
+          -47.1901,
+          -52.819,
+          -47.1393
+        ],
+        "max": [
+          144.8951,
+          83.1267,
+          -31.177
+        ]
+      },
+      "elapsed_ms": 17310
+    },
+    {
+      "combo": {
+        "name": "flatten off",
+        "overrides": {
+          "FLATTEN": false
+        }
+      },
+      "status": "ok",
+      "verts": 189048,
+      "faces": 189004,
+      "bbox": {
+        "min": [
+          -54.8228,
+          -60.808,
+          -47.1235
+        ],
+        "max": [
+          152.6131,
+          90.2546,
+          -23.6814
+        ]
+      },
+      "elapsed_ms": 20044
+    }
+  ]
+}

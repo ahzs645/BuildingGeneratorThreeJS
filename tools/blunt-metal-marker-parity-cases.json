@@ -1,0 +1,8 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "extrude distance 8", "overrides": { "extrude distance": 8 } },
+  { "name": "line thickness 60", "overrides": { "Line Thiccness": 60 } },
+  { "name": "resolution 220", "overrides": { "Resolution": 220 } },
+  { "name": "smooth 3", "overrides": { "smooth": 3 } },
+  { "name": "flatten off", "overrides": { "FLATTEN": false } }
+]

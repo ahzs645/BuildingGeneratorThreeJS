@@ -1,0 +1,10 @@
+{
+  "id": "blunt-metal-marker",
+  "object": "Chrome Marker Extruded",
+  "root": "blunt metal marker",
+  "status": "near-exact",
+  "blender": { "verts": 97691, "faces": 97669 },
+  "gnvm": { "verts": 97444, "faces": 97422 },
+  "coverage": "100% of reachable node types; Noise Texture uses Blender-compatible signed Perlin fBM and Merge by Distance removes coincident duplicate polygons.",
+  "validation": "Authored vertex and face deltas are both 0.25%. Across six extrusion, thickness, resolution, smoothing, and flatten cases, maximum vertex delta is 0.35%, maximum local-bounds difference is 0.2723 units, and maximum depth-bound difference is 0.0012 units."
+}

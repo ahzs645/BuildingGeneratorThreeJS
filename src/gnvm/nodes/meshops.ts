@@ -393,6 +393,7 @@ reg("GeometryNodeMergeByDistance", (api) => {
   }
   const keptFace: number[] = [];
   const cornerStart: number[] = [];
+  const seenFaces = new Set<string>();
   let cornerCursor = 0;
   for (const f of mesh.faces) { cornerStart.push(cornerCursor); cornerCursor += f.length; }
   const keptCorners: number[][] = [];
@@ -412,6 +413,14 @@ reg("GeometryNodeMergeByDistance", (api) => {
       nc.push(cornerStart[fi] + ci);
     }
     if (nf.length >= 3) {
+      // Blender also removes coincident duplicate polygons after their
+      // vertices have welded. Preserve winding (opposite faces can be an
+      // intentional two-sided shell), but ignore the arbitrary first corner.
+      let first = 0;
+      for (let i = 1; i < nf.length; i++) if (nf[i] < nf[first]) first = i;
+      const faceKey = Array.from({ length: nf.length }, (_, i) => nf[(first + i) % nf.length]).join("_");
+      if (seenFaces.has(faceKey)) continue;
+      seenFaces.add(faceKey);
       m.faces.push(nf);
       m.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
       keptFace.push(fi);

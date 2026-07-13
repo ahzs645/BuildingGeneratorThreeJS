@@ -122,20 +122,65 @@ reg("GeometryNodeIndexSwitch", (api) => {
 });
 
 function smoothNoiseFade(t: number): number { return t * t * t * (t * (t * 6 - 15) + 10); }
-function noiseHash(x: number, y: number, z: number): number {
-  const value = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453123;
-  return value - Math.floor(value);
+
+// Blender's Noise Texture is signed gradient Perlin noise backed by the
+// lookup3 integer hash. The previous sine/value-noise placeholder had neither
+// Blender's 0.5-centered range nor its inclusive Detail octave, which made
+// procedural geometry displacement several times too shallow.
+const u32 = (n: number): number => n >>> 0;
+const rotl32 = (n: number, bits: number): number => u32((n << bits) | (n >>> (32 - bits)));
+function blenderHashInt3(x: number, y: number, z: number): number {
+  let a = u32(0xdeadbeef + (3 << 2) + 13 + x);
+  let b = u32(0xdeadbeef + (3 << 2) + 13 + y);
+  let c = u32(0xdeadbeef + (3 << 2) + 13 + z);
+  c = u32((c ^ b) - rotl32(b, 14));
+  a = u32((a ^ c) - rotl32(c, 11));
+  b = u32((b ^ a) - rotl32(a, 25));
+  c = u32((c ^ b) - rotl32(b, 16));
+  a = u32((a ^ c) - rotl32(c, 4));
+  b = u32((b ^ a) - rotl32(a, 14));
+  c = u32((c ^ b) - rotl32(b, 24));
+  return c;
 }
-function valueNoise3(p: Vec3): number {
+function blenderNoiseGrad3(hash: number, x: number, y: number, z: number): number {
+  const h = hash & 15;
+  const u = h < 8 ? x : y;
+  const vt = h === 12 || h === 14 ? x : z;
+  const v = h < 4 ? y : vt;
+  return (h & 1 ? -u : u) + (h & 2 ? -v : v);
+}
+function blenderSNoise3(p: Vec3): number {
+  // Geometry-node coordinates here are far below Blender's 100000 precision
+  // wrapping threshold, so the periodic precision correction is unnecessary.
   const ix = Math.floor(p[0]), iy = Math.floor(p[1]), iz = Math.floor(p[2]);
-  const fx = smoothNoiseFade(p[0] - ix), fy = smoothNoiseFade(p[1] - iy), fz = smoothNoiseFade(p[2] - iz);
-  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-  const plane = (z: number) => lerp(
-    lerp(noiseHash(ix, iy, z), noiseHash(ix + 1, iy, z), fx),
-    lerp(noiseHash(ix, iy + 1, z), noiseHash(ix + 1, iy + 1, z), fx),
-    fy,
+  const fx = p[0] - ix, fy = p[1] - iy, fz = p[2] - iz;
+  const u = smoothNoiseFade(fx), v = smoothNoiseFade(fy), w = smoothNoiseFade(fz);
+  const grad = (dx: number, dy: number, dz: number) => blenderNoiseGrad3(
+    blenderHashInt3(ix + dx, iy + dy, iz + dz), fx - dx, fy - dy, fz - dz,
   );
-  return lerp(plane(iz), plane(iz + 1), fz);
+  const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+  const z0 = mix(mix(grad(0, 0, 0), grad(1, 0, 0), u), mix(grad(0, 1, 0), grad(1, 1, 0), u), v);
+  const z1 = mix(mix(grad(0, 0, 1), grad(1, 0, 1), u), mix(grad(0, 1, 1), grad(1, 1, 1), u), v);
+  return 0.982 * mix(z0, z1, w);
+}
+
+function blenderFbm3(p: Vec3, detail: number, roughness: number, lacunarity: number, normalize: boolean): number {
+  let frequency = 1;
+  let amplitude = 1;
+  let maxAmplitude = 0;
+  let sum = 0;
+  const whole = Math.floor(Math.max(0, Math.min(15, detail)));
+  for (let octave = 0; octave <= whole; octave++) {
+    sum += blenderSNoise3(vscale(p, frequency)) * amplitude;
+    maxAmplitude += amplitude;
+    amplitude *= Math.max(0, roughness);
+    frequency *= lacunarity;
+  }
+  const fraction = Math.max(0, Math.min(15, detail)) - whole;
+  const normalized = (value: number, weight: number) => normalize ? 0.5 * value / weight + 0.5 : value;
+  if (fraction <= EPS) return normalized(sum, maxAmplitude);
+  const sum2 = sum + blenderSNoise3(vscale(p, frequency)) * amplitude;
+  return normalized(sum, maxAmplitude) + (normalized(sum2, maxAmplitude + amplitude) - normalized(sum, maxAmplitude)) * fraction;
 }
 
 reg("ShaderNodeTexNoise", (api) => {
@@ -155,22 +200,16 @@ reg("ShaderNodeTexNoise", (api) => {
       p = vscale(p, frequencyScale);
       const warp = asNum(distortions[i] ?? 0);
       if (Math.abs(warp) > EPS) {
-        const d = valueNoise3(vadd(p, [13.5, 7.1, 19.7]));
-        p = vadd(p, [warp * (d - .5), warp * (valueNoise3(vadd(p, [3.7, 29.1, 5.3])) - .5), warp * (valueNoise3(vadd(p, [41.3, 2.9, 11.7])) - .5)]);
+        p = vadd(p, [
+          warp * blenderSNoise3(vadd(p, [131.7, 143.2, 176.4])),
+          warp * blenderSNoise3(vadd(p, [104.3, 191.1, 152.8])),
+          warp * blenderSNoise3(vadd(p, [187.9, 118.6, 139.5])),
+        ]);
       }
-      const octaves = Math.max(1, Math.min(16, Math.ceil(asNum(details[i] ?? 2))));
-      const fractional = Math.max(0, Math.min(1, asNum(details[i] ?? 2) - Math.floor(asNum(details[i] ?? 2))));
-      const persistence = Math.max(0, Math.min(1, asNum(roughnesses[i] ?? .5)));
+      const noiseDetail = asNum(details[i] ?? 2);
+      const persistence = Math.max(0, asNum(roughnesses[i] ?? .5));
       const lac = Math.max(1e-4, asNum(lacunarities[i] ?? 2));
-      let amplitude = 1, total = 0, weight = 0;
-      for (let octave = 0; octave < octaves; octave++) {
-        const blend = octave === octaves - 1 && fractional > 0 ? fractional : 1;
-        total += valueNoise3(p) * amplitude * blend;
-        weight += amplitude * blend;
-        p = vscale(p, lac);
-        amplitude *= persistence;
-      }
-      return weight > EPS ? total / weight : 0;
+      return blenderFbm3(p, noiseDetail, persistence, lac, api.prop<boolean>("normalize", true));
     });
   });
   return { Fac: factor, Factor: factor, Color: Field.make((ctx) => factor.array(ctx).map((value) => [asNum(value), asNum(value), asNum(value)])) };

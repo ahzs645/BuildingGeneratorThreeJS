@@ -418,6 +418,26 @@ function meshSignedAreaXY(m: Mesh): number {
   check("MergeByDistance preserves material slots", JSON.stringify(om.materialSlots) === JSON.stringify([null, "left", "right"]));
 }
 
+// Coincident joined meshes weld to one polygon in Blender; keeping both face
+// copies doubles downstream extrusions without adding any vertices.
+{
+  const m = new Mesh();
+  m.positions = [
+    [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
+    [1, 1, 0], [0, 1, 0], [0, 0, 0], [1, 0, 0],
+  ];
+  m.faces = [[0, 1, 2, 3], [4, 5, 6, 7]];
+  m.faceMaterial = [2, 7];
+  m.attributes.set("fid", { domain: "FACE", data: [10, 20] });
+  m.attributes.set("cid", { domain: "CORNER", data: [0, 1, 2, 3, 4, 5, 6, 7] });
+  const g = new Geometry();
+  g.mesh = m;
+  const out = runNode("GeometryNodeMergeByDistance", { Geometry: g, Selection: true, Distance: 1e-4, Mode: "All" }).Geometry as Geometry;
+  const om = out.mesh!;
+  check("MergeByDistance removes coincident duplicate faces", om.positions.length === 4 && om.faces.length === 1, `got ${om.positions.length}v/${om.faces.length}f`);
+  check("MergeByDistance keeps first coincident face data", approx(om.faceMaterial, [2]) && approx(om.attributes.get("fid")!.data as number[], [10]) && approx(om.attributes.get("cid")!.data as number[], [0, 1, 2, 3]));
+}
+
 // A collapsed long quad still carries a valid center-to-rim triangle after
 // Blender's triangulation; the exporter must preserve that topology.
 {
