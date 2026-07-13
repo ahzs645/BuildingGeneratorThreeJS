@@ -183,6 +183,13 @@ reg("GeometryNodeSetSplineCyclic", (api) => {
   return { Geometry: g };
 });
 
+reg("GeometryNodeSetSplineResolution", (api) => {
+  // Imported object curves already carry Blender's evaluated samples at their
+  // authored spline resolution. Preserve those samples here; re-tessellating
+  // the polyline would double-apply resolution downstream.
+  return { Geometry: api.geo("Geometry").clone() };
+});
+
 reg("GeometryNodeReverseCurve", (api) => {
   const g = api.geo("Curve").clone();
   const ctx = makeFieldCtx(g, "CURVE");

@@ -1,0 +1,179 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "PIXEL CRAYON.007",
+  "modifier": "CHROME CRAYON 3D",
+  "node_group": "blunt outline crayon",
+  "saved_values": {
+    "Show Pt Count": false,
+    "crv preview": false,
+    "stroke Thiccness": 51.06098937988281,
+    "outline": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "outline thiccness": 1.0,
+    "Resolution": 260,
+    "Smooth": 16,
+    "fill": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 24719,
+      "faces": 22853,
+      "bbox": {
+        "min": [
+          -67.9322,
+          -70.9018,
+          0.9237
+        ],
+        "max": [
+          42.5401,
+          37.4513,
+          4.1958
+        ]
+      },
+      "elapsed_ms": 34.1
+    },
+    {
+      "combo": {
+        "name": "stroke thickness 35",
+        "overrides": {
+          "stroke Thiccness": 35
+        }
+      },
+      "status": "ok",
+      "verts": 23303,
+      "faces": 21233,
+      "bbox": {
+        "min": [
+          -66.143,
+          -69.3907,
+          0.9237
+        ],
+        "max": [
+          40.7057,
+          35.8468,
+          4.1958
+        ]
+      },
+      "elapsed_ms": 31.0
+    },
+    {
+      "combo": {
+        "name": "outline thickness 1.8",
+        "overrides": {
+          "outline thiccness": 1.8
+        }
+      },
+      "status": "ok",
+      "verts": 24719,
+      "faces": 22853,
+      "bbox": {
+        "min": [
+          -68.6897,
+          -71.6642,
+          0.9237
+        ],
+        "max": [
+          43.2988,
+          38.2079,
+          4.1958
+        ]
+      },
+      "elapsed_ms": 33.1
+    },
+    {
+      "combo": {
+        "name": "resolution 160",
+        "overrides": {
+          "Resolution": 160
+        }
+      },
+      "status": "ok",
+      "verts": 17428,
+      "faces": 15886,
+      "bbox": {
+        "min": [
+          -67.2705,
+          -70.3739,
+          0.9237
+        ],
+        "max": [
+          41.9316,
+          36.835,
+          4.1958
+        ]
+      },
+      "elapsed_ms": 24.1
+    },
+    {
+      "combo": {
+        "name": "smooth 8",
+        "overrides": {
+          "Smooth": 8
+        }
+      },
+      "status": "ok",
+      "verts": 24671,
+      "faces": 22809,
+      "bbox": {
+        "min": [
+          -68.3418,
+          -71.3213,
+          0.9237
+        ],
+        "max": [
+          42.9342,
+          37.8566,
+          4.1958
+        ]
+      },
+      "elapsed_ms": 32.4
+    }
+  ],
+  "export_dir": "",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "flat.nodes": {
+        "faces": 22853,
+        "verts": 24719
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 22853,
+      "verts": 24719
+    }
+  }
+}

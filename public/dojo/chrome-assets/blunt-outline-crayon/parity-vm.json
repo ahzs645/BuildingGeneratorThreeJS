@@ -1,0 +1,125 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/blunt-outline-crayon/dump.json",
+  "object": "PIXEL CRAYON.007",
+  "results": [
+    {
+      "combo": {
+        "name": "authored default",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 24584,
+      "faces": 22731,
+      "bbox": {
+        "min": [
+          -66.6774,
+          -69.7554,
+          0.9237
+        ],
+        "max": [
+          41.2268,
+          36.7046,
+          4.2053
+        ]
+      },
+      "elapsed_ms": 3928
+    },
+    {
+      "combo": {
+        "name": "stroke thickness 35",
+        "overrides": {
+          "stroke Thiccness": 35
+        }
+      },
+      "status": "ok",
+      "verts": 23171,
+      "faces": 21118,
+      "bbox": {
+        "min": [
+          -65.1898,
+          -68.2764,
+          0.9237
+        ],
+        "max": [
+          39.7413,
+          35.1769,
+          4.2053
+        ]
+      },
+      "elapsed_ms": 7163
+    },
+    {
+      "combo": {
+        "name": "outline thickness 1.8",
+        "overrides": {
+          "outline thiccness": 1.8
+        }
+      },
+      "status": "ok",
+      "verts": 24584,
+      "faces": 22731,
+      "bbox": {
+        "min": [
+          -66.6774,
+          -69.7554,
+          0.9237
+        ],
+        "max": [
+          41.2268,
+          36.7046,
+          4.2129
+        ]
+      },
+      "elapsed_ms": 7152
+    },
+    {
+      "combo": {
+        "name": "resolution 160",
+        "overrides": {
+          "Resolution": 160
+        }
+      },
+      "status": "ok",
+      "verts": 17296,
+      "faces": 15760,
+      "bbox": {
+        "min": [
+          -66.3215,
+          -69.3994,
+          0.9237
+        ],
+        "max": [
+          40.8865,
+          36.2437,
+          4.2053
+        ]
+      },
+      "elapsed_ms": 1582
+    },
+    {
+      "combo": {
+        "name": "smooth 8",
+        "overrides": {
+          "Smooth": 8
+        }
+      },
+      "status": "ok",
+      "verts": 24524,
+      "faces": 22676,
+      "bbox": {
+        "min": [
+          -67.1068,
+          -70.1348,
+          0.9237
+        ],
+        "max": [
+          41.6537,
+          37.1116,
+          4.2053
+        ]
+      },
+      "elapsed_ms": 7100
+    }
+  ]
+}

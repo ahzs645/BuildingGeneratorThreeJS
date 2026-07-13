@@ -1,0 +1,7 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "stroke thickness 35", "overrides": { "stroke Thiccness": 35 } },
+  { "name": "outline thickness 1.8", "overrides": { "outline thiccness": 1.8 } },
+  { "name": "resolution 160", "overrides": { "Resolution": 160 } },
+  { "name": "smooth 8", "overrides": { "Smooth": 8 } }
+]

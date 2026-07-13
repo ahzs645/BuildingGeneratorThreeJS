@@ -196,6 +196,12 @@ function meshSignedAreaXY(m: Mesh): number {
   check("SetSplineType NURBS cuts inward from control corner", maxX < 0.76 && maxX > 0.74, `maxX=${maxX}`);
 }
 
+{
+  const source = curve([[0, 0, 0], [.5, .25, 0], [1, 0, 0]], false);
+  const resolved = runNode("GeometryNodeSetSplineResolution", { Geometry: source, Selection: true, Resolution: 12 }).Geometry as Geometry;
+  check("Set Spline Resolution preserves imported evaluated samples", resolved.curvePointCount() === 3);
+}
+
 // Imported Bezier objects retain both evaluated samples and authored controls.
 // Converting them to Poly uses the controls, matching Blender's 14-point Text
 // Soup guide instead of instancing over all 157 evaluated Bezier samples.
