@@ -1,0 +1,27 @@
+{
+  "source": "MODULE 3_ Mesh Modeling and Secret Ancient Bevel Technique.blend",
+  "object": "Cube.001",
+  "root": "Geometry Nodes.134",
+  "reachableGroups": 5,
+  "reachableNodes": 212,
+  "coverage": "100%",
+  "blender": {
+    "verts": 1860,
+    "faces": 1609,
+    "triangles": 3502,
+    "bbox": {
+      "min": [-5.473649501800537, -7.974661827087402, -4.019999980926514],
+      "max": [5.475000381469727, 7.974661827087402, 4.335870742797852]
+    }
+  },
+  "gnvm": {
+    "verts": 1860,
+    "faces": 1609,
+    "triangles": 3502,
+    "bbox": {
+      "min": [-5.473649501800537, -7.974661827087402, -4.019999980926514],
+      "max": [5.475000381469727, 7.974661827087402, 4.335870742797852]
+    }
+  },
+  "validation": "Exact topology, triangles, local bounds, and visible control-box composition. The rounded enclosure, inset lid, raised plus control, triangular button, and three curved face marks all match Blender. Convex Hull now removes the face-interior support point left unreferenced after coplanar dissolve."
+}

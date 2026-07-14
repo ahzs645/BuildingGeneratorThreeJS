@@ -43,7 +43,10 @@ reg("GeometryNodeConvexHull", (api) => {
     ...source.curves.flatMap((spline) => spline.points),
   ];
   const raw = manifoldHull(points);
-  const mesh = raw ? dissolveCoplanarFaces(raw) : null;
+  // Dissolving Manifold's coplanar triangles can leave face-interior support
+  // points unreferenced. Blender's Convex Hull output contains only surface
+  // vertices (the Module 3 control-box lid exposes one such discarded point).
+  const mesh = raw ? compactFaceVertsLocal(dissolveCoplanarFaces(raw)) : null;
   if (!mesh) return { "Convex Hull": new Geometry() };
   const geometry = new Geometry();
   geometry.mesh = mesh;

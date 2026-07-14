@@ -827,7 +827,7 @@
     "reference": "dojo/references/n03d/assembly-bracket.png",
     "blenderStats": { "verts": 1743, "faces": 1816 },
     "localSpace": true,
-    "note": "The complete 54-group, 1,662-node bracket builds the long pivot arm, cutout, clamp end, and screw components in-browser. Its dense two-cylinder hull matches Blender's internal 168 / 86 topology; remaining Exact Boolean and Heal Mesh tessellation produces 1,770 / 1,914 versus Blender's 1,743 / 1,816. All five validation cases have exact bounds and stay within 2.82% vertices.",
+    "note": "The complete 54-group, 1,662-node bracket builds the long pivot arm, cutout, clamp end, and screw components in-browser. Its dense two-cylinder hull matches Blender's internal 168 / 86 topology; remaining Exact Boolean and Heal Mesh tessellation produces 1,770 / 1,912 versus Blender's 1,743 / 1,816. All five validation cases have exact bounds and stay within 2.82% vertices.",
     "controls": [
       { "name": "outer dia.", "label": "Outer diameter", "min": 20, "max": 50, "step": 0.1, "value": 34 },
       { "name": "cutout dia", "label": "Cutout diameter", "min": 5, "max": 32, "step": 0.1, "value": 22.5 },
@@ -1527,6 +1527,18 @@
   "localSpace": true,
   "workbenchColor": [0.8, 0.8, 0.8],
   "note": "The complete 163-node Room study matches Blender exactly at 3,788 vertices, 2,542 faces, and 5,558 triangles, with bounds within 0.000002 units. Its framed wall-panel grids, posts, floor, plaque, and procedural text all run in-browser.",
+  "controls": []
+},
+{
+  "id": "course-module3-control-box",
+  "title": "Course Module 3 · Control Box",
+  "object": "Cube.001",
+  "dump": "dojo/course-modules/module3-control-box/dump.json",
+  "reference": "dojo/references/course-modules/module3-control-box.png",
+  "blenderStats": { "verts": 1860, "faces": 1609 },
+  "localSpace": true,
+  "workbenchColor": [0.8, 0.8, 0.8],
+  "note": "The 212-node mesh-modeling study matches Blender exactly at 1,860 vertices, 1,609 faces, and 3,502 triangles with identical bounds. Its rounded enclosure, inset lid, raised controls, and curved face marks all run in-browser.",
   "controls": []
 }
 ]

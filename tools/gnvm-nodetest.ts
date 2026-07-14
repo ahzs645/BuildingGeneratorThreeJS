@@ -1107,6 +1107,9 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Convex Hull dissolves coplanar triangles into Blender-style polygons",
     hull.mesh?.faces.length === 6 && hull.mesh.faces.every((face) => face.length === 4),
     `faces=${hull.mesh?.faces.length} sizes=${hull.mesh?.faces.map((face) => face.length)}`);
+  const hullSurfaceVertices = new Set(hull.mesh?.faces.flat() ?? []);
+  check("Convex Hull discards non-surface support points", hullSurfaceVertices.size === hull.mesh?.positions.length,
+    `surface=${hullSurfaceVertices.size} positions=${hull.mesh?.positions.length}`);
 
   const cylinderPair = new Geometry();
   cylinderPair.mesh = new Mesh();

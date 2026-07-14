@@ -9,8 +9,8 @@
   },
   "gnvm": {
     "verts": 1770,
-    "faces": 1914
+    "faces": 1912
   },
   "coverage": "100% of reachable node types across the 54-group, 1,662-node closure.",
-  "validation": "All five authored, diameter, screw, solid, and split-for-print cases have exact local bounds. The high-resolution two-cylinder arm hull now matches Blender's internal 168 / 86 topology exactly; the remaining delta is isolated to Exact Boolean intersection tessellation and the shared Heal Mesh merge. Authored output remains 1,770 / 1,914 versus Blender's 1,743 / 1,816, and every case stays within 2.82% vertices."
+  "validation": "All five authored, diameter, screw, solid, and split-for-print cases have exact local bounds. The high-resolution two-cylinder arm hull now matches Blender's internal 168 / 86 topology exactly; opposite-winding coincident-face cleanup removes two additional redundant browser faces. The remaining delta is isolated to Exact Boolean intersection tessellation and the shared Heal Mesh merge. Authored output is 1,770 / 1,912 versus Blender's 1,743 / 1,816, and every case stays within 2.82% vertices."
 }

@@ -1,0 +1,34 @@
+{
+  "source": "MODULE 3_ Mesh Modeling and Secret Ancient Bevel Technique.blend",
+  "auditDate": "2026-07-14",
+  "scope": "All four roots structurally classified as complex-study in Module 3",
+  "roots": [
+    {
+      "object": "dojo",
+      "root": "Geometry Nodes.002",
+      "classification": "published-distinct-study",
+      "catalogId": "course-dojo-finale",
+      "blender": { "verts": 47435, "faces": 46490 }
+    },
+    {
+      "object": "Cube.001",
+      "root": "Geometry Nodes.134",
+      "classification": "published-distinct-study",
+      "catalogId": "course-module3-control-box",
+      "blender": { "verts": 1860, "faces": 1609, "triangles": 3502 }
+    },
+    {
+      "object": "Plane.078",
+      "root": "Geometry Nodes.075",
+      "classification": "earlier-room-stage",
+      "blender": { "verts": 4538, "faces": 3158 }
+    },
+    {
+      "object": "Plane.083",
+      "root": "_big boy arrow",
+      "classification": "single-face-marker-helper",
+      "blender": { "verts": 32, "faces": 1 }
+    }
+  ],
+  "validation": "Every nominal Module 3 complex study was isolated and evaluated through a temporary Realize Instances pass in Blender 5.1. The only two distinct publishable surfaces are the already represented dojo finale and the control-box modeling study."
+}
