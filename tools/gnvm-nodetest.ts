@@ -129,6 +129,13 @@ function meshSignedAreaXY(m: Mesh): number {
   const topology = topologyOf(cube.mesh!);
   check("Subdivided Cube welds shared face borders", cube.mesh?.positions.length === 24 && cube.mesh.faces.length === 22);
   check("Subdivided Cube is a closed manifold", topology.edges.every((edge) => edge.faces.length === 2));
+  check("Subdivided Cube uses Blender vertex order", !!cube.mesh
+    && approx(cube.mesh.positions[0], [-1, -1.5, -2])
+    && approx(cube.mesh.positions[1], [-1 / 3, -1.5, -2])
+    && approx(cube.mesh.positions[4], [-1, 0, -2]));
+  check("Subdivided Cube uses Blender face order", JSON.stringify(cube.mesh?.faces.slice(0, 3)) === JSON.stringify([
+    [0, 4, 5, 1], [1, 5, 6, 2], [2, 6, 7, 3],
+  ]));
 }
 
 {

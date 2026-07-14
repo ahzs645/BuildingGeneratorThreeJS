@@ -2,15 +2,15 @@
   "id": "n03d-print-test-sphere",
   "object": "Cube",
   "root": "Geometry Nodes.002",
-  "status": "near-parity",
+  "status": "exact",
   "blender": {
     "verts": 32190,
     "faces": 58917
   },
   "gnvm": {
-    "verts": 32359,
-    "faces": 58898
+    "verts": 32190,
+    "faces": 58917
   },
   "coverage": "100% of reachable node types across the 4-group, 154-node closure.",
-  "validation": "The authored raised-tile sphere is within 0.53% of Blender's vertex count, differs by 19 faces, and has a maximum local-bounds difference of 0.0194 units. Implementing Mesh Face Area restored the per-face tile scale and raised silhouette; the small remaining difference is merge-by-distance behavior around adjacent tessellated tiles."
+  "validation": "The authored raised-tile sphere matches Blender exactly at 32,190 vertices / 58,917 faces with identical four-decimal local bounds. Mesh Face Area restores the per-face tile scale, while Blender-native subdivided Cube vertex and face ordering makes the graph's alternating Index modulo selection choose the same tessellation faces before Merge by Distance."
 }

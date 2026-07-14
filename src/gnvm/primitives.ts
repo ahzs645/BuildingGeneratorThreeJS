@@ -20,14 +20,15 @@ export function meshCube(size: Vec3, vx = 2, vy = 2, vz = 2): Geometry {
       [3, 0, 4, 7], // -x
     ];
   } else {
-    // Blender's subdivided Cube is a single closed surface. Sharing the twelve
-    // border rows is essential: Dual Mesh and repeated smoothing otherwise see
-    // six open grids and progressively delete the entire shell.
+    // Blender stores a subdivided Cube as a bottom grid, perimeter rings for
+    // every interior Z level, and a top grid.  Face order is likewise native:
+    // -Z, -Y, +Z, +Y, -X, +X.  Matching that order matters whenever a graph
+    // consumes Index (the print-test sphere alternates tessellation faces).
     vx = Math.max(2, Math.floor(vx));
     vy = Math.max(2, Math.floor(vy));
     vz = Math.max(2, Math.floor(vz));
     const vertices = new Map<string, number>();
-    const vertex = (x: number, y: number, z: number): number => {
+    const addVertex = (x: number, y: number, z: number): number => {
       const key = `${x}_${y}_${z}`;
       const existing = vertices.get(key);
       if (existing !== undefined) return existing;
@@ -40,18 +41,36 @@ export function meshCube(size: Vec3, vx = 2, vy = 2, vz = 2): Geometry {
       vertices.set(key, index);
       return index;
     };
-    for (let x = 0; x + 1 < vx; x++) for (let y = 0; y + 1 < vy; y++) {
+    // Bottom and top planes are complete row-major grids (X changes fastest).
+    for (let y = 0; y < vy; y++) for (let x = 0; x < vx; x++) addVertex(x, y, 0);
+    // Interior levels contain only the surface perimeter, traversed as the
+    // bottom row, alternating left/right columns, then the top row.
+    for (let z = 1; z + 1 < vz; z++) {
+      for (let x = 0; x < vx; x++) addVertex(x, 0, z);
+      for (let y = 1; y + 1 < vy; y++) {
+        addVertex(0, y, z);
+        addVertex(vx - 1, y, z);
+      }
+      for (let x = 0; x < vx; x++) addVertex(x, vy - 1, z);
+    }
+    for (let y = 0; y < vy; y++) for (let x = 0; x < vx; x++) addVertex(x, y, vz - 1);
+    const vertex = (x: number, y: number, z: number): number => {
+      const index = vertices.get(`${x}_${y}_${z}`);
+      if (index === undefined) throw new Error(`missing Cube surface vertex ${x},${y},${z}`);
+      return index;
+    };
+    for (let y = 0; y + 1 < vy; y++) for (let x = 0; x + 1 < vx; x++)
       m.faces.push([vertex(x, y, 0), vertex(x, y + 1, 0), vertex(x + 1, y + 1, 0), vertex(x + 1, y, 0)]);
-      m.faces.push([vertex(x, y, vz - 1), vertex(x + 1, y, vz - 1), vertex(x + 1, y + 1, vz - 1), vertex(x, y + 1, vz - 1)]);
-    }
-    for (let x = 0; x + 1 < vx; x++) for (let z = 0; z + 1 < vz; z++) {
+    for (let z = 0; z + 1 < vz; z++) for (let x = 0; x + 1 < vx; x++)
       m.faces.push([vertex(x, 0, z), vertex(x + 1, 0, z), vertex(x + 1, 0, z + 1), vertex(x, 0, z + 1)]);
+    for (let y = 0; y + 1 < vy; y++) for (let x = 0; x + 1 < vx; x++)
+      m.faces.push([vertex(x, y, vz - 1), vertex(x + 1, y, vz - 1), vertex(x + 1, y + 1, vz - 1), vertex(x, y + 1, vz - 1)]);
+    for (let z = 0; z + 1 < vz; z++) for (let x = 0; x + 1 < vx; x++)
       m.faces.push([vertex(x, vy - 1, z), vertex(x, vy - 1, z + 1), vertex(x + 1, vy - 1, z + 1), vertex(x + 1, vy - 1, z)]);
-    }
-    for (let y = 0; y + 1 < vy; y++) for (let z = 0; z + 1 < vz; z++) {
+    for (let z = 0; z + 1 < vz; z++) for (let y = 0; y + 1 < vy; y++)
       m.faces.push([vertex(0, y, z), vertex(0, y, z + 1), vertex(0, y + 1, z + 1), vertex(0, y + 1, z)]);
+    for (let z = 0; z + 1 < vz; z++) for (let y = 0; y + 1 < vy; y++)
       m.faces.push([vertex(vx - 1, y, z), vertex(vx - 1, y + 1, z), vertex(vx - 1, y + 1, z + 1), vertex(vx - 1, y, z + 1)]);
-    }
   }
   m.faceMaterial = m.faces.map(() => 0);
   m.materialSlots = [null];
