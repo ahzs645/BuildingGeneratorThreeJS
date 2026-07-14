@@ -1038,6 +1038,31 @@ function meshSignedAreaXY(m: Mesh): number {
     sweptCut.mesh?.positions.length === 32 && sweptCut.mesh.faces.length === 19,
     `${sweptCut.mesh?.positions.length}v/${sweptCut.mesh?.faces.length}f`);
 
+  const denseCutter = new Geometry();
+  denseCutter.mesh = new Mesh();
+  const denseSegments = 64;
+  for (const y of [-1, 1]) for (let i = 0; i < denseSegments; i++) {
+    const angle = i / denseSegments * Math.PI * 2;
+    denseCutter.mesh.positions.push([Math.cos(angle), y, Math.sin(angle)]);
+  }
+  for (let i = 0; i < denseSegments; i++) {
+    const next = (i + 1) % denseSegments;
+    denseCutter.mesh.faces.push([i, next, denseSegments + next, denseSegments + i]);
+  }
+  denseCutter.mesh.faces.push(
+    Array.from({ length: denseSegments }, (_, i) => denseSegments - 1 - i),
+    Array.from({ length: denseSegments }, (_, i) => denseSegments + i),
+  );
+  denseCutter.mesh.faceMaterial = denseCutter.mesh.faces.map(() => 0);
+  const denseCut = runNode(
+    "GeometryNodeMeshBoolean",
+    { "Mesh 1": openSlab, "Mesh 2": denseCutter },
+    { operation: "DIFFERENCE", solver: "EXACT" },
+  ).Mesh as Geometry;
+  check("MeshBoolean EXACT retains dense swept-panel boundary samples",
+    denseCut.mesh?.positions.length === 138 && denseCut.mesh.faces.length === 71,
+    `${denseCut.mesh?.positions.length}v/${denseCut.mesh?.faces.length}f`);
+
   // A partial prism cut through a sampled annulus keeps the authored radial
   // panels and Blender's two-ngon step instead of returning a triangle soup.
   const annulus = new Geometry();

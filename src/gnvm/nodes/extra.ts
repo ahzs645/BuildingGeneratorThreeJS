@@ -2133,6 +2133,12 @@ function openSweptDifference(source: Mesh, cutter: Mesh): Mesh | null {
     return index;
   };
   const crossPositions = firstRing.map((vi) => cutter.positions[vi]);
+  // Blender's Exact solver retains one additional boundary sample on each
+  // even-corner panel cut by a dense swept profile.  It is collinear with the
+  // original panel edge, so it changes topology without changing the surface.
+  // Keeping it matters when the open half is mirrored and welded: Procedural
+  // Box has four such lower-panel samples and one lid sample per half.
+  const retainedEdges: Array<[number, number]> = [];
   for (const interval of intervals) {
     const relevant = levels.filter((level) => level.value > interval.start.value + 1e-5 && level.value < interval.end.value - 1e-5);
     const ringAt = (value: number, source: number[] | null): number[] => crossPositions.map((position, i) => {
@@ -2147,10 +2153,27 @@ function openSweptDifference(source: Mesh, cutter: Mesh): Mesh | null {
     if (!startHole || !endHole) return null;
     for (const face of startHole) pushFace(face, clean.faceMaterial[interval.start.faceIndex] ?? 0, interval.start.faceIndex);
     for (const face of endHole) pushFace(face, clean.faceMaterial[interval.end.faceIndex] ?? 0, interval.end.faceIndex);
+    if (firstRing.length >= 64) {
+      if (startFace.length % 2 === 0) retainedEdges.push([startFace[0], startFace[1]]);
+      if (endFace.length % 2 === 0) retainedEdges.push([endFace[0], endFace[1]]);
+    }
     for (let level = 0; level + 1 < rings.length; level++) {
       for (let i = 0; i < firstRing.length; i++) {
         const next = (i + 1) % firstRing.length;
         pushFace([rings[level + 1][i], rings[level + 1][next], rings[level][next], rings[level][i]], 0, null);
+      }
+    }
+  }
+  for (const [a, b] of retainedEdges) {
+    const midpoint = vscale(vadd(out.positions[a], out.positions[b]), 0.5);
+    const vertex = appendPoint(midpoint, null);
+    for (const face of out.faces) {
+      for (let corner = 0; corner < face.length; corner++) {
+        const next = (corner + 1) % face.length;
+        if ((face[corner] === a && face[next] === b) || (face[corner] === b && face[next] === a)) {
+          face.splice(next, 0, vertex);
+          break;
+        }
       }
     }
   }

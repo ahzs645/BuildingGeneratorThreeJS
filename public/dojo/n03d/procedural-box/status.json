@@ -2,10 +2,10 @@
   "id": "n03d-procedural-box",
   "object": "PROC.BOX WIP",
   "root": "Geometry Nodes.003",
-  "status": "visual-parity-topology-near",
+  "status": "topology-exact-bounds-near",
   "blender": { "verts": 90928, "faces": 87165 },
-  "gnvm": { "verts": 90918, "faces": 87165 },
+  "gnvm": { "verts": 90928, "faces": 87165 },
   "reference": "dojo/references/n03d/procedural-box.png",
   "coverage": "100% of reachable node types, including bundled G_Center Geometry and G_Implicit Geometry helpers.",
-  "validation": "All eight authored, size, seam, height, animated-lid, and split-pin cases match Blender's face count exactly. Authored GN-VM is 90,918 / 87,165 versus Blender's 90,928 / 87,165 (-0.01% vertices), with bounds within 0.0001. Seven cases retain 0.0001 bound parity; the animated lid is within 0.0011 after Set Position moves its mixed mesh/instance components. Concave wall profiles are ear-clipped for a clean Blender-matching silhouette."
+  "validation": "All eight authored, size, seam, height, animated-lid, and split-pin cases match Blender topology exactly. Authored output is 90,928 / 87,165 and split-pin output is 83,154 / 79,693. Seven cases retain bounds within 0.0001; the animated lid is within 0.0011 after Set Position moves its mixed mesh/instance components. Dense open-shell Exact Booleans retain Blender's collinear panel boundary samples, and concave wall profiles are ear-clipped for a clean Blender-matching silhouette."
 }
