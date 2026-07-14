@@ -1,0 +1,27 @@
+{
+  "source": "INTRO MODULE_ The Basics of Nodes and Node Dojo_2MAY2024.blend",
+  "object": "Plane.034",
+  "root": "Room",
+  "reachableGroups": 7,
+  "reachableNodes": 163,
+  "coverage": "100%",
+  "blender": {
+    "verts": 3788,
+    "faces": 2542,
+    "triangles": 5558,
+    "bbox": {
+      "min": [-15.08357048034668, -15.08357048034668, -1.3899998664855957],
+      "max": [15.08357048034668, 15.08357048034668, 18.3242244720459]
+    }
+  },
+  "gnvm": {
+    "verts": 3788,
+    "faces": 2542,
+    "triangles": 5558,
+    "bbox": {
+      "min": [-15.083569526672363, -15.083569526672363, -1.3899998664855957],
+      "max": [15.083569526672363, 15.083569526672363, 18.32422637939453]
+    }
+  },
+  "validation": "Exact topology and matching complete-room composition, including the floor, open entrance, four posts, lower and upper framed wall-panel grids, header plaque, and procedural text. Local bounds are within 0.000002 units. Subdivide Mesh now preserves and splits loose wire edges, and Merge by Distance removes opposite-winding coincident faces created where the cross-beam sweeps intersect."
+}

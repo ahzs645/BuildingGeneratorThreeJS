@@ -1516,5 +1516,17 @@
   "workbenchColor": [0.8, 0.8, 0.8],
   "note": "The 64-node arrow-and-NodeTubes tab study matches Blender's visible cached frame-1 result exactly at 2,411 vertices and 81 faces, with bounds within 0.000001 units. All nine per-glyph bounce offsets run in-browser.",
   "controls": []
+},
+{
+  "id": "course-intro-room",
+  "title": "Course Intro · Node Dojo Room",
+  "object": "Plane.034",
+  "dump": "dojo/course-modules/intro-room/dump.json",
+  "reference": "dojo/references/course-modules/intro-room.png",
+  "blenderStats": { "verts": 3788, "faces": 2542 },
+  "localSpace": true,
+  "workbenchColor": [0.8, 0.8, 0.8],
+  "note": "The complete 163-node Room study matches Blender exactly at 3,788 vertices, 2,542 faces, and 5,558 triangles, with bounds within 0.000002 units. Its framed wall-panel grids, posts, floor, plaque, and procedural text all run in-browser.",
+  "controls": []
 }
 ]

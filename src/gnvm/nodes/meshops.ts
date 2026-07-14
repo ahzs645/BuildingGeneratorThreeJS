@@ -496,12 +496,10 @@ reg("GeometryNodeMergeByDistance", (api) => {
       nc.push(cornerStart[fi] + ci);
     }
     if (nf.length >= 3) {
-      // Blender also removes coincident duplicate polygons after their
-      // vertices have welded. Preserve winding (opposite faces can be an
-      // intentional two-sided shell), but ignore the arbitrary first corner.
-      let first = 0;
-      for (let i = 1; i < nf.length; i++) if (nf[i] < nf[first]) first = i;
-      const faceKey = Array.from({ length: nf.length }, (_, i) => nf[(first + i) % nf.length]).join("_");
+      // Blender removes coincident duplicate polygons after their vertices
+      // weld even when the source sweeps contributed opposite winding. The
+      // room's intersecting vertical/horizontal beams create 134 such pairs.
+      const faceKey = [...nf].sort((a, b) => a - b).join("_");
       if (seenFaces.has(faceKey)) continue;
       seenFaces.add(faceKey);
       m.faces.push(nf);
@@ -1110,6 +1108,35 @@ function subdivideOnce(mesh: Mesh, catmullClark: boolean, edgeCrease = 0): Mesh 
   out.materialSlots = [...mesh.materialSlots];
   const nV = mesh.positions.length;
   const nF = mesh.faces.length;
+
+  // Subdivide Mesh also operates on loose wire topology. The Intro room first
+  // deletes one edge from its floor outline, subdivides the remaining three
+  // edges, then extrudes that open wire into the wall panels. A face-only
+  // implementation silently discarded those authored edges.
+  if (nF === 0 && mesh.edges.length) {
+    out.positions = mesh.positions.map((point) => [...point] as Vec3);
+    const midpointSources: [number, number][] = [];
+    for (const [a, b] of mesh.edges) {
+      const midpoint = out.positions.length;
+      out.positions.push(vscale(vadd(mesh.positions[a], mesh.positions[b]), 0.5));
+      midpointSources.push([a, b]);
+      out.edges.push([a, midpoint], [midpoint, b]);
+    }
+    for (const [name, attribute] of mesh.attributes) {
+      if (attribute.domain === "POINT") {
+        out.attributes.set(name, {
+          domain: "POINT",
+          data: [
+            ...attribute.data,
+            ...midpointSources.map(([a, b]) => avgElem([attribute.data[a] ?? 0, attribute.data[b] ?? 0])),
+          ],
+        });
+      } else if (attribute.domain === "EDGE") {
+        out.attributes.set(name, { domain: "EDGE", data: attribute.data.flatMap((value) => [value, value]) });
+      }
+    }
+    return out;
+  }
 
   // Unique edges from faces
   const edgeMap = new Map<string, { a: number; b: number; faces: number[] }>();

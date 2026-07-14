@@ -211,6 +211,20 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 {
+  const wire = new Geometry();
+  wire.mesh = new Mesh();
+  wire.mesh.positions = [[0, 0, 0], [2, 0, 0], [2, 2, 0], [0, 2, 0]];
+  wire.mesh.edges = [[0, 1], [1, 2], [2, 3]];
+  wire.mesh.attributes.set("weight", { domain: "POINT", data: [0, 2, 4, 6] });
+  const subdivided = runNode("GeometryNodeSubdivideMesh", { Mesh: wire, Level: 1 }).Mesh as Geometry;
+  check("Subdivide Mesh splits loose wire edges",
+    subdivided.mesh?.positions.length === 7
+      && subdivided.mesh.edges.length === 6
+      && subdivided.mesh.faces.length === 0
+      && Number(subdivided.mesh.attributes.get("weight")?.data[4]) === 1);
+}
+
+{
   const sphere = runNode("GeometryNodeMeshIcoSphere", { Radius: 2, Subdivisions: 3 }).Mesh as Geometry;
   check("Ico Sphere subdivision 3 topology", sphere.mesh?.positions.length === 162 && sphere.mesh.faces.length === 320);
   check("Ico Sphere applies radius", !!sphere.mesh && sphere.mesh.positions.every((point) => Math.abs(Math.hypot(...point) - 2) < 1e-6));
@@ -943,6 +957,19 @@ function meshSignedAreaXY(m: Mesh): number {
   const om = out.mesh!;
   check("MergeByDistance removes coincident duplicate faces", om.positions.length === 4 && om.faces.length === 1, `got ${om.positions.length}v/${om.faces.length}f`);
   check("MergeByDistance keeps first coincident face data", approx(om.faceMaterial, [2]) && approx(om.attributes.get("fid")!.data as number[], [10]) && approx(om.attributes.get("cid")!.data as number[], [0, 1, 2, 3]));
+}
+
+{
+  const m = new Mesh();
+  m.positions = [
+    [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
+    [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
+  ];
+  m.faces = [[0, 1, 2, 3], [7, 6, 5, 4]];
+  const g = new Geometry();
+  g.mesh = m;
+  const out = runNode("GeometryNodeMergeByDistance", { Geometry: g, Selection: true, Distance: 1e-4, Mode: "All" }).Geometry as Geometry;
+  check("MergeByDistance removes opposite-winding duplicate faces", out.mesh?.positions.length === 4 && out.mesh.faces.length === 1);
 }
 
 // A collapsed long quad still carries a valid center-to-rim triangle after
