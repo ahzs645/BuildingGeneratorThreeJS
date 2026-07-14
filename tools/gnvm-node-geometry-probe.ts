@@ -37,7 +37,7 @@ GEOMETRY_PROBE.group = null;
 GEOMETRY_PROBE.node = null;
 GEOMETRY_PROBE.socket = null;
 if (!geometry) throw new Error(`no geometry captured from ${nodeName}:${socketName}`);
-const positions = geometry.mesh?.positions ?? geometry.curves.flatMap((curve) => curve.points);
+const positions = geometry.mesh?.positions.length ? geometry.mesh.positions : geometry.curves.flatMap((curve) => curve.points);
 const faces = geometry.mesh?.faces ?? [];
 const instance_payloads = geometry.instances.map((instance) => ({
   verts: instance.geometry.mesh?.positions.length ?? 0,
@@ -65,5 +65,5 @@ const realized_stats = {
   curves: realized.curves.length,
   curve_points: realized.curvePointCount(),
 };
-writeFileSync(outPath, `${JSON.stringify({ positions, edges: geometry.mesh?.edges ?? [], faces, attributes, curves: geometry.curves.length, curve_lengths: geometry.curves.map((curve) => curve.points.length), curve_attributes, instances: geometry.instances.length, instance_payloads, realized_stats }, null, 2)}\n`);
+writeFileSync(outPath, `${JSON.stringify({ positions, edges: geometry.mesh?.edges ?? [], faces, attributes, curves: geometry.curves.length, curve_lengths: geometry.curves.map((curve) => curve.points.length), curve_cyclic: geometry.curves.map((curve) => curve.cyclic), curve_attributes, instances: geometry.instances.length, instance_payloads, realized_stats }, null, 2)}\n`);
 console.log(`GNVM_NODE_GEOMETRY_PROBE_OK ${positions.length}v/${faces.length}f ${geometry.curves.length}c/${geometry.instances.length}i -> ${outPath}`);

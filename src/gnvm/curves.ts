@@ -651,6 +651,37 @@ function earClip(poly: PolyRef[]): number[][] {
   }
   if (verts.length === 3 && cross2(verts[0].p, verts[1].p, verts[2].p) > FILL_EPS && new Set(verts.map((v) => v.vi)).size === 3) {
     faces.push([verts[0].vi, verts[1].vi, verts[2].vi]);
+  } else if (verts.length === 3 && new Set(verts.map((v) => v.vi)).size === 3) {
+    // A valid polygon can finish on three collinear boundary points after all
+    // non-degenerate ears have been removed. Blender preserves the middle
+    // authored point by splitting the neighboring triangle that spans the two
+    // endpoints. Stackable Bin's groove cells expose one such point after the
+    // optional rounded-outline crossing is resolved.
+    const middle = verts.findIndex((candidate, i) => {
+      const a = verts[(i + 1) % 3].p, b = candidate.p, c = verts[(i + 2) % 3].p;
+      return Math.abs(cross2(a, b, c)) <= FILL_EPS
+        && (b[0] - a[0]) * (b[0] - c[0]) + (b[1] - a[1]) * (b[1] - c[1]) <= FILL_EPS;
+    });
+    if (middle >= 0) {
+      const point = verts[middle].vi;
+      const endpointA = verts[(middle + 1) % 3].vi;
+      const endpointB = verts[(middle + 2) % 3].vi;
+      const faceIndex = faces.findIndex((face) => face.some((vertex, corner) => {
+        const next = face[(corner + 1) % face.length];
+        return (vertex === endpointA && next === endpointB) || (vertex === endpointB && next === endpointA);
+      }));
+      if (faceIndex >= 0) {
+        const face = faces[faceIndex];
+        for (let corner = 0; corner < face.length; corner++) {
+          const a = face[corner], b = face[(corner + 1) % face.length];
+          if (!((a === endpointA && b === endpointB) || (a === endpointB && b === endpointA))) continue;
+          const opposite = face[(corner + 2) % face.length];
+          faces[faceIndex] = [a, point, opposite];
+          faces.push([point, b, opposite]);
+          break;
+        }
+      }
+    }
   }
   return faces;
 }

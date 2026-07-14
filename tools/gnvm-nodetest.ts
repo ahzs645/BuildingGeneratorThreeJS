@@ -435,6 +435,16 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 {
+  const collinear = runNode("GeometryNodeFillCurve", {
+    Curve: curve([[0, 0, 0], [1, 0, 0], [2, 0, 0], [2, 1, 0], [0, 1, 0]], true),
+  }, { mode: "TRIANGLES" }).Mesh as Geometry;
+  const used = new Set(collinear.mesh!.faces.flat());
+  check("Fill Curve retains collinear boundary points in triangulation",
+    collinear.mesh!.faces.length === 3 && used.size === 5,
+    `${used.size} used / ${collinear.mesh!.faces.length} faces`);
+}
+
+{
   const duplicateCorners = curve([[0, 0, 0], [1, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 0]], true);
   const welded = runNode("GeometryNodeFillCurve", { Curve: duplicateCorners }, { mode: "NGONS" }).Mesh as Geometry;
   check("Fill Curve welds adjacent cyclic duplicates", welded.mesh?.positions.length === 4 && welded.mesh.faces[0]?.length === 4, `${welded.mesh?.positions.length}/${welded.mesh?.faces[0]?.length}`);
