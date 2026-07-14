@@ -4,7 +4,7 @@
   "root": "blunt outline crayon",
   "status": "near-exact",
   "blender": { "verts": 24719, "faces": 22853 },
-  "gnvm": { "verts": 24584, "faces": 22731 },
+  "gnvm": { "verts": 24668, "faces": 22808 },
   "coverage": "100% of reachable node types; Set Spline Resolution preserves the already evaluated imported curve samples.",
-  "validation": "Authored vertex delta is 0.55% and face delta is 0.53%. Across five cases, maximum vertex delta is 0.76% and maximum local-bounds difference is 2.072 units."
+  "validation": "Authored vertex delta is 0.21% and face delta is 0.20%. Across five cases, maximum vertex delta is 0.28% and maximum local-bounds difference is 0.4539 units after honoring the full 665-pass Sigilize blur."
 }

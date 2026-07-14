@@ -12,5 +12,5 @@
     "faces": 97448
   },
   "coverage": "100% of reachable node types across the 22-group, 559-node closure.",
-  "validation": "The authored 3D surface is visually aligned with a -0.34% vertex delta and 1.9542-unit maximum bound difference. Flattened mode has an exact face count at 46,866 and -0.35% vertex delta. Browser evaluation takes about 36 seconds for the dense authored surface."
+  "validation": "The authored 3D surface is visually aligned with a -0.34% vertex delta and 0.2402-unit maximum bound difference after honoring the full 665-pass Sigilize blur. Flattened mode has an exact face count at 46,866 and -0.35% vertex delta. Browser evaluation takes about 37 seconds for the dense authored surface."
 }

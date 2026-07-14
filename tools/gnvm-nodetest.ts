@@ -125,6 +125,26 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 {
+  let neighborReads = 0;
+  const blurred = runNode("GeometryNodeBlurAttribute", {
+    Value: 3,
+    Weight: 1,
+    Iterations: 1111,
+  }).Value as Field;
+  const values = blurred.array({
+    size: 1,
+    domain: "POINT",
+    neighbors: () => {
+      neighborReads++;
+      return [];
+    },
+  });
+  check("Blur Attribute honors authored iterations above 512",
+    neighborReads === 1111 && Number(values[0]) === 3,
+    `neighbor reads=${neighborReads}`);
+}
+
+{
   const cube = runNode("GeometryNodeMeshCube", { Size: [2, 3, 4], "Vertices X": 4, "Vertices Y": 3, "Vertices Z": 2 }).Mesh as Geometry;
   const topology = topologyOf(cube.mesh!);
   check("Subdivided Cube welds shared face borders", cube.mesh?.positions.length === 24 && cube.mesh.faces.length === 22);

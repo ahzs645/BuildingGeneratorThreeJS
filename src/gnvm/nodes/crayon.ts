@@ -486,7 +486,9 @@ reg("GeometryNodeRaycast", (api) => {
 reg("GeometryNodeBlurAttribute", (api) => {
   const value = api.field("Value");
   const weight = api.field("Weight");
-  const iterations = Math.max(0, Math.min(512, Math.round(api.num("Iterations"))));
+  // Chrome Crayon assets author 665–1,111 passes. Keep a generous safety bound
+  // without truncating those Blender-authored smoothing loops.
+  const iterations = Math.max(0, Math.min(2048, Math.round(api.num("Iterations"))));
   const blurred = Field.make((ctx) => {
       let current = value.array(ctx);
       if (iterations && ctx.neighbors) {

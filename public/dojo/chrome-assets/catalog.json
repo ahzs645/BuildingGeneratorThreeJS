@@ -337,7 +337,7 @@
     "dump": "dojo/chrome-assets/blunt-outline-crayon/dump.json",
     "reference": "dojo/references/chrome-assets/blunt-outline-crayon.png",
     "blenderStats": { "verts": 24719, "faces": 22853 },
-    "note": "The authored browser mesh is within 0.55% of Blender's vertices and 0.53% of its faces. Five thickness/resolution/smoothing cases remain within 0.76% vertices.",
+    "note": "The authored browser mesh is within 0.21% of Blender's vertices and 0.20% of its faces. Five thickness/resolution/smoothing cases remain within 0.28% vertices and 0.4539 bounds units after the full 665-pass blur.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",
@@ -848,7 +848,7 @@
     "reference": "dojo/references/chrome-assets/25d-chrome-crayon.png",
     "blenderStats": { "verts": 97784, "faces": 97776 },
     "localSpace": true,
-    "note": "The Chrome library's final distinct 22-group, 559-node root reproduces its eight spiro-like raised forms in-browser. Authored topology is within 0.34% of Blender, flattened mode has an exact 46,866-face count, and the maximum bound difference is 1.9542 units. The dense graph takes about 36 seconds to evaluate, so only its structural flatten toggle is exposed here.",
+    "note": "The Chrome library's final distinct 22-group, 559-node root reproduces its eight spiro-like raised forms in-browser. Authored topology is within 0.34% of Blender, flattened mode has an exact 46,866-face count, and the maximum bound difference is 0.2402 units after the full 665-pass blur. The dense graph takes about 37 seconds to evaluate, so only its structural flatten toggle is exposed here.",
     "controls": [
       { "type": "checkbox", "name": "FLATTEN", "label": "Flatten surface", "value": false }
     ]
@@ -1347,7 +1347,7 @@
   "reference": "dojo/references/n03d/old-chrome-crayon.png",
   "blenderStats": { "verts": 71755, "faces": 71104 },
   "localSpace": true,
-  "note": "Exact authored topology across the 250-node legacy crayon graph. Browser bounds are up to 0.014 units wider; a second thickness case matches all 50,810 Blender faces with one fewer browser vertex.",
+  "note": "Exact authored topology and four-decimal bounds across the 250-node legacy crayon graph after all 1,111 Blur Attribute iterations. A second thickness case also matches Blender's bounds and all 50,810 faces with one fewer browser vertex.",
   "controls": [
     { "name": "Line Thiccness", "label": "Line thickness", "min": 0.3, "max": 2, "step": 0.000001, "value": 1.2360687255859375 },
     { "name": "Resolution", "label": "Resolution", "min": 40, "max": 500, "step": 1, "value": 333 },
