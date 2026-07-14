@@ -14,6 +14,14 @@ const ms = Date.now() - t0;
 console.log(`\n=== GN-VM run: ${path.split("/").pop()}${obj ? ` [${obj}]` : ""} ===`);
 console.log(`eval time: ${ms} ms`);
 console.log(`geometry:  ${res.soup.stats.verts} verts, ${res.soup.stats.faces} faces, ${res.soup.stats.tris} tris`);
+const bounds = { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };
+for (let index = 0; index < res.soup.positions.length; index += 3) {
+  for (let axis = 0; axis < 3; axis++) {
+    bounds.min[axis] = Math.min(bounds.min[axis], res.soup.positions[index + axis]);
+    bounds.max[axis] = Math.max(bounds.max[axis], res.soup.positions[index + axis]);
+  }
+}
+console.log(`bounds:    ${JSON.stringify(bounds)}`);
 console.log(`materials: ${res.soup.groups.map((g) => g.material ?? "none").join(", ") || "none"}`);
 console.log(`handlers registered: ${res.coverage.handled}`);
 

@@ -119,6 +119,55 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 {
+  const collapsed = runNode("GeometryNodeCurvePrimitiveCircle", { Resolution: 12, Radius: 0 }).Curve as Geometry;
+  check("CurveCircle preserves an authored zero radius",
+    collapsed.curves[0].points.length === 12
+      && collapsed.curves[0].points.every((point) => approx(point, [0, 0, 0])));
+}
+
+{
+  const socket = (name: string, identifier: string, type: string) => ({
+    name, identifier, type, linked: true, enabled: true, hide: false,
+    hide_value: false, display_shape: "CIRCLE", idx: 0, value: null,
+  });
+  const program = {
+    Root: {
+      name: "Root", type: "GeometryNodeTree", interface: [],
+      nodes: [
+        { name: "Group Input", type: "NodeGroupInput", inputs: [], outputs: [
+          socket("Value", "Input_0", "NodeSocketInt"),
+          socket("1", "Input_1", "NodeSocketGeometry"),
+          socket("2", "Input_2", "NodeSocketGeometry"),
+        ], props: {}, label: null },
+        { name: "Accumulate", type: "GeometryNodeGroup", group: "_SWITCH.accumalative geo", inputs: [
+          socket("Value", "Input_0", "NodeSocketInt"),
+          socket("1", "Input_1", "NodeSocketGeometry"),
+          socket("2", "Input_2", "NodeSocketGeometry"),
+        ], outputs: [socket("Output", "Output_19", "NodeSocketGeometry")], props: {}, label: null },
+        { name: "Group Output", type: "NodeGroupOutput", inputs: [
+          socket("Geometry", "Output_0", "NodeSocketGeometry"),
+        ], outputs: [], props: {}, label: null },
+      ],
+      links: [
+        { from_node: "Group Input", from_socket: "Input_0", to_node: "Accumulate", to_socket: "Input_0" },
+        { from_node: "Group Input", from_socket: "Input_1", to_node: "Accumulate", to_socket: "Input_1" },
+        { from_node: "Group Input", from_socket: "Input_2", to_node: "Accumulate", to_socket: "Input_2" },
+        { from_node: "Accumulate", from_socket: "Output_19", to_node: "Group Output", to_socket: "Output_0" },
+      ],
+    },
+  } as any;
+  const accumulated = new Evaluator(program).evalGroup("Root", {
+    Input_0: Field.of(1),
+    Input_1: box([0, 0, 0], [1, 1, 1]),
+    Input_2: box([0, 0, 0], [1, 1, 1]),
+  }).Output_0 as Geometry;
+  check("Legacy cumulative switch includes and offsets the selected row",
+    accumulated.mesh?.positions.length === 16
+      && accumulated.mesh.faces.length === 12
+      && Math.abs(Math.min(...accumulated.mesh.positions.map((point) => point[2])) + .6299998760223389) < 1e-7);
+}
+
+{
   const sphere = runNode("GeometryNodeMeshIcoSphere", { Radius: 2, Subdivisions: 3 }).Mesh as Geometry;
   check("Ico Sphere subdivision 3 topology", sphere.mesh?.positions.length === 162 && sphere.mesh.faces.length === 320);
   check("Ico Sphere applies radius", !!sphere.mesh && sphere.mesh.positions.every((point) => Math.abs(Math.hypot(...point) - 2) < 1e-6));

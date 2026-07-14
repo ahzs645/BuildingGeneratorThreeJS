@@ -634,25 +634,27 @@ class Invocation {
           }
           const joined = new Geometry();
           joined.mesh = new Mesh();
-          for (const socket of geometryInputs.slice(0, value)) {
+          // The authored control is the highest visible row index, not a
+          // count: value 0 keeps row 1, value 1 keeps rows 1 and 2, and so on.
+          // The legacy switch ladder therefore accumulates through the
+          // selected index inclusively.
+          for (const [rowIndex, socket] of geometryInputs.slice(0, value + 1).entries()) {
             const part = this.pull(node, socket.identifier);
             if (!(part instanceof Geometry)) continue;
-            if (part.mesh) mergeMeshInto(joined.mesh, part.mesh);
-            joined.curves.push(...part.curves.map((spline) => ({
-              cyclic: spline.cyclic,
-              resolution: spline.resolution,
-              points: spline.points.map((point) => [...point] as Vec3),
-              controlPoints: spline.controlPoints?.map((point) => [...point] as Vec3),
-              bezierLeft: spline.bezierLeft?.map((point) => [...point] as Vec3),
-              bezierRight: spline.bezierRight?.map((point) => [...point] as Vec3),
-            })));
-            joined.instances.push(...part.instances.map((instance) => ({
-              ...instance,
-              position: [...instance.position] as Vec3,
-              rotation: [...instance.rotation] as Vec3,
-              scale: [...instance.scale] as Vec3,
-              attributes: instance.attributes ? new Map(instance.attributes) : undefined,
-            })));
+            const shifted = part.clone();
+            const z = rowIndex * -0.6299998760223389;
+            const move = (point: Vec3): Vec3 => [point[0], point[1], point[2] + z];
+            if (shifted.mesh) shifted.mesh.positions = shifted.mesh.positions.map(move);
+            for (const spline of shifted.curves) {
+              spline.points = spline.points.map(move);
+              if (spline.controlPoints) spline.controlPoints = spline.controlPoints.map(move);
+              if (spline.bezierLeft) spline.bezierLeft = spline.bezierLeft.map(move);
+              if (spline.bezierRight) spline.bezierRight = spline.bezierRight.map(move);
+            }
+            for (const instance of shifted.instances) instance.position = move(instance.position);
+            if (shifted.mesh) mergeMeshInto(joined.mesh, shifted.mesh);
+            joined.curves.push(...shifted.curves);
+            joined.instances.push(...shifted.instances);
           }
           if (!joined.mesh.positions.length && !joined.mesh.faces.length && !joined.mesh.edges.length) joined.mesh = undefined;
           return { Output_19: joined };

@@ -31,8 +31,12 @@ GEOMETRY_PROBE.socket = socketName;
 GEOMETRY_PROBE.geometry = null;
 const rawOverrides = overridesPath ? JSON.parse(readFileSync(overridesPath, "utf8")) : {};
 const overrides = Array.isArray(rawOverrides) ? rawOverrides[0]?.overrides ?? {} : rawOverrides;
-await runGenerator(dump, { object: objectName, overrides });
-const geometry = GEOMETRY_PROBE.geometry;
+const result = await runGenerator(dump, { object: objectName, overrides });
+// Built-in node handlers can expose their value at evaluation time. Group
+// nodes are evaluated by the evaluator itself, so when a route has connected
+// the requested group socket all the way to the modifier output, the final
+// geometry is the authoritative probe value.
+const geometry = GEOMETRY_PROBE.geometry ?? (route.length ? result.geometry : null);
 GEOMETRY_PROBE.group = null;
 GEOMETRY_PROBE.node = null;
 GEOMETRY_PROBE.socket = null;
@@ -59,11 +63,24 @@ const curve_attributes = Object.fromEntries([...geometry.curveAttributes].map(([
   sample: attribute.data.slice(0, 8),
 }]));
 const realized = realizeInstances(geometry);
+const realized_positions = [
+  ...(realized.mesh?.positions ?? []),
+  ...realized.curves.flatMap((curve) => curve.points),
+];
+const realized_bbox = realized_positions.length ? {
+  min: [0, 1, 2].map((axis) => Math.min(...realized_positions.map((point) => point[axis]))),
+  max: [0, 1, 2].map((axis) => Math.max(...realized_positions.map((point) => point[axis]))),
+} : { min: [0, 0, 0], max: [0, 0, 0] };
 const realized_stats = {
   verts: realized.mesh?.positions.length ?? 0,
   faces: realized.mesh?.faces.length ?? 0,
   curves: realized.curves.length,
   curve_points: realized.curvePointCount(),
 };
-writeFileSync(outPath, `${JSON.stringify({ positions, edges: geometry.mesh?.edges ?? [], faces, attributes, curves: geometry.curves.length, curve_lengths: geometry.curves.map((curve) => curve.points.length), curve_cyclic: geometry.curves.map((curve) => curve.cyclic), curve_attributes, instances: geometry.instances.length, instance_payloads, realized_stats }, null, 2)}\n`);
+const payload: Record<string, unknown> = { positions, edges: geometry.mesh?.edges ?? [], faces, attributes, curves: geometry.curves.length, curve_lengths: geometry.curves.map((curve) => curve.points.length), curve_cyclic: geometry.curves.map((curve) => curve.cyclic), curve_attributes, instances: geometry.instances.length, instance_payloads, realized_stats, realized_bbox };
+if (process.env.GNVM_PROBE_GEOMETRY === "1") {
+  payload.realized_positions = realized_positions;
+  payload.realized_faces = realized.mesh?.faces ?? [];
+}
+writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`);
 console.log(`GNVM_NODE_GEOMETRY_PROBE_OK ${positions.length}v/${faces.length}f ${geometry.curves.length}c/${geometry.instances.length}i -> ${outPath}`);

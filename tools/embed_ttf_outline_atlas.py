@@ -13,6 +13,11 @@ import sys
 
 args = sys.argv[sys.argv.index("--") + 1 :]
 font_path, dump_path = args[:2]
+target_names = {
+    name.strip()
+    for name in os.environ.get("NODE_DOJO_FONT_NAMES", "").split(",")
+    if name.strip()
+}
 
 
 def dump_font_glyph(font, character, align_y="TOP_BASELINE"):
@@ -30,53 +35,51 @@ def dump_font_glyph(font, character, align_y="TOP_BASELINE"):
     bpy.context.view_layer.objects.active = obj
     bpy.ops.object.convert(target="CURVE")
 
-    def bezier(a, b, c, d, factor):
-        inverse = 1.0 - factor
-        return [
-            inverse**3 * a[index]
-            + 3.0 * inverse * inverse * factor * b[index]
-            + 3.0 * inverse * factor * factor * c[index]
-            + factor**3 * d[index]
-            for index in range(3)
-        ]
-
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    mesh = bpy.data.meshes.new_from_object(obj.evaluated_get(depsgraph))
+    edge_uses = {}
+    edge_directions = {}
+    for polygon in mesh.polygons:
+        vertices = list(polygon.vertices)
+        for index, start in enumerate(vertices):
+            end = vertices[(index + 1) % len(vertices)]
+            key = tuple(sorted((start, end)))
+            edge_uses[key] = edge_uses.get(key, 0) + 1
+            edge_directions[key] = (start, end)
+    unused = {
+        edge_directions[key]
+        for key, count in edge_uses.items()
+        if count == 1
+    }
+    next_edge = {start: (start, end) for start, end in unused}
     splines = []
-    for spline in obj.data.splines:
-        cyclic = bool(spline.use_cyclic_u)
-        if spline.type == "BEZIER":
-            controls = list(spline.bezier_points)
-            all_vector = all(
-                point.handle_left_type == "VECTOR" and point.handle_right_type == "VECTOR"
-                for point in controls
-            )
-            if all_vector:
-                points = [[round(value, 7) for value in point.co] for point in controls]
-            else:
-                points = []
-                segment_count = len(controls) if cyclic else max(0, len(controls) - 1)
-                resolution = max(2, int(spline.resolution_u or obj.data.resolution_u or 12))
-                for segment in range(segment_count):
-                    first = controls[segment]
-                    second = controls[(segment + 1) % len(controls)]
-                    for step in range(resolution):
-                        points.append([
-                            round(value, 7)
-                            for value in bezier(
-                                first.co,
-                                first.handle_right,
-                                second.handle_left,
-                                second.co,
-                                step / resolution,
-                            )
-                        ])
-                if not cyclic and controls:
-                    points.append([round(value, 7) for value in controls[-1].co])
-        else:
-            points = [[round(point.co[index], 7) for index in range(3)] for point in spline.points]
-        if points:
-            splines.append({"cyclic": cyclic, "points": points})
+    while unused:
+        first = next(iter(unused))
+        edge = first
+        indices = []
+        cyclic = False
+        while edge in unused:
+            unused.remove(edge)
+            start, end = edge
+            indices.append(start)
+            if end == first[0]:
+                cyclic = True
+                break
+            edge = next_edge.get(end)
+            if edge is None:
+                indices.append(end)
+                break
+        if indices:
+            splines.append({
+                "cyclic": cyclic,
+                "points": [
+                    [round(value, 7) for value in mesh.vertices[index].co]
+                    for index in indices
+                ],
+            })
 
     data = obj.data
+    bpy.data.meshes.remove(mesh)
     bpy.data.objects.remove(obj, do_unlink=True)
     if data.users == 0:
         bpy.data.curves.remove(data)
@@ -136,6 +139,8 @@ for group in dump.get("node_groups", {}).values():
                 continue
             value = socket.get("value")
             if isinstance(value, dict) and value.get("name"):
+                if target_names and value["name"] not in target_names:
+                    continue
                 replaced.add(value["name"])
             socket["value"] = {"datablock": "VectorFont", "name": font.name}
 

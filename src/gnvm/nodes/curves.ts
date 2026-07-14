@@ -24,7 +24,10 @@ reg("GeometryNodeCurvePrimitiveQuadrilateral", (api) => {
 
 reg("GeometryNodeCurvePrimitiveCircle", (api) => {
   const res = Math.max(3, Math.floor(api.num("Resolution") || 32));
-  const r = api.num("Radius") || 1;
+  // Radius=0 is authored deliberately by several node-construction groups:
+  // they create a collapsed indexed point loop and move each point afterward.
+  // Treating zero as a missing value turned those groups back into unit rings.
+  const r = api.num("Radius");
   const pts: Vec3[] = [];
   for (let i = 0; i < res; i++) {
     const a = (i / res) * Math.PI * 2;

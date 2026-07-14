@@ -1127,9 +1127,15 @@
     "object": "Cube",
     "dump": "dojo/nodes-node/dump.json",
     "reference": "dojo/references/nodes-node/cube.png",
-    "blenderStats": { "verts": 769, "faces": 435 },
+    "blenderStats": { "verts": 12743, "faces": 561 },
     "localSpace": true,
-    "note": "Work in progress: all 895 reachable nodes execute and the browser now builds the body, sockets, toggles, and labels. Legacy cumulative switches are supported, but row placement, text transforms, and bottom-edge filling remain visibly different (2,680 / 1,430 browser versus 769 / 435 Blender).",
+    "note": "Recovered-font near parity: the browser matches Blender's complete bounds and presentation layout. One shared control branch still retains a coincident 704-vertex / 704-face surface (13,447 / 1,265 browser versus 12,743 / 561 Blender).",
+    "font": {
+      "url": "dojo/fonts/DejaVuSans-ExtraLight.ttf",
+      "family": "DejaVu Sans ExtraLight",
+      "requiredFor": "the exact panel labels",
+      "fallback": "using the embedded Blender-evaluated outline atlas"
+    },
     "controls": []
   },
   {
@@ -1138,9 +1144,15 @@
     "object": "Cube.006",
     "dump": "dojo/nodes-node/dump.json",
     "reference": "dojo/references/nodes-node/cube-006.png",
-    "blenderStats": { "verts": 89, "faces": 45 },
+    "blenderStats": { "verts": 3861, "faces": 80 },
     "localSpace": true,
-    "note": "Work in progress: the main bar and left socket are present, but browser label geometry is still retained above the body (388 / 96 versus Blender 89 / 45).",
+    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 3,861 vertices and 80 faces with matching bounds, title outlines, and two accumulated rows. Small glyph-position and material-preview differences remain visible.",
+    "font": {
+      "url": "dojo/fonts/DejaVuSans-ExtraLight.ttf",
+      "family": "DejaVu Sans ExtraLight",
+      "requiredFor": "the exact Group Output title",
+      "fallback": "using the embedded Blender-evaluated outline atlas"
+    },
     "controls": []
   },
   {
@@ -1149,9 +1161,15 @@
     "object": "Cube.007",
     "dump": "dojo/nodes-node/dump.json",
     "reference": "dojo/references/nodes-node/cube-007.png",
-    "blenderStats": { "verts": 1177, "faces": 1103 },
+    "blenderStats": { "verts": 3453, "faces": 1127 },
     "localSpace": true,
-    "note": "Partial parity: the browser preserves the long node body and both end sockets. Text/row placement remains under correction (1,304 / 1,111 versus Blender 1,177 / 1,103).",
+    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 3,453 vertices and 1,127 faces with identical bounds; small label-position and material-preview differences remain.",
+    "font": {
+      "url": "dojo/fonts/DejaVuSans-ExtraLight.ttf",
+      "family": "DejaVu Sans ExtraLight",
+      "requiredFor": "the exact Group I/O labels",
+      "fallback": "using the embedded Blender-evaluated outline atlas"
+    },
     "controls": []
   },
   {
@@ -1160,9 +1178,15 @@
     "object": "Cube.005",
     "dump": "dojo/nodes-node/dump.json",
     "reference": "dojo/references/nodes-node/cube-005.png",
-    "blenderStats": { "verts": 233, "faces": 124 },
+    "blenderStats": { "verts": 4150, "faces": 169 },
     "localSpace": true,
-    "note": "Partial parity: the panel and three authored socket/control shapes execute in-browser, while label geometry and switch accumulation remain denser (505 / 164 versus Blender 233 / 124).",
+    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 4,150 vertices and 169 faces with identical bounds; small text-position and material-preview differences remain.",
+    "font": {
+      "url": "dojo/fonts/DejaVuSans-ExtraLight.ttf",
+      "family": "DejaVu Sans ExtraLight",
+      "requiredFor": "the exact selection-row labels",
+      "fallback": "using the embedded Blender-evaluated outline atlas"
+    },
     "controls": []
   },
   {
@@ -1171,9 +1195,15 @@
     "object": "Cube.004",
     "dump": "dojo/nodes-node/dump.json",
     "reference": "dojo/references/nodes-node/cube-004.png",
-    "blenderStats": { "verts": 1465, "faces": 1275 },
+    "blenderStats": { "verts": 9134, "faces": 1347 },
     "localSpace": true,
-    "note": "Partial parity: the tall body, socket family, and checkbox branch are recognizable. Browser row/text transforms still add geometry and alter placement (2,111 / 1,375 versus Blender 1,465 / 1,275).",
+    "note": "Recovered-font near parity: browser and Blender bounds and layout match exactly. One shared control branch retains a coincident 704-vertex / 704-face surface (9,838 / 2,051 browser versus 9,134 / 1,347 Blender).",
+    "font": {
+      "url": "dojo/fonts/DejaVuSans-ExtraLight.ttf",
+      "family": "DejaVu Sans ExtraLight",
+      "requiredFor": "the exact checkbox-panel labels",
+      "fallback": "using the embedded Blender-evaluated outline atlas"
+    },
     "controls": []
   },
   {
@@ -1182,9 +1212,15 @@
     "object": "Cube.003",
     "dump": "dojo/nodes-node/dump.json",
     "reference": "dojo/references/nodes-node/cube-003.png",
-    "blenderStats": { "verts": 1177, "faces": 1103 },
+    "blenderStats": { "verts": 2691, "faces": 1118 },
     "localSpace": true,
-    "note": "Work in progress: the long body and paired input sockets execute, but the legacy label branch remains incomplete (280 / 87 versus Blender 1,177 / 1,103).",
+    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 2,691 vertices and 1,118 faces with identical bounds; small label-position and material-preview differences remain.",
+    "font": {
+      "url": "dojo/fonts/DejaVuSans-ExtraLight.ttf",
+      "family": "DejaVu Sans ExtraLight",
+      "requiredFor": "the exact dual-input labels",
+      "fallback": "using the embedded Blender-evaluated outline atlas"
+    },
     "controls": []
   },
   {
