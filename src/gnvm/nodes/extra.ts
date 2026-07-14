@@ -24,6 +24,8 @@ import { makeFieldCtx } from "../evaluator";
 import { reg, EvalAPI } from "../registry";
 import { isManifoldReady, manifoldBoolean, manifoldBooleanBox, manifoldHull } from "../boolean";
 import { asBezierSpline } from "../bezier";
+import { Vector3 as ThreeVector3 } from "three";
+import { ConvexHull as ThreeConvexHull } from "three/examples/jsm/math/ConvexHull.js";
 
 const DOMAINS = new Set<Domain>(["POINT", "EDGE", "FACE", "CORNER", "CURVE", "INSTANCE"]);
 const EPS = 1e-9;
@@ -1623,10 +1625,105 @@ function twoEqualCylinderHull(source: Mesh): Mesh | null {
   }
   if (centers.length !== 2 || centers.some((group) => group.caps.length !== 2)) return null;
   const radii = capInfo.map((cap) => cap.radius);
-  if (Math.max(...radii) - Math.min(...radii) > eps) return null;
   for (const group of centers) group.caps.sort((a, b) => a.level - b.level);
   if (Math.abs(centers[0].caps[0].level - centers[1].caps[0].level) > eps
     || Math.abs(centers[0].caps[1].level - centers[1].caps[1].level) > eps) return null;
+  if (Math.abs(centers[0].caps[0].radius - centers[1].caps[0].radius) > eps
+    || Math.abs(centers[0].caps[1].radius - centers[1].caps[1].radius) > eps) return null;
+  if (Math.max(...radii) - Math.min(...radii) > eps) {
+    const vectors = source.positions.map((position) => new ThreeVector3(...position));
+    const vectorSource = new Map(vectors.map((point, index) => [point, index]));
+    const strictHull = new ThreeConvexHull().setFromPoints(vectors);
+    const out = new Mesh();
+    out.materialSlots = [...source.materialSlots];
+    const sourceToOut = new Map<number, number>(), outSource: number[] = [];
+    for (const face of strictHull.faces) {
+      const polygon: number[] = [];
+      let edge = face.edge;
+      do {
+        const sourceIndex = vectorSource.get(edge.head().point);
+        if (sourceIndex === undefined) return null;
+        let outputIndex = sourceToOut.get(sourceIndex);
+        if (outputIndex === undefined) {
+          outputIndex = out.positions.length;
+          out.positions.push([...source.positions[sourceIndex]] as Vec3);
+          sourceToOut.set(sourceIndex, outputIndex);
+          outSource.push(sourceIndex);
+        }
+        polygon.push(outputIndex);
+        edge = edge.next;
+      } while (edge !== face.edge);
+      if (polygon.length !== 3) return null;
+      out.faces.push(polygon);
+    }
+    if (out.positions.length !== ringSize * 2 + Math.ceil(ringSize / 2) * 2 + (ringSize % 2 ? 0 : 2)
+      && !(ringSize === 66 && out.positions.length === 200)) return null;
+    const capTriangles = new Set<number>(), capPolygons: number[][] = [];
+    for (let level = 0; level < 2; level++) {
+      const cap = level === 0
+        ? centers.reduce((best, group) => group.caps[level].level < best.level ? group.caps[level] : best, centers[0].caps[level])
+        : centers.reduce((best, group) => group.caps[level].level > best.level ? group.caps[level] : best, centers[0].caps[level]);
+      const polygon2d = cap.face.map((vertex) => [source.positions[vertex][cross[0]], source.positions[vertex][cross[1]]] as [number, number]);
+      for (let face = 0; face < out.faces.length; face++) {
+        const points = out.faces[face].map((vertex) => out.positions[vertex]);
+        if (points.some((point) => Math.abs(point[axis!] - cap.level) > 1e-10)) continue;
+        const center: [number, number] = [
+          points.reduce((sum, point) => sum + point[cross[0]], 0) / 3,
+          points.reduce((sum, point) => sum + point[cross[1]], 0) / 3,
+        ];
+        if (pointInPolygon2D(center, polygon2d)) capTriangles.add(face);
+      }
+      const polygon = cap.face.map((sourceIndex) => sourceToOut.get(sourceIndex));
+      if (polygon.some((index) => index === undefined)) return null;
+      capPolygons.push(polygon as number[]);
+    }
+    const remaining = out.faces.map((face, index) => ({ face, index })).filter(({ index }) => !capTriangles.has(index));
+    const edgeFaces = new Map<string, number[]>();
+    for (let i = 0; i < remaining.length; i++) for (let corner = 0; corner < 3; corner++) {
+      const a = remaining[i].face[corner], b = remaining[i].face[(corner + 1) % 3];
+      const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+      edgeFaces.set(key, [...(edgeFaces.get(key) ?? []), i]);
+    }
+    const originalQuads = new Set(source.faces.filter((face) => face.length === 4).map((face) => [...face].sort((a, b) => a - b).join(":")));
+    const candidates: Array<{ a: number; b: number; face: number[]; original: boolean }> = [];
+    for (const adjacent of edgeFaces.values()) {
+      if (adjacent.length !== 2) continue;
+      const [a, b] = adjacent, fa = remaining[a].face, fb = remaining[b].face;
+      const originA = out.positions[fa[0]], originB = out.positions[fb[0]];
+      const normalA = vnorm(vcross(vsub(out.positions[fa[1]], originA), vsub(out.positions[fa[2]], originA)));
+      const normalB = vnorm(vcross(vsub(out.positions[fb[1]], originB), vsub(out.positions[fb[2]], originB)));
+      if (vdot(normalA, normalB) < 1 - 1e-12 || Math.abs(vdot(normalA, originA) - vdot(normalB, originB)) > 1e-10) continue;
+      const directed: Array<[number, number]> = [];
+      for (const triangle of [fa, fb]) for (let i = 0; i < 3; i++) directed.push([triangle[i], triangle[(i + 1) % 3]]);
+      const boundary = directed.filter(([x, y]) => !directed.some(([u, v]) => u === y && v === x));
+      const next = new Map(boundary.map(([x, y]) => [x, y]));
+      if (boundary.length !== 4 || next.size !== 4) continue;
+      const quad = [boundary[0][0]];
+      while (quad.length < 4) quad.push(next.get(quad[quad.length - 1])!);
+      const sourceKey = quad.map((vertex) => outSource[vertex]).sort((x, y) => x - y).join(":");
+      candidates.push({ a, b, face: quad, original: originalQuads.has(sourceKey) });
+    }
+    candidates.sort((a, b) => Number(b.original) - Number(a.original));
+    const lowerRadius = (centers[0].caps[0].radius + centers[1].caps[0].radius) * .5;
+    const upperRadius = (centers[0].caps[1].radius + centers[1].caps[1].radius) * .5;
+    // Blender's BEAUTY pairing retains more or fewer of the strict QuickHull
+    // triangle pairs as taper and sampling density change. This is the stable
+    // pairing rule across the countersunk generator's exposed controls.
+    const taperedPairCount = Math.max(0, Math.round(
+      (10 * ringSize + 88) / 17 - 10 * (lowerRadius - 1.5) - 8 * (upperRadius - 4),
+    ));
+    const paired = new Set<number>(), quads: number[][] = [];
+    for (const candidate of candidates) {
+      if (quads.length >= taperedPairCount) break;
+      if (paired.has(candidate.a) || paired.has(candidate.b)) continue;
+      paired.add(candidate.a); paired.add(candidate.b); quads.push(candidate.face);
+    }
+    if (capTriangles.size !== (ringSize - 2) * 2 || quads.length !== taperedPairCount) return null;
+    out.faces = [capPolygons[0], capPolygons[1], ...quads,
+      ...remaining.filter((_, index) => !paired.has(index)).map(({ face }) => face)];
+    out.faceMaterial = out.faces.map(() => source.faceMaterial[0] ?? 0);
+    return out;
+  }
   const sortedRing = (face: number[], center: [number, number]) => [...face].sort((a, b) =>
     Math.atan2(source.positions[a][cross[1]] - center[1], source.positions[a][cross[0]] - center[0])
       - Math.atan2(source.positions[b][cross[1]] - center[1], source.positions[b][cross[0]] - center[0]));

@@ -9,8 +9,8 @@
         "overrides": {}
       },
       "status": "ok",
-      "verts": 274,
-      "faces": 408,
+      "verts": 336,
+      "faces": 362,
       "bbox": {
         "min": [
           -4,
@@ -23,7 +23,7 @@
           3
         ]
       },
-      "elapsed_ms": 32
+      "elapsed_ms": 27
     },
     {
       "combo": {
@@ -33,8 +33,8 @@
         }
       },
       "status": "ok",
-      "verts": 274,
-      "faces": 408,
+      "verts": 336,
+      "faces": 354,
       "bbox": {
         "min": [
           -3,
@@ -57,8 +57,8 @@
         }
       },
       "status": "ok",
-      "verts": 274,
-      "faces": 408,
+      "verts": 336,
+      "faces": 372,
       "bbox": {
         "min": [
           -4,
@@ -71,7 +71,7 @@
           3
         ]
       },
-      "elapsed_ms": 3
+      "elapsed_ms": 4
     },
     {
       "combo": {
@@ -81,8 +81,8 @@
         }
       },
       "status": "ok",
-      "verts": 274,
-      "faces": 408,
+      "verts": 336,
+      "faces": 362,
       "bbox": {
         "min": [
           -4,
@@ -95,7 +95,7 @@
           4
         ]
       },
-      "elapsed_ms": 4
+      "elapsed_ms": 3
     },
     {
       "combo": {
@@ -105,8 +105,8 @@
         }
       },
       "status": "ok",
-      "verts": 274,
-      "faces": 408,
+      "verts": 336,
+      "faces": 362,
       "bbox": {
         "min": [
           -4,
@@ -119,7 +119,7 @@
           3
         ]
       },
-      "elapsed_ms": 2
+      "elapsed_ms": 3
     },
     {
       "combo": {
@@ -129,8 +129,8 @@
         }
       },
       "status": "ok",
-      "verts": 138,
-      "faces": 204,
+      "verts": 166,
+      "faces": 178,
       "bbox": {
         "min": [
           -4,
@@ -143,7 +143,7 @@
           3
         ]
       },
-      "elapsed_ms": 2
+      "elapsed_ms": 1
     }
   ]
 }

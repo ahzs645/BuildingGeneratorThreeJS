@@ -881,6 +881,23 @@ function meshSignedAreaXY(m: Mesh): number {
     pillHull.mesh?.positions.length === 98 && pillHull.mesh.faces.length === 72,
     `${pillHull.mesh?.positions.length}v/${pillHull.mesh?.faces.length}f`);
 
+  const taperedPair = new Geometry();
+  taperedPair.mesh = new Mesh();
+  for (const [offset, zOffset] of [[-4, -2e-6], [4, 2e-6]]) {
+    const cone = runNode("GeometryNodeMeshCone", {
+      Vertices: 32, "Side Segments": 1, "Fill Segments": 1,
+      "Radius Top": 4, "Radius Bottom": 1.5, Depth: 2,
+    }, { fill_type: "NGON" }).Mesh as Geometry;
+    const base = taperedPair.mesh.positions.length;
+    taperedPair.mesh.positions.push(...cone.mesh!.positions.map(([x, y, z]) => [x, y + offset, z + zOffset] as Vec3));
+    taperedPair.mesh.faces.push(...cone.mesh!.faces.map((face) => face.map((vertex) => vertex + base)));
+    taperedPair.mesh.faceMaterial.push(...cone.mesh!.faces.map(() => 0));
+  }
+  const taperedHull = runNode("GeometryNodeConvexHull", { Geometry: taperedPair })["Convex Hull"] as Geometry;
+  check("Convex Hull retains strict tapered-pill extrema and face pairing",
+    taperedHull.mesh?.positions.length === 98 && taperedHull.mesh.faces.length === 110,
+    `${taperedHull.mesh?.positions.length}v/${taperedHull.mesh?.faces.length}f`);
+
   // Blender's FLOAT solver performs solid CSG for closed operands too. The VM
   // uses Manifold for that safe subset, including curved/non-AABB cutters.
   const a = box([-1, -1, -1], [1, 1, 1]);
