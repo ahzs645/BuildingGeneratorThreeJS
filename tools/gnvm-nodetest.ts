@@ -168,6 +168,49 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 {
+  const socket = (name: string, identifier: string, type: string) => ({
+    name, identifier, type, linked: true, enabled: true, hide: false,
+    hide_value: false, display_shape: "CIRCLE", idx: 0, value: null,
+  });
+  const program = {
+    Root: {
+      name: "Root", type: "GeometryNodeTree", interface: [],
+      nodes: [
+        { name: "Group Input", type: "NodeGroupInput", inputs: [], outputs: [
+          socket("Active", "Input_0", "NodeSocketGeometry"),
+          socket("Lesson Alternative", "Input_1", "NodeSocketGeometry"),
+        ], props: {}, label: null },
+        { name: "Join", type: "GeometryNodeJoinGeometry", inputs: [socket("Geometry", "Geometry", "NodeSocketGeometry")], outputs: [socket("Geometry", "Geometry", "NodeSocketGeometry")], props: {}, label: null },
+        { name: "Group Output", type: "NodeGroupOutput", inputs: [socket("Geometry", "Output_0", "NodeSocketGeometry")], outputs: [], props: {}, label: null },
+      ],
+      links: [
+        { from_node: "Group Input", from_socket: "Input_0", to_node: "Join", to_socket: "Geometry", multi_input_sort_id: 1 },
+        { from_node: "Group Input", from_socket: "Input_1", to_node: "Join", to_socket: "Geometry", multi_input_sort_id: 2, muted: true },
+        { from_node: "Join", from_socket: "Geometry", to_node: "Group Output", to_socket: "Output_0" },
+      ],
+    },
+  } as any;
+  const joined = new Evaluator(program).evalGroup("Root", {
+    Input_0: box([0, 0, 0], [1, 1, 1]),
+    Input_1: box([2, 0, 0], [3, 1, 1]),
+  }).Output_0 as Geometry;
+  check("Muted links do not participate in multi-input evaluation", joined.mesh?.positions.length === 8 && joined.mesh.faces.length === 6);
+}
+
+{
+  const payload = new Geometry();
+  payload.mesh = new Mesh();
+  payload.mesh.positions = [[-1, -1, 0], [1, -1, 0], [1, 1, 0], [-1, 1, 0]];
+  payload.mesh.faces = [[0, 1, 2, 3]];
+  const instanced = new Geometry();
+  instanced.instances = [{ geometry: payload, position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }];
+  const subdivided = runNode("GeometryNodeSubdivideMesh", { Mesh: instanced, Level: 2 }).Mesh as Geometry;
+  check("Subdivide Mesh evaluates inside instance payloads",
+    subdivided.instances[0].geometry.mesh?.positions.length === 25
+      && subdivided.instances[0].geometry.mesh?.faces.length === 16);
+}
+
+{
   const sphere = runNode("GeometryNodeMeshIcoSphere", { Radius: 2, Subdivisions: 3 }).Mesh as Geometry;
   check("Ico Sphere subdivision 3 topology", sphere.mesh?.positions.length === 162 && sphere.mesh.faces.length === 320);
   check("Ico Sphere applies radius", !!sphere.mesh && sphere.mesh.positions.every((point) => Math.abs(Math.hypot(...point) - 2) < 1e-6));
@@ -437,6 +480,14 @@ function meshSignedAreaXY(m: Mesh): number {
   source.curves[0].controlPoints = [[0, 0, 0], [1, 0, 0]];
   const converted = runNode("GeometryNodeCurveSplineType", { Curve: source }, { spline_type: "POLY" }).Curve as Geometry;
   check("SetSplineType POLY restores authored controls", converted.curves[0].points.length === 2, `got ${converted.curves[0].points.length}`);
+}
+
+{
+  const source = curve([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], true);
+  const converted = runNode("GeometryNodeCurveSplineType", { Curve: source }, { spline_type: "BEZIER" }).Curve as Geometry;
+  check("SetSplineType BEZIER preserves poly evaluated topology before handle edits",
+    converted.curves[0].points.length === 4 && converted.curves[0].controlPoints?.length === 4,
+    `points=${converted.curves[0].points.length}`);
 }
 
 // (E) CurveToMesh: straight Z rail (open) + diamond profile (cyclic), no caps

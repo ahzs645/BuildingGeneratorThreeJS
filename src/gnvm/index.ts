@@ -183,7 +183,7 @@ function isGeometryPassthroughGroup(group: any): boolean {
   const geometryOutput = input.outputs?.find((socket: any) => socket.type === "NodeSocketGeometry");
   const geometryInput = output.inputs?.find((socket: any) => socket.type === "NodeSocketGeometry");
   return Boolean(geometryOutput && geometryInput && group.links?.some((link: any) =>
-    link.from_node === input.name && link.from_socket === geometryOutput.identifier
+    !link.muted && link.from_node === input.name && link.from_socket === geometryOutput.identifier
       && link.to_node === output.name && link.to_socket === geometryInput.identifier));
 }
 

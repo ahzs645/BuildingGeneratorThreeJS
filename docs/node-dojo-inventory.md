@@ -15,9 +15,9 @@ The pack contains **16 Blender projects**, **499 active Geometry Nodes modifiers
 | Knit Graphic | 0 | 0 | No active Geometry Nodes modifier |
 | Typewriter | 1 | 1 | Live GN-VM; recovered Blurmed outlines embedded, layout partial |
 | Send Nodes Hat | 5 | 4 | All 4 roots live; 3 exact, embroidery partial |
-| Module 2 | 103 | 69 | All roots classified; shared finale 100% covered but divergent |
-| Module 3 | 28 | 20 | All roots classified; shared finale 100% covered but divergent |
-| Module 4 | 68 | 35 | All roots classified; shared finale 100% covered but divergent |
+| Module 2 | 103 | 69 | All roots classified; shared finale live and topology/bounds exact |
+| Module 3 | 28 | 20 | All roots classified; shared finale live and topology/bounds exact |
+| Module 4 | 68 | 35 | All roots classified; shared finale live and topology/bounds exact |
 | Chrome Crayon | 1 | 1 | Live Blender/GN-VM comparison |
 | Math Clay | 33 | 14 | All 13 distinct surface roots live; shared helper represented through its consumer |
 | Bubble Vessel | 6 | 3 | Live Blender/GN-VM comparison |

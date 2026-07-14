@@ -1,0 +1,27 @@
+{
+  "source": "MODULE 4_ wax ON wax OFF_1MAY2024.blend",
+  "object": "dojo",
+  "root": "Geometry Nodes.002",
+  "reachableGroups": 11,
+  "reachableNodes": 503,
+  "coverage": "100%",
+  "blender": {
+    "verts": 47435,
+    "faces": 46490,
+    "triangles": 93121,
+    "bbox": {
+      "min": [-1.5830001831054688, -0.5230000615119934, 0.20699986815452576],
+      "max": [1.5830001831054688, 0.14404189586639404, 2.150773286819458]
+    }
+  },
+  "gnvm": {
+    "verts": 47435,
+    "faces": 46490,
+    "triangles": 93121,
+    "bbox": {
+      "min": [-1.5830001831054688, -0.5230000615119934, 0.20699985325336456],
+      "max": [1.5830001831054688, 0.14404188096523285, 2.150773286819458]
+    }
+  },
+  "validation": "Exact topology, face-corner count, face-size distribution, and local bounds. Muted-link extraction removes four inactive building-lesson branches, recursive Subdivide Mesh restores both banner fabrics, and poly-to-Bezier conversion retains Blender's medallion outline density. Small procedural wind-displacement and Workbench shading differences remain."
+}

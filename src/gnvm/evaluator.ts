@@ -17,7 +17,7 @@ export interface RawGroup {
   name: string;
   type: string;
   nodes: RawNode[];
-  links: { from_node: string; from_socket: string; to_node: string; to_socket: string; multi_input_sort_id?: number | null }[];
+  links: { from_node: string; from_socket: string; to_node: string; to_socket: string; multi_input_sort_id?: number | null; muted?: boolean }[];
   interface: any[];
 }
 export type Program = Record<string, RawGroup>;
@@ -508,6 +508,7 @@ class Invocation {
   constructor(private ev: Evaluator, private group: RawGroup, private bindings: Record<string, SockVal>) {
     for (const n of group.nodes) this.byName.set(n.name, n);
     for (const l of group.links) {
+      if (l.muted) continue;
       const k = KEY(l.to_node, l.to_socket);
       const arr = this.incoming.get(k);
       const incoming = { from_node: l.from_node, from_socket: l.from_socket, multi_input_sort_id: l.multi_input_sort_id };
@@ -735,7 +736,7 @@ class Invocation {
     while (queue.length) {
       const cur = queue.pop()!;
       for (const l of this.group.links)
-        if (l.from_node === cur && !zone.has(l.to_node)) { zone.add(l.to_node); queue.push(l.to_node); }
+        if (!l.muted && l.from_node === cur && !zone.has(l.to_node)) { zone.add(l.to_node); queue.push(l.to_node); }
     }
     for (let it = 0; it < nIter; it++) {
       for (const nm of zone) this.memo.delete(nm);
@@ -778,7 +779,7 @@ class Invocation {
     while (queue.length) {
       const current = queue.pop()!;
       for (const link of this.group.links) {
-        if (link.from_node === current && !zone.has(link.to_node)) {
+        if (!link.muted && link.from_node === current && !zone.has(link.to_node)) {
           zone.add(link.to_node);
           queue.push(link.to_node);
         }

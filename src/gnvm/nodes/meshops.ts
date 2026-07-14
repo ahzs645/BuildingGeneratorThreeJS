@@ -942,8 +942,17 @@ reg("GeometryNodeSplitEdges", (api) => {
   return { Mesh: g };
 });
 
-reg("GeometryNodeSubdivideMesh", (api) => {
+function subdivideMesh(api: EvalAPI): Record<string, Geometry> {
   const g = api.geo("Mesh").clone();
+  if (g.instances.length) {
+    g.instances = g.instances.map((instance) => {
+      const nestedApi: EvalAPI = {
+        ...api,
+        geo: (name) => name === "Mesh" ? instance.geometry : api.geo(name),
+      };
+      return { ...instance, geometry: subdivideMesh(nestedApi).Mesh };
+    });
+  }
   // Cap is a runaway guard; the bin's print-layer slicer legitimately uses 4.
   const level = Math.max(0, Math.min(5, Math.round(api.num("Level"))));
   if (!g.mesh || level === 0) return { Mesh: g };
@@ -952,7 +961,8 @@ reg("GeometryNodeSubdivideMesh", (api) => {
   for (let l = 0; l < level; l++) mesh = subdivideOnce(mesh, false);
   g.mesh = mesh;
   return { Mesh: g };
-});
+}
+reg("GeometryNodeSubdivideMesh", subdivideMesh);
 
 reg("GeometryNodeTriangulate", (api) => {
   const g = api.geo("Mesh").clone();

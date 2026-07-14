@@ -55,6 +55,8 @@ export function evaluateBezierSpline(
 
 export function asBezierSpline(source: Spline): Spline {
   const controlPoints = (source.controlPoints?.length ? source.controlPoints : source.points).map(clonePoint);
+  const hadBezierHandles = source.bezierLeft?.length === controlPoints.length
+    && source.bezierRight?.length === controlPoints.length;
   const defaults = defaultHandles(controlPoints, source.cyclic);
   const bezierLeft = source.bezierLeft?.length === controlPoints.length
     ? source.bezierLeft.map(clonePoint)
@@ -68,6 +70,12 @@ export function asBezierSpline(source: Spline): Spline {
     controlPoints,
     bezierLeft,
     bezierRight,
-    points: evaluateBezierSpline(controlPoints, source.cyclic, bezierLeft, bezierRight, source.resolution ?? BEZIER_SAMPLES_PER_SEGMENT),
+    // Set Spline Type converts a poly spline to Bézier control points without
+    // immediately multiplying its evaluated topology. Blender retains those
+    // points until a later handle edit/resolution node creates curved samples.
+    // Existing authored Bézier handles still need their evaluated curve here.
+    points: hadBezierHandles
+      ? evaluateBezierSpline(controlPoints, source.cyclic, bezierLeft, bezierRight, source.resolution ?? BEZIER_SAMPLES_PER_SEGMENT)
+      : controlPoints.map(clonePoint),
   };
 }

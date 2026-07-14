@@ -49,6 +49,7 @@ function signatures(dump) {
       nodeIndex.get(link.from_node), link.from_socket,
       nodeIndex.get(link.to_node), link.to_socket,
       link.multi_input_sort_id ?? null,
+      link.muted ?? false,
     ]).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
     const payload = JSON.stringify({ interface: group.interface.map(clean), nodes, links });
     const digest = createHash("sha256").update(payload).digest("hex");

@@ -193,6 +193,12 @@ def dump_tree(tree):
         sort_id = getattr(l, "multi_input_sort_id", 0)
         if sort_id:
             entry["multi_input_sort_id"] = sort_id
+        # Muted links remain present in Blender's node tree and are exposed by
+        # bpy.types.NodeTree.links, but they do not participate in evaluation.
+        # Course-module lesson graphs use this to keep alternate construction
+        # branches visible beside the active banner output.
+        if getattr(l, "is_muted", False):
+            entry["muted"] = True
         d["links"].append(entry)
     return d
 

@@ -19,10 +19,10 @@ Strict recursive graph hashing collapses ten duplicate roots, leaving 166 struct
 
 - Intro `Plane.023` / `geo` is a 1,181-node “CHALLENGE!” text exercise. Blender evaluates 2,331 vertices / 16 faces. The browser executes the graph, but portable font substitution and curve-fill layout do not yet reproduce the authored typography.
 - Intro `Cube.014` / `Geometry Nodes.023` is a 1,130-node diagram of two Geometry Nodes panels. Blender evaluates 104,454 / 44,423; the browser evaluates the same branches but its legacy text, row, and panel placement are compressed, matching the remaining limitations documented for The Nodes Node UI roots.
-- The `dojo` finale in Modules 2–4 is the same authored banner-and-medallion study saved in successive course scenes. Blender evaluates 47,435 / 46,490 in each file. The GN-VM now has handlers for every reachable node type, including Shortest Edge Paths and Edge Paths to Curves, but evaluates 56,605 / 53,491 and selects the building-facade lesson branch instead of the two banners. It is therefore **100% handler-covered but visually divergent**.
+- The `dojo` finale in Modules 2–4 is the same authored banner-and-medallion study saved in successive course scenes. Muted-link extraction now excludes the four inactive building-lesson links, Subdivide Mesh evaluates inside the banner instances, and poly-to-Bézier conversion preserves the medallion's authored outline density. Blender and the browser both evaluate **47,435 vertices / 46,490 faces / 93,121 triangles**, with the same face-size distribution and local bounds. Small procedural wind-displacement and Workbench shading differences remain.
 
 ## Porting decision
 
 Course roots remain authoritative teaching snapshots, not missing catalog products. We will publish a course root only when it represents a distinct visible exercise and passes the same Blender-reference standard as the reusable generators. Repeated lesson stages and helper roots stay in the audit inventory so they are not mistaken for unfinished products.
 
-The next semantic investigation for the Modules 2–4 finale is the field/domain or object-dependency selection that chooses the building branch. Adding more node stubs will not fix it: the reachable handler coverage is already complete.
+The canonical Modules 2–4 finale now meets the publication evidence standard and is live in the browser library. The next course work should select another distinct visible complex study rather than expanding duplicated lesson snapshots.
