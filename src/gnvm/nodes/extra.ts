@@ -200,6 +200,26 @@ function blenderHashInt3(x: number, y: number, z: number): number {
   c = u32((c ^ b) - rotl32(b, 24));
   return c;
 }
+function blenderHashInt4(x: number, y: number, z: number, w: number): number {
+  let a = u32(0xdeadbeef + (4 << 2) + 13 + x);
+  let b = u32(0xdeadbeef + (4 << 2) + 13 + y);
+  let c = u32(0xdeadbeef + (4 << 2) + 13 + z);
+  a = u32(a - c); a = u32(a ^ rotl32(c, 4)); c = u32(c + b);
+  b = u32(b - a); b = u32(b ^ rotl32(a, 6)); a = u32(a + c);
+  c = u32(c - b); c = u32(c ^ rotl32(b, 8)); b = u32(b + a);
+  a = u32(a - c); a = u32(a ^ rotl32(c, 16)); c = u32(c + b);
+  b = u32(b - a); b = u32(b ^ rotl32(a, 19)); a = u32(a + c);
+  c = u32(c - b); c = u32(c ^ rotl32(b, 4)); b = u32(b + a);
+  a = u32(a + w);
+  c = u32((c ^ b) - rotl32(b, 14));
+  a = u32((a ^ c) - rotl32(c, 11));
+  b = u32((b ^ a) - rotl32(a, 25));
+  c = u32((c ^ b) - rotl32(b, 16));
+  a = u32((a ^ c) - rotl32(c, 4));
+  b = u32((b ^ a) - rotl32(a, 14));
+  c = u32((c ^ b) - rotl32(b, 24));
+  return c;
+}
 function blenderNoiseGrad3(hash: number, x: number, y: number, z: number): number {
   const h = hash & 15;
   const u = h < 8 ? x : y;
@@ -222,6 +242,31 @@ function blenderSNoise3(p: Vec3): number {
   return 0.982 * mix(z0, z1, w);
 }
 
+type Vec4 = [number, number, number, number];
+function blenderNoiseGrad4(hash: number, x: number, y: number, z: number, w: number): number {
+  const h = hash & 31;
+  const u = h < 24 ? x : y;
+  const v = h < 16 ? y : z;
+  const s = h < 8 ? z : w;
+  return (h & 1 ? -u : u) + (h & 2 ? -v : v) + (h & 4 ? -s : s);
+}
+function blenderSNoise4(p: Vec4): number {
+  const cell = p.map(Math.floor) as Vec4;
+  const f = p.map((value, axis) => value - cell[axis]) as Vec4;
+  const fade = f.map(smoothNoiseFade) as Vec4;
+  const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+  const sample = (dx: number, dy: number, dz: number, dw: number) => blenderNoiseGrad4(
+    blenderHashInt4(cell[0] + dx, cell[1] + dy, cell[2] + dz, cell[3] + dw),
+    f[0] - dx, f[1] - dy, f[2] - dz, f[3] - dw,
+  );
+  const cube = (dw: number) => {
+    const z0 = mix(mix(sample(0, 0, 0, dw), sample(1, 0, 0, dw), fade[0]), mix(sample(0, 1, 0, dw), sample(1, 1, 0, dw), fade[0]), fade[1]);
+    const z1 = mix(mix(sample(0, 0, 1, dw), sample(1, 0, 1, dw), fade[0]), mix(sample(0, 1, 1, dw), sample(1, 1, 1, dw), fade[0]), fade[1]);
+    return mix(z0, z1, fade[2]);
+  };
+  return 0.8344 * mix(cube(0), cube(1), fade[3]);
+}
+
 function blenderFbm3(p: Vec3, detail: number, roughness: number, lacunarity: number, normalize: boolean): number {
   let frequency = 1;
   let amplitude = 1;
@@ -241,6 +286,50 @@ function blenderFbm3(p: Vec3, detail: number, roughness: number, lacunarity: num
   return normalized(sum, maxAmplitude) + (normalized(sum2, maxAmplitude + amplitude) - normalized(sum, maxAmplitude)) * fraction;
 }
 
+function blenderFbm4(p: Vec4, detail: number, roughness: number, lacunarity: number, normalize: boolean): number {
+  let frequency = 1;
+  let amplitude = 1;
+  let maxAmplitude = 0;
+  let sum = 0;
+  const whole = Math.floor(Math.max(0, Math.min(15, detail)));
+  for (let octave = 0; octave <= whole; octave++) {
+    sum += blenderSNoise4(p.map((value) => value * frequency) as Vec4) * amplitude;
+    maxAmplitude += amplitude;
+    amplitude *= Math.max(0, roughness);
+    frequency *= lacunarity;
+  }
+  const fraction = Math.max(0, Math.min(15, detail)) - whole;
+  const normalized = (value: number, weight: number) => normalize ? 0.5 * value / weight + 0.5 : value;
+  if (fraction <= EPS) return normalized(sum, maxAmplitude);
+  const sum2 = sum + blenderSNoise4(p.map((value) => value * frequency) as Vec4) * amplitude;
+  return normalized(sum, maxAmplitude) + (normalized(sum2, maxAmplitude + amplitude) - normalized(sum, maxAmplitude)) * fraction;
+}
+
+const floatBitsBuffer = new ArrayBuffer(4);
+const floatBitsView = new DataView(floatBitsBuffer);
+function floatBits(value: number): number {
+  floatBitsView.setFloat32(0, value, true);
+  return floatBitsView.getUint32(0, true);
+}
+function blenderHashUint2(x: number, y: number): number {
+  let a = u32(0xdeadbeef + (2 << 2) + 13 + x);
+  let b = u32(0xdeadbeef + (2 << 2) + 13 + y);
+  let c = u32(0xdeadbeef + (2 << 2) + 13);
+  c = u32((c ^ b) - rotl32(b, 14));
+  a = u32((a ^ c) - rotl32(c, 11));
+  b = u32((b ^ a) - rotl32(a, 25));
+  c = u32((c ^ b) - rotl32(b, 16));
+  a = u32((a ^ c) - rotl32(c, 4));
+  b = u32((b ^ a) - rotl32(a, 14));
+  c = u32((c ^ b) - rotl32(b, 24));
+  return c;
+}
+function blenderRandomVec4Offset(seed: number): Vec4 {
+  return [0, 1, 2, 3].map((component) =>
+    100 + blenderHashUint2(floatBits(seed), floatBits(component)) / 0xffffffff * 100,
+  ) as Vec4;
+}
+
 reg("ShaderNodeTexNoise", (api) => {
   const linkedVector = api.node.inputs.find((socket) => socket.identifier === "Vector")?.linked ?? false;
   const vector = api.field("Vector");
@@ -249,9 +338,12 @@ reg("ShaderNodeTexNoise", (api) => {
   const roughness = api.field("Roughness");
   const lacunarity = api.field("Lacunarity");
   const distortion = api.field("Distortion");
-  const factor = Field.make((ctx) => {
+  const w = api.field("W");
+  const dimensions = api.prop<string>("noise_dimensions", "3D");
+  const evaluate = (ctx: import("../core").FieldCtx, colorSeed?: number) => {
     const vectors = vector.array(ctx), scales = scale.array(ctx), details = detail.array(ctx);
-    const roughnesses = roughness.array(ctx), lacunarities = lacunarity.array(ctx), distortions = distortion.array(ctx);
+    const roughnesses = roughness.array(ctx), lacunarities = lacunarity.array(ctx), distortions = distortion.array(ctx), ws = w.array(ctx);
+    const colorOffset = colorSeed === undefined ? null : blenderRandomVec4Offset(colorSeed);
     return Array.from({ length: ctx.size }, (_, i) => {
       let p = linkedVector ? asVec3(vectors[i] ?? 0) : ctx.position?.(i) ?? [0, 0, 0];
       const frequencyScale = asNum(scales[i] ?? 5);
@@ -267,10 +359,23 @@ reg("ShaderNodeTexNoise", (api) => {
       const noiseDetail = asNum(details[i] ?? 2);
       const persistence = Math.max(0, asNum(roughnesses[i] ?? .5));
       const lac = Math.max(1e-4, asNum(lacunarities[i] ?? 2));
+      if (dimensions === "4D") {
+        let p4: Vec4 = [p[0], p[1], p[2], asNum(ws[i] ?? 0) * frequencyScale];
+        if (colorOffset) p4 = p4.map((value, axis) => value + colorOffset[axis]) as Vec4;
+        return blenderFbm4(p4, noiseDetail, persistence, lac, api.prop<boolean>("normalize", true));
+      }
       return blenderFbm3(p, noiseDetail, persistence, lac, api.prop<boolean>("normalize", true));
     });
-  });
-  return { Fac: factor, Factor: factor, Color: Field.make((ctx) => factor.array(ctx).map((value) => [asNum(value), asNum(value), asNum(value)])) };
+  };
+  const factor = Field.make((ctx) => evaluate(ctx));
+  return {
+    Fac: factor,
+    Factor: factor,
+    Color: Field.make((ctx) => {
+      const red = factor.array(ctx), green = evaluate(ctx, dimensions === "4D" ? 4 : 3), blue = evaluate(ctx, dimensions === "4D" ? 5 : 4);
+      return red.map((value, index) => [asNum(value), asNum(green[index]), asNum(blue[index])] as Vec3);
+    }),
+  };
 });
 
 // Blender's Wave Texture uses a fixed factor of 20 before applying its

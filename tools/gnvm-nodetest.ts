@@ -378,6 +378,15 @@ function meshSignedAreaXY(m: Mesh): number {
   const waveValue = Number(wave.array({ size: 1, domain: "POINT" })[0]);
   check("Wave Texture SIN matches Blender's fixed-20 phase", Math.abs(waveValue - 0.91953576) < 1e-6, `got ${waveValue}`);
 
+  const noiseGeometry = new Geometry();
+  noiseGeometry.instances = [{ geometry: new Geometry(), position: [-2.9740545749664307, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }];
+  const noise = runNode("ShaderNodeTexNoise", {
+    Vector: [0, 0, 0], W: 1 / 1111, Scale: 18.709999084472656,
+    Detail: 2, Roughness: .5, Lacunarity: 2, Distortion: 0,
+  }, { noise_dimensions: "4D", noise_type: "FBM", normalize: true }).Fac as Field;
+  const noiseValue = Number(noise.array(makeFieldCtx(noiseGeometry, "INSTANCE"))[0]);
+  check("Noise Texture 4D matches Blender's driven header sample", Math.abs(noiseValue - 0.4700492322444916) < 2e-5, `got ${noiseValue}`);
+
   const rotatedVector = runNode("FunctionNodeRotateVector", {
     Vector: [1, 0, 0], Rotation: [0, 0, Math.PI / 2],
   }).Vector as Field;
@@ -1338,6 +1347,13 @@ function meshSignedAreaXY(m: Mesh): number {
       glyphs: {
         A: { advance: .8, curves: [{ cyclic: true, points: [[0, 0, 0], [.6, 0, 0], [.6, 1, 0], [0, 1, 0]] }] },
         B: { advance: .7, curves: [{ cyclic: true, points: [[0, 0, 0], [.5, 0, 0], [.5, 1, 0], [0, 1, 0]] }] },
+        S: { advance: 1, curves: [{ cyclic: true, points: [
+          ...Array.from({ length: 13 }, (_, index) => [index / 12, 0, 0]),
+          ...Array.from({ length: 11 }, (_, index) => {
+            const angle = (index + 1) / 12 * Math.PI;
+            return [0.5 + 0.5 * Math.cos(angle), 0.5 * Math.sin(angle), 0];
+          }),
+        ] }] },
       },
     },
   };
@@ -1370,6 +1386,12 @@ function meshSignedAreaXY(m: Mesh): number {
     "Text Box Width": 2,
   })["Curve Instances"] as Geometry;
   check("StringToCurves vertically centers wrapped Middle text", Math.abs(centeredWrappedAtlas.instances[0].position[1] - .5) < 1e-9 && Math.abs(centeredWrappedAtlas.instances[2].position[1] + .5) < 1e-9);
+  const sampledFontCurve = runNode("GeometryNodeStringToCurves", {
+    String: "S", Size: 1, Font: { datablock: "VectorFont", name: "TestFont" },
+    "Align X": "Left", "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": 1,
+  })["Curve Instances"] as Geometry;
+  const sampledFontFill = runNode("GeometryNodeFillCurve", { Curve: sampledFontCurve, Mode: "N-gons" }).Mesh as Geometry;
+  check("Fill Curve dissolves straight evaluated font samples", sampledFontFill.instances[0].geometry.mesh?.positions.length === 13, `got ${sampledFontFill.instances[0].geometry.mesh?.positions.length}`);
   DUMP_CONTEXT.fonts = savedFonts;
 
   const outlinedGlyph = new Geometry();

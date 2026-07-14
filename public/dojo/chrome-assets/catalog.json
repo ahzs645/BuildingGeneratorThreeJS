@@ -75,7 +75,7 @@
     "dump": "dojo/chrome-assets/ui-window-generator/dump.json",
     "reference": "dojo/references/chrome-assets/ui-window-generator.png",
     "blenderStats": { "verts": 35886, "faces": 33474 },
-    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. Authored topology is within 0.38% of Blender.",
+    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. Blender-compatible 4D noise brings authored topology to 35,878 / 33,456 versus Blender's 35,886 / 33,474.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",
@@ -1467,6 +1467,18 @@
   "localSpace": true,
   "workbenchColor": [0.8, 0.8, 0.8],
   "note": "The complete 1,130-node Intro diagram reproduces its Ico Sphere and Set Material panels with exact Blender topology at 104,454 vertices and 44,423 faces. Curve-domain point deletion restores both rounded lower edges and shared socket-row geometry; local bounds are within 0.0048 units.",
+  "controls": []
+},
+{
+  "id": "course-intro-challenge",
+  "title": "Course Intro · CHALLENGE!",
+  "object": "Plane.023",
+  "dump": "dojo/course-modules/intro-challenge/dump.json",
+  "reference": "dojo/references/course-modules/intro-challenge.png",
+  "blenderStats": { "verts": 2331, "faces": 16 },
+  "localSpace": true,
+  "workbenchColor": [0.8, 0.8, 0.8],
+  "note": "The complete 1,181-node Blurmed title-and-arrow study matches Blender's visible cached frame-1 result exactly at 2,331 vertices and 16 faces, with local bounds within 0.000003 units. Sampled straight font segments and all ten 4D-noise bounce offsets now match.",
   "controls": []
 }
 ]

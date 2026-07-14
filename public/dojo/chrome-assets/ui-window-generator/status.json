@@ -4,7 +4,7 @@
   "root": "UI Window Generator.001",
   "status": "near-exact",
   "blender": { "verts": 35886, "faces": 33474 },
-  "gnvm": { "verts": 35766, "faces": 33347 },
+  "gnvm": { "verts": 35878, "faces": 33456 },
   "font": { "source": "dojo/fonts/pixels.ttf", "family": "Pixels Medium", "fallback": "embedded Blender-extracted outlines" },
-  "validation": "The page loads the supplied Pixels Medium TTF and visibly reports when it falls back to the embedded outline atlas. Authored topology differs by 0.33% vertices and 0.38% faces; maximum local-bounds difference is 2.2816 units."
+  "validation": "The page loads the supplied Pixels Medium TTF and visibly reports when it falls back to the embedded outline atlas. Blender-compatible normalized 4D noise improves authored topology to within 0.03% vertices and 0.06% faces; maximum local-bounds difference remains 2.2816 units."
 }

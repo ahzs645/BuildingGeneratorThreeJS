@@ -464,10 +464,29 @@ reg("GeometryNodeFillCurve", (api) => {
     // Fill Curve preserves point indices. Clockwise outlines are made
     // front-facing by reversing polygon corners later, not by reordering the
     // vertices themselves; Sample Index consumers depend on that distinction.
-    const planar = source.curves.map((s) => ({
-      cyclic: s.cyclic,
-      points: s.points.map((p) => [p[0], p[1], 0] as Vec3),
-    }));
+    const sampledFontStride = source.curveAttributes.get("__font_sample_stride")?.data;
+    const planar = source.curves.map((s, splineIndex) => {
+      const stride = Math.max(0, Math.round(asNum(sampledFontStride?.[splineIndex] ?? 0)));
+      const points = stride > 1 && s.points.length % stride === 0
+        ? s.points.filter((point, index, values) => {
+          // Blender's font Fill Curve keeps the authored Bezier anchors but
+          // dissolves evaluated interior samples on exactly straight segments.
+          // Commercial CFF outlines commonly encode those straight sides as
+          // cubic segments; retaining all 12 evaluated samples made Blurmed's
+          // CHALLENGE title 264 vertices denser than Blender.
+          if (index % stride === 0) return true;
+          const previous = values[(index - 1 + values.length) % values.length];
+          const next = values[(index + 1) % values.length];
+          const before = vsub(point, previous), after = vsub(next, point);
+          const scale = vlen(before) * vlen(after);
+          return !scale || Math.abs(vlen(vcross(before, after))) > 1e-9 * scale || vdot(before, after) < 0;
+        })
+        : s.points;
+      return {
+        cyclic: s.cyclic,
+        points: points.map((p) => [p[0], p[1], 0] as Vec3),
+      };
+    });
     if (planar.length) {
       // Preserve String to Curves' per-glyph instances while applying the same
       // even-odd N-gon fill inside each payload. This retains Blender's outline
@@ -683,6 +702,10 @@ function atlasGlyphGeometry(fontName: string | undefined, ch: string, size: numb
     cyclic: curve.cyclic,
     points: curve.points.map((point) => [Number(point[0] ?? 0) * size, Number(point[1] ?? 0) * size, Number(point[2] ?? 0) * size] as Vec3),
   }));
+  // Blender's evaluated font curves use 12 samples per authored Bezier
+  // segment. Preserve that cadence so Fill Curve can distinguish removable
+  // straight-segment interiors from real collinear anchors.
+  geometry.curveAttributes.set("__font_sample_stride", { domain: "CURVE", data: entry.curves.map(() => 12) });
   return geometry;
 }
 

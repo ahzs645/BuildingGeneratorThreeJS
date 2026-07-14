@@ -1,0 +1,33 @@
+{
+  "source": "INTRO MODULE_ The Basics of Nodes and Node Dojo_2MAY2024.blend",
+  "object": "Plane.023",
+  "root": "geo",
+  "reachableGroups": 37,
+  "reachableNodes": 1181,
+  "coverage": "100%",
+  "referenceFrame": 1,
+  "driver": {
+    "path": "bouncy header / Noise Texture / W",
+    "expression": "frame/1111",
+    "value": 0.0009000900090009,
+    "note": "The supplied Blender file displays its cached frame-1 Geometry Nodes result on open even though the scene timeline is saved at frame 1405. The gallery preserves that visible on-open reference state."
+  },
+  "blender": {
+    "verts": 2331,
+    "faces": 16,
+    "bbox": {
+      "min": [-2.9347381591796875, -1.9497753381729126, -0.42397135496139526],
+      "max": [2.9347381591796875, 0.5784178972244263, 0.42397135496139526]
+    }
+  },
+  "gnvm": {
+    "verts": 2331,
+    "faces": 16,
+    "triangles": 2315,
+    "bbox": {
+      "min": [-2.93473744392395, -1.9497753381729126, -0.42396849393844604],
+      "max": [2.93473744392395, 0.5784178972244263, 0.42396849393844604]
+    }
+  },
+  "validation": "Exact topology and visual composition with local bounds within 0.000003 units. Blurmed CFF straight-segment samples are dissolved at Fill Curve while authored Bezier anchors remain, and Blender-compatible normalized 4D Perlin noise reproduces all ten per-glyph bounce offsets."
+}

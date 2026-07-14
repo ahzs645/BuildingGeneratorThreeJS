@@ -14,7 +14,12 @@ field_node, field_socket = field_spec.split(":", 1)
 group_output = next(node for node in tree.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output)
 geometry_output = next(socket for socket in group_output.inputs if socket.type == "GEOMETRY")
 original = geometry_output.links[0].from_socket if geometry_output.is_linked else None
-field_output = tree.nodes[field_node].outputs[field_socket]
+synthetic_field = None
+if field_node == "__POSITION__":
+    synthetic_field = tree.nodes.new("GeometryNodeInputPosition")
+    field_output = synthetic_field.outputs[field_socket]
+else:
+    field_output = tree.nodes[field_node].outputs[field_socket]
 store = tree.nodes.new("GeometryNodeStoreNamedAttribute")
 store.data_type = {
     "NodeSocketBool": "BOOLEAN",
@@ -27,7 +32,17 @@ tree.links.new(tree.nodes[geometry_node].outputs[geometry_socket], store.inputs[
 tree.links.new(field_output, store.inputs["Value"])
 for link in list(geometry_output.links):
     tree.links.remove(link)
-tree.links.new(store.outputs["Geometry"], geometry_output)
+realize = None
+if domain.upper() == "INSTANCE":
+    # Object evaluation realizes output instances, but attributes stored only
+    # on the instance domain are otherwise omitted from the resulting mesh
+    # attribute list. Realize explicitly so the captured value propagates to
+    # every point of each payload and can be inspected below.
+    realize = tree.nodes.new("GeometryNodeRealizeInstances")
+    tree.links.new(store.outputs["Geometry"], realize.inputs["Geometry"])
+    tree.links.new(realize.outputs["Geometry"], geometry_output)
+else:
+    tree.links.new(store.outputs["Geometry"], geometry_output)
 
 obj.update_tag()
 bpy.context.view_layer.update()
@@ -49,6 +64,10 @@ finally:
         tree.links.remove(link)
     if original is not None:
         tree.links.new(original, geometry_output)
+    if realize is not None:
+        tree.nodes.remove(realize)
+    if synthetic_field is not None:
+        tree.nodes.remove(synthetic_field)
     tree.nodes.remove(store)
 
 with open(out_path, "w", encoding="utf-8") as handle:
