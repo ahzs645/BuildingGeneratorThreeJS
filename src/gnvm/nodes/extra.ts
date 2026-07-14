@@ -899,7 +899,10 @@ reg("GeometryNodeSampleIndex", (api) => {
   const srcCtx = makeFieldCtx(src, domain);
   const srcArr = srcCtx.size ? valF.array(srcCtx) : [];
   const pick = (j: number): Elem => {
-    let k = Math.round(j);
+    // The Index socket is integer-valued. Blender's implicit float-to-int
+    // conversion truncates toward zero; rounding shifts every half-index in
+    // BB_Bridge and rotates one of the paired cyclic boundaries by a point.
+    let k = Math.trunc(j);
     if (clamp) k = Math.max(0, Math.min(srcArr.length - 1, k));
     return k >= 0 && k < srcArr.length ? srcArr[k] ?? 0 : 0;
   };
@@ -1791,6 +1794,203 @@ function openSweptDifference(source: Mesh, cutter: Mesh): Mesh | null {
   return out;
 }
 
+/**
+ * Preserve Blender's polygon layout when a short prism cuts part-way through
+ * an extruded annulus. Bolt Generator builds its head this way: the annulus
+ * has two equally sampled boundary loops, while a six-sided prism starts
+ * below the bottom and ends inside the head. Manifold returns the right solid
+ * but triangulates it and dissolves the 55 authored radial subdivisions.
+ */
+function annularPrismDifference(source: Mesh, cutter: Mesh): Mesh | null {
+  // Extrude Mesh keeps a duplicate cap ring, so the cutter can be
+  // geometrically closed while its raw vertex indices are not manifold.
+  if (!isClosedFaceManifold(source) || source.faces.some((face) => face.length !== 4)) return null;
+  const scale = Math.max(meshDiag(source), meshDiag(cutter), 1);
+  const eps = scale * 1e-5;
+  let axis: 0 | 1 | 2 | null = null;
+  let sourceLevels: Array<{ value: number; indices: number[] }> = [];
+  for (const candidate of [0, 1, 2] as const) {
+    const groups: Array<{ value: number; indices: number[] }> = [];
+    for (let index = 0; index < source.positions.length; index++) {
+      const value = source.positions[index][candidate];
+      let group = groups.find((entry) => Math.abs(entry.value - value) <= eps);
+      if (!group) { group = { value, indices: [] }; groups.push(group); }
+      group.indices.push(index);
+    }
+    if (groups.length === 2 && groups[0].indices.length === groups[1].indices.length) {
+      axis = candidate;
+      sourceLevels = groups.sort((a, b) => a.value - b.value);
+      break;
+    }
+  }
+  if (axis === null || sourceLevels[0].indices.length < 16 || sourceLevels[0].indices.length % 2) return null;
+  const cross = [0, 1, 2].filter((candidate) => candidate !== axis) as [0 | 1 | 2, 0 | 1 | 2];
+  const sourceMin = sourceLevels[0].value, sourceMax = sourceLevels[1].value;
+  const cutterValues = cutter.positions.map((position) => position[axis]);
+  const cutterMin = Math.min(...cutterValues), cutterMax = Math.max(...cutterValues);
+  if (cutterMin > sourceMin + eps || cutterMax <= sourceMin + eps || cutterMax >= sourceMax - eps) return null;
+
+  const uniqueCross = (indices: number[]): Vec3[] => {
+    const result: Vec3[] = [];
+    for (const index of indices) {
+      const point = cutter.positions[index];
+      if (!result.some((candidate) => Math.hypot(candidate[cross[0]] - point[cross[0]], candidate[cross[1]] - point[cross[1]]) <= eps)) {
+        result.push([...point] as Vec3);
+      }
+    }
+    return result;
+  };
+  const cutterTop = uniqueCross(cutter.positions.map((_, index) => index).filter((index) => Math.abs(cutter.positions[index][axis] - cutterMax) <= eps));
+  if (cutterTop.length < 3 || cutterTop.length > 16) return null;
+  const center: [number, number] = [
+    cutterTop.reduce((sum, point) => sum + point[cross[0]], 0) / cutterTop.length,
+    cutterTop.reduce((sum, point) => sum + point[cross[1]], 0) / cutterTop.length,
+  ];
+  const angle = (point: Vec3) => Math.atan2(point[cross[1]] - center[1], point[cross[0]] - center[0]);
+  cutterTop.sort((a, b) => angle(a) - angle(b));
+  const cutterPolygon = cutterTop.map((point) => [point[cross[0]], point[cross[1]]] as [number, number]);
+  const ringCount = sourceLevels[0].indices.length / 2;
+  const splitRings = (level: typeof sourceLevels[number]): { inner: number[]; outer: number[] } | null => {
+    const radial = level.indices.map((index) => {
+      const point = source.positions[index];
+      return { index, radius: (point[cross[0]] - center[0]) ** 2 + (point[cross[1]] - center[1]) ** 2 };
+    }).sort((a, b) => a.radius - b.radius);
+    const inner = radial.slice(0, ringCount).map((entry) => entry.index).sort((a, b) => angle(source.positions[a]) - angle(source.positions[b]));
+    const outer = radial.slice(ringCount).map((entry) => entry.index).sort((a, b) => angle(source.positions[a]) - angle(source.positions[b]));
+    if (inner.some((index) => !pointInPolygon2D([source.positions[index][cross[0]], source.positions[index][cross[1]]], cutterPolygon))) return null;
+    if (outer.some((index) => pointInPolygon2D([source.positions[index][cross[0]], source.positions[index][cross[1]]], cutterPolygon))) return null;
+    return { inner, outer };
+  };
+  const bottom = splitRings(sourceLevels[0]), top = splitRings(sourceLevels[1]);
+  if (!bottom || !top) return null;
+
+  const out = new Mesh();
+  out.materialSlots = [...source.materialSlots];
+  const copyRing = (ring: number[]): number[] => ring.map((sourceIndex) => {
+    const index = out.positions.length;
+    out.positions.push([...source.positions[sourceIndex]] as Vec3);
+    return index;
+  });
+  const bottomOuter = copyRing(bottom.outer);
+  const topOuter = copyRing(top.outer);
+  const topInner = copyRing(top.inner);
+  const stepInner = top.inner.map((sourceIndex) => {
+    const point = [...source.positions[sourceIndex]] as Vec3;
+    point[axis!] = cutterMax;
+    const index = out.positions.length;
+    out.positions.push(point);
+    return index;
+  });
+  const topCutter = cutterTop.map((sourcePoint) => {
+    const point = [...sourcePoint] as Vec3;
+    point[axis!] = cutterMax;
+    const index = out.positions.length;
+    out.positions.push(point);
+    return index;
+  });
+
+  const segmentHit = (a: Vec3, b: Vec3, c: Vec3, d: Vec3): { t: number; point: Vec3 } | null => {
+    const ax = a[cross[0]], ay = a[cross[1]], bx = b[cross[0]], by = b[cross[1]];
+    const cx = c[cross[0]], cy = c[cross[1]], dx = d[cross[0]], dy = d[cross[1]];
+    const abx = bx - ax, aby = by - ay, cdx = dx - cx, cdy = dy - cy;
+    const denominator = abx * cdy - aby * cdx;
+    if (Math.abs(denominator) < 1e-12) return null;
+    const acx = cx - ax, acy = cy - ay;
+    const t = (acx * cdy - acy * cdx) / denominator;
+    const u = (acx * aby - acy * abx) / denominator;
+    if (t < -1e-7 || t > 1 + 1e-7 || u < -1e-7 || u > 1 + 1e-7) return null;
+    const point = vadd(a, vscale(vsub(b, a), t));
+    point[axis!] = sourceMin;
+    return { t, point };
+  };
+  const radialHits: Vec3[] = [];
+  for (let i = 0; i < ringCount; i++) {
+    const outer = source.positions[bottom.outer[i]], inner = source.positions[bottom.inner[i]];
+    const hits: { t: number; point: Vec3 }[] = [];
+    for (let edge = 0; edge < cutterTop.length; edge++) {
+      const a = cutterTop[edge], b = cutterTop[(edge + 1) % cutterTop.length];
+      const hit = segmentHit(outer, inner, a, b);
+      if (hit) hits.push(hit);
+    }
+    if (!hits.length) return null;
+    hits.sort((a, b) => a.t - b.t);
+    radialHits.push(hits[0].point);
+  }
+  const boundaryPoints = [...radialHits, ...cutterTop.map((point) => {
+    const result = [...point] as Vec3;
+    result[axis!] = sourceMin;
+    return result;
+  })].sort((a, b) => angle(a) - angle(b)).filter((point, index, values) => {
+    const previous = values[(index + values.length - 1) % values.length];
+    return Math.hypot(point[cross[0]] - previous[cross[0]], point[cross[1]] - previous[cross[1]]) > eps;
+  });
+  // A cutter corner can coincide with any number of authored radial edges.
+  if (boundaryPoints.length < ringCount || boundaryPoints.length > ringCount + cutterTop.length) return null;
+  const bottomBoundary = boundaryPoints.map((point) => {
+    const index = out.positions.length;
+    out.positions.push(point);
+    return index;
+  });
+  const nearestBoundary = (point: Vec3): number => {
+    let best = 0, distance = Infinity;
+    for (let i = 0; i < boundaryPoints.length; i++) {
+      const candidate = boundaryPoints[i];
+      const next = (candidate[cross[0]] - point[cross[0]]) ** 2 + (candidate[cross[1]] - point[cross[1]]) ** 2;
+      if (next < distance) { distance = next; best = i; }
+    }
+    return best;
+  };
+  const boundaryArc = (start: number, end: number): number[] => {
+    const arc = [bottomBoundary[start]];
+    for (let i = start; i !== end;) { i = (i + 1) % bottomBoundary.length; arc.push(bottomBoundary[i]); }
+    return arc;
+  };
+  const radialBoundary = radialHits.map(nearestBoundary);
+  const cutterBoundary = cutterTop.map(nearestBoundary);
+  const material = source.faceMaterial[0] ?? 0;
+  const push = (face: number[]) => { out.faces.push(face); out.faceMaterial.push(material); };
+  for (let i = 0; i < ringCount; i++) {
+    const next = (i + 1) % ringCount;
+    push([bottomOuter[i], ...boundaryArc(radialBoundary[i], radialBoundary[next]), bottomOuter[next]]);
+    push([bottomOuter[i], bottomOuter[next], topOuter[next], topOuter[i]]);
+    push([topInner[i], topInner[next], stepInner[next], stepInner[i]]);
+    push([topOuter[i], topOuter[next], topInner[next], topInner[i]]);
+  }
+  for (let i = 0; i < cutterTop.length; i++) {
+    const next = (i + 1) % cutterTop.length;
+    push([topCutter[i], topCutter[next], ...boundaryArc(cutterBoundary[i], cutterBoundary[next]).reverse()]);
+  }
+  // Blender bridges one cutter edge to the corresponding short arc of the
+  // sampled inner ring. That leaves a small sector and one large ngon (12 and
+  // 53 corners for the authored 6/55 head), rather than balancing the annulus.
+  const nearestStep = (vertex: number): number => {
+    const point = out.positions[vertex];
+    let best = 0, distance = Infinity;
+    for (let i = 0; i < stepInner.length; i++) {
+      const candidate = out.positions[stepInner[i]];
+      const next = (candidate[cross[0]] - point[cross[0]]) ** 2 + (candidate[cross[1]] - point[cross[1]]) ** 2;
+      if (next < distance) { distance = next; best = i; }
+    }
+    return best;
+  };
+  let stepChoice: { outer: number; next: number; inner: number; innerNext: number; arc: number[] } | null = null;
+  for (let outer = 0; outer < topCutter.length; outer++) {
+    const next = (outer + 1) % topCutter.length;
+    const inner = nearestStep(topCutter[outer]), innerNext = nearestStep(topCutter[next]);
+    const arc = cyclicArc(stepInner, inner, innerNext);
+    if (arc.length < 2 || arc.length > stepInner.length / 2) continue;
+    if (!stepChoice || arc.length < stepChoice.arc.length) stepChoice = { outer, next, inner, innerNext, arc };
+  }
+  if (!stepChoice) return null;
+  const shortOuter = cyclicArc(topCutter, stepChoice.outer, stepChoice.next);
+  const longOuter = cyclicArc(topCutter, stepChoice.next, stepChoice.outer);
+  const shortInner = [...stepChoice.arc].reverse();
+  const longInner = [...cyclicArc(stepInner, stepChoice.innerNext, stepChoice.inner)].reverse();
+  push([...shortOuter, ...shortInner].reverse());
+  push([...longOuter, ...longInner].reverse());
+  return out;
+}
+
 reg("GeometryNodeMeshBoolean", (api) => {
   const op = (api.prop<string>("operation", "DIFFERENCE") || "DIFFERENCE").toUpperCase() as "UNION" | "DIFFERENCE" | "INTERSECT";
   // Blender's FLOAT and EXACT solvers are different operations. In particular,
@@ -1836,6 +2036,12 @@ reg("GeometryNodeMeshBoolean", (api) => {
   if (solver === "EXACT" && op === "DIFFERENCE" && mesh1.mesh && mesh2s.length === 1) {
     const knife = planarCutter(mesh2s[0]);
     if (knife) return { Mesh: clipToPlanarKnife(mesh1, knife), "Intersecting Edges": Field.of(0) };
+    const annulus = mesh2s[0].mesh ? annularPrismDifference(mesh1.mesh, mesh2s[0].mesh) : null;
+    if (annulus) {
+      const geometry = new Geometry();
+      geometry.mesh = annulus;
+      return { Mesh: geometry, "Intersecting Edges": Field.of(0) };
+    }
   }
 
   // Manifold represents closed solids. EXACT may attempt it for any input and

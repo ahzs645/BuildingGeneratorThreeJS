@@ -691,6 +691,17 @@ function meshSignedAreaXY(m: Mesh): number {
   check("FieldAtIndex samples source domain", approx(arr as number[], [10, 20]));
 }
 
+{
+  const source = new Geometry();
+  source.mesh = new Mesh();
+  source.mesh.positions = [[0, 0, 0], [1, 0, 0], [2, 0, 0]];
+  const value = Field.perElem((i) => i * 10);
+  const index = Field.make((ctx) => Array.from({ length: ctx.size }, (_, i) => [0, .5, 1, 1.5][i]));
+  const sampled = runNode("GeometryNodeSampleIndex", { Geometry: source, Value: value, Index: index }, { domain: "POINT", clamp: true }).Value as Field;
+  check("Sample Index truncates float fields connected to its integer socket",
+    approx(sampled.array({ size: 4, domain: "POINT" }) as number[], [0, 0, 10, 10]));
+}
+
 // (K) MeshToCurve carries FACE attrs to curve POINT attrs for captured factors
 {
   const m = new Mesh();
@@ -983,6 +994,50 @@ function meshSignedAreaXY(m: Mesh): number {
   check("MeshBoolean EXACT cuts ring-swept solids through open shells",
     sweptCut.mesh?.positions.length === 32 && sweptCut.mesh.faces.length === 19,
     `${sweptCut.mesh?.positions.length}v/${sweptCut.mesh?.faces.length}f`);
+
+  // A partial prism cut through a sampled annulus keeps the authored radial
+  // panels and Blender's two-ngon step instead of returning a triangle soup.
+  const annulus = new Geometry();
+  annulus.mesh = new Mesh();
+  const annulusSegments = 12;
+  const annulusRing = (level: number, inner: number, i: number) => (level * 2 + inner) * annulusSegments + i;
+  for (const z of [0, 2]) for (const radius of [3, 1]) for (let i = 0; i < annulusSegments; i++) {
+    const theta = i / annulusSegments * Math.PI * 2;
+    annulus.mesh.positions.push([Math.cos(theta) * radius, Math.sin(theta) * radius, z]);
+  }
+  for (let i = 0; i < annulusSegments; i++) {
+    const next = (i + 1) % annulusSegments;
+    annulus.mesh.faces.push(
+      [annulusRing(0, 0, i), annulusRing(0, 1, i), annulusRing(0, 1, next), annulusRing(0, 0, next)],
+      [annulusRing(0, 0, i), annulusRing(0, 0, next), annulusRing(1, 0, next), annulusRing(1, 0, i)],
+      [annulusRing(0, 1, i), annulusRing(1, 1, i), annulusRing(1, 1, next), annulusRing(0, 1, next)],
+      [annulusRing(1, 0, i), annulusRing(1, 0, next), annulusRing(1, 1, next), annulusRing(1, 1, i)],
+    );
+  }
+  annulus.mesh.faceMaterial = annulus.mesh.faces.map(() => 0);
+  const recess = new Geometry();
+  recess.mesh = new Mesh();
+  for (const z of [1, -1, 1]) for (let i = 0; i < 6; i++) {
+    const theta = i / 6 * Math.PI * 2;
+    recess.mesh.positions.push([Math.cos(theta) * 2, Math.sin(theta) * 2, z]);
+  }
+  for (let i = 0; i < 6; i++) {
+    const next = (i + 1) % 6;
+    recess.mesh.faces.push([i, next, 6 + next, 6 + i]);
+  }
+  recess.mesh.faces.push([6, 7, 8, 9, 10, 11], [17, 16, 15, 14, 13, 12]);
+  recess.mesh.faceMaterial = recess.mesh.faces.map(() => 0);
+  const recessed = runNode(
+    "GeometryNodeMeshBoolean",
+    { "Mesh 1": annulus, "Mesh 2": recess },
+    { operation: "DIFFERENCE", solver: "EXACT" },
+  ).Mesh as Geometry;
+  const recessedSizes = recessed.mesh!.faces.map((face) => face.length).sort((a, b) => a - b);
+  check("MeshBoolean EXACT preserves partial annular-prism panel topology",
+    recessed.mesh?.positions.length === 66 && recessed.mesh.faces.length === 56
+      && recessedSizes.filter((size) => size === 4).length === 48
+      && recessedSizes.at(-1) === 17,
+    `${recessed.mesh?.positions.length}v/${recessed.mesh?.faces.length}f sizes=${JSON.stringify(recessedSizes)}`);
 
   // EXACT treats an open planar mesh as a knife. A 3x3 grid oriented +Y keeps
   // the positive half-space and contributes four cap quadrants.

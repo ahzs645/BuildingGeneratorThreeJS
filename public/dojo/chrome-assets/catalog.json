@@ -451,7 +451,7 @@
     "dump": "dojo/n03d/bolt-generator/dump.json",
     "reference": "dojo/references/n03d/bolt-generator.png",
     "blenderStats": { "verts": 8646, "faces": 8535 },
-    "note": "Visual near-parity with exact bounds across all six validation cases. The authored browser result is 8,590 / 8,767 versus Blender's 8,646 / 8,535; thread-only is topology-exact. Blender's blue filament shader is shown only in the reference while the browser uses the shared comparison material.",
+    "note": "Five of six validation cases now have exact Blender topology, including the authored 8,646 / 8,535 result, the eight-sided head, and thread-only; all six have exact bounds and tap mode remains within 0.30% vertices. The browser preserves Blender's sampled head panels and hex-recess ngons. Blender's blue filament shader is shown only in the reference while the browser uses the shared comparison material.",
     "controls": [
       { "name": "length", "label": "Bolt length", "min": 8, "max": 60, "step": 0.1, "value": 24.632158279418945 },
       { "name": "thread dia", "label": "Thread diameter", "min": 5, "max": 40, "step": 0.1, "value": 14.95798110961914 },
