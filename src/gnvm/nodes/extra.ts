@@ -1587,6 +1587,210 @@ function isClosedFaceManifold(mesh: Mesh): boolean {
   return buildTopology(mesh).edges.every((edge) => edge.faces.length === 2);
 }
 
+type SweepRings = {
+  axis: 0 | 1 | 2;
+  cross: [0 | 1 | 2, 0 | 1 | 2];
+  levels: Array<{ value: number; indices: number[] }>;
+};
+
+/**
+ * Detect a closed prism/tube made from equally sampled rings. Blender's Exact
+ * Boolean accepts these as cutters even when the first operand is an open
+ * half-shell (the Procedural Box deliberately booleans before its mirror).
+ * Manifold cannot consume that first operand, so this gives that common GN
+ * construction a topology-preserving surface fallback.
+ */
+function sweptRings(mesh: Mesh, eps = 1e-5): SweepRings | null {
+  let best: SweepRings | null = null;
+  for (const axis of [0, 1, 2] as const) {
+    const groups = new Map<number, number[]>();
+    for (let i = 0; i < mesh.positions.length; i++) {
+      const key = Math.round(mesh.positions[i][axis] / eps);
+      const group = groups.get(key) ?? [];
+      group.push(i);
+      groups.set(key, group);
+    }
+    if (groups.size < 2 || groups.size > 64) continue;
+    const levels = [...groups.entries()]
+      .map(([key, indices]) => ({ value: key * eps, indices }))
+      .sort((a, b) => a.value - b.value);
+    const count = levels[0].indices.length;
+    if (count < 8 || levels.some((level) => level.indices.length !== count)) continue;
+    const cross = [0, 1, 2].filter((candidate) => candidate !== axis) as [0 | 1 | 2, 0 | 1 | 2];
+    let aligned = true;
+    for (let level = 1; level < levels.length && aligned; level++) {
+      for (let i = 0; i < count; i++) {
+        const a = mesh.positions[levels[0].indices[i]];
+        const b = mesh.positions[levels[level].indices[i]];
+        if (Math.abs(a[cross[0]] - b[cross[0]]) > eps || Math.abs(a[cross[1]] - b[cross[1]]) > eps) {
+          aligned = false;
+          break;
+        }
+      }
+    }
+    if (!aligned) continue;
+    if (!best || levels.length < best.levels.length) best = { axis, cross, levels };
+  }
+  return best;
+}
+
+function pointInPolygon2D(point: [number, number], polygon: Array<[number, number]>): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const a = polygon[i], b = polygon[j];
+    if ((a[1] > point[1]) !== (b[1] > point[1])
+      && point[0] < (b[0] - a[0]) * (point[1] - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+  }
+  return inside;
+}
+
+function polygonArea2D(indices: number[], positions: Vec3[], dims: [0 | 1 | 2, 0 | 1 | 2]): number {
+  let area = 0;
+  for (let i = 0; i < indices.length; i++) {
+    const a = positions[indices[i]], b = positions[indices[(i + 1) % indices.length]];
+    area += a[dims[0]] * b[dims[1]] - b[dims[0]] * a[dims[1]];
+  }
+  return area * 0.5;
+}
+
+function cyclicArc(values: number[], start: number, end: number): number[] {
+  const out = [values[start]];
+  for (let i = start; i !== end;) {
+    i = (i + 1) % values.length;
+    out.push(values[i]);
+  }
+  return out;
+}
+
+/** Split an annulus into two simple ngons using two short, opposite bridges. */
+function bridgeHoleFaces(outer: number[], holeInput: number[], positions: Vec3[], dims: [0 | 1 | 2, 0 | 1 | 2]): [number[], number[]] | null {
+  if (outer.length < 3 || holeInput.length < 3) return null;
+  const hole = [...holeInput];
+  if (Math.sign(polygonArea2D(outer, positions, dims)) === Math.sign(polygonArea2D(hole, positions, dims))) hole.reverse();
+  const nearestOuter = hole.map((vi) => {
+    const p = positions[vi];
+    let best = 0, bestDistance = Infinity;
+    for (let oi = 0; oi < outer.length; oi++) {
+      const q = positions[outer[oi]];
+      const distance = (p[dims[0]] - q[dims[0]]) ** 2 + (p[dims[1]] - q[dims[1]]) ** 2;
+      if (distance < bestDistance) { bestDistance = distance; best = oi; }
+    }
+    return { index: best, distance: bestDistance };
+  });
+  let choice: { hi: number; hj: number; oi: number; oj: number; score: number } | null = null;
+  for (let hi = 0; hi < hole.length; hi++) {
+    for (let hj = hi + 1; hj < hole.length; hj++) {
+      const separation = Math.min(hj - hi, hole.length - (hj - hi));
+      if (separation < hole.length * 0.35 || nearestOuter[hi].index === nearestOuter[hj].index) continue;
+      const score = nearestOuter[hi].distance + nearestOuter[hj].distance;
+      if (!choice || score < choice.score) choice = { hi, hj, oi: nearestOuter[hi].index, oj: nearestOuter[hj].index, score };
+    }
+  }
+  if (!choice) return null;
+  const { hi, hj, oi, oj } = choice;
+  const first = [...cyclicArc(outer, oi, oj), ...cyclicArc(hole, hj, hi)];
+  const second = [...cyclicArc(outer, oj, oi), ...cyclicArc(hole, hi, hj)];
+  return [first, second];
+}
+
+function faceAxisSign(mesh: Mesh, face: number[], axis: 0 | 1 | 2): number {
+  const origin = mesh.positions[face[0]];
+  for (let i = 1; i + 1 < face.length; i++) {
+    const normal = vcross(vsub(mesh.positions[face[i]], origin), vsub(mesh.positions[face[i + 1]], origin));
+    if (Math.abs(normal[axis]) > 1e-10) return Math.sign(normal[axis]);
+  }
+  return 0;
+}
+
+/**
+ * Difference an open shell by a ring-swept solid. The shell faces crossed by
+ * the sweep become two ngons around each hole, while the reversed cutter wall
+ * supplies the inside surface. This matches Blender's pre-mirror Exact Boolean
+ * construction without voxelization or a server-side Blender dependency.
+ */
+function openSweptDifference(source: Mesh, cutter: Mesh): Mesh | null {
+  if (isClosedFaceManifold(source) || !isClosedFaceManifold(cutter)) return null;
+  const sweep = sweptRings(cutter);
+  if (!sweep) return null;
+  const clean = compactFaceVertsLocal(source);
+  const { axis, cross, levels } = sweep;
+  const firstRing = levels[0].indices;
+  const center: [number, number] = [
+    firstRing.reduce((sum, vi) => sum + cutter.positions[vi][cross[0]], 0) / firstRing.length,
+    firstRing.reduce((sum, vi) => sum + cutter.positions[vi][cross[1]], 0) / firstRing.length,
+  ];
+  const minLevel = levels[0].value, maxLevel = levels[levels.length - 1].value;
+  const cuts: Array<{ faceIndex: number; value: number; sign: number }> = [];
+  for (let fi = 0; fi < clean.faces.length; fi++) {
+    const face = clean.faces[fi];
+    const values = face.map((vi) => clean.positions[vi][axis]);
+    const value = values[0];
+    if (value <= minLevel + 1e-5 || value >= maxLevel - 1e-5 || values.some((candidate) => Math.abs(candidate - value) > 1e-5)) continue;
+    const polygon = face.map((vi) => [clean.positions[vi][cross[0]], clean.positions[vi][cross[1]]] as [number, number]);
+    if (!pointInPolygon2D(center, polygon)) continue;
+    const sign = faceAxisSign(clean, face, axis);
+    if (sign) cuts.push({ faceIndex: fi, value, sign });
+  }
+  cuts.sort((a, b) => a.value - b.value);
+  const intervals: Array<{ start: typeof cuts[number]; end: typeof cuts[number] }> = [];
+  for (let i = 0; i < cuts.length; i++) {
+    if (cuts[i].sign >= 0) continue;
+    const end = cuts.slice(i + 1).find((candidate) => candidate.sign > 0);
+    if (end) { intervals.push({ start: cuts[i], end }); i = cuts.indexOf(end); }
+  }
+  if (!intervals.length) return null;
+
+  const out = clean.clone();
+  out.faces = [];
+  out.faceMaterial = [];
+  const removed = new Set(intervals.flatMap((interval) => [interval.start.faceIndex, interval.end.faceIndex]));
+  const faceAttributeData = new Map<string, Elem[]>();
+  for (const [name, attribute] of clean.attributes) if (attribute.domain === "FACE") faceAttributeData.set(name, []);
+  const pushFace = (face: number[], material: number, sourceFace: number | null) => {
+    out.faces.push(face);
+    out.faceMaterial.push(material);
+    for (const [name, data] of faceAttributeData) {
+      const sourceAttribute = clean.attributes.get(name)!;
+      data.push(sourceFace === null ? 0 : (sourceAttribute.data[sourceFace] ?? 0));
+    }
+  };
+  for (let fi = 0; fi < clean.faces.length; fi++) if (!removed.has(fi)) pushFace([...clean.faces[fi]], clean.faceMaterial[fi] ?? 0, fi);
+
+  const appendPoint = (position: Vec3, cutterVertex: number | null): number => {
+    const index = out.positions.length;
+    out.positions.push([...position] as Vec3);
+    for (const [, attribute] of out.attributes) {
+      if (attribute.domain !== "POINT") continue;
+      attribute.data.push(cutterVertex === null ? 0 : (cutter.attributes.size ? (cutter.attributes.values().next().value?.data[cutterVertex] ?? 0) : 0));
+    }
+    return index;
+  };
+  const crossPositions = firstRing.map((vi) => cutter.positions[vi]);
+  for (const interval of intervals) {
+    const relevant = levels.filter((level) => level.value > interval.start.value + 1e-5 && level.value < interval.end.value - 1e-5);
+    const ringAt = (value: number, source: number[] | null): number[] => crossPositions.map((position, i) => {
+      const point = [...position] as Vec3;
+      point[axis] = value;
+      return appendPoint(point, source?.[i] ?? null);
+    });
+    const rings = [ringAt(interval.start.value, null), ...relevant.map((level) => ringAt(level.value, level.indices)), ringAt(interval.end.value, null)];
+    const startFace = clean.faces[interval.start.faceIndex], endFace = clean.faces[interval.end.faceIndex];
+    const startHole = bridgeHoleFaces(startFace, rings[0], out.positions, cross);
+    const endHole = bridgeHoleFaces(endFace, rings[rings.length - 1], out.positions, cross);
+    if (!startHole || !endHole) return null;
+    for (const face of startHole) pushFace(face, clean.faceMaterial[interval.start.faceIndex] ?? 0, interval.start.faceIndex);
+    for (const face of endHole) pushFace(face, clean.faceMaterial[interval.end.faceIndex] ?? 0, interval.end.faceIndex);
+    for (let level = 0; level + 1 < rings.length; level++) {
+      for (let i = 0; i < firstRing.length; i++) {
+        const next = (i + 1) % firstRing.length;
+        pushFace([rings[level + 1][i], rings[level + 1][next], rings[level][next], rings[level][i]], 0, null);
+      }
+    }
+  }
+  for (const [name, data] of faceAttributeData) out.attributes.set(name, { domain: "FACE", data });
+  return out;
+}
+
 reg("GeometryNodeMeshBoolean", (api) => {
   const op = (api.prop<string>("operation", "DIFFERENCE") || "DIFFERENCE").toUpperCase() as "UNION" | "DIFFERENCE" | "INTERSECT";
   // Blender's FLOAT and EXACT solvers are different operations. In particular,
@@ -1660,6 +1864,7 @@ reg("GeometryNodeMeshBoolean", (api) => {
       let next: Mesh | null = null;
       if (box) next = manifoldBooleanBox(acc, box, op);
       if (!next) next = manifoldBoolean(acc, g.mesh, op);
+      if (!next && op === "DIFFERENCE") next = openSweptDifference(acc, g.mesh);
       if (next) acc = next;
       else if (op === "UNION") {
         const joined = new Mesh();

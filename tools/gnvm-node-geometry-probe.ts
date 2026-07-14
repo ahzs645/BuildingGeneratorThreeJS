@@ -3,6 +3,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { runGenerator, type Dump } from "../src/gnvm/index";
 import { GEOMETRY_PROBE } from "../src/gnvm/evaluator";
+import { realizeInstances } from "../src/gnvm/geometry";
 
 const args = process.argv.slice(2);
 if (args.length < 5 || args.length > 7) throw new Error("usage: DUMP OBJECT [GROUP] NODE SOCKET OUT.json [OVERRIDES.json]");
@@ -15,6 +16,15 @@ const [groupName, nodeName, socketName, outPath] = target.length === 4
   ? target
   : [null, target[0], target[1], target[2]];
 const dump = JSON.parse(readFileSync(dumpPath, "utf8")) as Dump;
+const route = JSON.parse(process.env.GNVM_PROBE_ROUTE ?? "[]") as Array<{ group: string; node: string; socket: string }>;
+for (const step of route) {
+  const group = dump.node_groups?.[step.group];
+  const output = group?.nodes.find((node) => node.type === "NodeGroupOutput");
+  const target = output?.inputs.find((socket) => socket.type === "NodeSocketGeometry");
+  if (!group || !output || !target) throw new Error(`invalid probe route: ${JSON.stringify(step)}`);
+  group.links = group.links.filter((link) => link.to_node !== output.name || link.to_socket !== target.identifier);
+  group.links.push({ from_node: step.node, from_socket: step.socket, to_node: output.name, to_socket: target.identifier });
+}
 GEOMETRY_PROBE.group = groupName;
 GEOMETRY_PROBE.node = nodeName;
 GEOMETRY_PROBE.socket = socketName;
@@ -48,5 +58,12 @@ const curve_attributes = Object.fromEntries([...geometry.curveAttributes].map(([
   count: attribute.data.length,
   sample: attribute.data.slice(0, 8),
 }]));
-writeFileSync(outPath, `${JSON.stringify({ positions, edges: geometry.mesh?.edges ?? [], faces, attributes, curves: geometry.curves.length, curve_lengths: geometry.curves.map((curve) => curve.points.length), curve_attributes, instances: geometry.instances.length, instance_payloads }, null, 2)}\n`);
+const realized = realizeInstances(geometry);
+const realized_stats = {
+  verts: realized.mesh?.positions.length ?? 0,
+  faces: realized.mesh?.faces.length ?? 0,
+  curves: realized.curves.length,
+  curve_points: realized.curvePointCount(),
+};
+writeFileSync(outPath, `${JSON.stringify({ positions, edges: geometry.mesh?.edges ?? [], faces, attributes, curves: geometry.curves.length, curve_lengths: geometry.curves.map((curve) => curve.points.length), curve_attributes, instances: geometry.instances.length, instance_payloads, realized_stats }, null, 2)}\n`);
 console.log(`GNVM_NODE_GEOMETRY_PROBE_OK ${positions.length}v/${faces.length}f ${geometry.curves.length}c/${geometry.instances.length}i -> ${outPath}`);
