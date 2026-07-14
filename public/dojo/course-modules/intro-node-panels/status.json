@@ -1,0 +1,26 @@
+{
+  "source": "INTRO MODULE_ The Basics of Nodes and Node Dojo_2MAY2024.blend",
+  "object": "Cube.014",
+  "root": "Geometry Nodes.023",
+  "reachableGroups": 33,
+  "reachableNodes": 1130,
+  "coverage": "100%",
+  "blender": {
+    "verts": 104454,
+    "faces": 44423,
+    "bbox": {
+      "min": [-2.047687530517578, -1.9282912015914917, -5.290398597717285],
+      "max": [4.5276875495910645, 0.14779964089393616, 0.4884030520915985]
+    }
+  },
+  "gnvm": {
+    "verts": 104454,
+    "faces": 44423,
+    "triangles": 108526,
+    "bbox": {
+      "min": [-2.0524024963378906, -1.9282913208007812, -5.290398597717285],
+      "max": [4.532402515411377, 0.1478186696767807, 0.4887586534023285]
+    }
+  },
+  "validation": "Exact authored topology and matching two-panel composition. POINT-domain Delete Geometry now edits curve components, preserves the cyclic spline property, and remaps curve attributes, reproducing the rounded lower panel edges and the shared row branch. Maximum local-bounds difference is 0.0048 units from legacy curve sampling."
+}

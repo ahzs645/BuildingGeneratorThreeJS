@@ -6,7 +6,7 @@ The pack contains **16 Blender projects**, **499 active Geometry Nodes modifiers
 
 | Project | Active modifiers | Root families | Current web evidence |
 | --- | ---: | ---: | --- |
-| Intro Module | 82 | 52 | All roots classified; sampled typography/UI studies partial |
+| Intro Module | 82 | 52 | All roots classified; Geometry Nodes panel diagram live and topology exact; typography study partial |
 | New Joint Generators | 32 | 13 | Inventory complete |
 | N03D 3D-printing Utilities | 77 | 39 | Inventory complete |
 | Recursive Bin | 1 | 1 | Live Blender/GN-VM comparison |

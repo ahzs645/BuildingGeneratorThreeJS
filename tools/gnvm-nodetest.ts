@@ -939,6 +939,19 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Delete Geometry EDGE retains unselected boundary wire", out.mesh?.positions.length === 4 && out.mesh.edges.length === 4 && out.mesh.faces.length === 0, `got ${out.mesh?.positions.length}v/${out.mesh?.edges.length}e/${out.mesh?.faces.length}f`);
 }
 
+// POINT-domain deletion applies to curve components too. Cyclic is a
+// spline-domain property, so deleting points preserves it and remaps point
+// attributes in source order (the Blender-style node panel relies on this to
+// fill only the rounded rectangle's lower arc).
+{
+  const g = curve([[-1, 0, 0], [0, 1, 0], [1, 0, 0], [0, -1, 0]], true);
+  g.curveAttributes.set("id", { domain: "POINT", data: [10, 20, 30, 40] });
+  const upper = Field.perElem((i, ctx) => (ctx.position?.(i)[1] ?? 0) > 0 ? 1 : 0);
+  const out = runNode("GeometryNodeDeleteGeometry", { Geometry: g, Selection: upper }, { domain: "POINT" }).Geometry as Geometry;
+  check("Delete Geometry POINT preserves cyclic spline property", out.curves.length === 1 && out.curves[0].cyclic && approx(out.curves[0].points.flat() as number[], [-1, 0, 0, 1, 0, 0, 0, -1, 0]), JSON.stringify(out.curves[0]));
+  check("Delete Geometry POINT remaps curve attributes", approx(out.curveAttributes.get("id")?.data as number[], [10, 30, 40]), JSON.stringify(out.curveAttributes.get("id")?.data));
+}
+
 // (N) MergeByDistance checks neighboring hash cells
 {
   const d = 1e-5;

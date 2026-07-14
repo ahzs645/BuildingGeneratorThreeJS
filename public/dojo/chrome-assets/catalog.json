@@ -1456,5 +1456,17 @@
   "workbenchColor": [0.8, 0.8, 0.8],
   "note": "The canonical Modules 2–4 banner-and-medallion finale now follows Blender's muted lesson links and matches 47,435 vertices, 46,490 faces, 93,121 triangles, face-size distribution, and local bounds exactly. Small procedural wind-displacement and Workbench shading differences remain.",
   "controls": []
+},
+{
+  "id": "course-intro-node-panels",
+  "title": "Course Intro · Geometry Nodes Panels",
+  "object": "Cube.014",
+  "dump": "dojo/course-modules/intro-node-panels/dump.json",
+  "reference": "dojo/references/course-modules/intro-node-panels.png",
+  "blenderStats": { "verts": 104454, "faces": 44423 },
+  "localSpace": true,
+  "workbenchColor": [0.8, 0.8, 0.8],
+  "note": "The complete 1,130-node Intro diagram reproduces its Ico Sphere and Set Material panels with exact Blender topology at 104,454 vertices and 44,423 faces. Curve-domain point deletion restores both rounded lower edges and shared socket-row geometry; local bounds are within 0.0048 units.",
+  "controls": []
 }
 ]

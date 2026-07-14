@@ -79,16 +79,35 @@ function keepFaces(mesh: Mesh, keep: (fi: number) => boolean, doCompact = true):
 // ---- Delete Geometry ------------------------------------------------------
 reg("GeometryNodeDeleteGeometry", (api) => {
   const g = api.geo("Geometry").clone();
-  if (!g.mesh) return { Geometry: g };
+  if (!g.mesh && !g.curves.length) return { Geometry: g };
   const domain = api.prop<string>("domain", "POINT");
   // Blender's float->bool conversion is `> 0` (e.g. Map Range feeding a Selection
   // uses -0.02 as its false sentinel; plain truthiness would treat it as selected).
   const on = (v: Elem | undefined) => asNum(v ?? 0) > 0;
-  if (domain === "FACE") {
+  if (domain === "CURVE") {
+    if (!g.curves.length) return { Geometry: g };
+    const curveOnly = new Geometry();
+    curveOnly.curves = g.curves.map((spline) => ({ ...spline, points: spline.points.map((point) => [...point] as Vec3) }));
+    for (const [name, attribute] of g.curveAttributes)
+      curveOnly.curveAttributes.set(name, { domain: attribute.domain, data: [...attribute.data] });
+    const sel = api.field("Selection").array(makeFieldCtx(curveOnly, "CURVE"));
+    const keepSpline = g.curves.map((_, index) => !on(sel[index]));
+    const pointKeep: boolean[] = [];
+    g.curves.forEach((spline, index) => pointKeep.push(...spline.points.map(() => keepSpline[index])));
+    g.curves = g.curves.filter((_, index) => keepSpline[index]);
+    for (const [name, attribute] of g.curveAttributes) {
+      if (attribute.domain === "CURVE")
+        g.curveAttributes.set(name, { domain: "CURVE", data: attribute.data.filter((_, index) => keepSpline[index]) });
+      else if (attribute.domain === "POINT")
+        g.curveAttributes.set(name, { domain: "POINT", data: attribute.data.filter((_, index) => pointKeep[index]) });
+    }
+  } else if (domain === "FACE") {
+    if (!g.mesh) return { Geometry: g };
     const ctx = makeFieldCtx(g, "FACE");
     const sel = api.field("Selection").array(ctx);
     g.mesh = keepFaces(g.mesh, (fi) => !on(sel[fi]));
   } else if (domain === "EDGE") {
+    if (!g.mesh) return { Geometry: g };
     // drop selected edges, plus faces using them (selection resolved per-edge)
     const ctx = makeFieldCtx(g, "EDGE");
     const sel = api.field("Selection").array(ctx);
@@ -126,19 +145,65 @@ reg("GeometryNodeDeleteGeometry", (api) => {
     // POINT/CURVE: drop selected points, plus faces AND loose edges using them.
     // Loose edges must be filtered too — otherwise compact() keeps the dead
     // verts alive through them (the clickme wire kept all 1,728 pts this way).
-    const ctx = makeFieldCtx(g, "POINT");
-    const sel = api.field("Selection").array(ctx);
-    const dead = new Set<number>();
-    for (let i = 0; i < g.mesh.positions.length; i++) if (on(sel[i])) dead.add(i);
-    const m = g.mesh;
-    m.edges = m.edges.filter(([a, b]) => !dead.has(a) && !dead.has(b));
-    // POINT deletion retains surviving isolated points even when all incident
-    // faces disappear. Compacting only the kept faces erased the one-point
-    // `bolt`/`axel` placement masks used by Procedural Box.
-    g.mesh = keepPointsMesh(m, (vi) => !dead.has(vi));
+    if (g.mesh) {
+      const meshOnly = new Geometry();
+      meshOnly.mesh = g.mesh;
+      const sel = api.field("Selection").array(makeFieldCtx(meshOnly, "POINT"));
+      const dead = new Set<number>();
+      for (let i = 0; i < g.mesh.positions.length; i++) if (on(sel[i])) dead.add(i);
+      const m = g.mesh;
+      m.edges = m.edges.filter(([a, b]) => !dead.has(a) && !dead.has(b));
+      // POINT deletion retains surviving isolated points even when all incident
+      // faces disappear. Compacting only the kept faces erased the one-point
+      // `bolt`/`axel` placement masks used by Procedural Box.
+      g.mesh = keepPointsMesh(m, (vi) => !dead.has(vi));
+    }
+    if (g.curves.length) deleteCurvePoints(g, api);
   }
   return { Geometry: g };
 });
+
+function deleteCurvePoints(g: Geometry, api: EvalAPI): void {
+  const curveOnly = new Geometry();
+  curveOnly.curves = g.curves.map((spline) => ({ ...spline, points: spline.points.map((point) => [...point] as Vec3) }));
+  for (const [name, attribute] of g.curveAttributes)
+    curveOnly.curveAttributes.set(name, { domain: attribute.domain, data: [...attribute.data] });
+  const selection = api.field("Selection").array(makeFieldCtx(curveOnly, "POINT"));
+  const on = (value: Elem | undefined) => asNum(value ?? 0) > 0;
+  const keptPointIndices: number[] = [];
+  const keptSplineIndices: number[] = [];
+  const curves = [] as Geometry["curves"];
+  let offset = 0;
+  for (let splineIndex = 0; splineIndex < g.curves.length; splineIndex++) {
+    const spline = g.curves[splineIndex];
+    const dead = spline.points.map((_, index) => on(selection[offset + index]));
+    const indices = spline.points.map((_, index) => index).filter((index) => !dead[index]);
+    if (!indices.length) { offset += spline.points.length; continue; }
+    const select = <T>(values: T[] | undefined): T[] | undefined =>
+      values?.length === spline.points.length ? indices.map((index) => values[index]) : values;
+    curves.push({
+      ...spline,
+      // Cyclic is a spline-domain attribute and survives point deletion in
+      // Blender. This lets Fill Curve close a retained arc with a straight
+      // boundary; a later Set Spline Cyclic can still override it explicitly.
+      cyclic: spline.cyclic,
+      points: indices.map((index) => [...spline.points[index]] as Vec3),
+      controlPoints: select(spline.controlPoints)?.map((point) => [...point] as Vec3),
+      bezierLeft: select(spline.bezierLeft)?.map((point) => [...point] as Vec3),
+      bezierRight: select(spline.bezierRight)?.map((point) => [...point] as Vec3),
+    });
+    keptSplineIndices.push(splineIndex);
+    keptPointIndices.push(...indices.map((index) => offset + index));
+    offset += spline.points.length;
+  }
+  g.curves = curves;
+  for (const [name, attribute] of g.curveAttributes) {
+    if (attribute.domain === "CURVE")
+      g.curveAttributes.set(name, { domain: "CURVE", data: keptSplineIndices.map((index) => attribute.data[index]) });
+    else if (attribute.domain === "POINT")
+      g.curveAttributes.set(name, { domain: "POINT", data: keptPointIndices.map((index) => attribute.data[index]) });
+  }
+}
 
 // ---- Separate Geometry ----------------------------------------------------
 // Keep exactly the selected points (isolated survivors included — Blender keeps
