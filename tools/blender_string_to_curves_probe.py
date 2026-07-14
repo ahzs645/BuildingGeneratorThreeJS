@@ -6,6 +6,7 @@ Usage:
 """
 
 import json
+import os
 import sys
 
 import bpy
@@ -17,6 +18,12 @@ obj = bpy.data.objects[object_name]
 modifier = next(candidate for candidate in obj.modifiers if candidate.type == "NODES" and candidate.node_group)
 tree = modifier.node_group
 node = tree.nodes[node_name]
+string_override = os.environ.get("NODE_DOJO_STRING_OVERRIDE")
+if string_override is not None:
+    string_socket = node.inputs.get("String")
+    for link in list(string_socket.links):
+        tree.links.remove(link)
+    string_socket.default_value = string_override
 output = next(candidate for candidate in tree.nodes if candidate.bl_idname == "NodeGroupOutput" and candidate.is_active_output)
 geometry_socket = next(socket for socket in output.inputs if socket.type == "GEOMETRY")
 original = geometry_socket.links[0].from_socket if geometry_socket.is_linked else None

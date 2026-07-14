@@ -572,6 +572,20 @@ class Invocation {
     const node = this.byName.get(name);
     let outs: Record<string, SockVal> = {};
     if (node) outs = this.dispatch(node);
+    if (node && FIELD_PROBE.node === node.name && FIELD_PROBE.socket) {
+      const original = outs[FIELD_PROBE.socket];
+      if (original instanceof Field) {
+        outs = { ...outs, [FIELD_PROBE.socket]: Field.make((context) => {
+          const values = original.array(context);
+          FIELD_PROBE.batches.push({
+            domain: context.domain,
+            positions: Array.from({ length: context.size }, (_, index) => context.position?.(index) ?? [0, 0, 0]),
+            values: [...values],
+          });
+          return values;
+        }) };
+      }
+    }
     this.visiting.delete(name);
     this.memo.set(name, outs);
     if (node && (!GEOMETRY_PROBE.group || GEOMETRY_PROBE.group === this.group.name) && GEOMETRY_PROBE.node === node.name) {

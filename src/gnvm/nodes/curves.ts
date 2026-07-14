@@ -208,6 +208,168 @@ reg("GeometryNodeResampleCurve", (api) => {
   return { Curve: resampleGeo(g, new Map()) };
 });
 
+// Set Curve Tilt writes a point-domain angle used when Blender constructs the
+// curve normal. Keeping it as an attribute (instead of baking it into the
+// evaluated points) also lets Sample Curve interpolate the authored tilt at an
+// arbitrary distance along the spline.
+reg("GeometryNodeSetCurveTilt", (api) => {
+  const geometry = api.geo("Curve").clone();
+  const count = geometry.curvePointCount();
+  if (!count) return { Curve: geometry };
+  const selection = api.resolve(api.field("Selection"), geometry, "POINT");
+  const tilt = api.resolve(api.field("Tilt"), geometry, "POINT");
+  const previous = geometry.curveAttributes.get("tilt");
+  const previousValues = previous?.domain === "POINT"
+    ? previous.data
+    : Array.from({ length: count }, () => 0 as Elem);
+  geometry.curveAttributes.set("tilt", {
+    domain: "POINT",
+    data: Array.from({ length: count }, (_, index) => asNum(selection[index] ?? 1) > 0
+      ? asNum(tilt[index] ?? 0)
+      : previousValues[index] ?? 0),
+  });
+  return { Curve: geometry };
+});
+
+interface CurveSample {
+  value: Elem;
+  position: Vec3;
+  tangent: Vec3;
+  normal: Vec3;
+}
+
+function rotateAroundAxis(vector: Vec3, axis: Vec3, angle: number): Vec3 {
+  const unit = vnorm(axis);
+  const cosine = Math.cos(angle);
+  const sine = Math.sin(angle);
+  return vadd(
+    vadd(vscale(vector, cosine), vscale(vcross(unit, vector), sine)),
+    vscale(unit, vdot(unit, vector) * (1 - cosine)),
+  );
+}
+
+// Sample one evaluated poly spline at an arc-length distance. Resample Curve
+// records its evaluated tangent/normal frame as anonymous portable attributes;
+// when those are absent, derive the same frame from the polyline directly.
+function sampleSplineAt(
+  spline: Spline,
+  distance: number,
+  pointOffset: number,
+  values: Elem[],
+  tangents: Elem[] | undefined,
+  normals: Elem[] | undefined,
+  tilts: Elem[] | undefined,
+): CurveSample {
+  const pointCount = spline.points.length;
+  if (!pointCount) return { value: 0, position: [0, 0, 0], tangent: [0, 0, 0], normal: [0, 0, 0] };
+  const frames = (!tangents || !normals) ? splineFrames(spline.points, spline.cyclic) : [];
+  if (pointCount === 1) {
+    const tangent = tangents ? asVec3(tangents[pointOffset] ?? [0, 0, 1]) : frames[0]?.tangent ?? [0, 0, 1];
+    const baseNormal = normals ? asVec3(normals[pointOffset] ?? [1, 0, 0]) : frames[0]?.normal ?? [1, 0, 0];
+    return {
+      value: values[pointOffset] ?? 0,
+      position: [...spline.points[0]] as Vec3,
+      tangent: vnorm(tangent),
+      normal: vnorm(rotateAroundAxis(baseNormal, tangent, asNum(tilts?.[pointOffset] ?? 0))),
+    };
+  }
+  const segmentCount = spline.cyclic ? pointCount : pointCount - 1;
+  const lengths = Array.from({ length: segmentCount }, (_, index) =>
+    vlen(vsub(spline.points[(index + 1) % pointCount], spline.points[index])));
+  const total = lengths.reduce((sum, length) => sum + length, 0);
+  let remaining = Math.max(0, Math.min(Number.isFinite(distance) ? distance : 0, total));
+  let segment = Math.max(0, segmentCount - 1);
+  for (let index = 0; index < segmentCount; index++) {
+    if (remaining <= lengths[index] || index === segmentCount - 1) { segment = index; break; }
+    remaining -= lengths[index];
+  }
+  const next = (segment + 1) % pointCount;
+  const factor = lengths[segment] > 1e-12 ? remaining / lengths[segment] : 0;
+  const a = spline.points[segment];
+  const b = spline.points[next];
+  const sourceTangentA = tangents
+    ? asVec3(tangents[pointOffset + segment] ?? vsub(b, a))
+    : frames[segment]?.tangent ?? vsub(b, a);
+  const sourceTangentB = tangents
+    ? asVec3(tangents[pointOffset + next] ?? sourceTangentA)
+    : frames[next]?.tangent ?? sourceTangentA;
+  const tangent = vnorm(vadd(vscale(sourceTangentA, 1 - factor), vscale(sourceTangentB, factor)));
+  const sourceNormalA = normals
+    ? asVec3(normals[pointOffset + segment] ?? [1, 0, 0])
+    : frames[segment]?.normal ?? [1, 0, 0];
+  const sourceNormalB = normals
+    ? asVec3(normals[pointOffset + next] ?? sourceNormalA)
+    : frames[next]?.normal ?? sourceNormalA;
+  const tilt = asNum(tilts?.[pointOffset + segment] ?? 0) * (1 - factor)
+    + asNum(tilts?.[pointOffset + next] ?? 0) * factor;
+  const baseNormal = vnorm(vadd(vscale(sourceNormalA, 1 - factor), vscale(sourceNormalB, factor)));
+  const valueA = values[pointOffset + segment] ?? 0;
+  const valueB = values[pointOffset + next] ?? valueA;
+  const value = Array.isArray(valueA) || Array.isArray(valueB)
+    ? vadd(vscale(asVec3(valueA), 1 - factor), vscale(asVec3(valueB), factor))
+    : asNum(valueA) * (1 - factor) + asNum(valueB) * factor;
+  return {
+    value,
+    position: vadd(a, vscale(vsub(b, a), factor)),
+    tangent,
+    normal: vnorm(rotateAroundAxis(baseNormal, tangent, tilt)),
+  };
+}
+
+reg("GeometryNodeSampleCurve", (api) => {
+  const geometry = realizeInstances(api.geo("Curves"));
+  const sourceContext = makeFieldCtx(geometry, "POINT");
+  const values = api.field("Value").array(sourceContext);
+  const tangents = geometry.curveAttributes.get("__curve_tangent")?.data;
+  const normals = geometry.curveAttributes.get("__curve_normal")?.data;
+  const tilts = geometry.curveAttributes.get("tilt")?.data;
+  const mode = api.prop<string>("mode", "FACTOR").toUpperCase();
+  const useAllCurves = api.prop<boolean>("use_all_curves", false);
+  const factorField = api.field("Factor");
+  const lengthField = api.field("Length");
+  const indexField = api.field("Curve Index");
+  const lengths = geometry.curves.map(splineLength);
+  const offsets: number[] = [];
+  let pointOffset = 0;
+  for (const spline of geometry.curves) { offsets.push(pointOffset); pointOffset += spline.points.length; }
+  const totalLength = lengths.reduce((sum, length) => sum + length, 0);
+
+  const samples = (context: import("../core").FieldCtx): CurveSample[] => {
+    const parameters = (mode === "LENGTH" ? lengthField : factorField).array(context);
+    const indices = indexField.array(context);
+    return Array.from({ length: context.size }, (_, targetIndex) => {
+      if (!geometry.curves.length) return { value: 0, position: [0, 0, 0], tangent: [0, 0, 0], normal: [0, 0, 0] };
+      let curveIndex = useAllCurves ? 0 : Math.max(0, Math.min(geometry.curves.length - 1, Math.trunc(asNum(indices[targetIndex] ?? 0))));
+      let distance = asNum(parameters[targetIndex] ?? 0);
+      if (mode !== "LENGTH") distance *= useAllCurves ? totalLength : lengths[curveIndex];
+      if (useAllCurves) {
+        distance = Math.max(0, Math.min(distance, totalLength));
+        for (let index = 0; index < geometry.curves.length; index++) {
+          if (distance <= lengths[index] || index === geometry.curves.length - 1) { curveIndex = index; break; }
+          distance -= lengths[index];
+        }
+      }
+      return sampleSplineAt(geometry.curves[curveIndex], distance, offsets[curveIndex], values, tangents, normals, tilts);
+    });
+  };
+  // Each output keeps its own Field cache, so cache the full sample batch per
+  // target context to avoid repeating the arc-length search four times.
+  const cache = new WeakMap<import("../core").FieldCtx, CurveSample[]>();
+  const batch = (context: import("../core").FieldCtx) => {
+    const existing = cache.get(context);
+    if (existing) return existing;
+    const result = samples(context);
+    cache.set(context, result);
+    return result;
+  };
+  return {
+    Value: Field.make((context) => batch(context).map((sample) => sample.value)),
+    Position: Field.make((context) => batch(context).map((sample) => sample.position)),
+    Tangent: Field.make((context) => batch(context).map((sample) => sample.tangent)),
+    Normal: Field.make((context) => batch(context).map((sample) => sample.normal)),
+  };
+});
+
 reg("GeometryNodeFilletCurve", (api) => {
   const g = api.geo("Curve");
   const radius = api.num("Radius");
@@ -702,10 +864,12 @@ function atlasGlyphGeometry(fontName: string | undefined, ch: string, size: numb
     cyclic: curve.cyclic,
     points: curve.points.map((point) => [Number(point[0] ?? 0) * size, Number(point[1] ?? 0) * size, Number(point[2] ?? 0) * size] as Vec3),
   }));
-  // Blender's evaluated font curves use 12 samples per authored Bezier
-  // segment. Preserve that cadence so Fill Curve can distinguish removable
-  // straight-segment interiors from real collinear anchors.
-  geometry.curveAttributes.set("__font_sample_stride", { domain: "CURVE", data: entry.curves.map(() => 12) });
+  // Blender's evaluated CFF/Bezier curves use 12 samples per authored segment.
+  // Pixel/grid fonts deliberately retain collinear cell corners, so the atlas
+  // extractor marks those with a zero stride instead of applying Bezier
+  // interior-point dissolution to them.
+  const stride = DUMP_CONTEXT.fonts[fontName!]?.sample_stride ?? 12;
+  if (stride > 1) geometry.curveAttributes.set("__font_sample_stride", { domain: "CURVE", data: entry.curves.map(() => stride) });
   return geometry;
 }
 
@@ -725,29 +889,14 @@ reg("GeometryNodeStringToCurves", (api) => {
   const fontName = api.ref("Font")?.name;
   const atlas = fontName ? DUMP_CONTEXT.fonts[fontName] : undefined;
   const alignYOffset = size * (atlas?.align_offsets?.[alignY] ?? 0);
-  const inkWidths = new Map<string, number>();
-  const inkWidthOf = (ch: string): number => {
-    const cached = inkWidths.get(ch);
-    if (cached !== undefined) return cached;
-    const curves = atlas?.glyphs[ch]?.curves ?? [];
-    let min = Infinity, max = -Infinity;
-    for (const curve of curves) for (const point of curve.points) {
-      min = Math.min(min, Number(point[0] ?? 0));
-      max = Math.max(max, Number(point[0] ?? 0));
-    }
-    // Use the forward ink extent from the glyph origin. A negative left-side
-    // overhang does not push the following glyph to the right in Blender.
-    const width = Number.isFinite(min) && Number.isFinite(max) ? Math.max(0, max) : 0;
-    inkWidths.set(ch, width);
-    return width;
-  };
+  const spacingExtra = advanceScale > 1 ? size * 0.5 * (advanceScale - 1) : 0;
   const advanceOf = (ch: string) => {
     const base = size * (atlas?.glyphs[ch]?.advance ?? .7) * (ch === " " ? wordSpacing : 1);
     if (advanceScale <= 1 || !atlas) return base * advanceScale;
-    // Blender compresses using the full advance below 1.0, but extra spacing
-    // above 1.0 is based on the glyph's visible ink width. This preserves
-    // overhanging fonts and does not add character spacing to blank spaces.
-    return base + size * inkWidthOf(ch) * (advanceScale - 1);
+    // Above 1.0 Blender adds half an em for every extra spacing unit. This is
+    // independent of the glyph's visible width and also applies to spaces.
+    // The final character's extra gap is excluded from alignment width below.
+    return base + spacingExtra;
   };
 
   const wrapLine = (line: string): string[] => {
@@ -779,7 +928,15 @@ reg("GeometryNodeStringToCurves", (api) => {
     wrapped.push(current);
     return wrapped;
   };
-  const lines = text.split("\n").flatMap(wrapLine);
+  const lines: { text: string; explicitBreakAfter: boolean }[] = [];
+  const paragraphs = text.split("\n");
+  for (let paragraphIndex = 0; paragraphIndex < paragraphs.length; paragraphIndex++) {
+    const wrapped = wrapLine(paragraphs[paragraphIndex]);
+    for (let wrappedIndex = 0; wrappedIndex < wrapped.length; wrappedIndex++) lines.push({
+      text: wrapped[wrappedIndex],
+      explicitBreakAfter: paragraphIndex + 1 < paragraphs.length && wrappedIndex + 1 === wrapped.length,
+    });
+  }
   const out = new Geometry();
   const cellH = size * lineSpacing;
   const blockHeight = Math.max(0, lines.length - 1) * cellH;
@@ -790,7 +947,7 @@ reg("GeometryNodeStringToCurves", (api) => {
 
   let lineIdx = 0;
   for (const line of lines) {
-    const chars = [...line];
+    const chars = [...line.text];
     // Blender retains trailing whitespace as empty instances but excludes its
     // advance from horizontal alignment. Wrapped Type Pixel Brush lines end in
     // a space; including it shifted each centered line left by half its width.
@@ -800,6 +957,7 @@ reg("GeometryNodeStringToCurves", (api) => {
     for (const ch of chars.slice(0, alignmentEnd)) {
       lineWidth += advanceOf(ch);
     }
+    if (alignmentEnd > 0) lineWidth -= spacingExtra;
     let x = 0;
     if (alignX === "CENTER") x = -lineWidth / 2;
     else if (alignX === "RIGHT") x = -lineWidth;
@@ -818,6 +976,15 @@ reg("GeometryNodeStringToCurves", (api) => {
       });
       x += advanceOf(ch);
     }
+    // Blender retains an explicit line break as one empty curve instance at
+    // the end of the preceding line. It contributes to instance-domain
+    // indexing but carries no glyph geometry.
+    if (line.explicitBreakAfter) out.instances.push({
+      geometry: new Geometry(),
+      position: [x, y, 0],
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1],
+    });
     lineIdx++;
   }
   // Also expose flattened curves for consumers that expect Curve geometry

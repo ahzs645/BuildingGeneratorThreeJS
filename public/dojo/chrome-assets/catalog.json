@@ -1480,5 +1480,17 @@
   "workbenchColor": [0.8, 0.8, 0.8],
   "note": "The complete 1,181-node Blurmed title-and-arrow study matches Blender's visible cached frame-1 result exactly at 2,331 vertices and 16 faces, with local bounds within 0.000003 units. Sampled straight font segments and all ten 4D-noise bounce offsets now match.",
   "controls": []
+},
+{
+  "id": "course-intro-node-dojo",
+  "title": "Course Intro · Node Dojo Emblem",
+  "object": "Plane.019",
+  "dump": "dojo/course-modules/intro-node-dojo/dump.json",
+  "reference": "dojo/references/course-modules/intro-node-dojo.png",
+  "blenderStats": { "verts": 5546, "faces": 2667 },
+  "localSpace": true,
+  "workbenchColor": [0.8, 0.8, 0.8],
+  "note": "The Intro's complete 101-node Node Dojo emblem matches Blender's visible cached frame-1 result exactly at 5,546 vertices and 2,667 faces, with local bounds within 0.000075 units. The arced display type, pixel-font subtitle, curved medallion, and radial instances all run in the browser.",
+  "controls": []
 }
 ]

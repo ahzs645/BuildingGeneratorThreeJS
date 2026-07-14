@@ -481,6 +481,35 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Set Spline Resolution preserves imported evaluated samples", resolved.curvePointCount() === 3);
 }
 
+{
+  const source = curve([[0, 0, 0], [2, 0, 0]], false);
+  const tilted = runNode("GeometryNodeSetCurveTilt", {
+    Curve: source,
+    Selection: true,
+    Tilt: Math.PI / 2,
+  }).Curve as Geometry;
+  check("Set Curve Tilt stores point-domain angles",
+    approx((tilted.curveAttributes.get("tilt")?.data ?? []) as number[], [Math.PI / 2, Math.PI / 2]));
+
+  const sampled = runNode("GeometryNodeSampleCurve", {
+    Curves: tilted,
+    Value: Field.perElem((index) => index * 10),
+    Factor: 0,
+    Length: Field.perElem((index) => index),
+    "Curve Index": 0,
+  }, { mode: "LENGTH", use_all_curves: true });
+  const target = curve([[0, 0, 0], [0, 0, 0], [0, 0, 0]], false);
+  const context = makeFieldCtx(target, "POINT");
+  const positions = (sampled.Position as Field).array(context) as Vec3[];
+  const normals = (sampled.Normal as Field).array(context) as Vec3[];
+  const values = (sampled.Value as Field).array(context) as number[];
+  check("Sample Curve interpolates by arc length",
+    approx(positions.flat(), [0, 0, 0, 1, 0, 0, 2, 0, 0]) && approx(values, [0, 5, 10]),
+    `${JSON.stringify(positions)} ${JSON.stringify(values)}`);
+  check("Sample Curve applies interpolated tilt to normals",
+    normals.every((normal) => approx(normal, [0, 0, 1])), JSON.stringify(normals));
+}
+
 // Imported Bezier objects retain both evaluated samples and authored controls.
 // Converting them to Poly uses the controls, matching Blender's 14-point Text
 // Soup guide instead of instancing over all 157 evaluated Bezier samples.
@@ -584,6 +613,15 @@ function meshSignedAreaXY(m: Mesh): number {
   const duplicateCorners = curve([[0, 0, 0], [1, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 0]], true);
   const welded = runNode("GeometryNodeFillCurve", { Curve: duplicateCorners }, { mode: "NGONS" }).Mesh as Geometry;
   check("Fill Curve welds adjacent cyclic duplicates", welded.mesh?.positions.length === 4 && welded.mesh.faces[0]?.length === 4, `${welded.mesh?.positions.length}/${welded.mesh?.faces[0]?.length}`);
+}
+
+{
+  const touching = curves([
+    { points: [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], cyclic: true },
+    { points: [[1, 1, 0], [2, 1, 0], [2, 2, 0], [1, 2, 0]], cyclic: true },
+  ]);
+  const welded = runNode("GeometryNodeFillCurve", { Curve: touching }, { mode: "NGONS" }).Mesh as Geometry;
+  check("Fill Curve welds corners shared by separate loops", welded.mesh?.positions.length === 7 && welded.mesh.faces.length === 2, `${welded.mesh?.positions.length}/${welded.mesh?.faces.length}`);
 }
 
 // Blender splits crossing cyclic outlines before its even-odd triangle fill.
@@ -1339,6 +1377,8 @@ function meshSignedAreaXY(m: Mesh): number {
   check("StringToCurves instances carry glyph curves", curves.instances.every((inst) => inst.geometry.curves.length > 0));
   const spaced = runNode("GeometryNodeStringToCurves", { String: "A B", Size: 1, "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": 1 }, { align_x: "LEFT" })["Curve Instances"] as Geometry;
   check("StringToCurves preserves whitespace as empty instances", spaced.instances.length === 3 && spaced.instances[1].geometry.curves.length === 0, `got ${spaced.instances.length}`);
+  const explicitBreak = runNode("GeometryNodeStringToCurves", { String: "A\nB", Size: 1, "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": 1 }, { align_x: "LEFT" })["Curve Instances"] as Geometry;
+  check("StringToCurves preserves explicit line breaks as empty instances", explicitBreak.instances.length === 3 && explicitBreak.instances[1].geometry.curves.length === 0 && explicitBreak.instances[2].position[1] < explicitBreak.instances[0].position[1], JSON.stringify(explicitBreak.instances.map((instance) => instance.position)));
 
   const savedFonts = DUMP_CONTEXT.fonts;
   DUMP_CONTEXT.fonts = {
@@ -1367,7 +1407,7 @@ function meshSignedAreaXY(m: Mesh): number {
     String: "AB", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
     "Align X": "Left", "Character Spacing": 1.5, "Word Spacing": 1, "Line Spacing": 1,
   })["Curve Instances"] as Geometry;
-  check("StringToCurves expands spacing by glyph ink width above one", Math.abs(expandedAtlasCurves.instances[1].position[0] - 2.2) < 1e-9);
+  check("StringToCurves adds half-em spacing above one", Math.abs(expandedAtlasCurves.instances[1].position[0] - 2.1) < 1e-9);
   const wrappedAtlasCurves = runNode("GeometryNodeStringToCurves", {
     String: "A B", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
     "Align X": "Left", "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": .5,

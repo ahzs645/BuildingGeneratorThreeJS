@@ -1,0 +1,33 @@
+{
+  "source": "INTRO MODULE_ The Basics of Nodes and Node Dojo_2MAY2024.blend",
+  "object": "Plane.019",
+  "root": "Geometry Nodes.032",
+  "reachableGroups": 3,
+  "reachableNodes": 101,
+  "coverage": "100%",
+  "referenceFrame": 1,
+  "driver": {
+    "path": "Geometry Nodes.032 / Noise Texture / W",
+    "expression": "frame/400",
+    "value": 0.0025,
+    "note": "The supplied Blender file displays its cached frame-1 Geometry Nodes result on open even though the scene timeline is saved at frame 1405. The gallery preserves that visible on-open reference state."
+  },
+  "blender": {
+    "verts": 5546,
+    "faces": 2667,
+    "bbox": {
+      "min": [-7.092873573303223, -5.352100849151611, -2.2800002098083496],
+      "max": [7.133107662200928, 10.613457679748535, 1.6703100204467773]
+    }
+  },
+  "gnvm": {
+    "verts": 5546,
+    "faces": 2667,
+    "triangles": 5514,
+    "bbox": {
+      "min": [-7.092874526977539, -5.352107524871826, -2.2800002098083496],
+      "max": [7.133111000061035, 10.613457679748535, 1.670235514640808]
+    }
+  },
+  "validation": "Exact topology and matching Node Dojo emblem composition, with maximum local-bounds difference below 0.000075 units. Set Curve Tilt and Sample Curve reproduce the arced title, while extracted pixel-font contours, explicit line-break instances, half-em character spacing, and shared-corner Fill Curve welding reproduce the WELCOME/to the lettering. Curve to Points now interpolates Blender-compatible source tangent and normal frames for the radial instances."
+}

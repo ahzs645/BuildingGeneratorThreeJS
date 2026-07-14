@@ -175,8 +175,17 @@ reg("GeometryNodeCurveToPoints", (api) => {
     });
   };
   const sampled = input.curves.map((s) => {
-    const values = sourceTangents?.slice(inputOffset, inputOffset + s.points.length);
-    const normalValues = sourceNormals?.slice(inputOffset, inputOffset + s.points.length);
+    const sourceFrames = splineFrames(s.points, s.cyclic);
+    // Curve to Points samples the evaluated frame of the input curve. When no
+    // explicit frame attributes are present, Blender interpolates tangents and
+    // normals from the original curve before resampling; deriving a fresh
+    // frame from the coarser output points creates an alternating rotation
+    // error whenever the source/output counts are not multiples (32 -> 24 on
+    // the Intro emblem's spike ring).
+    const values = sourceTangents?.slice(inputOffset, inputOffset + s.points.length)
+      ?? sourceFrames.map((frame) => frame.tangent);
+    const normalValues = sourceNormals?.slice(inputOffset, inputOffset + s.points.length)
+      ?? sourceFrames.map((frame) => frame.normal);
     inputOffset += s.points.length;
     let result: { points: Vec3[]; cyclic: boolean };
     if (mode === "EVALUATED") {

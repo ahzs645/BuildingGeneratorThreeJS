@@ -41,6 +41,7 @@ export interface DataRef {
 export interface FontAtlas {
   name: string;
   error?: string;
+  sample_stride?: number;
   align_offsets?: Record<string, number>;
   glyphs: Record<string, { advance: number; curves: { cyclic: boolean; points: number[][] }[] }>;
 }

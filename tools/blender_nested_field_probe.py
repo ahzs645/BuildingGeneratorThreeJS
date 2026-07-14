@@ -1,5 +1,6 @@
 """Store a field inside a nested node group and route that group's geometry out."""
 import json
+import os
 import sys
 
 import bpy
@@ -18,13 +19,20 @@ synthetic_field = None
 if field_node == "__POSITION__":
     synthetic_field = tree.nodes.new("GeometryNodeInputPosition")
     field_output = synthetic_field.outputs[field_socket]
+elif field_node == "__INSTANCE_SCALE__":
+    synthetic_field = tree.nodes.new("GeometryNodeInputInstanceScale")
+    field_output = synthetic_field.outputs[field_socket]
 else:
     field_output = tree.nodes[field_node].outputs[field_socket]
+rotation_converter = None
+if field_output.bl_idname == "NodeSocketRotation":
+    rotation_converter = tree.nodes.new("FunctionNodeRotationToEuler")
+    tree.links.new(field_output, rotation_converter.inputs["Rotation"])
+    field_output = rotation_converter.outputs["Euler"]
 store = tree.nodes.new("GeometryNodeStoreNamedAttribute")
-store.data_type = {
+store.data_type = "FLOAT_VECTOR" if field_output.bl_idname.startswith("NodeSocketVector") else {
     "NodeSocketBool": "BOOLEAN",
     "NodeSocketInt": "INT",
-    "NodeSocketVector": "FLOAT_VECTOR",
 }.get(field_output.bl_idname, "FLOAT")
 store.domain = domain.upper()
 store.inputs["Name"].default_value = "__nested_probe"
@@ -33,6 +41,7 @@ tree.links.new(field_output, store.inputs["Value"])
 for link in list(geometry_output.links):
     tree.links.remove(link)
 realize = None
+to_vertices = None
 if domain.upper() == "INSTANCE":
     # Object evaluation realizes output instances, but attributes stored only
     # on the instance domain are otherwise omitted from the resulting mesh
@@ -41,6 +50,13 @@ if domain.upper() == "INSTANCE":
     realize = tree.nodes.new("GeometryNodeRealizeInstances")
     tree.links.new(store.outputs["Geometry"], realize.inputs["Geometry"])
     tree.links.new(realize.outputs["Geometry"], geometry_output)
+elif os.environ.get("NODE_DOJO_PROBE_POINTS_TO_VERTICES") == "1":
+    # Point-cloud components are not exposed by Object.to_mesh(). Convert them
+    # to loose mesh vertices so POINT-domain texture/field probes remain
+    # inspectable without changing their positions or stored attributes.
+    to_vertices = tree.nodes.new("GeometryNodePointsToVertices")
+    tree.links.new(store.outputs["Geometry"], to_vertices.inputs["Points"])
+    tree.links.new(to_vertices.outputs["Mesh"], geometry_output)
 else:
     tree.links.new(store.outputs["Geometry"], geometry_output)
 
@@ -66,8 +82,12 @@ finally:
         tree.links.new(original, geometry_output)
     if realize is not None:
         tree.nodes.remove(realize)
+    if to_vertices is not None:
+        tree.nodes.remove(to_vertices)
     if synthetic_field is not None:
         tree.nodes.remove(synthetic_field)
+    if rotation_converter is not None:
+        tree.nodes.remove(rotation_converter)
     tree.nodes.remove(store)
 
 with open(out_path, "w", encoding="utf-8") as handle:

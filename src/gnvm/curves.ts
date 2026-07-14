@@ -288,6 +288,7 @@ export function fillCurves(curves: Spline[], mode: "NGONS" | "TRIANGLES"): Mesh 
   // groove cells crossing its rounded clip outline. Preserve the inexpensive
   // legacy path when there are no proper intersections (the common case).
   if (mode === "TRIANGLES" && emitIntersectingFill(mesh, loops, plane)) {
+    weldTouchingFillLoops(mesh);
     mesh.materialSlots = [null];
     return mesh;
   }
@@ -300,8 +301,51 @@ export function fillCurves(curves: Spline[], mode: "NGONS" | "TRIANGLES"): Mesh 
     else if (mode === "NGONS") emitHoledNgonFill(mesh, loop, holes);
     else emitHoledFill(mesh, loop, holes);
   }
+  weldTouchingFillLoops(mesh);
   mesh.materialSlots = [null];
   return mesh;
+}
+
+// Fill Curve keeps separate faces for contours that only touch, but their
+// coincident corners share one mesh vertex. Pixel fonts rely on this: several
+// square glyph cells meet at a corner without becoming one polygon. Welding
+// only the emitted vertices preserves the face partition and even-odd loop
+// classification while matching Blender's final topology.
+function weldTouchingFillLoops(mesh: Mesh): void {
+  if (mesh.positions.length < 2) return;
+  const tolerance = 1e-7;
+  const buckets = new Map<string, number[]>();
+  const positions: Vec3[] = [];
+  const remap: number[] = new Array(mesh.positions.length);
+  for (let index = 0; index < mesh.positions.length; index++) {
+    const point = mesh.positions[index];
+    const qx = Math.round(point[0] / tolerance);
+    const qy = Math.round(point[1] / tolerance);
+    const qz = Math.round(point[2] / tolerance);
+    let representative = -1;
+    for (let x = qx - 1; x <= qx + 1 && representative < 0; x++)
+      for (let y = qy - 1; y <= qy + 1 && representative < 0; y++)
+        for (let z = qz - 1; z <= qz + 1 && representative < 0; z++)
+          for (const candidate of buckets.get(`${x}:${y}:${z}`) ?? [])
+            if (vlen(vsub(point, positions[candidate])) <= tolerance) { representative = candidate; break; }
+    if (representative < 0) {
+      representative = positions.length;
+      positions.push(point);
+      const key = `${qx}:${qy}:${qz}`;
+      const bucket = buckets.get(key);
+      if (bucket) bucket.push(representative);
+      else buckets.set(key, [representative]);
+    }
+    remap[index] = representative;
+  }
+  if (positions.length === mesh.positions.length) return;
+  mesh.positions = positions;
+  mesh.faces = mesh.faces.map((face) => {
+    const mapped: number[] = [];
+    for (const vertex of face) if (mapped[mapped.length - 1] !== remap[vertex]) mapped.push(remap[vertex]);
+    if (mapped.length > 1 && mapped[0] === mapped[mapped.length - 1]) mapped.pop();
+    return mapped;
+  });
 }
 
 type Vec2 = [number, number];
