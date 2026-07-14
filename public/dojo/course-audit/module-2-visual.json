@@ -1,0 +1,54 @@
+{
+  "source": "MODULE 2_8JUN2022.blend",
+  "auditDate": "2026-07-14",
+  "scope": "All 22 roots structurally classified as complex-study in Module 2",
+  "summary": {
+    "publishedDistinctStudy": 1,
+    "earlierRoomStage": 1,
+    "singleFaceMarkerHelpers": 4,
+    "emptyOrNonSurfaceLessonRoots": 16
+  },
+  "published": [
+    {
+      "object": "dojo",
+      "root": "Geometry Nodes.002",
+      "classification": "published-distinct-study",
+      "catalogId": "course-dojo-finale",
+      "blender": { "verts": 47435, "faces": 46490 }
+    }
+  ],
+  "earlierStages": [
+    {
+      "object": "1A",
+      "root": "Geometry Nodes.120",
+      "classification": "earlier-room-stage",
+      "blender": { "verts": 3854, "faces": 2997 },
+      "note": "An earlier version of the Room family, superseded in the browser library by the complete Intro Room."
+    }
+  ],
+  "markerHelpers": [
+    { "object": "Plane.014", "root": ".arrow", "blender": { "verts": 32, "faces": 1 } },
+    { "object": "Plane.017", "root": "Geometry Nodes.032", "blender": { "verts": 32, "faces": 1 } },
+    { "object": "Plane.022", "root": "Geometry Nodes.063", "blender": { "verts": 32, "faces": 1 } },
+    { "object": "Plane.040", "root": "Geometry Nodes.094", "blender": { "verts": 32, "faces": 1 } }
+  ],
+  "emptyOrNonSurface": [
+    { "object": "Plane.020", "root": "Geometry Nodes.098", "reachableNodes": 453 },
+    { "object": "Plane.046", "root": "Geometry Nodes.113", "reachableNodes": 451 },
+    { "object": "Plane.006", "root": "Geometry Nodes.041", "reachableNodes": 406 },
+    { "object": "Plane.007", "root": "Geometry Nodes.042", "reachableNodes": 406 },
+    { "object": "Plane.013", "root": "Geometry Nodes.022", "reachableNodes": 406 },
+    { "object": "Plane.015", "root": "Geometry Nodes.023", "reachableNodes": 406 },
+    { "object": "Plane.018", "root": "Geometry Nodes.044", "reachableNodes": 406 },
+    { "object": "Plane.019", "root": "Geometry Nodes.071", "reachableNodes": 405 },
+    { "object": "Plane.033", "root": "Geometry Nodes.075", "reachableNodes": 405 },
+    { "object": "Plane.036", "root": "Geometry Nodes.078", "reachableNodes": 405 },
+    { "object": "Plane.050", "root": "Geometry Nodes.121", "reachableNodes": 405 },
+    { "object": "Plane", "root": "Geometry Nodes.038", "reachableNodes": 402 },
+    { "object": "Plane.001", "root": "Geometry Nodes.039", "reachableNodes": 167 },
+    { "object": "how to.001", "root": "Geometry Nodes.108", "reachableNodes": 413 },
+    { "object": "how to.002", "root": "Geometry Nodes.109", "reachableNodes": 413 },
+    { "object": "how to.033", "root": "Geometry Nodes.053", "reachableNodes": 413 }
+  ],
+  "validation": "Each object was isolated and evaluated through a temporary Realize Instances pass in Blender 5.1. The representative 453-node Plane.020 closure was also extracted and run in the GN-VM: both engines produce 0 vertices / 0 faces with 100% node-handler coverage because the active graph terminates as an unbeveled wire/curve. The file reports a missing Bradley's Geo Node Presets library containing G_Parenting and G_Set Shade AutoSmooth, but neither missing group is reachable from that representative closure."
+}
