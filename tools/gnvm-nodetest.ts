@@ -861,6 +861,9 @@ function meshSignedAreaXY(m: Mesh): number {
   const hullX = hull.mesh?.positions.map((point) => point[0]) ?? [];
   check("Convex Hull encloses disconnected point sets", (hull.mesh?.faces.length ?? 0) > 0 && Math.min(...hullX) === -1 && Math.max(...hullX) === 5,
     `verts=${hull.mesh?.positions.length} faces=${hull.mesh?.faces.length}`);
+  check("Convex Hull dissolves coplanar triangles into Blender-style polygons",
+    hull.mesh?.faces.length === 6 && hull.mesh.faces.every((face) => face.length === 4),
+    `faces=${hull.mesh?.faces.length} sizes=${hull.mesh?.faces.map((face) => face.length)}`);
 
   // Blender's FLOAT solver performs solid CSG for closed operands too. The VM
   // uses Manifold for that safe subset, including curved/non-AABB cutters.

@@ -827,7 +827,7 @@
     "reference": "dojo/references/n03d/assembly-bracket.png",
     "blenderStats": { "verts": 1743, "faces": 1816 },
     "localSpace": true,
-    "note": "The complete 54-group, 1,662-node bracket builds the long pivot arm, cutout, clamp end, and screw components in-browser. Authored, diameter, and screw variants match Blender bounds exactly; topology is denser because browser booleans retain split faces, and split-for-print still extends 11.09 units too far on +X.",
+    "note": "The complete 54-group, 1,662-node bracket builds the long pivot arm, cutout, clamp end, and screw components in-browser. Coplanar hull and boolean triangles are recombined into Blender-style panels, producing 1,770 / 1,914 versus Blender's 1,743 / 1,816. All five validation cases have exact bounds and stay within 2.82% vertices; split-for-print no longer overshoots +X.",
     "controls": [
       { "name": "outer dia.", "label": "Outer diameter", "min": 20, "max": 50, "step": 0.1, "value": 34 },
       { "name": "cutout dia", "label": "Cutout diameter", "min": 5, "max": 32, "step": 0.1, "value": 22.5 },

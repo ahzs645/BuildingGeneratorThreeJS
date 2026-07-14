@@ -1,6 +1,6 @@
 {
   "source": "gnvm",
-  "dump": "/tmp/n03d-assembly-bracket-dump.json",
+  "dump": "public/dojo/n03d/assembly-bracket/dump.json",
   "object": "Cube.035",
   "results": [
     {
@@ -9,8 +9,8 @@
         "overrides": {}
       },
       "status": "ok",
-      "verts": 5486,
-      "faces": 6242,
+      "verts": 1770,
+      "faces": 1914,
       "bbox": {
         "min": [
           -193.9592,
@@ -23,7 +23,7 @@
           180.8749
         ]
       },
-      "elapsed_ms": 282
+      "elapsed_ms": 350
     },
     {
       "combo": {
@@ -33,8 +33,8 @@
         }
       },
       "status": "ok",
-      "verts": 5486,
-      "faces": 6242,
+      "verts": 1769,
+      "faces": 1906,
       "bbox": {
         "min": [
           -193.9592,
@@ -47,7 +47,7 @@
           180.8749
         ]
       },
-      "elapsed_ms": 94
+      "elapsed_ms": 201
     },
     {
       "combo": {
@@ -58,8 +58,8 @@
         }
       },
       "status": "ok",
-      "verts": 5462,
-      "faces": 6194,
+      "verts": 1756,
+      "faces": 1895,
       "bbox": {
         "min": [
           -190.9602,
@@ -72,7 +72,7 @@
           177.8752
         ]
       },
-      "elapsed_ms": 189
+      "elapsed_ms": 279
     },
     {
       "combo": {
@@ -82,8 +82,8 @@
         }
       },
       "status": "ok",
-      "verts": 5486,
-      "faces": 6242,
+      "verts": 1770,
+      "faces": 1914,
       "bbox": {
         "min": [
           -193.9592,
@@ -96,7 +96,7 @@
           180.8749
         ]
       },
-      "elapsed_ms": 166
+      "elapsed_ms": 237
     },
     {
       "combo": {
@@ -106,8 +106,8 @@
         }
       },
       "status": "ok",
-      "verts": 9636,
-      "faces": 10299,
+      "verts": 1775,
+      "faces": 1587,
       "bbox": {
         "min": [
           -193.9592,
@@ -115,12 +115,12 @@
           -17
         ],
         "max": [
-          26.9389,
+          15.8494,
           87.1023,
           180.8749
         ]
       },
-      "elapsed_ms": 216
+      "elapsed_ms": 305
     }
   ]
 }

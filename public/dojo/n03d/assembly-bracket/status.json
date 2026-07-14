@@ -2,15 +2,15 @@
   "id": "n03d-assembly-bracket",
   "object": "Cube.035",
   "root": "asmbly_bracket.001",
-  "status": "live-partial-parity",
+  "status": "visual-near-parity",
   "blender": {
     "verts": 1743,
     "faces": 1816
   },
   "gnvm": {
-    "verts": 5486,
-    "faces": 6242
+    "verts": 1770,
+    "faces": 1914
   },
   "coverage": "100% of reachable node types across the 54-group, 1,662-node closure.",
-  "validation": "The authored bracket, compact-diameter, and half-screw cases have exact local bounds and visually aligned components. GN-VM retains split vertices and boolean faces, producing denser topology than Blender. Split-for-print remains partial: the browser adds 11.0895 units to the positive X bound."
+  "validation": "All five authored, diameter, screw, solid, and split-for-print cases have exact local bounds. Coplanar Manifold hull and boolean triangles are recombined into Blender-style panels; authored output is 1,770 / 1,914 versus Blender's 1,743 / 1,816, and every case remains within 2.82% vertices."
 }

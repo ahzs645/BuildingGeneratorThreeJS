@@ -34,7 +34,8 @@ reg("GeometryNodeConvexHull", (api) => {
     ...(source.mesh?.positions ?? []),
     ...source.curves.flatMap((spline) => spline.points),
   ];
-  const mesh = manifoldHull(points);
+  const raw = manifoldHull(points);
+  const mesh = raw ? dissolveCoplanarFaces(raw) : null;
   if (!mesh) return { "Convex Hull": new Geometry() };
   const geometry = new Geometry();
   geometry.mesh = mesh;
@@ -1584,6 +1585,124 @@ function compactFaceVertsLocal(mesh: Mesh): Mesh {
   return out;
 }
 
+/**
+ * Recombine coplanar triangle regions emitted by Manifold into Blender-style
+ * polygons. A region is dissolved only when its boundary is one simple loop;
+ * areas with holes or ambiguous/non-manifold boundaries retain their source
+ * triangles. Boundary vertices are deliberately kept, including collinear
+ * authored subdivisions used by downstream Geometry Nodes fields.
+ */
+function dissolveCoplanarFaces(mesh: Mesh): Mesh {
+  if (mesh.faces.length < 2 || [...mesh.attributes.values()].some((attribute) => attribute.domain === "CORNER")) return mesh;
+  const diagonal = Math.max(meshDiag(mesh), 1);
+  const planeTolerance = diagonal * 1e-4;
+  const planes = mesh.faces.map((face) => {
+    const origin = mesh.positions[face[0]];
+    let normal: Vec3 = [0, 0, 0];
+    for (let i = 1; i + 1 < face.length; i++) {
+      const candidate = vcross(vsub(mesh.positions[face[i]], origin), vsub(mesh.positions[face[i + 1]], origin));
+      if (vlen(candidate) > 1e-12) { normal = vnorm(candidate); break; }
+    }
+    return { normal, distance: vdot(normal, origin) };
+  });
+  const parent = mesh.faces.map((_, index) => index);
+  const find = (index: number): number => parent[index] === index ? index : (parent[index] = find(parent[index]));
+  const union = (a: number, b: number) => {
+    a = find(a); b = find(b);
+    if (a !== b) parent[b] = a;
+  };
+  for (const edge of buildTopology(mesh).edges) {
+    if (edge.faces.length !== 2) continue;
+    const [a, b] = edge.faces;
+    if ((mesh.faceMaterial[a] ?? 0) !== (mesh.faceMaterial[b] ?? 0)) continue;
+    const pa = planes[a], pb = planes[b];
+    if (vdot(pa.normal, pb.normal) < 1 - 1e-3 || Math.abs(pa.distance - pb.distance) > planeTolerance) continue;
+    union(a, b);
+  }
+  const groups = new Map<number, number[]>();
+  for (let face = 0; face < mesh.faces.length; face++) {
+    const root = find(face);
+    groups.set(root, [...(groups.get(root) ?? []), face]);
+  }
+  if ([...groups.values()].every((group) => group.length === 1)) return mesh;
+
+  const out = mesh.clone();
+  out.faces = [];
+  out.faceMaterial = [];
+  out.edges = [];
+  const faceAttributes = new Map<string, Elem[]>();
+  for (const [name, attribute] of mesh.attributes) if (attribute.domain === "FACE") faceAttributes.set(name, []);
+  const emit = (face: number[], sourceFace: number) => {
+    out.faces.push(face);
+    out.faceMaterial.push(mesh.faceMaterial[sourceFace] ?? 0);
+    for (const [name, data] of faceAttributes) data.push(mesh.attributes.get(name)!.data[sourceFace] ?? 0);
+  };
+  for (const group of groups.values()) {
+    if (group.length === 1) { emit([...mesh.faces[group[0]]], group[0]); continue; }
+    const edgeUses = new Map<string, Array<[number, number]>>();
+    for (const faceIndex of group) {
+      const face = mesh.faces[faceIndex];
+      for (let corner = 0; corner < face.length; corner++) {
+        const a = face[corner], b = face[(corner + 1) % face.length];
+        const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+        edgeUses.set(key, [...(edgeUses.get(key) ?? []), [a, b]]);
+      }
+    }
+    const boundary = [...edgeUses.values()].filter((uses) => uses.length === 1).map((uses) => uses[0]);
+    const outgoing = new Map<number, number[]>(), incoming = new Map<number, number[]>();
+    for (const [a, b] of boundary) {
+      outgoing.set(a, [...(outgoing.get(a) ?? []), b]);
+      incoming.set(b, [...(incoming.get(b) ?? []), a]);
+    }
+    const vertices = new Set(boundary.flat());
+    const simple = boundary.length >= 3
+      && vertices.size === boundary.length
+      && [...vertices].every((vertex) => outgoing.get(vertex)?.length === 1 && incoming.get(vertex)?.length === 1);
+    if (!simple) { for (const faceIndex of group) emit([...mesh.faces[faceIndex]], faceIndex); continue; }
+    const loops: number[][] = [];
+    const visited = new Set<number>();
+    for (const start of vertices) {
+      if (visited.has(start)) continue;
+      const loop = [start];
+      visited.add(start);
+      let current = start;
+      while (loop.length <= boundary.length) {
+        current = outgoing.get(current)![0];
+        if (current === start) break;
+        if (visited.has(current)) break;
+        loop.push(current);
+        visited.add(current);
+      }
+      if (current !== start) { loops.length = 0; break; }
+      loops.push(loop);
+    }
+    if (!loops.length || loops.reduce((sum, loop) => sum + loop.length, 0) !== boundary.length) {
+      for (const faceIndex of group) emit([...mesh.faces[faceIndex]], faceIndex);
+      continue;
+    }
+    if (loops.length === 1) {
+      emit(loops[0], group[0]);
+      continue;
+    }
+    if (loops.length === 2) {
+      const normal = planes[group[0]].normal;
+      const dominant = Math.abs(normal[1]) > Math.abs(normal[0])
+        ? (Math.abs(normal[2]) > Math.abs(normal[1]) ? 2 : 1)
+        : (Math.abs(normal[2]) > Math.abs(normal[0]) ? 2 : 0);
+      const dims = [0, 1, 2].filter((axis) => axis !== dominant) as [0 | 1 | 2, 0 | 1 | 2];
+      loops.sort((a, b) => Math.abs(polygonArea2D(b, mesh.positions, dims)) - Math.abs(polygonArea2D(a, mesh.positions, dims)));
+      const bridged = bridgeHoleFaces(loops[0], loops[1], mesh.positions, dims);
+      if (bridged) {
+        for (const face of bridged) emit(face, group[0]);
+        continue;
+      }
+    }
+    for (const faceIndex of group) emit([...mesh.faces[faceIndex]], faceIndex);
+  }
+  for (const [name, data] of faceAttributes) out.attributes.set(name, { domain: "FACE", data });
+  return out;
+}
+
 /** True when every polygon edge belongs to exactly two faces. */
 function isClosedFaceManifold(mesh: Mesh): boolean {
   if (!mesh.faces.length) return false;
@@ -2068,8 +2187,14 @@ reg("GeometryNodeMeshBoolean", (api) => {
       if (!acc || !g.mesh) continue;
       const box = axisBox(g);
       let next: Mesh | null = null;
-      if (box) next = manifoldBooleanBox(acc, box, op);
-      if (!next) next = manifoldBoolean(acc, g.mesh, op);
+      if (box) {
+        const result = manifoldBooleanBox(acc, box, op);
+        if (result) next = dissolveCoplanarFaces(result);
+      }
+      if (!next) {
+        const result = manifoldBoolean(acc, g.mesh, op);
+        if (result) next = dissolveCoplanarFaces(result);
+      }
       if (!next && op === "DIFFERENCE") next = openSweptDifference(acc, g.mesh);
       if (next) acc = next;
       else if (op === "UNION") {
