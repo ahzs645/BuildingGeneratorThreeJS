@@ -1450,6 +1450,12 @@ function meshSignedAreaXY(m: Mesh): number {
     "Text Box Width": 2,
   })["Curve Instances"] as Geometry;
   check("StringToCurves center alignment ignores trailing wrap space", Math.abs(centeredWrap.instances[0].position[0] + .8) < 1e-9, `x=${centeredWrap.instances[0].position[0]}`);
+  const leftPivotWrap = runNode("GeometryNodeStringToCurves", {
+    String: "A B", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
+    "Align X": "Center", "Pivot Point": "Bottom Left", "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": .5,
+    "Text Box Width": 2,
+  })["Curve Instances"] as Geometry;
+  check("StringToCurves left pivot centers within the text box", Math.abs(leftPivotWrap.instances[0].position[0] - .2) < 1e-9, `x=${leftPivotWrap.instances[0].position[0]}`);
   const centeredWrappedAtlas = runNode("GeometryNodeStringToCurves", {
     String: "A B", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
     "Align X": "Left", "Align Y": "Middle", "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": .5,

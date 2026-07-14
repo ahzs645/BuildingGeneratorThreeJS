@@ -1504,5 +1504,17 @@
   "workbenchColor": [0.8, 0.8, 0.8],
   "note": "The complete 104-node chalkboard study matches Blender exactly at 2,226 vertices and 290 faces. Its raised Pixels lettering, inset board, and swept perimeter frame run in-browser, with local bounds within 0.0031 units.",
   "controls": []
+},
+{
+  "id": "course-intro-node-tabs",
+  "title": "Course Intro · Node Tabs",
+  "object": "Plane.035",
+  "dump": "dojo/course-modules/intro-node-tabs/dump.json",
+  "reference": "dojo/references/course-modules/intro-node-tabs.png",
+  "blenderStats": { "verts": 2411, "faces": 81 },
+  "localSpace": true,
+  "workbenchColor": [0.8, 0.8, 0.8],
+  "note": "The 64-node arrow-and-NodeTubes tab study matches Blender's visible cached frame-1 result exactly at 2,411 vertices and 81 faces, with bounds within 0.000001 units. All nine per-glyph bounce offsets run in-browser.",
+  "controls": []
 }
 ]

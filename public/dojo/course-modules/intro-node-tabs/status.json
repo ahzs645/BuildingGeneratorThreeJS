@@ -1,0 +1,33 @@
+{
+  "source": "INTRO MODULE_ The Basics of Nodes and Node Dojo_2MAY2024.blend",
+  "object": "Plane.035",
+  "root": "Geometry Nodes.036",
+  "reachableGroups": 5,
+  "reachableNodes": 64,
+  "coverage": "100%",
+  "referenceFrame": 1,
+  "driver": {
+    "path": "bouncy header / Noise Texture / W",
+    "expression": "frame/1111",
+    "value": 0.0009000900090009,
+    "note": "The supplied Blender file displays its cached frame-1 result on open even though the timeline is saved at frame 1405. The gallery preserves that visible reference state."
+  },
+  "blender": {
+    "verts": 2411,
+    "faces": 81,
+    "bbox": {
+      "min": [-5.099999904632568, -0.5099999904632568, -0.38932645320892334],
+      "max": [3.3199052810668945, 1.090000033378601, 0.38932645320892334]
+    }
+  },
+  "gnvm": {
+    "verts": 2411,
+    "faces": 81,
+    "triangles": 2399,
+    "bbox": {
+      "min": [-5.099999904632568, -0.5099999904632568, -0.3893258273601532],
+      "max": [3.3199052810668945, 1.090000033378601, 0.3893258273601532]
+    }
+  },
+  "validation": "Exact topology, matching arrow-and-NodeTubes composition, and local bounds within 0.000001 units. String to Curves now applies Blender's bounded-text Bottom Left pivot before per-glyph 4D-noise displacement; all nine cached frame-1 glyph offsets match within 0.000006 units."
+}
