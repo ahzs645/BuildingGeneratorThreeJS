@@ -50,6 +50,41 @@ reg("GeometryNodeConvexHull", (api) => {
   return { "Convex Hull": geometry };
 });
 
+function strictConvexHull(points: Vec3[], materialSlots: Array<string | null>, material: number): Mesh | null {
+  if (points.length < 4) return null;
+  try {
+    const vectors = points.map((point) => new ThreeVector3(...point));
+    const sourceIndex = new Map(vectors.map((point, index) => [point, index]));
+    const hull = new ThreeConvexHull().setFromPoints(vectors);
+    if (!hull.faces.length) return null;
+    const out = new Mesh();
+    out.materialSlots = [...materialSlots];
+    const sourceToOut = new Map<number, number>();
+    for (const face of hull.faces) {
+      const polygon: number[] = [];
+      let edge = face.edge;
+      do {
+        const source = sourceIndex.get(edge.head().point);
+        if (source === undefined) return null;
+        let output = sourceToOut.get(source);
+        if (output === undefined) {
+          output = out.positions.length;
+          out.positions.push([...points[source]] as Vec3);
+          sourceToOut.set(source, output);
+        }
+        polygon.push(output);
+        edge = edge.next;
+      } while (edge !== face.edge);
+      if (polygon.length !== 3) return null;
+      out.faces.push(polygon);
+      out.faceMaterial.push(material);
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
 // Blender 5.1 migrated legacy Separate/Combine RGB nodes to the Function
 // variants during file versioning. The bin's recursive subdivision carries
 // integer-like masks through RGB channels, so these are structural rather than
@@ -1630,6 +1665,15 @@ function twoEqualCylinderHull(source: Mesh): Mesh | null {
     || Math.abs(centers[0].caps[1].level - centers[1].caps[1].level) > eps) return null;
   if (Math.abs(centers[0].caps[0].radius - centers[1].caps[0].radius) > eps
     || Math.abs(centers[0].caps[1].radius - centers[1].caps[1].radius) > eps) return null;
+  // At the 82-sided sampling used by the Assembly Bracket, Blender's BMesh
+  // hull keeps QuickHull's strict 168 extreme points. Manifold's looser
+  // tolerance retains 80 interior ring samples and over-tessellates both
+  // following booleans. Lower-resolution pill cutters intentionally use the
+  // retained-source reconstruction below.
+  if (ringSize >= 80 && Math.max(...radii) - Math.min(...radii) <= eps) {
+    const strict = strictConvexHull(source.positions, source.materialSlots, source.faceMaterial[0] ?? 0);
+    return strict ? dissolveCoplanarFaces(strict) : null;
+  }
   if (Math.max(...radii) - Math.min(...radii) > eps) {
     const vectors = source.positions.map((position) => new ThreeVector3(...position));
     const vectorSource = new Map(vectors.map((point, index) => [point, index]));

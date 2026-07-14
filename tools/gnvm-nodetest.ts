@@ -908,6 +908,22 @@ function meshSignedAreaXY(m: Mesh): number {
     pillHull.mesh?.positions.length === 98 && pillHull.mesh.faces.length === 72,
     `${pillHull.mesh?.positions.length}v/${pillHull.mesh?.faces.length}f`);
 
+  const denseCylinderPair = new Geometry();
+  denseCylinderPair.mesh = new Mesh();
+  for (const [x, y] of [[-35, 35], [35, -35]]) {
+    const cylinder = runNode("GeometryNodeMeshCylinder", {
+      Vertices: 82, "Side Segments": 1, "Fill Segments": 1, Radius: 11.25, Depth: 80,
+    }, { fill_type: "NGON" }).Mesh as Geometry;
+    const base = denseCylinderPair.mesh.positions.length;
+    denseCylinderPair.mesh.positions.push(...cylinder.mesh!.positions.map(([px, py, pz]) => [px + x, py + y, pz] as Vec3));
+    denseCylinderPair.mesh.faces.push(...cylinder.mesh!.faces.map((face) => face.map((vertex) => vertex + base)));
+    denseCylinderPair.mesh.faceMaterial.push(...cylinder.mesh!.faces.map(() => 0));
+  }
+  const denseHull = runNode("GeometryNodeConvexHull", { Geometry: denseCylinderPair })["Convex Hull"] as Geometry;
+  check("Dense two-cylinder hull uses Blender strict extrema",
+    denseHull.mesh?.positions.length === 168 && denseHull.mesh.faces.length === 86,
+    `${denseHull.mesh?.positions.length}v/${denseHull.mesh?.faces.length}f`);
+
   const taperedPair = new Geometry();
   taperedPair.mesh = new Mesh();
   for (const [offset, zOffset] of [[-4, -2e-6], [4, 2e-6]]) {

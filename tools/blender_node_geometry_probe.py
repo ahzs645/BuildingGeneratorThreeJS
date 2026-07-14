@@ -30,6 +30,13 @@ bpy.context.window.scene = probe_scene
 obj.hide_viewport = False
 obj.hide_render = False
 obj.hide_set(False)
+if os.environ.get("NODE_DOJO_LOCAL_SPACE") == "1":
+    # Match parity_sweep.py and the gallery's local-space mode. Relative Object
+    # Info nodes then see the authored dependency transforms from an identity
+    # modifier object, rather than inheriting the asset-library display offset.
+    obj.location = (0, 0, 0)
+    obj.rotation_euler = (0, 0, 0)
+    obj.scale = (1, 1, 1)
 modifier = next((candidate for candidate in obj.modifiers if candidate.type == "NODES" and candidate.node_group is not None), None)
 probe_overrides = json.loads(os.environ.get("NODE_DOJO_PROBE_OVERRIDES", "{}"))
 if probe_overrides:
