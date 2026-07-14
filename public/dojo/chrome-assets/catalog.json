@@ -1492,5 +1492,17 @@
   "workbenchColor": [0.8, 0.8, 0.8],
   "note": "The Intro's complete 101-node Node Dojo emblem matches Blender's visible cached frame-1 result exactly at 5,546 vertices and 2,667 faces, with local bounds within 0.000075 units. The arced display type, pixel-font subtitle, curved medallion, and radial instances all run in the browser.",
   "controls": []
+},
+{
+  "id": "course-intro-chalkboard",
+  "title": "Course Intro · Challenge Chalkboard",
+  "object": "chalkboard",
+  "dump": "dojo/course-modules/intro-chalkboard/dump.json",
+  "reference": "dojo/references/course-modules/intro-chalkboard.png",
+  "blenderStats": { "verts": 2226, "faces": 290 },
+  "localSpace": true,
+  "workbenchColor": [0.8, 0.8, 0.8],
+  "note": "The complete 104-node chalkboard study matches Blender exactly at 2,226 vertices and 290 faces. Its raised Pixels lettering, inset board, and swept perimeter frame run in-browser, with local bounds within 0.0031 units.",
+  "controls": []
 }
 ]

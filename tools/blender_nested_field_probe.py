@@ -60,6 +60,21 @@ elif os.environ.get("NODE_DOJO_PROBE_POINTS_TO_VERTICES") == "1":
 else:
     tree.links.new(store.outputs["Geometry"], geometry_output)
 
+# Optionally carry a nested group's temporary output through each containing
+# group to the modifier root. Without this, downstream nodes can delete or
+# remap the stored domain before it reaches the evaluated object.
+route_links = []
+for step in json.loads(os.environ.get("NODE_DOJO_PROBE_ROUTE", "[]")):
+    route_tree = bpy.data.node_groups[step["group"]]
+    route_node = route_tree.nodes[step["node"]]
+    route_output = next(node for node in route_tree.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output)
+    route_target = next(socket for socket in route_output.inputs if socket.type == "GEOMETRY")
+    route_source = route_node.outputs[step["socket"]]
+    route_links.append((route_tree, route_target, route_target.links[0].from_socket if route_target.is_linked else None))
+    for link in list(route_target.links):
+        route_tree.links.remove(link)
+    route_tree.links.new(route_source, route_target)
+
 obj.update_tag()
 bpy.context.view_layer.update()
 evaluated = obj.evaluated_get(bpy.context.evaluated_depsgraph_get())
@@ -76,6 +91,11 @@ try:
     payload = {"domain": domain.upper(), "values": values, "positions": positions, "verts": len(mesh.vertices), "faces": len(mesh.polygons), "edges": len(mesh.edges)}
 finally:
     evaluated.to_mesh_clear()
+    for route_tree, route_target, route_original in reversed(route_links):
+        for link in list(route_target.links):
+            route_tree.links.remove(link)
+        if route_original is not None:
+            route_tree.links.new(route_original, route_target)
     for link in list(geometry_output.links):
         tree.links.remove(link)
     if original is not None:

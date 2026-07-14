@@ -1,0 +1,11 @@
+{
+  "object": "chalkboard",
+  "type": "MESH",
+  "bbox": {
+    "min": [-8.234509468078613, -7.758503437042236, -0.239357590675354],
+    "max": [8.234509468078613, 7.759399890899658, 0.2376922219991684]
+  },
+  "verts": 2226,
+  "faces": 290,
+  "materials": ["emit.003", "Chalkboard_Green", "wood_chalkboard"]
+}

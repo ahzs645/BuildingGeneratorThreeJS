@@ -455,7 +455,11 @@ for obj in bpy.data.objects:
                 "verts": [[round(v.co.x, 6), round(v.co.y, 6), round(v.co.z, 6)] for v in me.vertices],
                 "faces": [list(p.vertices) for p in me.polygons],
                 "face_materials": [p.material_index for p in me.polygons],
-                "edges": [[e.vertices[0], e.vertices[1]] for e in me.edges if e.is_loose],
+                # Preserve Blender's stored edge order, including polygon
+                # boundaries. Mesh to Curve and edge-domain fields use this
+                # order; rebuilding only from face winding can reverse a
+                # cyclic rail and therefore its Curve to Mesh frame.
+                "edges": [[e.vertices[0], e.vertices[1]] for e in me.edges],
             }
             # authored custom attributes (e.g. the bubble vase's 'bottom' vertex
             # tag drives a Named Attribute -> Separate chain in the graph)
@@ -559,7 +563,7 @@ for obj in bpy.data.objects:
                 "verts": [[round(v.co.x, 6), round(v.co.y, 6), round(v.co.z, 6)] for v in mesh.vertices],
                 "faces": [list(p.vertices) for p in mesh.polygons],
                 "face_materials": [p.material_index for p in mesh.polygons],
-                "edges": [[e.vertices[0], e.vertices[1]] for e in mesh.edges if e.is_loose],
+                "edges": [[e.vertices[0], e.vertices[1]] for e in mesh.edges],
                 "materials": [material.name if material else None for material in mesh.materials],
                 "attributes": dump_mesh_attributes(mesh),
             }

@@ -518,6 +518,7 @@ reg("GeometryNodeCurveToMesh", (api) => {
   mesh.materialSlots = [null];
   const profiles = prof.curves;
   const tangentAttribute = rail.curveAttributes.get("__curve_tangent")?.data;
+  const planarFromMesh = rail.curveAttributes.has("__gnvm_planar_mesh_curve");
   const railPointAttributes = [...rail.curveAttributes].filter(([, attribute]) => attribute.domain === "POINT");
   const profilePointAttributes = [...prof.curveAttributes].filter(([, attribute]) => attribute.domain === "POINT");
   let flatBase = 0;
@@ -573,7 +574,7 @@ reg("GeometryNodeCurveToMesh", (api) => {
         profileBase += p.points.length;
         continue;
       }
-      const sm = sweep(r, p, caps, scales, tangentOverrides);
+      const sm = sweep(r, p, caps, scales, tangentOverrides, planarFromMesh);
       const base = mesh.positions.length;
       for (const pos of sm.positions) mesh.positions.push(pos);
       for (let fi = 0; fi < sm.faces.length; fi++) { mesh.faces.push(sm.faces[fi].map((v) => v + base)); mesh.faceMaterial.push(0); }
@@ -691,6 +692,28 @@ reg("GeometryNodeMeshToCurve", (api) => {
     }
     const chains = meshEdgesToChains(source);
     out.curves = chains.map((c) => c.spline);
+    // Blender's Mesh to Curve creates evaluated poly tangents by bisecting the
+    // normalized incident edge directions. Preserve that field explicitly so
+    // Curve to Mesh does not replace it with a length-weighted chord tangent.
+    const meshTangents: Vec3[] = [];
+    if (source.attributes.has("__gnvm_stored_edge_order")) for (const { spline } of chains) for (let index = 0; index < spline.points.length; index++) {
+      const count = spline.points.length;
+      const previous = spline.points[(index - 1 + count) % count];
+      const current = spline.points[index];
+      const next = spline.points[(index + 1) % count];
+      let tangent: Vec3;
+      if (!spline.cyclic && index === 0) tangent = vsub(next, current);
+      else if (!spline.cyclic && index + 1 === count) tangent = vsub(current, previous);
+      else {
+        tangent = vadd(vnorm(vsub(current, previous)), vnorm(vsub(next, current)));
+        if (vlen(tangent) < 1e-9) tangent = vsub(next, current);
+      }
+      meshTangents.push(vnorm(tangent));
+    }
+    if (meshTangents.length) {
+      out.curveAttributes.set("__curve_tangent", { domain: "POINT", data: meshTangents });
+      out.curveAttributes.set("__gnvm_planar_mesh_curve", { domain: "POINT", data: meshTangents.map(() => 1) });
+    }
     // carry the mesh's POINT attributes onto the flattened curve control points
     const pointAttrs = [...g.mesh.attributes].filter(([, a]) => a.domain === "POINT");
     for (const [name, a] of pointAttrs) {

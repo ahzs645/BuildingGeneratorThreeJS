@@ -1,0 +1,26 @@
+{
+  "source": "INTRO MODULE_ The Basics of Nodes and Node Dojo_2MAY2024.blend",
+  "object": "chalkboard",
+  "root": "Geometry Nodes.011",
+  "reachableGroups": 7,
+  "reachableNodes": 104,
+  "coverage": "100%",
+  "blender": {
+    "verts": 2226,
+    "faces": 290,
+    "bbox": {
+      "min": [-8.234509468078613, -7.758503437042236, -0.239357590675354],
+      "max": [8.234509468078613, 7.759399890899658, 0.2376922219991684]
+    }
+  },
+  "gnvm": {
+    "verts": 2226,
+    "faces": 290,
+    "triangles": 1900,
+    "bbox": {
+      "min": [-8.233989715576172, -7.7588911056518555, -0.23635606467723846],
+      "max": [8.233989715576172, 7.759144306182861, 0.23521505296230316]
+    }
+  },
+  "validation": "Exact topology and matching chalkboard, raised pixel-font lettering, inset face, and swept perimeter frame. INSTANCE-domain Delete Geometry now preserves adjacent mesh and curve components, false-selection Split Edges retains authored edge order, and Mesh to Curve carries Blender's normalized corner-bisector tangents into the tilted cyclic sweep. Maximum local-bounds difference is 0.0031 units from cyclic frame interpolation."
+}

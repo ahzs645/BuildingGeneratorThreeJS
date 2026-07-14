@@ -574,6 +574,16 @@ function meshSignedAreaXY(m: Mesh): number {
   check("MeshGrid uses Blender X-major vertex order", JSON.stringify(grid.mesh!.positions) === JSON.stringify([[-1, -1, 0], [-1, 1, 0], [1, -1, 0], [1, 1, 0]]));
   const boundary = runNode("GeometryNodeMeshToCurve", { Mesh: grid, Selection: true }).Curve as Geometry;
   check("MeshToCurve follows stored Grid edge order", JSON.stringify(boundary.curves[0]?.points) === JSON.stringify([[-1, -1, 0], [-1, 1, 0], [1, 1, 0], [1, -1, 0]]));
+
+  const authored = new Geometry();
+  authored.mesh = new Mesh();
+  authored.mesh.positions = [[-2, -1, 0], [2, -1, 0], [-2, 1, .1], [2, 1, .1]];
+  authored.mesh.faces = [[0, 1, 3, 2]];
+  authored.mesh.edges = [[2, 0], [0, 1], [1, 3], [3, 2]];
+  authored.mesh.attributes.set("__gnvm_stored_edge_order", { domain: "CORNER", data: [] });
+  const authoredCurve = runNode("GeometryNodeMeshToCurve", { Mesh: authored, Selection: true }).Curve as Geometry;
+  const authoredTangent = authoredCurve.curveAttributes.get("__curve_tangent")?.data[0] as Vec3;
+  check("MeshToCurve stores normalized corner-bisector tangents for authored edges", Math.abs(Math.abs(authoredTangent[0]) - Math.abs(authoredTangent[1])) < .002, JSON.stringify(authoredTangent));
 }
 
 // (F) FillCurve NGON: triangle -> 1 face, 3 verts
@@ -973,6 +983,18 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Split Edges rebuilds selected face edges without quadratic duplicates", out.mesh?.positions.length === 8 && out.mesh.faces.length === 2 && out.mesh.edges.length === 7, `got ${out.mesh?.positions.length}v/${out.mesh?.edges.length}e`);
 }
 
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0]];
+  m.faces = [[0, 1, 3, 2]];
+  m.faceMaterial = [0];
+  m.edges = [[2, 0], [0, 1], [1, 3], [3, 2]];
+  const g = new Geometry();
+  g.mesh = m;
+  const out = runNode("GeometryNodeSplitEdges", { Mesh: g, Selection: false }).Mesh as Geometry;
+  check("Split Edges false selection preserves stored edge order", JSON.stringify(out.mesh?.edges) === JSON.stringify(m.edges), JSON.stringify(out.mesh?.edges));
+}
+
 // EDGE-domain deletion removes faces incident to selected edges but preserves
 // the other face boundaries as loose wire geometry.
 {
@@ -997,6 +1019,14 @@ function meshSignedAreaXY(m: Mesh): number {
   const out = runNode("GeometryNodeDeleteGeometry", { Geometry: g, Selection: upper }, { domain: "POINT" }).Geometry as Geometry;
   check("Delete Geometry POINT preserves cyclic spline property", out.curves.length === 1 && out.curves[0].cyclic && approx(out.curves[0].points.flat() as number[], [-1, 0, 0, 1, 0, 0, 0, -1, 0]), JSON.stringify(out.curves[0]));
   check("Delete Geometry POINT remaps curve attributes", approx(out.curveAttributes.get("id")?.data as number[], [10, 30, 40]), JSON.stringify(out.curveAttributes.get("id")?.data));
+}
+
+{
+  const g = curve([[0, 0, 0], [1, 0, 0]], false);
+  g.mesh = (runNode("GeometryNodeMeshCube", { Size: [1, 1, 1] }).Mesh as Geometry).mesh;
+  g.instances = [{ geometry: curve([[0, 0, 0], [0, 1, 0]], false), position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }];
+  const out = runNode("GeometryNodeDeleteGeometry", { Geometry: g, Selection: true }, { domain: "INSTANCE" }).Geometry as Geometry;
+  check("Delete Geometry INSTANCE preserves mesh and curve components", out.instances.length === 0 && out.mesh?.positions.length === 8 && out.curves.length === 1, `${out.instances.length}i/${out.mesh?.positions.length}v/${out.curves.length}c`);
 }
 
 // (N) MergeByDistance checks neighboring hash cells

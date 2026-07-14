@@ -79,12 +79,20 @@ function keepFaces(mesh: Mesh, keep: (fi: number) => boolean, doCompact = true):
 // ---- Delete Geometry ------------------------------------------------------
 reg("GeometryNodeDeleteGeometry", (api) => {
   const g = api.geo("Geometry").clone();
-  if (!g.mesh && !g.curves.length) return { Geometry: g };
+  if (!g.mesh && !g.curves.length && !g.instances.length) return { Geometry: g };
   const domain = api.prop<string>("domain", "POINT");
   // Blender's float->bool conversion is `> 0` (e.g. Map Range feeding a Selection
   // uses -0.02 as its false sentinel; plain truthiness would treat it as selected).
   const on = (v: Elem | undefined) => asNum(v ?? 0) > 0;
-  if (domain === "CURVE") {
+  if (domain === "INSTANCE") {
+    // Component-domain operations only edit their selected component. A mesh
+    // or curve beside the instance component passes through unchanged, even
+    // when every instance is deleted (the Intro chalkboard relies on this to
+    // keep its perimeter curve after stripping helper instances).
+    if (!g.instances.length) return { Geometry: g };
+    const selection = api.field("Selection").array(makeFieldCtx(g, "INSTANCE"));
+    g.instances = g.instances.filter((_, index) => !on(selection[index]));
+  } else if (domain === "CURVE") {
     if (!g.curves.length) return { Geometry: g };
     const curveOnly = new Geometry();
     curveOnly.curves = g.curves.map((spline) => ({ ...spline, points: spline.points.map((point) => [...point] as Vec3) }));
@@ -920,6 +928,10 @@ reg("GeometryNodeSplitEdges", (api) => {
       ? Array.from({ length: ctx.size }, (_, i) => ctx.edgeFaceCount?.(i) ?? 0)
       : selArr,
   });
+  // A false selection is a true no-op in Blender. Besides avoiding needless
+  // reconstruction, this retains the mesh's authored edge order for a later
+  // Mesh to Curve conversion.
+  if (selArr.length > 0 && selArr.every((selection) => asNum(selection ?? 0) <= 0)) return { Mesh: g };
   const allSelected = selArr.length === 0 || selArr.every((s) => asNum(s ?? 1));
   if (!allSelected) {
     const topology = buildTopology(m);

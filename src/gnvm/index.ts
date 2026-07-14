@@ -150,6 +150,7 @@ function baseGeometryOf(dump: Dump, objectName: string): Geometry | null {
     m.faceMaterial = obj.mesh.face_materials ? [...obj.mesh.face_materials] : m.faces.map(() => 0);
     m.materialSlots = obj.materials?.length ? [...obj.materials] : [null];
     m.edges = (obj.mesh.edges ?? []).map((e: number[]) => [e[0], e[1]] as [number, number]);
+    if (m.edges.length) m.attributes.set("__gnvm_stored_edge_order", { domain: "CORNER", data: [] });
     // authored custom attributes (e.g. the vase's 'bottom' vertex tag)
     for (const [name, a] of Object.entries<any>(obj.mesh.attributes ?? {})) {
       m.attributes.set(name, { domain: a.domain ?? "POINT", data: [...a.data] });

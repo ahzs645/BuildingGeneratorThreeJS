@@ -180,7 +180,7 @@ export function splineFrames(pts: Vec3[], cyclic: boolean, tangentOverrides?: Ve
 
 // Sweep a profile spline along a rail spline -> mesh. `scales` (optional) is a
 // per-rail-point profile scale (Blender's Curve to Mesh "Scale" / curve radius).
-export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?: number[], tangentOverrides?: Vec3[]): Mesh {
+export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?: number[], tangentOverrides?: Vec3[], planarFromMesh = false): Mesh {
   const mesh = new Mesh();
   const rp = rail.points;
   const pp = profile.points;
@@ -193,16 +193,39 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?:
   // stable in-plane normal. Cyclic curves point profile +X toward their
   // interior. A trimmed planar arc retains its source curve's outward normal;
   // the Clevis retaining clip depends on that distinction.
-  const planarCyclic = rail.cyclic && rp.length > 2
+  // Blender treats any coplanar cyclic rail as a planar curve, not only one
+  // lying in world XY. Derive a stable, winding-independent plane normal so a
+  // slightly tilted board outline keeps a constant profile-up direction.
+  const horizontalPlanar = rail.cyclic && rp.length > 2
     && rp.every((point) => Math.abs(point[2] - rp[0][2]) < 1e-8);
+  let tiltedPlanarNormal: Vec3 | null = null;
+  if (planarFromMesh && !horizontalPlanar && rail.cyclic && rp.length > 2) {
+    for (let index = 1; index + 1 < rp.length; index++) {
+      const candidate = vcross(vsub(rp[index], rp[0]), vsub(rp[index + 1], rp[0]));
+      if (vlen(candidate) > 1e-9) { tiltedPlanarNormal = vnorm(candidate); break; }
+    }
+    if (tiltedPlanarNormal) {
+      const dominant = [0, 1, 2].reduce((best, axis) => Math.abs(tiltedPlanarNormal![axis]) > Math.abs(tiltedPlanarNormal![best]) ? axis : best, 0);
+      if (tiltedPlanarNormal[dominant] < 0) tiltedPlanarNormal = vscale(tiltedPlanarNormal, -1);
+      const span = Math.max(1, ...rp.flatMap((point) => point.map(Math.abs)));
+      if (!rp.every((point) => Math.abs(vdot(vsub(point, rp[0]), tiltedPlanarNormal!)) <= 1e-7 * span)) tiltedPlanarNormal = null;
+    }
+  }
   let planarOrientation = 1;
-  if (planarCyclic) {
+  if (horizontalPlanar) {
     let area2 = 0;
     for (let i = 0; i < rp.length; i++) {
       const a = rp[i], b = rp[(i + 1) % rp.length];
       area2 += a[0] * b[1] - b[0] * a[1];
     }
     planarOrientation = area2 >= 0 ? 1 : -1;
+  } else if (tiltedPlanarNormal) {
+    let areaVector: Vec3 = [0, 0, 0];
+    for (let i = 0; i < rp.length; i++) {
+      const a = rp[i], b = rp[(i + 1) % rp.length];
+      areaVector = vadd(areaVector, vcross(a, b));
+    }
+    planarOrientation = vdot(areaVector, tiltedPlanarNormal) >= 0 ? 1 : -1;
   }
   const planarOpen = !rail.cyclic && rp.length > 2
     && rp.every((point) => Math.abs(point[2] - rp[0][2]) < 1e-8);
@@ -216,12 +239,14 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?:
   }
   for (let i = 0; i < nr; i++) {
     const frame = frames[i];
-    const normal = planarCyclic
+    const normal = horizontalPlanar
       ? vnorm([-frame.tangent[1] * planarOrientation, frame.tangent[0] * planarOrientation, 0])
+      : tiltedPlanarNormal
+        ? vscale(vnorm(vcross(tiltedPlanarNormal, frame.tangent)), planarOrientation)
       : planarOpen && Math.abs(planarTurn) > 1e-6
         ? frame.normal
         : vscale(frame.normal, -1);
-    const binormal = vscale(frame.binormal, -1);
+    const binormal = tiltedPlanarNormal ? tiltedPlanarNormal : vscale(frame.binormal, -1);
     const s = scales?.[i] ?? 1;
     for (let j = 0; j < np; j++) {
       const px = pp[j][0] * s, py = pp[j][1] * s;
