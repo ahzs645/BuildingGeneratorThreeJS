@@ -639,16 +639,15 @@ function meshSignedAreaXY(m: Mesh): number {
   check("FillCurve nested squares area subtracts hole", Math.abs(meshSignedAreaXY(m) - 12) < 1e-6, `area=${meshSignedAreaXY(m)}`);
 }
 
-// Blender's N-gons mode keeps nested outlines as independent faces. This is
-// important for glyphs: counters such as the center of O are separate N-gons,
-// while Triangles mode above treats them as holes.
+// Blender's N-gons mode preserves one face per authored outline, but partitions
+// nested outlines into an annulus so glyph counters remain open.
 {
   const outer: Vec3[] = [[-2, -2, 0], [2, -2, 0], [2, 2, 0], [-2, 2, 0]];
   const inner: Vec3[] = [[-1, -1, 0], [1, -1, 0], [1, 1, 0], [-1, 1, 0]];
   const g = runNode("GeometryNodeFillCurve", { Curve: curves([{ points: outer, cyclic: true }, { points: inner, cyclic: true }]) }, { mode: "NGONS" }).Mesh as Geometry;
   const m = g.mesh!;
   check("FillCurve NGONS keeps one face per nested outline", m.positions.length === 8 && m.faces.length === 2, `got ${m.positions.length}v/${m.faces.length}f`);
-  check("FillCurve NGONS preserves both outline orders", JSON.stringify(m.faces) === JSON.stringify([[0, 1, 2, 3], [4, 5, 6, 7]]));
+  check("FillCurve NGONS subtracts the nested hole", Math.abs(meshSignedAreaXY(m) - 12) < 1e-6, `area=${meshSignedAreaXY(m)}`);
 }
 
 // (F4) FillCurve three-level nesting: middle is a hole, inner is an island
@@ -1318,6 +1317,8 @@ function meshSignedAreaXY(m: Mesh): number {
   glyphInstances.instances = [{ geometry: outlinedGlyph, position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }];
   const filledGlyphs = runNode("GeometryNodeFillCurve", { Curve: glyphInstances, Mode: "N-gons" }).Mesh as Geometry;
   check("Fill Curve keeps one N-gon per glyph outline", filledGlyphs.instances[0].geometry.mesh?.faces.length === 2);
+  const glyphArea = meshSignedAreaXY(filledGlyphs.instances[0].geometry.mesh!);
+  check("Fill Curve keeps glyph counters open", Math.abs(glyphArea - 3) < 1e-6, `area=${glyphArea}`);
 }
 
 // (R) InputTangent on a straight curve segment

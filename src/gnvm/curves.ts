@@ -253,9 +253,10 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?:
   return mesh;
 }
 
-// Fill cyclic splines in their shared local plane. Blender's N-gons mode keeps
-// each cyclic spline as an independent polygon, including nested font outlines;
-// Triangles mode applies even-odd containment so inner loops become holes.
+// Fill cyclic splines in their shared local plane. Both modes apply even-odd
+// containment. Triangles emits a triangulated annulus; N-gons partitions the
+// annulus with two boundary bridges per hole so it can retain Blender's one-face
+// per authored outline count without filling glyph counters such as O, P, or B.
 export function fillCurves(curves: Spline[], mode: "NGONS" | "TRIANGLES"): Mesh {
   const mesh = new Mesh();
   // Limit Radius can make neighboring fillets meet at the exact same tangent
@@ -290,17 +291,13 @@ export function fillCurves(curves: Spline[], mode: "NGONS" | "TRIANGLES"): Mesh 
     mesh.materialSlots = [null];
     return mesh;
   }
-  if (mode === "NGONS") {
-    for (const loop of loops) emitSimpleFill(mesh, loop.points, "NGONS");
-    mesh.materialSlots = [null];
-    return mesh;
-  }
   classifyFillLoops(loops);
   for (let li = 0; li < loops.length; li++) {
     const loop = loops[li];
     if (loop.depth % 2 !== 0) continue;
     const holes = loops.filter((h) => h.parent === li && h.depth === loop.depth + 1);
     if (!holes.length) emitSimpleFill(mesh, loop.points, mode);
+    else if (mode === "NGONS") emitHoledNgonFill(mesh, loop, holes);
     else emitHoledFill(mesh, loop, holes);
   }
   mesh.materialSlots = [null];
@@ -566,6 +563,79 @@ function emitHoledFill(mesh: Mesh, outer: FillLoop, holes: FillLoop[]) {
   for (const f of tris) {
     mesh.faces.push(f);
     mesh.faceMaterial.push(0);
+  }
+}
+
+// Blender's N-gon fill keeps the number of faces equal to the number of input
+// loops, but it does not fill nested loops independently. It connects a hole to
+// its containing polygon with two non-crossing bridges, splitting that polygon
+// into two simple N-gons. Each additional hole repeats the split and adds one
+// face, preserving the authored-loop face count while leaving the hole open.
+function emitHoledNgonFill(mesh: Mesh, outer: FillLoop, holes: FillLoop[]) {
+  const baseByLoop = new Map<FillLoop, number>();
+  const addLoop = (loop: FillLoop) => {
+    const base = mesh.positions.length;
+    baseByLoop.set(loop, base);
+    for (const p of loop.points) mesh.positions.push([...p] as Vec3);
+  };
+  addLoop(outer);
+  for (const hole of holes) addLoop(hole);
+
+  let polygons: PolyRef[][] = [orientedRefs(outer, baseByLoop.get(outer)!, true)];
+  const pending = holes
+    .map((hole) => orientedRefs(hole, baseByLoop.get(hole)!, false))
+    .sort((a, b) => rightmostX(b) - rightmostX(a));
+  for (let hi = 0; hi < pending.length; hi++) {
+    const hole = pending[hi];
+    const center = avg2(hole.map((ref) => ref.p));
+    let polygonIndex = polygons.findIndex((polygon) => pointInPolygon(center, polygon.map((ref) => ref.p)) >= 0);
+    if (polygonIndex < 0) polygonIndex = 0;
+    const split = splitPolygonAroundHole(polygons[polygonIndex], hole, pending.slice(hi));
+    if (split) polygons.splice(polygonIndex, 1, ...split);
+    else polygons.push(hole);
+  }
+  for (let face of polygons) {
+    face = cleanPoly(face);
+    if (face.length < 3) continue;
+    if (signedAreaRefs(face) < 0) face.reverse();
+    mesh.faces.push(face.map((ref) => ref.vi));
+    mesh.faceMaterial.push(0);
+  }
+}
+
+function splitPolygonAroundHole(ring: PolyRef[], hole: PolyRef[], allHoles: PolyRef[][]): [PolyRef[], PolyRef[]] | null {
+  type Candidate = { ring: number; hole: number; d2: number };
+  const candidates: Candidate[] = [];
+  const ringPoints = ring.map((ref) => ref.p);
+  const holePoints = hole.map((ref) => ref.p);
+  for (let ri = 0; ri < ring.length; ri++) for (let hi = 0; hi < hole.length; hi++) {
+    if (!visibleBridge(ring[ri], hole[hi], ring, allHoles, hole)) continue;
+    const midpoint: Vec2 = [(ring[ri].p[0] + hole[hi].p[0]) * 0.5, (ring[ri].p[1] + hole[hi].p[1]) * 0.5];
+    if (pointInPolygon(midpoint, ringPoints) < 0 || pointInPolygon(midpoint, holePoints) > 0) continue;
+    candidates.push({ ring: ri, hole: hi, d2: dist2(ring[ri].p, hole[hi].p) });
+  }
+  candidates.sort((a, b) => a.d2 - b.d2);
+  for (let ai = 0; ai < candidates.length; ai++) {
+    const a = candidates[ai];
+    for (let bi = ai + 1; bi < candidates.length; bi++) {
+      const b = candidates[bi];
+      if (a.ring === b.ring || a.hole === b.hole) continue;
+      if (segmentsIntersect(ring[a.ring].p, hole[a.hole].p, ring[b.ring].p, hole[b.hole].p)) continue;
+      const ringAB = cyclicArc(ring, a.ring, b.ring);
+      const ringBA = cyclicArc(ring, b.ring, a.ring);
+      const holeBA = cyclicArc(hole, b.hole, a.hole);
+      const holeAB = cyclicArc(hole, a.hole, b.hole);
+      return [[...ringAB, ...holeBA], [...ringBA, ...holeAB]];
+    }
+  }
+  return null;
+}
+
+function cyclicArc<T>(items: T[], start: number, end: number): T[] {
+  const out: T[] = [];
+  for (let i = start; ; i = (i + 1) % items.length) {
+    out.push(items[i]);
+    if (i === end) return out;
   }
 }
 

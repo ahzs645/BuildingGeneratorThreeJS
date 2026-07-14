@@ -454,7 +454,7 @@ reg("GeometryNodeFillCurve", (api) => {
   // older dumps carry it as a `mode` prop.
   const menu = api.str("Mode").toUpperCase().replace(/[^A-Z]/g, "");
   const mode = (menu === "NGONS" || menu === "TRIANGLES" ? menu : api.prop<string>("mode", "TRIANGLES")) as "NGONS" | "TRIANGLES";
-  const fillGeometry = (source: Geometry, instancePayload = false): Geometry => {
+  const fillGeometry = (source: Geometry): Geometry => {
     const out = new Geometry();
     // Blender's Fill Curve operates in the curve component's local XY plane;
     // Z is discarded rather than carried through from the control points. This
@@ -469,37 +469,15 @@ reg("GeometryNodeFillCurve", (api) => {
       points: s.points.map((p) => [p[0], p[1], 0] as Vec3),
     }));
     if (planar.length) {
-      if (instancePayload && mode === "NGONS") {
-        // Fill Curve preserves String to Curves' glyph instances. In N-gon
-        // mode Blender emits one face for every cyclic outline inside each
-        // instance (including counter-wound inner outlines); it does not bridge
-        // those loops into a triangulated hole until the instances are realized
-        // before filling.
-        const mesh = new Mesh();
-        mesh.materialSlots = [null];
-        for (const spline of planar) {
-          if (!spline.cyclic || spline.points.length < 3) continue;
-          const base = mesh.positions.length;
-          mesh.positions.push(...spline.points.map((point) => [...point] as Vec3));
-          const face = spline.points.map((_, index) => base + index);
-          let area2 = 0;
-          for (let index = 0; index < spline.points.length; index++) {
-            const a = spline.points[index], b = spline.points[(index + 1) % spline.points.length];
-            area2 += a[0] * b[1] - b[0] * a[1];
-          }
-          if (area2 < 0) face.reverse();
-          mesh.faces.push(face);
-          mesh.faceMaterial.push(0);
-        }
-        out.mesh = mesh;
-      } else {
-        out.mesh = fillCurves(planar, mode);
-      }
+      // Preserve String to Curves' per-glyph instances while applying the same
+      // even-odd N-gon fill inside each payload. This retains Blender's outline
+      // face count and leaves counter shapes such as O and P visibly open.
+      out.mesh = fillCurves(planar, mode);
     }
     // String to Curves outputs one curve instance per glyph. Fill Curve keeps
     // those instances and fills each payload in local space; dropping them made
     // the Node Dojo Typewriter animate strings internally but output no text.
-    out.instances = source.instances.map((instance) => ({ ...instance, geometry: fillGeometry(instance.geometry, true) }));
+    out.instances = source.instances.map((instance) => ({ ...instance, geometry: fillGeometry(instance.geometry) }));
     return out;
   };
   return { Mesh: fillGeometry(g) };

@@ -16,5 +16,5 @@
     { "id": "nodes-node-checkbox-panel", "object": "Cube.004", "root": "Geometry Nodes.015", "nodes": 898, "status": "topology-bounds-exact-recovered-font", "blender": { "verts": 9134, "faces": 1347 }, "gnvm": { "verts": 9134, "faces": 1347 } },
     { "id": "nodes-node-dual-input-bar", "object": "Cube.003", "root": "Geometry Nodes.003", "nodes": 900, "status": "topology-bounds-exact-recovered-font", "blender": { "verts": 2691, "faces": 1118 }, "gnvm": { "verts": 2691, "faces": 1118 } }
   ],
-  "validation": "All twelve roots are exact, structurally exact, or topology-and-bounds exact. The recovered DejaVu atlas, zero-radius Curve Circle semantics, inclusive cumulative-row placement, and Blender-style legacy curve pass-through make all six large UI variants topology-and-bounds exact; small glyph-position and material-preview deltas remain."
+  "validation": "All twelve roots are exact, structurally exact, or topology-and-bounds exact. The recovered DejaVu atlas, even-odd N-gon glyph fill, zero-radius Curve Circle semantics, inclusive cumulative-row placement, and Blender-style legacy curve pass-through make all six large UI variants topology-and-bounds exact. Their neutral 0.8 Workbench material color now matches Blender; small glyph-position and Workbench lighting/cavity deltas remain."
 }

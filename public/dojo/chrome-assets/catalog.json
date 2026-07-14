@@ -1063,6 +1063,7 @@
     "reference": "dojo/references/nodes-node/check.png",
     "blenderStats": { "verts": 3, "faces": 0 },
     "localSpace": true,
+    "workbenchColor": [0.8, 0.8, 0.8],
     "note": "Exact structural helper: Blender retains a three-point curve and the browser retains no renderable surface. It is included because it is a distinct active modifier root, not because it produces a visible mesh.",
     "controls": []
   },
@@ -1074,6 +1075,7 @@
     "reference": "dojo/references/nodes-node/cube-002.png",
     "blenderStats": { "verts": 8, "faces": 6 },
     "localSpace": true,
+    "workbenchColor": [0.8, 0.8, 0.8],
     "note": "Exact two-node passthrough root: 8 vertices and 6 faces in Blender and the browser.",
     "controls": []
   },
@@ -1085,6 +1087,7 @@
     "reference": "dojo/references/nodes-node/plane.png",
     "blenderStats": { "verts": 47652, "faces": 2813 },
     "localSpace": true,
+    "workbenchColor": [0.8, 0.8, 0.8],
     "note": "Exact eleven-node source plate, including the supplied dense triangulation: 47,652 vertices and 2,813 faces in both engines.",
     "controls": []
   },
@@ -1096,6 +1099,7 @@
     "reference": "dojo/references/nodes-node/point-001.png",
     "blenderStats": { "verts": 4736, "faces": 4672 },
     "localSpace": true,
+    "workbenchColor": [0.8, 0.8, 0.8],
     "note": "Exact topology and visual parity. Portable Bézier handles, Set Handle Positions, and the two pre-Geometry-Nodes Hook modifiers reproduce Blender's paired socket noodles at 4,736 vertices and 4,672 faces.",
     "controls": []
   },
@@ -1107,6 +1111,7 @@
     "reference": "dojo/references/nodes-node/stamp.png",
     "blenderStats": { "verts": 490, "faces": 0 },
     "localSpace": true,
+    "workbenchColor": [0.8, 0.8, 0.8],
     "note": "Exact wire-only stamp helper: both engines produce 490 vertices and no faces, so the normal surface viewer intentionally appears empty.",
     "controls": []
   },
@@ -1118,6 +1123,7 @@
     "reference": "dojo/references/nodes-node/cube-001.png",
     "blenderStats": { "verts": 2240, "faces": 2208 },
     "localSpace": true,
+    "workbenchColor": [0.8, 0.8, 0.8],
     "note": "Exact 151-node mesh-line-to-Bézier noodle: 2,240 vertices and 2,208 faces in Blender and the browser, with matching authored curvature.",
     "controls": []
   },
@@ -1129,7 +1135,8 @@
     "reference": "dojo/references/nodes-node/cube.png",
     "blenderStats": { "verts": 12743, "faces": 561 },
     "localSpace": true,
-    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 12,743 vertices and 561 faces with identical bounds. Legacy pass-through curve conversion now sweeps the radio-button checkmark on Blender's three-point control domain; small glyph-position and material-preview differences remain.",
+    "workbenchColor": [0.8, 0.8, 0.8],
+    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 12,743 vertices and 561 faces with identical bounds. Glyph counters use Blender-style open N-gon annuli, and the radio-button checkmark uses Blender's three-point legacy-curve control domain. Neutral Workbench color matches; small glyph-position and lighting/cavity differences remain.",
     "font": {
       "url": "dojo/fonts/DejaVuSans-ExtraLight.ttf",
       "family": "DejaVu Sans ExtraLight",
@@ -1146,7 +1153,8 @@
     "reference": "dojo/references/nodes-node/cube-006.png",
     "blenderStats": { "verts": 3861, "faces": 80 },
     "localSpace": true,
-    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 3,861 vertices and 80 faces with matching bounds, title outlines, and two accumulated rows. Small glyph-position and material-preview differences remain visible.",
+    "workbenchColor": [0.8, 0.8, 0.8],
+    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 3,861 vertices and 80 faces with matching bounds, open glyph counters, title outlines, and two accumulated rows. Neutral Workbench color matches; small glyph-position and lighting/cavity differences remain.",
     "font": {
       "url": "dojo/fonts/DejaVuSans-ExtraLight.ttf",
       "family": "DejaVu Sans ExtraLight",
@@ -1163,7 +1171,8 @@
     "reference": "dojo/references/nodes-node/cube-007.png",
     "blenderStats": { "verts": 3453, "faces": 1127 },
     "localSpace": true,
-    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 3,453 vertices and 1,127 faces with identical bounds; small label-position and material-preview differences remain.",
+    "workbenchColor": [0.8, 0.8, 0.8],
+    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 3,453 vertices and 1,127 faces with identical bounds and open glyph counters. Neutral Workbench color matches; small label-position and lighting/cavity differences remain.",
     "font": {
       "url": "dojo/fonts/DejaVuSans-ExtraLight.ttf",
       "family": "DejaVu Sans ExtraLight",
@@ -1180,7 +1189,8 @@
     "reference": "dojo/references/nodes-node/cube-005.png",
     "blenderStats": { "verts": 4150, "faces": 169 },
     "localSpace": true,
-    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 4,150 vertices and 169 faces with identical bounds; small text-position and material-preview differences remain.",
+    "workbenchColor": [0.8, 0.8, 0.8],
+    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 4,150 vertices and 169 faces with identical bounds and open glyph counters. Neutral Workbench color matches; small text-position and lighting/cavity differences remain.",
     "font": {
       "url": "dojo/fonts/DejaVuSans-ExtraLight.ttf",
       "family": "DejaVu Sans ExtraLight",
@@ -1197,7 +1207,8 @@
     "reference": "dojo/references/nodes-node/cube-004.png",
     "blenderStats": { "verts": 9134, "faces": 1347 },
     "localSpace": true,
-    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 9,134 vertices and 1,347 faces with identical bounds. The radio-button checkmark now uses Blender's three-point legacy-curve pass-through topology; small glyph-position and material-preview differences remain.",
+    "workbenchColor": [0.8, 0.8, 0.8],
+    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 9,134 vertices and 1,347 faces with identical bounds. Glyph counters are open, and the radio-button checkmark uses Blender's three-point legacy-curve pass-through topology. Neutral Workbench color matches; small glyph-position and lighting/cavity differences remain.",
     "font": {
       "url": "dojo/fonts/DejaVuSans-ExtraLight.ttf",
       "family": "DejaVu Sans ExtraLight",
@@ -1214,7 +1225,8 @@
     "reference": "dojo/references/nodes-node/cube-003.png",
     "blenderStats": { "verts": 2691, "faces": 1118 },
     "localSpace": true,
-    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 2,691 vertices and 1,118 faces with identical bounds; small label-position and material-preview differences remain.",
+    "workbenchColor": [0.8, 0.8, 0.8],
+    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 2,691 vertices and 1,118 faces with identical bounds and open glyph counters. Neutral Workbench color matches; small label-position and lighting/cavity differences remain.",
     "font": {
       "url": "dojo/fonts/DejaVuSans-ExtraLight.ttf",
       "family": "DejaVu Sans ExtraLight",
