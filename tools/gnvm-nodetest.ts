@@ -865,6 +865,22 @@ function meshSignedAreaXY(m: Mesh): number {
     hull.mesh?.faces.length === 6 && hull.mesh.faces.every((face) => face.length === 4),
     `faces=${hull.mesh?.faces.length} sizes=${hull.mesh?.faces.map((face) => face.length)}`);
 
+  const cylinderPair = new Geometry();
+  cylinderPair.mesh = new Mesh();
+  for (const offset of [-4, 4]) {
+    const cylinder = runNode("GeometryNodeMeshCylinder", {
+      Vertices: 32, "Side Segments": 1, "Fill Segments": 1, Radius: 2, Depth: 2,
+    }, { fill_type: "NGON" }).Mesh as Geometry;
+    const base = cylinderPair.mesh.positions.length;
+    cylinderPair.mesh.positions.push(...cylinder.mesh!.positions.map(([x, y, z]) => [x, y + offset, z] as Vec3));
+    cylinderPair.mesh.faces.push(...cylinder.mesh!.faces.map((face) => face.map((vertex) => vertex + base)));
+    cylinderPair.mesh.faceMaterial.push(...cylinder.mesh!.faces.map(() => 0));
+  }
+  const pillHull = runNode("GeometryNodeConvexHull", { Geometry: cylinderPair })["Convex Hull"] as Geometry;
+  check("Convex Hull retains Blender's two-cylinder pill panels",
+    pillHull.mesh?.positions.length === 98 && pillHull.mesh.faces.length === 72,
+    `${pillHull.mesh?.positions.length}v/${pillHull.mesh?.faces.length}f`);
+
   // Blender's FLOAT solver performs solid CSG for closed operands too. The VM
   // uses Manifold for that safe subset, including curved/non-AABB cutters.
   const a = box([-1, -1, -1], [1, 1, 1]);

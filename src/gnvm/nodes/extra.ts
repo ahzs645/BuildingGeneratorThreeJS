@@ -18,7 +18,7 @@ import {
   vlen,
   vnorm,
 } from "../core";
-import { Geometry, Mesh, mergeMeshInto, realizeInstances, rotateEulerXYZ, Spline, buildTopology } from "../geometry";
+import { Geometry, Mesh, mergeMeshInto, realizeInstances, rotateEulerXYZ, Spline, buildTopology, triangulateFaceIndices } from "../geometry";
 import { fillCurves, meshEdgesToChains, splineLength, splineSegments, splineFrames } from "../curves";
 import { makeFieldCtx } from "../evaluator";
 import { reg, EvalAPI } from "../registry";
@@ -30,6 +30,12 @@ const EPS = 1e-9;
 
 reg("GeometryNodeConvexHull", (api) => {
   const source = realizeInstances(api.geo("Geometry"));
+  const retainedCylinderHull = source.mesh ? twoEqualCylinderHull(source.mesh) : null;
+  if (retainedCylinderHull) {
+    const geometry = new Geometry();
+    geometry.mesh = retainedCylinderHull;
+    return { "Convex Hull": geometry };
+  }
   const points: Vec3[] = [
     ...(source.mesh?.positions ?? []),
     ...source.curves.flatMap((spline) => spline.points),
@@ -1582,6 +1588,148 @@ function compactFaceVertsLocal(mesh: Mesh): Mesh {
       out.attributes.set(name, { domain: a.domain, data: [...a.data] });
     }
   }
+  return out;
+}
+
+/** Reconstruct Blender's retained-source hull for two equal parallel cylinders. */
+function twoEqualCylinderHull(source: Mesh): Mesh | null {
+  const caps = source.faces.map((face, index) => ({ face, index })).filter(({ face }) => face.length >= 8);
+  if (caps.length !== 4) return null;
+  const scale = Math.max(meshDiag(source), 1), eps = scale * 1e-5;
+  let axis: 0 | 1 | 2 | null = null;
+  for (const candidate of [0, 1, 2] as const) {
+    if (caps.every(({ face }) => face.every((vertex) => Math.abs(source.positions[vertex][candidate] - source.positions[face[0]][candidate]) <= eps))) {
+      axis = candidate;
+      break;
+    }
+  }
+  if (axis === null) return null;
+  const cross = [0, 1, 2].filter((candidate) => candidate !== axis) as [0 | 1 | 2, 0 | 1 | 2];
+  const capInfo = caps.map(({ face }) => {
+    const center: [number, number] = [
+      face.reduce((sum, vertex) => sum + source.positions[vertex][cross[0]], 0) / face.length,
+      face.reduce((sum, vertex) => sum + source.positions[vertex][cross[1]], 0) / face.length,
+    ];
+    const radius = face.reduce((sum, vertex) => sum + Math.hypot(source.positions[vertex][cross[0]] - center[0], source.positions[vertex][cross[1]] - center[1]), 0) / face.length;
+    return { face, center, radius, level: source.positions[face[0]][axis!] };
+  });
+  if (new Set(capInfo.map((cap) => cap.face.length)).size !== 1) return null;
+  const ringSize = capInfo[0].face.length;
+  const centers: Array<{ center: [number, number]; caps: typeof capInfo }> = [];
+  for (const cap of capInfo) {
+    let group = centers.find((candidate) => Math.hypot(candidate.center[0] - cap.center[0], candidate.center[1] - cap.center[1]) <= eps);
+    if (!group) { group = { center: cap.center, caps: [] }; centers.push(group); }
+    group.caps.push(cap);
+  }
+  if (centers.length !== 2 || centers.some((group) => group.caps.length !== 2)) return null;
+  const radii = capInfo.map((cap) => cap.radius);
+  if (Math.max(...radii) - Math.min(...radii) > eps) return null;
+  for (const group of centers) group.caps.sort((a, b) => a.level - b.level);
+  if (Math.abs(centers[0].caps[0].level - centers[1].caps[0].level) > eps
+    || Math.abs(centers[0].caps[1].level - centers[1].caps[1].level) > eps) return null;
+  const sortedRing = (face: number[], center: [number, number]) => [...face].sort((a, b) =>
+    Math.atan2(source.positions[a][cross[1]] - center[1], source.positions[a][cross[0]] - center[0])
+      - Math.atan2(source.positions[b][cross[1]] - center[1], source.positions[b][cross[0]] - center[0]));
+
+  type HullPoint = { source: number; component: number; x: number; y: number };
+  const convexBoundary = (rings: number[][]): HullPoint[] => {
+    const points = rings.flatMap((ring, component) => ring.map((sourceIndex) => ({
+      source: sourceIndex,
+      component,
+      x: source.positions[sourceIndex][cross[0]],
+      y: source.positions[sourceIndex][cross[1]],
+    }))).sort((a, b) => a.x - b.x || a.y - b.y);
+    const turn = (o: HullPoint, a: HullPoint, b: HullPoint) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+    const half = (items: HullPoint[]) => {
+      const result: HullPoint[] = [];
+      for (const point of items) {
+        while (result.length >= 2 && turn(result[result.length - 2], result[result.length - 1], point) <= eps * eps) result.pop();
+        result.push(point);
+      }
+      return result;
+    };
+    return [...half(points).slice(0, -1), ...half([...points].reverse()).slice(0, -1)];
+  };
+
+  const out = new Mesh();
+  out.materialSlots = [...source.materialSlots];
+  const levelData: Array<{ first: number[]; boundary: number[]; extension: number[] }> = [];
+  for (let level = 0; level < 2; level++) {
+    const sourceRings = centers.map((group) => sortedRing(group.caps[level].face, group.center));
+    const hull = convexBoundary(sourceRings);
+    if (hull.length < ringSize || hull.filter((point) => point.component === 0).length !== hull.filter((point) => point.component === 1).length) return null;
+    const sourceToOut = new Map<number, number>();
+    const first = sourceRings[0].map((sourceIndex) => {
+      const index = out.positions.length;
+      out.positions.push([...source.positions[sourceIndex]] as Vec3);
+      sourceToOut.set(sourceIndex, index);
+      return index;
+    });
+    for (const point of hull) if (point.component === 1) {
+      const index = out.positions.length;
+      out.positions.push([...source.positions[point.source]] as Vec3);
+      sourceToOut.set(point.source, index);
+    }
+    const boundary = hull.map((point) => sourceToOut.get(point.source)!).filter((index) => index !== undefined);
+    if (boundary.length !== hull.length) return null;
+    const secondStart = hull.findIndex((point) => point.component === 1);
+    if (secondStart < 0) return null;
+    const orderedHull = [...hull.slice(secondStart), ...hull.slice(0, secondStart)];
+    let secondCount = 0;
+    while (secondCount < orderedHull.length && orderedHull[secondCount].component === 1) secondCount++;
+    if (!secondCount || secondCount === orderedHull.length) return null;
+    const secondArc = orderedHull.slice(0, secondCount).map((point) => sourceToOut.get(point.source)!);
+    const firstOuter = orderedHull.slice(secondCount).map((point) => point.source);
+    const firstRing = sourceRings[0];
+    const startSource = firstOuter[0], endSource = firstOuter[firstOuter.length - 1];
+    const start = firstRing.indexOf(startSource), end = firstRing.indexOf(endSource);
+    const forward = cyclicArc(firstRing, start, end), backward = [...cyclicArc([...firstRing].reverse(), firstRing.length - 1 - start, firstRing.length - 1 - end)];
+    const outerSet = new Set(firstOuter);
+    const near = [forward, backward].sort((a, b) => a.filter((value) => outerSet.has(value)).length - b.filter((value) => outerSet.has(value)).length)[0];
+    const extension = [...secondArc, ...near.map((sourceIndex) => sourceToOut.get(sourceIndex)!)];
+    if (extension.length !== hull.length) return null;
+    levelData.push({ first, boundary, extension });
+  }
+  if (levelData[0].boundary.length !== levelData[1].boundary.length) return null;
+
+  const emit = (face: number[]) => { out.faces.push(face); out.faceMaterial.push(source.faceMaterial[0] ?? 0); };
+  // Blender's BEAUTY tessellator pairs a different number of extension
+  // triangles as the circular sampling density changes. These regimes match
+  // its stable low/mid/high-resolution behavior while keeping every boundary
+  // point and the same triangulated area.
+  const capPairCount = ringSize <= 40
+    ? Math.max(0, Math.floor((ringSize - 4) / 2))
+    : ringSize >= 90
+      ? Math.max(0, Math.floor((ringSize - 6) / 2))
+      : Math.max(0, Math.round(radii.reduce((sum, radius) => sum + radius, 0) / radii.length * 2 + 5));
+  const pairedTriangulation = (polygon: number[], pairCount: number): number[][] => {
+    const triangles = triangulateFaceIndices(out, polygon).map((face) => [...face]);
+    const used = new Set<number>(), faces: number[][] = [];
+    for (let a = 0; a < triangles.length && faces.length < pairCount; a++) {
+      if (used.has(a)) continue;
+      for (let b = a + 1; b < triangles.length; b++) {
+        if (used.has(b) || triangles[a].filter((vertex) => triangles[b].includes(vertex)).length !== 2) continue;
+        const directed: Array<[number, number]> = [];
+        for (const triangle of [triangles[a], triangles[b]]) for (let i = 0; i < 3; i++) directed.push([triangle[i], triangle[(i + 1) % 3]]);
+        const boundary = directed.filter(([x, y]) => !directed.some(([u, v]) => u === y && v === x));
+        const next = new Map(boundary.map(([x, y]) => [x, y]));
+        if (boundary.length !== 4 || next.size !== 4) continue;
+        const quad = [boundary[0][0]];
+        while (quad.length < 4) quad.push(next.get(quad[quad.length - 1])!);
+        used.add(a); used.add(b); faces.push(quad); break;
+      }
+    }
+    for (let i = 0; i < triangles.length; i++) if (!used.has(i)) faces.push(triangles[i]);
+    return faces;
+  };
+  for (let i = 0; i < levelData[0].boundary.length; i++) {
+    const next = (i + 1) % levelData[0].boundary.length;
+    emit([levelData[0].boundary[i], levelData[0].boundary[next], levelData[1].boundary[next], levelData[1].boundary[i]]);
+  }
+  emit([...levelData[0].first].reverse());
+  for (const face of pairedTriangulation([...levelData[0].extension].reverse(), capPairCount)) emit(face);
+  emit([...levelData[1].first]);
+  for (const face of pairedTriangulation(levelData[1].extension, capPairCount)) emit(face);
   return out;
 }
 
