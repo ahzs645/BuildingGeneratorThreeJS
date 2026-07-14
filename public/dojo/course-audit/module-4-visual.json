@@ -1,0 +1,40 @@
+{
+  "source": "MODULE 4_ wax ON wax OFF_1MAY2024.blend",
+  "auditDate": "2026-07-14",
+  "scope": "All ten roots structurally classified as complex-study in Module 4",
+  "summary": {
+    "publishedDistinctStudy": 1,
+    "earlierRoomStage": 1,
+    "singleFaceMarkerHelper": 1,
+    "emptyOrNonSurfaceLessonRoots": 7
+  },
+  "roots": [
+    {
+      "object": "dojo",
+      "root": "Geometry Nodes.002",
+      "classification": "published-distinct-study",
+      "catalogId": "course-dojo-finale",
+      "blender": { "verts": 47435, "faces": 46490 }
+    },
+    {
+      "object": "1A.001",
+      "root": "Geometry Nodes.120",
+      "classification": "earlier-room-stage",
+      "blender": { "verts": 3822, "faces": 2988 }
+    },
+    {
+      "object": "Plane.007",
+      "root": "Geometry Nodes.032",
+      "classification": "single-face-marker-helper",
+      "blender": { "verts": 32, "faces": 1 }
+    },
+    { "object": "Plane.002", "root": "Geometry Nodes.126", "reachableNodes": 406, "classification": "empty-or-non-surface" },
+    { "object": "Plane.004", "root": "Geometry Nodes.130", "reachableNodes": 406, "classification": "empty-or-non-surface" },
+    { "object": "Plane.008", "root": "Geometry Nodes.132", "reachableNodes": 406, "classification": "empty-or-non-surface" },
+    { "object": "Plane.010", "root": "Geometry Nodes.145", "reachableNodes": 407, "classification": "empty-or-non-surface" },
+    { "object": "Plane.011", "root": "Geometry Nodes.146", "reachableNodes": 406, "classification": "empty-or-non-surface" },
+    { "object": "Plane.015", "root": "Geometry Nodes.023", "reachableNodes": 406, "classification": "empty-or-non-surface" },
+    { "object": "how to.033", "root": "Geometry Nodes.053", "reachableNodes": 413, "classification": "empty-or-non-surface" }
+  ],
+  "validation": "Every nominal Module 4 complex study was isolated and evaluated through a temporary Realize Instances pass in Blender 5.1. No distinct visible surface remains beyond the already published dojo finale; the remaining roots are a repeated Room stage, a marker, or empty/non-surface lesson helpers."
+}

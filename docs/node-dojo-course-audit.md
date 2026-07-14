@@ -36,8 +36,12 @@ Module 2 references a missing Windows-only Bradley's Geo Node Presets library co
 
 Module 3 contains only four nominal complex studies. The `dojo` finale and the control-box study are the two distinct published surfaces. `Plane.078` is an earlier Room-family stage, and `Plane.083` is a 32-vertex single-face marker helper. Their exact Blender counts and classifications are recorded in `public/dojo/course-audit/module-3-visual.json`.
 
+### Module 4 visual closure
+
+All ten Module 4 roots labeled `complex-study` have also been evaluated in isolation. The already published `dojo` finale is its only distinct visible study. `1A.001` is an earlier Room-family stage, `Plane.007` is a 32-vertex single-face marker, and the remaining seven roots produce no evaluated mesh surface. Their exact classification is recorded in `public/dojo/course-audit/module-4-visual.json`.
+
 ## Porting decision
 
-Course roots remain authoritative teaching snapshots, not missing catalog products. We will publish a course root only when it represents a distinct visible exercise and passes the same Blender-reference standard as the reusable generators. Repeated lesson stages and helper roots stay in the audit inventory so they are not mistaken for unfinished products.
+Course roots remain authoritative teaching snapshots, not missing catalog products. We publish a course root only when it represents a distinct visible exercise and passes the same Blender-reference standard as the reusable generators. Repeated lesson stages and helper roots stay in the audit inventory so they are not mistaken for unfinished products. Modules 2–4 now have complete visual closure; the remaining course work is limited to the not-yet-reviewed Intro complex studies.
 
 The canonical Modules 2–4 finale, Intro Geometry Nodes panel diagram, Intro CHALLENGE title, Intro Node Dojo emblem, Intro challenge chalkboard, Intro Node Tabs study, complete Intro Room, and Module 3 control-box study now meet the publication evidence standard and are live in the browser library. The next course work should select another distinct visible complex study rather than expanding duplicated lesson snapshots.
