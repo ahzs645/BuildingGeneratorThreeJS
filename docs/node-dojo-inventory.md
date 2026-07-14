@@ -11,7 +11,7 @@ The pack contains **16 Blender projects**, **499 active Geometry Nodes modifiers
 | N03D 3D-printing Utilities | 77 | 39 | Inventory complete |
 | Recursive Bin | 1 | 1 | Live Blender/GN-VM comparison |
 | Dusty Crystal Cocoon | 2 | 1 | Active roots are Auto Smooth only |
-| The Nodes Node | 17 | 12 | All 12 roots live; 6 exact/structural, 6 legacy UI-panel variants partial |
+| The Nodes Node | 17 | 12 | All 12 roots live; 6 exact/structural, 6 UI panels topology-and-bounds exact |
 | Knit Graphic | 0 | 0 | No active Geometry Nodes modifier |
 | Typewriter | 1 | 1 | Live GN-VM; recovered Blurmed outlines embedded, layout partial |
 | Send Nodes Hat | 5 | 4 | All 4 roots live; 3 exact, embroidery partial |

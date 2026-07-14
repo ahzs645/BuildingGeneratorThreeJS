@@ -5,6 +5,22 @@ import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitive
 import { reg, EvalAPI, DUMP_CONTEXT } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 
+export function matchLegacyCurvePassthrough(geometry: Geometry): void {
+  // A legacy Curve datablock routed through an otherwise empty Geometry Nodes
+  // modifier enters downstream Object Info on its control-point domain. The
+  // dump also carries dense preview samples for browser-side Bézier work; using
+  // those here overbuilds every later sweep (800/770 instead of 96/66 for the
+  // Nodes Node checkmark).
+  let changed = false;
+  for (const spline of geometry.curves) {
+    if (!spline.controlPoints?.length || spline.controlPoints.length === spline.points.length) continue;
+    spline.points = spline.controlPoints.map((point) => [...point] as Vec3);
+    spline.resolution = 1;
+    changed = true;
+  }
+  if (changed) geometry.curveAttributes.delete("__curve_tangent");
+}
+
 // ---- object info ------------------------------------------------------------
 // Materializes a referenced scene object from the dump's embedded plain meshes
 // (dump_blend.py exports them for non-GN objects, e.g. the bin's 'printbed').
@@ -49,6 +65,7 @@ function geometryOfDumpObject(obj: (typeof DUMP_CONTEXT.objects)[number] | undef
     const tilts = obj.curves.flatMap((spline) => spline.tilts ?? spline.points.map(() => 0));
     if (tilts.some((value) => value !== 0)) out.curveAttributes.set("tilt", { domain: "POINT", data: tilts });
   }
+  if (evaluated && obj && DUMP_CONTEXT.legacyCurvePassthroughObjects.has(obj.name)) matchLegacyCurvePassthrough(out);
   return out;
 }
 

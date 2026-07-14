@@ -1836,6 +1836,7 @@ function meshSignedAreaXY(m: Mesh): number {
 {
   const savedObjects = DUMP_CONTEXT.objects;
   const savedActiveObject = DUMP_CONTEXT.activeObject;
+  const savedLegacyCurvePassthroughObjects = new Set(DUMP_CONTEXT.legacyCurvePassthroughObjects);
   DUMP_CONTEXT.objects = [{
     name: "nested", mesh: { verts: [[0, 0, 0]], faces: [] },
     evaluated_mesh: { verts: [[0, 0, 0], [1, 0, 0]], faces: [] },
@@ -1844,6 +1845,24 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Object Info uses evaluated modifier geometry", nested.mesh?.positions.length === 2, `verts=${nested.mesh?.positions.length}`);
   const nestedInstance = runNode("GeometryNodeObjectInfo", { Object: { datablock: "Object", name: "nested" }, "As Instance": true }).Geometry as Geometry;
   check("Object Info As Instance preserves an instance component", !nestedInstance.mesh && nestedInstance.instances.length === 1 && nestedInstance.instances[0].geometry.mesh?.positions.length === 2);
+  DUMP_CONTEXT.objects = [{
+    name: "legacy-check", type: "CURVE",
+    curves: [{
+      cyclic: false, resolution: 12,
+      points: [[0, 0, 0], [.25, 0, 0], [.5, 0, 0], [.75, 0, 0], [1, 0, 0]],
+      control_points: [[0, 0, 0], [.5, 0, 0], [1, 0, 0]],
+      bezier_left: [[0, 0, 0], [.25, 0, 0], [.75, 0, 0]],
+      bezier_right: [[.25, 0, 0], [.75, 0, 0], [1, 0, 0]],
+    }],
+  }];
+  DUMP_CONTEXT.legacyCurvePassthroughObjects.clear();
+  DUMP_CONTEXT.legacyCurvePassthroughObjects.add("legacy-check");
+  const legacyCheck = runNode("GeometryNodeObjectInfo", {
+    Object: { datablock: "Object", name: "legacy-check" }, "As Instance": false,
+  }).Geometry as Geometry;
+  check("Object Info uses the control domain after a legacy curve pass-through modifier",
+    legacyCheck.curves[0]?.points.length === 3 && legacyCheck.curves[0]?.resolution === 1,
+    `points=${legacyCheck.curves[0]?.points.length}`);
   DUMP_CONTEXT.objects = [{
     name: "parented", mesh: { verts: [[1, 2, 3]], faces: [] },
     matrix_world: [[0, 2, 0, 10], [3, 0, 0, 20], [0, 0, 4, 30], [0, 0, 0, 1]],
@@ -1857,6 +1876,8 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Object Info uses inherited world matrix", approx(relative.mesh?.positions[0] ?? [], [10, 18, 36]), JSON.stringify(relative.mesh?.positions[0]));
   DUMP_CONTEXT.objects = savedObjects;
   DUMP_CONTEXT.activeObject = savedActiveObject;
+  DUMP_CONTEXT.legacyCurvePassthroughObjects.clear();
+  for (const name of savedLegacyCurvePassthroughObjects) DUMP_CONTEXT.legacyCurvePassthroughObjects.add(name);
   const instances = new Geometry();
   instances.instances = [{ geometry: box([0, 0, 0], [1, 1, 1]), position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }];
   const rotated = runNode("GeometryNodeRotateInstances", {

@@ -73,6 +73,7 @@ export const MISSING = new Map<string, number>();
 // referenced objects. Set by runGenerator before evaluation.
 export interface DumpObject {
   name: string;
+  type?: string;
   location?: number[];
   rotation?: number[];
   scale?: number[];
@@ -90,9 +91,10 @@ export const DUMP_CONTEXT: {
   fonts: Record<string, FontAtlas>;
   activeObject?: DumpObject;
   evaluatedObjects: Map<string, Geometry>;
+  legacyCurvePassthroughObjects: Set<string>;
   frame: number;
   fps: number;
-} = { objects: [], collections: [], images: [], fonts: {}, evaluatedObjects: new Map(), frame: 0, fps: 24 };
+} = { objects: [], collections: [], images: [], fonts: {}, evaluatedObjects: new Map(), legacyCurvePassthroughObjects: new Set(), frame: 0, fps: 24 };
 
 export function reg(types: string | string[], handler: Handler): void {
   for (const t of Array.isArray(types) ? types : [types]) REGISTRY.set(t, handler);

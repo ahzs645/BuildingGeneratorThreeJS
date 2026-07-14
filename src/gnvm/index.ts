@@ -4,11 +4,11 @@ import { Geometry, Mesh, toTriSoup, TriSoup } from "./geometry";
 import { DUMP_CONTEXT, MISSING, REGISTRY } from "./registry";
 import { ensureManifold } from "./boolean";
 import { evaluateBezierSpline } from "./bezier";
+import { matchLegacyCurvePassthrough } from "./nodes/geometry";
 
 // Registering the handler modules populates the REGISTRY.
 import "./nodes/math";
 import "./nodes/inputs";
-import "./nodes/geometry";
 import "./nodes/meshops";
 import "./nodes/fields";
 import "./nodes/curves";
@@ -176,6 +176,17 @@ function baseGeometryOf(dump: Dump, objectName: string): Geometry | null {
   return g.mesh || g.curves.length ? g : null;
 }
 
+function isGeometryPassthroughGroup(group: any): boolean {
+  const input = group?.nodes?.find((node: any) => node.type === "NodeGroupInput");
+  const output = group?.nodes?.find((node: any) => node.type === "NodeGroupOutput");
+  if (!input || !output) return false;
+  const geometryOutput = input.outputs?.find((socket: any) => socket.type === "NodeSocketGeometry");
+  const geometryInput = output.inputs?.find((socket: any) => socket.type === "NodeSocketGeometry");
+  return Boolean(geometryOutput && geometryInput && group.links?.some((link: any) =>
+    link.from_node === input.name && link.from_socket === geometryOutput.identifier
+      && link.to_node === output.name && link.to_socket === geometryInput.identifier));
+}
+
 export async function runGenerator(dump: Dump, opts: { object?: string; overrides?: Record<string, any> } = {}): Promise<RunResult> {
   // Mesh boolean needs Manifold WASM; load once before evaluation.
   await ensureManifold();
@@ -185,6 +196,12 @@ export async function runGenerator(dump: Dump, opts: { object?: string; override
   DUMP_CONTEXT.images = dump.images ?? [];
   DUMP_CONTEXT.fonts = dump.fonts ?? {};
   DUMP_CONTEXT.evaluatedObjects.clear();
+  DUMP_CONTEXT.legacyCurvePassthroughObjects.clear();
+  for (const object of DUMP_CONTEXT.objects) {
+    const modifier = object.modifiers?.find((candidate) => candidate.type === "NODES" && candidate.node_group);
+    if (object.type === "CURVE" && modifier?.node_group && isGeometryPassthroughGroup(dump.node_groups[modifier.node_group]))
+      DUMP_CONTEXT.legacyCurvePassthroughObjects.add(object.name);
+  }
   DUMP_CONTEXT.frame = Number(opts.overrides?.__frame ?? dump.scene?.frame_current ?? 0);
   DUMP_CONTEXT.fps = Number(dump.scene?.fps ?? 24) / Math.max(Number(dump.scene?.fps_base ?? 1), 1e-9);
   const found = findModifierGroup(dump, opts.object);
@@ -212,6 +229,8 @@ export async function runGenerator(dump: Dump, opts: { object?: string; override
     }
     DUMP_CONTEXT.activeObject = object;
     const dependencyGeometry = ev.evalModifierGroup(modifier.node_group, dependencyInputs).geometry;
+    if (object.type === "CURVE" && isGeometryPassthroughGroup(dependencyGroup))
+      matchLegacyCurvePassthrough(dependencyGeometry);
     // Pure-mesh dependencies already have Blender's exact evaluated mesh in the
     // portable dump. Keep that authoritative snapshot for Object Info; evaluate
     // at runtime only when a dependency carries curves/instances that the mesh

@@ -1129,7 +1129,7 @@
     "reference": "dojo/references/nodes-node/cube.png",
     "blenderStats": { "verts": 12743, "faces": 561 },
     "localSpace": true,
-    "note": "Recovered-font near parity: the browser matches Blender's complete bounds and presentation layout. One shared control branch still retains a coincident 704-vertex / 704-face surface (13,447 / 1,265 browser versus 12,743 / 561 Blender).",
+    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 12,743 vertices and 561 faces with identical bounds. Legacy pass-through curve conversion now sweeps the radio-button checkmark on Blender's three-point control domain; small glyph-position and material-preview differences remain.",
     "font": {
       "url": "dojo/fonts/DejaVuSans-ExtraLight.ttf",
       "family": "DejaVu Sans ExtraLight",
@@ -1197,7 +1197,7 @@
     "reference": "dojo/references/nodes-node/cube-004.png",
     "blenderStats": { "verts": 9134, "faces": 1347 },
     "localSpace": true,
-    "note": "Recovered-font near parity: browser and Blender bounds and layout match exactly. One shared control branch retains a coincident 704-vertex / 704-face surface (9,838 / 2,051 browser versus 9,134 / 1,347 Blender).",
+    "note": "Recovered-font topology-and-bounds parity: Blender and the browser both produce 9,134 vertices and 1,347 faces with identical bounds. The radio-button checkmark now uses Blender's three-point legacy-curve pass-through topology; small glyph-position and material-preview differences remain.",
     "font": {
       "url": "dojo/fonts/DejaVuSans-ExtraLight.ttf",
       "family": "DejaVu Sans ExtraLight",
