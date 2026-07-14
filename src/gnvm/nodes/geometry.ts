@@ -299,6 +299,22 @@ reg("GeometryNodeSetPosition", (api) => {
   } else {
     g.instances = g.instances.map((instance, i) => ({ ...instance, position: move(instance.position, i) }));
   }
+  // Geometry sets can carry a mesh and instances simultaneously. Blender
+  // evaluates Set Position once per supported component; choosing the mesh's
+  // POINT domain above must not leave the instance points behind. Procedural
+  // Box joins its lid shell with a referenced print pin and then animates both
+  // through one position field.
+  if (g.instances.length && domain !== "INSTANCE") {
+    const instanceCtx = makeFieldCtx(g, "INSTANCE");
+    const instanceSelection = api.field("Selection").array(instanceCtx);
+    const instanceOffset = api.field("Offset").array(instanceCtx);
+    const instancePosition = posLinked ? api.field("Position").array(instanceCtx) : null;
+    g.instances = g.instances.map((instance, i) => {
+      if (!asNum(instanceSelection[i] ?? 1)) return instance;
+      const base = instancePosition ? asVec3(instancePosition[i]) : instance.position;
+      return { ...instance, position: vadd(base, asVec3(instanceOffset[i] ?? [0, 0, 0])) };
+    });
+  }
   return { Geometry: g };
 });
 

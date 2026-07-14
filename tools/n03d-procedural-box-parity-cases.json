@@ -1,0 +1,10 @@
+[
+  { "name": "authored defaults", "overrides": {} },
+  { "name": "compact 110x60", "overrides": { "width": 110, "depth": 60 } },
+  { "name": "wide 155", "overrides": { "width": 155 } },
+  { "name": "deep 90", "overrides": { "depth": 90 } },
+  { "name": "seam offset 2", "overrides": { "part seam offset": 2 } },
+  { "name": "height offset 5", "overrides": { "height offset": 5 } },
+  { "name": "open lid 0.65", "overrides": { "open lid": 0.65 } },
+  { "name": "split print pin", "overrides": { "SPLIT TO PRINT PIN": true } }
+]

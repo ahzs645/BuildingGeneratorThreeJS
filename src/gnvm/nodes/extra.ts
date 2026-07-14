@@ -1759,9 +1759,9 @@ function openSweptDifference(source: Mesh, cutter: Mesh): Mesh | null {
   const appendPoint = (position: Vec3, cutterVertex: number | null): number => {
     const index = out.positions.length;
     out.positions.push([...position] as Vec3);
-    for (const [, attribute] of out.attributes) {
+    for (const [name, attribute] of out.attributes) {
       if (attribute.domain !== "POINT") continue;
-      attribute.data.push(cutterVertex === null ? 0 : (cutter.attributes.size ? (cutter.attributes.values().next().value?.data[cutterVertex] ?? 0) : 0));
+      attribute.data.push(cutterVertex === null ? 0 : (cutter.attributes.get(name)?.data[cutterVertex] ?? 0));
     }
     return index;
   };

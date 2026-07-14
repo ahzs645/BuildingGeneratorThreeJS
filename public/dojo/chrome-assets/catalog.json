@@ -1242,7 +1242,7 @@
     "faces": 87165
   },
   "localSpace": true,
-  "note": "Complete 529-node authored storage-box assembly. Browser and Blender bounds match within 0.0001 on every axis; GN-VM is 97,186 / 88,087 versus Blender 90,928 / 87,165 because curve/screw sampling retains denser topology.",
+  "note": "Complete 529-node authored storage-box assembly. Browser output is 90,918 / 87,165 versus Blender 90,928 / 87,165: every face matches, with only 10 Boolean bridge vertices remaining. Eight size, seam, height, animated-lid, and split-pin cases keep exact face counts; bounds differ by at most 0.0011. Open-shell Exact Boolean support restores the dowel bores, mixed-component Set Position keeps the referenced pin on the animated lid, and concave-ngon triangulation removes the former wall spikes.",
   "controls": [
     {
       "name": "width",

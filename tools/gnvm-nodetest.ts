@@ -935,6 +935,45 @@ function meshSignedAreaXY(m: Mesh): number {
   ).Mesh as Geometry;
   check("MeshBoolean open-shell INTERSECT non-empty", (openClip.mesh?.faces.length ?? 0) > 0, `faces=${openClip.mesh?.faces.length}`);
 
+  // Blender's Exact solver can cut a swept closed tube through an open shell
+  // before that shell is mirrored. Preserve the two cap ngons as annuli and
+  // add the reversed tunnel wall instead of silently returning the input.
+  const openSlab = new Geometry();
+  openSlab.mesh = new Mesh();
+  openSlab.mesh.positions = [
+    [-2, -.5, -2], [2, -.5, -2], [2, -.5, 2], [-2, -.5, 2],
+    [-2, .5, -2], [2, .5, -2], [2, .5, 2], [-2, .5, 2],
+  ];
+  openSlab.mesh.faces = [
+    [0, 1, 2, 3], [4, 7, 6, 5],
+    [0, 4, 5, 1], [1, 5, 6, 2], [2, 6, 7, 3],
+  ]; // deliberately omit the fourth side wall
+  openSlab.mesh.faceMaterial = openSlab.mesh.faces.map(() => 0);
+  const tubeCutter = new Geometry();
+  tubeCutter.mesh = new Mesh();
+  const sweepSegments = 12;
+  for (const y of [-1, 1]) for (let i = 0; i < sweepSegments; i++) {
+    const angle = i / sweepSegments * Math.PI * 2;
+    tubeCutter.mesh.positions.push([Math.cos(angle), y, Math.sin(angle)]);
+  }
+  for (let i = 0; i < sweepSegments; i++) {
+    const next = (i + 1) % sweepSegments;
+    tubeCutter.mesh.faces.push([i, next, sweepSegments + next, sweepSegments + i]);
+  }
+  tubeCutter.mesh.faces.push(
+    Array.from({ length: sweepSegments }, (_, i) => sweepSegments - 1 - i),
+    Array.from({ length: sweepSegments }, (_, i) => sweepSegments + i),
+  );
+  tubeCutter.mesh.faceMaterial = tubeCutter.mesh.faces.map(() => 0);
+  const sweptCut = runNode(
+    "GeometryNodeMeshBoolean",
+    { "Mesh 1": openSlab, "Mesh 2": tubeCutter },
+    { operation: "DIFFERENCE", solver: "EXACT" },
+  ).Mesh as Geometry;
+  check("MeshBoolean EXACT cuts ring-swept solids through open shells",
+    sweptCut.mesh?.positions.length === 32 && sweptCut.mesh.faces.length === 19,
+    `${sweptCut.mesh?.positions.length}v/${sweptCut.mesh?.faces.length}f`);
+
   // EXACT treats an open planar mesh as a knife. A 3x3 grid oriented +Y keeps
   // the positive half-space and contributes four cap quadrants.
   const knife = new Geometry();
@@ -1405,6 +1444,16 @@ function meshSignedAreaXY(m: Mesh): number {
     Offset: Field.perElem((i) => [0, 0, i * .01]),
   }).Geometry as Geometry;
   check("Set Position offsets instance points", approx(moved.instances[2].position, [2, 0, .02]));
+
+  const mixed = box([0, 0, 0], [1, 1, 1]);
+  mixed.instances.push({ geometry: payload, position: [3, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] });
+  const mixedMoved = runNode("GeometryNodeSetPosition", {
+    Geometry: mixed,
+    Selection: true,
+    Offset: [0, 0, 2],
+  }).Geometry as Geometry;
+  check("Set Position moves instances beside a mesh component",
+    approx(mixedMoved.mesh!.positions[0], [0, 0, 2]) && approx(mixedMoved.instances[0].position, [3, 0, 2]));
 }
 
 // Bounding Box does not realize/open instances. Text Soup depends on the zero

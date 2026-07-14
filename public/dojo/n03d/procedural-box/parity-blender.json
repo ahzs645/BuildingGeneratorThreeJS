@@ -1,0 +1,189 @@
+{
+  "source": "blender",
+  "object": "PROC.BOX WIP",
+  "results": [
+    {
+      "combo": {
+        "name": "authored defaults",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 90928,
+      "faces": 87165,
+      "bbox": {
+        "min": [
+          -47.2342,
+          -62.3152,
+          0.0
+        ],
+        "max": [
+          31.5067,
+          62.3152,
+          74.758
+        ]
+      }
+    },
+    {
+      "combo": {
+        "name": "compact 110x60",
+        "overrides": {
+          "width": 110,
+          "depth": 60
+        }
+      },
+      "status": "ok",
+      "verts": 90928,
+      "faces": 87165,
+      "bbox": {
+        "min": [
+          -48.4234,
+          -55.0998,
+          0.0
+        ],
+        "max": [
+          31.5067,
+          55.0998,
+          74.758
+        ]
+      }
+    },
+    {
+      "combo": {
+        "name": "wide 155",
+        "overrides": {
+          "width": 155
+        }
+      },
+      "status": "ok",
+      "verts": 90928,
+      "faces": 87165,
+      "bbox": {
+        "min": [
+          -47.2342,
+          -77.5998,
+          0.0
+        ],
+        "max": [
+          31.5067,
+          77.5998,
+          74.758
+        ]
+      }
+    },
+    {
+      "combo": {
+        "name": "deep 90",
+        "overrides": {
+          "depth": 90
+        }
+      },
+      "status": "ok",
+      "verts": 90928,
+      "faces": 87165,
+      "bbox": {
+        "min": [
+          -78.4234,
+          -62.3152,
+          0.0
+        ],
+        "max": [
+          31.5067,
+          62.3152,
+          74.758
+        ]
+      }
+    },
+    {
+      "combo": {
+        "name": "seam offset 2",
+        "overrides": {
+          "part seam offset": 2
+        }
+      },
+      "status": "ok",
+      "verts": 90928,
+      "faces": 87165,
+      "bbox": {
+        "min": [
+          -47.2342,
+          -62.3152,
+          0.0
+        ],
+        "max": [
+          31.5067,
+          62.3152,
+          74.758
+        ]
+      }
+    },
+    {
+      "combo": {
+        "name": "height offset 5",
+        "overrides": {
+          "height offset": 5
+        }
+      },
+      "status": "ok",
+      "verts": 90928,
+      "faces": 87165,
+      "bbox": {
+        "min": [
+          -47.2342,
+          -62.3152,
+          0.0
+        ],
+        "max": [
+          31.5067,
+          62.3152,
+          81.0285
+        ]
+      }
+    },
+    {
+      "combo": {
+        "name": "open lid 0.65",
+        "overrides": {
+          "open lid": 0.65
+        }
+      },
+      "status": "ok",
+      "verts": 90928,
+      "faces": 87165,
+      "bbox": {
+        "min": [
+          -54.1162,
+          -62.3152,
+          0.0
+        ],
+        "max": [
+          30.2766,
+          62.3152,
+          116.1522
+        ]
+      }
+    },
+    {
+      "combo": {
+        "name": "split print pin",
+        "overrides": {
+          "SPLIT TO PRINT PIN": true
+        }
+      },
+      "status": "ok",
+      "verts": 83154,
+      "faces": 79693,
+      "bbox": {
+        "min": [
+          -47.129,
+          -62.3152,
+          0.0
+        ],
+        "max": [
+          31.5067,
+          62.3152,
+          74.758
+        ]
+      }
+    }
+  ]
+}

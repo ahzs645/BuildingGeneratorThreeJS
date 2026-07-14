@@ -820,15 +820,18 @@ export function toTriSoup(g: Geometry): TriSoup {
     normArr[i * 3 + 1] = normals[i][1];
     normArr[i * 3 + 2] = normals[i][2];
   }
-  // group faces by material slot, fan-triangulate
+  // Group faces by material slot. Concave Geometry Nodes ngons (notably the
+  // Procedural Box wall profiles) must be ear-clipped; a fan can escape the
+  // polygon and render long triangular spikes even though the mesh topology is
+  // otherwise identical to Blender.
   const slotCount = Math.max(1, mesh.materialSlots.length);
   const perSlot: number[][] = Array.from({ length: slotCount }, () => []);
   let triCount = 0;
   for (let fi = 0; fi < mesh.faces.length; fi++) {
     const f = mesh.faces[fi];
     const slot = mesh.faceMaterial[fi] ?? 0;
-    for (let k = 1; k + 1 < f.length; k++) {
-      perSlot[slot].push(f[0], f[k], f[k + 1]);
+    for (const triangle of triangulateFaceIndices(mesh, f)) {
+      perSlot[slot].push(...triangle);
       triCount++;
     }
   }
