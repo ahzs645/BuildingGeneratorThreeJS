@@ -12,6 +12,7 @@
       "Chrome Crayon procedural roughness",
       "Chain and Mace face roughness",
       "attribute-driven emission",
+      "attribute-driven Principled color, roughness, and metallic",
       "Image Pixel Stippler WebGL material"
     ]
   },
