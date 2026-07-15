@@ -64,6 +64,13 @@ const courseCurveChainReference = JSON.parse(readFileSync(
   stages: Record<string, { count: number; bounds: { min: Vec3; max: Vec3 }; samples: { index: number; position: Vec3 }[] }>;
 };
 
+const courseBarRowReference = JSON.parse(readFileSync(
+  new URL("./course-bar-row-blender-reference.json", import.meta.url), "utf8",
+)) as {
+  parameters: { instance_scale: number; profile_radius: number };
+  stages: Record<string, { verts: number; faces: number; bounds: { min: Vec3; max: Vec3 } }>;
+};
+
 const box = (min: Vec3, max: Vec3): Geometry => {
   const m = new Mesh();
   const [x0, y0, z0] = min;
@@ -2674,6 +2681,23 @@ function meshSignedAreaXY(m: Mesh): number {
   check("instance fields use INSTANCE domain beside a mesh component", approx(scaledMixed.instances[0].scale, [0.5, 0.5, 0.5]));
   const wireInstances = runNode("GeometryNodeMeshToCurve", { Mesh: instances, Selection: true }).Curve as Geometry;
   check("Mesh to Curve preserves instance transforms", wireInstances.instances.length === 1 && wireInstances.instances[0].geometry.curves.length > 0);
+  const scaledCurveSource = new Geometry();
+  const authoredScale = courseBarRowReference.parameters.instance_scale;
+  scaledCurveSource.instances = [{
+    geometry: box([-.5, -.5, 0], [.5, .5, 0]),
+    position: [0, 0, 0], rotation: [0, 0, 0], scale: [authoredScale, authoredScale, authoredScale],
+  }];
+  const scaledCurves = runNode("GeometryNodeMeshToCurve", { Mesh: scaledCurveSource, Selection: true }).Curve as Geometry;
+  const realizedCurves = realizeInstances(scaledCurves);
+  const realizedRadius = realizedCurves.curveAttributes.get("radius")?.data as number[] | undefined;
+  const socketHalfWidth = courseBarRowReference.stages.socket_shape.bounds.max[0];
+  const sweptHalfWidth = courseBarRowReference.stages.line_thickness.bounds.max[0];
+  const blenderRadiusScale = (sweptHalfWidth - socketHalfWidth) / courseBarRowReference.parameters.profile_radius;
+  check("Realize Instances scales Mesh to Curve radius",
+    !!realizedRadius && realizedRadius.length === realizedCurves.curvePointCount()
+      && realizedRadius.every((radius) => Math.abs(radius - authoredScale) < 1e-12)
+      && Math.abs(blenderRadiusScale - authoredScale) < 3e-6,
+    `points=${realizedCurves.curvePointCount()} radius=${JSON.stringify(realizedRadius?.slice(0, 4))} blenderScale=${blenderRadiusScale}`);
 }
 
 // (AG) Packed images remain available to worker-side image fields. Repeated

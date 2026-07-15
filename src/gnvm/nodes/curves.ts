@@ -547,7 +547,9 @@ reg("GeometryNodeCurveToMesh", (api) => {
   const importedTangentAttribute = rail.curveAttributes.has("__curve_imported_tangent");
   const railWasInstanced = railInput.instances.length > 0;
   const planarFromMesh = rail.curveAttributes.has("__gnvm_planar_mesh_curve");
-  const railPointAttributes = [...rail.curveAttributes].filter(([, attribute]) => attribute.domain === "POINT");
+  // Curve radius drives the sweep scale but is a built-in curve property, not
+  // a named mesh attribute on Curve to Mesh's output.
+  const railPointAttributes = [...rail.curveAttributes].filter(([name, attribute]) => attribute.domain === "POINT" && name !== "radius");
   const profilePointAttributes = [...prof.curveAttributes].filter(([, attribute]) => attribute.domain === "POINT");
   let flatBase = 0;
   for (const r of rail.curves) {
@@ -773,6 +775,13 @@ reg("GeometryNodeMeshToCurve", (api) => {
     }
     const chains = meshEdgesToChains(source);
     out.curves = chains.map((c) => c.spline);
+    // Radius is a built-in curve point attribute. A newly converted mesh curve
+    // starts at one even when the source mesh has no named radius; realizing a
+    // scaled curve instance subsequently transforms this value.
+    out.curveAttributes.set("radius", {
+      domain: "POINT",
+      data: chains.flatMap((chain) => chain.spline.points.map(() => 1)),
+    });
     // Blender's Mesh to Curve creates evaluated poly tangents by bisecting the
     // normalized incident edge directions. Preserve that field explicitly so
     // Curve to Mesh does not replace it with a length-weighted chord tangent.

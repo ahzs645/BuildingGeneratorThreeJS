@@ -742,6 +742,10 @@ export function realizeInstances(g: Geometry): Geometry {
     }
     // Curve-only payloads must survive realize — the bubble vase's proximity
     // target is 58 instanced curves; `if (!rg.mesh) continue` emptied the field.
+    const pointBase = out.curvePointCount();
+    const curveBase = out.curves.length;
+    const addedPoints = rg.curvePointCount();
+    const addedCurves = rg.curves.length;
     for (const s of rg.curves)
       out.curves.push({
         cyclic: s.cyclic,
@@ -758,6 +762,40 @@ export function realizeInstances(g: Geometry): Geometry {
           ? transformPointMatrixFloat32(p, inst.transformMatrix)
           : transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
       });
+    if (addedCurves) {
+      // Realizing a scaled curve instance transforms its built-in radius along
+      // with its positions. Mesh to Curve creates radius=1; an Instance on
+      // Points scale of .27 therefore makes a following Curve to Mesh profile
+      // .27 times as wide. Preserve all curve attributes while flattening and
+      // apply the transform's uniform scale to that radius field.
+      const matrixScales = inst.transformMatrix
+        ? [0, 1, 2].map((column) => Math.hypot(
+            inst.transformMatrix?.[0]?.[column] ?? 0,
+            inst.transformMatrix?.[1]?.[column] ?? 0,
+            inst.transformMatrix?.[2]?.[column] ?? 0,
+          ))
+        : inst.scale.map(Math.abs);
+      const radiusScale = Math.cbrt(Math.max(0, matrixScales[0] * matrixScales[1] * matrixScales[2]));
+      const names = new Set([...out.curveAttributes.keys(), ...rg.curveAttributes.keys()]);
+      for (const name of names) {
+        const source = rg.curveAttributes.get(name);
+        const target = out.curveAttributes.get(name);
+        const domain = source?.domain ?? target?.domain;
+        if (!domain || (target && target.domain !== domain)) continue;
+        const before = domain === "POINT" ? pointBase : curveBase;
+        const count = domain === "POINT" ? addedPoints : addedCurves;
+        const fallback = zeroLike(target?.data[0] ?? source?.data[0]);
+        const data = target?.data ?? [];
+        while (data.length < before) data.push(fallback);
+        for (let index = 0; index < count; index++) {
+          const value = source?.data[index] ?? fallback;
+          data.push(name === "radius" && domain === "POINT"
+            ? asNum(value) * radiusScale
+            : value);
+        }
+        out.curveAttributes.set(name, { domain, data });
+      }
+    }
   }
   if (g.mesh || mesh.positions.length || mesh.faces.length || mesh.edges.length) out.mesh = mesh;
   return out;
