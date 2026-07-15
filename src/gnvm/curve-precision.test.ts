@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { evaluateBezierSpline } from "./bezier";
 import { Field } from "./core";
-import { resampleSpline } from "./curves";
+import { resampleSpline, sweep } from "./curves";
 import { makeFieldCtx } from "./evaluator";
 import { Geometry } from "./geometry";
 import "./nodes/crayon";
+import "./nodes/curves";
 import "./nodes/geometry";
 import "./nodes/inputs";
 import "./nodes/fields";
@@ -51,6 +52,19 @@ test("curve resampling preserves Blender float32 length parameterization", () =>
     [2.601719856262207, 1.429631233215332, 0.16309577226638794],
     [2.9000000953674316, 3.0999999046325684, 0.699999988079071],
   ]);
+});
+
+test("Curve Circle follows Blender float32 sincos sampling", () => {
+  const handler = REGISTRY.get("GeometryNodeCurvePrimitiveCircle");
+  assert.ok(handler);
+  const output = handler({
+    num: (name: string) => name === "Resolution" ? 33 : 15.556474685668945,
+  } as EvalAPI).Curve as Geometry;
+
+  assert.equal(output.curves[0].points.length, 33);
+  assert.deepEqual(output.curves[0].points[1], [15.275348663330078, 2.944082260131836, 0]);
+  assert.deepEqual(output.curves[0].points[24], [-2.2139124870300293, -15.398133277893066, 0]);
+  assert.deepEqual(output.curves[0].points[32], [15.275348663330078, -2.9440810680389404, 0]);
 });
 
 test("Bounding Box includes Blender's implicit curve-point radius", () => {
@@ -109,6 +123,26 @@ test("Curve Tangent prefers the evaluated Resample Curve frame", () => {
   assert.deepEqual(values[0], [1, 0, 0]);
   assert.deepEqual(values[1], [Math.SQRT1_2, Math.SQRT1_2, 0]);
   assert.deepEqual(values[2], [0, 1, 0]);
+});
+
+test("Curve to Mesh preserves the evaluated Resample Curve frame", () => {
+  const result = sweep(
+    { cyclic: false, points: [[0, 0, 1], [0, 0, -1]] },
+    { cyclic: true, points: [[2, 0, 0], [0, 3, 0], [-2, 0, 0], [0, -3, 0]] },
+    false,
+    undefined,
+    [[0, 0, -1], [0, 0, -1]],
+  );
+
+  // Blender's evaluated frame maps profile +X to world +X and profile +Y to
+  // world -Y on a descending Z rail. Reapplying the generic half-turn maps
+  // the first ring to the opposite side of the rail instead.
+  assert.deepEqual(result.positions.slice(0, 4), [
+    [2, 0, 1],
+    [0, -3, 1],
+    [-2, 0, 1],
+    [0, 3, 1],
+  ]);
 });
 
 test("Align Rotation preserves native Curve to Points quaternion at 180 degrees", () => {

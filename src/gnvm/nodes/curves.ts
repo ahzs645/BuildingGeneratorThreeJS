@@ -29,9 +29,23 @@ reg("GeometryNodeCurvePrimitiveCircle", (api) => {
   // Treating zero as a missing value turned those groups back into unit rings.
   const r = api.num("Radius");
   const pts: Vec3[] = [];
+  // Blender's primitive is generated through float sincosf: the angular step,
+  // each multiplied angle, trig results, and final radius products are all
+  // rounded to float32. Computing i/res*2pi in JavaScript double precision is
+  // visibly close, but its late-circle samples drift by several ULPs before a
+  // Length-mode Resample Curve. Modern Pipe's 33->86 point sleeve profile
+  // provides an exact reference for this operation order.
+  const angleStep = Math.fround((Math.PI * 2) / res);
+  const radius = Math.fround(r);
   for (let i = 0; i < res; i++) {
-    const a = (i / res) * Math.PI * 2;
-    pts.push([Math.cos(a) * r, Math.sin(a) * r, 0]);
+    const angle = Math.fround(i * angleStep);
+    const cosine = Math.fround(Math.cos(angle));
+    const sine = Math.fround(Math.sin(angle));
+    pts.push([
+      Math.fround(cosine * radius),
+      Math.fround(sine * radius),
+      0,
+    ]);
   }
   return { Curve: curveGeo([{ points: pts, cyclic: true }]), Center: Field.of([0, 0, 0]) };
 });
@@ -531,6 +545,7 @@ reg("GeometryNodeCurveToMesh", (api) => {
   const profiles = prof.curves;
   const tangentAttribute = rail.curveAttributes.get("__curve_tangent")?.data;
   const importedTangentAttribute = rail.curveAttributes.has("__curve_imported_tangent");
+  const railWasInstanced = railInput.instances.length > 0;
   const planarFromMesh = rail.curveAttributes.has("__gnvm_planar_mesh_curve");
   const railPointAttributes = [...rail.curveAttributes].filter(([, attribute]) => attribute.domain === "POINT");
   const profilePointAttributes = [...prof.curveAttributes].filter(([, attribute]) => attribute.domain === "POINT");
@@ -559,7 +574,14 @@ reg("GeometryNodeCurveToMesh", (api) => {
           const bisector = vadd(vnorm(vsub(point, previous)), vnorm(vsub(next, point)));
           return vlen(bisector) > 1e-9 ? vnorm(bisector) : vnorm(vsub(next, previous));
         })
-      : tangentAttribute?.slice(flatBase, flatBase + r.points.length).map(asVec3);
+      : tangentAttribute?.slice(flatBase, flatBase + r.points.length).map(asVec3)
+        // Realize Instances currently bakes the curve positions but does not
+        // retain anonymous curve-domain frame attributes from its payloads.
+        // An instanced rail still has an evaluated Blender frame, however, and
+        // Curve to Mesh must not fall back to the unrelated generic open-curve
+        // half-turn. Reconstruct its tangent side of the frame from the baked
+        // polyline; this is exact for Modern Pipe's rotated Curve Line rails.
+        ?? (railWasInstanced ? splineFrames(r.points, r.cyclic).map((frame) => frame.tangent) : undefined);
     flatBase += r.points.length;
     if (!profiles.length) {
       // no profile: emit the rail as an edge-only wire

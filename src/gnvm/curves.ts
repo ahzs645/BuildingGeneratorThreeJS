@@ -284,16 +284,23 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?:
   }
   for (let i = 0; i < nr; i++) {
     const frame = frames[i];
+    // Resample Curve carries Blender's evaluated tangent frame forward. Its
+    // initial normal is already constructed with cross(tangent, +Z), so the
+    // generic open-curve half-turn below must not be applied a second time.
+    // Modern Pipe exposes this on its three straight, resampled sleeve rails:
+    // the extra half-turn changes which slightly asymmetric resampled-circle
+    // point reaches each extremum and moves the generated joint boundary.
+    const evaluatedFrameSign = tangentOverrides?.length ? 1 : -1;
     const normal = horizontalPlanar
       ? vnorm([frame.tangent[1] * planarOrientation, -frame.tangent[0] * planarOrientation, 0])
       : tiltedPlanarNormal
         ? vscale(vnorm(vcross(tiltedPlanarNormal, frame.tangent)), planarOrientation)
       : planarOpen && Math.abs(planarTurn) > 1e-6
         ? frame.normal
-        : vscale(frame.normal, -1);
+        : vscale(frame.normal, evaluatedFrameSign);
     const binormal = horizontalPlanar
       ? vnorm(vcross(frame.tangent, normal))
-      : tiltedPlanarNormal ? tiltedPlanarNormal : vscale(frame.binormal, -1);
+      : tiltedPlanarNormal ? tiltedPlanarNormal : vscale(frame.binormal, evaluatedFrameSign);
     const s = scales?.[i] ?? 1;
     for (let j = 0; j < np; j++) {
       const px = pp[j][0] * s, py = pp[j][1] * s;

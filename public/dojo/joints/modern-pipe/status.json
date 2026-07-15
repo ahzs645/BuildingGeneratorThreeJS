@@ -8,9 +8,9 @@
     "faces": 8064
   },
   "gnvm": {
-    "verts": 11225,
-    "faces": 8114
+    "verts": 11229,
+    "faces": 8116
   },
   "coverage": "100% of reachable node types across the 296-group, 2,413-node closure, including its six-object pipe structure collection.",
-  "validation": "The authored six-way pipe layout, generated sleeves, SDF joint shell, dual-mesh smoothing, and structure toggle run in-browser. Convex Hull now uses the same double-precision Bullet backend as Blender: Blender's captured 28,638-point input reproduces its exact 1,507 vertices, 2,572 polygons, and 3,010 triangles. With the browser-generated input, the authored result improves to 11,225 / 8,114 versus Blender's 11,162 / 8,064 (0.56% vertex delta and exact collection bounds); joint-size is within 0.31%, and bone preview is topology-exact at 31,447 / 28,386. The remaining surface delta is upstream in the non-cap sleeve sweep positions, while hidden-structure/bone bounds differ by at most 0.0596 Blender units."
+  "validation": "The authored six-way pipe layout, generated sleeves, SDF joint shell, dual-mesh smoothing, and structure toggle run in-browser. Convex Hull uses the same double-precision Bullet backend as Blender: Blender's captured 28,638-point input reproduces its exact 1,507 vertices, 2,572 polygons, and 3,010 triangles. Curve Circle now matches Blender's float32 sincos sampling exactly, the authored 33-to-86-point sleeve profile is position-exact, and the non-cap sleeve sweep is topology-exact at 10,578 / 10,326 with only 0.0000068 maximum positional residual after instance realization. The current authored result is 11,229 / 8,116 versus Blender's 11,162 / 8,064 (0.60% vertex delta and exact collection bounds); joint-size is within 0.31%, bone preview is topology-exact at 31,447 / 28,386, and hidden-structure/bone bounds differ by at most 0.0586 Blender units. The remaining sleeve ULP error is localized to the shared instance-realization transform, after which downstream hull/CSG threshold topology can be compared from exact inputs."
 }

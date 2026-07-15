@@ -19,8 +19,12 @@ bpy.context.window.scene = probe_scene
 obj.hide_viewport = False
 obj.hide_render = False
 obj.hide_set(False)
+if os.environ.get("NODE_DOJO_LOCAL_SPACE") == "1":
+    obj.location = (0, 0, 0)
+    obj.rotation_euler = (0, 0, 0)
+    obj.scale = (1, 1, 1)
 mod = next(m for m in obj.modifiers if m.type == "NODES" and m.node_group)
-tree = mod.node_group
+tree = bpy.data.node_groups.get(os.environ.get("NODE_DOJO_PROBE_GROUP", "")) or mod.node_group
 probe_overrides = json.loads(os.environ.get("NODE_DOJO_PROBE_OVERRIDES", "{}"))
 if probe_overrides:
     identifiers = {
@@ -58,6 +62,21 @@ for link in list(geometry_output.links):
     tree.links.remove(link)
 tree.links.new(to_vertices.outputs["Mesh"], geometry_output)
 
+# Carry a nested group's temporary point mesh through its containing group
+# instances to the modifier root. The order is immediate parent to root, as in
+# blender_node_geometry_probe.py.
+route_links = []
+for step in json.loads(os.environ.get("NODE_DOJO_PROBE_ROUTE", "[]")):
+    route_tree = bpy.data.node_groups[step["group"]]
+    route_node = route_tree.nodes[step["node"]]
+    route_output = next(n for n in route_tree.nodes if n.bl_idname == "NodeGroupOutput" and n.is_active_output)
+    route_target = next(socket for socket in route_output.inputs if socket.type == "GEOMETRY")
+    route_source = route_node.outputs[step["socket"]]
+    route_links.append((route_tree, route_target, route_target.links[0].from_socket if route_target.is_linked else None))
+    for link in list(route_target.links):
+        route_tree.links.remove(link)
+    route_tree.links.new(route_source, route_target)
+
 obj.update_tag()
 bpy.context.view_layer.update()
 evaluated = obj.evaluated_get(bpy.context.evaluated_depsgraph_get())
@@ -73,6 +92,11 @@ try:
     }
 finally:
     evaluated.to_mesh_clear()
+    for route_tree, route_target, route_original in reversed(route_links):
+        for link in list(route_target.links):
+            route_tree.links.remove(link)
+        if route_original is not None:
+            route_tree.links.new(route_original, route_target)
     for link in list(geometry_output.links):
         tree.links.remove(link)
     if original is not None:
