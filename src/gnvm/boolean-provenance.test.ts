@@ -7,8 +7,8 @@ import {
   manifoldBooleanMany,
   meshToManifoldGL,
 } from "./boolean";
-import { Mesh } from "./geometry";
-import { dissolveCoplanarFacesForTest } from "./nodes/extra";
+import { Mesh, mergeMeshInto } from "./geometry";
+import { dissolveCoplanarFacesForTest, splitDisconnectedBooleanMeshForTest } from "./nodes/extra";
 
 function box(
   min: [number, number, number],
@@ -98,4 +98,20 @@ test("batch Boolean assigns non-colliding face IDs across operands", async () =>
   assert.equal(reconstructed.faces.length, 18);
   assert.ok(reconstructed.faces.every((face) => face.length === 4));
   assert.equal(reconstructed.attributes.get("source_face")?.data.length, 18);
+});
+
+test("disconnected Boolean cutters split into attribute-preserving solids", () => {
+  const joined = new Mesh();
+  mergeMeshInto(joined, box([-2, -1, -1], [-1, 1, 1], 0, "left"));
+  mergeMeshInto(joined, box([1, -1, -1], [2, 1, 1], 0, "right"));
+
+  const parts = splitDisconnectedBooleanMeshForTest(joined);
+  assert.equal(parts.length, 2);
+  assert.deepEqual(parts.map((part) => part.positions.length), [8, 8]);
+  assert.deepEqual(parts.map((part) => part.faces.length), [6, 6]);
+  assert.ok(parts.every((part) => part.attributes.get("source_face")?.data.length === 6));
+  assert.deepEqual(parts.map((part) => [
+    Math.min(...part.positions.map((point) => point[0])),
+    Math.max(...part.positions.map((point) => point[0])),
+  ]), [[-2, -1], [1, 2]]);
 });

@@ -1170,6 +1170,45 @@ function joinedMesh(parts: Geometry[]): Geometry {
   return out;
 }
 
+/**
+ * Split a Boolean operand into its face-connected closed shells. Blender's
+ * Exact solver consumes disconnected components as independent operands. A
+ * single Manifold containing several overlapping shells is geometrically
+ * equivalent in the simple case, but it preserves extra intersection seams
+ * when the same multi-input cutter is linked more than once (Bubble Putty).
+ */
+function splitDisconnectedBooleanMesh(mesh: Mesh): Mesh[] {
+  const topology = buildTopology(mesh);
+  if (topology.pointIslandCount <= 1) return [mesh];
+  const facesByIsland = Array.from({ length: topology.pointIslandCount }, () => [] as number[]);
+  for (let face = 0; face < mesh.faces.length; face++) {
+    const first = mesh.faces[face][0];
+    if (first !== undefined) facesByIsland[topology.pointIsland[first] ?? 0].push(face);
+  }
+  const parts: Mesh[] = [];
+  for (const faceIndexes of facesByIsland) {
+    if (!faceIndexes.length) continue;
+    const sourceVertices = [...new Set(faceIndexes.flatMap((face) => mesh.faces[face]))].sort((a, b) => a - b);
+    const remap = new Map(sourceVertices.map((vertex, index) => [vertex, index]));
+    const part = new Mesh();
+    part.positions = sourceVertices.map((vertex) => [...mesh.positions[vertex]] as Vec3);
+    part.faces = faceIndexes.map((face) => mesh.faces[face].map((vertex) => remap.get(vertex)!));
+    part.faceMaterial = faceIndexes.map((face) => mesh.faceMaterial[face] ?? 0);
+    part.materialSlots = [...mesh.materialSlots];
+    for (const [name, attribute] of mesh.attributes) {
+      if (attribute.domain === "POINT") {
+        part.attributes.set(name, { domain: "POINT", data: sourceVertices.map((vertex) => attribute.data[vertex] ?? 0) });
+      } else if (attribute.domain === "FACE") {
+        part.attributes.set(name, { domain: "FACE", data: faceIndexes.map((face) => attribute.data[face] ?? 0) });
+      }
+    }
+    parts.push(part);
+  }
+  return parts.length ? parts : [mesh];
+}
+
+export const splitDisconnectedBooleanMeshForTest = splitDisconnectedBooleanMesh;
+
 // ---- Points / Sample Index -------------------------------------------------
 reg("GeometryNodePoints", (api) => {
   const count = Math.max(0, Math.round(api.num("Count")));
@@ -3530,9 +3569,30 @@ reg("GeometryNodeMeshBoolean", (api) => {
     // turn a harmless coincident duplicate cutter into a non-manifold second
     // input and grow a few thousand triangles into tens of thousands.
     if (mesh2s.length > 1 && mesh2s.every((geometry) => !!geometry.mesh)) {
-      const raw = manifoldBooleanMany(mesh1.mesh, mesh2s.map((geometry) => geometry.mesh!), op);
+      const sourceMeshes = mesh2s.map((geometry) => geometry.mesh!);
+      const uniqueMeshes = sourceMeshes.filter((mesh, index) => sourceMeshes.indexOf(mesh) === index);
+      const splitCutters = uniqueMeshes.flatMap(splitDisconnectedBooleanMesh);
+      // A duplicated disconnected DIFFERENCE cutter is idempotent, but passing
+      // both copies as multi-component Manifolds creates coincident seams that
+      // Blender's BMesh solver never emits. Bubble Putty links the same
+      // three-object structure twice; treating those three shells as the batch
+      // restores its authored intersection curve and exact bounds.
+      const duplicateDisconnectedDifference = op === "DIFFERENCE"
+        && uniqueMeshes.length < sourceMeshes.length
+        && splitCutters.length > uniqueMeshes.length;
+      const operands = duplicateDisconnectedDifference ? splitCutters : sourceMeshes;
+      const raw = manifoldBooleanMany(mesh1.mesh, operands, op);
       if (raw) {
-        const reconstructed = dissolveCoplanarFaces(raw, [mesh1.mesh, ...mesh2s.map((geometry) => geometry.mesh!)]);
+        // Blender retains the Exact solver's intersection support vertices in
+        // this duplicate-shell case. Generic coplanar reconstruction removes
+        // those supports and loses hundreds of final triangles, so preserve
+        // Manifold's valid triangle surface here. Other multi-input booleans
+        // continue through the established polygon reconstruction path.
+        if (duplicateDisconnectedDifference) {
+          out.mesh = raw;
+          return { Mesh: out, "Intersecting Edges": Field.of(0) };
+        }
+        const reconstructed = dissolveCoplanarFaces(raw, [mesh1.mesh, ...sourceMeshes]);
         out.mesh = isManifoldMesh(reconstructed) ? reconstructed : raw;
         return { Mesh: out, "Intersecting Edges": Field.of(0) };
       }

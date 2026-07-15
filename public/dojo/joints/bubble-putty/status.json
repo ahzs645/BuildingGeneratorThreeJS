@@ -2,15 +2,15 @@
   "id": "joint-bubble-putty",
   "object": "PUTTY.002",
   "root": "Bubble Putty Generator_9OCT2024_01",
-  "status": "live-partial-parity",
+  "status": "near-exact-surface",
   "blender": {
     "verts": 3302,
     "faces": 4675
   },
   "gnvm": {
-    "verts": 3603,
-    "faces": 2480
+    "verts": 3326,
+    "faces": 6656
   },
   "coverage": "100% of the reachable node types across the 46-group, 828-node closure.",
-  "validation": "The browser reproduces the relative three-object structure, welded quad-sphere seed, repeated tight-wrap/dual-mesh deformation, and finalized boolean shell. Structure-preview topology is exact at 8,040 / 9,300, and the authored stochastic bubble layout is 10,272 / 20,480. Blender's BMesh-style Ico Sphere grid now matches the pre-noise surface within 0.000004, the procedural noise and nearest-surface mix match Blender's rounded bounds, all 10,272 Geometry Proximity distances are bit-exact, and tight-wrap plus dynamic-triangulation bounds/topology are exact. Batching the authored duplicate multi-input cutters removes the invalid pairwise-fold explosion: the finalized browser shell is now 3,603 vertices / 2,480 reconstructed polygons (7,278 triangles) versus Blender's 3,302 vertices / 4,675 polygons (6,608 triangles). The remaining 0.0359 bounds difference begins in the final CSG solver's coincident-surface semantics. Missing Budokan and Avenir fonts belong to auxiliary label graphs and are not required by the putty surface."
+  "validation": "The browser reproduces the relative three-object structure, welded quad-sphere seed, repeated tight-wrap/dual-mesh deformation, and finalized boolean shell. Structure-preview topology is exact at 8,040 / 9,300, and the authored stochastic bubble layout is 10,272 / 20,480. Blender's BMesh-style Ico Sphere grid, procedural noise, nearest-surface mix, tight wrap, and dynamic triangulation match through the complete pre-Boolean surface. Splitting the authored duplicate multi-input structure cutter into its three disconnected solids matches Blender Exact Boolean bounds and produces 3,326 vertices / 6,656 triangles versus Blender's 3,302 vertices / 4,675 polygons (6,608 triangles), a 0.73% vertex/triangle delta. The remaining 24 vertices and 48 triangles are native CSG solver intersection-tessellation differences. Missing Budokan and Avenir fonts belong to auxiliary label graphs and are not required by the putty surface."
 }
