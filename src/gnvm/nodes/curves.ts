@@ -550,7 +550,7 @@ reg("GeometryNodeCurveToMesh", (api) => {
   // Curve radius drives the sweep scale but is a built-in curve property, not
   // a named mesh attribute on Curve to Mesh's output.
   const railPointAttributes = [...rail.curveAttributes].filter(([name, attribute]) => attribute.domain === "POINT" && name !== "radius");
-  const profilePointAttributes = [...prof.curveAttributes].filter(([, attribute]) => attribute.domain === "POINT");
+  const profilePointAttributes = [...prof.curveAttributes].filter(([name, attribute]) => attribute.domain === "POINT" && name !== "radius");
   let flatBase = 0;
   for (const r of rail.curves) {
     const railBase = flatBase;

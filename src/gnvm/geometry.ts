@@ -1014,6 +1014,9 @@ export function toTriSoup(g: Geometry): TriSoup {
   }
   const attributes: TriSoup["attributes"] = {};
   for (const [name, attribute] of source.attributes) {
+    // Curve radius is a built-in evaluation property, not a generic mesh
+    // attribute after Blender converts the curve component.
+    if (name === "radius") continue;
     if (name.startsWith("__") || !["POINT", "FACE", "CORNER"].includes(attribute.domain)) continue;
     const itemSize: 1 | 3 = Array.isArray(attribute.data.find((value) => value !== undefined)) ? 3 : 1;
     const pointValues: Elem[] = source.positions.map(() => itemSize === 3 ? [0, 0, 0] as Vec3 : 0);

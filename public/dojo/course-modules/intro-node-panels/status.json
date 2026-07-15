@@ -19,9 +19,9 @@
     "faces": 44423,
     "triangles": 108526,
     "bbox": {
-      "min": [-2.0524024963378906, -1.9282913208007812, -5.290398597717285],
-      "max": [4.532402515411377, 0.1478186696767807, 0.4887586534023285]
+      "min": [-2.0473217964172363, -1.9282912015914917, -5.290398597717285],
+      "max": [4.527321815490723, 0.14779964089393616, 0.4884030520915985]
     }
   },
-  "validation": "Exact authored topology and matching two-panel composition. POINT-domain Delete Geometry now edits curve components, preserves the cyclic spline property, and remaps curve attributes, reproducing the rounded lower panel edges and the shared row branch. Maximum local-bounds difference is 0.0048 units from legacy curve sampling."
+  "validation": "Exact authored topology and matching two-panel composition. Blender 5.1.2 micro-references prove the Quadrilateral to Bezier, Fillet, and length-Resample chain is coordinate-exact. Realize Instances now scales the built-in curve radius before the BAR ROWS line-thickness sweep, reducing the symmetric X-bounds residual from 0.004715 to 0.000366 units; Y and Z bounds are exact."
 }
