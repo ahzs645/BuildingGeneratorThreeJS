@@ -196,8 +196,18 @@ reg("GeometryNodeCurveToPoints", (api) => {
     } else {
       result = resampleSpline(s, count);
     }
-    sampledTangents.push(sampleVectors(s, result.points, values));
-    sampledNormals.push(sampleVectors(s, result.points, normalValues));
+    // When Count preserves a poly spline's point count, Blender constructs the
+    // evaluated frame from the redistributed output polyline. Interpolating
+    // the original corner frames instead rotates Text Soup's glyph instances
+    // by an entire segment. A genuinely different sample count (32 -> 24 on
+    // the Intro emblem) still needs source-frame interpolation.
+    const keepsPointCount = result.points.length === s.points.length;
+    sampledTangents.push(sourceTangents || !keepsPointCount
+      ? sampleVectors(s, result.points, values)
+      : []);
+    sampledNormals.push(sourceNormals || !keepsPointCount
+      ? sampleVectors(s, result.points, normalValues)
+      : []);
     return result;
   });
   const out = new Geometry();

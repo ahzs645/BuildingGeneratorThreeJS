@@ -3,7 +3,7 @@
 // Run: npx tsx tools/gnvm-nodetest.ts
 import { Field, Vec3 } from "../src/gnvm/core";
 import { Geometry, Mesh, orientClosedSurface, realizeInstances, toTriSoup, topologyOf, transformPoint, triangulateFaceIndices } from "../src/gnvm/geometry";
-import { splineFrames } from "../src/gnvm/curves";
+import { resampleSpline, splineFrames } from "../src/gnvm/curves";
 import { DUMP_CONTEXT, EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
 import { Evaluator, gradientDirectionField, makeFieldCtx } from "../src/gnvm/evaluator";
 import "../src/gnvm/index"; // registers all handlers
@@ -535,6 +535,20 @@ function meshSignedAreaXY(m: Mesh): number {
     `${JSON.stringify(positions)} ${JSON.stringify(values)}`);
   check("Sample Curve applies interpolated tilt to normals",
     normals.every((normal) => approx(normal, [0, 0, 1])), JSON.stringify(normals));
+}
+
+// With an unchanged Count, Curve to Points still redistributes an irregular
+// poly spline by arc length. Blender derives rotations from that output
+// polyline, while changed-count sampling retains interpolated source frames.
+{
+  const source = curve([[0, 0, 0], [3, 0, 0], [3, 1, 0], [0, 2, 0]], true);
+  const points = runNode("GeometryNodeCurveToPoints", {
+    Curve: source, Count: 4, Length: .1,
+  }, { mode: "COUNT" }).Points as Geometry;
+  const redistributed = resampleSpline(source.curves[0], 4);
+  const expected = splineFrames(redistributed.points, redistributed.cyclic).map((frame) => frame.tangent).flat();
+  const actual = (points.mesh?.attributes.get("__curve_tangent")?.data ?? []).flat() as number[];
+  check("Curve to Points same-count frames follow the redistributed polyline", approx(actual, expected, 1e-6), JSON.stringify(actual));
 }
 
 // Imported Bezier objects retain both evaluated samples and authored controls.
