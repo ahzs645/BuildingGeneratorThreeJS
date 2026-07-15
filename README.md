@@ -1,5 +1,7 @@
 # BuildingGeneratorThreeJS
 
+The Blender-like Geometry Nodes workspace vertical slice is available at `/crayon`. See [docs/GEOMETRY_NODES_WORKSPACE.md](docs/GEOMETRY_NODES_WORKSPACE.md) for its semantic contract, reference/license review, and schema migration path.
+
 A procedural Hong Kong building generator for Three.js, ported from a Blender
 geometry-nodes setup (`procedural-hong-kong-building/source/procedural_building.blend`).
 Original model URL : https://sketchfab.com/3d-models/procedural-hong-kong-building-528a732e84c44fd49c4726f341014a23

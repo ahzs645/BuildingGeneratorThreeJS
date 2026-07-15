@@ -22,7 +22,7 @@ import "./nodes/curve-handles";
 import "./nodes/edge-paths";
 import "./nodes/surface-sampling";
 
-export { Evaluator } from "./evaluator";
+export { Evaluator, GEOMETRY_PROBE } from "./evaluator";
 export { Geometry, toTriSoup } from "./geometry";
 export type { TriSoup } from "./geometry";
 export { REGISTRY, MISSING } from "./registry";
