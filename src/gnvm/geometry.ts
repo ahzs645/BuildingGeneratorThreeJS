@@ -2,7 +2,7 @@
 // engine runs under plain node/tsx for self-tests; the browser viewer converts
 // the triangle soup to a BufferGeometry.
 
-import { Vec3, Domain, Elem, asNum, asVec3, vadd, vscale, vsub, vlen, vnorm } from "./core";
+import { Vec3, Domain, Elem, asNum, asVec3, vadd, vscale, vsub, vlen } from "./core";
 
 export interface Attribute {
   domain: Domain;
@@ -42,16 +42,7 @@ export class Mesh {
   faceNormal(fi: number): Vec3 {
     const f = this.faces[fi];
     if (f.length < 3) return [0, 0, 1];
-    // Newell's method (robust for ngons).
-    let nx = 0, ny = 0, nz = 0;
-    for (let i = 0; i < f.length; i++) {
-      const cur = this.positions[f[i]];
-      const nxt = this.positions[f[(i + 1) % f.length]];
-      nx += (cur[1] - nxt[1]) * (cur[2] + nxt[2]);
-      ny += (cur[2] - nxt[2]) * (cur[0] + nxt[0]);
-      nz += (cur[0] - nxt[0]) * (cur[1] + nxt[1]);
-    }
-    return vnorm([nx, ny, nz]);
+    return faceNormalBlenderFloat(this, f);
   }
 
   faceArea(fi: number): number {
@@ -370,7 +361,8 @@ export function invalidateMeshCaches(mesh: Mesh): void {
 
 const f32 = Math.fround;
 
-function normalizeBlenderFloat(vector: Vec3): Vec3 {
+/** Legacy C mesh normalization used while building true face normals. */
+function normalizeBlenderFloatLegacy(vector: Vec3): Vec3 {
   const x = f32(vector[0]);
   const y = f32(vector[1]);
   const z = f32(vector[2]);
@@ -381,6 +373,38 @@ function normalizeBlenderFloat(vector: Vec3): Vec3 {
   return [f32(x * inverse), f32(y * inverse), f32(z * inverse)];
 }
 
+/** Blender's C++ `math::normalize(float3)`, which divides each component. */
+function normalizeBlenderFloat(vector: Vec3): Vec3 {
+  const x = f32(vector[0]);
+  const y = f32(vector[1]);
+  const z = f32(vector[2]);
+  const lengthSquared = f32(f32(f32(x * x) + f32(y * y)) + f32(z * z));
+  const length = f32(Math.sqrt(lengthSquared));
+  if (!(length > 0)) return [0, 0, 0];
+  // Do not replace these divisions with a shared reciprocal. Although the two
+  // forms are algebraically equivalent, Blender's C++ mesh-normal path rounds
+  // each float division directly and Chrome Crayon exposes the one-ULP gap.
+  return [f32(x / length), f32(y / length), f32(z / length)];
+}
+
+function faceNormalBlenderFloat(mesh: Mesh, face: number[]): Vec3 {
+  let nx = 0, ny = 0, nz = 0;
+  // The cyclic starting edge is observable in float precision. Blender starts
+  // with last -> first and then walks the face in corner order.
+  let prev = mesh.positions[face[face.length - 1]];
+  for (let i = 0; i < face.length; i++) {
+    const cur = mesh.positions[face[i]];
+    nx = f32(nx + f32(f32(prev[1] - cur[1]) * f32(prev[2] + cur[2])));
+    ny = f32(ny + f32(f32(prev[2] - cur[2]) * f32(prev[0] + cur[0])));
+    nz = f32(nz + f32(f32(prev[0] - cur[0]) * f32(prev[1] + cur[1])));
+    prev = cur;
+  }
+  const normalized = normalizeBlenderFloatLegacy([nx, ny, nz]);
+  return normalized[0] === 0 && normalized[1] === 0 && normalized[2] === 0
+    ? [0, 0, 1]
+    : normalized;
+}
+
 /** Blender's float-only `safe_acos_approx`, used for mesh corner weights. */
 function safeAcosApproxBlenderFloat(value: number): number {
   const x = f32(value);
@@ -389,32 +413,17 @@ function safeAcosApproxBlenderFloat(value: number): number {
   // outside [-1, 1] and crush denormals using float arithmetic.
   const magnitude = absolute < 1 ? f32(1 - f32(1 - absolute)) : 1;
   let polynomial = f32(-0.02164095);
-  polynomial = f32(0.077980478 + f32(magnitude * polynomial));
-  polynomial = f32(-0.213300989 + f32(magnitude * polynomial));
-  polynomial = f32(1.5707963267 + f32(magnitude * polynomial));
+  // Each source constant is a C++ float literal. Round the constant before the
+  // addition as well as rounding the multiplication and result.
+  polynomial = f32(f32(0.077980478) + f32(magnitude * polynomial));
+  polynomial = f32(f32(-0.213300989) + f32(magnitude * polynomial));
+  polynomial = f32(f32(1.5707963267) + f32(magnitude * polynomial));
   const angle = f32(f32(Math.sqrt(f32(1 - magnitude))) * polynomial);
   return x < 0 ? f32(f32(Math.PI) - angle) : angle;
 }
 
 function computeVertexNormals(mesh: Mesh): Vec3[] {
-  const faceNormalWeights = mesh.faces.map((f) => {
-    // Blender calculates normalized Newell face normals in float precision.
-    let nx = 0, ny = 0, nz = 0;
-    for (let i = 0; i < f.length; i++) {
-      const cur = mesh.positions[f[i]];
-      const nxt = mesh.positions[f[(i + 1) % f.length]];
-      nx = f32(nx + f32(f32(cur[1] - nxt[1]) * f32(cur[2] + nxt[2])));
-      ny = f32(ny + f32(f32(cur[2] - nxt[2]) * f32(cur[0] + nxt[0])));
-      nz = f32(nz + f32(f32(cur[0] - nxt[0]) * f32(cur[1] + nxt[1])));
-    }
-    return [nx, ny, nz] as Vec3;
-  });
-  const faceNormals = faceNormalWeights.map((normal) => {
-    const normalized = normalizeBlenderFloat(normal);
-    return normalized[0] === 0 && normalized[1] === 0 && normalized[2] === 0
-      ? [0, 0, 1] as Vec3
-      : normalized;
-  });
+  const faceNormals = mesh.faces.map((face) => faceNormalBlenderFloat(mesh, face));
   const incident: number[][] = mesh.positions.map(() => []);
   // Blender's mesh point normals are corner-angle weighted. Equal face
   // weighting badly tilts a rounded n-gon rim toward its two wall quads: the

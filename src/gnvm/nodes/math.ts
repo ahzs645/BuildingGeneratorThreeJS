@@ -71,7 +71,7 @@ reg("ShaderNodeMath", (api) => {
       const result = f(num(x), num(y), num(z));
       // Float Math sockets store float32 values. ADD is especially visible in
       // generated grid dimensions, where double precision shifts every point.
-      return op === "ADD" ? Math.fround(result) : result;
+      return op === "ADD" || op === "DIVIDE" ? Math.fround(result) : result;
     }),
   };
 });
@@ -160,7 +160,14 @@ reg("ShaderNodeVectorMath", (api) => {
         Math.fround(Math.fround(u[2]) - Math.fround(v[2])),
       ] as Vec3;
     }); break;
-    case "MULTIPLY": vecOut = fieldMap([a, b], (x, y) => vmul(va(x), va(y))); break;
+    case "MULTIPLY": vecOut = fieldMap([a, b], (x, y) => {
+      const u = va(x), v = va(y);
+      return [
+        Math.fround(Math.fround(u[0]) * Math.fround(v[0])),
+        Math.fround(Math.fround(u[1]) * Math.fround(v[1])),
+        Math.fround(Math.fround(u[2]) * Math.fround(v[2])),
+      ] as Vec3;
+    }); break;
     case "DIVIDE": vecOut = fieldMap([a, b], (x, y) => { const u = va(x), v = va(y); return [v[0] ? u[0] / v[0] : 0, v[1] ? u[1] / v[1] : 0, v[2] ? u[2] / v[2] : 0] as Vec3; }); break;
     case "SCALE": vecOut = fieldMap([a, scale], (x, s) => {
       const u = va(x), factor = Math.fround(num(s));

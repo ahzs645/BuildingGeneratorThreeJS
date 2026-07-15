@@ -1571,7 +1571,12 @@ function meshSignedAreaXY(m: Mesh): number {
   m.positions = [[0.3, -0.2, 0.1], [2.1, 0.4, -0.3], [1.4, 2.2, 0.7], [-0.6, 1.1, 0.2], [0.2, 0.3, 1.9]];
   m.faces = [[0, 1, 2, 3], [0, 4, 1], [1, 4, 2], [2, 4, 3], [3, 4, 0]];
   const normals = m.vertexNormals();
-  check("vertex normals follow Blender float accumulation", approx(normals[0], [0.2710078955, 0.7997940183, 0.5356156826], 2e-7), JSON.stringify(normals[0]));
+  const blenderPointNormal = [0.27100786566734314, 0.79979407787323, 0.5356156229972839];
+  check("vertex normals follow Blender float accumulation",
+    normals[0].every((value, i) => Object.is(value, blenderPointNormal[i])), JSON.stringify(normals[0]));
+  const blenderFaceNormal = [0.10252531617879868, -0.2852306663990021, 0.9529596567153931];
+  check("face normals follow Blender float Newell order",
+    m.faceNormal(0).every((value, i) => Object.is(value, blenderFaceNormal[i])), JSON.stringify(m.faceNormal(0)));
 
   const loose = new Mesh();
   loose.positions = [[3, 4, 0]];
@@ -2227,6 +2232,21 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Logarithm evaluates valid real domain", Math.abs((validLog.value as number) - 3) < 1e-6, `value=${validLog.value}`);
   check("Logarithm zeroes invalid real domains", negativeLog.value === 0 && invalidBaseLog.value === 0,
     `negative=${negativeLog.value} base=${invalidBaseLog.value}`);
+  const divide = runNode("ShaderNodeMath", {
+    Value: 20.80218505859375,
+    Value_001: 100,
+    Value_002: 0,
+  }, { operation: "DIVIDE" }).Value as Field;
+  check("Math Divide stores Blender float32 output",
+    Object.is(divide.value, 0.2080218493938446), `value=${divide.value}`);
+  const multiply = runNode("ShaderNodeVectorMath", {
+    Vector: [-0.32352685928344727, -0.1122373640537262, 0.9395387768745422],
+    Vector_001: [0.2080218493938446, 0.2080218493938446, 0.2080218493938446],
+  }, { operation: "MULTIPLY" }).Vector as Field;
+  const multiplied = multiply.value as number[];
+  const blenderMultiply = [-0.06730065494775772, -0.023347824811935425, 0.19544459879398346];
+  check("Vector Multiply stores Blender float32 components",
+    multiplied.every((value, i) => Object.is(value, blenderMultiply[i])), JSON.stringify(multiplied));
   const unk = runNode("ShaderNodeVectorMath", { Vector: [1, 2, 3], Vector_001: [10, 20, 30] }, { operation: "NOT_A_REAL_OP" }).Vector as Field;
   const got = unk.value as number[];
   check("unknown VectorMath does not ADD", !approx(got, [11, 22, 33]) && approx(got, [1, 2, 3]), JSON.stringify(got));
