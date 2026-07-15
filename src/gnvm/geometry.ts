@@ -870,6 +870,15 @@ export interface TriSoup {
   }>;
   groups: { start: number; count: number; material: string | null }[]; // per material slot
   stats: { verts: number; faces: number; tris: number };
+  /**
+   * Optional curve-only display payload. These evaluated polyline segments are
+   * deliberately separate from the indexed mesh arrays so a visible browser
+   * wire never inflates Blender-compatible mesh vertex/face statistics.
+   */
+  lines?: {
+    positions: Float32Array; // duplicated xyz endpoints, two per segment
+    stats: { controlPoints: number; evaluatedPoints: number; segments: number; splines: number };
+  };
 }
 
 /**
@@ -1126,6 +1135,31 @@ export function toTriSoup(g: Geometry): TriSoup {
     }
     attributes[name] = { itemSize, data, domain: attribute.domain as "POINT" | "FACE" | "CORNER", domainData };
   }
+  const linePositions: number[] = [];
+  let controlPoints = 0;
+  let evaluatedPoints = 0;
+  let lineSplines = 0;
+  for (const spline of realized.curves) {
+    controlPoints += spline.controlPoints?.length ?? spline.points.length;
+    evaluatedPoints += spline.points.length;
+    if (spline.points.length < 2) continue;
+    lineSplines++;
+    const segmentCount = spline.points.length - 1 + (spline.cyclic ? 1 : 0);
+    for (let segment = 0; segment < segmentCount; segment++) {
+      const a = spline.points[segment];
+      const b = spline.points[(segment + 1) % spline.points.length];
+      linePositions.push(a[0], a[1], a[2], b[0], b[1], b[2]);
+    }
+  }
+  const lines: TriSoup["lines"] = linePositions.length ? {
+    positions: new Float32Array(linePositions),
+    stats: {
+      controlPoints,
+      evaluatedPoints,
+      segments: linePositions.length / 6,
+      splines: lineSplines,
+    },
+  } : undefined;
   return {
     positions,
     normals: normArr,
@@ -1134,5 +1168,6 @@ export function toTriSoup(g: Geometry): TriSoup {
     attributes,
     groups,
     stats: { verts: mesh.positions.length, faces: mesh.faces.length, tris: triCount },
+    lines,
   };
 }

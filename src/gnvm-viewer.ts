@@ -90,7 +90,22 @@ function soupToMesh(dump: Dump, soup: TriSoup): THREE.Mesh {
     mats.push(materialFor(dump, g.material));
   });
   if (!soup.groups.length) mats.push(materialFor(dump, null));
-  return new THREE.Mesh(geo, mats.length > 1 ? mats : mats[0]);
+  const mesh = new THREE.Mesh(geo, mats.length > 1 ? mats : mats[0]);
+  if (soup.lines) {
+    const wireGeometry = new THREE.BufferGeometry();
+    wireGeometry.setAttribute("position", new THREE.BufferAttribute(soup.lines.positions, 3));
+    mesh.add(new THREE.LineSegments(wireGeometry, new THREE.LineBasicMaterial({ color: 0xd9e7ff })));
+  }
+  return mesh;
+}
+
+function disposeObject(root: THREE.Object3D): void {
+  root.traverse((child) => {
+    if (!(child instanceof THREE.Mesh || child instanceof THREE.LineSegments)) return;
+    child.geometry.dispose();
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    for (const material of materials) material.dispose();
+  });
 }
 
 let current: THREE.Mesh | null = null;
@@ -152,7 +167,7 @@ async function main() {
     const ms = (performance.now() - t0).toFixed(0);
     if (current) {
       scene.remove(current);
-      (current.geometry as THREE.BufferGeometry).dispose();
+      disposeObject(current);
     }
     current = soupToMesh(dump, res.soup);
     current.rotation.x = -Math.PI / 2; // Blender Z-up -> three.js Y-up
@@ -161,6 +176,7 @@ async function main() {
     const missing = res.coverage.missingTypes.length;
     statEl.innerHTML =
       `<span class="ok">${res.soup.stats.verts.toLocaleString()} verts / ${res.soup.stats.tris.toLocaleString()} tris</span> · ` +
+      (res.soup.lines ? `${res.soup.lines.stats.controlPoints.toLocaleString()} curve points / ${res.soup.lines.stats.segments.toLocaleString()} wire segments · ` : "") +
       `${ms} ms · ${res.coverage.handled} handlers · ` +
       (missing ? `<span class="warn">${missing} node types via fallback</span>` : `<span class="ok">100% coverage</span>`);
   }

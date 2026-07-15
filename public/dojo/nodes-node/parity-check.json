@@ -1,0 +1,36 @@
+{
+  "target": {
+    "id": "nodes-node-check",
+    "object": "check",
+    "root": "Geometry Nodes.013"
+  },
+  "blenderReference": "references/check-blender.json",
+  "meshStats": {
+    "verts": 0,
+    "faces": 0,
+    "tris": 0
+  },
+  "curve": {
+    "splines": 1,
+    "controlPoints": 3,
+    "evaluatedPoints": 25,
+    "wireSegments": 24,
+    "cyclic": false
+  },
+  "localBounds": {
+    "min": [-0.022244, 0, -0.343651],
+    "max": [0.943155, 0, 0.448483]
+  },
+  "objectLocation": [8.873939514160156, -0.15665845572948456, 9.094704627990723],
+  "worldBounds": {
+    "min": [8.851695513352752, -0.15665845572948456, 8.751053631305695],
+    "max": [9.817094504833221, -0.15665845572948456, 9.543187618255615]
+  },
+  "worldBoundsMaxError": 4.76837158203125e-7,
+  "result": "exact-viewport-wire",
+  "browserVerification": {
+    "route": "/chrome-assets?asset=nodes-node-check",
+    "result": "The in-app WebGL preview displays the V-shaped 24-segment wire, reports 0 mesh vertices / 0 faces / 3 curve points, and logs no browser warning or error."
+  },
+  "note": "The optional line payload is display-only. It preserves the evaluated curve as a Blender-style editable viewport wire without adding its endpoints to TriSoup mesh vertex or face statistics. The supplied offline Blender render is blank because the raw curve has no beveled surface."
+}

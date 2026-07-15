@@ -40,17 +40,22 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
         attributes: result.soup.attributes,
         groups: result.soup.groups,
         stats: result.soup.stats,
+        lines: result.soup.lines,
       },
       coverage: result.coverage,
       probeSoup: probeSoup ? transferableSoup(probeSoup) : undefined,
     };
     const transfer: Transferable[] = [result.soup.positions.buffer, result.soup.normals.buffer, result.soup.indices.buffer];
     if (result.soup.triangleFaces) transfer.push(result.soup.triangleFaces.buffer);
+    if (result.soup.lines) transfer.push(result.soup.lines.positions.buffer);
     for (const attribute of Object.values(result.soup.attributes)) {
       transfer.push(attribute.data.buffer);
       if (attribute.domainData) transfer.push(attribute.domainData.buffer);
     }
-    if (probeSoup) transfer.push(probeSoup.positions.buffer, probeSoup.normals.buffer, probeSoup.indices.buffer);
+    if (probeSoup) {
+      transfer.push(probeSoup.positions.buffer, probeSoup.normals.buffer, probeSoup.indices.buffer);
+      if (probeSoup.lines) transfer.push(probeSoup.lines.positions.buffer);
+    }
     scope.postMessage(payload, {
       transfer,
     });
@@ -77,5 +82,6 @@ function transferableSoup(soup: TriSoup): TriSoup {
     groups: soup.groups,
     stats: soup.stats,
     attributes: soup.attributes,
+    lines: soup.lines,
   };
 }

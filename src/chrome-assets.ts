@@ -28,7 +28,7 @@ type VectorControl = { type: "vector"; name: string; label: string; value: [numb
 type SelectControl = { type: "select"; name: string; label: string; value: number | string; options: { label: string; value: number | string }[] };
 type Control = RangeControl | CheckboxControl | TextControl | VectorControl | SelectControl;
 type AssetFont = { url: string; family: string; requiredFor: string; fallback: string };
-type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; blenderStats: { verts: number; faces: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; controls: Control[] };
+type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; blenderStats: { verts: number; faces: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; controls: Control[] };
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
@@ -139,9 +139,25 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
   }
   if(!materials.length)materials.push(diagnosticMaterial());
   const mesh = new THREE.Mesh(geometry, materials.length===1?materials[0]:materials);
+  if (soup.lines) {
+    const wireGeometry = new THREE.BufferGeometry();
+    wireGeometry.setAttribute("position", new THREE.BufferAttribute(soup.lines.positions, 3));
+    const wireColor = current.workbenchColor
+      ? new THREE.Color().setRGB(...current.workbenchColor)
+      : new THREE.Color(0xd9e7ff);
+    mesh.add(new THREE.LineSegments(wireGeometry, new THREE.LineBasicMaterial({ color: wireColor })));
+  }
   if (!current.localSpace && source?.rotation) mesh.rotation.set(Number(source.rotation[0] ?? 0), Number(source.rotation[1] ?? 0), Number(source.rotation[2] ?? 0));
   if (!current.localSpace && source?.scale) mesh.scale.set(Number(source.scale[0] ?? 1), Number(source.scale[1] ?? 1), Number(source.scale[2] ?? 1));
   return mesh;
+}
+function disposeObject(root: THREE.Object3D): void {
+  root.traverse((child) => {
+    if (!(child instanceof THREE.Mesh || child instanceof THREE.LineSegments)) return;
+    child.geometry.dispose();
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    for (const disposable of materials) disposable.dispose();
+  });
 }
 async function prepareFont(asset: Asset): Promise<void> {
   const font=asset.font;
@@ -155,7 +171,7 @@ async function prepareFont(asset: Asset): Promise<void> {
   fontStatus.style.fontFamily=loaded?`"${font.family}", ui-monospace, monospace`:"";
   fontStatus.textContent=loaded?`${font.family} TTF loaded · GN geometry uses its extracted outlines.`:`${font.family} TTF unavailable · ${font.fallback}`;
 }
-async function evaluate(): Promise<void> { const id=++requestId; status.classList.remove("ready");status.textContent="Evaluating extracted graph…";const started=performance.now();const worker=new Worker(new URL("./blend-import-worker.ts",import.meta.url),{type:"module",name:"chrome-assets"});const result=await new Promise<Reply>((resolve,reject)=>{worker.onmessage=(event:MessageEvent<Reply>)=>resolve(event.data);worker.onerror=(event)=>reject(new Error(event.message));worker.postMessage({id,dump,object:current.object,overrides:overrides()});});worker.terminate();if(!result.ok)throw new Error(result.error);if(result.id<appliedId)return;appliedId=result.id;model.clear();model.add(makeMesh(result.soup));frame();vmCount.textContent=`${result.soup.stats.verts.toLocaleString()} verts · ${result.soup.stats.faces.toLocaleString()} faces`;runtime.textContent=`${((performance.now()-started)/1000).toFixed(2)}s · ${current.object}`;const exact=result.soup.stats.verts===current.blenderStats.verts&&result.soup.stats.faces===current.blenderStats.faces;status.classList.toggle("ready",exact);status.textContent=exact?"Topology counts match Blender":current.note??"Geometry differs from Blender reference"; }
+async function evaluate(): Promise<void> { const id=++requestId; status.classList.remove("ready");status.textContent="Evaluating extracted graph…";const started=performance.now();const worker=new Worker(new URL("./blend-import-worker.ts",import.meta.url),{type:"module",name:"chrome-assets"});const result=await new Promise<Reply>((resolve,reject)=>{worker.onmessage=(event:MessageEvent<Reply>)=>resolve(event.data);worker.onerror=(event)=>reject(new Error(event.message));worker.postMessage({id,dump,object:current.object,overrides:overrides()});});worker.terminate();if(!result.ok)throw new Error(result.error);if(result.id<appliedId)return;appliedId=result.id;for(const child of [...model.children])disposeObject(child);model.clear();model.add(makeMesh(result.soup));frame();const lineStats=result.soup.lines?.stats;vmCount.textContent=`${result.soup.stats.verts.toLocaleString()} verts · ${result.soup.stats.faces.toLocaleString()} faces${lineStats?` · ${lineStats.controlPoints.toLocaleString()} curve points · ${lineStats.segments.toLocaleString()} wire segments`:""}`;runtime.textContent=`${((performance.now()-started)/1000).toFixed(2)}s · ${current.object}`;const curveExact=Boolean(current.curveStats&&lineStats&&result.soup.stats.verts===0&&result.soup.stats.faces===current.blenderStats.faces&&lineStats.controlPoints===current.curveStats.controlPoints&&(current.curveStats.evaluatedPoints===undefined||lineStats.evaluatedPoints===current.curveStats.evaluatedPoints)&&(current.curveStats.segments===undefined||lineStats.segments===current.curveStats.segments));const exact=current.curveStats?curveExact:result.soup.stats.verts===current.blenderStats.verts&&result.soup.stats.faces===current.blenderStats.faces;status.classList.toggle("ready",exact);status.textContent=exact?(current.curveStats?"Curve control points match Blender":"Topology counts match Blender"):current.note??"Geometry differs from Blender reference"; }
 function queue(): void { clearTimeout(timer);timer=window.setTimeout(()=>void evaluate().catch((error)=>status.textContent=String(error)),100); }
 async function choose(): Promise<void> {
   current=catalog.find((item)=>item.id===select.value)??catalog[0];const asset=current;

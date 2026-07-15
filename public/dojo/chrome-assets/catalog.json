@@ -1158,9 +1158,10 @@
     "shaderMetadata": "dojo/nodes-node/shader-metadata.json",
     "reference": "dojo/references/nodes-node/check.png",
     "blenderStats": { "verts": 3, "faces": 0 },
+    "curveStats": { "controlPoints": 3, "evaluatedPoints": 25, "segments": 24 },
     "localSpace": true,
     "workbenchColor": [0.8, 0.8, 0.8],
-    "note": "Exact structural helper: Blender retains a three-point curve and the browser retains no renderable surface. It is included because it is a distinct active modifier root, not because it produces a visible mesh.",
+    "note": "Exact viewport-curve helper: Blender retains three authored Bézier controls and the browser displays their 25-point evaluated wire (24 segments) without counting the line as mesh topology. World bounds match Blender within 0.000001 units. The supplied offline Blender render remains blank because this raw curve has no beveled surface; the browser line intentionally represents Blender's editable viewport wire.",
     "controls": []
   },
   {
