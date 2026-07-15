@@ -8,9 +8,9 @@
     "faces": 97776
   },
   "gnvm": {
-    "verts": 97448,
-    "faces": 97448
+    "verts": 97779,
+    "faces": 97778
   },
   "coverage": "100% of reachable node types across the 22-group, 559-node closure.",
-  "validation": "The authored 3D surface is visually aligned with a -0.34% vertex delta and 0.2402-unit maximum bound difference after honoring the full 665-pass Sigilize blur. Flattened mode has an exact face count at 46,866 and -0.35% vertex delta. Browser evaluation takes about 37 seconds for the dense authored surface."
+  "validation": "The Marching Squares join is topology-exact before welding at 59,872 vertices / 46,866 faces. Its inner Merge by Distance produces 48,891 / 46,866 versus Blender's 48,896 / 46,866, leaving only five vertices of weld partitioning while preserving every base face. The authored extruded output is 97,779 / 97,778 versus Blender's 97,784 / 97,776, with a 0.0649-unit maximum bounds difference after all 665 Sigilize passes."
 }
