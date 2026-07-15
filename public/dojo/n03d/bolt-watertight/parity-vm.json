@@ -2,7 +2,7 @@
   "source": "gnvm",
   "object": "Bolt Gen_DHTS_Thru Head v03.003",
   "node_group": "BOLT GEN DHTS v03_Thru Head_1JUL2024.005",
-  "evaluation_ms": 144828,
+  "evaluation_ms": 181416,
   "result": {
     "verts": 16220,
     "faces": 16222,

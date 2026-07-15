@@ -476,6 +476,29 @@ type Triangle = { a: Vec3; b: Vec3; c: Vec3; normal: Vec3 };
 type Hit = { hit: number; position: Vec3; normal: Vec3; distance: number };
 type TriangleBvh = { min: Vec3; max: Vec3; left?: TriangleBvh; right?: TriangleBvh; triangles?: Triangle[] };
 
+/** Blender's float3 normalize path stores the dot, sqrt and divisions as float32. */
+export function normalizeBlenderFloat3(value: Vec3): Vec3 {
+  const f = Math.fround;
+  const vector = value.map(f) as Vec3;
+  let lengthSquared = f(vector[0] * vector[0]);
+  lengthSquared = f(lengthSquared + f(vector[1] * vector[1]));
+  lengthSquared = f(lengthSquared + f(vector[2] * vector[2]));
+  if (!(lengthSquared > 1e-35)) return [0, 0, 0];
+  const length = f(Math.sqrt(lengthSquared));
+  return [f(vector[0] / length), f(vector[1] / length), f(vector[2] / length)];
+}
+
+function blenderTriangleNormal(a: Vec3, b: Vec3, c: Vec3): Vec3 {
+  const f = Math.fround;
+  const ab: Vec3 = [f(b[0] - a[0]), f(b[1] - a[1]), f(b[2] - a[2])];
+  const ac: Vec3 = [f(c[0] - a[0]), f(c[1] - a[1]), f(c[2] - a[2])];
+  return normalizeBlenderFloat3([
+    f(f(ab[1] * ac[2]) - f(ab[2] * ac[1])),
+    f(f(ab[2] * ac[0]) - f(ab[0] * ac[2])),
+    f(f(ab[0] * ac[1]) - f(ab[1] * ac[0])),
+  ]);
+}
+
 function triangleBounds(triangle: Triangle): { min: Vec3; max: Vec3; center: Vec3 } {
   const min: Vec3 = [Math.min(triangle.a[0], triangle.b[0], triangle.c[0]), Math.min(triangle.a[1], triangle.b[1], triangle.c[1]), Math.min(triangle.a[2], triangle.b[2], triangle.c[2])];
   const max: Vec3 = [Math.max(triangle.a[0], triangle.b[0], triangle.c[0]), Math.max(triangle.a[1], triangle.b[1], triangle.c[1]), Math.max(triangle.a[2], triangle.b[2], triangle.c[2])];
@@ -533,21 +556,50 @@ function rayBvh(origin: Vec3, direction: Vec3, maxDistance: number, root?: Trian
   return best;
 }
 function rayTriangle(origin: Vec3, direction: Vec3, maxDistance: number, tri: Triangle): Hit | null {
-  const e1 = vsub(tri.b, tri.a), e2 = vsub(tri.c, tri.a);
-  const h = vcross(direction, e2);
-  const det = vdot(e1, h);
-  if (Math.abs(det) < 1e-9) return null;
-  const inv = 1 / det;
-  const s = vsub(origin, tri.a);
-  const u = inv * vdot(s, h);
-  const barycentricEpsilon = 1e-9;
-  if (u < -barycentricEpsilon || u > 1 + barycentricEpsilon) return null;
-  const q = vcross(s, e1);
-  const v = inv * vdot(direction, q);
-  if (v < -barycentricEpsilon || u + v > 1 + barycentricEpsilon) return null;
-  const distance = inv * vdot(e2, q);
-  if (distance < 0 || distance > maxDistance) return null;
-  return { hit: 1, position: vadd(origin, vscale(direction, distance)), normal: tri.normal, distance };
+  const f = Math.fround;
+  const rayOrigin = origin.map(f) as Vec3;
+  const rayDirection = direction.map(f) as Vec3;
+  let kz = 0;
+  if (Math.abs(rayDirection[1]) > Math.abs(rayDirection[kz])) kz = 1;
+  if (Math.abs(rayDirection[2]) > Math.abs(rayDirection[kz])) kz = 2;
+  if (rayDirection[kz] === 0) return null;
+  let kx = kz !== 2 ? kz + 1 : 0;
+  let ky = kx !== 2 ? kx + 1 : 0;
+  if (rayDirection[kz] < 0) [kx, ky] = [ky, kx];
+  const inverseDirectionZ = f(1 / rayDirection[kz]);
+  const shearX = f(rayDirection[kx] * inverseDirectionZ);
+  const shearY = f(rayDirection[ky] * inverseDirectionZ);
+  const relative = (point: Vec3): Vec3 => [
+    f(f(point[0]) - rayOrigin[0]),
+    f(f(point[1]) - rayOrigin[1]),
+    f(f(point[2]) - rayOrigin[2]),
+  ];
+  const a = relative(tri.a), b = relative(tri.b), c = relative(tri.c);
+  const ax = f(a[kx] - f(shearX * a[kz])), ay = f(a[ky] - f(shearY * a[kz]));
+  const bx = f(b[kx] - f(shearX * b[kz])), by = f(b[ky] - f(shearY * b[kz]));
+  const cx = f(c[kx] - f(shearX * c[kz])), cy = f(c[ky] - f(shearY * c[kz]));
+  const u = f(f(cx * by) - f(cy * bx));
+  const v = f(f(ax * cy) - f(ay * cx));
+  const w = f(f(bx * ay) - f(by * ax));
+  if ((u < 0 || v < 0 || w < 0) && (u > 0 || v > 0 || w > 0)) return null;
+  const determinant = f(f(u + v) + w);
+  if (determinant === 0 || !Number.isFinite(determinant)) return null;
+  const scaledDistance = f(f(f(f(u * a[kz]) + f(v * b[kz])) + f(w * c[kz])) * inverseDirectionZ);
+  if ((determinant < 0 ? -scaledDistance : scaledDistance) < 0) return null;
+  const distance = f(scaledDistance * f(1 / determinant));
+  if (distance > f(maxDistance)) return null;
+  const position: Vec3 = [
+    f(rayOrigin[0] + f(rayDirection[0] * distance)),
+    f(rayOrigin[1] + f(rayDirection[1] * distance)),
+    f(rayOrigin[2] + f(rayDirection[2] * distance)),
+  ];
+  return { hit: 1, position, normal: tri.normal, distance };
+}
+
+/** Focused public hook for float32/watertight ray precision regression tests. */
+export function blenderRaycastTriangleForTest(origin: Vec3, direction: Vec3, maxDistance: number, a: Vec3, b: Vec3, c: Vec3): Hit | null {
+  const triangle = { a, b, c, normal: blenderTriangleNormal(a, b, c) };
+  return rayTriangle(origin, normalizeBlenderFloat3(direction), maxDistance, triangle);
 }
 
 function pointSegmentDistance2D(point: Vec3, a: Vec3, b: Vec3): number {
@@ -569,8 +621,10 @@ reg("GeometryNodeRaycast", (api) => {
   if (target.instances.length) target = realizeInstances(target);
   const triangles: Triangle[] = [];
   if (target.mesh) for (const face of target.mesh.faces) for (const [ai, bi, ci] of triangulateFaceIndices(target.mesh, face)) {
-    const a = target.mesh.positions[ai], b = target.mesh.positions[bi], c = target.mesh.positions[ci];
-    triangles.push({ a, b, c, normal: vnorm(vcross(vsub(b, a), vsub(c, a))) });
+    const a = target.mesh.positions[ai].map(Math.fround) as Vec3;
+    const b = target.mesh.positions[bi].map(Math.fround) as Vec3;
+    const c = target.mesh.positions[ci].map(Math.fround) as Vec3;
+    triangles.push({ a, b, c, normal: blenderTriangleNormal(a, b, c) });
   }
   const bvh = triangleBvh(triangles);
   const sourcePosition = api.field("Source Position");
@@ -581,9 +635,10 @@ reg("GeometryNodeRaycast", (api) => {
     const cached = cache.get(ctx);
     if (cached) return cached;
     const positionLinked = api.node.inputs.find((s) => s.identifier === "Source Position")?.linked;
-    const origins = positionLinked ? sourcePosition.array(ctx).map(asVec3) : Array.from({ length: ctx.size }, (_, i) => ctx.position?.(i) ?? [0, 0, 0] as Vec3);
-    const dirs = rayDirection.array(ctx).map((v) => vnorm(asVec3(v)));
-    const lengths = rayLength.array(ctx).map((v) => Math.max(0, asNum(v)));
+    const origins = (positionLinked ? sourcePosition.array(ctx).map(asVec3) : Array.from({ length: ctx.size }, (_, i) => ctx.position?.(i) ?? [0, 0, 0] as Vec3))
+      .map((origin) => origin.map(Math.fround) as Vec3);
+    const dirs = rayDirection.array(ctx).map((v) => normalizeBlenderFloat3(asVec3(v)));
+    const lengths = rayLength.array(ctx).map((v) => Math.fround(Math.max(0, asNum(v))));
     const result: Hit[] = origins.map((origin, i) => {
       return rayBvh(origin, dirs[i] ?? [0, 0, 1], lengths[i] ?? 100, bvh)
         ?? { hit: 0, position: origin, normal: [0, 0, 0] as Vec3, distance: 0 };
