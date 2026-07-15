@@ -22,16 +22,33 @@
     "viewTransform": "AgX Medium High Contrast",
     "filmTransparent": true
   },
+  "workbenchApproximationContract": {
+    "implementation": "scene-light-independent view-space-normal ShaderMaterial",
+    "sourceColorSpace": "sRGB",
+    "targetSrgbLuminance": { "topAndLeft": 0.504, "screenRight": 0.227 },
+    "toneMapped": false,
+    "cavityParity": false
+  },
   "authoredCaptureComparison": {
     "viewport": [570, 570],
-    "maskIoU": 0.9792,
-    "intersectionPixels": 263866,
-    "unionPixels": 269470,
-    "luminanceMAE": 0.28199,
-    "browserMeanLuminance": 0.14083,
-    "blenderMeanLuminance": 0.40344,
-    "luminanceCorrelation": -0.08043
+    "before": {
+      "maskIoU": 0.9792,
+      "luminanceMAE": 0.28199,
+      "browserMeanLuminance": 0.14083,
+      "blenderMeanLuminance": 0.40344,
+      "luminanceCorrelation": -0.08043
+    },
+    "workbenchApproximation": {
+      "maskIoU": 0.97966,
+      "intersectionPixels": 263921,
+      "unionPixels": 269401,
+      "luminanceMAE": 0.02515,
+      "browserMeanLuminance": 0.41582,
+      "blenderMeanLuminance": 0.40353,
+      "luminanceCorrelation": 0.99287
+    },
+    "luminanceMAEReduction": 0.91081
   },
-  "result": "exact geometry and strong camera silhouette; WebGL Workbench lighting remains an explicit approximation",
-  "note": "Blender Workbench's studio light, cavity pass, and AgX raster are not reproduced by Three.js PBR. The standard gallery is too bright; the authored-capture mode is too dark. No pixel-parity claim is made."
+  "result": "exact geometry and strong camera silhouette; the explicit WebGL Workbench approximation materially improves face luminance",
+  "note": "The ShaderMaterial approximates Blender's neutral studio lobes from view-space normals and does not depend on scene lights. Blender Workbench cavity/AO, shadows, specular, and AgX raster are not reproduced, so no exact pixel-parity claim is made."
 }

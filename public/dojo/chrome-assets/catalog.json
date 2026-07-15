@@ -1174,7 +1174,7 @@
     "blenderStats": { "verts": 8, "faces": 6 },
     "localSpace": true,
     "workbenchColor": [0.8, 0.8, 0.8],
-    "note": "Exact source geometry: 8 vertices / 6 faces and local bounds [-1, -1, -1] to [1, 1, 1] in Blender and the browser. The fixed-camera silhouette reaches 0.9792 IoU, but Three.js does not yet reproduce Blender Workbench's studio/cavity raster; material lighting remains explicitly approximate.",
+    "note": "Exact source geometry: 8 vertices / 6 faces and local bounds [-1, -1, -1] to [1, 1, 1] in Blender and the browser. The scene-light-independent Workbench approximation reaches 0.97966 mask IoU, 0.02515 luminance MAE, and 0.99287 luminance correlation against the fixed Blender reference. Blender cavity/AO, shadows, specular, and AgX raster are not reproduced; this remains explicitly approximate.",
     "controls": []
   },
   {

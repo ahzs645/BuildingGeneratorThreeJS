@@ -14,7 +14,7 @@
   },
   "variants": [
     { "id": "nodes-node-check", "object": "check", "root": "Geometry Nodes.013", "nodes": 2, "status": "exact-viewport-wire", "blender": { "curveControlPoints": 3, "faces": 0 }, "gnvm": { "meshVerts": 0, "faces": 0, "curveControlPoints": 3, "evaluatedPoints": 25, "wireSegments": 24 }, "worldBoundsMaxError": 4.76837158203125e-7 },
-    { "id": "nodes-node-source-cube", "object": "Cube.002", "root": "Geometry Nodes.006", "nodes": 9, "status": "exact-geometry-workbench-approx", "blender": { "verts": 8, "faces": 6 }, "gnvm": { "verts": 8, "faces": 6 }, "render": { "maskIoU": 0.9792, "luminanceMAE": 0.28199 } },
+    { "id": "nodes-node-source-cube", "object": "Cube.002", "root": "Geometry Nodes.006", "nodes": 9, "status": "exact-geometry-workbench-approx", "blender": { "verts": 8, "faces": 6 }, "gnvm": { "verts": 8, "faces": 6 }, "render": { "maskIoU": 0.97966, "luminanceMAE": 0.02515, "luminanceCorrelation": 0.99287, "cavityParity": false } },
     { "id": "nodes-node-base-plate", "object": "Plane", "root": "Geometry Nodes.007", "nodes": 11, "status": "exact", "blender": { "verts": 47652, "faces": 2813 }, "gnvm": { "verts": 47652, "faces": 2813 } },
     { "id": "nodes-node-noodle-pair", "object": "Point.001", "root": "Geometry Nodes.011", "nodes": 16, "status": "exact", "blender": { "verts": 4736, "faces": 4672 }, "gnvm": { "verts": 4736, "faces": 4672 } },
     { "id": "nodes-node-stamp-guide", "object": "STAMP.001", "root": "_Stamp Tool", "nodes": 76, "status": "exact-wire-only", "blender": { "verts": 490, "faces": 0 }, "gnvm": { "verts": 490, "faces": 0 } },

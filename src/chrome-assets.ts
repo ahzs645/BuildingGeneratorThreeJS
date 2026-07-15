@@ -20,6 +20,7 @@ import { makePackedStickerMaterial } from "./packed-sticker-material";
 import { makeVtextMaterial } from "./vtext-material";
 import { makeHatStitchMaterial } from "./hat-stitch-material";
 import { makeAttributeColorEmissionMaterial } from "./attribute-color-emission-material";
+import { makeWorkbenchApproximationMaterial, shouldUseWorkbenchApproximation } from "./workbench-approx-material";
 
 type RangeControl = { type?: "range"; name: string; label: string; min: number; max: number; step: number; value: number };
 type CheckboxControl = { type: "checkbox"; name: string; label: string; value: boolean };
@@ -106,12 +107,15 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
   const previewMode=document.querySelector<HTMLSelectElement>('[data-control="__materialPreview"]')?.value;
   const useAuthored=previewMode!=="diagnostic";
   const source = (dump.objects as any[] | undefined)?.find((object) => object.name === current.object);
+  const sourceMaterials = Array.isArray(source?.materials) ? source.materials as Array<string | null | undefined> : undefined;
   const materials: THREE.Material[]=[];
   if(useAuthored&&current.material==="chain-mace")attachChainMaceRoughnessAttribute(geometry,soup.groups);
   if(useAuthored&&soup.groups.length){
     for(const group of soup.groups){
       const materialName=group.material??(current.material==="chain-mace"?soup.groups.find((candidate)=>candidate.material)?.material:"")??"";
-      const authored=current.material==="image-pixel-stippler"
+      const authored=shouldUseWorkbenchApproximation(current.workbenchColor,sourceMaterials,materialName)
+        ? makeWorkbenchApproximationMaterial(current.workbenchColor)
+        : current.material==="image-pixel-stippler"
         ? makeImagePixelStipplerMaterial(dump,geometry,group.material??"")
         : current.material==="chain-mace"
           ? makeChainMaceMaterial(dump,geometry,materialName)
@@ -137,7 +141,11 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
       materials.push(authored??diagnosticMaterial());
     }
   }
-  if(!materials.length)materials.push(diagnosticMaterial());
+  if(!materials.length)materials.push(
+    useAuthored&&shouldUseWorkbenchApproximation(current.workbenchColor,sourceMaterials,null)
+      ? makeWorkbenchApproximationMaterial(current.workbenchColor)
+      : diagnosticMaterial(),
+  );
   const mesh = new THREE.Mesh(geometry, materials.length===1?materials[0]:materials);
   if (soup.lines) {
     const wireGeometry = new THREE.BufferGeometry();
