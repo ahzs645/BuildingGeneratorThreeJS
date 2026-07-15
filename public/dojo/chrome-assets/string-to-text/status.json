@@ -2,11 +2,11 @@
   "id": "string-to-text",
   "object": "Vert.001",
   "root": "Dojo_STRING TO TEXT",
-  "status": "near-parity",
-  "reason": "The packed SF Intermosaic outlines, authored 20-face output, curve-only mode, empty mode, reset behavior, local bounds, and all 119 reachable node handlers now match Blender. The VM omits Blender's 24 loose/bookkeeping vertices in the authored fill output.",
+  "status": "exact-parity",
+  "reason": "FACE-domain Split to Instances now evaluates Selection and Group ID like Blender, so each filled glyph face receives its own instance payload and shared boundary vertices are duplicated on realization.",
   "blender": { "verts": 246, "faces": 20 },
-  "gnvm": { "verts": 222, "faces": 20 },
-  "validation": "Thirteen Blender/browser cases cover editable text, size, alignment, character and line spacing, word wrapping, all fill modes, and reset-letter behavior. Rounded local bounds now match in every case; surface vertex deltas stay at or below 14.93% solely because Blender retains loose fill bookkeeping vertices.",
+  "gnvm": { "verts": 246, "faces": 20 },
+  "validation": "All thirteen Blender/browser cases exactly match in vertex count, face count, and rounded local bounds. The sweep covers editable text, size, alignment, character and line spacing, word wrapping, all fill modes, and reset-letter behavior.",
   "portableDump": "dojo/chrome-assets/string-to-text/dump.json",
   "reference": "dojo/references/chrome-assets/string-to-text.png"
 }

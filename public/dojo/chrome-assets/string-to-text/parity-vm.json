@@ -9,7 +9,7 @@
         "overrides": {}
       },
       "status": "ok",
-      "verts": 222,
+      "verts": 246,
       "faces": 20,
       "bbox": {
         "min": [
@@ -23,7 +23,7 @@
           0
         ]
       },
-      "elapsed_ms": 27
+      "elapsed_ms": 24
     },
     {
       "combo": {
@@ -33,7 +33,7 @@
         }
       },
       "status": "ok",
-      "verts": 114,
+      "verts": 134,
       "faces": 13,
       "bbox": {
         "min": [
@@ -47,7 +47,7 @@
           0
         ]
       },
-      "elapsed_ms": 2
+      "elapsed_ms": 3
     },
     {
       "combo": {
@@ -57,7 +57,7 @@
         }
       },
       "status": "ok",
-      "verts": 222,
+      "verts": 246,
       "faces": 20,
       "bbox": {
         "min": [
@@ -71,7 +71,7 @@
           0
         ]
       },
-      "elapsed_ms": 3
+      "elapsed_ms": 4
     },
     {
       "combo": {
@@ -81,7 +81,7 @@
         }
       },
       "status": "ok",
-      "verts": 222,
+      "verts": 246,
       "faces": 20,
       "bbox": {
         "min": [
@@ -105,7 +105,7 @@
         }
       },
       "status": "ok",
-      "verts": 222,
+      "verts": 246,
       "faces": 20,
       "bbox": {
         "min": [
@@ -129,7 +129,7 @@
         }
       },
       "status": "ok",
-      "verts": 222,
+      "verts": 246,
       "faces": 20,
       "bbox": {
         "min": [
@@ -143,7 +143,7 @@
           0
         ]
       },
-      "elapsed_ms": 3
+      "elapsed_ms": 2
     },
     {
       "combo": {
@@ -153,7 +153,7 @@
         }
       },
       "status": "ok",
-      "verts": 222,
+      "verts": 246,
       "faces": 20,
       "bbox": {
         "min": [
@@ -167,7 +167,7 @@
           0
         ]
       },
-      "elapsed_ms": 3
+      "elapsed_ms": 4
     },
     {
       "combo": {
@@ -177,7 +177,7 @@
         }
       },
       "status": "ok",
-      "verts": 222,
+      "verts": 246,
       "faces": 20,
       "bbox": {
         "min": [
@@ -191,7 +191,7 @@
           0
         ]
       },
-      "elapsed_ms": 3
+      "elapsed_ms": 2
     },
     {
       "combo": {
@@ -201,7 +201,7 @@
         }
       },
       "status": "ok",
-      "verts": 222,
+      "verts": 246,
       "faces": 20,
       "bbox": {
         "min": [
@@ -215,7 +215,7 @@
           0
         ]
       },
-      "elapsed_ms": 2
+      "elapsed_ms": 3
     },
     {
       "combo": {
@@ -225,7 +225,7 @@
         }
       },
       "status": "ok",
-      "verts": 222,
+      "verts": 246,
       "faces": 20,
       "bbox": {
         "min": [
@@ -297,7 +297,7 @@
         }
       },
       "status": "ok",
-      "verts": 222,
+      "verts": 246,
       "faces": 20,
       "bbox": {
         "min": [

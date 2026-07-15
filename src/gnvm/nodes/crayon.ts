@@ -40,18 +40,38 @@ reg("GeometryNodeGeometryToInstance", (api) => {
   return { Instances: out };
 });
 
-function copySubmesh(mesh: Mesh, vertices: Set<number>, faces: number[], edges: [number, number][]): Mesh {
+function copySubmesh(
+  mesh: Mesh,
+  vertices: Set<number>,
+  faces: number[],
+  edgeIndices: number[],
+  topology: ReturnType<typeof buildTopology>,
+): Mesh {
   const out = new Mesh();
   out.materialSlots = [...mesh.materialSlots];
   const ordered = [...vertices].sort((a, b) => a - b);
   const remap = new Map(ordered.map((old, next) => [old, next]));
   out.positions = ordered.map((i) => [...mesh.positions[i]] as Vec3);
-  out.edges = edges.map(([a, b]) => [remap.get(a)!, remap.get(b)!]);
+  out.edges = edgeIndices.map((index) => {
+    const [a, b] = topology.edges[index].verts;
+    return [remap.get(a)!, remap.get(b)!];
+  });
   out.faces = faces.map((fi) => mesh.faces[fi].map((vi) => remap.get(vi)!));
   out.faceMaterial = faces.map((fi) => mesh.faceMaterial[fi] ?? 0);
+  const cornerStarts: number[] = [];
+  let cornerStart = 0;
+  for (const face of mesh.faces) {
+    cornerStarts.push(cornerStart);
+    cornerStart += face.length;
+  }
   for (const [name, attr] of mesh.attributes) {
     if (attr.domain === "POINT") out.attributes.set(name, { domain: "POINT", data: ordered.map((i) => attr.data[i] ?? 0) });
+    else if (attr.domain === "EDGE") out.attributes.set(name, { domain: "EDGE", data: edgeIndices.map((i) => attr.data[i] ?? 0) });
     else if (attr.domain === "FACE") out.attributes.set(name, { domain: "FACE", data: faces.map((fi) => attr.data[fi] ?? 0) });
+    else if (attr.domain === "CORNER") out.attributes.set(name, {
+      domain: "CORNER",
+      data: faces.flatMap((fi) => mesh.faces[fi].map((_, corner) => attr.data[cornerStarts[fi] + corner] ?? 0)),
+    });
   }
   return out;
 }
@@ -62,6 +82,49 @@ reg("GeometryNodeSplitToInstances", (api) => {
   if (!g.mesh) return { Instances: out, "Group ID": Field.of(0) };
   const mesh = g.mesh;
   const topo = buildTopology(mesh);
+  const domain = domainOf(api);
+  const groupIdLinked = api.node.inputs.some((socket) =>
+    (socket.identifier === "Group ID" || socket.name === "Group ID") && socket.linked);
+
+  // Split to Instances evaluates Selection and Group ID on its chosen domain.
+  // In FACE mode a group owns whole faces, and vertices shared with another
+  // group are copied into both instance payloads. String to Text deliberately
+  // feeds Face Index into Group ID, so its 20 N-gons become 20 independent
+  // instances and their 246 corners realize as 246 vertices.
+  if (domain === "FACE" && groupIdLinked) {
+    const ctx = makeFieldCtx(g, "FACE");
+    const selection = api.field("Selection").array(ctx);
+    const groupIds = api.field("Group ID").array(ctx);
+    const faceGroups = new Map<number, number[]>();
+    for (let fi = 0; fi < mesh.faces.length; fi++) {
+      if (asNum(selection[fi] ?? 1) <= 0) continue;
+      const group = Math.round(asNum(groupIds[fi] ?? 0));
+      const faces = faceGroups.get(group);
+      if (faces) faces.push(fi);
+      else faceGroups.set(group, [fi]);
+    }
+    for (const [group, faces] of [...faceGroups].sort((a, b) => a[0] - b[0])) {
+      const faceSet = new Set(faces);
+      const vertices = new Set(faces.flatMap((fi) => mesh.faces[fi]));
+      const edgeIndices = topo.edges
+        .map((edge, index) => edge.faces.some((fi) => faceSet.has(fi)) ? index : -1)
+        .filter((index) => index >= 0);
+      const geometry = new Geometry();
+      geometry.mesh = copySubmesh(mesh, vertices, faces, edgeIndices, topo);
+      out.instances.push({
+        geometry,
+        position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1],
+        attributes: new Map([["__split_group", group]]),
+      });
+    }
+    return {
+      Instances: out,
+      "Group ID": Field.perElem((i) => out.instances[i]?.attributes?.get("__split_group") ?? 0).tagged("INSTANCE"),
+    };
+  }
+
+  // Retain the compatibility behavior for unsupported domains and older dumps
+  // whose Group ID socket was not connected: one instance per topology island.
   const groups = new Map<number, Set<number>>();
   for (let vi = 0; vi < mesh.positions.length; vi++) {
     const group = topo.pointIsland[vi] ?? 0;
@@ -72,9 +135,11 @@ reg("GeometryNodeSplitToInstances", (api) => {
   for (const [group, vertices] of [...groups].sort((a, b) => a[0] - b[0])) {
     const faces: number[] = [];
     for (let fi = 0; fi < mesh.faces.length; fi++) if (mesh.faces[fi].every((vi) => vertices.has(vi))) faces.push(fi);
-    const edges = topo.edges.filter((edge) => vertices.has(edge.verts[0]) && vertices.has(edge.verts[1])).map((edge) => edge.verts);
+    const edgeIndices = topo.edges
+      .map((edge, index) => vertices.has(edge.verts[0]) && vertices.has(edge.verts[1]) ? index : -1)
+      .filter((index) => index >= 0);
     const geometry = new Geometry();
-    geometry.mesh = copySubmesh(mesh, vertices, faces, edges);
+    geometry.mesh = copySubmesh(mesh, vertices, faces, edgeIndices, topo);
     out.instances.push({ geometry, position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], attributes: new Map([["__split_group", group]]) });
   }
   return {

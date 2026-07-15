@@ -490,6 +490,62 @@ function meshSignedAreaXY(m: Mesh): number {
     `${openDual.mesh?.positions.length}v/${openDual.mesh?.faces.length}f ${JSON.stringify(openDual.mesh?.faces[0])}`);
 }
 
+// Split to Instances is field-driven on its selected domain. Two adjacent
+// faces with Face Index as Group ID must become separate payloads, duplicating
+// their shared boundary vertices when the instances are realized.
+{
+  const source = new Geometry();
+  source.mesh = new Mesh();
+  source.mesh.positions = [
+    [0, 0, 0], [1, 0, 0], [2, 0, 0],
+    [0, 1, 0], [1, 1, 0], [2, 1, 0],
+  ];
+  source.mesh.faces = [[0, 1, 4, 3], [1, 2, 5, 4]];
+  source.mesh.faceMaterial = [0, 1];
+  source.mesh.materialSlots = ["left", "right"];
+  source.mesh.attributes.set("point value", { domain: "POINT", data: [10, 11, 12, 13, 14, 15] });
+  source.mesh.attributes.set("edge value", { domain: "EDGE", data: [20, 21, 22, 23, 24, 25, 26] });
+  source.mesh.attributes.set("face value", { domain: "FACE", data: [30, 31] });
+  source.mesh.attributes.set("corner value", { domain: "CORNER", data: [40, 41, 42, 43, 44, 45, 46, 47] });
+  const faceIndex = Field.perElem((i) => i).tagged("FACE");
+  const splitResult = runNode("GeometryNodeSplitToInstances", {
+    Geometry: source,
+    Selection: true,
+    "Group ID": faceIndex,
+  }, { domain: "FACE" }, ["Group ID"]);
+  const split = splitResult.Instances as Geometry;
+  const realized = realizeInstances(split);
+  check("Split to Instances FACE groups by the linked field",
+    split.instances.length === 2 && realized.mesh?.positions.length === 8 && realized.mesh.faces.length === 2,
+    `${split.instances.length} instances / ${realized.mesh?.positions.length}v/${realized.mesh?.faces.length}f`);
+  check("Split to Instances FACE preserves domain attributes and materials",
+    split.instances[0].geometry.mesh?.attributes.get("point value")?.data.length === 4
+      && split.instances[0].geometry.mesh?.attributes.get("edge value")?.data.length === 4
+      && JSON.stringify(split.instances[1].geometry.mesh?.attributes.get("face value")?.data) === JSON.stringify([31])
+      && JSON.stringify(split.instances[1].geometry.mesh?.attributes.get("corner value")?.data) === JSON.stringify([44, 45, 46, 47])
+      && split.instances[1].geometry.mesh?.faceMaterial[0] === 1);
+  const outputIds = (splitResult["Group ID"] as Field).array(makeFieldCtx(split, "INSTANCE"));
+  check("Split to Instances exposes each instance Group ID", approx(outputIds as number[], [0, 1]), JSON.stringify(outputIds));
+
+  const selectedResult = runNode("GeometryNodeSplitToInstances", {
+    Geometry: source,
+    Selection: Field.perElem((i) => i === 1 ? 1 : 0).tagged("FACE"),
+    "Group ID": Field.perElem((i) => i + 7).tagged("FACE"),
+  }, { domain: "FACE" }, ["Selection", "Group ID"]);
+  const selected = selectedResult.Instances as Geometry;
+  check("Split to Instances FACE omits unselected faces",
+    selected.instances.length === 1 && selected.instances[0].geometry.mesh?.positions.length === 4
+      && (selectedResult["Group ID"] as Field).array(makeFieldCtx(selected, "INSTANCE"))[0] === 8);
+
+  const fallback = runNode("GeometryNodeSplitToInstances", {
+    Geometry: source,
+    Selection: true,
+    "Group ID": faceIndex,
+  }, { domain: "FACE" }).Instances as Geometry;
+  check("Split to Instances keeps topology-island fallback for unlinked Group ID",
+    fallback.instances.length === 1 && fallback.instances[0].geometry.mesh?.positions.length === 6);
+}
+
 // (D) FilletCurve: 90deg open corner A(0,0,0) B(1,0,0) C(1,1,0), radius .5, count 2
 {
   const f = runNode("GeometryNodeFilletCurve", { Curve: curve([[0, 0, 0], [1, 0, 0], [1, 1, 0]], false), Radius: 0.5, Count: 2 }).Curve as Geometry;
