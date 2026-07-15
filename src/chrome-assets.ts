@@ -3,6 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { publicUrl } from "./base-url";
 import { rangeOverrideValue } from "./chrome-asset-controls";
 import type { Dump, TriSoup } from "./gnvm/index";
+import { makeAttributeEmissionMaterial } from "./attribute-emission-material";
 import { makeImagePixelStipplerMaterial } from "./image-pixel-stippler-material";
 
 type RangeControl = { type?: "range"; name: string; label: string; min: number; max: number; step: number; value: number };
@@ -12,7 +13,7 @@ type VectorControl = { type: "vector"; name: string; label: string; value: [numb
 type SelectControl = { type: "select"; name: string; label: string; value: number | string; options: { label: string; value: number | string }[] };
 type Control = RangeControl | CheckboxControl | TextControl | VectorControl | SelectControl;
 type AssetFont = { url: string; family: string; requiredFor: string; fallback: string };
-type Asset = { id: string; title: string; object: string; dump: string; reference: string; blenderStats: { verts: number; faces: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler"; controls: Control[] };
+type Asset = { id: string; title: string; object: string; dump: string; reference: string; blenderStats: { verts: number; faces: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission"; controls: Control[] };
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
@@ -66,12 +67,15 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
     return result;
   };
   const previewMode=document.querySelector<HTMLSelectElement>('[data-control="__materialPreview"]')?.value;
-  const useAuthored=current.material==="image-pixel-stippler"&&previewMode!=="diagnostic";
+  const useAuthored=Boolean(current.material)&&previewMode!=="diagnostic";
   const materials: THREE.Material[]=[];
   if(useAuthored&&soup.groups.length){
     for(const [index,group] of soup.groups.entries()){
       geometry.addGroup(group.start,group.count,index);
-      materials.push(makeImagePixelStipplerMaterial(dump,geometry,group.material??"")??diagnosticMaterial());
+      const authored=current.material==="image-pixel-stippler"
+        ? makeImagePixelStipplerMaterial(dump,geometry,group.material??"")
+        : makeAttributeEmissionMaterial(dump,geometry,group.material??"");
+      materials.push(authored??diagnosticMaterial());
     }
   }
   if(!materials.length)materials.push(diagnosticMaterial());

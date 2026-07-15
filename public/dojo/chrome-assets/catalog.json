@@ -194,8 +194,10 @@
     "dump": "dojo/chrome-assets/outline-sticker/dump.json",
     "reference": "dojo/references/chrome-assets/outline-sticker.png",
     "blenderStats": { "verts": 1056, "faces": 1025 },
-    "note": "Authored output matches Blender exactly at 1,056 vertices / 1,025 faces with identical four-decimal local bounds; scale and outline remain editable in-browser.",
+    "note": "Authored output matches Blender exactly at 1,056 vertices / 1,025 faces with identical four-decimal local bounds. Its col and power attributes now drive the same emission contract as Blender; scale and outline remain editable in-browser.",
+    "material": "attribute-emission",
     "controls": [
+      { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored attribute emission", "value": "authored" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },
       { "name": "scale", "label": "Scale", "min": 2, "max": 18, "step": 0.000001, "value": 11.558334350585938 },
       { "name": "outline", "label": "Outline", "min": 0, "max": 2, "step": 0.000001, "value": 0.49366679787635803 }
     ]
