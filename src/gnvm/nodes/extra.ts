@@ -26,12 +26,16 @@ import { getManifoldFaceProvenance, isManifoldMesh, isManifoldReady, manifoldBoo
 import { asBezierSpline } from "../bezier";
 import { Vector3 as ThreeVector3 } from "three";
 import { ConvexHull as ThreeConvexHull } from "three/examples/jsm/math/ConvexHull.js";
+import { blenderBulletHull } from "../bullet-hull";
 
 const DOMAINS = new Set<Domain>(["POINT", "EDGE", "FACE", "CORNER", "CURVE", "INSTANCE"]);
 const EPS = 1e-9;
 
 reg("GeometryNodeConvexHull", (api) => {
   const source = realizeInstances(api.geo("Geometry"));
+  // Retain the BLI-polyfill reconstruction for synthetic cylinder pairs. It
+  // preserves Blender's authored cap/side panel provenance before the general
+  // Bullet point-cloud path discards that source topology.
   const retainedCylinderHull = source.mesh ? twoEqualCylinderHull(source.mesh) : null;
   if (retainedCylinderHull) {
     const geometry = new Geometry();
@@ -42,6 +46,12 @@ reg("GeometryNodeConvexHull", (api) => {
     ...(source.mesh?.positions ?? []),
     ...source.curves.flatMap((spline) => spline.points),
   ];
+  const bulletHull = blenderBulletHull(points);
+  if (bulletHull) {
+    const geometry = new Geometry();
+    geometry.mesh = bulletHull;
+    return { "Convex Hull": geometry };
+  }
   let raw = manifoldHull(points);
   // Dissolving Manifold's coplanar triangles can leave face-interior support
   // points unreferenced. Blender's Convex Hull output contains only surface

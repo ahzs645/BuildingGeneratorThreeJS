@@ -8,9 +8,9 @@
     "faces": 8064
   },
   "gnvm": {
-    "verts": 11252,
-    "faces": 8128
+    "verts": 11225,
+    "faces": 8114
   },
   "coverage": "100% of reachable node types across the 296-group, 2,413-node closure, including its six-object pipe structure collection.",
-  "validation": "The authored six-way pipe layout, generated sleeves, SDF joint shell, dual-mesh smoothing, and structure toggle run in-browser. Combined collection rotations and Blender's instance-domain For Each boundary semantics are preserved, giving 11,252 / 8,128 versus Blender's 11,162 / 8,064 for the authored result (0.81% vertex delta and exact collection bounds). Joint-size, hidden-structure, and bone-preview sweeps remain within 0.29-1.45% of Blender topology; surface-only bounds differ by at most 0.673 Blender units."
+  "validation": "The authored six-way pipe layout, generated sleeves, SDF joint shell, dual-mesh smoothing, and structure toggle run in-browser. Convex Hull now uses the same double-precision Bullet backend as Blender: Blender's captured 28,638-point input reproduces its exact 1,507 vertices, 2,572 polygons, and 3,010 triangles. With the browser-generated input, the authored result improves to 11,225 / 8,114 versus Blender's 11,162 / 8,064 (0.56% vertex delta and exact collection bounds); joint-size is within 0.31%, and bone preview is topology-exact at 31,447 / 28,386. The remaining surface delta is upstream in the non-cap sleeve sweep positions, while hidden-structure/bone bounds differ by at most 0.0596 Blender units."
 }

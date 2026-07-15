@@ -1,0 +1,17 @@
+Generated from the LinearMath convex-hull sources vendored by Blender at
+commit ec6e62d40fa9e9d1bea33ad5d00148c99a4f0832. The files in the Bullet source repository are licensed under the zlib license,
+except for files under Extras and examples/ThirdPartyLibs. This generated hull
+module uses only Bullet's LinearMath convex-hull implementation.
+
+Bullet Continuous Collision Detection and Physics Library
+http://bulletphysics.org
+
+This software is provided 'as-is', without any express or implied warranty.
+In no event will the authors be held liable for any damages arising from the use of this software.
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it freely,
+subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.

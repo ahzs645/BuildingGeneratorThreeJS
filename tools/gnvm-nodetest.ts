@@ -7,6 +7,7 @@ import { resampleSpline, splineFrames } from "../src/gnvm/curves";
 import { DUMP_CONTEXT, EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
 import { Evaluator, gradientDirectionField, makeFieldCtx } from "../src/gnvm/evaluator";
 import "../src/gnvm/index"; // registers all handlers
+import { ensureBulletHull } from "../src/gnvm/bullet-hull";
 
 type Input = SockVal | number | number[] | boolean;
 const wrap = (v: Input): SockVal =>
@@ -1498,7 +1499,7 @@ function meshSignedAreaXY(m: Mesh): number {
 // (P) MeshBoolean respects Blender's FLOAT / EXACT solver selection.
 {
   const { ensureManifold, isManifoldMesh, manifoldBooleanMany } = await import("../src/gnvm/boolean");
-  await ensureManifold();
+  await Promise.all([ensureManifold(), ensureBulletHull()]);
 
   const batchSource = box([-2, -2, -2], [2, 2, 2]);
   const batchCutter = box([0, -1, -1], [3, 1, 1]);
@@ -1519,6 +1520,20 @@ function meshSignedAreaXY(m: Mesh): number {
   const hullSurfaceVertices = new Set(hull.mesh?.faces.flat() ?? []);
   check("Convex Hull discards non-surface support points", hullSurfaceVertices.size === hull.mesh?.positions.length,
     `surface=${hullSurfaceVertices.size} positions=${hull.mesh?.positions.length}`);
+
+  const precisionHullSource = new Geometry();
+  precisionHullSource.mesh = new Mesh();
+  precisionHullSource.mesh.positions = [
+    [-27.704580307006836, 61.140411376953125, 34.087467193603516],
+    [-26.60045051574707, 61.09313201904297, 34.069679260253906],
+    [-41.128761291503906, 61.472251892089844, 42.661590576171875],
+    [-51.6058349609375, 62.383853912353516, 28.680110931396484],
+    [-29.951278686523438, 107.85670471191406, 64.3630142211914],
+  ];
+  const precisionHull = runNode("GeometryNodeConvexHull", { Geometry: precisionHullSource })["Convex Hull"] as Geometry;
+  check("Convex Hull uses Blender's double-precision Bullet predicates",
+    precisionHull.mesh?.positions.length === 4 && precisionHull.mesh.faces.length === 4,
+    `${precisionHull.mesh?.positions.length}v/${precisionHull.mesh?.faces.length}f`);
 
   const cylinderPair = new Geometry();
   cylinderPair.mesh = new Mesh();

@@ -3,6 +3,7 @@ import { Evaluator, Program } from "./evaluator";
 import { Geometry, Mesh, toTriSoup, TriSoup } from "./geometry";
 import { DUMP_CONTEXT, MISSING, REGISTRY } from "./registry";
 import { ensureManifold } from "./boolean";
+import { ensureBulletHull } from "./bullet-hull";
 import { evaluateBezierSpline } from "./bezier";
 import { matchLegacyCurvePassthrough } from "./nodes/geometry";
 import { resolveObjectDependencyOrder, type ExtractionMetadataV1 } from "./dependency-metadata";
@@ -28,6 +29,7 @@ export { Geometry, toTriSoup } from "./geometry";
 export type { TriSoup } from "./geometry";
 export { REGISTRY, MISSING } from "./registry";
 export { ensureManifold, isManifoldReady } from "./boolean";
+export { ensureBulletHull, isBulletHullReady } from "./bullet-hull";
 
 export interface RunResult {
   geometry: Geometry;
@@ -202,8 +204,8 @@ function isGeometryPassthroughGroup(group: any): boolean {
 }
 
 export async function runGenerator(dump: Dump, opts: { object?: string; overrides?: Record<string, any> } = {}): Promise<RunResult> {
-  // Mesh boolean needs Manifold WASM; load once before evaluation.
-  await ensureManifold();
+  // Mesh boolean and Blender-compatible convex hull need WASM; load both once.
+  await Promise.all([ensureManifold(), ensureBulletHull()]);
   MISSING.clear();
   DUMP_CONTEXT.objects = (dump.objects ?? []) as any;
   DUMP_CONTEXT.collections = dump.collections ?? [];
