@@ -2472,20 +2472,50 @@ function twoEqualCylinderHull(source: Mesh): Mesh | null {
       ? Math.max(0, Math.floor((ringSize - 6) / 2))
       : Math.max(0, Math.round(radii.reduce((sum, radius) => sum + radius, 0) / radii.length * 2 + 5));
   const pairedTriangulation = (polygon: number[], pairCount: number): number[][] => {
-    const triangles = triangulateFaceIndices(out, polygon).map((face) => [...face]);
-    const used = new Set<number>(), faces: number[][] = [];
-    for (let a = 0; a < triangles.length && faces.length < pairCount; a++) {
-      if (used.has(a)) continue;
-      for (let b = a + 1; b < triangles.length; b++) {
-        if (used.has(b) || triangles[a].filter((vertex) => triangles[b].includes(vertex)).length !== 2) continue;
-        const directed: Array<[number, number]> = [];
-        for (const triangle of [triangles[a], triangles[b]]) for (let i = 0; i < 3; i++) directed.push([triangle[i], triangle[(i + 1) % 3]]);
-        const boundary = directed.filter(([x, y]) => !directed.some(([u, v]) => u === y && v === x));
-        const next = new Map(boundary.map(([x, y]) => [x, y]));
-        if (boundary.length !== 4 || next.size !== 4) continue;
-        const quad = [boundary[0][0]];
-        while (quad.length < 4) quad.push(next.get(quad[quad.length - 1])!);
-        used.add(a); used.add(b); faces.push(quad); break;
+    let triangles = triangulateFaceIndices(out, polygon).map((face) => [...face]);
+    const mergedQuad = (a: number, b: number): number[] | null => {
+      if (triangles[a].filter((vertex) => triangles[b].includes(vertex)).length !== 2) return null;
+      const directed: Array<[number, number]> = [];
+      for (const triangle of [triangles[a], triangles[b]]) for (let i = 0; i < 3; i++) directed.push([triangle[i], triangle[(i + 1) % 3]]);
+      const boundary = directed.filter(([x, y]) => !directed.some(([u, v]) => u === y && v === x));
+      const next = new Map(boundary.map(([x, y]) => [x, y]));
+      if (boundary.length !== 4 || next.size !== 4) return null;
+      const quad = [boundary[0][0]];
+      while (quad.length < 4) quad.push(next.get(quad[quad.length - 1])!);
+      return quad;
+    };
+    const pairGreedy = () => {
+      const used = new Set<number>(), faces: number[][] = [];
+      for (let a = 0; a < triangles.length && faces.length < pairCount; a++) {
+        if (used.has(a)) continue;
+        for (let b = a + 1; b < triangles.length; b++) {
+          if (used.has(b)) continue;
+          const quad = mergedQuad(a, b);
+          if (!quad) continue;
+          used.add(a); used.add(b); faces.push(quad); break;
+        }
+      }
+      return { used, faces };
+    };
+    let { used, faces } = pairGreedy();
+    if (faces.length < pairCount) {
+      // Balanced polyfill can create a branched triangle dual with too small a
+      // matching for this deliberately reconstructed convex cap. A local fan
+      // retains the same boundary and restores the authored panel count without
+      // changing general mesh tessellation used by Proximity and Raycast.
+      const balanced = triangles;
+      const balancedPairing = { used, faces };
+      triangles = Array.from({ length: polygon.length - 2 }, (_, index) => [
+        polygon[0], polygon[index + 1], polygon[index + 2],
+      ]);
+      const fanPairing = pairGreedy();
+      if (fanPairing.faces.length > balancedPairing.faces.length) {
+        used = fanPairing.used;
+        faces = fanPairing.faces;
+      } else {
+        triangles = balanced;
+        used = balancedPairing.used;
+        faces = balancedPairing.faces;
       }
     }
     for (let i = 0; i < triangles.length; i++) if (!used.has(i)) faces.push(triangles[i]);

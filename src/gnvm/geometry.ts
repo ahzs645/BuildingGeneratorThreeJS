@@ -116,55 +116,132 @@ export function triangulateFaceIndices(mesh: Mesh, face: number[]): [number, num
       ? [[face[0], face[1], face[3]], [face[1], face[2], face[3]]]
       : [[face[0], face[1], face[2]], [face[0], face[2], face[3]]];
   }
-  const normal = (() => {
-    let x = 0, y = 0, z = 0;
-    for (let i = 0; i < face.length; i++) {
-      const a = mesh.positions[face[i]], b = mesh.positions[face[(i + 1) % face.length]];
-      x += (a[1] - b[1]) * (a[2] + b[2]);
-      y += (a[2] - b[2]) * (a[0] + b[0]);
-      z += (a[0] - b[0]) * (a[1] + b[1]);
-    }
-    return [x, y, z] as Vec3;
-  })();
-  const drop = Math.abs(normal[0]) > Math.abs(normal[1])
-    ? (Math.abs(normal[0]) > Math.abs(normal[2]) ? 0 : 2)
-    : (Math.abs(normal[1]) > Math.abs(normal[2]) ? 1 : 2);
-  const projected = face.map((vertex) => {
-    const p = mesh.positions[vertex];
-    return drop === 0 ? [p[1], p[2]] : drop === 1 ? [p[0], p[2]] : [p[0], p[1]];
-  });
-  const cross = (a: number[], b: number[], c: number[]) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
-  let area = 0;
-  for (let i = 0; i < projected.length; i++) {
-    const a = projected[i], b = projected[(i + 1) % projected.length];
-    area += a[0] * b[1] - b[0] * a[1];
+  // Blender projects n-gons onto an orthonormal basis and passes them to
+  // BLI_polyfill_calc. Besides concavity handling, that ear clipper deliberately
+  // advances by two corners after every cut to avoid fan-filling convex faces.
+  // Volume to Mesh produces many non-planar pentagons and hexagons; using a
+  // conventional first-ear clipper changes both Proximity FACES and Raycast.
+  const f = Math.fround;
+  const positions = face.map((vertex) => mesh.positions[vertex].map(f) as Vec3);
+  let normal: Vec3 = [0, 0, 0];
+  for (let i = 0; i < positions.length; i++) {
+    const previous = positions[(i - 1 + positions.length) % positions.length];
+    const current = positions[i];
+    normal = [
+      f(normal[0] + f(f(previous[1] - current[1]) * f(previous[2] + current[2]))),
+      f(normal[1] + f(f(previous[2] - current[2]) * f(previous[0] + current[0]))),
+      f(normal[2] + f(f(previous[0] - current[0]) * f(previous[1] + current[1]))),
+    ];
   }
-  const orientation = area >= 0 ? 1 : -1;
-  const inside = (p: number[], a: number[], b: number[], c: number[]) => {
-    const ab = orientation * cross(a, b, p), bc = orientation * cross(b, c, p), ca = orientation * cross(c, a, p);
-    return ab >= -1e-10 && bc >= -1e-10 && ca >= -1e-10;
+  const normalSquared = f(f(f(normal[0] * normal[0]) + f(normal[1] * normal[1])) + f(normal[2] * normal[2]));
+  if (normalSquared > 1e-35) {
+    const normalLength = f(Math.sqrt(normalSquared));
+    const inverseLength = f(1 / normalLength);
+    normal = [f(-normal[0] * inverseLength), f(-normal[1] * inverseLength), f(-normal[2] * inverseLength)];
+  } else {
+    // normalize_v3 clears a degenerate vector, then mesh tessellation selects +Z;
+    // axis_dominant_v3_to_m3_negate therefore receives -Z here.
+    normal = [0, 0, -1];
+  }
+  const basisLengthSquared = f(f(normal[0] * normal[0]) + f(normal[1] * normal[1]));
+  let basisX: Vec3;
+  let basisY: Vec3;
+  if (basisLengthSquared > 1.1920928955078125e-7) {
+    const inverseLength = f(1 / f(Math.sqrt(basisLengthSquared)));
+    basisX = [f(normal[1] * inverseLength), f(-normal[0] * inverseLength), 0];
+    basisY = [
+      f(-normal[2] * basisX[1]),
+      f(normal[2] * basisX[0]),
+      f(f(normal[0] * basisX[1]) - f(normal[1] * basisX[0])),
+    ];
+  } else {
+    basisX = [normal[2] < 0 ? -1 : 1, 0, 0];
+    basisY = [0, 1, 0];
+  }
+  const dot = (a: Vec3, b: Vec3) => f(f(f(a[0] * b[0]) + f(a[1] * b[1])) + f(a[2] * b[2]));
+  const projected = positions.map((position) => [dot(basisX, position), dot(basisY, position)] as [number, number]);
+  const area = (a: number, b: number, c: number) => {
+    const d2x = f(projected[b][0] - projected[a][0]);
+    const d2y = f(projected[b][1] - projected[a][1]);
+    const d3x = f(projected[c][0] - projected[a][0]);
+    const d3y = f(projected[c][1] - projected[a][1]);
+    return f(f(d2x * d3y) - f(d3x * d2y));
   };
+  // BLI's span_tri_v2_sign(v1, v2, v3) evaluates area(v3, v2, v1).
+  const sign = (previous: number, current: number, next: number) => Math.sign(area(next, current, previous));
   const remaining = Array.from({ length: face.length }, (_, index) => index);
+  const signs = new Map(remaining.map((index, i) => [index, sign(
+    remaining[(i - 1 + remaining.length) % remaining.length], index, remaining[(i + 1) % remaining.length],
+  )]));
+  let concaveCount = [...signs.values()].filter((value) => value !== 1).length;
   const triangles: [number, number, number][] = [];
-  for (let guard = 0; remaining.length > 3 && guard < face.length * face.length; guard++) {
-    let clipped = false;
-    for (let i = 0; i < remaining.length; i++) {
-      const before = remaining[(i - 1 + remaining.length) % remaining.length];
-      const current = remaining[i];
-      const after = remaining[(i + 1) % remaining.length];
-      if (orientation * cross(projected[before], projected[current], projected[after]) <= 1e-12) continue;
-      if (remaining.some((candidate) => candidate !== before && candidate !== current && candidate !== after
-        && inside(projected[candidate], projected[before], projected[current], projected[after]))) continue;
-      triangles.push([face[before], face[current], face[after]]);
-      remaining.splice(i, 1);
-      clipped = true;
-      break;
+  let earInit = 0;
+  let reverse = false;
+  const positionOf = (index: number) => remaining.indexOf(index);
+  const adjacent = (index: number, offset: number) => {
+    const at = positionOf(index);
+    return remaining[(at + offset + remaining.length) % remaining.length];
+  };
+  const containsNonConvex = (ear: number) => {
+    const next = adjacent(ear, 1), previous = adjacent(ear, -1);
+    const triangle = [ear, next, previous];
+    const edgeTests = triangle.map((start, index) => {
+      const end = triangle[(index + 1) % 3];
+      const edgeX = f(projected[end][0] - projected[start][0]);
+      const edgeY = f(projected[end][1] - projected[start][1]);
+      const constant = f(f(edgeX * projected[start][1]) - f(projected[start][0] * edgeY));
+      return (candidate: number) => f(
+        f(f(edgeY * projected[candidate][0]) - f(edgeX * projected[candidate][1])) + constant,
+      ) >= 0;
+    });
+    for (const candidate of remaining) {
+      if (candidate === ear || candidate === next || candidate === previous || signs.get(candidate) === 1) continue;
+      // Blender's KD-tree path uses a precomputed edge equation. Keeping that
+      // form matters for almost-collinear OpenVDB boundary polygons: expanding
+      // it into translated cross products changes cancellation by one ULP.
+      if (edgeTests.every((test) => test(candidate))) return true;
     }
-    if (!clipped) break;
+    return false;
+  };
+  while (remaining.length > 3) {
+    let ear: number | undefined;
+    for (const accepted of [1, 0]) {
+      let candidate = earInit;
+      for (let scanned = 0; scanned < remaining.length; scanned++) {
+        if ((concaveCount === 0 || signs.get(candidate) === accepted) && !containsNonConvex(candidate)) {
+          ear = candidate;
+          break;
+        }
+        candidate = adjacent(candidate, reverse ? -1 : 1);
+      }
+      if (ear !== undefined) break;
+    }
+    if (ear === undefined) {
+      let candidate = earInit;
+      for (let scanned = 0; scanned < remaining.length; scanned++) {
+        if (signs.get(candidate) !== -1) { ear = candidate; break; }
+        candidate = adjacent(candidate, 1);
+      }
+      ear ??= candidate;
+    }
+    const previous = adjacent(ear, -1), next = adjacent(ear, 1);
+    triangles.push([face[previous], face[ear], face[next]]);
+    if (signs.get(ear) !== 1) concaveCount--;
+    remaining.splice(positionOf(ear), 1);
+    for (const neighbor of [previous, next]) {
+      if (signs.get(neighbor) === 1) continue;
+      const updated = sign(adjacent(neighbor, -1), neighbor, adjacent(neighbor, 1));
+      if (updated === 1) concaveCount--;
+      signs.set(neighbor, updated);
+    }
+    earInit = reverse ? adjacent(previous, -1) : adjacent(next, 1);
+    if (signs.get(earInit) !== 1) {
+      earInit = adjacent(earInit, reverse ? -1 : 1);
+      reverse = !reverse;
+    }
   }
-  if (remaining.length === 3) triangles.push([face[remaining[0]], face[remaining[1]], face[remaining[2]]]);
-  if (triangles.length === face.length - 2) return triangles;
-  return Array.from({ length: face.length - 2 }, (_, index) => [face[0], face[index + 1], face[index + 2]]);
+  triangles.push([face[remaining[0]], face[remaining[1]], face[remaining[2]]]);
+  return triangles;
 }
 
 export interface InstanceRef {

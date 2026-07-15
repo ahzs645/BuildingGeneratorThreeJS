@@ -55,6 +55,32 @@ test("quad tessellation uses Blender's stable 0-2 diagonal", () => {
   assert.deepEqual(triangulateFaceIndices(mesh, [0, 1, 2, 3]), [[0, 1, 2], [0, 2, 3]]);
 });
 
+test("n-gon tessellation follows Blender's balanced polyfill sweep", () => {
+  const mesh = new Mesh();
+  mesh.positions = [
+    [0, 0, 0], [2, 0, 0], [3, 1, 0], [2.5, 2.5, 0], [1, 3, 0], [-0.5, 1.5, 0],
+  ];
+
+  assert.deepEqual(triangulateFaceIndices(mesh, [0, 1, 2, 3, 4, 5]), [
+    [5, 0, 1], [1, 2, 3], [3, 4, 5], [1, 3, 5],
+  ]);
+});
+
+test("n-gon tessellation preserves Blender's non-planar concave ears", () => {
+  const mesh = new Mesh();
+  mesh.positions = [
+    [5.6985979080200195, 4.206120014190674, 2.2141342163085938],
+    [5.601629257202148, 4.322347640991211, 2.216545343399048],
+    [5.768020153045654, 4.122910022735596, 2.2124080657958984],
+    [5.962743759155273, 3.8895132541656494, 2.207566022872925],
+    [5.879220008850098, 3.9896252155303955, 2.2096428871154785],
+  ];
+
+  assert.deepEqual(triangulateFaceIndices(mesh, [0, 1, 2, 3, 4]), [
+    [4, 0, 1], [2, 3, 4], [1, 2, 4],
+  ]);
+});
+
 test("Ico Sphere uses Blender's BMesh seed and projected grid", () => {
   const mesh = meshIcoSphere(1, 4).mesh!;
 
