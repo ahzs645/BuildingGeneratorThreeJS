@@ -22,7 +22,7 @@
     "dump": "dojo/chrome-assets/pixel-marker/dump.json",
     "reference": "dojo/references/chrome-assets/pixel-marker.png",
     "blenderStats": { "verts": 209, "faces": 134 },
-    "note": "Authored topology matches Blender exactly; the recovered curve-radius attribute also keeps all tested bounds within 0.01 units.",
+    "note": "All six Blender/browser cases have exact topology and rounded local bounds after recovering the source curve's radius and Bezier endpoint tangents.",
     "controls": [
       { "name": "extrude height", "label": "Extrude height", "min": 1, "max": 35, "step": 0.000001, "value": 23.715652465820312 },
       { "name": "line thiccness", "label": "Line thickness", "min": 5, "max": 40, "step": 0.000001, "value": 25 },
@@ -38,7 +38,7 @@
     "dump": "dojo/chrome-assets/pixel-marker-003/dump.json",
     "reference": "dojo/references/chrome-assets/pixel-marker-003.png",
     "blenderStats": { "verts": 412, "faces": 428 },
-    "note": "Authored 3D topology matches Blender exactly; the shared pixel-marker family also matches its flat branch.",
+    "note": "All six Blender/browser cases have exact topology and rounded local bounds, including the shared flat branch and dense pixel-size control.",
     "controls": [
       { "name": "extrude height", "label": "Extrude height", "min": 1, "max": 35, "step": 0.000001, "value": 14.615509033203125 },
       { "name": "line thiccness", "label": "Line thickness", "min": 5, "max": 40, "step": 0.000001, "value": 25 },

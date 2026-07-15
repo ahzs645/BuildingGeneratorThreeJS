@@ -1,8 +1,8 @@
 {
   "object": "PIXEL CRAYON.003",
   "root": "pixel marker.001",
-  "status": "authored-exact",
+  "status": "exact-parity",
   "blender": { "verts": 412, "faces": 428 },
   "gnvm": { "verts": 412, "faces": 428 },
-  "validation": "Five of six parameter cases match topology exactly; pixel size 0.25 differs by 2 vertices and 2 faces (0.20%) while bounds remain within 0.01 units."
+  "validation": "All six Blender/browser cases have exact vertex and face counts and rounded local bounds, covering pixel size, line thickness, flattening, the flat branch, and extrusion height."
 }

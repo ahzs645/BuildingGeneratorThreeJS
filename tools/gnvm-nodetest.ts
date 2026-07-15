@@ -3,6 +3,7 @@
 // Run: npx tsx tools/gnvm-nodetest.ts
 import { Field, Vec3 } from "../src/gnvm/core";
 import { Geometry, Mesh, orientClosedSurface, realizeInstances, toTriSoup, topologyOf, transformPoint, triangulateFaceIndices } from "../src/gnvm/geometry";
+import { splineFrames } from "../src/gnvm/curves";
 import { DUMP_CONTEXT, EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
 import { Evaluator, gradientDirectionField, makeFieldCtx } from "../src/gnvm/evaluator";
 import "../src/gnvm/index"; // registers all handlers
@@ -572,6 +573,10 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 {
+  const frame = splineFrames([[0, 0, 0], [1, 0, 0], [1, 3, 0]], false)[1];
+  check("Spline frames bisect unequal incident segments",
+    approx(frame.tangent, [Math.SQRT1_2, Math.SQRT1_2, 0]), JSON.stringify(frame.tangent));
+
   const rail = curve([[0, 0, 0], [1, 0, 0], [1, 3, 0]], false);
   // Imported Blender curves expose evaluated field tangents, but Curve to
   // Mesh uses normalized incident-direction bisectors at interior points.

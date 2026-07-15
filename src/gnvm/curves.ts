@@ -130,7 +130,15 @@ export function splineFrames(pts: Vec3[], cyclic: boolean, tangentOverrides?: Ve
     let t: Vec3;
     if (!cyclic && i === 0) t = vsub(pts[1], pts[0]);
     else if (!cyclic && i === n - 1) t = vsub(pts[n - 1], pts[n - 2]);
-    else t = vsub(next, prev);
+    else {
+      // Blender bisects the normalized incident segment directions. Using a
+      // raw next-minus-previous chord weights the tangent toward the longer
+      // evaluated segment and can move a polygonal Curve-to-Mesh boundary.
+      const incoming = vnorm(vsub(pts[i], prev));
+      const outgoing = vnorm(vsub(next, pts[i]));
+      const bisector = vadd(incoming, outgoing);
+      t = vlen(bisector) > 1e-9 ? bisector : vsub(next, prev);
+    }
     const normalized = vnorm(t);
     tangents.push(vlen(normalized) < 1e-9 ? [0, 0, 1] : normalized);
   }
