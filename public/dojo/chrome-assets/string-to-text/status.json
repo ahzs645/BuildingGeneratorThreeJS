@@ -6,7 +6,7 @@
   "reason": "FACE-domain Split to Instances now evaluates Selection and Group ID like Blender, so each filled glyph face receives its own instance payload and shared boundary vertices are duplicated on realization.",
   "blender": { "verts": 246, "faces": 20 },
   "gnvm": { "verts": 246, "faces": 20 },
-  "validation": "All thirteen Blender/browser cases exactly match in vertex count, face count, and rounded local bounds. The sweep covers editable text, size, alignment, character and line spacing, word wrapping, all fill modes, and reset-letter behavior.",
+  "validation": "All thirteen Blender/browser cases exactly match in vertex count, face count, and rounded local bounds. The sweep covers editable text, size, alignment, character and line spacing, word wrapping, all fill modes, and reset-letter behavior. Browser material reconstruction also follows the extracted flat.nodes.001 contract: col drives Emission Color and power drives Emission Strength, with an explicit diagnostic fallback.",
   "portableDump": "dojo/chrome-assets/string-to-text/dump.json",
   "reference": "dojo/references/chrome-assets/string-to-text.png"
 }

@@ -136,8 +136,10 @@
     "dump": "dojo/chrome-assets/string-to-text/dump.json",
     "reference": "dojo/references/chrome-assets/string-to-text.png",
     "blenderStats": { "verts": 246, "faces": 20 },
-    "note": "Exact Blender/browser parity across all 13 cases. FACE-domain grouping preserves each filled glyph as its own instance, including Blender's duplicated shared-boundary vertices.",
+    "note": "Exact Blender/browser parity across all 13 cases. FACE-domain grouping preserves each filled glyph as its own instance, including Blender's duplicated shared-boundary vertices. The extracted col and power fields now drive Blender's authored emission contract in WebGL.",
+    "material": "attribute-emission",
     "controls": [
+      { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored attribute emission", "value": "authored" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },
       { "type": "text", "name": "String", "label": "Text", "value": "3D Chrome Crayon" },
       { "name": "Align", "label": "Align: left / center / right", "min": 0, "max": 2, "step": 1, "value": 1 },
       { "name": "Size", "label": "Size", "min": 1, "max": 30, "step": 0.000001, "value": 14.094398498535156 },
