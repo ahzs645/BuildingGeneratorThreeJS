@@ -1,8 +1,7 @@
 # Math Clay surface-net diagnostics
 
-This note records the July 2026 D-surface investigation. It deliberately does
-not claim a connectivity fix: the evidence puts the first unresolved difference
-before quad assembly.
+This note records the July 2026 D-surface investigation and its resolved
+negative-boundary topology defect.
 
 ## Reproduce
 
@@ -27,44 +26,38 @@ evaluate instead of returning the 1,538-vertex seed mesh):
 | Measure | Blender | GN-VM |
 | --- | ---: | ---: |
 | Vertices | 35,054 | 35,054 |
-| Quad faces | 35,052 | 33,540 |
-| Unique edges | 70,104 | 67,572 |
-| Boundary edges | 0 | 984 |
-| Euler characteristic | 2 | 1,022 |
+| Quad faces | 35,052 | 35,052 |
+| Unique edges | 70,104 | 70,104 |
+| Boundary edges | 0 | 0 |
+| Euler characteristic | 2 | 2 |
 
-The GN-VM surface-net counters for its 71 x 71 x 71 sampled lattice are:
+The fixed GN-VM surface-net counters for its 71 x 71 x 71 sampled lattice are:
 
 - 35,054 active cells, all with exactly one edge component;
 - zero checkerboard/ambiguous cell faces;
-- 33,540 crossed interior grid edges and 33,540 emitted quads;
+- 35,052 crossed grid edges and 35,052 emitted quads;
 - zero skipped quads from missing cell vertices or duplicate corners;
 - zero vertices added by non-manifold fan splitting.
 
-Therefore the 1,512-face gap is not caused by the current asymptotic-decider
-branch, `addQuad` rejection, or fan splitting. The exact vertex-count match is
-not sufficient evidence that Blender and GN-VM sampled the same scalar grid.
-The GN-VM sign lattice itself requests only 33,540 dual-edge quads, while
-Blender's evaluated OpenVDB result is a closed 35,052-quad manifold.
+Every pre-fix GN-VM quad matched Blender after a one-to-one nearest-vertex map.
+Blender's 1,512 additional quads were all negative padded-grid boundary caps:
+504 on each of X-, Y-, and Z-, with none on the positive sides.
 
-## Exact next experiment
+## Resolved cause
 
-Extract both scalar lattices before changing surface-net connectivity:
+The face-emission loop started `x`, `y`, and `z` at one for all three edge
+orientations. A quad around an X edge needs negative-side neighbors only in Y
+and Z, so X may start at zero; the corresponding rule applies to Y and Z.
+The shared lower bound therefore skipped exactly the three negative caps.
 
-1. In a temporary Blender copy of `TPMS generator`, replace the selected
-   `Dojo Field to Mesh` result with a point lattice at the Volume Cube sample
-   coordinates and use Store Named Attribute to capture its incoming `FIELD`.
-2. Dump the 67 x 67 x 67 stored Volume Cube values and, separately, the 71 x
-   71 x 71 values/signs at Volume to Mesh's transformed lattice.
-3. Add a GN-VM diagnostic export for the corresponding `VolumeGrid.values` and
-   resampled grid, including origin, spacing, threshold, and a sign-bit hash.
-4. Compare sign bits by coordinate and classify every differing crossed edge.
-   Only if the sign grids match should the next change target OpenVDB's
-   face-emission semantics. If they differ, fix Volume Cube field evaluation or
-   GridTransformer sampling first.
+The corrected loop visits all grid-edge coordinates and guards only the two
+orthogonal negative neighbors for each orientation. A focused test now covers
+X-, Y-, and Z-boundary crossings. The D-surface is closed and matches Blender's
+vertex count, quad count, edge count, Euler characteristic, and rounded bounds.
 
-No OpenVDB ambiguity/connectivity rule should be changed from the present
-counts without that comparison, because seven of the thirteen Math Clay roots
-are already topology-exact.
+The scalar-grid diagnostic callback remains available to export the 64-cubed
+Volume Cube grid and 71-cubed transformed grid, including transform metadata,
+isolation, counts, and a byte-level hash.
 
 ## Thirteen-root regression snapshot
 
@@ -74,17 +67,17 @@ The diagnostic-only change leaves all roots unchanged:
 | --- | ---: | ---: |
 | Math Clay Study.003 | 23,968 / 23,966 | 23,968 / 23,966 |
 | Math Clay Study.002 | 30,644 / 30,642 | 30,644 / 30,642 |
-| Math Clay Study.008 | 17,061 / 28,525 | 17,061 / 28,525 |
+| Math Clay Study.008 | 17,061 / 28,525 | 17,055 / 28,467 |
 | Math Clay Study.006 | 29,226 / 29,226 | 29,226 / 29,226 |
 | Math Clay Study.007 | 108,958 / 108,924 | 108,958 / 108,924 |
-| Math Clay Study.014 | 129,503 / 125,916 | 129,503 / 125,916 |
+| Math Clay Study.014 | 129,503 / 125,916 | 129,503 / 127,614 |
 | Math Clay Study.018 | 42,770 / 42,768 | 42,770 / 42,768 |
-| Math Clay Study.019 | 133,373 / 128,394 | 133,373 / 128,394 |
-| Math Clay Study.013 | 85,696 / 86,010 | 85,696 / 86,010 |
-| Math Clay Study.001 | 14,887 / 25,665 | 14,887 / 25,665 |
+| Math Clay Study.019 | 133,373 / 128,394 | 133,373 / 131,484 |
+| Math Clay Study.013 | 85,696 / 86,010 | 85,663 / 86,457 |
+| Math Clay Study.001 | 14,887 / 25,665 | 14,868 / 25,617 |
 | Math Clay Study.004 | 35,200 / 35,198 | 35,200 / 35,198 |
 | Math Clay Study.005 | 61,098 / 61,124 | 61,098 / 61,124 |
-| Dsurface | 35,054 / 33,540 | 35,054 / 33,540 |
+| Dsurface | 35,054 / 33,540 | 35,054 / 35,052 |
 
-Counts are vertices / polygon faces from `runGenerator`; the seven exact roots
-remain exact.
+Counts are vertices / polygon faces from `runGenerator`; the seven previously
+exact roots remain exact and Dsurface becomes the eighth exact root.

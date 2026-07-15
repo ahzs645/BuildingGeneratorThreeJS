@@ -14,6 +14,18 @@ interface VolumeGrid {
   values: Float32Array;
 }
 
+export interface VolumeGridDiagnostics {
+  stage: "volume-cube" | "volume-to-mesh";
+  background: number;
+  min: Vec3;
+  max: Vec3;
+  resolution: Vec3;
+  origin: Vec3;
+  spacing: Vec3;
+  isolation?: number;
+  values: Float32Array;
+}
+
 function isVolumeGrid(value: unknown): value is VolumeGrid {
   return !!value && typeof value === "object" && (value as VolumeGrid).kind === "GNVM_VOLUME_GRID";
 }
@@ -90,10 +102,16 @@ export interface SurfaceNetsDiagnostics {
 }
 
 let surfaceNetsDiagnosticSink: ((diagnostics: SurfaceNetsDiagnostics) => void) | null = null;
+let volumeGridDiagnosticSink: ((diagnostics: VolumeGridDiagnostics) => void) | null = null;
 
 /** Install a process-local diagnostic callback; intended for parity tooling. */
 export function setSurfaceNetsDiagnosticSink(sink: ((diagnostics: SurfaceNetsDiagnostics) => void) | null): void {
   surfaceNetsDiagnosticSink = sink;
+}
+
+/** Install a process-local scalar-grid callback; intended for parity tooling. */
+export function setVolumeGridDiagnosticSink(sink: ((diagnostics: VolumeGridDiagnostics) => void) | null): void {
+  volumeGridDiagnosticSink = sink;
 }
 
 // Blender's OpenVDB mesher uses a surface-net topology: one vertex in every
@@ -215,16 +233,20 @@ function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, 
     if (diagnosticSink) emittedQuads++;
   };
   const cellEdge = (x: number, y: number, z: number, edge: number) => cellEdgeVertices.get(cellIndex(x, y, z))?.[edge] ?? -1;
-  for (let z = 1; z < resolution[2] - 1; z++) for (let y = 1; y < resolution[1] - 1; y++) for (let x = 1; x < resolution[0] - 1; x++) {
+  // A crossed grid edge needs a cell on both sides of each orthogonal axis,
+  // but not on the negative side of its own axis. Starting all three axes at
+  // one drops the entire negative X/Y/Z cap respectively. The two-sample
+  // background padding above guarantees that the guarded incident cells exist.
+  for (let z = 0; z < resolution[2] - 1; z++) for (let y = 0; y < resolution[1] - 1; y++) for (let x = 0; x < resolution[0] - 1; x++) {
     const value = sample(x, y, z);
     const crossX = sample(x + 1, y, z);
-    if ((value < isolation) !== (crossX < isolation))
+    if (y > 0 && z > 0 && (value < isolation) !== (crossX < isolation))
       addQuad([cellEdge(x, y - 1, z - 1, 3), cellEdge(x, y, z - 1, 2), cellEdge(x, y, z, 0), cellEdge(x, y - 1, z, 1)], value < isolation);
     const crossY = sample(x, y + 1, z);
-    if ((value < isolation) !== (crossY < isolation))
+    if (x > 0 && z > 0 && (value < isolation) !== (crossY < isolation))
       addQuad([cellEdge(x - 1, y, z - 1, 7), cellEdge(x - 1, y, z, 5), cellEdge(x, y, z, 4), cellEdge(x, y, z - 1, 6)], value < isolation);
     const crossZ = sample(x, y, z + 1);
-    if ((value < isolation) !== (crossZ < isolation))
+    if (x > 0 && y > 0 && (value < isolation) !== (crossZ < isolation))
       addQuad([cellEdge(x - 1, y - 1, z, 11), cellEdge(x, y - 1, z, 10), cellEdge(x, y, z, 8), cellEdge(x - 1, y, z, 9)], value < isolation);
   }
   const preSplitVertices = mesh.positions.length;
@@ -247,6 +269,9 @@ function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, 
   });
   return mesh;
 }
+
+/** Direct hook for focused topology tests; production evaluation uses the registered nodes below. */
+export const surfaceNetsForTest = surfaceNets;
 
 reg("GeometryNodeVolumeCube", (api) => {
   const min = api.vec("Min");
@@ -296,6 +321,16 @@ reg("GeometryNodeVolumeCube", (api) => {
     voxelSize,
     values,
   };
+  volumeGridDiagnosticSink?.({
+    stage: "volume-cube",
+    background,
+    min: [...min] as Vec3,
+    max: [...max] as Vec3,
+    resolution: [...resolution] as Vec3,
+    origin: [...origin] as Vec3,
+    spacing: [...voxelSize] as Vec3,
+    values,
+  });
   return { Volume: volume as unknown as SockVal };
 });
 
@@ -356,6 +391,17 @@ reg("GeometryNodeVolumeToMesh", (api) => {
   // producing four faces on one dual edge. The offset is far below the voxel
   // scale and mirrors Blender/OpenVDB's stable treatment of the zero level set.
   const isolation = api.num("Threshold") - Math.max(1e-7, Math.max(...spacing) * 1e-6);
+  volumeGridDiagnosticSink?.({
+    stage: "volume-to-mesh",
+    background: volume.background,
+    min: [...volume.min] as Vec3,
+    max: [...volume.max] as Vec3,
+    resolution: [...resolution] as Vec3,
+    origin: [...origin] as Vec3,
+    spacing: [...spacing] as Vec3,
+    isolation,
+    values: sampledGrid,
+  });
   const mesh = surfaceNets(sampledGrid, resolution, isolation, origin, spacing);
   mesh.materialSlots = [null];
   const geometry = new Geometry();

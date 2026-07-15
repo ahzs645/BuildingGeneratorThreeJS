@@ -911,7 +911,7 @@
     "reference": "dojo/references/math-clay/lorenze-007.png",
     "blenderStats": { "verts": 16249, "faces": 15459 },
     "localSpace": true,
-    "note": "Rounded curl with bounds now within 0.0592 units. Browser surface nets and boolean output use 17,061 vertices / 28,525 faces versus Blender's 16,249 / 15,459; connectivity remains a follow-up.",
+    "note": "Rounded curl with bounds within 0.0732 units. Browser surface nets and boolean output use 17,055 vertices / 28,467 faces versus Blender's 16,249 / 15,459; connectivity remains a follow-up.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 3 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -956,7 +956,7 @@
     "reference": "dojo/references/math-clay/tpms-017.png",
     "blenderStats": { "verts": 155474, "faces": 155472 },
     "localSpace": true,
-    "note": "Correct Blender/OpenVDB lattice alignment exposes a remaining custom surface-nets gap for this ambiguous 240-node star field: browser 129,503 / 125,916 versus Blender 155,474 / 155,472, with bounds within 0.6267 units.",
+    "note": "Correct Blender/OpenVDB lattice alignment exposes a remaining custom surface-nets gap for this ambiguous 240-node star field: browser 129,503 / 127,614 versus Blender 155,474 / 155,472, with bounds within 0.6267 units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.212766408920288 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.4, "max": 1.5, "step": 0.02, "value": 0.4216800034046173 },
@@ -971,7 +971,7 @@
     "reference": "dojo/references/math-clay/tpms-019.png",
     "blenderStats": { "verts": 42770, "faces": 42768 },
     "localSpace": true,
-    "note": "Exact 242-node spiked orb topology after matching Blender's inclusive Volume Cube lattice and OpenVDB transform-preserving resampling: 42,770 vertices / 42,768 faces in both Blender and GN-VM, with bounds within 0.0002 units.",
+    "note": "Exact 242-node spiked orb topology after matching Blender's inclusive Volume Cube lattice and OpenVDB transform-preserving resampling: 42,770 vertices / 42,768 faces in both Blender and GN-VM, with bounds within 0.0001 units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.5531917810440063 },
       { "name": "Factor", "label": "Shape factor", "min": 0, "max": 1, "step": 0.01, "value": 0.9678784012794495 },
@@ -986,7 +986,7 @@
     "reference": "dojo/references/math-clay/tpms-020.png",
     "blenderStats": { "verts": 153602, "faces": 153600 },
     "localSpace": true,
-    "note": "Correct Blender/OpenVDB lattice alignment exposes a remaining custom surface-nets gap for this rounded star field: browser 133,373 / 128,394 versus Blender 153,602 / 153,600, with bounds within 0.4932 units.",
+    "note": "Correct Blender/OpenVDB lattice alignment exposes a remaining custom surface-nets gap for this rounded star field: browser 133,373 / 131,484 versus Blender 153,602 / 153,600, with bounds within 0.4932 units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.5531917810440063 },
       { "name": "Factor", "label": "Shape factor", "min": 0, "max": 1, "step": 0.01, "value": 0 },
@@ -1001,7 +1001,7 @@
     "reference": "dojo/references/math-clay/tpms-016.png",
     "blenderStats": { "verts": 87099, "faces": 85390 },
     "localSpace": true,
-    "note": "Cross-section lattice improves to 85,696 vertices / 86,010 faces versus Blender's 87,099 / 85,390, with bounds within 0.0903 units; the remaining 620-face gap is surface-net connectivity.",
+    "note": "Cross-section lattice evaluates to 85,663 vertices / 86,457 faces versus Blender's 87,099 / 85,390, with bounds within 0.0903 units; boolean and surface connectivity remain.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.0638302564620972 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.4, "max": 1.5, "step": 0.02, "value": 0.4216800034046173 },
@@ -1016,7 +1016,7 @@
     "reference": "dojo/references/math-clay/tpms-018.png",
     "blenderStats": { "verts": 14190, "faces": 13558 },
     "localSpace": true,
-    "note": "Twin-bowl bounds now align within 0.0054 units. Browser output is 14,887 vertices / 25,665 faces versus Blender's 14,190 / 13,558; boolean and surface-net connectivity remain.",
+    "note": "Twin-bowl bounds now align within 0.0002 units. Browser output is 14,868 vertices / 25,617 faces versus Blender's 14,190 / 13,558; boolean and surface-net connectivity remain.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.0638302564620972 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -1061,7 +1061,7 @@
     "reference": "dojo/references/math-clay/tpms-main.png",
     "blenderStats": { "verts": 35054, "faces": 35052 },
     "localSpace": true,
-    "note": "The full 22-group, 421-node D-surface now matches Blender's 35,054 vertices exactly, with 33,540 browser faces versus 35,052 in Blender. Custom surface-net connectivity and the 1.2957-unit bounds gap remain explicit follow-ups.",
+    "note": "Exact full 22-group, 421-node D-surface: Blender and GN-VM both produce 35,054 vertices / 35,052 closed quads, with bounds within 0.0001 units after restoring the negative-boundary surface-net caps.",
     "controls": [
       { "type": "select", "name": "Menu", "label": "TPMS formula", "value": 2, "options": [
         { "label": "Schwarz P", "value": 0 },
