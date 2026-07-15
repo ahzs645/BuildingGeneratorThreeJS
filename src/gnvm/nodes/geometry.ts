@@ -834,7 +834,12 @@ reg("GeometryNodeProximity", (api) => {
   return {
     Position: Field.make((ctx) => {
       const arr = posF ? posF.array(ctx) : null;
-      return Array.from({ length: ctx.size }, (_, i) => (pts.length ? nearest(sample(ctx, i, arr)).q : [0, 0, 0]));
+      const positions: Vec3[] = Array.from({ length: ctx.size }, (_, i) => sample(ctx, i, arr));
+      const values: Vec3[] = positions.map((position) => (pts.length ? nearest(position).q : [0, 0, 0]));
+      if (FIELD_PROBE.node === api.node.name && FIELD_PROBE.socket === "Position") {
+        FIELD_PROBE.batches.push({ domain: ctx.domain, positions, values, targets: pts });
+      }
+      return values;
     }),
     Distance: Field.make((ctx) => {
       const arr = posF ? posF.array(ctx) : null;
