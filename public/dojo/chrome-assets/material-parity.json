@@ -58,6 +58,12 @@
     "sharedSidecar": "dojo/chrome-assets/shader-metadata.json",
     "contents": "Fresh Blender 5.1 extraction shared by all 26 Chrome Asset catalog entries; render-specific graph reconstruction remains explicit per supported contract."
   },
+  "n03dShaderMetadata": {
+    "materials": 46,
+    "shaderGroups": 11,
+    "sharedSidecar": "dojo/n03d/shader-metadata.json",
+    "contents": "Fresh Blender 5.1 extraction shared by all 28 N03D printing catalog entries, including MatCap and index-viewer shader group internals."
+  },
   "packedStickerTextures": {
     "restored": 6,
     "missingFromBlend": ["tree sticky.png", "ryu electrify1.png"],
