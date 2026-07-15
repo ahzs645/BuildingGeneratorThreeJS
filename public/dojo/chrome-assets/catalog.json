@@ -169,6 +169,7 @@
     "dump": "dojo/chrome-assets/img-pixel-stippler/dump.json",
     "reference": "dojo/references/chrome-assets/img-pixel-stippler.png",
     "blenderStats": { "verts": 72094, "faces": 71550 },
+    "note": "Exact Blender geometry and four-decimal bounds across four cases covering pixelation, density, and structure. The packed image is sampled into the img attribute; the gallery currently shows the normalized comparison material rather than Blender's procedural Voronoi stipple shader.",
     "controls": [
       { "name": "pixelate", "label": "Pixelate", "min": 0.5, "max": 1, "step": 0.000001, "value": 0.5988134145736694 },
       { "name": "STIPPLE DENSITY", "label": "Stipple density", "min": 25, "max": 500, "step": 1, "value": 333 },
