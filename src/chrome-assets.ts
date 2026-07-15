@@ -20,7 +20,7 @@ type VectorControl = { type: "vector"; name: string; label: string; value: [numb
 type SelectControl = { type: "select"; name: string; label: string; value: number | string; options: { label: string; value: number | string }[] };
 type Control = RangeControl | CheckboxControl | TextControl | VectorControl | SelectControl;
 type AssetFont = { url: string; family: string; requiredFor: string; fallback: string };
-type Asset = { id: string; title: string; object: string; dump: string; reference: string; blenderStats: { verts: number; faces: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; controls: Control[] };
+type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; blenderStats: { verts: number; faces: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; controls: Control[] };
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
@@ -125,7 +125,17 @@ async function prepareFont(asset: Asset): Promise<void> {
 }
 async function evaluate(): Promise<void> { const id=++requestId; status.classList.remove("ready");status.textContent="Evaluating extracted graph…";const started=performance.now();const worker=new Worker(new URL("./blend-import-worker.ts",import.meta.url),{type:"module",name:"chrome-assets"});const result=await new Promise<Reply>((resolve,reject)=>{worker.onmessage=(event:MessageEvent<Reply>)=>resolve(event.data);worker.onerror=(event)=>reject(new Error(event.message));worker.postMessage({id,dump,object:current.object,overrides:overrides()});});worker.terminate();if(!result.ok)throw new Error(result.error);if(result.id<appliedId)return;appliedId=result.id;model.clear();model.add(makeMesh(result.soup));frame();vmCount.textContent=`${result.soup.stats.verts.toLocaleString()} verts · ${result.soup.stats.faces.toLocaleString()} faces`;runtime.textContent=`${((performance.now()-started)/1000).toFixed(2)}s · ${current.object}`;const exact=result.soup.stats.verts===current.blenderStats.verts&&result.soup.stats.faces===current.blenderStats.faces;status.classList.toggle("ready",exact);status.textContent=exact?"Topology counts match Blender":current.note??"Geometry differs from Blender reference"; }
 function queue(): void { clearTimeout(timer);timer=window.setTimeout(()=>void evaluate().catch((error)=>status.textContent=String(error)),100); }
-async function choose(): Promise<void> { current=catalog.find((item)=>item.id===select.value)??catalog[0];const asset=current;window.dispatchEvent(new CustomEvent("chrome-assets-selection-change",{detail:{id:current.id,title:current.title,object:current.object,dumpUrl:current.dump}}));reference.src=publicUrl(current.reference);blenderCount.textContent=`${current.blenderStats.verts.toLocaleString()} verts · ${current.blenderStats.faces.toLocaleString()} faces`;note.textContent=current.note??"";note.hidden=!current.note;renderControls();await prepareFont(asset);if(current!==asset)return;dump=await fetch(publicUrl(current.dump),{cache:"no-store"}).then((response)=>response.json());await evaluate(); }
+async function choose(): Promise<void> {
+  current=catalog.find((item)=>item.id===select.value)??catalog[0];const asset=current;
+  window.dispatchEvent(new CustomEvent("chrome-assets-selection-change",{detail:{id:current.id,title:current.title,object:current.object,dumpUrl:current.dump}}));reference.src=publicUrl(current.reference);blenderCount.textContent=`${current.blenderStats.verts.toLocaleString()} verts · ${current.blenderStats.faces.toLocaleString()} faces`;note.textContent=current.note??"";note.hidden=!current.note;renderControls();
+  await prepareFont(asset);if(current!==asset)return;
+  const [geometryDump,shaderMetadata]=await Promise.all([
+    fetch(publicUrl(asset.dump),{cache:"no-store"}).then((response)=>response.json()),
+    asset.shaderMetadata?fetch(publicUrl(asset.shaderMetadata),{cache:"no-store"}).then((response)=>response.json()):Promise.resolve(null),
+  ]);
+  if(current!==asset)return;
+  dump=Object.assign(geometryDump,shaderMetadata??{});await evaluate();
+}
 select.addEventListener("change",()=>{const url=new URL(location.href);url.searchParams.set("asset",select.value);history.replaceState(null,"",url);void choose();});reset.addEventListener("click",()=>{renderControls();queue();});addEventListener("resize",resize);renderer.setAnimationLoop(()=>{orbit.update();renderer.render(scene,camera);});
 fetch(publicUrl("dojo/chrome-assets/catalog.json"),{cache:"no-store"}).then((response)=>response.json()).then((items:Asset[])=>{catalog=items;for(const item of catalog){const option=document.createElement("option");option.value=item.id;option.textContent=item.title;select.append(option);}const requested=new URLSearchParams(location.search).get("asset");if(requested&&catalog.some((item)=>item.id===requested))select.value=requested;resize();return choose();}).catch((error)=>status.textContent=String(error));
 
