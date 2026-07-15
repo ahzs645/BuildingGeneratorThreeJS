@@ -19,6 +19,10 @@ const nodesNodeMetadata = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/nodes-node/shader-metadata.json",
   import.meta.url,
 )), "utf8"));
+const mathClayMetadata = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/math-clay/shader-metadata.json",
+  import.meta.url,
+)), "utf8"));
 const catalog = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/chrome-assets/catalog.json",
   import.meta.url,
@@ -83,5 +87,19 @@ test("every Nodes Node root loads its shared shader sidecar", () => {
   assert.equal(assets.length, 12);
   for (const asset of assets) {
     assert.equal(asset.shaderMetadata, "dojo/nodes-node/shader-metadata.json");
+  }
+});
+
+test("Math Clay sidecar preserves its authored toon group", () => {
+  assert.equal(Object.keys(mathClayMetadata.materials).length, 12);
+  assert.equal(Object.keys(mathClayMetadata.shader_node_groups).length, 2);
+  assert.ok(mathClayMetadata.shader_node_groups["_Toon Cycles ShaderA"].nodes.length > 0);
+});
+
+test("every Math Clay root loads its shared shader sidecar", () => {
+  const assets = catalog.filter((asset: any) => asset.dump.startsWith("dojo/math-clay/"));
+  assert.equal(assets.length, 13);
+  for (const asset of assets) {
+    assert.equal(asset.shaderMetadata, "dojo/math-clay/shader-metadata.json");
   }
 });

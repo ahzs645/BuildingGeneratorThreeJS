@@ -70,6 +70,12 @@
     "sharedSidecar": "dojo/nodes-node/shader-metadata.json",
     "contents": "Fresh Blender 5.1 extraction shared by all 12 Nodes Node roots, including the vtext shader group internals."
   },
+  "mathClayShaderMetadata": {
+    "materials": 12,
+    "shaderGroups": 2,
+    "sharedSidecar": "dojo/math-clay/shader-metadata.json",
+    "contents": "Fresh Blender 5.1 extraction shared by all 13 Math Clay roots, including the authored toon and bevel shader groups."
+  },
   "packedStickerTextures": {
     "restored": 6,
     "missingFromBlend": ["tree sticky.png", "ryu electrify1.png"],
