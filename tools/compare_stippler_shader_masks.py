@@ -1,11 +1,13 @@
-"""Compare aligned Blender and WebGL Image Pixel Stippler captures.
+"""Compare aligned Blender and WebGL authored-material captures.
 
 Usage:
   blender --background --python tools/compare_stippler_shader_masks.py -- \
     BLENDER.png WEBGL.png OUT.json
 
 The Blender capture must have a transparent background. The opt-in WebGL
-``capture=stippler-shader`` route uses #ff00ff as a segmentation background.
+``capture=authored`` and legacy ``capture=stippler-shader`` routes use #ff00ff
+as a segmentation background. The script name is retained for compatibility
+with the existing Stippler evidence pipeline.
 """
 import json
 import math
@@ -123,7 +125,7 @@ comparison = {
         "black_fraction_delta": mask_stats(webgl_mask, webgl_luminance)["black_fraction"] - mask_stats(blender_mask, blender_luminance)["black_fraction"],
         "mean_luminance_delta": mask_stats(webgl_mask, webgl_luminance)["mean_luminance"] - mask_stats(blender_mask, blender_luminance)["mean_luminance"],
     },
-    "interpretation": "The aligned silhouette and visible image structure validate the capture context, but the occupancy, macro correlation, and pixel disagreement do not establish shader parity. Residual differences include viewport filtering/sampling and may include Generated-coordinate or renderer-specific hash behavior.",
+    "interpretation": "The aligned silhouette validates the capture context, but luminance occupancy, correlation, and pixel disagreement determine whether the authored WebGL material is visually equivalent. Renderer lighting, environment, tone mapping, texture filtering, and procedural implementations may remain as residuals.",
 }
 with open(out_path, "w", encoding="utf-8") as handle:
     json.dump(comparison, handle, indent=2)

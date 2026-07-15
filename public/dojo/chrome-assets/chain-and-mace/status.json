@@ -8,15 +8,15 @@
   "coverage": "All five authored input sweeps execute with exact vertex and face counts and local bounds within 0.0001 units of Blender.",
   "validation": "Split Edges processes mesh components inside instances, matching Blender autosmooth topology. Curve Tangent now consumes Resample Curve's evaluated normalized-segment-bisector frame instead of rebuilding a length-weighted chord; the 39 pre-twist instance transforms match Blender within 0.000086 units.",
   "materialParity": {
-    "status": "authored-webgl-reconstruction",
+    "status": "material-semantics-exact-lighting-pending",
     "groups": [
-      { "material": "chrome.002", "triangles": 225148, "surface": "anisotropic rough-metal mace ball and polished chain" }
+      { "material": "chrome.002", "triangles": 225148, "surface": "roughness 2/15 mace ball and zero-roughness polished chain" }
     ],
     "attributes": {
       "gnvmSoup": { "1": { "domain": "POINT", "zeroVertices": 11781, "oneVertices": 108946, "shaderUse": false } },
       "blenderEvaluated": { "1": { "domain": "POINT", "value": 1, "count": 120727 }, "rough": { "domain": "FACE", "zeroFaces": 205408, "value2Faces": 9310 } },
       "restoredForShader": { "rough": { "mace": 2, "chainMissingValue": 0 } }
     },
-    "evidence": "The exact soup contains an 18,620-triangle chrome.002 range and a 206,528-triangle null range. Blender's realized mesh has slots [chrome.002, null], assigns all 214,718 faces to slot zero, and carries rough=2 on the 9,310 mace faces while the joined chain resolves it to zero. The browser restores the equivalent per-vertex shader input from the exact material ranges. The source object's grainy test slot is not used by the generated surface. Authored/diagnostic preview switching is exposed in the Chrome Assets page."
+    "evidence": "The exact soup contains an 18,620-triangle chrome.002 range and a 206,528-triangle null range. Blender's realized mesh has slots [chrome.002, null], assigns all 214,718 faces to slot zero, and carries rough=2 on the 9,310 mace faces while the joined chain resolves it to zero. The authored Mapping output drives Noise Scale while Noise Vector stays zero, so Blender produces a constant mapped value of 1/15 rather than spatial grain; the browser now reproduces roughness 2/15 on the mace and zero on the chain. A 768px aligned WebGL capture lowers luminance MAE from 0.5291 to 0.5178, but remains 0.4731 mean luminance above Blender because the page still uses Three.js RoomEnvironment plus hemisphere/directional lights instead of Blender's dark studio world and two area lights. Geometry and material parameters are matched; authored-lighting parity remains pending."
   }
 }

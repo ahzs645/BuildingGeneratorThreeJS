@@ -56,62 +56,29 @@ export function makeChainMaceMaterial(
   if (!config) return null;
   const roughness = geometry.getAttribute(config.roughnessAttribute);
   if (!roughness || roughness.itemSize !== 1) return null;
-  geometry.computeBoundingBox();
-  const bounds = geometry.boundingBox;
-  if (!bounds) return null;
-  const size = bounds.getSize(new THREE.Vector3());
-  const scalar = (value: number): string => Number.isInteger(value) ? value.toFixed(1) : String(value);
   const material = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(...config.baseColor),
     metalness: config.metallic,
     roughness: 0,
-    envMapIntensity: 1.35,
+    envMapIntensity: 1,
     side: THREE.DoubleSide,
   });
   material.name = `${materialName} · authored Chain & Mace chrome reconstruction`;
   material.userData.chainMaceContract = config;
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", `#include <common>\nattribute float ${config.roughnessAttribute};\nvarying vec3 vChainMaceGenerated;\nvarying float vChainMaceRough;`)
-      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvChainMaceGenerated = (position - vec3(${scalar(bounds.min.x)}, ${scalar(bounds.min.y)}, ${scalar(bounds.min.z)})) / max(vec3(${scalar(size.x)}, ${scalar(size.y)}, ${scalar(size.z)}), vec3(1e-7));\nvChainMaceRough = ${config.roughnessAttribute};`);
+      .replace("#include <common>", `#include <common>\nattribute float ${config.roughnessAttribute};\nvarying float vChainMaceRough;`)
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvChainMaceRough = ${config.roughnessAttribute};`);
     shader.fragmentShader = shader.fragmentShader
       .replace("#include <common>", `#include <common>
-varying vec3 vChainMaceGenerated;
 varying float vChainMaceRough;
-float chainMaceHash(vec3 p) {
-  p = fract(p * 0.1031);
-  p += dot(p, p.yzx + 33.33);
-  return fract((p.x + p.y) * p.z);
-}
-float chainMaceNoise(vec3 p) {
-  vec3 i = floor(p), f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(mix(chainMaceHash(i), chainMaceHash(i + vec3(1,0,0)), f.x), mix(chainMaceHash(i + vec3(0,1,0)), chainMaceHash(i + vec3(1,1,0)), f.x), f.y), mix(mix(chainMaceHash(i + vec3(0,0,1)), chainMaceHash(i + vec3(1,0,1)), f.x), mix(chainMaceHash(i + vec3(0,1,1)), chainMaceHash(i + vec3(1,1,1)), f.x), f.y), f.z);
-}
-float chainMaceFbm(vec3 p) {
-  float sum = 0.0, amplitude = 0.5714286, normalization = 0.0;
-  for (int octave = 0; octave < 3; octave++) {
-    sum += chainMaceNoise(p) * amplitude;
-    normalization += amplitude;
-    p *= ${scalar(config.noise.lacunarity)};
-    amplitude *= ${scalar(config.noise.roughness)};
-  }
-  return sum / max(normalization, 1e-7);
-}
 `)
       .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
-vec3 chainMaceMapped = vChainMaceGenerated * vec3(${config.generatedScale.map(scalar).join(", ")});
-float chainMaceScale = (chainMaceMapped.x + chainMaceMapped.y + chainMaceMapped.z) / 3.0;
-vec3 chainMacePosition = vChainMaceGenerated * chainMaceScale;
-chainMacePosition += ${scalar(config.noise.distortion)} * vec3(
-  chainMaceNoise(chainMacePosition + vec3(0.0, 0.0, 0.0)),
-  chainMaceNoise(chainMacePosition + vec3(19.1, 7.7, 3.4)),
-  chainMaceNoise(chainMacePosition + vec3(5.2, 23.8, 11.6))
-);
-float chainMaceFac = chainMaceFbm(chainMacePosition);
-float chainMaceMappedRoughness = ${scalar(config.noise.toMin)} + (chainMaceFac - ${scalar(config.noise.fromMin)}) * (${scalar(config.noise.toMax)} - ${scalar(config.noise.toMin)}) / max(${scalar(config.noise.fromMax)} - ${scalar(config.noise.fromMin)}, 1e-7);
-roughnessFactor = clamp(chainMaceMappedRoughness * max(vChainMaceRough, 0.0), 0.0, 1.0);`);
+// The authored Mapping output is connected to Noise.Scale, not Noise.Vector.
+// Blender therefore evaluates one constant noise sample. Its mapped value is
+// 1/15, yielding roughness 2/15 on the mace (rough=2) and zero on the chain.
+roughnessFactor = clamp((1.0 / 15.0) * max(vChainMaceRough, 0.0), 0.0, 1.0);`);
   };
-  material.customProgramCacheKey = () => `chain-mace-chrome-${materialName}-v1`;
+  material.customProgramCacheKey = () => `chain-mace-chrome-${materialName}-v2`;
   return material;
 }

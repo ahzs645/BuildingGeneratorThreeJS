@@ -61,9 +61,10 @@ test("resolves both exact soup ranges to the evaluated chrome material", async (
   assert.equal(material?.name, "chrome.002 · authored Chain & Mace chrome reconstruction");
   assert.equal(material?.metalness, 1);
   assert.equal(material?.roughness, 0);
-  assert.equal(material?.envMapIntensity, 1.35);
+  assert.equal(material?.envMapIntensity, 1);
   assert.match(String(material?.customProgramCacheKey()), /chain-mace-chrome/);
-  assert.match(String(material?.onBeforeCompile), /chainMaceFbm/);
+  assert.match(String(material?.onBeforeCompile), /1\.0 \/ 15\.0/);
+  assert.doesNotMatch(String(material?.onBeforeCompile), /chainMaceNoise/);
   geometry.dispose();
   material?.dispose();
 });

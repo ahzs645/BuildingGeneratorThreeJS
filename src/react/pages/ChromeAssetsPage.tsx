@@ -26,7 +26,9 @@ export default function ChromeAssetsPage(): React.JSX.Element {
   const [graphOpen, setGraphOpen] = useState(true);
   const [graphMaximized, setGraphMaximized] = useState(false);
   const showTypePixelBrushGraph = activeAssetId === "type-pixel-brush";
-  const shaderCapture = query.get("capture") === "stippler-shader" && activeAssetId === "img-pixel-stippler";
+  const captureMode = query.get("capture");
+  const shaderCapture = captureMode === "authored"
+    || (captureMode === "stippler-shader" && activeAssetId === "img-pixel-stippler");
 
   useEffect(() => {
     const selected = (event: Event): void => {

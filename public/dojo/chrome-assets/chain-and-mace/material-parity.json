@@ -1,0 +1,20 @@
+{
+  "capture": {
+    "resolution": [768, 768],
+    "blenderReference": "../../references/chrome-assets/chain-and-mace-shader.png",
+    "route": "/chrome-assets?asset=chain-and-mace&capture=authored"
+  },
+  "beforeConstantRoughnessFix": {
+    "surfaceMaskIou": 0.9898077397091447,
+    "pixelLuminanceMae": 0.5290896406143878,
+    "pixelLuminanceCorrelation": 0.07075031848776307,
+    "meanLuminanceDelta": 0.5017245119193858
+  },
+  "afterConstantRoughnessFix": {
+    "surfaceMaskIou": 0.9400404957807141,
+    "pixelLuminanceMae": 0.5178062359744477,
+    "pixelLuminanceCorrelation": 0.02716114428240994,
+    "meanLuminanceDelta": 0.4730760836986345
+  },
+  "interpretation": "The material graph's roughness semantics are now exact and the invented spatial grain is removed. The dominant remaining visual difference is the environment and light rig; the current shared RoomEnvironment is much brighter than Blender's authored studio world. Surface-mask IoU varied between browser capture sessions, so lighting progress is judged by aligned intersection luminance and must be re-baselined after the capture environment is made deterministic."
+}
