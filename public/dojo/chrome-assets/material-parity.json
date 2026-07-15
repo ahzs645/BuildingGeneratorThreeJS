@@ -50,6 +50,12 @@
     "sharedSidecar": "dojo/joints/shader-metadata.json",
     "contents": "Fresh Blender 5.1 extraction with Color Ramp elements and internal ShaderNodeTree definitions; merged into the four joint assets without rewriting their validated geometry dumps."
   },
+  "chromeAssetShaderMetadata": {
+    "materials": 35,
+    "shaderGroups": 11,
+    "sharedSidecar": "dojo/chrome-assets/shader-metadata.json",
+    "contents": "Fresh Blender 5.1 extraction shared by all 26 Chrome Asset catalog entries; render-specific graph reconstruction remains explicit per supported contract."
+  },
   "limitations": [
     "Linked procedural inputs currently use their constant fallback and are labeled as approximations on the Three.js material contract.",
     "Mix Shader, shader-group, texture, coordinate-mapping, bump, and displacement networks require focused WebGL reconstructions.",
