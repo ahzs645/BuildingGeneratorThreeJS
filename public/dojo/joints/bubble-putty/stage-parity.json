@@ -1,0 +1,119 @@
+{
+  "source": "Bubble Putty authored-finalize intermediate probes",
+  "object": "PUTTY.002",
+  "root": "Bubble Putty Generator_9OCT2024_01",
+  "face_convention": {
+    "blender": "polygon count, with triangles reported separately",
+    "gnvm": "triangle count"
+  },
+  "stages": [
+    {
+      "stage": "authored bubble layout",
+      "node": "Store Named Attribute",
+      "blender": {
+        "verts": 10272,
+        "faces": 20480,
+        "triangles": 20480,
+        "bbox": { "min": [-2.0781, -2.4766, -3.8332], "max": [3.9771, 3.5893, 3.4031] }
+      },
+      "gnvm_after": {
+        "verts": 10272,
+        "faces": 20480,
+        "bbox": { "min": [-2.0781, -2.4766, -3.8332], "max": [3.9771, 3.5893, 3.4031] }
+      },
+      "classification": "exact"
+    },
+    {
+      "stage": "procedural noise displacement",
+      "group": ",distort sculpt",
+      "node": "Set Position",
+      "blender": {
+        "verts": 10272,
+        "faces": 20480,
+        "triangles": 20480,
+        "bbox": { "min": [-1.9137, -2.4273, -3.6632], "max": [3.9192, 3.8456, 3.7332] }
+      },
+      "gnvm_before": {
+        "verts": 10272,
+        "faces": 20480,
+        "bbox": { "min": [-2.5527, -2.8365, -4.1078], "max": [4.4286, 4.043, 3.5851] }
+      },
+      "gnvm_after": {
+        "verts": 10272,
+        "faces": 20480,
+        "bbox": { "min": [-1.9138, -2.4269, -3.6632], "max": [3.9222, 3.8456, 3.7327] }
+      },
+      "classification": "fixed: Blender hash-derived distortion offsets"
+    },
+    {
+      "stage": "nearest-surface mix",
+      "group": ",distort sculpt",
+      "node": "Set Position.001",
+      "blender": {
+        "verts": 10272,
+        "faces": 20480,
+        "triangles": 20480,
+        "bbox": { "min": [-1.6115, -2.6132, -3.6769], "max": [3.8816, 3.7009, 3.528] }
+      },
+      "gnvm_after": {
+        "verts": 10272,
+        "faces": 20480,
+        "bbox": { "min": [-1.61, -2.6439, -3.6802], "max": [3.8918, 3.6966, 3.5401] }
+      },
+      "classification": "next field mismatch: Geometry Proximity position / nearest-surface semantics"
+    },
+    {
+      "stage": "tight wrap and dual mesh",
+      "node": "Group.013",
+      "blender": {
+        "verts": 1352,
+        "faces": 1350,
+        "triangles": 2700,
+        "bbox": { "min": [-1.6018, -2.4843, -3.4666], "max": [3.7022, 3.573, 3.4759] }
+      },
+      "gnvm_after": {
+        "verts": 1352,
+        "faces": 1350,
+        "bbox": { "min": [-1.6008, -2.4642, -3.458], "max": [3.692, 3.573, 3.4743] }
+      },
+      "classification": "topology exact; downstream of nearest-surface field mismatch"
+    },
+    {
+      "stage": "dynamic triangulation",
+      "node": "Group.007",
+      "blender": {
+        "verts": 1352,
+        "faces": 2700,
+        "triangles": 2700,
+        "bbox": { "min": [-1.5862, -2.3911, -3.4024], "max": [3.6293, 3.5198, 3.4078] }
+      },
+      "gnvm_after": {
+        "verts": 1352,
+        "faces": 2700,
+        "bbox": { "min": [-1.5838, -2.3849, -3.3992], "max": [3.6246, 3.5192, 3.4055] }
+      },
+      "classification": "topology exact"
+    },
+    {
+      "stage": "exact boolean",
+      "node": "Group.005",
+      "blender": {
+        "verts": 3302,
+        "faces": 4675,
+        "triangles": 6608,
+        "bbox": { "min": [-1.5862, -2.1273, -3.4024], "max": [3.5734, 3.5198, 3.4078] }
+      },
+      "gnvm_before": {
+        "verts": 58561,
+        "faces": 102007,
+        "bbox": { "min": [-2.2326, -2.6957, -3.9315], "max": [4.2015, 3.698, 3.2504] }
+      },
+      "gnvm_after": {
+        "verts": 35252,
+        "faces": 59732,
+        "bbox": { "min": [-1.5838, -2.1235, -3.3961], "max": [3.6006, 3.5192, 3.4055] }
+      },
+      "classification": "bounds improved from 0.6464 to 0.0272 max-absolute difference; volume/boolean tessellation remains primary topology blocker"
+    }
+  ]
+}

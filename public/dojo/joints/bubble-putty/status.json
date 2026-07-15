@@ -8,9 +8,9 @@
     "faces": 4675
   },
   "gnvm": {
-    "verts": 4994,
-    "faces": 10088
+    "verts": 35252,
+    "faces": 59732
   },
   "coverage": "100% of the reachable node types across the 46-group, 828-node closure.",
-  "validation": "The browser reproduces the relative three-object structure, welded quad-sphere seed, repeated tight-wrap/dual-mesh deformation, and finalized boolean shell. Structure-preview topology is exact at 8,040 / 9,300. The authored stochastic bubble layout is extracted from Blender and now matches exactly before deformation at 10,272 / 20,480; the finalized browser shell is 4,994 vertices / 10,088 triangles versus Blender's 3,302 vertices / 4,675 polygons (6,608 triangles), with a 0.6464-unit maximum bounds difference. The remaining gap is procedural noise/tight-wrap field sampling and boolean tessellation, not missing bubbles. Missing Budokan and Avenir fonts belong to auxiliary label graphs and are not required by the putty surface."
+  "validation": "The browser reproduces the relative three-object structure, welded quad-sphere seed, repeated tight-wrap/dual-mesh deformation, and finalized boolean shell. Structure-preview topology is exact at 8,040 / 9,300, and the authored stochastic bubble layout matches exactly before deformation at 10,272 / 20,480. Blender's hash-derived 3D Noise Texture distortion offsets now match explicit field probes within 0.000003 and reduce the finalized maximum bounds difference from 0.6464 to 0.0272. The current finalized browser shell is 35,252 vertices / 59,732 triangles versus Blender's 3,302 vertices / 4,675 polygons (6,608 triangles); its remaining topology gap is volume/boolean tessellation, while the next upstream surface target is Geometry Proximity nearest-surface position semantics. Missing Budokan and Avenir fonts belong to auxiliary label graphs and are not required by the putty surface."
 }

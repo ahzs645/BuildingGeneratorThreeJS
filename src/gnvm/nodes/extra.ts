@@ -417,6 +417,32 @@ function blenderRandomVec4Offset(seed: number): Vec4 {
   ) as Vec4;
 }
 
+const blenderNoiseDistortionOffsets = [0, 1, 2].map((seed) => {
+  const offset = blenderRandomVec4Offset(seed);
+  return [offset[0], offset[1], offset[2]] as Vec3;
+});
+
+// Blender offsets each distortion axis with random_float3_offset(seed), where
+// seed is 0, 1, then 2. Keeping this in one pure function makes the CPU
+// evaluator testable against explicit Blender field samples.
+export function blenderNoiseTexture3D(
+  position: Vec3,
+  scale: number,
+  detail: number,
+  roughness: number,
+  lacunarity: number,
+  distortion: number,
+  normalize = true,
+): number {
+  let p = vscale(position, scale);
+  if (Math.abs(distortion) > EPS) {
+    p = vadd(p, blenderNoiseDistortionOffsets.map((offset) =>
+      distortion * blenderSNoise3(vadd(p, offset)),
+    ) as Vec3);
+  }
+  return blenderFbm3(p, detail, Math.max(0, roughness), Math.max(1e-4, lacunarity), normalize);
+}
+
 reg("ShaderNodeTexNoise", (api) => {
   const linkedVector = api.node.inputs.find((socket) => socket.identifier === "Vector")?.linked ?? false;
   const vector = api.field("Vector");
@@ -434,24 +460,32 @@ reg("ShaderNodeTexNoise", (api) => {
     return Array.from({ length: ctx.size }, (_, i) => {
       let p = linkedVector ? asVec3(vectors[i] ?? 0) : ctx.position?.(i) ?? [0, 0, 0];
       const frequencyScale = asNum(scales[i] ?? 5);
-      p = vscale(p, frequencyScale);
       const warp = asNum(distortions[i] ?? 0);
-      if (Math.abs(warp) > EPS) {
-        p = vadd(p, [
-          warp * blenderSNoise3(vadd(p, [131.7, 143.2, 176.4])),
-          warp * blenderSNoise3(vadd(p, [104.3, 191.1, 152.8])),
-          warp * blenderSNoise3(vadd(p, [187.9, 118.6, 139.5])),
-        ]);
-      }
       const noiseDetail = asNum(details[i] ?? 2);
       const persistence = Math.max(0, asNum(roughnesses[i] ?? .5));
       const lac = Math.max(1e-4, asNum(lacunarities[i] ?? 2));
       if (dimensions === "4D") {
+        p = vscale(p, frequencyScale);
+        if (Math.abs(warp) > EPS) {
+          p = vadd(p, [
+            warp * blenderSNoise3(vadd(p, [131.7, 143.2, 176.4])),
+            warp * blenderSNoise3(vadd(p, [104.3, 191.1, 152.8])),
+            warp * blenderSNoise3(vadd(p, [187.9, 118.6, 139.5])),
+          ]);
+        }
         let p4: Vec4 = [p[0], p[1], p[2], asNum(ws[i] ?? 0) * frequencyScale];
         if (colorOffset) p4 = p4.map((value, axis) => value + colorOffset[axis]) as Vec4;
         return blenderFbm4(p4, noiseDetail, persistence, lac, api.prop<boolean>("normalize", true));
       }
-      return blenderFbm3(p, noiseDetail, persistence, lac, api.prop<boolean>("normalize", true));
+      return blenderNoiseTexture3D(
+        p,
+        frequencyScale,
+        noiseDetail,
+        persistence,
+        lac,
+        warp,
+        api.prop<boolean>("normalize", true),
+      );
     });
   };
   const factor = Field.make((ctx) => evaluate(ctx));
