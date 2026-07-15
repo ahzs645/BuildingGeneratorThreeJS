@@ -541,6 +541,20 @@ function meshSignedAreaXY(m: Mesh): number {
 // poly spline by arc length. Blender derives rotations from that output
 // polyline, while changed-count sampling retains interpolated source frames.
 {
+  const source = new Geometry();
+  source.curves = [
+    { points: [[0, 0, 0], [4.9, 0, 0]], cyclic: false },
+    { points: [[0, 1, 0], [.9, 1, 0]], cyclic: false },
+  ];
+  const points = runNode("GeometryNodeCurveToPoints", {
+    Curve: source, Count: 10, Length: 2,
+  }, { mode: "LENGTH" }).Points as Geometry;
+  check("Curve to Points length mode fits intervals and permits one-point splines",
+    points.mesh?.positions.length === 4,
+    `points=${points.mesh?.positions.length ?? 0}`);
+}
+
+{
   const source = curve([[0, 0, 0], [3, 0, 0], [3, 1, 0], [0, 2, 0]], true);
   const points = runNode("GeometryNodeCurveToPoints", {
     Curve: source, Count: 4, Length: .1,

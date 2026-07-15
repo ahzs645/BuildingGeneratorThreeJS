@@ -3,7 +3,7 @@
 // milestone remains easy to audit against its Blender source.
 import { Field, FieldCtx, Vec3, Elem, Domain, asNum, asVec3, vadd, vsub, vscale, vdot, vcross, vlen, vnorm } from "../core";
 import { Geometry, Mesh, buildTopology, invalidateMeshCaches, orientClosedSurface, realizeInstances, triangulateFaceIndices } from "../geometry";
-import { resampleSpline, splineFrames } from "../curves";
+import { resampleSpline, splineFrames, splineLength } from "../curves";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 import { reg, EvalAPI } from "../registry";
 
@@ -191,8 +191,16 @@ reg("GeometryNodeCurveToPoints", (api) => {
     if (mode === "EVALUATED") {
       result = { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
     } else if (mode === "LENGTH") {
-      const n = Math.max(2, Math.round((makeFieldCtx(new Geometry(), "POINT"), s.points.reduce((sum, p, i) => i ? sum + vlen(vsub(p, s.points[i - 1])) : sum, 0)) / length));
-      result = resampleSpline(s, n);
+      // Blender fits whole requested-length intervals independently on every
+      // spline. Open splines include the endpoint after those intervals, so a
+      // spline shorter than Length still emits one point. The old rounded,
+      // minimum-two rule made dense hat stitches too sparse while adding a
+      // second point to each short ground-fuzz spline.
+      const fittedIntervals = Math.floor(splineLength(s) / length);
+      const n = Math.max(1, fittedIntervals + (s.cyclic ? 0 : 1));
+      result = n === 1
+        ? { points: s.points.length ? [[...s.points[0]] as Vec3] : [], cyclic: false }
+        : resampleSpline(s, n);
     } else {
       result = resampleSpline(s, count);
     }
