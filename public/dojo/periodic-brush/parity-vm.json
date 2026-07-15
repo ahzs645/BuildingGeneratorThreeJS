@@ -1,0 +1,47 @@
+{
+  "source": "gnvm",
+  "dump": "public/dojo/periodic-brush/dump.json",
+  "object": "PERIODIC BRUSH",
+  "results": [
+    {
+      "combo": { "name": "authored default", "overrides": {} },
+      "status": "ok",
+      "verts": 7840,
+      "faces": 280,
+      "bbox": { "min": [-41.3055, -57.5685, 0], "max": [90.1366, 63.9416, 2.79] },
+      "elapsed_ms": 36
+    },
+    {
+      "combo": { "name": "dot distance 1", "overrides": { "Dot Distance": 1 } },
+      "status": "ok",
+      "verts": 16884,
+      "faces": 603,
+      "bbox": { "min": [-41.406, -57.5685, 0], "max": [90.1566, 63.9416, 6.02] },
+      "elapsed_ms": 25
+    },
+    {
+      "combo": { "name": "dot distance 4", "overrides": { "Dot Distance": 4 } },
+      "status": "ok",
+      "verts": 4228,
+      "faces": 151,
+      "bbox": { "min": [-41.2606, -57.5685, 0], "max": [90.1446, 63.9416, 1.5] },
+      "elapsed_ms": 10
+    },
+    {
+      "combo": { "name": "dot size 0.3", "overrides": { "dot size": 0.3 } },
+      "status": "ok",
+      "verts": 7840,
+      "faces": 280,
+      "bbox": { "min": [-33.2147, -49.4776, 0], "max": [82.0457, 55.8508, 2.79] },
+      "elapsed_ms": 10
+    },
+    {
+      "combo": { "name": "dot size 1.75", "overrides": { "dot size": 1.75 } },
+      "status": "ok",
+      "verts": 7840,
+      "faces": 280,
+      "bbox": { "min": [-49.9742, -66.2372, 0], "max": [98.8053, 72.6104, 2.79] },
+      "elapsed_ms": 12
+    }
+  ]
+}

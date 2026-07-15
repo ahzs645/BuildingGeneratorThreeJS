@@ -1,0 +1,55 @@
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "PERIODIC BRUSH",
+  "modifier": "GeometryNodes",
+  "node_group": "dot periodic brush.002",
+  "saved_values": {
+    "dot object": "outline sticker.001",
+    "dot size": 1.0,
+    "Dot Distance": 2.1514170169830322,
+    "Collection": "period pack"
+  },
+  "results": [
+    {
+      "combo": { "name": "authored default", "overrides": {} },
+      "status": "ok",
+      "verts": 7840,
+      "faces": 280,
+      "bbox": { "min": [-41.3055, -57.5685, 0.0], "max": [90.1366, 63.9416, 2.79] },
+      "elapsed_ms": 4.1
+    },
+    {
+      "combo": { "name": "dot distance 1", "overrides": { "Dot Distance": 1 } },
+      "status": "ok",
+      "verts": 16884,
+      "faces": 603,
+      "bbox": { "min": [-41.406, -57.5685, 0.0], "max": [90.1566, 63.9416, 6.02] },
+      "elapsed_ms": 8.3
+    },
+    {
+      "combo": { "name": "dot distance 4", "overrides": { "Dot Distance": 4 } },
+      "status": "ok",
+      "verts": 4228,
+      "faces": 151,
+      "bbox": { "min": [-41.2606, -57.5685, 0.0], "max": [90.1446, 63.9416, 1.5] },
+      "elapsed_ms": 2.8
+    },
+    {
+      "combo": { "name": "dot size 0.3", "overrides": { "dot size": 0.3 } },
+      "status": "ok",
+      "verts": 7840,
+      "faces": 280,
+      "bbox": { "min": [-33.2147, -49.4776, 0.0], "max": [82.0457, 55.8508, 2.79] },
+      "elapsed_ms": 4.2
+    },
+    {
+      "combo": { "name": "dot size 1.75", "overrides": { "dot size": 1.75 } },
+      "status": "ok",
+      "verts": 7840,
+      "faces": 280,
+      "bbox": { "min": [-49.9742, -66.2372, 0.0], "max": [98.8053, 72.6104, 2.79] },
+      "elapsed_ms": 4.1
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "periodic-brush",
+  "object": "PERIODIC BRUSH",
+  "root": "dot periodic brush.002",
+  "status": "exact-sweep",
+  "blender": { "verts": 7840, "faces": 280 },
+  "gnvm": { "verts": 7840, "faces": 280 },
+  "coverage": "100% of reachable node types across the single-group, 13-node graph.",
+  "validation": "Exact Blender topology and four-decimal bounds across five cases covering the authored result, two dot distances, and two dot sizes. Collection Info reproduces the evaluated period-pack collection children and their authored transforms."
+}

@@ -1,0 +1,30 @@
+[
+  {
+    "name": "authored default",
+    "overrides": {}
+  },
+  {
+    "name": "dot distance 1",
+    "overrides": {
+      "Dot Distance": 1
+    }
+  },
+  {
+    "name": "dot distance 4",
+    "overrides": {
+      "Dot Distance": 4
+    }
+  },
+  {
+    "name": "dot size 0.3",
+    "overrides": {
+      "dot size": 0.3
+    }
+  },
+  {
+    "name": "dot size 1.75",
+    "overrides": {
+      "dot size": 1.75
+    }
+  }
+]
