@@ -1,0 +1,37 @@
+{
+  "target": {
+    "id": "nodes-node-source-cube",
+    "object": "Cube.002",
+    "root": "Geometry Nodes.006"
+  },
+  "geometry": {
+    "blender": { "verts": 8, "faces": 6 },
+    "gnvm": { "verts": 8, "faces": 6, "tris": 12 },
+    "localBounds": { "min": [-1, -1, -1], "max": [1, 1, 1] },
+    "coverage": "100% across 9 reachable nodes in 2 groups"
+  },
+  "blenderWorkbenchContract": {
+    "engine": "BLENDER_WORKBENCH",
+    "cameraDirection": [1, -1.25, 0.85],
+    "orthographicScale": 2.9,
+    "light": "STUDIO Default",
+    "materialColor": [0.8, 0.8, 0.8],
+    "shadows": true,
+    "cavity": "BOTH",
+    "specularHighlight": true,
+    "viewTransform": "AgX Medium High Contrast",
+    "filmTransparent": true
+  },
+  "authoredCaptureComparison": {
+    "viewport": [570, 570],
+    "maskIoU": 0.9792,
+    "intersectionPixels": 263866,
+    "unionPixels": 269470,
+    "luminanceMAE": 0.28199,
+    "browserMeanLuminance": 0.14083,
+    "blenderMeanLuminance": 0.40344,
+    "luminanceCorrelation": -0.08043
+  },
+  "result": "exact geometry and strong camera silhouette; WebGL Workbench lighting remains an explicit approximation",
+  "note": "Blender Workbench's studio light, cavity pass, and AgX raster are not reproduced by Three.js PBR. The standard gallery is too bright; the authored-capture mode is too dark. No pixel-parity claim is made."
+}

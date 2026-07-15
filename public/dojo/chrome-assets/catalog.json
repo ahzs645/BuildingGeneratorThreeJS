@@ -1174,7 +1174,7 @@
     "blenderStats": { "verts": 8, "faces": 6 },
     "localSpace": true,
     "workbenchColor": [0.8, 0.8, 0.8],
-    "note": "Exact two-node passthrough root: 8 vertices and 6 faces in Blender and the browser.",
+    "note": "Exact source geometry: 8 vertices / 6 faces and local bounds [-1, -1, -1] to [1, 1, 1] in Blender and the browser. The fixed-camera silhouette reaches 0.9792 IoU, but Three.js does not yet reproduce Blender Workbench's studio/cavity raster; material lighting remains explicitly approximate.",
     "controls": []
   },
   {
