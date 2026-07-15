@@ -82,7 +82,7 @@
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/ui-window-generator.png",
     "blenderStats": { "verts": 35886, "faces": 33474 },
-    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. Authored topology matches Blender exactly at 35,886 / 33,474, with local bounds within 0.6513 units. Both subdivision validation cases are also topology-exact; subdivide=0 is within 0.0101 bounds units.",
+    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. Authored topology matches Blender exactly at 35,886 / 33,474, and both subdivision cases are topology-exact. The title and secondary frame are within 0.0102 bounds units; the authored 0.6513 residual is isolated to the primary frame's Set Position.006 after 334 weighted vector Blur Attribute iterations. Blender's literal mixer rule fixes UI bounds but regresses the exact 3D Chrome Crayon Generator, so shared Weight field/domain semantics must be reconciled before retaining it.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",
@@ -451,7 +451,7 @@
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/geometry-nodes-001.png",
     "blenderStats": { "verts": 61812, "faces": 53892 },
-    "note": "The full 1,007-node root executes Blender's authored three-pass sharpen group, including face-domain Gradient Direction normalization before point interpolation. Authored output is 61,697 / 53,892 versus Blender's 61,812 / 53,892, with bounds within 0.0303 units. The first divergence is the evaluated RELATIVE Object Info target: topology and all 52,555 Raycast hits are exact, while a 0.0000453 target-coordinate error is amplified by near-tangent projection. Supplying all full-precision matrix_world values does not reduce it, so the remaining correction is dependency-transform evaluation rather than missing dump precision or epsilon snapping.",
+    "note": "The full 1,007-node root executes Blender's authored three-pass sharpen group, including face-domain Gradient Direction normalization before point interpolation. Authored output is 61,697 / 53,892 versus Blender's 61,812 / 53,892, with bounds within 0.0303 units. The first divergence is the evaluated RELATIVE Object Info target: topology and all 52,555 Raycast hits are exact, while a 0.0000453 coordinate error is amplified by near-tangent projection. Exact evaluated float relative-matrix extraction now reduces target RMS error 3.46×, but the final temporary result loses one face, so the tracked dump remains on the stronger topology checkpoint pending downstream float/order reconciliation.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",
@@ -847,7 +847,7 @@
     "blenderStats": { "verts": 11162, "faces": 8064 },
     "localSpace": true,
     "surfaceBounds": true,
-    "note": "The complete 296-group, 2,413-node neupipe product builds its six-way pipe layout, per-instance sleeves, signed-distance joint shell, and dual-mesh smoothing in-browser. Relative collection affine transforms survive the instance-domain For Each zone without an Euler round-trip: the authored result is 11,230 / 8,116 versus Blender's 11,162 / 8,064 (0.61% vertex delta) with exact collection bounds. The first coordinate difference is the first vertex of the second generated-sleeve collection child after realization; Blender-captured coordinates reproduce the exact Bullet hull, so the remaining 52-face residual begins in evaluated relative-transform arithmetic before Convex Hull.",
+    "note": "The complete 296-group, 2,413-node neupipe product builds its six-way pipe layout, per-instance sleeves, signed-distance joint shell, and dual-mesh smoothing in-browser. Relative collection affine transforms survive the instance-domain For Each zone without an Euler round-trip: the authored result is 11,230 / 8,116 versus Blender's 11,162 / 8,064 (0.61% vertex delta) with exact collection bounds. The first coordinate difference is the first vertex of the second generated-sleeve child after realization. Direct Blender probing keeps the tiny Collection Info matrix term, while the downstream For Each/Join Geometry path loses its contribution; Blender-captured coordinates reproduce the exact Bullet hull.",
     "controls": [
       { "type": "checkbox", "name": "keep structure geo", "label": "Keep structure pipes", "value": true },
       { "name": "joint size", "label": "Joint size", "min": 10, "max": 40, "step": 0.1, "value": 23.177337646484375 },

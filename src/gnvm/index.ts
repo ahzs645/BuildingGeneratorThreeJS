@@ -55,6 +55,7 @@ export interface Dump {
     rotation?: number[];
     scale?: number[];
     matrix_world?: number[][];
+    relative_matrices?: Record<string, number[][]>;
     modifiers?: { type: string; node_group?: string; input_values?: Record<string, any>; object?: string; vertex_indices?: number[]; matrix_inverse?: number[][]; strength?: number }[];
     curves?: {
       points: number[][];

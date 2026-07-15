@@ -4,6 +4,7 @@ import base64
 import hashlib
 import json
 import os
+import struct
 import sys
 
 tool_args = sys.argv[sys.argv.index("--") + 1:]
@@ -426,6 +427,15 @@ while pending_dependency_trees:
 result["dependency_objects"] = sorted(dependency_object_names)
 depsgraph = bpy.context.evaluated_depsgraph_get()
 
+
+def float32_json(value):
+    """Return the exact Python/JSON representation of one IEEE-754 float."""
+    return struct.unpack("<f", struct.pack("<f", float(value)))[0]
+
+
+def matrix_float32_json(matrix):
+    return [[float32_json(value) for value in row] for row in matrix]
+
 # Objects inside excluded asset-library collections can retain a stale
 # matrix_world until they are linked into an active scene. Recompose ordinary
 # object-parent chains from matrix_basis so targeted dumps preserve the same
@@ -444,11 +454,36 @@ def resolved_world_matrix(obj):
     world_matrix_cache[obj.name] = matrix
     return matrix
 
+
+evaluated_world_matrix_cache = {}
+def evaluated_world_matrix(obj):
+    cached = evaluated_world_matrix_cache.get(obj.name)
+    if cached is not None:
+        return cached
+    try:
+        matrix = obj.evaluated_get(depsgraph).matrix_world.copy()
+    except Exception:
+        matrix = resolved_world_matrix(obj)
+    evaluated_world_matrix_cache[obj.name] = matrix
+    return matrix
+
+
+active_evaluated_world = evaluated_world_matrix(bpy.data.objects[target_object]) if target_object and bpy.data.objects.get(target_object) else None
+
 for obj in bpy.data.objects:
     o = {"name": obj.name, "type": obj.type, "location": list(obj.location),
          "rotation": list(obj.rotation_euler), "scale": list(obj.scale),
-         "matrix_world": [[round(float(value), 9) for value in row] for row in resolved_world_matrix(obj)],
+         # Geometry Nodes consumes evaluated object_to_world matrices. Preserve
+         # their exact float32 values; decimal rounding can move a relative
+         # dependency surface by several ULPs before Raycast amplifies it.
+         "matrix_world": matrix_float32_json(evaluated_world_matrix(obj)),
          "visible": not obj.hide_render, "modifiers": [], "materials": [m.name for m in obj.data.materials if m is not None] if obj.type in ("MESH", "CURVE") and obj.data else []}
+    if active_evaluated_world is not None and obj.name in dependency_object_names:
+        # Relative Object/Collection Info is evaluated in the modifier object's
+        # space. Export Blender's own matrix inversion/multiplication result so
+        # the portable runtime does not have to reproduce it from rounded TRS.
+        relative = active_evaluated_world.inverted_safe() @ evaluated_world_matrix(obj)
+        o["relative_matrices"] = {target_object: matrix_float32_json(relative)}
     if obj.get("node_dojo_dependency_snapshot"):
         o["node_dojo_dependency_snapshot"] = str(obj["node_dojo_dependency_snapshot"])
     if obj.type == "MESH" and obj.data:

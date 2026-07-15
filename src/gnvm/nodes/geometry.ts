@@ -1,6 +1,6 @@
 // Geometry-operation handlers.
 import { Field, Vec3, asVec3, asNum, vadd } from "../core";
-import { Geometry, Mesh, InstanceRef, MATERIAL_MATCH_ATTRIBUTE, buildTopology, inverseTransformPoint, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint, transformPointFloat32, triangulateFaceIndices } from "../geometry";
+import { Geometry, Mesh, InstanceRef, MATERIAL_MATCH_ATTRIBUTE, buildTopology, inverseTransformPoint, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint, transformPointFloat32, transformPointMatrixFloat32, triangulateFaceIndices } from "../geometry";
 import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitives";
 import { reg, EvalAPI, DUMP_CONTEXT } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
@@ -200,7 +200,10 @@ reg("GeometryNodeObjectInfo", (api) => {
     // retain and use the extracted affine matrices whenever they are present.
     const objectMatrix = (obj as { matrix_world?: Matrix4Rows } | undefined)?.matrix_world;
     const activeMatrix = (active as { matrix_world?: Matrix4Rows } | undefined)?.matrix_world;
-    const relative = objectMatrix && activeMatrix
+    const extractedRelative = active?.name ? obj?.relative_matrices?.[active.name] : undefined;
+    const relative = extractedRelative
+      ? (point: Vec3) => transformPointMatrixFloat32(point, extractedRelative)
+      : objectMatrix && activeMatrix
       ? (point: Vec3) => inverseTransformByMatrix(transformByMatrix(point, objectMatrix), activeMatrix)
       : (point: Vec3) => inverseTransformPoint(transformPoint(point, loc, rot, scl), activeLoc, activeRot, activeScale);
     if (out.mesh) out.mesh.positions = out.mesh.positions.map(relative);
@@ -234,8 +237,14 @@ reg("GeometryNodeCollectionInfo", (api) => {
     if (!geometry.mesh && !geometry.curves.length && !geometry.instances.length) continue;
     const objectMatrix = (object as { matrix_world?: Matrix4Rows } | undefined)?.matrix_world;
     const activeMatrix = (DUMP_CONTEXT.activeObject as { matrix_world?: Matrix4Rows } | undefined)?.matrix_world;
-    const relative = api.prop<string>("transform_space", "ORIGINAL") === "RELATIVE" && objectMatrix && activeMatrix
-      ? relativeInstanceTransform(objectMatrix, activeMatrix)
+    const activeName = DUMP_CONTEXT.activeObject?.name;
+    const extractedRelative = activeName ? object?.relative_matrices?.[activeName] : undefined;
+    const relative = api.prop<string>("transform_space", "ORIGINAL") === "RELATIVE"
+      ? extractedRelative
+        ? relativeInstanceTransform(extractedRelative, [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+        : objectMatrix && activeMatrix
+          ? relativeInstanceTransform(objectMatrix, activeMatrix)
+          : null
       : null;
     out.instances.push({
       geometry,

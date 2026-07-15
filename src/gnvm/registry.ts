@@ -79,6 +79,7 @@ export interface DumpObject {
   rotation?: number[];
   scale?: number[];
   matrix_world?: number[][];
+  relative_matrices?: Record<string, number[][]>;
   materials?: string[];
   mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][]; attributes?: Record<string, { domain: import("./core").Domain; data: Elem[] }> };
   evaluated_mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][]; materials?: (string | null)[]; attributes?: Record<string, { domain: import("./core").Domain; data: Elem[] }> };

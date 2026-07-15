@@ -1,0 +1,36 @@
+{
+  "updated": "2026-07-15",
+  "target": {
+    "id": "periodic-brush",
+    "object": "PERIODIC BRUSH",
+    "material": "flat.nodes"
+  },
+  "geometryContract": {
+    "verts": 7840,
+    "faces": 280,
+    "tris": 7280,
+    "group": {
+      "start": 0,
+      "count": 21840,
+      "material": "flat.nodes"
+    }
+  },
+  "authoredShaderContract": {
+    "nodes": 4,
+    "links": 3,
+    "colorPath": "Geometry Attribute col Color → Emission Color",
+    "strengthPath": "Geometry Attribute power Vector → Emission Strength",
+    "evaluatedAttributes": [],
+    "blenderResolution": {
+      "col": "missing → zero color",
+      "power": "missing → zero vector/scalar",
+      "surface": "black emission"
+    },
+    "browserResolution": "Each missing input is tracked independently and resolves to zero. If either multiplicative Emission input is absent, the exact rendered result is black; assets carrying both attributes continue through the existing shader path."
+  },
+  "browserVerification": {
+    "route": "/chrome-assets?asset=periodic-brush",
+    "status": "Pending visual capture: the local in-app browser backend was unavailable during this checkpoint. The production WebGL bundle compiles, and the exact 7,840 / 280 geometry/material contract is covered by the focused runtime test."
+  },
+  "remaining": "The isolated gallery reference is a normalized geometry render rather than authored flat.nodes shader truth. This checkpoint records the exact extracted material semantics without claiming a quantitative comparison to that diagnostic reference."
+}

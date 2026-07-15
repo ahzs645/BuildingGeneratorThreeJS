@@ -14,6 +14,10 @@ const textDump = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/chrome-assets/string-to-text/dump.json",
   import.meta.url,
 )), "utf8")) as Dump;
+const periodicDump = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/periodic-brush/dump.json",
+  import.meta.url,
+)), "utf8")) as Dump;
 
 test("extracts the authored flat sticker emission contract", () => {
   assert.deepEqual(extractAttributeEmissionConfig(dump, "flat.nodes"), {
@@ -44,11 +48,45 @@ test("wires Outline Sticker color and power attributes into its browser material
   assert.ok(material?.isShaderMaterial);
   assert.equal(material?.name, "flat.nodes · attribute emission reconstruction");
   assert.equal(material?.toneMapped, true);
-  assert.match(material?.vertexShader ?? "", /attribute vec3 col/);
-  assert.match(material?.vertexShader ?? "", /attribute float power/);
-  assert.match(material?.fragmentShader ?? "", /tonemapping_fragment/);
+  assert.match((material as THREE.ShaderMaterial).vertexShader, /attribute vec3 col/);
+  assert.match((material as THREE.ShaderMaterial).vertexShader, /attribute float power/);
+  assert.match((material as THREE.ShaderMaterial).fragmentShader, /tonemapping_fragment/);
   geometry.dispose();
   material?.dispose();
+});
+
+test("resolves Periodic Brush's missing flat.nodes attributes independently to zero", async () => {
+  assert.deepEqual(extractAttributeEmissionConfig(periodicDump, "flat.nodes"), {
+    colorAttribute: "col",
+    strengthAttribute: "power",
+  });
+  const result = await runGenerator(periodicDump, { object: "PERIODIC BRUSH", overrides: {} });
+  assert.deepEqual(result.soup.stats, { verts: 7840, faces: 280, tris: 7280 });
+  assert.deepEqual(result.soup.groups, [{ start: 0, count: 21840, material: "flat.nodes" }]);
+  assert.deepEqual(Object.keys(result.soup.attributes), []);
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));
+  const bothMissing = makeAttributeEmissionMaterial(periodicDump, geometry, "flat.nodes");
+  assert.ok(bothMissing?.isMeshBasicMaterial);
+  assert.equal((bothMissing as THREE.MeshBasicMaterial).color.getHex(), 0x000000);
+  assert.deepEqual(bothMissing?.userData.attributeResolution, { color: "missing-zero", strength: "missing-zero" });
+
+  geometry.setAttribute("col", new THREE.Float32BufferAttribute(new Array(result.soup.stats.verts * 3).fill(1), 3));
+  const missingStrength = makeAttributeEmissionMaterial(periodicDump, geometry, "flat.nodes");
+  assert.ok(missingStrength?.isMeshBasicMaterial);
+  assert.deepEqual(missingStrength?.userData.attributeResolution, { color: "geometry-color", strength: "missing-zero" });
+
+  geometry.deleteAttribute("col");
+  geometry.setAttribute("power", new THREE.Float32BufferAttribute(new Array(result.soup.stats.verts).fill(1), 1));
+  const missingColor = makeAttributeEmissionMaterial(periodicDump, geometry, "flat.nodes");
+  assert.ok(missingColor?.isMeshBasicMaterial);
+  assert.deepEqual(missingColor?.userData.attributeResolution, { color: "missing-zero", strength: "geometry-vector" });
+
+  bothMissing?.dispose();
+  missingStrength?.dispose();
+  missingColor?.dispose();
+  geometry.dispose();
 });
 
 test("reconstructs String to Text's independently extracted emission material", async () => {

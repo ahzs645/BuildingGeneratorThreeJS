@@ -23,7 +23,7 @@ with open(fresh_path, encoding="utf-8") as handle:
 
 target_objects = {item["name"]: item for item in target.get("objects", [])}
 fresh_objects = {item["name"]: item for item in fresh.get("objects", [])}
-precision_keys = ("matrix_world", "mesh", "curves", "evaluated_mesh")
+precision_keys = ("matrix_world", "relative_matrices", "mesh", "curves", "evaluated_mesh")
 
 for name in object_names:
     if name not in target_objects or name not in fresh_objects:

@@ -2522,6 +2522,20 @@ function meshSignedAreaXY(m: Mesh): number {
   const rotatedChild = rotatedCollection.instances[0];
   check("Collection Info preserves combined matrix rotations",
     approx(transformPoint([0, 0, 2], rotatedChild.position, rotatedChild.rotation, rotatedChild.scale), [6, 5, 6]));
+  DUMP_CONTEXT.objects = [{
+    name: "rotated-child",
+    matrix_world: [[1, 0, 0, -100], [0, 1, 0, -100], [0, 0, 1, -100], [0, 0, 0, 1]],
+    relative_matrices: {
+      active: [[2, 0, 0, 7], [0, 3, 0, 8], [0, 0, 4, 9], [0, 0, 0, 1]],
+    },
+    evaluated_mesh: { verts: [[1, 2, 3]], faces: [] },
+  } as any];
+  const extractedCollection = runNode("GeometryNodeCollectionInfo", {
+    Collection: { datablock: "Collection", name: "rotated-pack" },
+    "Separate Children": true, "Reset Children": false,
+  }, { transform_space: "RELATIVE" }).Instances as Geometry;
+  check("Collection Info prefers the extracted active-relative matrix",
+    approx(realizeInstances(extractedCollection).mesh?.positions[0] ?? [], [9, 14, 21]));
   DUMP_CONTEXT.objects = savedObjects;
   DUMP_CONTEXT.collections = savedCollections;
   DUMP_CONTEXT.activeObject = savedActiveObject;
@@ -2674,6 +2688,14 @@ function meshSignedAreaXY(m: Mesh): number {
     Object: { datablock: "Object", name: "parented" }, "As Instance": false,
   }, { transform_space: "RELATIVE" }).Geometry as Geometry;
   check("Object Info uses inherited world matrix", approx(relative.mesh?.positions[0] ?? [], [10, 18, 36]), JSON.stringify(relative.mesh?.positions[0]));
+  DUMP_CONTEXT.objects[0].relative_matrices = {
+    active: [[2, 0, 0, 7], [0, 3, 0, 8], [0, 0, 4, 9], [0, 0, 0, 1]],
+  };
+  const extractedRelative = runNode("GeometryNodeObjectInfo", {
+    Object: { datablock: "Object", name: "parented" }, "As Instance": false,
+  }, { transform_space: "RELATIVE" }).Geometry as Geometry;
+  check("Object Info prefers the extracted active-relative matrix",
+    approx(extractedRelative.mesh?.positions[0] ?? [], [9, 14, 21]), JSON.stringify(extractedRelative.mesh?.positions[0]));
   DUMP_CONTEXT.objects = savedObjects;
   DUMP_CONTEXT.activeObject = savedActiveObject;
   DUMP_CONTEXT.legacyCurvePassthroughObjects.clear();

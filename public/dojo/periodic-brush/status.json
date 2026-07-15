@@ -6,5 +6,6 @@
   "blender": { "verts": 7840, "faces": 280 },
   "gnvm": { "verts": 7840, "faces": 280 },
   "coverage": "100% of reachable node types across the single-group, 13-node graph.",
+  "materialParity": "The complete 21,840-index result uses the strict flat.nodes Attribute/Emission graph. Its evaluated soup contains neither col nor power, so Blender resolves both missing Geometry Attribute outputs independently to zero; Emission Color and Strength therefore produce black. The authored browser route now preserves that result instead of substituting diagnostic green, while flat.nodes assets carrying both fields retain their existing attribute-driven emission shader.",
   "validation": "Exact Blender topology and four-decimal bounds across five cases covering the authored result, two dot distances, and two dot sizes. Collection Info reproduces the evaluated period-pack collection children and their authored transforms."
 }

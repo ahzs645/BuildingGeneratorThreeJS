@@ -45,14 +45,24 @@ export function makeAttributeEmissionMaterial(
   dump: Dump,
   geometry: THREE.BufferGeometry,
   materialName: string,
-): THREE.ShaderMaterial | null {
+): THREE.ShaderMaterial | THREE.MeshBasicMaterial | null {
   const config = extractAttributeEmissionConfig(dump, materialName);
   if (!config) return null;
   const color = geometry.getAttribute(config.colorAttribute);
   const strength = geometry.getAttribute(config.strengthAttribute);
-  if (!color || color.itemSize !== 3 || !strength || strength.itemSize !== 1) return null;
+  if (!color || !strength) {
+    const material = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide, toneMapped: true });
+    material.name = `${materialName} · missing attribute zero emission`;
+    material.userData.attributeEmissionContract = config;
+    material.userData.attributeResolution = {
+      color: color ? "geometry-color" : "missing-zero",
+      strength: strength ? "geometry-vector" : "missing-zero",
+    };
+    return material;
+  }
+  if (color.itemSize !== 3 || strength.itemSize !== 1) return null;
 
-  return new THREE.ShaderMaterial({
+  const material = new THREE.ShaderMaterial({
     name: `${materialName} · attribute emission reconstruction`,
     vertexShader: /* glsl */`
       attribute vec3 ${config.colorAttribute};
@@ -77,4 +87,7 @@ export function makeAttributeEmissionMaterial(
     side: THREE.DoubleSide,
     toneMapped: true,
   });
+  material.userData.attributeEmissionContract = config;
+  material.userData.attributeResolution = { color: "geometry-color", strength: "geometry-vector" };
+  return material;
 }
