@@ -17,7 +17,7 @@ const examples: Example[] = [
   { id: "shoen-gyroid", title: "Schoen Gyroid", detail: "Math Clay TPMS study · 46,920 faces", file: publicUrl("dojo/gallery/shoen-gyroid.glb"), accent: 0xd9a7ff },
   { id: "schwarz-p", title: "Schwarz P-Surface", detail: "Math Clay TPMS study · 18,978 faces", file: publicUrl("dojo/gallery/schwarz-p.glb"), accent: 0xffb56d },
   { id: "hat-front", title: "Send Nodes Hat", detail: "complete procedural hat assembly · 379,885 faces", file: publicUrl("dojo/gallery/hat-front.glb"), accent: 0xff758c },
-  { id: "dojo-bin", title: "Recursive Bin Generator", detail: "existing Node Dojo bake · 100% Blender fidelity", file: publicUrl("dojo/bin.glb"), accent: 0x5b83ff },
+  { id: "dojo-bin", title: "Recursive Bin Generator", detail: "existing Blender-evaluated geometry bake", file: publicUrl("dojo/bin.glb"), accent: 0x5b83ff },
 ];
 
 const canvas = document.querySelector<HTMLCanvasElement>("#app")!;

@@ -6,5 +6,5 @@ const loadBinStudio = () => import("../../bin-studio");
 
 export default function BinStudioPage(): React.JSX.Element {
   usePageRuntime("Dojo Bin Studio · interactive baked bin", loadBinStudio);
-  return <><canvas id="app"></canvas><StudioLink /><div id="hud"><b>Dojo Bin Studio</b> · pre-baked from the .blend, 100% Blender fidelity · <span id="stat">loading…</span></div></>;
+  return <><canvas id="app"></canvas><StudioLink /><div id="hud"><b>Dojo Bin Studio</b> · pre-baked Blender geometry · Three.js material preview · <span id="stat">loading…</span></div></>;
 }

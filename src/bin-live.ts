@@ -74,7 +74,7 @@ async function bake() {
     const buf = await resp.arrayBuffer();
     const gltf = await loader.parseAsync(buf, "");
     show(gltf.scene);
-    statEl.innerHTML = `<span class="ok">baked in ${(performance.now() - t0).toFixed(0)} ms</span> · Blender fidelity · drag any slider`;
+    statEl.innerHTML = `<span class="ok">baked in ${(performance.now() - t0).toFixed(0)} ms</span> · Blender-evaluated geometry · drag any slider`;
   } catch (e: any) {
     statEl.innerHTML = `<span class="err">bake failed: ${e.message}</span> — is the bake server running?`;
     console.log("BINLIVE_ERROR", e.message);

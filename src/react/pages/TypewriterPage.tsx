@@ -21,7 +21,7 @@ export default function TypewriterPage(): React.JSX.Element {
       <section className="typewriter-stats"><span>Browser GN-VM</span><strong id="typewriter-count">—</strong><small id="typewriter-runtime">Web Worker</small></section>
       <label className="typewriter-font-file"><span>Original font preview</span><input id="typewriter-font-file" type="file" accept=".ttf,font/ttf" /></label>
       <div id="typewriter-font-status" className="typewriter-font-status loading">The original Blurmed.ttf is license-restricted. Exact extracted glyph geometry is embedded; choose your local recovered TTF to match the editor preview.</div>
-      <p className="typewriter-note">Generated geometry uses the recovered <code>Blurmed.ttf</code> outline atlas extracted in Blender. The commercial TTF is not distributed by the app; <code>pixels.ttf</code> remains the legal editor-preview fallback.</p>
+      <p className="typewriter-note">Generated geometry currently uses a reusable Blender-extracted Blurmed outline atlas. The commercial binary is not distributed, but the outline atlas still requires license review; the supplied Pixels preview font also has unverified license provenance.</p>
     </aside>
     <div className="typewriter-help">Drag to orbit · scroll to zoom</div>
   </main>;

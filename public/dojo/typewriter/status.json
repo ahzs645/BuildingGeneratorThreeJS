@@ -6,6 +6,8 @@
     "original": "Blurmed.ttf",
     "geometry": "Embedded 96-glyph Blender-extracted BlurMedium Regular outline atlas (ASCII plus em dash)",
     "rawBinaryPublished": false,
+    "reusableOutlineAtlasPublished": true,
+    "licenseReview": "required",
     "editorFallback": "dojo/fonts/pixels.ttf"
   },
   "authoredFrame240Sample": {

@@ -1118,7 +1118,7 @@
     "blenderStats": { "verts": 4736, "faces": 4672 },
     "localSpace": true,
     "workbenchColor": [0.8, 0.8, 0.8],
-    "note": "Exact topology and visual parity. Portable Bézier handles, Set Handle Positions, and the two pre-Geometry-Nodes Hook modifiers reproduce Blender's paired socket noodles at 4,736 vertices and 4,672 faces.",
+    "note": "Exact topology. Portable Bézier handles, Set Handle Positions, and the two pre-Geometry-Nodes Hook modifiers reproduce Blender's paired socket noodles at 4,736 vertices and 4,672 faces.",
     "controls": []
   },
   {

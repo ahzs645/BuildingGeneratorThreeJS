@@ -11,7 +11,7 @@ export default function ChromeAssetsPage(): React.JSX.Element {
     <header className="assets-head"><p>Node Dojo coverage lab</p><h1>Live Asset Library</h1><div id="assets-status">Loading catalog…</div></header>
     <section className="assets-compare">
       <figure className="assets-pane"><figcaption><span>Blender reference</span><strong id="assets-blender-count">—</strong></figcaption><img id="assets-reference" alt="Isolated Blender reference render" /></figure>
-      <figure className="assets-pane"><figcaption><span>Browser GN-VM</span><strong id="assets-vm-count">—</strong></figcaption><canvas id="assets-canvas" /></figure>
+      <figure className="assets-pane"><figcaption><span>Browser GN-VM · normalized material</span><strong id="assets-vm-count">—</strong></figcaption><canvas id="assets-canvas" /></figure>
     </section>
     <aside className="assets-panel">
       <label><span>Ported asset</span><select id="assets-select" /></label>
