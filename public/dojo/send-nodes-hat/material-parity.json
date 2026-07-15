@@ -1,0 +1,76 @@
+{
+  "updated": "2026-07-15",
+  "target": {
+    "id": "send-nodes-hat-embroidery",
+    "object": "embroidery crv",
+    "material": "sitch.001"
+  },
+  "geometryContract": {
+    "verts": 188934,
+    "faces": 188160,
+    "tris": 376320,
+    "groups": [
+      {
+        "start": 0,
+        "count": 1128960,
+        "material": "sitch.001"
+      }
+    ],
+    "result": "The authored material reconstruction does not change the topology-exact procedural embroidery result."
+  },
+  "authoredShaderContract": {
+    "baseColor": "The Geometry Attribute node's FACE-domain RGB col value feeds Principled Base Color. The evaluated payload preserves one RGB record per realized vertex/corner and the browser binds that exact col buffer without averaging it to a scalar.",
+    "evaluatedColor": [
+      0.9770724773406982,
+      1.0,
+      0.9756893515586853
+    ],
+    "principled": {
+      "metallic": 0.23291926085948944,
+      "roughness": 0.804347813129425,
+      "ior": 1.5,
+      "transmissionWeight": 1.0
+    },
+    "generatedMapping": {
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        -0.031415924429893494,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "wave": {
+      "type": "BANDS",
+      "direction": "DIAGONAL",
+      "profile": "SIN",
+      "scale": 1.5299999713897705,
+      "distortion": 0.0,
+      "detail": 2.0,
+      "detailScale": 1.0,
+      "detailRoughness": 0.5,
+      "phaseOffset": 0.0
+    },
+    "bump": {
+      "strength": 0.3124999701976776,
+      "distance": 1.0,
+      "filterWidth": 1.0,
+      "invert": false,
+      "implementation": "The browser reuses the shared Blender-compatible Wave and derivative Bump shader core after applying the authored Generated-coordinate POINT mapping."
+    }
+  },
+  "browserVerification": {
+    "route": "/chrome-assets?asset=send-nodes-hat-embroidery",
+    "capture": "/private/tmp/send-nodes-hat-stitch-stage1-studio.png",
+    "status": "The material compiled in WebGL without warning/error console messages and the page reported Topology counts match Blender at 188,934 vertices / 188,160 faces."
+  },
+  "remaining": "The generic Chrome Assets camera keeps a one-unit minimum frame size, so this 0.0868-unit local-space embroidery appears smaller than the isolated Blender reference. The authored transparent-background capture also needs a defined transmission backdrop before it can be used for quantitative image metrics. Those presentation issues are separate from the implemented sitch.001 shader graph and exact geometry."
+}

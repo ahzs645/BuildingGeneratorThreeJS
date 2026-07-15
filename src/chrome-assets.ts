@@ -17,6 +17,7 @@ import { makeToonCyclesMaterial } from "./toon-cycles-material";
 import { makeToonOutlineMaterial } from "./toon-outline-material";
 import { makeGreyUiMaterial } from "./grey-ui-material";
 import { makePackedStickerMaterial } from "./packed-sticker-material";
+import { makeHatStitchMaterial } from "./hat-stitch-material";
 
 type RangeControl = { type?: "range"; name: string; label: string; min: number; max: number; step: number; value: number };
 type CheckboxControl = { type: "checkbox"; name: string; label: string; value: boolean };
@@ -120,6 +121,7 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
             ?? makeAttributePrincipledMaterial(dump,geometry,group.material??"")
             ?? makeFilamentMaterial(dump,geometry,group,group.material??"")
             ?? makeCrossSectionFilamentMaterial(dump,geometry,group.material??"")
+            ?? makeHatStitchMaterial(dump,geometry,group,group.material??"")
             ?? makeMahoganyMaterial(dump,geometry,group.material??"")
             ?? makeToonCyclesMaterial(dump,group.material??"")
             ?? makeToonOutlineMaterial(dump,group.material??"")
