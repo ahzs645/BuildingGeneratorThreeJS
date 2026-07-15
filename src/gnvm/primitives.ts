@@ -211,6 +211,13 @@ export function meshIcoSphere(radius = 1, subdivisions = 2): Geometry {
   const level = Math.max(1, Math.min(10, Math.floor(subdivisions)));
   const frequency = 1 << (level - 1);
   const outputRadius = f(Math.abs(radius));
+  // BMesh first stores the historical coordinates after multiplying them by
+  // `radius / 200.0f`. Subdivide Sphere then interpolates those float32
+  // coordinates and projects the result back to `radius`. Normalizing the
+  // unscaled historical constants is mathematically equivalent, but differs
+  // by a few ULPs and those differences are amplified by procedural fields.
+  const radiusDiv = f(outputRadius / f(200));
+  const baseSeed = seed.map((point) => point.map((value) => f(radiusDiv * f(value))) as Vec3);
   const vertexCache = new Map<string, number>();
   const keyFor = (vertices: number[], weights: number[]) => vertices
     .map((vertex, index) => [vertex, weights[index]] as const)
@@ -218,23 +225,34 @@ export function meshIcoSphere(radius = 1, subdivisions = 2): Geometry {
     .sort((a, b) => a[0] - b[0])
     .map((entry) => `${entry[0]}:${entry[1]}`)
     .join("|");
-  const project = (vertices: number[], weights: number[]): Vec3 => {
+  const normalizeToRadius = (point: Vec3): Vec3 => {
     if (outputRadius === 0) return [0, 0, 0];
-    const point: Vec3 = [0, 0, 0];
-    for (let axis = 0; axis < 3; axis++) {
-      let value = f(f(seed[vertices[0]][axis]) * f(weights[0]));
-      value = f(value + f(f(seed[vertices[1]][axis]) * f(weights[1])));
-      value = f(value + f(f(seed[vertices[2]][axis]) * f(weights[2])));
-      point[axis] = f(value / frequency);
-    }
     let lengthSquared = f(f(point[0] * point[0]) + f(point[1] * point[1]));
     lengthSquared = f(lengthSquared + f(point[2] * point[2]));
     const length = f(Math.sqrt(lengthSquared));
-    return length === 0 ? [0, 0, 0] : [
-      f(f(point[0] / length) * outputRadius),
-      f(f(point[1] / length) * outputRadius),
-      f(f(point[2] / length) * outputRadius),
-    ];
+    if (length === 0) return [0, 0, 0];
+    const factor = f(outputRadius / length);
+    return point.map((value) => f(value * factor)) as Vec3;
+  };
+  const interpolate = (a: Vec3, b: Vec3, numerator: number, denominator: number): Vec3 => {
+    if (numerator <= 0) return [...a] as Vec3;
+    if (numerator >= denominator) return [...b] as Vec3;
+    const t = f(f(numerator) / f(denominator));
+    const s = f(f(1) - t);
+    return [0, 1, 2].map((axis) => f(f(s * a[axis]) + f(t * b[axis]))) as Vec3;
+  };
+  const project = (vertices: number[], weights: number[]): Vec3 => {
+    const [a, b, c] = vertices.map((index) => baseSeed[index]);
+    const [wa, wb, wc] = weights;
+    // BMesh normalizes every boundary cut first. Grid-fill then creates each
+    // interior row by interpolating between the already projected boundary
+    // vertices and normalizing that new point again.
+    if (wc === 0) return normalizeToRadius(interpolate(a, b, wb, frequency));
+    if (wb === 0) return normalizeToRadius(interpolate(a, c, wc, frequency));
+    if (wa === 0) return normalizeToRadius(interpolate(b, c, wc, frequency));
+    const left = normalizeToRadius(interpolate(a, c, wc, frequency));
+    const right = normalizeToRadius(interpolate(b, c, wc, frequency));
+    return normalizeToRadius(interpolate(left, right, wb, wa + wb));
   };
   const vertex = (vertices: number[], weights: number[]) => {
     const key = keyFor(vertices, weights);

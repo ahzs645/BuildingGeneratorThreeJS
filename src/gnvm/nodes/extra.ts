@@ -276,7 +276,12 @@ reg("GeometryNodeIndexSwitch", (api) => {
   return { Output: picked instanceof Field ? picked : Field.of(0) };
 });
 
-function smoothNoiseFade(t: number): number { return t * t * t * (t * (t * 6 - 15) + 10); }
+const f32 = Math.fround;
+function smoothNoiseFade(t: number): number {
+  // BLI_noise evaluates the fade polynomial as float, not double.
+  const inner = f32(f32(f32(t * f32(6)) - f32(15)) * t + f32(10));
+  return f32(f32(f32(t * t) * t) * inner);
+}
 
 // Blender's Noise Texture is signed gradient Perlin noise backed by the
 // lookup3 integer hash. The previous sine/value-noise placeholder had neither
@@ -322,21 +327,31 @@ function blenderNoiseGrad3(hash: number, x: number, y: number, z: number): numbe
   const u = h < 8 ? x : y;
   const vt = h === 12 || h === 14 ? x : z;
   const v = h < 4 ? y : vt;
-  return (h & 1 ? -u : u) + (h & 2 ? -v : v);
+  return f32((h & 1 ? -u : u) + (h & 2 ? -v : v));
 }
 function blenderSNoise3(p: Vec3): number {
   // Geometry-node coordinates here are far below Blender's 100000 precision
   // wrapping threshold, so the periodic precision correction is unnecessary.
   const ix = Math.floor(p[0]), iy = Math.floor(p[1]), iz = Math.floor(p[2]);
-  const fx = p[0] - ix, fy = p[1] - iy, fz = p[2] - iz;
+  const fx = f32(p[0] - ix), fy = f32(p[1] - iy), fz = f32(p[2] - iz);
   const u = smoothNoiseFade(fx), v = smoothNoiseFade(fy), w = smoothNoiseFade(fz);
   const grad = (dx: number, dy: number, dz: number) => blenderNoiseGrad3(
-    blenderHashInt3(ix + dx, iy + dy, iz + dz), fx - dx, fy - dy, fz - dz,
+    blenderHashInt3(ix + dx, iy + dy, iz + dz), f32(fx - dx), f32(fy - dy), f32(fz - dz),
   );
-  const mix = (a: number, b: number, t: number) => a + (b - a) * t;
-  const z0 = mix(mix(grad(0, 0, 0), grad(1, 0, 0), u), mix(grad(0, 1, 0), grad(1, 1, 0), u), v);
-  const z1 = mix(mix(grad(0, 0, 1), grad(1, 0, 1), u), mix(grad(0, 1, 1), grad(1, 1, 1), u), v);
-  return 0.982 * mix(z0, z1, w);
+  // Match Blender's dedicated trilinear mix, whose float temporaries are
+  // observable after several fBM octaves.
+  const samples = [
+    grad(0, 0, 0), grad(1, 0, 0), grad(0, 1, 0), grad(1, 1, 0),
+    grad(0, 0, 1), grad(1, 0, 1), grad(0, 1, 1), grad(1, 1, 1),
+  ];
+  const x1 = f32(1 - u), y1 = f32(1 - v), z1 = f32(1 - w);
+  const row = (offset: number, yWeight: number, yInverse: number): number => {
+    const a = f32(f32(samples[offset] * x1) + f32(samples[offset + 1] * u));
+    const b = f32(f32(samples[offset + 2] * x1) + f32(samples[offset + 3] * u));
+    return f32(f32(yInverse * a) + f32(yWeight * b));
+  };
+  const mixed = f32(f32(z1 * row(0, v, y1)) + f32(w * row(4, v, y1)));
+  return f32(mixed * f32(0.982));
 }
 
 type Vec4 = [number, number, number, number];
@@ -371,16 +386,22 @@ function blenderFbm3(p: Vec3, detail: number, roughness: number, lacunarity: num
   let sum = 0;
   const whole = Math.floor(Math.max(0, Math.min(15, detail)));
   for (let octave = 0; octave <= whole; octave++) {
-    sum += blenderSNoise3(vscale(p, frequency)) * amplitude;
-    maxAmplitude += amplitude;
-    amplitude *= Math.max(0, roughness);
-    frequency *= lacunarity;
+    const octavePoint = p.map((value) => f32(value * frequency)) as Vec3;
+    sum = f32(sum + f32(blenderSNoise3(octavePoint) * amplitude));
+    maxAmplitude = f32(maxAmplitude + amplitude);
+    amplitude = f32(amplitude * Math.max(0, roughness));
+    frequency = f32(frequency * lacunarity);
   }
   const fraction = Math.max(0, Math.min(15, detail)) - whole;
-  const normalized = (value: number, weight: number) => normalize ? 0.5 * value / weight + 0.5 : value;
+  const normalized = (value: number, weight: number) => normalize
+    ? f32(f32(f32(.5) * value) / weight + f32(.5))
+    : f32(value);
   if (fraction <= EPS) return normalized(sum, maxAmplitude);
-  const sum2 = sum + blenderSNoise3(vscale(p, frequency)) * amplitude;
-  return normalized(sum, maxAmplitude) + (normalized(sum2, maxAmplitude + amplitude) - normalized(sum, maxAmplitude)) * fraction;
+  const octavePoint = p.map((value) => f32(value * frequency)) as Vec3;
+  const sum2 = f32(sum + f32(blenderSNoise3(octavePoint) * amplitude));
+  const a = normalized(sum, maxAmplitude);
+  const b = normalized(sum2, f32(maxAmplitude + amplitude));
+  return f32(f32(f32(1 - fraction) * a) + f32(fraction * b));
 }
 
 function blenderFbm4(p: Vec4, detail: number, roughness: number, lacunarity: number, normalize: boolean): number {
@@ -423,7 +444,7 @@ function blenderHashUint2(x: number, y: number): number {
 }
 function blenderRandomVec4Offset(seed: number): Vec4 {
   return [0, 1, 2, 3].map((component) =>
-    100 + blenderHashUint2(floatBits(seed), floatBits(component)) / 0xffffffff * 100,
+    f32(f32(100) + f32(f32(f32(blenderHashUint2(floatBits(seed), floatBits(component))) / f32(0xffffffff)) * f32(100))),
   ) as Vec4;
 }
 
@@ -444,11 +465,13 @@ export function blenderNoiseTexture3D(
   distortion: number,
   normalize = true,
 ): number {
-  let p = vscale(position, scale);
+  let p = position.map((value) => f32(value * f32(scale))) as Vec3;
   if (Math.abs(distortion) > EPS) {
-    p = vadd(p, blenderNoiseDistortionOffsets.map((offset) =>
-      distortion * blenderSNoise3(vadd(p, offset)),
-    ) as Vec3);
+    p = p.map((value, axis) => {
+      const offsetPoint = p.map((component, componentAxis) =>
+        f32(component + blenderNoiseDistortionOffsets[axis][componentAxis])) as Vec3;
+      return f32(value + f32(f32(distortion) * blenderSNoise3(offsetPoint)));
+    }) as Vec3;
   }
   // Geometry-node float fields store Noise Texture results as float32. Keep
   // that boundary explicit so later distance/threshold math does not carry

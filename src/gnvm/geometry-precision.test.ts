@@ -88,7 +88,10 @@ test("Ico Sphere uses Blender's BMesh seed and projected grid", () => {
   assert.equal(mesh.faces.length, 1280);
   assert.deepEqual(mesh.positions[0], [0, 0, -1]);
   assert.ok(mesh.positions.some((position) => position.every((value, axis) =>
-    Math.abs(value - [-0.2579365074634552, -0.7938604354858398, -0.5506852865219116][axis]) < 1e-7)));
+    // This interior grid point is copied from Blender 5.1's evaluated mesh.
+    // Projecting one barycentric interpolation misses it by 2.35e-6; BMesh's
+    // boundary-projection then row-projection path reproduces it exactly.
+    Math.abs(value - [-0.7824448347091675, 0.4693736433982849, -0.40922895073890686][axis]) < 1e-7)));
 });
 
 test("Merge by Distance keeps Blender's index-ordered representative targets", () => {
