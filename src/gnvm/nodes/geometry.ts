@@ -120,7 +120,12 @@ function relativeInstanceTransform(objectMatrix: Matrix4Rows, activeMatrix: Matr
 
 reg("GeometryNodeObjectInfo", (api) => {
   const ref = api.ref("Object");
-  const obj = DUMP_CONTEXT.objects.find((o) => o.name === ref?.name);
+  // Blender exposes a dependency-cycle back-edge as unavailable while the
+  // referenced object is still being evaluated. Falling back to its authored
+  // base mesh here silently deforms the dependency (Send Nodes Hat's front
+  // reads the pending embroidery root while the embroidery reads the front).
+  const pending = Boolean(ref?.name && DUMP_CONTEXT.evaluatingObjects.has(ref.name));
+  const obj = pending ? undefined : DUMP_CONTEXT.objects.find((o) => o.name === ref?.name);
   // Blender's Geometry output includes the referenced object's evaluated
   // modifier stack. Targeted dumps embed that mesh so nested asset generators
   // (Sticker Noodle Brush -> Polarity Sticker) remain procedural in the VM.

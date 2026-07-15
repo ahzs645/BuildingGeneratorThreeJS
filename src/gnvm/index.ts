@@ -206,6 +206,7 @@ export async function runGenerator(dump: Dump, opts: { object?: string; override
   DUMP_CONTEXT.images = dump.images ?? [];
   DUMP_CONTEXT.fonts = dump.fonts ?? {};
   DUMP_CONTEXT.evaluatedObjects.clear();
+  DUMP_CONTEXT.evaluatingObjects.clear();
   DUMP_CONTEXT.legacyCurvePassthroughObjects.clear();
   for (const object of DUMP_CONTEXT.objects) {
     const modifier = object.modifiers?.find((candidate) => candidate.type === "NODES" && candidate.node_group);
@@ -226,56 +227,70 @@ export async function runGenerator(dump: Dump, opts: { object?: string; override
   // outputs that cannot be represented by Object.to_mesh() during extraction.
   const dependencyNames = resolveObjectDependencyOrder(dump, found.group, found.objectName);
   const objectsByName = new Map(DUMP_CONTEXT.objects.map((object) => [object.name, object]));
-  for (const dependencyName of dependencyNames) {
-    const object = objectsByName.get(dependencyName);
-    if (!object) continue;
-    const modifier = object.modifiers?.find((candidate) => candidate.type === "NODES" && candidate.node_group && dump.node_groups[candidate.node_group]);
-    if (!modifier?.node_group) continue;
-    const dependencyGroup: any = dump.node_groups[modifier.node_group];
-    const dependencyInputs: Record<string, any> = { ...(modifier.input_values ?? {}) };
-    const geometrySocket = dependencyGroup?.interface?.find((item: any) => item.item_type === "SOCKET" && item.in_out === "INPUT" && item.socket_type === "NodeSocketGeometry");
-    if (geometrySocket) {
-      const base = baseGeometryOf(dump, object.name);
-      if (base) dependencyInputs[geometrySocket.identifier] = base;
+  // Keep the main object pending while its dependencies cook. Object Info
+  // back-edges to it then match Blender's unavailable cycle edge instead of
+  // materializing the main object's base geometry.
+  DUMP_CONTEXT.evaluatingObjects.add(found.objectName);
+  try {
+    for (const dependencyName of dependencyNames) {
+      const object = objectsByName.get(dependencyName);
+      if (!object) continue;
+      const modifier = object.modifiers?.find((candidate) => candidate.type === "NODES" && candidate.node_group && dump.node_groups[candidate.node_group]);
+      if (!modifier?.node_group) continue;
+      const dependencyGroup: any = dump.node_groups[modifier.node_group];
+      const dependencyInputs: Record<string, any> = { ...(modifier.input_values ?? {}) };
+      const geometrySocket = dependencyGroup?.interface?.find((item: any) => item.item_type === "SOCKET" && item.in_out === "INPUT" && item.socket_type === "NodeSocketGeometry");
+      if (geometrySocket) {
+        const base = baseGeometryOf(dump, object.name);
+        if (base) dependencyInputs[geometrySocket.identifier] = base;
+      }
+      DUMP_CONTEXT.activeObject = object;
+      DUMP_CONTEXT.evaluatingObjects.add(object.name);
+      let dependencyGeometry: Geometry;
+      try {
+        dependencyGeometry = ev.evalModifierGroup(modifier.node_group, dependencyInputs).geometry;
+      } finally {
+        DUMP_CONTEXT.evaluatingObjects.delete(object.name);
+      }
+      if (object.type === "CURVE" && isGeometryPassthroughGroup(dependencyGroup))
+        matchLegacyCurvePassthrough(dependencyGeometry);
+      // Pure-mesh dependencies already have Blender's exact evaluated mesh in the
+      // portable dump. Keep that authoritative snapshot for Object Info; evaluate
+      // at runtime only when a dependency carries curves/instances that the mesh
+      // snapshot cannot represent, or when no snapshot was extracted.
+      if (dependencyGeometry.curves.length || dependencyGeometry.instances.length || !object.evaluated_mesh)
+        DUMP_CONTEXT.evaluatedObjects.set(object.name, dependencyGeometry);
     }
-    DUMP_CONTEXT.activeObject = object;
-    const dependencyGeometry = ev.evalModifierGroup(modifier.node_group, dependencyInputs).geometry;
-    if (object.type === "CURVE" && isGeometryPassthroughGroup(dependencyGroup))
-      matchLegacyCurvePassthrough(dependencyGeometry);
-    // Pure-mesh dependencies already have Blender's exact evaluated mesh in the
-    // portable dump. Keep that authoritative snapshot for Object Info; evaluate
-    // at runtime only when a dependency carries curves/instances that the mesh
-    // snapshot cannot represent, or when no snapshot was extracted.
-    if (dependencyGeometry.curves.length || dependencyGeometry.instances.length || !object.evaluated_mesh)
-      DUMP_CONTEXT.evaluatedObjects.set(object.name, dependencyGeometry);
+    DUMP_CONTEXT.activeObject = DUMP_CONTEXT.objects.find((object) => object.name === found.objectName);
+    const groupDef: any = dump.node_groups[found.group];
+    const merged: Record<string, any> = { ...found.inputs };
+    for (const [key, value] of Object.entries(opts.overrides ?? {})) {
+      merged[key] = value;
+      // Friendly-name UI overrides must replace the identifier value captured in
+      // the modifier dump; identifier-first binding otherwise restores the saved
+      // value. Duplicate names intentionally update every matching socket.
+      for (const item of groupDef?.interface ?? [])
+        if (item.item_type === "SOCKET" && item.in_out === "INPUT" && item.name === key)
+          merged[item.identifier] = value;
+    }
+    // Blender feeds the object's own (pre-modifier) mesh into the tree's Geometry
+    // input — e.g. the bubble vase's seed mesh. Bind it by socket identifier.
+    const geoSocket = groupDef?.interface?.find(
+      (it: any) => it.item_type === "SOCKET" && it.in_out === "INPUT" && it.socket_type === "NodeSocketGeometry"
+    );
+    if (geoSocket) {
+      const base = baseGeometryOf(dump, found.objectName);
+      if (base) merged[geoSocket.identifier] = base;
+    }
+    const { geometry } = ev.evalModifierGroup(found.group, merged);
+    const soup = toTriSoup(geometry);
+    const missingTypes = [...MISSING.entries()].map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count);
+    return {
+      geometry,
+      soup,
+      coverage: { handled: REGISTRY.size, missingTypes },
+    };
+  } finally {
+    DUMP_CONTEXT.evaluatingObjects.clear();
   }
-  DUMP_CONTEXT.activeObject = DUMP_CONTEXT.objects.find((object) => object.name === found.objectName);
-  const groupDef: any = dump.node_groups[found.group];
-  const merged: Record<string, any> = { ...found.inputs };
-  for (const [key, value] of Object.entries(opts.overrides ?? {})) {
-    merged[key] = value;
-    // Friendly-name UI overrides must replace the identifier value captured in
-    // the modifier dump; identifier-first binding otherwise restores the saved
-    // value. Duplicate names intentionally update every matching socket.
-    for (const item of groupDef?.interface ?? [])
-      if (item.item_type === "SOCKET" && item.in_out === "INPUT" && item.name === key)
-        merged[item.identifier] = value;
-  }
-  // Blender feeds the object's own (pre-modifier) mesh into the tree's Geometry
-  // input — e.g. the bubble vase's seed mesh. Bind it by socket identifier.
-  const geoSocket = groupDef?.interface?.find(
-    (it: any) => it.item_type === "SOCKET" && it.in_out === "INPUT" && it.socket_type === "NodeSocketGeometry"
-  );
-  if (geoSocket) {
-    const base = baseGeometryOf(dump, found.objectName);
-    if (base) merged[geoSocket.identifier] = base;
-  }
-  const { geometry } = ev.evalModifierGroup(found.group, merged);
-  const soup = toTriSoup(geometry);
-  const missingTypes = [...MISSING.entries()].map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count);
-  return {
-    geometry,
-    soup,
-    coverage: { handled: REGISTRY.size, missingTypes },
-  };
 }

@@ -92,10 +92,11 @@ export const DUMP_CONTEXT: {
   fonts: Record<string, FontAtlas>;
   activeObject?: DumpObject;
   evaluatedObjects: Map<string, Geometry>;
+  evaluatingObjects: Set<string>;
   legacyCurvePassthroughObjects: Set<string>;
   frame: number;
   fps: number;
-} = { objects: [], collections: [], images: [], fonts: {}, evaluatedObjects: new Map(), legacyCurvePassthroughObjects: new Set(), frame: 0, fps: 24 };
+} = { objects: [], collections: [], images: [], fonts: {}, evaluatedObjects: new Map(), evaluatingObjects: new Set(), legacyCurvePassthroughObjects: new Set(), frame: 0, fps: 24 };
 
 export function reg(types: string | string[], handler: Handler): void {
   for (const t of Array.isArray(types) ? types : [types]) REGISTRY.set(t, handler);
