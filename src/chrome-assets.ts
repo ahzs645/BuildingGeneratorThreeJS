@@ -13,6 +13,7 @@ import { makeAttributePrincipledMaterial } from "./attribute-principled-material
 import { makeFilamentMaterial } from "./filament-material";
 import { makeCrossSectionFilamentMaterial } from "./cross-section-filament-material";
 import { makeMahoganyMaterial } from "./mahogany-material";
+import { makeToonOutlineMaterial } from "./toon-outline-material";
 
 type RangeControl = { type?: "range"; name: string; label: string; min: number; max: number; step: number; value: number };
 type CheckboxControl = { type: "checkbox"; name: string; label: string; value: boolean };
@@ -101,6 +102,7 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
             ?? makeFilamentMaterial(dump,geometry,group.material??"")
             ?? makeCrossSectionFilamentMaterial(dump,geometry,group.material??"")
             ?? makeMahoganyMaterial(dump,geometry,group.material??"")
+            ?? makeToonOutlineMaterial(dump,group.material??"")
             ?? makeChromeCrayonMaterial(dump,geometry,group.material??"")
             ?? makeBasicBlenderMaterial(dump,group.material??"");
       if(authored instanceof THREE.MeshStandardMaterial)authored.flatShading=current.flatShading??false;

@@ -17,6 +17,7 @@
       "N03D filament color, layer bands, rough plastic, and backface treatment",
       "joint-generator filament color, roughness, and layer fields",
       "joint procedural mahogany Wave/Noise ramps and Principled coat",
+      "joint Pipe Icon front-emission/back-transparent outline",
       "Image Pixel Stippler WebGL material"
     ]
   },
