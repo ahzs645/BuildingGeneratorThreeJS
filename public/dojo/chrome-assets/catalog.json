@@ -169,8 +169,10 @@
     "dump": "dojo/chrome-assets/img-pixel-stippler/dump.json",
     "reference": "dojo/references/chrome-assets/img-pixel-stippler.png",
     "blenderStats": { "verts": 72094, "faces": 71550 },
-    "note": "Exact Blender geometry and four-decimal bounds across fifteen cases, including empty-grid and zero-fillet edge cases. The packed image now uses Grid UVs and linear CLIP sampling; the gallery still needs Blender's procedural Voronoi stipple shader.",
+    "material": "image-pixel-stippler",
+    "note": "Exact Blender geometry and four-decimal bounds across fifteen cases, including empty-grid and zero-fillet edge cases. Authored shader attributes and node settings now drive an independent WebGL Voronoi reconstruction; this is not yet validated as Blender shader parity.",
     "controls": [
+      { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored WebGL reconstruction", "value": "authored" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },
       { "name": "pixelate", "label": "Pixelate", "min": 0, "max": 1, "step": 0.000001, "value": 0.5988134145736694 },
       { "type": "checkbox", "name": "stippler/full color", "label": "Full color", "value": false },
       { "name": "STIPPLE DENSITY", "label": "Stipple density", "min": 25, "max": 500, "step": 1, "value": 333 },

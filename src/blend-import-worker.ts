@@ -36,6 +36,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
         positions: result.soup.positions,
         normals: result.soup.normals,
         indices: result.soup.indices,
+        attributes: result.soup.attributes,
         groups: result.soup.groups,
         stats: result.soup.stats,
       },
@@ -43,6 +44,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
       probeSoup: probeSoup ? transferableSoup(probeSoup) : undefined,
     };
     const transfer: Transferable[] = [result.soup.positions.buffer, result.soup.normals.buffer, result.soup.indices.buffer];
+    for (const attribute of Object.values(result.soup.attributes)) transfer.push(attribute.data.buffer);
     if (probeSoup) transfer.push(probeSoup.positions.buffer, probeSoup.normals.buffer, probeSoup.indices.buffer);
     scope.postMessage(payload, {
       transfer,
@@ -68,6 +70,6 @@ function transferableSoup(soup: TriSoup): TriSoup {
     indices: soup.indices,
     groups: soup.groups,
     stats: soup.stats,
-    attributes: {},
+    attributes: soup.attributes,
   };
 }
