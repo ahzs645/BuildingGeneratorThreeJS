@@ -325,12 +325,19 @@ export function fillCurves(curves: Spline[], mode: "NGONS" | "TRIANGLES"): Mesh 
     mesh.materialSlots = [null];
     return mesh;
   }
+  if (mode === "NGONS" && emitOverlappingNgonFill(mesh, loops)) {
+    weldTouchingFillLoops(mesh);
+    mesh.materialSlots = [null];
+    return mesh;
+  }
   classifyFillLoops(loops);
   for (let li = 0; li < loops.length; li++) {
     const loop = loops[li];
     if (loop.depth % 2 !== 0) continue;
     const holes = loops.filter((h) => h.parent === li && h.depth === loop.depth + 1);
-    if (!holes.length) emitSimpleFill(mesh, loop.points, mode);
+    if (!holes.length) {
+      if (mode !== "NGONS" || !emitSelfTouchingNgonFill(mesh, loop)) emitSimpleFill(mesh, loop.points, mode);
+    }
     else if (mode === "NGONS") emitHoledNgonFill(mesh, loop, holes);
     else emitHoledFill(mesh, loop, holes);
   }
@@ -405,6 +412,233 @@ type PolyRef = {
 };
 
 const FILL_EPS = 1e-12;
+
+function loopHasSelfTouch(loop: FillLoop): boolean {
+  for (let i = 0; i < loop.points2.length; i++) for (let j = i + 1; j < loop.points2.length; j++) {
+    if (same2(loop.points2[i], loop.points2[j])) return true;
+  }
+  return false;
+}
+
+// Blender's N-gon CDT globally nodes collinear constraints. In the pixel-font
+// spacing sweep, a simple contour partially overlaps a self-touching contour;
+// Blender keeps the non-zero arrangement cells but leaves the simple-only strip
+// loose. This helper is deliberately gated on that uncommon pattern so normal
+// nested-loop N-gon fills retain the exact bridge topology below.
+function emitOverlappingNgonFill(mesh: Mesh, loops: FillLoop[]): boolean {
+  const selfTouching = new Set<number>();
+  for (let i = 0; i < loops.length; i++) if (loopHasSelfTouch(loops[i])) selfTouching.add(i);
+  if (!selfTouching.size) return false;
+
+  const suppressedSimple = new Set<number>();
+  for (let simple = 0; simple < loops.length; simple++) {
+    if (selfTouching.has(simple)) continue;
+    for (const complex of selfTouching) {
+      const relation = loops[simple].points2.map((point) => pointInPolygon(point, loops[complex].points2));
+      // A boundary-only touch must not suppress the neighboring simple cell.
+      // Require a point strictly inside the self-touching walk as well as one
+      // outside it; the pixel-font fixture also has several harmless corner
+      // contacts that Blender's CDT keeps filled.
+      if (relation.some((value) => value > 0) && relation.some((value) => value < 0)) {
+        suppressedSimple.add(simple);
+        break;
+      }
+    }
+  }
+  if (!suppressedSimple.size) return false;
+
+  const tolerance = 1e-7;
+  const points2: Vec2[] = [];
+  const points3: Vec3[] = [];
+  const loopVertices: number[][] = [];
+  for (const loop of loops) {
+    const indices: number[] = [];
+    for (let i = 0; i < loop.points2.length; i++) {
+      const point = loop.points2[i];
+      let index = points2.findIndex((candidate) => Math.hypot(point[0] - candidate[0], point[1] - candidate[1]) <= tolerance);
+      if (index < 0) {
+        index = points2.length;
+        points2.push(point);
+        points3.push([...loop.points[i]] as Vec3);
+      }
+      indices.push(index);
+    }
+    loopVertices.push(indices);
+  }
+
+  // Split every authored segment at every authored point lying on it. XOR the
+  // resulting undirected constraints so coincident overlap boundaries cancel.
+  const edgeMultiplicity = new Map<string, number>();
+  for (const indices of loopVertices) for (let segment = 0; segment < indices.length; segment++) {
+    const ia = indices[segment], ib = indices[(segment + 1) % indices.length];
+    const a = points2[ia], b = points2[ib];
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const length2 = dx * dx + dy * dy;
+    if (length2 <= FILL_EPS) continue;
+    const cuts: { t: number; vertex: number }[] = [];
+    for (let vertex = 0; vertex < points2.length; vertex++) {
+      const point = points2[vertex];
+      const t = ((point[0] - a[0]) * dx + (point[1] - a[1]) * dy) / length2;
+      const cross = Math.abs((point[0] - a[0]) * dy - (point[1] - a[1]) * dx);
+      if (t >= -1e-9 && t <= 1 + 1e-9 && cross <= tolerance * Math.sqrt(length2)) {
+        cuts.push({ t: Math.max(0, Math.min(1, t)), vertex });
+      }
+    }
+    cuts.sort((left, right) => left.t - right.t);
+    for (let cut = 0; cut + 1 < cuts.length; cut++) {
+      const u = cuts[cut].vertex, v = cuts[cut + 1].vertex;
+      if (u === v) continue;
+      const key = u < v ? `${u}:${v}` : `${v}:${u}`;
+      edgeMultiplicity.set(key, (edgeMultiplicity.get(key) ?? 0) + 1);
+    }
+  }
+  const edges: [number, number][] = [];
+  for (const [key, multiplicity] of edgeMultiplicity) if (multiplicity % 2) {
+    const [a, b] = key.split(":").map(Number);
+    edges.push([a, b]);
+  }
+
+  const adjacency = points2.map(() => [] as number[]);
+  for (const [a, b] of edges) { adjacency[a].push(b); adjacency[b].push(a); }
+  for (let vertex = 0; vertex < adjacency.length; vertex++) adjacency[vertex].sort((a, b) =>
+    Math.atan2(points2[a][1] - points2[vertex][1], points2[a][0] - points2[vertex][0])
+    - Math.atan2(points2[b][1] - points2[vertex][1], points2[b][0] - points2[vertex][0]));
+
+  const windingAt = (point: Vec2) => {
+    let winding = 0;
+    for (const loop of loops) for (let i = 0; i < loop.points2.length; i++) {
+      const a = loop.points2[i], b = loop.points2[(i + 1) % loop.points2.length];
+      if (a[1] <= point[1]) {
+        if (b[1] > point[1] && cross2(a, b, point) > 0) winding++;
+      } else if (b[1] <= point[1] && cross2(a, b, point) < 0) winding--;
+    }
+    return winding;
+  };
+  const containingLoops = (point: Vec2) => loops
+    .map((loop, index) => pointInPolygon(point, loop.points2) > 0 ? index : -1)
+    .filter((index) => index >= 0);
+
+  const visited = new Set<string>();
+  const faces: number[][] = [];
+  for (let start = 0; start < adjacency.length; start++) for (const first of adjacency[start]) {
+    if (visited.has(`${start}:${first}`)) continue;
+    const face: number[] = [];
+    let previous = start, current = first;
+    while (!visited.has(`${previous}:${current}`) && face.length <= edges.length + 1) {
+      visited.add(`${previous}:${current}`);
+      face.push(previous);
+      const around = adjacency[current];
+      const reverse = around.indexOf(previous);
+      if (reverse < 0 || !around.length) break;
+      const next = around[(reverse - 1 + around.length) % around.length];
+      previous = current;
+      current = next;
+      if (previous === start && current === first) break;
+    }
+    if (previous !== start || current !== first || face.length < 3) continue;
+    const refs = face.map((vertex) => ({ p: points2[vertex], vi: vertex }));
+    if (signedAreaRefs(refs) <= FILL_EPS) continue;
+    const triangles = earClip(refs);
+    const firstTriangle = triangles[0];
+    if (!firstTriangle) continue;
+    const sample = avg2(firstTriangle.map((vertex) => points2[vertex]));
+    if (windingAt(sample) === 0) continue;
+    const containers = containingLoops(sample);
+    if (containers.length === 1 && suppressedSimple.has(containers[0])) continue;
+    faces.push(face);
+  }
+  if (!faces.length) return false;
+
+  const base = mesh.positions.length;
+  mesh.positions.push(...points3);
+  for (const face of faces) {
+    mesh.faces.push(face.map((vertex) => base + vertex));
+    mesh.faceMaterial.push(0);
+  }
+  return true;
+}
+
+// A pixel-font outline can walk through the same bridge vertex more than once.
+// Blender's N-gon fill treats that walk as a planar graph and emits each odd-
+// winding bounded cell separately. A single polygon with repeated corners
+// instead left two 20-gons where Blender creates a 16-gon plus a 4-gon.
+function emitSelfTouchingNgonFill(mesh: Mesh, loop: FillLoop): boolean {
+  const tolerance = 1e-7;
+  const unique: Vec2[] = [];
+  const sourceToUnique: number[] = [];
+  let repeated = false;
+  for (const point of loop.points2) {
+    let index = unique.findIndex((candidate) => Math.hypot(point[0] - candidate[0], point[1] - candidate[1]) <= tolerance);
+    if (index < 0) {
+      index = unique.length;
+      unique.push(point);
+    } else repeated = true;
+    sourceToUnique.push(index);
+  }
+  if (!repeated || unique.length < 3) return false;
+
+  const edges: [number, number][] = [];
+  const edgeKeys = new Set<string>();
+  for (let i = 0; i < sourceToUnique.length; i++) {
+    const a = sourceToUnique[i], b = sourceToUnique[(i + 1) % sourceToUnique.length];
+    if (a === b) continue;
+    const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+    if (!edgeKeys.has(key)) { edgeKeys.add(key); edges.push([a, b]); }
+  }
+  const adjacency = unique.map(() => [] as number[]);
+  for (const [a, b] of edges) { adjacency[a].push(b); adjacency[b].push(a); }
+  for (let vertex = 0; vertex < adjacency.length; vertex++) adjacency[vertex].sort((a, b) =>
+    Math.atan2(unique[a][1] - unique[vertex][1], unique[a][0] - unique[vertex][0])
+    - Math.atan2(unique[b][1] - unique[vertex][1], unique[b][0] - unique[vertex][0]));
+
+  const windingAt = (point: Vec2) => {
+    let winding = 0;
+    for (let i = 0; i < loop.points2.length; i++) {
+      const a = loop.points2[i], b = loop.points2[(i + 1) % loop.points2.length];
+      if (a[1] <= point[1]) {
+        if (b[1] > point[1] && cross2(a, b, point) > 0) winding++;
+      } else if (b[1] <= point[1] && cross2(a, b, point) < 0) winding--;
+    }
+    return winding;
+  };
+
+  const visited = new Set<string>();
+  const candidates: number[][] = [];
+  for (let start = 0; start < adjacency.length; start++) for (const first of adjacency[start]) {
+    const initial = `${start}:${first}`;
+    if (visited.has(initial)) continue;
+    const face: number[] = [];
+    let previous = start, current = first;
+    while (!visited.has(`${previous}:${current}`) && face.length <= edges.length + 1) {
+      visited.add(`${previous}:${current}`);
+      face.push(previous);
+      const around = adjacency[current];
+      const reverse = around.indexOf(previous);
+      if (reverse < 0 || !around.length) break;
+      const next = around[(reverse - 1 + around.length) % around.length];
+      previous = current;
+      current = next;
+      if (previous === start && current === first) break;
+    }
+    if (previous !== start || current !== first || face.length < 3) continue;
+    const refs = face.map((vi) => ({ p: unique[vi], vi }));
+    if (signedAreaRefs(refs) <= FILL_EPS) continue;
+    if (Math.abs(windingAt(avg2(refs.map((ref) => ref.p)))) % 2 === 0) continue;
+    candidates.push(face);
+  }
+  if (candidates.length <= 1) return false;
+
+  const base = mesh.positions.length;
+  for (let i = 0; i < unique.length; i++) {
+    const source = sourceToUnique.indexOf(i);
+    mesh.positions.push([...loop.points[source]] as Vec3);
+  }
+  for (const face of candidates) {
+    mesh.faces.push(face.map((vertex) => base + vertex));
+    mesh.faceMaterial.push(0);
+  }
+  return true;
+}
 
 function emitIntersectingFill(mesh: Mesh, loops: FillLoop[], plane: FillPlane): boolean {
   if (loops.length < 2) return false;

@@ -642,6 +642,20 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 {
+  const outline: Vec3[] = [
+    [0, 0, 0], [0, 1, 0], [0, 2, 0], [0, 3, 0], [0, 4, 0], [0, 5, 0],
+    [1, 5, 0], [2, 5, 0], [2, 4, 0], [3, 4, 0], [3, 3, 0], [2, 3, 0],
+    [2, 4, 0], [1, 4, 0], [1, 3, 0], [2, 3, 0], [2, 2, 0], [1, 2, 0],
+    [1, 1, 0], [1, 0, 0],
+  ];
+  const filled = runNode("GeometryNodeFillCurve", { Curve: curve(outline, true), Mode: "N-gons" }).Mesh as Geometry;
+  const sizes = filled.mesh!.faces.map((face) => face.length).sort((a, b) => a - b);
+  check("Fill Curve splits self-touching pixel outlines into odd-winding N-gons",
+    filled.mesh?.positions.length === 18 && JSON.stringify(sizes) === JSON.stringify([4, 16]),
+    `${filled.mesh?.positions.length}v sizes=${sizes}`);
+}
+
+{
   const collinear = runNode("GeometryNodeFillCurve", {
     Curve: curve([[0, 0, 0], [1, 0, 0], [2, 0, 0], [2, 1, 0], [0, 1, 0]], true),
   }, { mode: "TRIANGLES" }).Mesh as Geometry;

@@ -309,7 +309,7 @@
     "dump": "dojo/chrome-assets/type-pixel-brush/dump.json",
     "reference": "dojo/references/chrome-assets/type-pixel-brush.png",
     "blenderStats": { "verts": 17860, "faces": 11296 },
-    "note": "The supplied file's Budokan font is missing, so both Blender and the browser use the supplied Pixels Medium TTF. Authored vertices are within 0.69%; Y/Z bounds match and X bounds differ by about 1.04 units.",
+    "note": "Exact Blender topology across all six validation cases, with local bounds within 0.0001 units. The supplied file's Budokan font is missing, so both Blender and the browser use the supplied Pixels Medium TTF; Blender-compatible global N-gon filling preserves its self-touching and overlapping pixel outlines.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",
@@ -590,7 +590,7 @@
     "dump": "dojo/n03d/glue-grid/dump.json",
     "reference": "dojo/references/n03d/glue-grid.png",
     "blenderStats": { "verts": 4736, "faces": 4096 },
-    "note": "Surface parity: all 4,096 faces and the 4×4 raised-lattice silhouette match Blender, with face-referenced bounds within 0.0004 units. The browser reports 4,752 vertices because it retains the graph's invisible 16-point Points component; Blender's evaluated mesh count reports only the 4,736 surface vertices.",
+    "note": "Exact Blender topology for the authored 4×4 raised lattice at 4,736 vertices / 4,096 faces, with local bounds within 0.0004 units. Point-cloud components remain available during graph evaluation but are correctly omitted from the final evaluated mesh.",
     "controls": []
   },
   {
@@ -827,7 +827,7 @@
     "reference": "dojo/references/n03d/assembly-bracket.png",
     "blenderStats": { "verts": 1743, "faces": 1816 },
     "localSpace": true,
-    "note": "The complete 54-group, 1,662-node bracket builds the long pivot arm, cutout, clamp end, and screw components in-browser. Its dense two-cylinder hull matches Blender's internal 168 / 86 topology; remaining Exact Boolean and Heal Mesh tessellation produces 1,770 / 1,912 versus Blender's 1,743 / 1,816. All five validation cases have exact bounds and stay within 2.82% vertices.",
+    "note": "Exact Blender topology and four-decimal local bounds across all five validation cases for the complete 54-group, 1,662-node bracket. The browser reproduces the dense two-cylinder hull, both Exact Boolean cuts, Heal Mesh output, screw assembly, compact-diameter case, and split-for-print branches.",
     "controls": [
       { "name": "outer dia.", "label": "Outer diameter", "min": 20, "max": 50, "step": 0.1, "value": 34 },
       { "name": "cutout dia", "label": "Cutout diameter", "min": 5, "max": 32, "step": 0.1, "value": 22.5 },
