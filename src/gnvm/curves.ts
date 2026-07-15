@@ -552,9 +552,13 @@ function emitSimpleFill(mesh: Mesh, points: Vec3[], mode: "NGONS" | "TRIANGLES")
     for (const face of earClip(refs)) { mesh.faces.push(face); mesh.faceMaterial.push(0); }
   } else {
     // Fill Curve emits a +Z-facing polygon in its local XY plane regardless
-    // of the cyclic spline's authored direction. Keep vertex order stable for
-    // Index/Sample Index users and reverse only the polygon corners.
-    const face = Array.from({ length: n }, (_, i) => base + i);
+    // of the cyclic spline's authored direction. Blender canonicalizes the
+    // cyclic start at the lowest Y corner (observable when Extrude Mesh emits
+    // duplicate vertices in face-corner order), while retaining the original
+    // cyclic direction.
+    const start = points.reduce((best, point, index) =>
+      point[1] < points[best][1] || (point[1] === points[best][1] && point[0] < points[best][0]) ? index : best, 0);
+    const face = Array.from({ length: n }, (_, i) => base + (start + i) % n);
     if (signedArea2(points.map((point) => [point[0], point[1]])) < 0) face.reverse();
     mesh.faces.push(face);
     mesh.faceMaterial.push(0);

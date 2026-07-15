@@ -990,6 +990,20 @@ function meshSignedAreaXY(m: Mesh): number {
   check("MergeByDistance removes opposite-winding duplicate faces", out.mesh?.positions.length === 4 && out.mesh.faces.length === 1);
 }
 
+// Welding non-adjacent corners pinches a polygon into two lobes. Blender
+// removes that face, while an adjacent corner collapse remains a valid smaller
+// polygon. Heal Mesh relies on this distinction for dense screw surfaces.
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [1, 0, 0], [0.00001, 0, 0], [0, 1, 0]];
+  m.faces = [[0, 1, 2, 3]];
+  const g = new Geometry();
+  g.mesh = m;
+  const out = runNode("GeometryNodeMergeByDistance", { Geometry: g, Selection: true, Distance: 1e-3, Mode: "All" }).Geometry as Geometry;
+  check("MergeByDistance removes non-adjacent pinched faces", out.mesh?.positions.length === 3 && out.mesh.faces.length === 0,
+    `got ${out.mesh?.positions.length}v/${out.mesh?.faces.length}f`);
+}
+
 // A collapsed long quad still carries a valid center-to-rim triangle after
 // Blender's triangulation; the exporter must preserve that topology.
 {
@@ -1600,6 +1614,7 @@ function meshSignedAreaXY(m: Mesh): number {
   }, { fill_type: "NGON" }).Mesh as Geometry;
   const m = cone.mesh!;
   check("MeshCone collapses its zero-radius apex", m.positions.length === 9 && m.faces.length === 9, `v=${m.positions.length} f=${m.faces.length}`);
+  check("MeshCone stores its top ring first", m.positions[0][2] === 2 && m.positions[0][0] === 0 && m.positions[0][1] === 0);
   const zs = m.positions.map((p) => p[2]);
   check("MeshCone spans depth from zero", Math.abs(Math.min(...zs)) < 1e-6 && Math.abs(Math.max(...zs) - 2) < 1e-6);
 }
@@ -2248,6 +2263,11 @@ function meshSignedAreaXY(m: Mesh): number {
   }).Curve as Geometry;
   check("Curve Spiral uses samples per rotation", spiral.curves[0].points.length === 17, `got ${spiral.curves[0].points.length}`);
   check("Curve Spiral endpoints", approx(spiral.curves[0].points[0], [1, 0, 0]) && approx(spiral.curves[0].points[16], [2, 0, 4]));
+  check("Curve Spiral default winding follows Blender", spiral.curves[0].points[1][1] < 0);
+  const reversedSpiral = runNode("GeometryNodeCurveSpiral", {
+    Resolution: 8, Rotations: 2, "Start Radius": 1, "End Radius": 2, Height: 4, Reverse: true,
+  }).Curve as Geometry;
+  check("Curve Spiral Reverse flips winding", reversedSpiral.curves[0].points[1][1] > 0);
 
   line.curves[0].resolution = 7;
   const splineResolution = runNode("GeometryNodeInputSplineResolution", {}).Resolution as Field;

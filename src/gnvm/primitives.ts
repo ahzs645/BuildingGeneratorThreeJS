@@ -2,6 +2,23 @@
 import { Vec3 } from "./core";
 import { Geometry, Mesh } from "./geometry";
 
+/**
+ * Blender's circular mesh primitives increment a float angle in their vertex
+ * loop instead of recomputing every sample from an exact fraction of 2π.
+ * The accumulated float32 phase is observable on dense rings and can affect
+ * threshold operations such as Merge by Distance.
+ */
+function blenderCircleDirections(verts: number): Array<[number, number]> {
+  const directions: Array<[number, number]> = [];
+  const step = Math.fround((Math.PI * 2) / verts);
+  let angle = 0;
+  for (let i = 0; i < verts; i++) {
+    directions.push([Math.cos(angle), Math.sin(angle)]);
+    angle = Math.fround(angle + step);
+  }
+  return directions;
+}
+
 export function meshCube(size: Vec3, vx = 2, vy = 2, vz = 2): Geometry {
   const m = new Mesh();
   const [sx, sy, sz] = [size[0] / 2, size[1] / 2, size[2] / 2];
@@ -118,10 +135,8 @@ export function meshGrid(sizeX: number, sizeY: number, vx: number, vy: number): 
 export function meshCircle(verts: number, radius: number, fill: "NONE" | "NGON" | "TRIANGLE_FAN" = "NGON"): Geometry {
   const m = new Mesh();
   verts = Math.max(3, Math.floor(verts));
-  for (let i = 0; i < verts; i++) {
-    const a = (i / verts) * Math.PI * 2;
-    m.positions.push([Math.cos(a) * radius, Math.sin(a) * radius, 0]);
-  }
+  for (const [cosine, sine] of blenderCircleDirections(verts))
+    m.positions.push([Math.fround(cosine * radius), Math.fround(sine * radius), 0]);
   for (let i = 0; i < verts; i++) m.edges.push([i, (i + 1) % verts]);
   if (fill === "NGON") {
     m.faces.push(Array.from({ length: verts }, (_, i) => i));
@@ -215,23 +230,23 @@ export function meshCone(
   fillSegments = Math.max(1, Math.floor(fillSegments));
   const z0 = centered ? -depth / 2 : 0;
   const z1 = centered ? depth / 2 : depth;
-  // Rings from bottom to top (sideSegments+1 rings)
+  const directions = blenderCircleDirections(verts);
+  // Blender stores Cone side rings from top to bottom. This ordering remains
+  // observable after Extrude Mesh and in representative-order-dependent welds.
   const ringStart: number[] = [];
   const ringCount: number[] = [];
   for (let s = 0; s <= sideSegments; s++) {
     const t = s / sideSegments;
-    const r = radiusBottom + (radiusTop - radiusBottom) * t;
-    const z = z0 + (z1 - z0) * t;
+    const r = radiusTop + (radiusBottom - radiusTop) * t;
+    const z = z1 + (z0 - z1) * t;
     ringStart.push(m.positions.length);
     if (Math.abs(r) <= 1e-12) {
       ringCount.push(1);
       m.positions.push([0, 0, z]);
     } else {
       ringCount.push(verts);
-      for (let i = 0; i < verts; i++) {
-        const a = (i / verts) * Math.PI * 2;
-        m.positions.push([Math.cos(a) * r, Math.sin(a) * r, z]);
-      }
+      for (const [cosine, sine] of directions)
+        m.positions.push([Math.fround(cosine * r), Math.fround(sine * r), Math.fround(z)]);
     }
   }
   // Side quads, or triangle fans where a radius collapses to an apex.
@@ -240,13 +255,13 @@ export function meshCone(
     const a1 = ringStart[s + 1];
     if (ringCount[s] === 1 && ringCount[s + 1] === 1) continue;
     if (ringCount[s] === 1) {
-      for (let i = 0; i < verts; i++) m.faces.push([a0, a1 + ((i + 1) % verts), a1 + i]);
+      for (let i = 0; i < verts; i++) m.faces.push([a0, a1 + i, a1 + ((i + 1) % verts)]);
     } else if (ringCount[s + 1] === 1) {
-      for (let i = 0; i < verts; i++) m.faces.push([a0 + i, a0 + ((i + 1) % verts), a1]);
+      for (let i = 0; i < verts; i++) m.faces.push([a0 + ((i + 1) % verts), a0 + i, a1]);
     } else {
       for (let i = 0; i < verts; i++) {
         const j = (i + 1) % verts;
-        m.faces.push([a0 + i, a0 + j, a1 + j, a1 + i]);
+        m.faces.push([a0 + i, a1 + i, a1 + j, a0 + j]);
       }
     }
   }
@@ -266,8 +281,9 @@ export function meshCone(
       m.faces.push(flip ? [c, ring + j, ring + i] : [c, ring + i, ring + j]);
     }
   };
-  addCap(ringStart[0], radiusBottom, z0, true);
-  addCap(ringStart[sideSegments], radiusTop, z1, false);
+  // Keep the native face-domain order: sides, bottom, then top.
+  addCap(ringStart[sideSegments], radiusBottom, z0, true);
+  addCap(ringStart[0], radiusTop, z1, false);
   m.faceMaterial = m.faces.map(() => 0);
   m.materialSlots = [null];
   const g = new Geometry();

@@ -9,8 +9,8 @@
         "overrides": {}
       },
       "status": "ok",
-      "verts": 1770,
-      "faces": 1912,
+      "verts": 1771,
+      "faces": 1940,
       "bbox": {
         "min": [
           -193.9592,
@@ -23,7 +23,7 @@
           180.8749
         ]
       },
-      "elapsed_ms": 311
+      "elapsed_ms": 344
     },
     {
       "combo": {
@@ -33,8 +33,8 @@
         }
       },
       "status": "ok",
-      "verts": 1769,
-      "faces": 1904,
+      "verts": 1770,
+      "faces": 1909,
       "bbox": {
         "min": [
           -193.9592,
@@ -47,7 +47,7 @@
           180.8749
         ]
       },
-      "elapsed_ms": 112
+      "elapsed_ms": 126
     },
     {
       "combo": {
@@ -58,8 +58,8 @@
         }
       },
       "status": "ok",
-      "verts": 1756,
-      "faces": 1893,
+      "verts": 1765,
+      "faces": 1920,
       "bbox": {
         "min": [
           -190.9602,
@@ -72,7 +72,7 @@
           177.8752
         ]
       },
-      "elapsed_ms": 227
+      "elapsed_ms": 253
     },
     {
       "combo": {
@@ -82,8 +82,8 @@
         }
       },
       "status": "ok",
-      "verts": 1770,
-      "faces": 1912,
+      "verts": 1771,
+      "faces": 1940,
       "bbox": {
         "min": [
           -193.9592,
@@ -96,7 +96,7 @@
           180.8749
         ]
       },
-      "elapsed_ms": 234
+      "elapsed_ms": 279
     },
     {
       "combo": {
@@ -106,8 +106,8 @@
         }
       },
       "status": "ok",
-      "verts": 1775,
-      "faces": 1570,
+      "verts": 1764,
+      "faces": 1464,
       "bbox": {
         "min": [
           -193.9592,
@@ -120,7 +120,7 @@
           180.8749
         ]
       },
-      "elapsed_ms": 263
+      "elapsed_ms": 273
     }
   ]
 }

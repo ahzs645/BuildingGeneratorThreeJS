@@ -64,7 +64,11 @@ reg("GeometryNodeCurveSpiral", (api) => {
   const startRadius = api.num("Start Radius");
   const endRadius = api.num("End Radius");
   const height = api.num("Height");
-  const direction = api.bool("Reverse") ? -1 : 1;
+  // Blender's Spiral node names this socket from the direction of the helix
+  // viewed down its axis: Reverse=false winds toward negative Y from +X,
+  // while Reverse=true winds toward positive Y. This is the opposite of the
+  // sign convention used by a direct mathematical XY rotation.
+  const direction = api.bool("Reverse") ? 1 : -1;
   // Blender defines Resolution as samples per full rotation and includes both
   // endpoints of the open spiral.
   const segments = Math.max(1, Math.round(Math.abs(rotations) * resolution));

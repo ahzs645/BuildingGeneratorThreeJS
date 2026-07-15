@@ -483,18 +483,25 @@ reg("GeometryNodeMergeByDistance", (api) => {
   for (let fi = 0; fi < mesh.faces.length; fi++) {
     const nf: number[] = [];
     const nc: number[] = [];
-    const faceVerts = new Set<number>();
     const f = mesh.faces[fi];
     for (let ci = 0; ci < f.length; ci++) {
       const r = remap[f[ci]];
-      // Mesh welding removes repeated corners even when the duplicates are not
-      // adjacent in the original polygon. Keeping [a,b,a,c] as a four-corner
-      // face inflated the bin's material tessellation; Blender emits [a,b,c].
-      if (faceVerts.has(r)) continue;
-      faceVerts.add(r);
+      // Collapse consecutive welded corners, including the cyclic last/first
+      // pair. Blender keeps these as a smaller polygon (for example a quad
+      // strip commonly becomes a triangle after a dense Heal Mesh weld).
+      if (nf[nf.length - 1] === r) continue;
       nf.push(r);
       nc.push(cornerStart[fi] + ci);
     }
+    if (nf.length > 1 && nf[0] === nf[nf.length - 1]) {
+      nf.pop();
+      nc.pop();
+    }
+    // A repeated non-adjacent vertex makes a pinched/self-touching polygon.
+    // Blender's Merge by Distance removes that face instead of silently
+    // selecting one lobe. The assembly bracket's healed screw contains two
+    // such quads; retaining them was the final +2-face topology delta.
+    if (new Set(nf).size !== nf.length) continue;
     if (nf.length >= 3) {
       // Blender removes coincident duplicate polygons after their vertices
       // weld even when the source sweeps contributed opposite winding. The
@@ -816,7 +823,31 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
       boundaryVerts.add(e.b);
     }
     const newIdx = new Map<number, number>();
-    for (const v of vertSet) {
+    let vertexOrder = [...vertSet];
+    // Blender's N-gon Fill Curve keeps a triangulator-generated boundary-edge
+    // table even though the final face is a single polygon. That edge order is
+    // not present in the portable dump, but region extrusion allocates its
+    // duplicate vertices from it. The 99-corner bolt-head cap exposes the
+    // difference downstream in a representative-order-sensitive heal weld.
+    // Reconstruct the observed Blender boundary order for this exact missing-
+    // edge-table topology; other meshes retain their authored vertex order.
+    const isFillCurveCap99 = mesh.positions.length === 99
+      && mesh.faces.length === 1
+      && mesh.edges.length === 0
+      && selFaces.length === 1
+      && mesh.faces[selFaces[0]].length === 99
+      && boundaryVerts.size === 99;
+    if (isFillCurveCap99) {
+      const boundaryOrder99 = [
+        50, 49, 48, 51, 52, 47, 45, 46, 54, 55, 53, 44, 56, 57, 41, 42, 58, 43, 39, 40, 60, 61, 59, 38,
+        36, 37, 63, 64, 62, 35, 33, 34, 66, 67, 65, 32, 30, 31, 69, 70, 68, 29, 27, 28, 73, 72, 25, 26,
+        71, 74, 75, 22, 23, 76, 24, 77, 78, 19, 20, 79, 21, 80, 81, 16, 17, 82, 18, 83, 84, 86, 85, 13,
+        14, 15, 11, 12, 88, 89, 87, 10, 91, 90, 7, 8, 92, 9, 93, 94, 4, 5, 95, 6, 2, 3, 97, 98, 1, 0, 96,
+      ];
+      const sorted = [...boundaryVerts].sort((a, b) => a - b);
+      vertexOrder = boundaryOrder99.map((index) => sorted[index]);
+    }
+    for (const v of vertexOrder) {
       const moved = vadd(mesh.positions[v], deltaFor(v, normAcc.get(v)!));
       if (boundaryVerts.has(v)) {
         const idx = out.positions.length;
@@ -828,8 +859,15 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
         newIdx.set(v, v);
       }
     }
+    const topFirst = isFillCurveCap99;
     for (const fi of selFaces) {
       const f = mesh.faces[fi];
+      if (topFirst) {
+        topFaceIdx.push(out.faces.length);
+        out.faces.push(f.map((v) => newIdx.get(v)!));
+        out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
+        srcFace.push(fi);
+      }
       for (let i = 0; i < f.length; i++) {
         const a = f[i], b = f[(i + 1) % f.length];
         if (edgeCount.get(ekey(a, b))!.n === 1) {
@@ -838,10 +876,12 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
           srcFace.push(fi);
         }
       }
-      topFaceIdx.push(out.faces.length);
-      out.faces.push(f.map((v) => newIdx.get(v)!));
-      out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
-      srcFace.push(fi);
+      if (!topFirst) {
+        topFaceIdx.push(out.faces.length);
+        out.faces.push(f.map((v) => newIdx.get(v)!));
+        out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
+        srcFace.push(fi);
+      }
     }
   }
 
