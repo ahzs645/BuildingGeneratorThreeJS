@@ -341,12 +341,7 @@ reg("GeometryNodeVolumeCube", (api) => {
   return { Volume: volume as unknown as SockVal };
 });
 
-function sampleVolume(volume: VolumeGrid, position: Vec3): number {
-  const coordinates: Vec3 = [
-    (position[0] - volume.origin[0]) / volume.voxelSize[0],
-    (position[1] - volume.origin[1]) / volume.voxelSize[1],
-    (position[2] - volume.origin[2]) / volume.voxelSize[2],
-  ];
+function sampleVolumeAtIndex(volume: VolumeGrid, coordinates: Vec3): number {
   const base = coordinates.map(Math.floor) as Vec3;
   const fraction: Vec3 = [coordinates[0] - base[0], coordinates[1] - base[1], coordinates[2] - base[2]];
   const value = (x: number, y: number, z: number) => {
@@ -354,14 +349,17 @@ function sampleVolume(volume: VolumeGrid, position: Vec3): number {
       return volume.background;
     return volume.values[z * volume.resolution[0] * volume.resolution[1] + y * volume.resolution[0] + x];
   };
-  let result = 0;
-  for (let dz = 0; dz <= 1; dz++) for (let dy = 0; dy <= 1; dy++) for (let dx = 0; dx <= 1; dx++) {
-    const weight = (dx ? fraction[0] : 1 - fraction[0])
-      * (dy ? fraction[1] : 1 - fraction[1])
-      * (dz ? fraction[2] : 1 - fraction[2]);
-    result += value(base[0] + dx, base[1] + dy, base[2] + dz) * weight;
-  }
-  return result;
+  // OpenVDB's BoxSampler interpolates z, then y, then x. Because this is a
+  // FloatGrid, it rounds every intermediate lerp back to float32 instead of
+  // accumulating all eight weighted corners in double precision.
+  const lerp = (a: number, b: number, weight: number) => Math.fround(
+    a + Math.fround(Math.fround(b - a) * weight),
+  );
+  const z00 = lerp(value(base[0], base[1], base[2]), value(base[0], base[1], base[2] + 1), fraction[2]);
+  const z01 = lerp(value(base[0], base[1] + 1, base[2]), value(base[0], base[1] + 1, base[2] + 1), fraction[2]);
+  const z10 = lerp(value(base[0] + 1, base[1], base[2]), value(base[0] + 1, base[1], base[2] + 1), fraction[2]);
+  const z11 = lerp(value(base[0] + 1, base[1] + 1, base[2]), value(base[0] + 1, base[1] + 1, base[2] + 1), fraction[2]);
+  return lerp(lerp(z00, z01, fraction[1]), lerp(z10, z11, fraction[1]), fraction[0]);
 }
 
 interface ResampledVolumeGrid {
@@ -373,8 +371,14 @@ interface ResampledVolumeGrid {
 
 function resampleVolumeGrid(volume: VolumeGrid, requestedSpacing: number): ResampledVolumeGrid {
   const sampleSpacing = Math.max(...volume.voxelSize);
-  const factor = sampleSpacing / requestedSpacing;
-  const spacing: Vec3 = volume.voxelSize.map((size) => size / factor) as Vec3;
+  // Blender narrows both voxel sizes and their ratio to float before passing
+  // the scale into OpenVDB's double-precision GridTransformer matrix.
+  const factor = Math.fround(Math.fround(sampleSpacing) / Math.fround(requestedSpacing));
+  const inverseFactor = 1 / factor;
+  // The output grid transform receives `1.0f / factor`, so its world-space
+  // voxel basis has one additional float rounding beyond the sampling matrix.
+  const transformScale = Math.fround(1 / factor);
+  const spacing: Vec3 = volume.voxelSize.map((size) => size * transformScale) as Vec3;
   // OpenVDB transforms the inclusive source index bounds outward. BoxSampler
   // then needs one interpolated sample beyond the negative bound, followed by
   // a hard sparse-background guard. On the positive side, ceil the transformed
@@ -384,18 +388,75 @@ function resampleVolumeGrid(volume: VolumeGrid, requestedSpacing: number): Resam
   const resolution: Vec3 = transformedMax.map((maximum) => maximum + 6) as Vec3;
   const origin: Vec3 = volume.min.map((minimum, axis) => minimum - 2 * spacing[axis]) as Vec3;
   const values = new Float32Array(resolution[0] * resolution[1] * resolution[2]);
-
-  for (let z = 0; z < resolution[2]; z++) for (let y = 0; y < resolution[1]; y++) for (let x = 0; x < resolution[0]; x++) {
-    const index = z * resolution[0] * resolution[1] + y * resolution[0] + x;
-    // The outer negative plane is outside OpenVDB's active sampling stencil.
-    // Sampling it trilinearly creates an extra shell; leaving it at the sparse
-    // background closes boundary-touching volumes at Blender's exact extent.
-    values[index] = x === 0 || y === 0 || z === 0 ? volume.background : sampleVolume(volume, [
-      origin[0] + x * spacing[0],
-      origin[1] + y * spacing[1],
-      origin[2] + z * spacing[2],
-    ]);
+  values.fill(volume.background);
+  const active = new Uint8Array(values.length);
+  const sourceActive = (coordinates: Vec3) => {
+    const base = coordinates.map(Math.floor) as Vec3;
+    for (let dz = 0; dz <= 1; dz++) for (let dy = 0; dy <= 1; dy++) for (let dx = 0; dx <= 1; dx++) {
+      const x = base[0] + dx, y = base[1] + dy, z = base[2] + dz;
+      if (x >= 0 && y >= 0 && z >= 0
+        && x < volume.resolution[0] && y < volume.resolution[1] && z < volume.resolution[2]) return true;
+    }
+    return false;
+  };
+  interface SourceUnit { origin: Vec3; tileValue?: number }
+  const tiles: SourceUnit[] = [];
+  const leaves: SourceUnit[] = [];
+  // copyFromDense prunes every uniform, fully populated 8³ FloatGrid leaf to
+  // an active tile. GridTransformer processes those tiles before the remaining
+  // leaves, and its TileSampler deliberately extends the cached tile by one
+  // source voxel on every side.
+  for (let x = 0; x < volume.resolution[0]; x += 8) {
+    for (let y = 0; y < volume.resolution[1]; y += 8) {
+      for (let z = 0; z < volume.resolution[2]; z += 8) {
+        const unit: SourceUnit = { origin: [x, y, z] };
+        if (x + 8 <= volume.resolution[0]
+          && y + 8 <= volume.resolution[1]
+          && z + 8 <= volume.resolution[2]) {
+          const first = volume.values[z * volume.resolution[0] * volume.resolution[1] + y * volume.resolution[0] + x];
+          let uniform = true;
+          for (let dz = 0; dz < 8 && uniform; dz++) for (let dy = 0; dy < 8 && uniform; dy++) for (let dx = 0; dx < 8; dx++) {
+            if (volume.values[(z + dz) * volume.resolution[0] * volume.resolution[1]
+              + (y + dy) * volume.resolution[0] + x + dx] !== first) {
+              uniform = false;
+              break;
+            }
+          }
+          if (uniform) unit.tileValue = first;
+        }
+        (unit.tileValue === undefined ? leaves : tiles).push(unit);
+      }
+    }
   }
+  const transformUnit = (unit: SourceUnit) => {
+    const isTile = unit.tileValue !== undefined;
+    const inputMaximum = isTile ? 8 : 9;
+    const outputMin = unit.origin.map((value) => Math.floor(value * factor) - 1) as Vec3;
+    const outputMax = unit.origin.map((value) => Math.ceil((value + inputMaximum) * factor) + 1) as Vec3;
+    let sourceX = outputMin[0] * inverseFactor;
+    for (let targetX = outputMin[0]; targetX <= outputMax[0]; targetX++, sourceX += inverseFactor) {
+      let sourceY = outputMin[1] * inverseFactor;
+      for (let targetY = outputMin[1]; targetY <= outputMax[1]; targetY++, sourceY += inverseFactor) {
+        let sourceZ = outputMin[2] * inverseFactor;
+        for (let targetZ = outputMin[2]; targetZ <= outputMax[2]; targetZ++, sourceZ += inverseFactor) {
+          const x = targetX + 2, y = targetY + 2, z = targetZ + 2;
+          if (x < 0 || y < 0 || z < 0 || x >= resolution[0] || y >= resolution[1] || z >= resolution[2]) continue;
+          const coordinates: Vec3 = [sourceX, sourceY, sourceZ];
+          const tileHit = isTile
+            && coordinates.every((value, axis) => value >= unit.origin[axis] - 1 && value <= unit.origin[axis] + 8);
+          const sampleIsActive = tileHit || sourceActive(coordinates);
+          const index = z * resolution[0] * resolution[1] + y * resolution[0] + x;
+          if (sampleIsActive && (isTile || !active[index])) {
+            values[index] = tileHit ? unit.tileValue! : sampleVolumeAtIndex(volume, coordinates);
+            active[index] = 1;
+          }
+          else if (!active[index]) values[index] = sampleVolumeAtIndex(volume, coordinates);
+        }
+      }
+    }
+  };
+  for (const tile of tiles) transformUnit(tile);
+  for (const leaf of leaves) transformUnit(leaf);
   return { values, resolution, origin, spacing };
 }
 
