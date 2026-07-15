@@ -450,7 +450,10 @@ export function blenderNoiseTexture3D(
       distortion * blenderSNoise3(vadd(p, offset)),
     ) as Vec3);
   }
-  return blenderFbm3(p, detail, Math.max(0, roughness), Math.max(1e-4, lacunarity), normalize);
+  // Geometry-node float fields store Noise Texture results as float32. Keep
+  // that boundary explicit so later distance/threshold math does not carry
+  // JavaScript-only binary64 bits into Marching Squares classification.
+  return Math.fround(blenderFbm3(p, detail, Math.max(0, roughness), Math.max(1e-4, lacunarity), normalize));
 }
 
 reg("ShaderNodeTexNoise", (api) => {

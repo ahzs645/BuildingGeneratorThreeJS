@@ -2,6 +2,33 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { blenderNoiseTexture3D } from "./nodes/extra";
 
+test("3D Noise Texture stores its Factor at Blender's float32 field boundary", () => {
+  const samples = [
+    { position: [-15.653032302856445, -13.776257514953613, 0.9236533641815186], expected: 0.5221064686775208 },
+    { position: [24.38067626953125, -38.2547721862793, 0.9236533641815186], expected: 0.5691377520561218 },
+    { position: [25.558135986328125, -37.08912658691406, 0.9236533641815186], expected: 0.5661042928695679 },
+  ] as const;
+
+  for (const sample of samples) {
+    const actual = blenderNoiseTexture3D(
+      [...sample.position],
+      0.0020000000949949026,
+      2,
+      0.5,
+      2,
+      0,
+      true,
+    );
+    // Blender's CPU node and the VM can differ by one final float ULP when
+    // Clang contracts the Perlin interpolation. Both store the same float32
+    // field precision before downstream geometry math.
+    assert.ok(
+      Math.abs(actual - sample.expected) <= 5.960464477539063e-8,
+      `${sample.position.join(",")}: expected ${sample.expected}, got ${actual}`,
+    );
+  }
+});
+
 test("3D Noise Texture distortion uses Blender's hash-derived axis offsets", () => {
   const samples = [
     { position: [0, 0, 0], expected: 0.47466596961021423 },

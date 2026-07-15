@@ -2,9 +2,9 @@
   "id": "blunt-metal-marker",
   "object": "Chrome Marker Extruded",
   "root": "blunt metal marker",
-  "status": "near-exact",
+  "status": "exact-topology",
   "blender": { "verts": 97691, "faces": 97669 },
-  "gnvm": { "verts": 97717, "faces": 97693 },
-  "coverage": "100% of reachable node types; Noise Texture uses Blender-compatible signed Perlin fBM and Merge by Distance removes coincident duplicate polygons.",
-  "validation": "The authored browser result is 97,717 / 97,693 versus Blender's 97,691 / 97,669: only 26 vertices and 24 faces high (0.027% topology). Current local bounds agree within 0.0019 units after Blender-compatible procedural noise and field-domain corrections."
+  "gnvm": { "verts": 97691, "faces": 97669 },
+  "coverage": "100% of reachable node types; the portable graph now carries Blender's evaluated 291-point proximity wire, float32 Noise Texture factors, and numeric capture-domain provenance.",
+  "validation": "The authored browser result is topology-exact at 97,691 vertices / 97,669 faces. All six parameter-sweep cases match Blender's vertex and face counts exactly; authored and five flattened cases agree within 0.0003 bounds units. FLATTEN off remains topology-exact with a 0.0496-unit positional bounds residual (about 0.025% of the model span)."
 }
