@@ -64,6 +64,8 @@ test("every Chrome Asset catalog entry loads its shared shader sidecar", () => {
   for (const asset of assets) {
     assert.equal(asset.shaderMetadata, "dojo/chrome-assets/shader-metadata.json");
   }
+  assert.equal(catalog.find((asset: any) => asset.id === "periodic-brush")?.shaderMetadata,
+    "dojo/chrome-assets/shader-metadata.json");
 });
 
 test("N03D shader sidecar preserves internal material groups", () => {

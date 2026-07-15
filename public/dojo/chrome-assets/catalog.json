@@ -166,6 +166,7 @@
     "title": "Periodic Brush",
     "object": "PERIODIC BRUSH",
     "dump": "dojo/periodic-brush/dump.json",
+    "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/periodic-brush.png",
     "blenderStats": { "verts": 7840, "faces": 280 },
     "note": "Exact Blender topology and four-decimal local bounds across five validation cases. The browser reproduces the evaluated Period Pack collection children, authored transforms, curve resampling, dot distance, and dot-size controls.",

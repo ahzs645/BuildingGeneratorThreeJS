@@ -56,7 +56,7 @@
     "materials": 35,
     "shaderGroups": 11,
     "sharedSidecar": "dojo/chrome-assets/shader-metadata.json",
-    "contents": "Fresh Blender 5.1 extraction shared by all 26 Chrome Asset catalog entries; render-specific graph reconstruction remains explicit per supported contract."
+    "contents": "Fresh Blender 5.1 extraction shared by all 26 Chrome Asset catalog entries plus the Periodic Brush page; render-specific graph reconstruction remains explicit per supported contract."
   },
   "n03dShaderMetadata": {
     "materials": 46,
