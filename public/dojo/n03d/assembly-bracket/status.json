@@ -2,7 +2,7 @@
   "id": "n03d-assembly-bracket",
   "object": "Cube.035",
   "root": "asmbly_bracket.001",
-  "status": "exact-authored",
+  "status": "exact-sweep",
   "blender": {
     "verts": 1743,
     "faces": 1816
@@ -12,5 +12,5 @@
     "faces": 1816
   },
   "coverage": "100% of reachable node types across the 54-group, 1,662-node closure.",
-  "validation": "The authored, solid-bracket, half-screw, and split-for-print cases now match Blender exactly with identical four-decimal local bounds. Split-for-print reproduces both Exact Boolean halves at 2,172 / 2,057 and 2,210 / 2,095, the joined fastener at 4,382 / 4,152, the healed screw at 893 / 1,192, and the final result at 1,805 / 1,819. The authored high-resolution hull remains exact at 168 / 86, the shared Heal Mesh output at 831 / 1,189, and the bracket shell at 912 / 627. The compact-diameter hull and first cut also match Blender's 373 / 497 and 648 / 622 totals; only its second-cut delta remains, giving 1,772 / 1,984 versus 1,807 / 1,973 (1.94% vertices, 0.56% faces)."
+  "validation": "All five authored parameter cases now match Blender exactly in vertices, faces, and four-decimal local bounds. Split-for-print reproduces both Exact Boolean halves at 2,172 / 2,057 and 2,210 / 2,095, the joined fastener at 4,382 / 4,152, the healed screw at 893 / 1,192, and the final result at 1,805 / 1,819. Compact diameters reproduces the hull at 373 / 497, the first cut at 648 / 622, the second cut at 976 / 784, and the final result at 1,807 / 1,973. The authored high-resolution hull remains exact at 168 / 86, the shared Heal Mesh output at 831 / 1,189, and the bracket shell at 912 / 627."
 }

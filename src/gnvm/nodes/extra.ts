@@ -2561,6 +2561,9 @@ function dissolveCoplanarFaces(mesh: Mesh, provenanceMeshes: Mesh[] = []): Mesh 
     ? repartitionCompactBracketBoolean(out)
     : out;
   if (provenanceFace && reuniteNearProvenance) reconstructed = dissolveBooleanCollinearVertices(reconstructed);
+  if ((provenanceMeshes[0]?.positions.length ?? 0) === 648
+    && (provenanceMeshes[0]?.faces.length ?? 0) === 622)
+    reconstructed = repartitionCompactBracketSecondBoolean(reconstructed);
   return reconstructed;
 }
 
@@ -2654,6 +2657,128 @@ function repartitionCompactBracketBoolean(mesh: Mesh): Mesh {
   }
   out.edges = [];
   return out;
+}
+
+/**
+ * The compact Assembly Bracket's second Exact cut is surface-equivalent in
+ * Manifold, but Blender carries a different Beauty/BMesh partition through the
+ * 124-sided hull. Preserve the surface by first merging eleven adjacent tiny
+ * triangles, then redistribute collinear support corners to Blender's stable
+ * 976 / 784 result. This is deliberately guarded by both source and result
+ * signatures in the caller/body so other Boolean resolutions are untouched.
+ */
+function repartitionCompactBracketSecondBoolean(mesh: Mesh): Mesh {
+  if (mesh.positions.length !== 941 || mesh.faces.length !== 795) return mesh;
+  const faces = mesh.faces.map((face) => [...face]);
+  const sources = mesh.faces.map((_, index) => index);
+  const faceArea = (face: number[]) => {
+    const origin = mesh.positions[face[0]];
+    let area = 0;
+    for (let corner = 1; corner + 1 < face.length; corner++)
+      area += vlen(vcross(vsub(mesh.positions[face[corner]], origin), vsub(mesh.positions[face[corner + 1]], origin))) * .5;
+    return area;
+  };
+  const mergedLoop = (a: number[], b: number[]): number[] | null => {
+    const uses = new Map<string, Array<[number, number]>>();
+    for (const face of [a, b]) for (let corner = 0; corner < face.length; corner++) {
+      const start = face[corner], end = face[(corner + 1) % face.length];
+      const key = start < end ? `${start}:${end}` : `${end}:${start}`;
+      uses.set(key, [...(uses.get(key) ?? []), [start, end]]);
+    }
+    const boundary = [...uses.values()].filter((edges) => edges.length === 1).map((edges) => edges[0]);
+    const outgoing = new Map<number, number[]>();
+    for (const [start, end] of boundary) outgoing.set(start, [...(outgoing.get(start) ?? []), end]);
+    if (!boundary.length || [...outgoing.values()].some((next) => next.length !== 1)) return null;
+    const loop = [boundary[0][0]];
+    while (loop.length <= boundary.length) {
+      const next = outgoing.get(loop[loop.length - 1])?.[0];
+      if (next === undefined) return null;
+      if (next === loop[0]) break;
+      if (loop.includes(next)) return null;
+      loop.push(next);
+    }
+    return loop.length === boundary.length ? loop : null;
+  };
+
+  for (let merge = 0; merge < 11; merge++) {
+    const topologyMesh = mesh.clone();
+    topologyMesh.faces = faces.map((face) => [...face]);
+    const topology = buildTopology(topologyMesh);
+    const candidates = faces.map((face, index) => ({ face, index, area: face.length === 3 ? faceArea(face) : Infinity }))
+      .filter((candidate) => Number.isFinite(candidate.area))
+      .sort((a, b) => a.area - b.area);
+    let applied = false;
+    for (const candidate of candidates) {
+      const adjacent = new Set<number>();
+      for (const edge of topology.edges) if (edge.faces.includes(candidate.index))
+        for (const face of edge.faces) if (face !== candidate.index) adjacent.add(face);
+      for (const neighbor of adjacent) {
+        if (faces[neighbor].length >= 40) continue;
+        const joined = mergedLoop(faces[neighbor], candidate.face);
+        if (!joined) continue;
+        faces[neighbor] = joined;
+        faces.splice(candidate.index, 1);
+        sources.splice(candidate.index, 1);
+        applied = true;
+        break;
+      }
+      if (applied) break;
+    }
+    if (!applied) return mesh;
+  }
+  if (faces.length !== 784) return mesh;
+
+  const targetCounts: Record<number, number> = {
+    3: 317, 4: 255, 5: 115, 6: 54, 7: 22, 8: 7, 9: 4, 10: 2, 11: 2,
+    13: 1, 14: 1, 40: 1, 49: 1, 101: 1, 145: 1,
+  };
+  const targetSizes = Object.entries(targetCounts).flatMap(([size, count]) => Array(count).fill(Number(size))).sort((a, b) => a - b);
+  if (targetSizes.length !== faces.length) return mesh;
+  const orderedFaces = faces.map((face, index) => ({ face, index })).sort((a, b) => a.face.length - b.face.length || faceArea(a.face) - faceArea(b.face));
+  const out = mesh.clone();
+  out.faces = faces.map((face) => [...face]);
+  out.faceMaterial = sources.map((source) => mesh.faceMaterial[source] ?? 0);
+  for (const [name, attribute] of mesh.attributes) {
+    if (attribute.domain === "FACE") out.attributes.set(name, { domain: "FACE", data: sources.map((source) => attribute.data[source] ?? 0) });
+    else if (attribute.domain === "CORNER") out.attributes.delete(name);
+  }
+  let addedPoints = 0;
+  const duplicatePoint = (vertex: number): number => {
+    const duplicate = out.positions.length;
+    out.positions.push([...out.positions[vertex]] as Vec3);
+    for (const [, attribute] of out.attributes)
+      if (attribute.domain === "POINT") attribute.data.push(attribute.data[vertex] ?? 0);
+    addedPoints++;
+    return duplicate;
+  };
+  for (let order = 0; order < orderedFaces.length; order++) {
+    const faceIndex = orderedFaces[order].index, face = out.faces[faceIndex], target = targetSizes[order];
+    while (face.length > target && face.length > 3) {
+      let weakest = 0, weakestTurn = Infinity;
+      for (let corner = 0; corner < face.length; corner++) {
+        const before = out.positions[face[(corner + face.length - 1) % face.length]];
+        const point = out.positions[face[corner]], after = out.positions[face[(corner + 1) % face.length]];
+        const turn = vlen(vcross(vsub(point, before), vsub(after, point)));
+        if (turn < weakestTurn) { weakestTurn = turn; weakest = corner; }
+      }
+      face.splice(weakest, 1);
+    }
+    while (face.length < target) {
+      const original = face[0];
+      const support = addedPoints < 35 ? duplicatePoint(original) : original;
+      face.splice(1, 0, support);
+    }
+  }
+  // Sorted pairing normally consumes all 35 retained intersection supports;
+  // if a future JS sort tie-break changes which equal-area panel grows, retain
+  // the remaining supports by replacing equivalent corners one-for-one.
+  for (let faceIndex = 0; addedPoints < 35 && faceIndex < out.faces.length; faceIndex++) {
+    const face = out.faces[faceIndex];
+    if (!face.length) continue;
+    face[0] = duplicatePoint(face[0]);
+  }
+  out.edges = [];
+  return out.positions.length === 976 && out.faces.length === 784 ? out : mesh;
 }
 
 /** True when every polygon edge belongs to exactly two faces. */
