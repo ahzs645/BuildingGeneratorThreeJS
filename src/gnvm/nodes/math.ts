@@ -66,7 +66,14 @@ reg("ShaderNodeMath", (api) => {
   const a = api.field("Value");
   const b = api.field("Value_001");
   const c = api.field("Value_002");
-  return { Value: fieldMap([a, b, c], (x, y, z) => f(num(x), num(y), num(z))) };
+  return {
+    Value: fieldMap([a, b, c], (x, y, z) => {
+      const result = f(num(x), num(y), num(z));
+      // Float Math sockets store float32 values. ADD is especially visible in
+      // generated grid dimensions, where double precision shifts every point.
+      return op === "ADD" ? Math.fround(result) : result;
+    }),
+  };
 });
 
 type CurvePoint = { location: [number, number]; handle_type?: string };
@@ -137,11 +144,32 @@ reg("ShaderNodeVectorMath", (api) => {
   let vecOut: Field | null = null;
   let valOut: Field | null = null;
   switch (op) {
-    case "ADD": vecOut = fieldMap([a, b], (x, y) => vadd(va(x), va(y))); break;
-    case "SUBTRACT": vecOut = fieldMap([a, b], (x, y) => vsub(va(x), va(y))); break;
+    case "ADD": vecOut = fieldMap([a, b], (x, y) => {
+      const u = va(x), v = va(y);
+      return [
+        Math.fround(Math.fround(u[0]) + Math.fround(v[0])),
+        Math.fround(Math.fround(u[1]) + Math.fround(v[1])),
+        Math.fround(Math.fround(u[2]) + Math.fround(v[2])),
+      ] as Vec3;
+    }); break;
+    case "SUBTRACT": vecOut = fieldMap([a, b], (x, y) => {
+      const u = va(x), v = va(y);
+      return [
+        Math.fround(Math.fround(u[0]) - Math.fround(v[0])),
+        Math.fround(Math.fround(u[1]) - Math.fround(v[1])),
+        Math.fround(Math.fround(u[2]) - Math.fround(v[2])),
+      ] as Vec3;
+    }); break;
     case "MULTIPLY": vecOut = fieldMap([a, b], (x, y) => vmul(va(x), va(y))); break;
     case "DIVIDE": vecOut = fieldMap([a, b], (x, y) => { const u = va(x), v = va(y); return [v[0] ? u[0] / v[0] : 0, v[1] ? u[1] / v[1] : 0, v[2] ? u[2] / v[2] : 0] as Vec3; }); break;
-    case "SCALE": vecOut = fieldMap([a, scale], (x, s) => vscale(va(x), num(s))); break;
+    case "SCALE": vecOut = fieldMap([a, scale], (x, s) => {
+      const u = va(x), factor = Math.fround(num(s));
+      return [
+        Math.fround(Math.fround(u[0]) * factor),
+        Math.fround(Math.fround(u[1]) * factor),
+        Math.fround(Math.fround(u[2]) * factor),
+      ] as Vec3;
+    }); break;
     case "CROSS_PRODUCT": vecOut = fieldMap([a, b], (x, y) => vcross(va(x), va(y))); break;
     case "NORMALIZE": vecOut = fieldMap([a], (x) => vnorm(va(x))); break;
     case "DOT_PRODUCT": valOut = fieldMap([a, b], (x, y) => vdot(va(x), va(y))); break;
@@ -290,7 +318,11 @@ reg("ShaderNodeMapRange", (api) => {
   return {
     Result: fieldMap([v, fmin, fmax, tmin, tmax], (a, b, c, d, e) => {
       const x = num(a), b0 = num(b), b1 = num(c), t0 = num(d), t1 = num(e);
-      return mapComponent(x, b0, b1, t0, t1);
+      const result = mapComponent(x, b0, b1, t0, t1);
+      // Blender's scalar linear Map Range is evaluated in float precision.
+      // This is observable when a distance field drives marching-square case
+      // thresholds, where one ULP can select a different edge intersection.
+      return interp === "LINEAR" ? Math.fround(result) : result;
     }),
   };
 });

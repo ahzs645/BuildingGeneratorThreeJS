@@ -377,6 +377,100 @@ reg("GeometryNodeFlipFaces", (api) => {
   return { Mesh: g };
 });
 
+// Blender's ALL-mode merge uses kdtree_calc_duplicates_fast with an
+// index-ordered search. Its balanced-tree pruning is observable for points
+// near the exact distance boundary, so a spatial-hash approximation can weld
+// a different number of vertices even with identical float32 coordinates.
+type WeldKdNode = { co: Vec3; index: number; left: number; right: number; axis: 0 | 1 | 2 };
+
+export function blenderMergeTargets(positions: Vec3[], selection: boolean[], distance: number): number[] {
+  const f = Math.fround;
+  const nodes: WeldKdNode[] = [];
+  for (let index = 0; index < positions.length; index++) {
+    if (!selection[index]) continue;
+    nodes.push({
+      co: [f(positions[index][0]), f(positions[index][1]), f(positions[index][2])],
+      index,
+      left: -1,
+      right: -1,
+      axis: 0,
+    });
+  }
+  const swap = (a: number, b: number) => {
+    const value = nodes[a];
+    nodes[a] = nodes[b];
+    nodes[b] = value;
+  };
+  const balance = (start: number, length: number, axis: 0 | 1 | 2): number => {
+    if (length <= 0) return -1;
+    if (length === 1) return start;
+    let left = 0;
+    let right = length - 1;
+    const median = Math.floor(length / 2);
+    while (right > left) {
+      const coordinate = nodes[start + right].co[axis];
+      let i = left - 1;
+      let j = right;
+      while (true) {
+        do i++; while (nodes[start + i].co[axis] < coordinate);
+        do j--; while (nodes[start + j].co[axis] > coordinate && j > left);
+        if (i >= j) break;
+        swap(start + i, start + j);
+      }
+      swap(start + i, start + right);
+      if (i >= median) right = i - 1;
+      if (i <= median) left = i + 1;
+    }
+    const nodeIndex = start + median;
+    const nextAxis = ((axis + 1) % 3) as 0 | 1 | 2;
+    nodes[nodeIndex].axis = axis;
+    nodes[nodeIndex].left = balance(start, median, nextAxis);
+    nodes[nodeIndex].right = balance(start + median + 1, length - median - 1, nextAxis);
+    return nodeIndex;
+  };
+
+  const root = balance(0, nodes.length, 0);
+  const indexOrder = Array<number>(positions.length).fill(-1);
+  nodes.forEach((node, nodeIndex) => { indexOrder[node.index] = nodeIndex; });
+  // -2 is outside the selection, -1 is an unassigned merge candidate.
+  const targets = Array<number>(positions.length).fill(-2);
+  for (let index = 0; index < selection.length; index++) if (selection[index]) targets[index] = -1;
+  const range = f(distance);
+  const rangeSquared = f(range * range);
+  const distanceSquared = (a: Vec3, b: Vec3) => {
+    const x = f(a[0] - b[0]), y = f(a[1] - b[1]), z = f(a[2] - b[2]);
+    let result = f(f(x * x) + f(y * y));
+    result = f(result + f(z * z));
+    return result;
+  };
+  let found = 0;
+  const deduplicate = (search: number, searchCoordinate: Vec3, nodeIndex: number): void => {
+    const node = nodes[nodeIndex];
+    const axis = node.axis;
+    if (f(searchCoordinate[axis] + range) <= node.co[axis]) {
+      if (node.left >= 0) deduplicate(search, searchCoordinate, node.left);
+    } else if (f(searchCoordinate[axis] - range) >= node.co[axis]) {
+      if (node.right >= 0) deduplicate(search, searchCoordinate, node.right);
+    } else {
+      if (search !== node.index && targets[node.index] === -1
+        && distanceSquared(node.co, searchCoordinate) <= rangeSquared) {
+        targets[node.index] = search;
+        found++;
+      }
+      if (node.left >= 0) deduplicate(search, searchCoordinate, node.left);
+      if (node.right >= 0) deduplicate(search, searchCoordinate, node.right);
+    }
+  };
+  for (let index = 0; index < indexOrder.length; index++) {
+    const nodeIndex = indexOrder[index];
+    if (nodeIndex < 0 || (targets[index] !== -1 && targets[index] !== index)) continue;
+    const previousFound = found;
+    deduplicate(index, nodes[nodeIndex].co, root);
+    if (found !== previousFound) targets[index] = index;
+  }
+  return targets;
+}
+
 // ---- Merge by Distance ----------------------------------------------------
 reg("GeometryNodeMergeByDistance", (api) => {
   const g = api.geo("Geometry").clone();
@@ -388,15 +482,7 @@ reg("GeometryNodeMergeByDistance", (api) => {
   }
   const hasDistance = api.node.inputs.some((s) => s.identifier === "Distance" || s.name === "Distance");
   const rawDist = hasDistance ? api.num("Distance") : 0.001;
-  const dist = Number.isFinite(rawDist) ? Math.max(0, rawDist) : 0.001;
-  const distSq = dist * dist;
-  const cellSize = dist || 1e-12;
-  const cellCoord = (p: Vec3): [number, number, number] => [
-    Math.floor(p[0] / cellSize),
-    Math.floor(p[1] / cellSize),
-    Math.floor(p[2] / cellSize),
-  ];
-  const cellKey = (x: number, y: number, z: number) => `${x}_${y}_${z}`;
+  const dist = Math.fround(Number.isFinite(rawDist) ? Math.max(0, rawDist) : 0.001);
   const selectedCtx = makeFieldCtx(g, "POINT");
   const selected = api.field("Selection").array(selectedCtx);
   if (FIELD_PROBE.node === api.node.name) {
@@ -410,53 +496,29 @@ reg("GeometryNodeMergeByDistance", (api) => {
   // precision for threshold comparisons; double-precision fillet coordinates
   // can differ by ~1e-8 and choose the opposite side of an exact 0.001 weld.
   const weldPositions: Vec3[] = mesh.positions.map((p) => [Math.fround(p[0]), Math.fround(p[1]), Math.fround(p[2])]);
-  // Blender uses non-transitive representative clusters (a chain of points
-  // less than Distance apart must not collapse into one vertex), then places
-  // each result at its cluster average.
-  const reps = new Map<string, number[]>();
-  const remap: number[] = [];
+  const selectedMask = weldPositions.map((_, index) => asNum(selected[index] ?? 1) > 0);
+  const mergeTargets = blenderMergeTargets(weldPositions, selectedMask, dist);
+  const representative = mergeTargets.map((target, index) => target >= 0 ? target : index);
+  const representativeToDense = new Map<number, number>();
   const srcVert: number[] = [];
-  const seeds: Vec3[] = [];
   const sums: Vec3[] = [];
   const counts: number[] = [];
+  for (let index = 0; index < representative.length; index++) {
+    if (representative[index] !== index) continue;
+    const dense = representativeToDense.size;
+    representativeToDense.set(index, dense);
+    srcVert[dense] = index;
+    sums[dense] = [0, 0, 0];
+    counts[dense] = 0;
+  }
+  const remap: number[] = [];
   for (let i = 0; i < mesh.positions.length; i++) {
     const p = weldPositions[i];
-    let found = -1;
-    if (asNum(selected[i] ?? 1) > 0) {
-      const [cx, cy, cz] = cellCoord(p);
-      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
-        const bucket = reps.get(cellKey(cx + dx, cy + dy, cz + dz));
-        if (!bucket) continue;
-        for (const ri of bucket) {
-          const q = seeds[ri];
-          const d2 = (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2;
-          if (d2 <= distSq && (found < 0 || ri < found)) found = ri;
-        }
-      }
-      if (found >= 0) {
-        remap[i] = found;
-        sums[found] = vadd(sums[found], p);
-        counts[found]++;
-        continue;
-      }
-      const ni = seeds.length;
-      remap[i] = ni;
-      srcVert[ni] = i;
-      seeds.push([...p] as Vec3);
-      sums.push([...p] as Vec3);
-      counts.push(1);
-      const key = cellKey(cx, cy, cz);
-      const bucket = reps.get(key);
-      if (bucket) bucket.push(ni);
-      else reps.set(key, [ni]);
-    } else {
-      const ni = seeds.length;
-      remap[i] = ni;
-      srcVert[ni] = i;
-      seeds.push([...p] as Vec3);
-      sums.push([...p] as Vec3);
-      counts.push(1);
-    }
+    const dense = representativeToDense.get(representative[i]);
+    if (dense === undefined) throw new Error(`Merge by Distance target ${representative[i]} is missing`);
+    remap[i] = dense;
+    sums[dense] = vadd(sums[dense], p);
+    counts[dense]++;
   }
   const pos = sums.map((sum, i) => {
     const averaged = vscale(sum, 1 / counts[i]);

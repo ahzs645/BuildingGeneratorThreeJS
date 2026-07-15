@@ -334,7 +334,12 @@ reg("GeometryNodeSetPosition", (api) => {
   const move = (p: Vec3, i: number): Vec3 => {
     if (!asNum(sel[i] ?? 1)) return p;
     const base = posArr ? asVec3(posArr[i]) : p;
-    return vadd(base, asVec3(off[i] ?? [0, 0, 0]));
+    const offset = asVec3(off[i] ?? [0, 0, 0]);
+    return [
+      Math.fround(Math.fround(base[0]) + Math.fround(offset[0])),
+      Math.fround(Math.fround(base[1]) + Math.fround(offset[1])),
+      Math.fround(Math.fround(base[2]) + Math.fround(offset[2])),
+    ];
   };
   if (hasMeshPoints) {
     g.mesh!.positions = g.mesh!.positions.map(move);
@@ -743,6 +748,41 @@ function nearestFacePoint(point: Vec3, root: ProximityBvh | null): { d: number; 
   return { d: Math.sqrt(bestSquared), q: best };
 }
 
+export function nearestEdgePointFloat32(point: Vec3, segments: [Vec3, Vec3][]): { d: number; q: Vec3 } {
+  const f = Math.fround;
+  const dot = (a: Vec3, b: Vec3) => {
+    let result = f(f(a[0] * b[0]) + f(a[1] * b[1]));
+    result = f(result + f(a[2] * b[2]));
+    return result;
+  };
+  const p: Vec3 = [f(point[0]), f(point[1]), f(point[2])];
+  let bestSq = Infinity;
+  let best: Vec3 = segments.length
+    ? [f(segments[0][0][0]), f(segments[0][0][1]), f(segments[0][0][2])]
+    : [0, 0, 0];
+  for (const [rawA, rawB] of segments) {
+    const a: Vec3 = [f(rawA[0]), f(rawA[1]), f(rawA[2])];
+    const b: Vec3 = [f(rawB[0]), f(rawB[1]), f(rawB[2])];
+    const u: Vec3 = [f(b[0] - a[0]), f(b[1] - a[1]), f(b[2] - a[2])];
+    const h: Vec3 = [f(p[0] - a[0]), f(p[1] - a[1]), f(p[2] - a[2])];
+    const denominator = dot(u, u);
+    const lambda = denominator > 0 ? f(dot(u, h) / denominator) : 0;
+    const factor = Math.max(0, Math.min(1, lambda));
+    const q: Vec3 = [
+      f(a[0] + f(u[0] * factor)),
+      f(a[1] + f(u[1] * factor)),
+      f(a[2] + f(u[2] * factor)),
+    ];
+    const delta: Vec3 = [f(q[0] - p[0]), f(q[1] - p[1]), f(q[2] - p[2])];
+    const distanceSquared = dot(delta, delta);
+    if (distanceSquared < bestSq) {
+      bestSq = distanceSquared;
+      best = q;
+    }
+  }
+  return { d: Number.isFinite(bestSq) ? f(Math.sqrt(bestSq)) : 0, q: best };
+}
+
 reg("GeometryNodeProximity", (api) => {
   let target = api.geo("Target");
   if (target.instances.length) target = realizeInstances(target);
@@ -771,21 +811,7 @@ reg("GeometryNodeProximity", (api) => {
   const nearest = (p: Vec3): { d: number; q: Vec3 } => {
     if (!pts.length) return { d: 0, q: [0, 0, 0] };
     if (faces) return nearestFacePoint(p, faces);
-    if (segments.length) {
-      let bestSq = Infinity;
-      let best: Vec3 = segments[0][0];
-      for (const [a, b] of segments) {
-        const abx = b[0] - a[0], aby = b[1] - a[1], abz = b[2] - a[2];
-        const apx = p[0] - a[0], apy = p[1] - a[1], apz = p[2] - a[2];
-        const denom = abx * abx + aby * aby + abz * abz;
-        const t = denom > 1e-20 ? Math.max(0, Math.min(1, (apx * abx + apy * aby + apz * abz) / denom)) : 0;
-        const q: Vec3 = [a[0] + abx * t, a[1] + aby * t, a[2] + abz * t];
-        const dx = p[0] - q[0], dy = p[1] - q[1], dz = p[2] - q[2];
-        const dSq = dx * dx + dy * dy + dz * dz;
-        if (dSq < bestSq) { bestSq = dSq; best = q; }
-      }
-      return { d: Math.sqrt(bestSq), q: best };
-    }
+    if (segments.length) return nearestEdgePointFloat32(p, segments);
     let bestSq = Infinity;
     let bestIndex = 0;
     const visit = (node: KdNode | null) => {

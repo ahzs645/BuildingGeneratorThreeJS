@@ -116,10 +116,16 @@ export function meshGrid(sizeX: number, sizeY: number, vx: number, vy: number): 
   // Blender stores Grid vertices X-major (all Y samples for one X before the
   // next X). Geometry looks identical either way, but Index/Field at Index
   // consumers rely on this order (the Dojo bin samples corners recursively).
+  const dx = Math.fround(Math.fround(sizeX) / (vx - 1));
+  const dy = Math.fround(Math.fround(sizeY) / (vy - 1));
+  const xShift = Math.fround((vx - 1) / 2);
+  const yShift = Math.fround((vy - 1) / 2);
   for (let i = 0; i < vx; i++)
     for (let j = 0; j < vy; j++) {
-      const x = (i / (vx - 1) - 0.5) * sizeX;
-      const y = (j / (vy - 1) - 0.5) * sizeY;
+      // Blender's create_grid_mesh uses a float32 step and half-edge shift,
+      // not normalized double interpolation. Preserve its operation order.
+      const x = Math.fround(Math.fround(Math.fround(i) - xShift) * dx);
+      const y = Math.fround(Math.fround(Math.fround(j) - yShift) * dy);
       m.positions.push([x, y, 0]);
     }
   for (let i = 0; i + 1 < vx; i++)
