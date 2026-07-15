@@ -96,6 +96,43 @@ export interface EditorGraph {
   unresolvedLinks: string[];
 }
 
+export interface EditorGraphSearchResult {
+  groupName: string;
+  node: GraphNode;
+}
+
+/**
+ * Return a stable, useful neighborhood for the editor's initial camera.
+ * Blender opens node trees at a working scale rather than shrinking the entire
+ * tree into view, so walk upstream from Group Output and frame that authored
+ * output chain. The full graph remains available through the explicit fit-all
+ * control and minimap.
+ */
+export function graphWorkingSetNodeIds(graph: EditorGraph, limit = 18): string[] {
+  if (limit <= 0) return [];
+  const candidates = graph.nodes.filter((node) => node.kind !== "frame");
+  if (!candidates.length) return [];
+
+  const output = candidates.find((node) => node.sourceType === "NodeGroupOutput")
+    ?? candidates.find((node) => node.label === "Group Output")
+    ?? candidates[candidates.length - 1];
+  const selected: string[] = [];
+  const seen = new Set<string>();
+  const queue = [output.id];
+
+  while (queue.length && selected.length < limit) {
+    const nodeId = queue.shift()!;
+    if (seen.has(nodeId)) continue;
+    seen.add(nodeId);
+    selected.push(nodeId);
+    for (const link of graph.links) {
+      if (link.target === nodeId && !seen.has(link.source)) queue.push(link.source);
+    }
+  }
+
+  return selected;
+}
+
 type DumpWithEditorGroups = {
   node_groups: Record<string, {
     name?: string;
@@ -264,4 +301,29 @@ export function graphGroupPath(dump: Dump, rootGroup: string, nodeNames: string[
     groupName = node.nestedGroup;
   }
   return path;
+}
+
+/** Search every extracted group while retaining enough context to navigate there. */
+export function searchEditorGraphs(dump: Dump, rawQuery: string, limit = 24): EditorGraphSearchResult[] {
+  const query = rawQuery.trim().toLowerCase();
+  if (!query || limit <= 0) return [];
+
+  const ranked: (EditorGraphSearchResult & { score: number; order: number })[] = [];
+  let order = 0;
+  for (const groupName of Object.keys(dump.node_groups).sort()) {
+    const graph = dumpGroupToEditorGraph(dump, groupName);
+    for (const node of graph.nodes) {
+      if (node.kind === "frame") continue;
+      const fields = [node.label, node.sourceName, node.sourceType, node.nestedGroup ?? ""].map((field) => field.toLowerCase());
+      const exact = fields.some((field) => field === query);
+      const prefix = fields.some((field) => field.startsWith(query));
+      if (!fields.some((field) => field.includes(query))) continue;
+      ranked.push({ groupName, node, score: exact ? 0 : prefix ? 1 : 2, order: order++ });
+    }
+  }
+
+  return ranked
+    .sort((a, b) => a.score - b.score || a.order - b.order)
+    .slice(0, limit)
+    .map(({ score: _score, order: _order, ...result }) => result);
 }

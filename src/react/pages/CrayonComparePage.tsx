@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StudioLink } from "../StudioLink";
 import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import { usePageRuntime } from "../page-runtime";
@@ -16,6 +16,26 @@ const controls = [
 export default function CrayonComparePage(): React.JSX.Element {
   usePageRuntime("Chrome Crayon · Blender vs browser Geometry Nodes", loadCrayonCompare);
   const [graphOpen, setGraphOpen] = useState(true);
+  const [graphMaximized, setGraphMaximized] = useState(false);
+  useEffect(() => {
+    if (!graphMaximized) return;
+    const restore = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") setGraphMaximized(false);
+    };
+    window.addEventListener("keydown", restore);
+    return () => window.removeEventListener("keydown", restore);
+  }, [graphMaximized]);
+  useEffect(() => {
+    if (!graphOpen) return;
+    const frame = window.requestAnimationFrame(() => window.dispatchEvent(new CustomEvent("crayon-graph-resize")));
+    return () => window.cancelAnimationFrame(frame);
+  }, [graphMaximized, graphOpen]);
+
+  const closeGraph = (): void => {
+    setGraphMaximized(false);
+    setGraphOpen(false);
+  };
+
   return <main className={`crayon-shell ${graphOpen ? "graph-open" : ""}`}>
     <canvas id="crayon-canvas" />
     <StudioLink />
@@ -40,8 +60,8 @@ export default function CrayonComparePage(): React.JSX.Element {
       </section>
       <section className="crayon-note"><span className="panel-label">Semantic contract</span><p>Blender remains the behavior oracle. The editor projects the extracted JSON while GN-VM evaluates the untouched graph payload.</p><p>Click a node with a geometry output to request an amber intermediate-geometry probe in the Three.js viewport. Double-click group nodes to navigate their nested tree.</p></section>
     </aside>
-    <button className="graph-toggle" type="button" onClick={() => setGraphOpen((open) => !open)}>{graphOpen ? "Hide" : "Show"} Geometry Nodes workspace</button>
-    {graphOpen && <section className="crayon-graph"><header><b>Geometry Nodes</b><span>pan · zoom · box-select · reconnect noodles · F3 search · double-click groups</span></header><GeometryNodesEditor /></section>}
+    {!graphOpen && <button className="graph-toggle" type="button" onClick={() => setGraphOpen(true)}>Show Geometry Nodes workspace</button>}
+    {graphOpen && <section className={`crayon-graph ${graphMaximized ? "maximized" : ""}`}><header><b>Geometry Nodes</b><div className="graph-window-actions"><span>pan · zoom · box-select · reconnect noodles · F3 search · double-click groups</span><button type="button" onClick={() => setGraphMaximized((maximized) => !maximized)} title={graphMaximized ? "Restore workspace" : "Maximize workspace"}>{graphMaximized ? "Restore" : "Maximize"}</button><button type="button" onClick={closeGraph} title="Hide workspace">Hide</button></div></header><GeometryNodesEditor /></section>}
     <div className="crayon-help">Three.js viewport · drag to orbit · scroll to zoom</div>
   </main>;
 }

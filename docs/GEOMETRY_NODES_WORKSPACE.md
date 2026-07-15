@@ -6,8 +6,9 @@ The browser route is `/crayon`. It presents the extracted Chrome Crayon graph be
 
 The slice supports:
 
-- Blender-oriented category headers, stored custom colors, authored widths, socket colors/display shapes, frames, reroutes, and Bezier noodle links;
-- pan, zoom, box/multi-selection, minimap, fit controls, F3/Cmd/Ctrl-F node search, and selected-node metadata;
+- Blender-oriented category headers, stored custom colors, authored coordinates and widths, output-first full-width socket rows, Blender-like UI typography, socket colors/display shapes, frames, reroutes, and Bezier noodle links;
+- a readable Blender-style initial camera framed around the Group Output dependency chain, plus pan, zoom, box/multi-selection, minimap, explicit Frame All, and a full-screen workspace;
+- F3/Cmd/Ctrl-F search across the complete group closure and selected-node metadata;
 - nested group entry by double-click and a path-preserving breadcrumb bar;
 - existing unlinked-socket editing, link creation/removal, undo/redo, JSON open/save, and debounced GN-VM reevaluation;
 - exposed modifier controls evaluated by the existing Web Worker GN-VM;
@@ -40,7 +41,7 @@ Reviewed against authoritative repository state on 2026-07-14. No implementation
 The current dump remains version 1 input until Blender round-trip fixtures justify a new contract.
 
 1. Add an optional sidecar/envelope without changing node payloads: `schema_version`, extractor/Blender versions, source fingerprint, root object/group IDs, warnings, and provenance.
-2. Assign canonical object, node, interface item, and socket IDs during extraction. Keep current names/identifiers for compatibility and diagnostics.
+2. Assign exact document-local object, node, interface item, and socket IDs during extraction. Keep current names/identifiers for compatibility and diagnostics. These IDs preserve identity inside one export; cross-export persistence requires a separate opt-in policy, such as UUID custom properties stored in the `.blend`.
 3. Add typed external dependency descriptors for objects, collections, materials, images, fonts, scenes, and nested trees. Record source tree/node/socket, target datablock/tree, nested path, provenance, library path, direction, and whether the dependency is embedded, referenced, unavailable, required, or optional.
 4. Represent hierarchy and ordering explicitly: parent frame IDs, interface panel parent/order, ordered multi-input links, paired zones, and stable reroute input/output IDs.
 5. Build dependency indexes (predecessors/successors), cycle diagnostics, dirty propagation, and cached GN-VM cooking as derived metadata. These optimize evaluation but never override Blender behavior.
@@ -51,6 +52,9 @@ Until step 6 is proven, editor-only XYFlow position changes and JSON exports are
 
 ## Remaining work
 
+- Make the editor asset-driven, then mount the same workspace for Type Pixel Brush. Resolve its root by the selected object rather than taking the first node modifier in the dump.
+- Add a cancellable evaluation manager with explicit queued/running/error state. Selection should be immediate; expensive intermediate preview should be an explicit target, and obsolete workers should be terminated.
+- Add structured per-node diagnostics and timing before attempting dependency-aware caching or incremental cooking.
 - Frame-relative dragging/resizing and moving a frame with all children need compound editor operations.
 - Node creation, dynamic socket declarations, interface panels, socket ranges, and Blender subtypes need more extractor metadata before they can round-trip safely.
 - External object/material/image resolution needs the typed dependency records above.

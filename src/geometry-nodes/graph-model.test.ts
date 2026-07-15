@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import type { Dump } from "../gnvm";
-import { dumpGroupToEditorGraph, graphGroupPath } from "./graph-model";
+import { dumpGroupToEditorGraph, graphGroupPath, graphWorkingSetNodeIds, searchEditorGraphs } from "./graph-model";
 
 const dumpPath = fileURLToPath(new URL("../../public/dojo/chrome-assets/type-pixel-brush/dump.json", import.meta.url));
 const dump = JSON.parse(await readFile(dumpPath, "utf8")) as Dump;
@@ -50,3 +50,26 @@ test("nested group traversal produces Blender-style breadcrumbs", () => {
   assert.deepEqual(graphGroupPath(dump, root, ["missing"]), [root]);
 });
 
+test("search spans every group and retains navigation context", () => {
+  const nestedMatches = searchEditorGraphs(dump, "bounding box");
+  assert.ok(nestedMatches.some((match) => match.groupName === root && match.node.nestedGroup === "_Bounding Box.002"));
+
+  const internalMatches = searchEditorGraphs(dump, "vector math");
+  assert.ok(internalMatches.some((match) => match.groupName === "_Bounding Box.002"));
+  assert.ok(internalMatches.every((match) => match.node.kind !== "frame"));
+  assert.deepEqual(searchEditorGraphs(dump, "   "), []);
+});
+
+test("initial working set is deterministic and walks upstream from Group Output", () => {
+  const graph = dumpGroupToEditorGraph(dump, root);
+  const first = graphWorkingSetNodeIds(graph, 12);
+  const second = graphWorkingSetNodeIds(graph, 12);
+  const output = graph.nodes.find((node) => node.sourceType === "NodeGroupOutput");
+
+  assert.deepEqual(first, second);
+  assert.equal(first[0], output?.id);
+  assert.ok(first.length > 1 && first.length <= 12);
+  assert.ok(first.every((id) => graph.nodes.some((node) => node.id === id && node.kind !== "frame")));
+  assert.ok(first.slice(1).every((id) => graph.links.some((link) => link.source === id && first.includes(link.target))));
+  assert.deepEqual(graphWorkingSetNodeIds(graph, 0), []);
+});

@@ -17,7 +17,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { publicUrl } from "../../base-url";
 import type { Dump } from "../../gnvm";
-import { dumpGroupToEditorGraph, type EditorGraph, type GraphNode, type GraphSocket } from "../../geometry-nodes/graph-model";
+import { dumpGroupToEditorGraph, graphWorkingSetNodeIds, searchEditorGraphs, type EditorGraph, type EditorGraphSearchResult, type GraphNode, type GraphSocket } from "../../geometry-nodes/graph-model";
 
 type NodeCardData = {
   node: GraphNode;
@@ -111,14 +111,13 @@ function NodeCard({ data }: NodeProps<Node<NodeCardData>>): React.JSX.Element {
   const outputs = node.outputs.filter((socket) => (socket.visible || socket.linked) && socket.identifier !== "__extend__");
   return <div className={`blender-node tone-${nodeTone(node.sourceType)} ${node.muted ? "muted" : ""} ${data.searchMatch ? "search-match" : ""}`} style={{ width: data.width, ...(node.color ? { "--node-custom-color": node.color } as React.CSSProperties : {}) }}>
     <div className="blender-node-title"><span>{node.label}</span>{node.nestedGroup && <i title={`Open ${node.nestedGroup}`}>◆</i>}</div>
-    <div className="blender-node-type">{compactType(node.sourceType)}</div>
     {node.hidden && <div className="collapsed-handles">
       {inputs.map((socket, index) => <Handle className="collapsed-handle" key={socket.id} type="target" position={Position.Left} id={socket.id} title={socket.name} style={{ top: 10 + index * 3, background: socketColor(socket.type) }} />)}
       {outputs.map((socket, index) => <Handle className="collapsed-handle" key={socket.id} type="source" position={Position.Right} id={socket.id} title={socket.name} style={{ top: 10 + index * 3, background: socketColor(socket.type) }} />)}
     </div>}
     {!node.hidden && <div className="blender-node-body">
-      <div className="socket-list inputs">{inputs.map((socket) => <SocketRow key={socket.id} socket={socket} nodeId={node.id} onSocketChange={data.onSocketChange} />)}</div>
       <div className="socket-list outputs">{outputs.map((socket) => <SocketRow key={socket.id} socket={socket} nodeId={node.id} onSocketChange={data.onSocketChange} />)}</div>
+      <div className="socket-list inputs">{inputs.map((socket) => <SocketRow key={socket.id} socket={socket} nodeId={node.id} onSocketChange={data.onSocketChange} />)}</div>
     </div>}
   </div>;
 }
@@ -148,9 +147,11 @@ export default function GeometryNodesEditor(): React.JSX.Element {
   const [dirty, setDirty] = useState(false);
   const [selected, setSelected] = useState<GraphNode | null>(null);
   const [search, setSearch] = useState("");
+  const [pendingFocus, setPendingFocus] = useState<{ groupName: string; nodeId: string } | null>(null);
   const [flow, setFlow] = useState<ReactFlowInstance | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
+  const framedGroup = useRef("");
 
   const commit = useCallback((mutate: (next: Dump) => void) => {
     setDump((current) => {
@@ -191,7 +192,7 @@ export default function GeometryNodesEditor(): React.JSX.Element {
   useEffect(() => {
     if (!dump || !groupName) return;
     const nextGraph = dumpGroupToEditorGraph(dump, groupName);
-    const scale = .46;
+    const scale = 1;
     const byKind = [...nextGraph.nodes].sort((a, b) => Number(a.kind !== "frame") - Number(b.kind !== "frame"));
     const nextNodes: Node[] = byKind.map((node) => {
       if (node.kind === "frame") return {
@@ -199,7 +200,7 @@ export default function GeometryNodesEditor(): React.JSX.Element {
         type: "blenderFrame",
         position: { x: node.position.x * scale, y: node.position.y * scale },
         data: { title: node.label, color: node.color },
-        style: { width: Math.max(120, node.width * scale), height: Math.max(90, node.height * scale) },
+        style: { width: Math.max(120, node.width), height: Math.max(90, node.height) },
         selectable: false,
         draggable: false,
         zIndex: -10,
@@ -209,7 +210,7 @@ export default function GeometryNodesEditor(): React.JSX.Element {
         type: "blenderNode",
         position: { x: node.position.x * scale, y: node.position.y * scale },
         parentId: node.parentId,
-        data: { node, width: Math.max(126, Math.min(290, node.width * scale + 82)), searchMatch: false, onSocketChange: changeSocket },
+        data: { node, width: Math.max(120, Math.min(360, node.width)), searchMatch: false, onSocketChange: changeSocket },
         zIndex: 2,
       };
     });
@@ -250,16 +251,22 @@ export default function GeometryNodesEditor(): React.JSX.Element {
   }, []);
 
   const groupNames = useMemo(() => Object.keys(dump?.node_groups ?? {}).sort(), [dump]);
-  const matches = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query || !graph) return [];
-    return graph.nodes.filter((node) => node.kind !== "frame" && `${node.label} ${node.sourceName} ${node.sourceType} ${node.nestedGroup ?? ""}`.toLowerCase().includes(query)).slice(0, 8);
-  }, [graph, search]);
+  const matches = useMemo(() => dump ? searchEditorGraphs(dump, search, 8) : [], [dump, search]);
 
   const focusNode = (node: GraphNode): void => {
     const flowNode = flow?.getNode(node.id);
     if (flowNode) void flow?.fitView({ nodes: [flowNode], duration: 320, padding: .8, maxZoom: 1.25 });
     setSelected(node);
+  };
+  const focusSearchResult = (match: EditorGraphSearchResult): void => {
+    setSearch("");
+    if (match.groupName === groupName) {
+      focusNode(match.node);
+      return;
+    }
+    setBreadcrumbs([{ group: match.groupName }]);
+    setPendingFocus({ groupName: match.groupName, nodeId: match.node.id });
+    setGroupName(match.groupName);
   };
   const openNestedGroup = (node: GraphNode): void => {
     if (!node.nestedGroup || !dump?.node_groups[node.nestedGroup]) return;
@@ -276,6 +283,50 @@ export default function GeometryNodesEditor(): React.JSX.Element {
     setGroupName(next);
     setBreadcrumbs([{ group: next }]);
   };
+  const frameAll = (): void => {
+    void flow?.fitView({ duration: 320, padding: .12, minZoom: .05, maxZoom: 1.2 });
+  };
+  const frameWorkingSet = useCallback((duration = 0): boolean => {
+    if (!flow || !graph || !nodes.length) return false;
+    const workingSet = new Set(graphWorkingSetNodeIds(graph, 12));
+    const focusNodes = nodes.filter((node) => workingSet.has(node.id));
+    if (!focusNodes.length) return false;
+    void flow.fitView({ nodes: focusNodes, duration, padding: .28, minZoom: .62, maxZoom: .82 });
+    return true;
+  }, [flow, graph, nodes]);
+
+  useEffect(() => {
+    if (!flow || !graph || !nodes.length || pendingFocus || framedGroup.current === groupName) return;
+    framedGroup.current = groupName;
+    const frame = window.requestAnimationFrame(() => {
+      frameWorkingSet();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [flow, frameWorkingSet, graph, groupName, nodes, pendingFocus]);
+
+  useEffect(() => {
+    let frame = 0;
+    const reframe = (): void => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => frameWorkingSet(240));
+    };
+    window.addEventListener("crayon-graph-resize", reframe);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("crayon-graph-resize", reframe);
+    };
+  }, [frameWorkingSet]);
+
+  useEffect(() => {
+    if (!pendingFocus || pendingFocus.groupName !== groupName || !graph) return;
+    const node = graph.nodes.find((candidate) => candidate.id === pendingFocus.nodeId);
+    const flowNode = flow?.getNode(pendingFocus.nodeId);
+    if (!node || !flowNode) return;
+    framedGroup.current = groupName;
+    void flow?.fitView({ nodes: [flowNode], duration: 320, padding: .8, maxZoom: 1.25 });
+    setSelected(node);
+    setPendingFocus(null);
+  }, [flow, graph, groupName, nodes, pendingFocus]);
   const undo = (): void => setUndoStack((items) => {
     if (!items.length || !dump) return items;
     const next = [...items], previous = next.pop()!;
@@ -329,8 +380,8 @@ export default function GeometryNodesEditor(): React.JSX.Element {
       <span className="editor-kind">Geometry Nodes{dirty ? " •" : ""}</span>
       <nav className="graph-breadcrumbs" aria-label="Node group path">{breadcrumbs.map((crumb, index) => <span key={`${crumb.group}:${index}`}><button type="button" onClick={() => jumpBreadcrumb(index)} title={crumb.group}>{crumb.via ?? crumb.group}</button>{index < breadcrumbs.length - 1 && <i>›</i>}</span>)}</nav>
       <select aria-label="All node groups" value={groupName} onChange={(event) => chooseGroup(event.target.value)}>{groupNames.map((name) => <option key={name}>{name}</option>)}</select>
-      <div className="graph-search"><span>⌕</span><input ref={searchInput} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find nodes  F3" aria-label="Search nodes" />{matches.length > 0 && <div className="graph-search-results">{matches.map((node) => <button type="button" key={node.id} onClick={() => { focusNode(node); setSearch(""); }}><b>{node.label}</b><small>{compactType(node.sourceType)}</small></button>)}</div>}</div>
-      <div className="graph-actions"><button type="button" disabled={!undoStack.length} onClick={undo} title="Undo">↶</button><button type="button" disabled={!redoStack.length} onClick={redo} title="Redo">↷</button><button type="button" onClick={() => fileInput.current?.click()} title="Open portable JSON">Open</button><button type="button" onClick={saveJson} disabled={!dump} title="Save portable JSON">Save</button></div>
+      <div className="graph-search"><span>⌕</span><input ref={searchInput} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find all nodes  F3" aria-label="Search nodes" />{matches.length > 0 && <div className="graph-search-results">{matches.map((match) => <button type="button" key={`${match.groupName}:${match.node.id}`} onClick={() => focusSearchResult(match)} title={`${match.groupName} · ${match.node.sourceName}`}><b>{match.node.label}</b><small>{compactType(match.node.sourceType)}{match.node.nestedGroup ? ` → ${match.node.nestedGroup}` : ""}</small><em>{match.groupName}</em></button>)}</div>}</div>
+      <div className="graph-actions"><button type="button" onClick={frameAll} title="Frame the complete node tree">Frame All</button><button type="button" disabled={!undoStack.length} onClick={undo} title="Undo">↶</button><button type="button" disabled={!redoStack.length} onClick={redo} title="Redo">↷</button><button type="button" onClick={() => fileInput.current?.click()} title="Open portable JSON">Open</button><button type="button" onClick={saveJson} disabled={!dump} title="Save portable JSON">Save</button></div>
       <input ref={fileInput} className="graph-file-input" type="file" accept="application/json,.json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importJson(file).catch((error) => window.alert(error instanceof Error ? error.message : String(error))); event.target.value = ""; }} />
     </div>
     <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onInit={setFlow} onNodesChange={(changes: NodeChange[]) => setNodes((current) => applyNodeChanges(changes, current))} onConnect={connect} onEdgesDelete={deleteEdges} deleteKeyCode={["Backspace", "Delete"]} onNodeClick={(_event, flowNode) => {
@@ -342,7 +393,7 @@ export default function GeometryNodesEditor(): React.JSX.Element {
     }} onNodeDoubleClick={(_event, flowNode) => {
       const data = flowNode.data as NodeCardData | FrameData;
       if ("node" in data) openNestedGroup(data.node);
-    }} fitView fitViewOptions={{ padding: .1 }} minZoom={.05} maxZoom={2.4} colorMode="dark" selectionOnDrag panOnScroll multiSelectionKeyCode={["Meta", "Control"]}>
+    }} minZoom={.05} maxZoom={2.4} colorMode="dark" selectionOnDrag panOnScroll multiSelectionKeyCode={["Meta", "Control"]}>
       <Background gap={22} size={1.1} color="#30343a" />
       <MiniMap pannable zoomable nodeColor={(node) => node.type === "blenderFrame" ? "#24272b" : "#567064"} maskColor="rgba(8,9,11,.62)" />
       <Controls showInteractive={false} />

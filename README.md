@@ -51,7 +51,8 @@ comparisons. The former standalone `/gnvm` page redirects into this workspace.
 
 `/crayon` includes the Blender-like Geometry Nodes workspace for the extracted
 Chrome Crayon graph. It preserves authored groups, frames, reroutes, socket order,
-and stable socket identifiers; search, selection, breadcrumbs, minimap, wiring,
+and stable socket identifiers; readable output-chain framing, full-screen authoring,
+cross-group search, selection, breadcrumbs, minimap, wiring,
 value edits, and undo/redo are connected to the existing GN-VM Web Worker and
 Three.js parity viewport. Architecture, reference-project licensing, and the
 Tree Clipper metadata migration plan are documented in
