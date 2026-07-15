@@ -1,18 +1,18 @@
 {
   "source": "_Typewriter Nodes.blend",
   "root": "GN",
-  "status": "live-partial-layout-parity",
+  "status": "live-frame-240-exact-parity",
   "font": {
     "original": "Blurmed.ttf",
-    "geometry": "Embedded 95-glyph Blender-extracted BlurMedium Regular outline atlas",
+    "geometry": "Embedded 96-glyph Blender-extracted BlurMedium Regular outline atlas (ASCII plus em dash)",
     "rawBinaryPublished": false,
     "editorFallback": "dojo/fonts/pixels.ttf"
   },
   "authoredFrame240Sample": {
     "text": "NODE DOJO TYPEWRITER — now r_",
     "blender": { "verts": 4743, "faces": 33 },
-    "gnvm": { "verts": 5872, "faces": 33 },
-    "status": "exact-face-count-divergent-layout"
+    "gnvm": { "verts": 4743, "faces": 33 },
+    "status": "exact-topology-and-layout"
   },
-  "validation": "The recovered Blurmed.ttf was loaded in Blender and its glyph outlines were extracted into the portable dump. Blender 5 leaves the legacy animated instances-to-Fill-Curve path empty, so the reference harness explicitly realizes the glyphs and materializes the frame-240 typed string. Both engines generate the same 33 filled glyph faces; browser outline sampling is denser and its word wrapping remains different."
+  "validation": "The recovered Blurmed.ttf was loaded in Blender and its evaluated outline boundaries were extracted into the portable dump without publishing the commercial binary. The atlas now includes the em dash used by the browser's default text. Blender 5 leaves the legacy animated instances-to-Fill-Curve path empty, so the reference harness explicitly realizes the glyphs and materializes the frame-240 typed string. Blender and the browser both generate 4,743 vertices / 33 filled glyph faces with the same wrapping, cursor placement, and world bounds within 0.00001 units."
 }

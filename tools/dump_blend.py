@@ -308,8 +308,11 @@ def dump_font_atlas(font):
     marker_splines = dump_font_glyph(font, marker)
     marker_max = max((point[0] for spline in marker_splines for point in spline["points"]), default=0.0)
     glyphs = {}
-    for codepoint in range(32, 127):
-        character = chr(codepoint)
+    characters = [chr(codepoint) for codepoint in range(32, 127)]
+    for character in os.environ.get("NODE_DOJO_FONT_CHARACTERS", ""):
+        if character not in characters:
+            characters.append(character)
+    for character in characters:
         splines = dump_font_glyph(font, character)
         combined = dump_font_glyph(font, character + marker)
         combined_max = max((point[0] for spline in combined for point in spline["points"]), default=marker_max)
