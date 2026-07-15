@@ -1,7 +1,7 @@
 // Mesh-topology input nodes: per-element queries resolved against the consuming
 // geometry's domain. These drive the bin's recursive subdivision (quad detection),
 // wall thickening (edge neighbors), and bin selection (islands).
-import { Field, asNum } from "../core";
+import { Field, Vec3, asNum } from "../core";
 import { reg } from "../registry";
 import { FIELD_PROBE } from "../evaluator";
 
@@ -28,13 +28,26 @@ reg("GeometryNodeInputMeshEdgeAngle", (api) => {
   return { "Unsigned Angle": angle(false, "Unsigned Angle"), "Signed Angle": angle(true, "Signed Angle") };
 });
 
-// Edge Vertices: endpoint indices + positions of each edge.
-reg("GeometryNodeInputMeshEdgeVertices", () => ({
-  "Vertex Index 1": Field.perElem((i, ctx) => (ctx.edgeVerts ? ctx.edgeVerts(i)[0] : 0)).tagged("EDGE"),
-  "Vertex Index 2": Field.perElem((i, ctx) => (ctx.edgeVerts ? ctx.edgeVerts(i)[1] : 0)).tagged("EDGE"),
-  "Position 1": Field.perElem((i, ctx) => (ctx.edgeVerts && ctx.position ? ctx.position(ctx.edgeVerts(i)[0]) : [0, 0, 0])).tagged("EDGE"),
-  "Position 2": Field.perElem((i, ctx) => (ctx.edgeVerts && ctx.position ? ctx.position(ctx.edgeVerts(i)[1]) : [0, 0, 0])).tagged("EDGE"),
-}));
+// Edge Vertices: endpoint indices + positions of each edge. Endpoint indices
+// address the POINT domain; using EDGE-context position() interprets them as
+// edge indices and returns unrelated edge midpoints.
+reg("GeometryNodeInputMeshEdgeVertices", () => {
+  const endpointPosition = (endpoint: 0 | 1) => Field.make((ctx) => {
+    const pointCtx = ctx.fork?.("POINT");
+    const values: Vec3[] = new Array(ctx.size);
+    for (let i = 0; i < ctx.size; i++) {
+      const vertex = ctx.edgeVerts?.(i)?.[endpoint];
+      values[i] = vertex === undefined ? [0, 0, 0] : pointCtx?.position?.(vertex) ?? [0, 0, 0];
+    }
+    return values;
+  }).tagged("EDGE");
+  return {
+    "Vertex Index 1": Field.perElem((i, ctx) => (ctx.edgeVerts ? ctx.edgeVerts(i)[0] : 0)).tagged("EDGE"),
+    "Vertex Index 2": Field.perElem((i, ctx) => (ctx.edgeVerts ? ctx.edgeVerts(i)[1] : 0)).tagged("EDGE"),
+    "Position 1": endpointPosition(0),
+    "Position 2": endpointPosition(1),
+  };
+});
 
 // Mesh Island: connected-component id + total count. Drives "choose bin".
 reg("GeometryNodeInputMeshIsland", () => ({
