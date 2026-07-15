@@ -1183,11 +1183,11 @@
     "object": "Plane",
     "dump": "dojo/nodes-node/dump.json",
     "shaderMetadata": "dojo/nodes-node/shader-metadata.json",
-    "reference": "dojo/references/nodes-node/plane.png",
+    "reference": "dojo/references/nodes-node/plane-authored.png",
     "blenderStats": { "verts": 47652, "faces": 2813 },
     "localSpace": true,
     "workbenchColor": [0.8, 0.8, 0.8],
-    "note": "Exact eleven-node source plate, including the supplied dense triangulation: 47,652 vertices and 2,813 faces in both engines.",
+    "note": "Exact eleven-node source plate: Blender and GN-VM both produce 47,652 vertices, 2,813 faces, and the same 1,369 base / 1,444 grid-dot material-face split. Authored mode reconstructs the exact four-node node base.001 normalized 3D Noise to Bump graph; Three.js PBR lighting and WebGL screen derivatives remain renderer approximations.",
     "controls": []
   },
   {

@@ -21,6 +21,7 @@ import { makeVtextMaterial } from "./vtext-material";
 import { makeHatStitchMaterial } from "./hat-stitch-material";
 import { makeAttributeColorEmissionMaterial } from "./attribute-color-emission-material";
 import { makeWorkbenchApproximationMaterial, shouldUseWorkbenchApproximation } from "./workbench-approx-material";
+import { makeNodeBaseMaterial } from "./node-base-material";
 
 type RangeControl = { type?: "range"; name: string; label: string; min: number; max: number; step: number; value: number };
 type CheckboxControl = { type: "checkbox"; name: string; label: string; value: boolean };
@@ -126,6 +127,7 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
           : makeAttributeEmissionMaterial(dump,geometry,group.material??"")
             ?? makeAttributeColorEmissionMaterial(dump,geometry,group.material??"")
             ?? makeAttributePrincipledMaterial(dump,geometry,group.material??"")
+            ?? makeNodeBaseMaterial(dump,geometry,group,group.material??"")
             ?? makeVtextMaterial(dump,geometry,group,group.material??"")
             ?? makeFilamentMaterial(dump,geometry,group,group.material??"")
             ?? makeCrossSectionFilamentMaterial(dump,geometry,group.material??"")

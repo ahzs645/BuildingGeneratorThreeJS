@@ -1,0 +1,69 @@
+{
+  "source": "The Nodes Node_.blend",
+  "object": "Plane",
+  "root": "Geometry Nodes.007",
+  "blenderVersion": "5.1.2",
+  "geometry": {
+    "blender": { "verts": 47652, "faces": 2813 },
+    "gnvm": { "verts": 47652, "faces": 2813 },
+    "localBounds": {
+      "min": [-14.61299991607666, -5.001817271477194e-7, -14.612998962402344],
+      "max": [14.61299991607666, 0.010000498965382576, 14.612998962402344]
+    },
+    "materialFaces": { "node base.001": 1369, "grid dots": 1444 }
+  },
+  "authoredMaterial": {
+    "name": "node base.001",
+    "nodes": 4,
+    "links": 3,
+    "graph": "Noise Texture.Fac -> Bump.Height -> Principled BSDF.Normal -> Material Output.Surface",
+    "principled": {
+      "baseColor": [0, 0, 0, 1],
+      "metallic": 0,
+      "roughness": 1,
+      "ior": 1.4500000476837158,
+      "specularIorLevel": 0.3062015771865845
+    },
+    "noise": {
+      "dimensions": "3D",
+      "type": "FBM",
+      "normalize": true,
+      "scale": 500,
+      "detail": 2,
+      "roughness": 0.5,
+      "lacunarity": 2,
+      "distortion": 0,
+      "coordinate": "Generated"
+    },
+    "bump": {
+      "strength": 0.10000000149011612,
+      "distance": 1,
+      "filterWidth": 1,
+      "invert": false
+    }
+  },
+  "scalarProbe": {
+    "samples": 8,
+    "tolerance": 0.00001,
+    "maximumAbsoluteError": 0.000007276,
+    "result": "pass"
+  },
+  "normalProbe": {
+    "resolution": [256, 256],
+    "opaquePixels": 65536,
+    "encoding": "0.5 * Bump.Normal + 0.5, Raw emission",
+    "channelRange": {
+      "min": [0.48235297203063965, 0.48235297203063965, 0.9921569228172302],
+      "max": [0.5176470875740051, 0.5215686559677124, 1]
+    },
+    "result": "spatial micro-bump confirmed in Blender"
+  },
+  "browser": {
+    "implementation": "strict graph recognizer plus MeshPhysicalMaterial shader injection",
+    "generatedBounds": "material-group-local",
+    "webglCompile": "pass; no browser console warnings or errors",
+    "reference": "dojo/references/nodes-node/plane-authored.png"
+  },
+  "result": "exact geometry, material grouping, scalar graph, and extracted parameters; renderer approximation remains",
+  "note": "The authored Blender reference uses isolated Eevee with the shared two-area-light rig. Three.js PBR lighting and WebGL screen derivatives do not claim exact Eevee pixel parity."
+}

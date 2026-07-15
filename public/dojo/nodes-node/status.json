@@ -12,10 +12,20 @@
     "blenderProbe": "512px direct-normal emission: 206116 opaque pixels, 7692 unique RGB values; spatial micro-bump confirmed",
     "geometryInvariant": "All six node-base group ranges, local bounds, vertex counts, and face counts remain exact"
   },
+  "basePlateMaterialValidation": {
+    "material": "node base.001",
+    "status": "authored-live-normalized-noise-bump-reconstructed",
+    "strictGraph": "Noise Texture -> Bump -> Principled BSDF -> Material Output; 4 nodes / 3 links",
+    "generatedDomain": "material-group-local bounds",
+    "blenderScalarProbe": "8 samples; browser CPU oracle maximum absolute error 0.000007276",
+    "blenderNormalProbe": "256px direct-normal emission; 65536 opaque pixels; RGB ranges [0.482353,0.517647], [0.482353,0.521569], [0.992157,1]",
+    "rendererApproximation": "Three.js PBR lighting and WebGL screen derivatives; no exact Blender Eevee raster claim",
+    "materialFaces": { "node base.001": 1369, "grid dots": 1444 }
+  },
   "variants": [
     { "id": "nodes-node-check", "object": "check", "root": "Geometry Nodes.013", "nodes": 2, "status": "exact-viewport-wire", "blender": { "curveControlPoints": 3, "faces": 0 }, "gnvm": { "meshVerts": 0, "faces": 0, "curveControlPoints": 3, "evaluatedPoints": 25, "wireSegments": 24 }, "worldBoundsMaxError": 4.76837158203125e-7 },
     { "id": "nodes-node-source-cube", "object": "Cube.002", "root": "Geometry Nodes.006", "nodes": 9, "status": "exact-geometry-workbench-approx", "blender": { "verts": 8, "faces": 6 }, "gnvm": { "verts": 8, "faces": 6 }, "render": { "maskIoU": 0.97966, "luminanceMAE": 0.02515, "luminanceCorrelation": 0.99287, "cavityParity": false } },
-    { "id": "nodes-node-base-plate", "object": "Plane", "root": "Geometry Nodes.007", "nodes": 11, "status": "exact", "blender": { "verts": 47652, "faces": 2813 }, "gnvm": { "verts": 47652, "faces": 2813 } },
+    { "id": "nodes-node-base-plate", "object": "Plane", "root": "Geometry Nodes.007", "nodes": 11, "status": "exact-geometry-authored-shader-approx", "blender": { "verts": 47652, "faces": 2813, "materialFaces": { "node base.001": 1369, "grid dots": 1444 } }, "gnvm": { "verts": 47652, "faces": 2813, "materialFaces": { "node base.001": 1369, "grid dots": 1444 } } },
     { "id": "nodes-node-noodle-pair", "object": "Point.001", "root": "Geometry Nodes.011", "nodes": 16, "status": "exact", "blender": { "verts": 4736, "faces": 4672 }, "gnvm": { "verts": 4736, "faces": 4672 } },
     { "id": "nodes-node-stamp-guide", "object": "STAMP.001", "root": "_Stamp Tool", "nodes": 76, "status": "exact-wire-only", "blender": { "verts": 490, "faces": 0 }, "gnvm": { "verts": 490, "faces": 0 } },
     { "id": "nodes-node-noodle-segment", "object": "Cube.001", "root": "Geometry Nodes.012", "nodes": 151, "status": "exact", "blender": { "verts": 2240, "faces": 2208 }, "gnvm": { "verts": 2240, "faces": 2208 } },
@@ -26,5 +36,5 @@
     { "id": "nodes-node-checkbox-panel", "object": "Cube.004", "root": "Geometry Nodes.015", "nodes": 898, "status": "topology-bounds-exact-recovered-font-vtext", "blender": { "verts": 9134, "faces": 1347 }, "gnvm": { "verts": 9134, "faces": 1347 } },
     { "id": "nodes-node-dual-input-bar", "object": "Cube.003", "root": "Geometry Nodes.003", "nodes": 900, "status": "topology-bounds-exact-recovered-font-vtext", "blender": { "verts": 2691, "faces": 1118 }, "gnvm": { "verts": 2691, "faces": 1118 } }
   ],
-  "validation": "All twelve roots are exact, structurally exact, or topology-and-bounds exact. The check helper now remains visible as a separate evaluated viewport-wire payload while retaining zero mesh vertices/faces; its translated world bounds match Blender within 0.000001 units. The supplied offline Blender reference is correctly blank because the raw curve has no beveled render surface. The recovered DejaVu atlas, even-odd N-gon glyph fill, zero-radius Curve Circle semantics, inclusive cumulative-row placement, and Blender-style legacy curve pass-through make all six large UI variants topology-and-bounds exact. Authored mode now reconstructs the shared node base vtext.001 FBM/Wave/Ping-Pong micro-bump with strict topology recognition and Blender-probed group-local Generated bounds; other small glyph-position and renderer-lighting deltas remain."
+  "validation": "All twelve roots are exact, structurally exact, or topology-and-bounds exact. The check helper now remains visible as a separate evaluated viewport-wire payload while retaining zero mesh vertices/faces; its translated world bounds match Blender within 0.000001 units. The supplied offline Blender reference is correctly blank because the raw curve has no beveled render surface. The recovered DejaVu atlas, even-odd N-gon glyph fill, zero-radius Curve Circle semantics, inclusive cumulative-row placement, and Blender-style legacy curve pass-through make all six large UI variants topology-and-bounds exact. Authored mode reconstructs both the shared node base vtext.001 FBM/Wave/Ping-Pong micro-bump and the base plate's node base.001 normalized Noise/Bump graph with strict topology recognition and Blender-probed Generated bounds; renderer-lighting and small glyph-position deltas remain."
 }
