@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Vec3 } from "./core";
-import { surfaceNetsForTest } from "./nodes/volume";
+import { resampleVolumeGridForTest, surfaceNetsForTest } from "./nodes/volume";
 import { OPENVDB_AMBIGUOUS_FACE, OPENVDB_EDGE_GROUPS, openVdbGroupCount } from "./openvdb-edge-groups";
 
 test("bundles the complete OpenVDB ambiguous-cell topology tables", () => {
@@ -53,4 +53,36 @@ test("surface nets preserves Blender's directional quad winding and diagonals", 
     assert.equal(mesh.faces.length, 1, `axis ${axis}, inside=${inside}`);
     assert.deepEqual(mesh.faces[0], (inside ? expectedForward : expectedReverse)[axis]);
   }
+});
+
+test("volume resampling uses OpenVDB's sparse lower guard and ceil-rounded extent", () => {
+  const volume = {
+    kind: "GNVM_VOLUME_GRID" as const,
+    background: 0,
+    min: [0, 0, 0] as Vec3,
+    max: [2, 2, 2] as Vec3,
+    resolution: [3, 3, 3] as Vec3,
+    origin: [0, 0, 0] as Vec3,
+    voxelSize: [1, 1, 1] as Vec3,
+    values: new Float32Array(27).fill(1),
+  };
+  const resampled = resampleVolumeGridForTest(volume, 0.6);
+  assert.deepEqual(resampled.resolution, [10, 10, 10]);
+  assert.deepEqual(resampled.origin.map((value) => Number(value.toFixed(6))), [-1.2, -1.2, -1.2]);
+  const index = (x: number, y: number, z: number) =>
+    z * resampled.resolution[0] * resampled.resolution[1] + y * resampled.resolution[0] + x;
+  assert.equal(resampled.values[index(0, 2, 2)], 0, "outer lower plane must be hard background");
+  assert.ok(resampled.values[index(1, 2, 2)] > 0, "one lower BoxSampler support layer must remain interpolated");
+  assert.equal(resampled.values[index(9, 2, 2)], 0, "ceil-rounded upper guard must reach background");
+
+  const mesh = surfaceNetsForTest(resampled.values, resampled.resolution, 0.5, resampled.origin, resampled.spacing);
+  assert.equal(mesh.positions.length, 146);
+  assert.equal(mesh.faces.length, 144);
+  const edgeUses = new Map<string, number>();
+  for (const face of mesh.faces) for (let corner = 0; corner < face.length; corner++) {
+    const a = face[corner], b = face[(corner + 1) % face.length];
+    const key = a < b ? `${a},${b}` : `${b},${a}`;
+    edgeUses.set(key, (edgeUses.get(key) ?? 0) + 1);
+  }
+  assert.ok([...edgeUses.values()].every((uses) => uses === 2), "boundary-touching surface must close manifoldly");
 });

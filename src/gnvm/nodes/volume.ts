@@ -364,6 +364,44 @@ function sampleVolume(volume: VolumeGrid, position: Vec3): number {
   return result;
 }
 
+interface ResampledVolumeGrid {
+  values: Float32Array;
+  resolution: Vec3;
+  origin: Vec3;
+  spacing: Vec3;
+}
+
+function resampleVolumeGrid(volume: VolumeGrid, requestedSpacing: number): ResampledVolumeGrid {
+  const sampleSpacing = Math.max(...volume.voxelSize);
+  const factor = sampleSpacing / requestedSpacing;
+  const spacing: Vec3 = volume.voxelSize.map((size) => size / factor) as Vec3;
+  // OpenVDB transforms the inclusive source index bounds outward. BoxSampler
+  // then needs one interpolated sample beyond the negative bound, followed by
+  // a hard sparse-background guard. On the positive side, ceil the transformed
+  // maximum and keep three samples so interpolation reaches the background.
+  // Rebase target indices [-2, ceil(max) + 3] to a dense array.
+  const transformedMax: Vec3 = volume.resolution.map((count) => Math.ceil((count - 1) * factor)) as Vec3;
+  const resolution: Vec3 = transformedMax.map((maximum) => maximum + 6) as Vec3;
+  const origin: Vec3 = volume.min.map((minimum, axis) => minimum - 2 * spacing[axis]) as Vec3;
+  const values = new Float32Array(resolution[0] * resolution[1] * resolution[2]);
+
+  for (let z = 0; z < resolution[2]; z++) for (let y = 0; y < resolution[1]; y++) for (let x = 0; x < resolution[0]; x++) {
+    const index = z * resolution[0] * resolution[1] + y * resolution[0] + x;
+    // The outer negative plane is outside OpenVDB's active sampling stencil.
+    // Sampling it trilinearly creates an extra shell; leaving it at the sparse
+    // background closes boundary-touching volumes at Blender's exact extent.
+    values[index] = x === 0 || y === 0 || z === 0 ? volume.background : sampleVolume(volume, [
+      origin[0] + x * spacing[0],
+      origin[1] + y * spacing[1],
+      origin[2] + z * spacing[2],
+    ]);
+  }
+  return { values, resolution, origin, spacing };
+}
+
+/** Focused hook for sparse-boundary parity tests. */
+export const resampleVolumeGridForTest = resampleVolumeGrid;
+
 reg("GeometryNodeVolumeToMesh", (api) => {
   const volume = api.input("Volume") as unknown;
   if (!isVolumeGrid(volume)) return { Mesh: new Geometry() };
@@ -377,22 +415,7 @@ reg("GeometryNodeVolumeToMesh", (api) => {
   // scales only its voxel basis. Preserve that minimum-bound origin instead of
   // re-centering the target lattice. For anisotropic grids Blender chooses the
   // maximum source voxel size as the requested-size reference.
-  const factor = sampleSpacing / requestedSpacing;
-  const spacing: Vec3 = volume.voxelSize.map((size) => size / factor) as Vec3;
-  const coreCells: Vec3 = volume.resolution.map((count) => Math.max(1, Math.floor((count - 1) * factor))) as Vec3;
-  const coreSamples: Vec3 = coreCells.map((count) => count + 1) as Vec3;
-  // Keep two background samples outside the transformed active grid so every
-  // crossed edge has four adjacent cells, without changing the core origin.
-  const resolution: Vec3 = coreSamples.map((count) => count + 4) as Vec3;
-  const origin: Vec3 = volume.min.map((minimum, axis) => minimum - 2 * spacing[axis]) as Vec3;
-  const sampledGrid = new Float32Array(resolution[0] * resolution[1] * resolution[2]);
-
-  for (let z = 0; z < resolution[2]; z++) for (let y = 0; y < resolution[1]; y++) for (let x = 0; x < resolution[0]; x++)
-    sampledGrid[z * resolution[0] * resolution[1] + y * resolution[0] + x] = sampleVolume(volume, [
-      origin[0] + x * spacing[0],
-      origin[1] + y * spacing[1],
-      origin[2] + z * spacing[2],
-    ]);
+  const { values: sampledGrid, resolution, origin, spacing } = resampleVolumeGrid(volume, requestedSpacing);
 
   // A deterministic half-open tie break prevents exact-zero SDF samples from
   // producing four faces on one dual edge. The offset is far below the voxel
