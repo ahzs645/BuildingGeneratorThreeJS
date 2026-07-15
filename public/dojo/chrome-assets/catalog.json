@@ -379,7 +379,7 @@
     "dump": "dojo/chrome-assets/blunt-metal-marker/dump.json",
     "reference": "dojo/references/chrome-assets/blunt-metal-marker.png",
     "blenderStats": { "verts": 97691, "faces": 97669 },
-    "note": "The authored browser mesh is within 0.25% of Blender topology. Six control cases stay within 0.35% vertices; Blender-compatible procedural noise brings depth bounds within 0.0012 units.",
+    "note": "The authored browser mesh is near-exact at 97,717 / 97,693 versus Blender's 97,691 / 97,669, only 26 vertices and 24 faces high (0.027%). Blender-compatible procedural noise and field-domain corrections align current local bounds within 0.0019 units.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

@@ -4,7 +4,7 @@
   "root": "blunt metal marker",
   "status": "near-exact",
   "blender": { "verts": 97691, "faces": 97669 },
-  "gnvm": { "verts": 97444, "faces": 97422 },
+  "gnvm": { "verts": 97717, "faces": 97693 },
   "coverage": "100% of reachable node types; Noise Texture uses Blender-compatible signed Perlin fBM and Merge by Distance removes coincident duplicate polygons.",
-  "validation": "Authored vertex and face deltas are both 0.25%. Across six extrusion, thickness, resolution, smoothing, and flatten cases, maximum vertex delta is 0.35%, maximum local-bounds difference is 0.2723 units, and maximum depth-bound difference is 0.0012 units."
+  "validation": "The authored browser result is 97,717 / 97,693 versus Blender's 97,691 / 97,669: only 26 vertices and 24 faces high (0.027% topology). Current local bounds agree within 0.0019 units after Blender-compatible procedural noise and field-domain corrections."
 }
