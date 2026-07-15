@@ -52,7 +52,7 @@ export default function CrayonComparePage(): React.JSX.Element {
         <button id="crayon-update" type="button">Evaluate in browser</button>
       </section>
       <section><span className="panel-label">Viewport</span><div className="crayon-segment"><button id="crayon-split" className="active" type="button">Side by side</button><button id="crayon-overlay" type="button">Overlay</button></div></section>
-      <section><span className="panel-label">Shader</span><div className="crayon-segment shader-segment"><button id="crayon-shader-debug" className="active" type="button">Diagnostic</button><button id="crayon-shader-chrome" type="button">Chrome</button></div><p className="shader-caption">Chrome reconstructs the authored metallic Principled surface and procedural roughness in WebGL.</p></section>
+      <section><span className="panel-label">Shader</span><div className="crayon-segment shader-segment"><button id="crayon-shader-debug" className="active" type="button">Diagnostic</button><button id="crayon-shader-chrome" type="button">WebGL chrome</button></div><p className="shader-caption">Shared WebGL reconstruction applied to both meshes; this does not compare Blender shader output.</p></section>
       <section className="crayon-metrics">
         <article><span>Blender baseline</span><strong id="crayon-truth-count">—</strong><small>evaluated .blend export</small></article>
         <article><span>Browser GN-VM</span><strong id="crayon-vm-count">—</strong><small id="crayon-runtime">Web Worker</small></article>
