@@ -8,9 +8,9 @@
     "faces": 4675
   },
   "gnvm": {
-    "verts": 3326,
-    "faces": 6656
+    "verts": 3290,
+    "faces": 6584
   },
   "coverage": "100% of the reachable node types across the 46-group, 828-node closure.",
-  "validation": "The browser reproduces the relative three-object structure, welded quad-sphere seed, repeated tight-wrap/dual-mesh deformation, and finalized boolean shell. Structure-preview topology is exact at 8,040 / 9,300, and the authored stochastic bubble layout is 10,272 / 20,480. Blender's BMesh-style Ico Sphere grid, procedural noise, nearest-surface mix, tight wrap, and dynamic triangulation match through the complete pre-Boolean surface. Splitting the authored duplicate multi-input structure cutter into its three disconnected solids matches Blender Exact Boolean bounds and produces 3,326 vertices / 6,656 triangles versus Blender's 3,302 vertices / 4,675 polygons (6,608 triangles), a 0.73% vertex/triangle delta. The remaining 24 vertices and 48 triangles are native CSG solver intersection-tessellation differences. Missing Budokan and Avenir fonts belong to auxiliary label graphs and are not required by the putty surface."
+  "validation": "The browser reproduces the relative three-object structure, welded quad-sphere seed, repeated tight-wrap/dual-mesh deformation, and finalized boolean shell. Structure-preview topology is exact at 8,040 / 9,300, and the authored stochastic bubble layout is 10,272 / 20,480. Blender's BMesh-style Ico Sphere grid, procedural noise, nearest-surface mix, tight wrap, and dynamic triangulation match through the complete pre-Boolean surface. The current four-case sweep produces 3,290 vertices / 6,584 triangles for every finalized case versus Blender's 3,302 vertices / 4,675 polygons (6,608 triangles), with exact four-decimal bounds. Blender-exact Boolean operands produce 3,301 / 6,606 in the same Manifold solver, localizing one vertex / two triangles to native CSG tessellation and the other 11 vertices / 22 triangles to pre-CSG float32 evaluation drift. Missing Budokan and Avenir fonts belong to auxiliary label graphs and are not required by the putty surface."
 }

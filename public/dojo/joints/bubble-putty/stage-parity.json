@@ -109,12 +109,12 @@
         "bbox": { "min": [-2.2326, -2.6957, -3.9315], "max": [4.2015, 3.698, 3.2504] }
       },
       "gnvm_after": {
-        "verts": 3326,
-        "faces": 6656,
-        "triangles": 6656,
+        "verts": 3290,
+        "faces": 6584,
+        "triangles": 6584,
         "bbox": { "min": [-1.5862, -2.1273, -3.4024], "max": [3.5734, 3.5198, 3.4078] }
       },
-      "classification": "near-exact: splitting the duplicated disconnected cutter into its three solids gives exact rounded bounds and leaves a 24-vertex / 48-triangle native CSG solver residual (0.73%)"
+      "classification": "near-exact authored result: exact rounded bounds with 12 fewer vertices / 24 fewer triangles than Blender. Replaying Blender-exact operands yields 3,301 / 6,606, separating one vertex / two triangles of native CSG tessellation from 11 vertices / 22 triangles of pre-CSG float32 drift"
     }
   ]
 }
