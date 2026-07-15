@@ -20,6 +20,21 @@ if os.environ.get("NODE_DOJO_LOCAL_SPACE") == "1":
     obj.location = (0, 0, 0)
     obj.rotation_euler = (0, 0, 0)
     obj.scale = (1, 1, 1)
+probe_overrides = json.loads(os.environ.get("NODE_DOJO_PROBE_OVERRIDES", "{}"))
+if probe_overrides:
+    modifier = next((candidate for candidate in obj.modifiers if candidate.type == "NODES" and candidate.node_group is not None), None)
+    if modifier is None:
+        raise RuntimeError(f"no Geometry Nodes modifier on {object_name!r}")
+    identifiers = {
+        item.name: item.identifier
+        for item in modifier.node_group.interface.items_tree
+        if item.item_type == "SOCKET" and item.in_out == "INPUT"
+    }
+    for name, value in probe_overrides.items():
+        identifier = identifiers.get(name)
+        if identifier is None:
+            raise KeyError(f"modifier input not found: {name}")
+        modifier[identifier] = value
 geometry_node, geometry_socket = geometry_spec.split(":", 1)
 field_node, field_socket = field_spec.split(":", 1)
 group_output = next(node for node in tree.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output)

@@ -171,7 +171,14 @@ function baseGeometryOf(dump: Dump, objectName: string): Geometry | null {
     const radii = obj.curves.flatMap((s: any) => s.radii ?? s.points.map(() => 1));
     if (radii.some((value: number) => value !== 1)) g.curveAttributes.set("radius", { domain: "POINT", data: radii });
     const tangents = obj.curves.flatMap((s: any) => s.tangents ?? []);
-    if (tangents.length === g.curvePointCount()) g.curveAttributes.set("__curve_tangent", { domain: "POINT", data: tangents });
+    if (tangents.length === g.curvePointCount()) {
+      g.curveAttributes.set("__curve_tangent", { domain: "POINT", data: tangents });
+      // The evaluated Tangent field is not always the frame Blender uses for
+      // Curve to Mesh. In particular, open planar legacy curves are swept from
+      // neighboring evaluated points while Input Tangent still exposes this
+      // stored value. Keep the provenance so those semantics can diverge.
+      g.curveAttributes.set("__curve_imported_tangent", { domain: "CURVE", data: g.curves.map(() => 1) });
+    }
     applyPreNodesHooks(dump, obj, g);
   }
   return g.mesh || g.curves.length ? g : null;

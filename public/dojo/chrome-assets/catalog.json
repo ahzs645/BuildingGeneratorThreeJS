@@ -54,7 +54,7 @@
     "dump": "dojo/chrome-assets/soft-pixel-marker/dump.json",
     "reference": "dojo/references/chrome-assets/soft-pixel-marker.png",
     "blenderStats": { "verts": 8455, "faces": 5664 },
-    "note": "Authored topology matches Blender exactly after reproducing OpenSubdiv's non-manifold seam rules; five of six parity cases are topology-exact and the dense pixel-size variant remains within 0.54% vertices.",
+    "note": "All six Blender/browser cases have exact topology after reproducing OpenSubdiv's non-manifold seams and Blender's evaluated-curve sweep tangents; local bounds differ by at most 0.0001 units.",
     "controls": [
       { "name": "line weight", "label": "Line weight", "min": 5, "max": 40, "step": 0.000001, "value": 22.796825408935547 },
       { "name": "Resolution", "label": "Resolution", "min": 16, "max": 180, "step": 1, "value": 120 },

@@ -572,6 +572,19 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 {
+  const rail = curve([[0, 0, 0], [1, 0, 0], [1, 3, 0]], false);
+  // Imported Blender curves expose evaluated field tangents, but Curve to
+  // Mesh uses normalized incident-direction bisectors at interior points.
+  rail.curveAttributes.set("__curve_tangent", { domain: "POINT", data: [[1, 0, 0], [1, 0, 0], [0, 1, 0]] });
+  rail.curveAttributes.set("__curve_imported_tangent", { domain: "CURVE", data: [1] });
+  const profile = curve([[1, 0, 0], [0, 1, 0]], false);
+  const mesh = (runNode("GeometryNodeCurveToMesh", { Curve: rail, "Profile Curve": profile, "Fill Caps": false }).Mesh as Geometry).mesh!;
+  const rootHalf = Math.SQRT1_2;
+  check("CurveToMesh bisects imported evaluated-curve tangents",
+    approx(mesh.positions[2], [1 + rootHalf, -rootHalf, 0]), JSON.stringify(mesh.positions[2]));
+}
+
+{
   const rail = curve([[0, 0, 0], [4, 0, 0], [4, 3, 0], [0, 3, 0]], true);
   const profile = curve([[0, 0, 0], [1, 0, 0]], false);
   const mesh = (runNode("GeometryNodeCurveToMesh", { Curve: rail, "Profile Curve": profile, "Fill Caps": false }).Mesh as Geometry).mesh!;

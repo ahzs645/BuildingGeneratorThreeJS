@@ -23,7 +23,7 @@
           33.2569
         ]
       },
-      "elapsed_ms": 159,
+      "elapsed_ms": 161,
       "export": "00-authored-default.json"
     },
     {
@@ -48,7 +48,7 @@
           33.2569
         ]
       },
-      "elapsed_ms": 103,
+      "elapsed_ms": 104,
       "export": "01-line-weight-15.json"
     },
     {
@@ -59,8 +59,8 @@
         }
       },
       "status": "ok",
-      "verts": 15101,
-      "faces": 12192,
+      "verts": 15020,
+      "faces": 12160,
       "bbox": {
         "min": [
           -78.6316,
@@ -73,7 +73,7 @@
           33.2569
         ]
       },
-      "elapsed_ms": 254,
+      "elapsed_ms": 247,
       "export": "02-pixel-size-0-2.json"
     },
     {
@@ -123,7 +123,7 @@
           33.2569
         ]
       },
-      "elapsed_ms": 97,
+      "elapsed_ms": 120,
       "export": "04-edge-crease-0.json"
     },
     {
@@ -148,7 +148,7 @@
           21.2569
         ]
       },
-      "elapsed_ms": 106,
+      "elapsed_ms": 99,
       "export": "05-height-10.json"
     }
   ]

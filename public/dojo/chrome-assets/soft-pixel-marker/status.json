@@ -4,5 +4,5 @@
   "status": "exact-authored",
   "blender": { "verts": 8455, "faces": 5664 },
   "gnvm": { "verts": 8455, "faces": 5664 },
-  "validation": "The authored result and four of five control variants have exact vertex and face counts; local bounds differ by at most 0.0001 units. The denser pixel-size 0.2 case remains within 0.54% vertices and differs by 32 faces."
+  "validation": "All six Blender/browser cases have exact vertex and face counts, covering the authored result, line weight, pixel size, subdivision level, edge crease, and height. Local bounds differ by at most 0.0001 units."
 }

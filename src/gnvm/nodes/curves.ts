@@ -518,6 +518,7 @@ reg("GeometryNodeCurveToMesh", (api) => {
   mesh.materialSlots = [null];
   const profiles = prof.curves;
   const tangentAttribute = rail.curveAttributes.get("__curve_tangent")?.data;
+  const importedTangentAttribute = rail.curveAttributes.has("__curve_imported_tangent");
   const planarFromMesh = rail.curveAttributes.has("__gnvm_planar_mesh_curve");
   const railPointAttributes = [...rail.curveAttributes].filter(([, attribute]) => attribute.domain === "POINT");
   const profilePointAttributes = [...prof.curveAttributes].filter(([, attribute]) => attribute.domain === "POINT");
@@ -525,7 +526,28 @@ reg("GeometryNodeCurveToMesh", (api) => {
   for (const r of rail.curves) {
     const railBase = flatBase;
     const scales = scaleArr ? scaleArr.slice(flatBase, flatBase + r.points.length) : undefined;
-    const tangentOverrides = tangentAttribute?.slice(flatBase, flatBase + r.points.length).map(asVec3);
+    const importedTangents = tangentAttribute?.slice(flatBase, flatBase + r.points.length).map(asVec3);
+    const tangentOverrides = importedTangentAttribute
+      ? r.points.map((point, index, points) => {
+          if (points.length < 2) return [0, 0, 1] as Vec3;
+          // Open evaluated splines retain their extracted endpoint tangent;
+          // Blender bisects normalized incident directions only in the
+          // interior. Bezier endpoints can differ substantially from the
+          // first/last evaluated chord.
+          if (!r.cyclic && (index === 0 || index + 1 === points.length)) {
+            const stored = importedTangents?.[index];
+            if (stored && vlen(stored) > 1e-9) return vnorm(stored);
+            return index === 0 ? vnorm(vsub(points[1], point)) : vnorm(vsub(point, points[index - 1]));
+          }
+          const previous = points[(index - 1 + points.length) % points.length];
+          const next = points[(index + 1) % points.length];
+          // Blender's evaluated-curve sweep tangent bisects normalized
+          // incident directions. A raw next-minus-previous chord becomes
+          // length-weighted when neighboring evaluated segments differ.
+          const bisector = vadd(vnorm(vsub(point, previous)), vnorm(vsub(next, point)));
+          return vlen(bisector) > 1e-9 ? vnorm(bisector) : vnorm(vsub(next, previous));
+        })
+      : tangentAttribute?.slice(flatBase, flatBase + r.points.length).map(asVec3);
     flatBase += r.points.length;
     if (!profiles.length) {
       // no profile: emit the rail as an edge-only wire
