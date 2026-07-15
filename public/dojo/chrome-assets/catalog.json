@@ -1294,7 +1294,7 @@
     "reference": "dojo/references/send-nodes-hat/embroidery.png",
     "blenderStats": { "verts": 188934, "faces": 188160 },
     "localSpace": true,
-    "note": "Partial parity with complete node coverage: nearest-surface sampling, old Rotate Euler composition, curve radius, and stitch instancing reproduce the intended SEND NODES lettering. The browser is about 12% denser at 211,596 / 210,756. Blender truth freezes the exact front-shell dependency first because the supplied file contains a dependency cycle.",
+    "note": "Topology-exact at 188,934 vertices / 188,160 faces. The runtime derives the evaluated hat-front Object Info dependency, suppresses the reverse cycle edge while that dependency cooks, and applies Blender-compatible per-spline Length sampling for the stitch and fuzz placements. The embroidery remains procedural; no final result mesh is embedded.",
     "controls": []
   },
 {

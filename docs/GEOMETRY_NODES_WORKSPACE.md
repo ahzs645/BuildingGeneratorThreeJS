@@ -61,12 +61,12 @@ Until step 6 is proven, editor-only XYFlow position changes and JSON exports are
 
 ## Remaining work
 
-- Make the editor asset-driven, then mount the same workspace for Type Pixel Brush. Resolve its root by the selected object rather than taking the first node modifier in the dump.
+- Extend the asset-driven editor beyond Chrome Crayon and Type Pixel Brush, retaining explicit object/root configuration for every mounted asset.
 - Add a cancellable evaluation manager with explicit queued/running/error state. Selection should be immediate; expensive intermediate preview should be an explicit target, and obsolete workers should be terminated.
 - Add structured per-node diagnostics and timing before attempting dependency-aware caching or incremental cooking.
 - Frame-relative dragging/resizing and moving a frame with all children need compound editor operations.
 - Node creation, dynamic socket declarations, interface panels, socket ranges, and Blender subtypes need more extractor metadata before they can round-trip safely.
-- External object/material/image resolution needs the typed dependency records above.
+- Extend the new typed object-dependency records to full material/image/font resolution and versioned inverse import.
 - Camera and selection history are stack-based but not persisted per group across reloads.
 
 ## Verification
