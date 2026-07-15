@@ -17,9 +17,6 @@ const zeroLike = (value: Elem): Elem => Array.isArray(value) ? [0, 0, 0] : 0;
 const addElem = (a: Elem, b: Elem): Elem => Array.isArray(a) || Array.isArray(b)
   ? vadd(asVec3(a), asVec3(b))
   : asNum(a) + asNum(b);
-const scaleElem = (value: Elem, factor: number): Elem => Array.isArray(value)
-  ? vscale(value, factor)
-  : value * factor;
 
 reg("GeometryNodeInputSplineCyclic", () => ({
   Cyclic: Field.perElem((i, ctx) => ctx.splineCyclic?.(i) ? 1 : 0),
@@ -595,18 +592,34 @@ reg("GeometryNodeBlurAttribute", (api) => {
   const blurred = Field.make((ctx) => {
       let current = value.array(ctx);
       if (iterations && ctx.neighbors) {
-        const weights = weight.array(ctx).map((v) => Math.max(0, asNum(v)));
+        // Blender stores every intermediate blur pass in the attribute's
+        // float32 buffer. Its averaging path also multiplies by a rounded
+        // reciprocal instead of dividing the accumulated value directly.
+        // That distinction is only one ULP in a single pass, but becomes
+        // visible after the 665+ passes authored by the Chrome Crayon graphs.
+        const f = Math.fround;
+        const weights = weight.array(ctx).map((v) => f(Math.max(0, asNum(v))));
+        const addFloat32 = (a: Elem, b: Elem): Elem => Array.isArray(a) || Array.isArray(b)
+          ? [
+              f(f(asVec3(a)[0]) + f(asVec3(b)[0])),
+              f(f(asVec3(a)[1]) + f(asVec3(b)[1])),
+              f(f(asVec3(a)[2]) + f(asVec3(b)[2])),
+            ]
+          : f(f(asNum(a)) + f(asNum(b)));
+        const scaleFloat32 = (item: Elem, factor: number): Elem => Array.isArray(item)
+          ? [f(f(item[0]) * factor), f(f(item[1]) * factor), f(f(item[2]) * factor)]
+          : f(f(item) * factor);
         for (let iteration = 0; iteration < iterations; iteration++) {
           const next: Elem[] = new Array(ctx.size);
           for (let i = 0; i < ctx.size; i++) {
-            let total = scaleElem(current[i] ?? 0, weights[i] ?? 1);
+            let total = scaleFloat32(current[i] ?? 0, weights[i] ?? 1);
             let totalWeight = weights[i] ?? 1;
             for (const neighbor of ctx.neighbors(i)) {
               const w = weights[neighbor] ?? 1;
-              total = addElem(total, scaleElem(current[neighbor] ?? 0, w));
-              totalWeight += w;
+              total = addFloat32(total, scaleFloat32(current[neighbor] ?? 0, w));
+              totalWeight = f(totalWeight + w);
             }
-            next[i] = totalWeight > 0 ? scaleElem(total, 1 / totalWeight) : current[i] ?? 0;
+            next[i] = totalWeight > 0 ? scaleFloat32(total, f(1 / totalWeight)) : current[i] ?? 0;
           }
           current = next;
         }

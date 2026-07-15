@@ -258,6 +258,20 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 {
+  const blurred = runNode("GeometryNodeBlurAttribute", {
+    Value: Field.make((ctx) => [0, 1, 3].slice(0, ctx.size).map((x) => [x, 0, 0])),
+    Weight: 1,
+    Iterations: 1,
+  }).Value as Field;
+  const neighbors = [[1], [0, 2], [1]];
+  const values = blurred.array({ size: 3, domain: "POINT", neighbors: (i) => neighbors[i] });
+  check("Blur Attribute matches Blender float32 reciprocal averaging",
+    approx(values[0], [0.5, 0, 0])
+      && approx(values[1], [Math.fround(4 * Math.fround(1 / 3)), 0, 0])
+      && approx(values[2], [2, 0, 0]));
+}
+
+{
   const cube = runNode("GeometryNodeMeshCube", { Size: [2, 3, 4], "Vertices X": 4, "Vertices Y": 3, "Vertices Z": 2 }).Mesh as Geometry;
   const topology = topologyOf(cube.mesh!);
   check("Subdivided Cube welds shared face borders", cube.mesh?.positions.length === 24 && cube.mesh.faces.length === 22);

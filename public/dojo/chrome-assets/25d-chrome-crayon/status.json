@@ -12,5 +12,5 @@
     "faces": 97776
   },
   "coverage": "100% of reachable node types across the 22-group, 559-node closure.",
-  "validation": "The browser and Blender now match the 508-point Spiro repeat, the complete 59,872-vertex / 46,866-face Marching Squares join, and the welded flattened surface at 48,896 vertices / 46,866 faces. Every flattened face and pre-weld position is index-exact. The authored solid and curve-preview branches have exact face counts at 97,780 / 97,776 versus Blender's 97,784 / 97,776, with four residual solid vertices after extrusion/Sigilize and a 0.0025-unit maximum bounds difference."
+  "validation": "The browser and Blender match the 508-point Spiro repeat, the complete 59,872-vertex / 46,866-face Marching Squares join, and the welded flattened surface at 48,896 vertices / 46,866 faces. Blur Attribute now follows Blender's float32 accumulation and reciprocal-multiply path across all 665 Sigilize passes, making the flattened and authored solid bounds exact to four decimals. The authored solid and curve-preview branches have exact face counts at 97,780 / 97,776 versus Blender's 97,784 / 97,776; only four residual vertices remain in the extrusion/final-weld topology."
 }
