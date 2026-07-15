@@ -1196,11 +1196,11 @@
     "object": "Point.001",
     "dump": "dojo/nodes-node/dump.json",
     "shaderMetadata": "dojo/nodes-node/shader-metadata.json",
-    "reference": "dojo/references/nodes-node/point-001.png",
+    "reference": "dojo/references/nodes-node/point-001-authored.png",
     "blenderStats": { "verts": 4736, "faces": 4672 },
     "localSpace": true,
     "workbenchColor": [0.8, 0.8, 0.8],
-    "note": "Exact topology. Portable Bézier handles, Set Handle Positions, and the two pre-Geometry-Nodes Hook modifiers reproduce Blender's paired socket noodles at 4,736 vertices and 4,672 faces.",
+    "note": "Topology is exact at 4,736 vertices and 4,672 faces; the two pre-Geometry-Nodes Hook modifiers leave a disclosed 0.00892 maximum world-bounds delta. Authored mode preserves node color.geometry's exact Principled constants and reconstructs its seven-node vtext normal branch with an independently expressed Smooth-F1 approximation. Blender's exact Voronoi scalar field and renderer remain parity targets.",
     "controls": []
   },
   {

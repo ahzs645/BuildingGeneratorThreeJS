@@ -1,0 +1,62 @@
+{
+  "source": "The Nodes Node_.blend",
+  "object": "Point.001",
+  "root": "Geometry Nodes.011",
+  "blenderVersion": "5.1.2",
+  "geometry": {
+    "blender": {
+      "verts": 4736,
+      "faces": 4672,
+      "worldBounds": {
+        "min": [-21.64906883239746, -1.6307388544082642, -2.5964837074279785],
+        "max": [-12.781160354614258, 0.036633364856243134, 7.101312637329102]
+      }
+    },
+    "gnvm": {
+      "verts": 4736,
+      "faces": 4672,
+      "tris": 9344,
+      "localBounds": {
+        "min": [-1.1190650463104248, -1.627370834350586, -1.0509577989578247],
+        "max": [7.758215427398682, 0.040000032633543015, 8.645318031311035]
+      },
+      "worldBounds": {
+        "min": [-21.657986402511597, -1.6307377815246583, -2.5950335264205933],
+        "max": [-12.78070592880249, 0.03663308545947075, 7.101242303848267]
+      }
+    },
+    "maximumWorldBoundsError": 0.008917570114135742,
+    "note": "Topology is exact; the remaining bounds delta is associated with the two pre-Geometry-Nodes Hook modifiers."
+  },
+  "authoredMaterial": {
+    "name": "node color.geometry",
+    "outerGraph": { "nodes": 3, "links": 2 },
+    "shaderGroup": { "name": "vtext", "nodes": 7, "links": 6 },
+    "principled": {
+      "baseColor": [0, 0.11227122694253922, 0.06201505288481712, 1],
+      "metallic": 0,
+      "roughness": 0.8012232780456543,
+      "ior": 1.4500000476837158,
+      "specularIorLevel": 0.377675861120224
+    },
+    "normalGraph": {
+      "topology": "Generated -> Mapping -> 3D Smooth F1 Voronoi -> identity Map Range -> Greater Than 0.5 -> Bump",
+      "mappingRotation": [1.5707963705062866, 0.7853981852531433, 0],
+      "mappingScale": [1, 1, 1.440000057220459],
+      "voronoiScale": 791.2999267578125,
+      "voronoiSmoothness": 1,
+      "voronoiRandomness": 0.7094972133636475,
+      "bumpStrength": 0.3284916281700134
+    }
+  },
+  "browser": {
+    "implementation": "strict graph recognizer plus MeshPhysicalMaterial shader injection",
+    "exact": ["graph topology", "extracted constants", "material assignment", "Generated bounds"],
+    "approximation": "independently expressed 3D Worley cell jitter and exponential smooth minimum; Three.js derivative bump and PBR lighting",
+    "blenderScalarParity": false,
+    "webglCompile": "pass; no browser console warnings or errors",
+    "reference": "dojo/references/nodes-node/point-001-authored.png"
+  },
+  "result": "exact topology and authored material constants; near-exact bounds and explicit Smooth-F1/renderer approximation",
+  "note": "The browser implementation intentionally does not copy Blender renderer source or claim exact Blender Voronoi scalar parity."
+}
