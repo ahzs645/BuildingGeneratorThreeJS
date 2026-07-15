@@ -6,7 +6,8 @@
     "diagnostic": "Uses the shared pale-green material so geometry, normals, silhouettes, and topology can be compared without shader differences."
   },
   "assetSpecificReconstructions": {
-    "assets": 5,
+    "explicitCatalogAssets": 5,
+    "automaticRecognition": "Strict graph-and-attribute recognition also applies the attribute-emission and Chrome Crayon reconstructions to compatible materials in default catalog assets.",
     "implementations": [
       "Chrome Crayon procedural roughness",
       "Chain and Mace face roughness",

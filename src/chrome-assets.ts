@@ -92,7 +92,9 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
           ? makeChromeCrayonMaterial(dump,geometry,group.material??"")
         : current.material==="attribute-emission"
           ? makeAttributeEmissionMaterial(dump,geometry,group.material??"")
-          : makeBasicBlenderMaterial(dump,group.material??"");
+          : makeAttributeEmissionMaterial(dump,geometry,group.material??"")
+            ?? makeChromeCrayonMaterial(dump,geometry,group.material??"")
+            ?? makeBasicBlenderMaterial(dump,group.material??"");
       if(authored instanceof THREE.MeshStandardMaterial)authored.flatShading=current.flatShading??false;
       materials.push(authored??diagnosticMaterial());
     }
