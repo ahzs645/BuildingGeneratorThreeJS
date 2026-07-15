@@ -6,5 +6,13 @@
   "blender": { "verts": 1155, "faces": 1153 },
   "gnvm": { "verts": 1155, "faces": 1153 },
   "coverage": "100% of reachable node types across the 4-group, 58-node closure.",
-  "validation": "Five tail-length and tail-width cases match Blender topology exactly, with local bounds within 0.0007 units. The authored edge-domain tail masks are preserved so both deformation controls remain live in-browser."
+  "validation": "Five tail-length and tail-width cases match Blender topology exactly, with local bounds within 0.0007 units. The authored edge-domain tail masks are preserved so both deformation controls remain live in-browser.",
+  "materialParity": {
+    "status": "literal-background-routing-supported",
+    "groups": [
+      { "material": "flat.b.001", "triangles": 2240, "surface": "unlit black" },
+      { "material": "flat.w", "triangles": 33, "surface": "unlit linear RGB 0.8000000119" }
+    ],
+    "validation": "Both direct Background to Material Output graphs now use the generic browser Background material rather than the normalized geometry fallback."
+  }
 }

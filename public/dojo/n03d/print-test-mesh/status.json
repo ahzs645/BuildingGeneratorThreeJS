@@ -16,5 +16,11 @@
     "faces": 18182
   },
   "coverage": "100% of reachable node types across the 5-group, 168-node closure.",
-  "validation": "The Geometry Nodes output, including all non-manifold edge tubes and tetrahedral diagnostic markers, has exact topology and bounds. The supplied object applies a separate Bevel modifier after Geometry Nodes; that non-GN modifier is excluded from the fair VM comparison and documented with its full-stack evaluated counts."
+  "validation": "The Geometry Nodes output, including all non-manifold edge tubes and tetrahedral diagnostic markers, has exact topology and bounds. The supplied object applies a separate Bevel modifier after Geometry Nodes; that non-GN modifier is excluded from the fair VM comparison and documented with its full-stack evaluated counts.",
+  "materialParity": {
+    "status": "literal-background-and-filament-supported",
+    "flat.w": { "triangles": 17920, "shader": "unlit linear RGB 0.8000000119, strength 1" },
+    "filament .02 mm.002": { "triangles": 200, "shader": "portable N03D filament reconstruction" },
+    "validation": "The browser recognizes the authored two-node Background to Material Output contract generically, routes the exact 53,760-index flat.w group through MeshBasicMaterial, and rejects linked Background inputs instead of claiming unsupported procedural parity. An authored Eevee/WebGL image comparison remains pending; the existing PNG is Workbench geometry evidence."
+  }
 }

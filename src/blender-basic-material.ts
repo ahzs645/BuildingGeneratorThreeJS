@@ -13,7 +13,7 @@ type RawLink = {
 type RawMaterial = { nodes?: RawNode[]; links?: RawLink[] };
 
 export type BasicBlenderMaterialConfig = {
-  kind: "principled" | "emission" | "diffuse" | "glossy";
+  kind: "principled" | "emission" | "diffuse" | "glossy" | "background";
   baseColor: [number, number, number];
   metalness: number;
   roughness: number;
@@ -84,6 +84,29 @@ export function extractBasicBlenderMaterialConfig(dump: Dump, materialName: stri
   if (!node) return null;
 
   const linked = linkedInputs(node);
+  if (node.type === "ShaderNodeBackground") {
+    // A Background node is formally intended for a World surface, but several
+    // supplied assets connect one directly to a material output as an unlit
+    // color. Only accept the literal two-node contract: linked Color/Strength
+    // inputs would require evaluating the upstream shader graph.
+    if (linked.length) return null;
+    const backgroundColor = color(socket(node, "Color")?.value, [0.8, 0.8, 0.8]);
+    return {
+      kind: "background",
+      baseColor: backgroundColor,
+      metalness: 0,
+      roughness: 1,
+      emissive: backgroundColor,
+      emissiveIntensity: finite(socket(node, "Strength")?.value, 1),
+      opacity: 1,
+      ior: 1.5,
+      transmission: 0,
+      clearcoat: 0,
+      clearcoatRoughness: 0,
+      linkedInputs: [],
+    };
+  }
+
   if (node.type === "ShaderNodeEmission") {
     return {
       kind: "emission",
@@ -137,9 +160,19 @@ export function extractBasicBlenderMaterialConfig(dump: Dump, materialName: stri
   };
 }
 
-export function makeBasicBlenderMaterial(dump: Dump, materialName: string): THREE.MeshPhysicalMaterial | null {
+export function makeBasicBlenderMaterial(dump: Dump, materialName: string): THREE.MeshPhysicalMaterial | THREE.MeshBasicMaterial | null {
   const config = extractBasicBlenderMaterialConfig(dump, materialName);
   if (!config) return null;
+  if (config.kind === "background") {
+    const material = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(...config.baseColor).multiplyScalar(Math.max(0, config.emissiveIntensity)),
+      side: THREE.DoubleSide,
+      toneMapped: true,
+    });
+    material.name = `${materialName} · Blender background constants`;
+    material.userData.blenderMaterialContract = config;
+    return material;
+  }
   const opacity = THREE.MathUtils.clamp(config.opacity, 0, 1);
   const material = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(...config.baseColor),

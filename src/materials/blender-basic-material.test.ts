@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
+import * as THREE from "three";
 import { extractBasicBlenderMaterialConfig, makeBasicBlenderMaterial } from "../blender-basic-material";
-import type { Dump } from "../gnvm";
+import { runGenerator, type Dump } from "../gnvm";
 
 function dumpWith(nodes: unknown[], links: unknown[]): Dump {
   return { node_groups: {}, materials: { Test: { nodes, links } } } as Dump;
@@ -73,4 +75,56 @@ test("supports direct Emission and rejects unsupported shader mixes", () => {
   ], [{ from_node: "Mix", from_socket: "Shader", from_type: "NodeSocketShader", to_node: "Output", to_socket: "Surface" }]);
   assert.equal(extractBasicBlenderMaterialConfig(mixed, "Test"), null);
   assert.equal(makeBasicBlenderMaterial(mixed, "Test"), null);
+});
+
+test("reconstructs literal Background material outputs as unlit colors", () => {
+  const sidecar = JSON.parse(readFileSync("public/dojo/n03d/shader-metadata.json", "utf8")) as Dump;
+  const white = extractBasicBlenderMaterialConfig(sidecar, "flat.w");
+  assert.deepEqual(white, {
+    kind: "background",
+    baseColor: [0.800000011920929, 0.800000011920929, 0.800000011920929],
+    metalness: 0,
+    roughness: 1,
+    emissive: [0.800000011920929, 0.800000011920929, 0.800000011920929],
+    emissiveIntensity: 1,
+    opacity: 1,
+    ior: 1.5,
+    transmission: 0,
+    clearcoat: 0,
+    clearcoatRoughness: 0,
+    linkedInputs: [],
+  });
+  const whiteMaterial = makeBasicBlenderMaterial(sidecar, "flat.w");
+  assert.ok(whiteMaterial?.isMeshBasicMaterial);
+  assert.equal(whiteMaterial?.side, THREE.DoubleSide);
+  assert.equal(whiteMaterial?.toneMapped, true);
+  assert.equal(whiteMaterial?.color.r, 0.800000011920929);
+  assert.equal(whiteMaterial?.name, "flat.w · Blender background constants");
+  whiteMaterial?.dispose();
+
+  const blackMaterial = makeBasicBlenderMaterial(sidecar, "flat.b.001");
+  assert.ok(blackMaterial?.isMeshBasicMaterial);
+  assert.equal(blackMaterial?.color.getHex(), 0x000000);
+  blackMaterial?.dispose();
+
+  const linked = dumpWith([
+    { name: "Background", type: "ShaderNodeBackground", inputs: [
+      { name: "Color", value: [0.8, 0.8, 0.8, 1], linked: true },
+      { name: "Strength", value: 1, linked: false },
+    ] },
+    { name: "Output", type: "ShaderNodeOutputMaterial", props: { is_active_output: true } },
+  ], [{ from_node: "Background", from_socket: "Background", from_type: "NodeSocketShader", to_node: "Output", to_socket: "Surface" }]);
+  assert.equal(extractBasicBlenderMaterialConfig(linked, "Test"), null);
+  assert.equal(makeBasicBlenderMaterial(linked, "Test"), null);
+});
+
+test("routes the exact N03D print-test surface through flat.w", async () => {
+  const dump = JSON.parse(readFileSync("public/dojo/n03d/print-test-mesh/dump.json", "utf8")) as Dump;
+  const result = await runGenerator(dump, { object: "print test mesh" });
+  assert.equal(result.soup.stats.verts, 16751);
+  assert.equal(result.soup.stats.faces, 9065);
+  assert.deepEqual(result.soup.groups.map((group) => ({ material: group.material, count: group.count })), [
+    { material: "flat.w", count: 53760 },
+    { material: "filament .02 mm.002", count: 600 },
+  ]);
 });
