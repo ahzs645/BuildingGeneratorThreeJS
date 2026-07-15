@@ -31,6 +31,7 @@ reg("GeometryNodeSetCurveHandlePositions", (api) => {
   const side = api.prop<string>("mode", "LEFT");
 
   let pointOffset = 0;
+  let frameChanged = false;
   out.curves = source.curves.map((spline) => {
     const controlPoints = (spline.controlPoints?.length ? spline.controlPoints : spline.points).map((point) => [...point] as Vec3);
     const left = (spline.bezierLeft ?? controlPoints).map((point) => [...point] as Vec3);
@@ -40,7 +41,9 @@ reg("GeometryNodeSetCurveHandlePositions", (api) => {
       const fieldIndex = pointOffset + index;
       if (!asNum(selection[fieldIndex] ?? 1)) continue;
       const base: Elem = position ? position[fieldIndex] ?? target[index] : target[index];
-      target[index] = vadd(asVec3(base), asVec3(offset[fieldIndex] ?? [0, 0, 0]));
+      const next = vadd(asVec3(base), asVec3(offset[fieldIndex] ?? [0, 0, 0]));
+      frameChanged ||= next.some((value, axis) => value !== target[index][axis]);
+      target[index] = next;
     }
     pointOffset += controlPoints.length;
     return {
@@ -52,5 +55,10 @@ reg("GeometryNodeSetCurveHandlePositions", (api) => {
       points: evaluateBezierSpline(controlPoints, spline.cyclic, left, right, spline.resolution),
     };
   });
+  if (frameChanged) {
+    out.curveAttributes.delete("__curve_tangent");
+    out.curveAttributes.delete("__curve_imported_tangent");
+    out.curveAttributes.delete("__curve_normal");
+  }
   return { Curve: out };
 });

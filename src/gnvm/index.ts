@@ -113,6 +113,7 @@ function applyPreNodesHooks(dump: Dump, object: NonNullable<Dump["objects"]>[num
   const objectMatrix = object.matrix_world;
   if (!objectMatrix || !geometry.curves.length) return;
   const modifiers = object.modifiers ?? [];
+  let deformedCurve = false;
   for (const modifier of modifiers) {
     if (modifier.type === "NODES") break;
     if (modifier.type !== "HOOK" || !modifier.object || !modifier.matrix_inverse) continue;
@@ -133,6 +134,7 @@ function applyPreNodesHooks(dump: Dump, object: NonNullable<Dump["objects"]>[num
             const hookLocal = transformByMatrix(point, modifier.matrix_inverse);
             const world = transformByMatrix(hookLocal, hookObject.matrix_world);
             const deformed = inverseTransformByMatrix(world, objectMatrix);
+            deformedCurve ||= strength > 0 && deformed.some((value, axis) => value !== point[axis]);
             point[0] += (deformed[0] - point[0]) * strength;
             point[1] += (deformed[1] - point[1]) * strength;
             point[2] += (deformed[2] - point[2]) * strength;
@@ -143,6 +145,14 @@ function applyPreNodesHooks(dump: Dump, object: NonNullable<Dump["objects"]>[num
       if (isBezier)
         spline.points = evaluateBezierSpline(controlPoints, spline.cyclic, spline.bezierLeft!, spline.bezierRight!, spline.resolution);
     }
+  }
+  if (deformedCurve) {
+    // Imported frames describe the pre-modifier curve. Blender rebuilds the
+    // evaluated frame after a Hook moves controls/handles, so downstream Curve
+    // to Mesh must derive it from the hooked spline rather than reuse stale data.
+    geometry.curveAttributes.delete("__curve_tangent");
+    geometry.curveAttributes.delete("__curve_imported_tangent");
+    geometry.curveAttributes.delete("__curve_normal");
   }
 }
 

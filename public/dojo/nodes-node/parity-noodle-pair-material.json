@@ -17,16 +17,18 @@
       "faces": 4672,
       "tris": 9344,
       "localBounds": {
-        "min": [-1.1190650463104248, -1.627370834350586, -1.0509577989578247],
-        "max": [7.758215427398682, 0.040000032633543015, 8.645318031311035]
+        "min": [-1.1105543375015259, -1.627370834350586, -1.0523862838745117],
+        "max": [7.758215427398682, 0.03999947011470795, 8.645318031311035]
       },
       "worldBounds": {
-        "min": [-21.657986402511597, -1.6307377815246583, -2.5950335264205933],
-        "max": [-12.78070592880249, 0.03663308545947075, 7.101242303848267]
+        "min": [-21.649475693702698, -1.6307377815246583, -2.5964620113372803],
+        "max": [-12.78070592880249, 0.03663252294063568, 7.101242303848267]
       }
     },
-    "maximumWorldBoundsError": 0.008917570114135742,
-    "note": "Topology is exact; the remaining bounds delta is associated with the two pre-Geometry-Nodes Hook modifiers."
+    "maximumWorldBoundsErrorBeforeFrameFix": 0.008917570114135742,
+    "maximumWorldBoundsError": 0.0004544258117675781,
+    "errorReduction": 0.9490437632,
+    "note": "Topology is exact. Hook controls and handles were already correct; invalidating imported pre-deformation tangent/normal frames after Hooks and Set Curve Handle Positions lets Curve to Mesh derive the current frame and removes the dominant bounds error."
   },
   "authoredMaterial": {
     "name": "node color.geometry",

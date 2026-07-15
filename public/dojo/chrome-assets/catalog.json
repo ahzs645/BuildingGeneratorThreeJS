@@ -1200,7 +1200,7 @@
     "blenderStats": { "verts": 4736, "faces": 4672 },
     "localSpace": true,
     "workbenchColor": [0.8, 0.8, 0.8],
-    "note": "Topology is exact at 4,736 vertices and 4,672 faces; the two pre-Geometry-Nodes Hook modifiers leave a disclosed 0.00892 maximum world-bounds delta. Authored mode preserves node color.geometry's exact Principled constants and reconstructs its seven-node vtext normal branch with an independently expressed Smooth-F1 approximation. Blender's exact Voronoi scalar field and renderer remain parity targets.",
+    "note": "Topology is exact at 4,736 vertices and 4,672 faces. Rebuilding the evaluated curve frame after Hook and Set Curve Handle Positions deformation reduces the maximum world-bounds delta to 0.000454. Authored mode preserves node color.geometry's exact Principled constants and reconstructs its seven-node vtext normal branch with an independently expressed Smooth-F1 approximation. Blender's exact Voronoi scalar field and renderer remain parity targets.",
     "controls": []
   },
   {
