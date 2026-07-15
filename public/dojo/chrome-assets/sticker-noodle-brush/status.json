@@ -1,0 +1,10 @@
+{
+  "id": "sticker-noodle-brush",
+  "object": "Sticker Noodle Brush.001",
+  "root": "dot periodic brush.001",
+  "status": "exact-sweep",
+  "blender": { "verts": 16252, "faces": 956 },
+  "gnvm": { "verts": 16252, "faces": 956 },
+  "coverage": "100% of reachable node types across the 2-group, 39-node closure.",
+  "validation": "Exact Blender topology across seven cases covering dot distance, dot size, and twist. Four-decimal local bounds are exact except for at most 0.0001 units in the two twist cases."
+}

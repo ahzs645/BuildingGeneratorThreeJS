@@ -1,0 +1,9 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "dot distance 0.75", "overrides": { "Dot Distance": 0.75 } },
+  { "name": "dot distance 3", "overrides": { "Dot Distance": 3 } },
+  { "name": "dot size 0.25", "overrides": { "dot size": 0.25 } },
+  { "name": "dot size 1.25", "overrides": { "dot size": 1.25 } },
+  { "name": "twist 0", "overrides": { "twist factor": 0 } },
+  { "name": "twist 2", "overrides": { "twist factor": 2 } }
+]
