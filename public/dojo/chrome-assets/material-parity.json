@@ -1,0 +1,45 @@
+{
+  "updated": "2026-07-15",
+  "catalogAssets": 96,
+  "previewModes": {
+    "authored": "Uses an asset-specific reconstruction when available, otherwise follows each assigned material's active Blender Material Output and maps constant surface inputs to Three.js.",
+    "diagnostic": "Uses the shared pale-green material so geometry, normals, silhouettes, and topology can be compared without shader differences."
+  },
+  "assetSpecificReconstructions": {
+    "assets": 5,
+    "implementations": [
+      "Chrome Crayon procedural roughness",
+      "Chain and Mace face roughness",
+      "attribute-driven emission",
+      "Image Pixel Stippler WebGL material"
+    ]
+  },
+  "genericConstantMapper": {
+    "defaultCatalogAssets": 91,
+    "assetsWithAtLeastOneSupportedMaterialTree": 96,
+    "literalSetMaterialReferences": 346,
+    "supportedLiteralSetMaterialReferences": 280,
+    "assetsWithEveryLiteralReferenceSupported": 44,
+    "assetsWithAtLeastOneSupportedLiteralReference": 80,
+    "assetsWithNoLiteralSetMaterialReference": 15,
+    "supportedSurfaceNodes": {
+      "ShaderNodeBsdfPrincipled": 1672,
+      "ShaderNodeEmission": 721,
+      "ShaderNodeBsdfDiffuse": 70
+    },
+    "supportedMaterialTrees": 2463,
+    "totalMaterialTrees": 3493
+  },
+  "remainingDirectOutputTrees": {
+    "ShaderNodeMixShader": 468,
+    "ShaderNodeGroup": 132,
+    "ShaderNodeBackground": 83,
+    "ShaderNodeHoldout": 27,
+    "missingOrNoDirectSurfaceOutput": 320
+  },
+  "limitations": [
+    "Linked procedural inputs currently use their constant fallback and are labeled as approximations on the Three.js material contract.",
+    "Mix Shader, shader-group, texture, coordinate-mapping, bump, and displacement networks require focused WebGL reconstructions.",
+    "The shared browser environment approximates Blender studio/render lighting; authored mode is material-semantic parity, not pixel-identical Cycles or Eevee rendering."
+  ]
+}
