@@ -1,0 +1,45 @@
+{
+  "source": "NO3D Chrome Asset Library.blend",
+  "images": {
+    "sticky1@2x.png": {
+      "file": "sticky1-2x.png",
+      "width": 1987,
+      "height": 2052,
+      "bytes": 133355
+    },
+    "stickie2.png": {
+      "file": "stickie2.png",
+      "width": 1200,
+      "height": 1200,
+      "bytes": 102471
+    },
+    "sticker texture.png": {
+      "file": "sticker-texture.png",
+      "width": 881,
+      "height": 899,
+      "bytes": 1556582
+    },
+    "foolish bb spooky sticker.png": {
+      "file": "foolish-bb-spooky-sticker.png",
+      "width": 1568,
+      "height": 1793,
+      "bytes": 742336
+    },
+    "fuck around find out.png": {
+      "file": "fuck-around-find-out.png",
+      "width": 1169,
+      "height": 1200,
+      "bytes": 1741593
+    },
+    "ryu electrify.png": {
+      "file": "ryu-electrify.png",
+      "width": 1440,
+      "height": 1440,
+      "bytes": 2764234
+    }
+  },
+  "missing": [
+    "ryu electrify1.png",
+    "tree sticky.png"
+  ]
+}
