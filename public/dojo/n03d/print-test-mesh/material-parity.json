@@ -10,7 +10,7 @@
     { "material": "flat.w", "triangles": 17920, "browser": "literal Background material" },
     { "material": "filament .02 mm.002", "triangles": 200, "browser": "portable filament approximation" }
   ],
-  "comparison": {
+  "roomEnvironmentBaseline": {
     "surfaceMaskIou": 0.9917000822350467,
     "intersectionPixels": 272541,
     "pixelLuminanceMae": 0.7377595189644236,
@@ -20,5 +20,25 @@
     "macroLuminanceCorrelation": -0.07682215075613709,
     "meanLuminanceDelta": 0.7314765561496585
   },
-  "interpretation": "Camera and geometry align, but whole-asset shader parity fails. The few large filament faces occlude much of the high-triangle-count flat.w diagnostic geometry, and their browser reconstruction is much brighter than Blender Eevee. The generic flat.w Background contract is implemented; the next material target for this asset is the filament shader plus its lighting environment."
+  "authoredAreaBeforeFilamentSemanticFix": {
+    "surfaceMaskIou": 0.9921982794712451,
+    "intersectionPixels": 272540,
+    "pixelLuminanceMae": 0.06295565821942413,
+    "pixelLuminanceCorrelation": 0.6571150632149947,
+    "binaryMaskDisagreementFraction": 0.0033976663975930138,
+    "macroLuminanceMae": 0.06187761154408378,
+    "macroLuminanceCorrelation": 0.8193537454280152,
+    "meanLuminanceDelta": 0.01770475319942348
+  },
+  "authoredAreaExactFilamentColors": {
+    "surfaceMaskIou": 0.9921332935326281,
+    "intersectionPixels": 272541,
+    "pixelLuminanceMae": 0.06437900417795164,
+    "pixelLuminanceCorrelation": 0.6529828689521938,
+    "binaryMaskDisagreementFraction": 0.003404992276391442,
+    "macroLuminanceMae": 0.06278553618202307,
+    "macroLuminanceCorrelation": 0.8084655279389585,
+    "meanLuminanceDelta": 0.027288621982416453
+  },
+  "interpretation": "Camera and geometry align. Replacing the capture-only RoomEnvironment, hemisphere light, and directional light with scale-relative RectArea lights reduces full-surface luminance MAE by 91.3%. The filament front is now the exact col attribute and its back is the achromatic max-RGB value branch used by Blender. Removing the graph-inaccurate color and roughness bands changes MAE only from 0.0630 to 0.0644; the remaining material residual is the unimplemented procedural Wave/Bump normal perturbation. The generic flat.w Background contract is implemented."
 }

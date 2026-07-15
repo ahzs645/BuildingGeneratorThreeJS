@@ -29,6 +29,7 @@ type Asset = { id: string; title: string; object: string; dump: string; shaderMe
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
+const authoredCapture = new URLSearchParams(location.search).get("capture") === "authored";
 const select = document.querySelector<HTMLSelectElement>("#assets-select")!;
 const controlsHost = document.querySelector<HTMLElement>("#assets-controls")!;
 const reference = document.querySelector<HTMLImageElement>("#assets-reference")!;
@@ -43,12 +44,20 @@ const note = document.querySelector<HTMLElement>("#assets-note")!;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
 const scene = new THREE.Scene();
-const room = new RoomEnvironment();
-const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(room, .04).texture;
-room.dispose(); pmrem.dispose();
-scene.add(new THREE.HemisphereLight(0xf1f6ed, 0x172018, 1.5));
-const key = new THREE.DirectionalLight(0xffffff, 2); key.position.set(-4, -6, 9); scene.add(key);
+let authoredKey: THREE.RectAreaLight | null = null;
+let authoredFill: THREE.RectAreaLight | null = null;
+if (authoredCapture) {
+  authoredKey = new THREE.RectAreaLight(0xffffff, 0.5, 1, 1);
+  authoredFill = new THREE.RectAreaLight(0xffffff, 0.25, 1, 1);
+  scene.add(authoredKey, authoredFill);
+} else {
+  const room = new RoomEnvironment();
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(room, .04).texture;
+  room.dispose(); pmrem.dispose();
+  scene.add(new THREE.HemisphereLight(0xf1f6ed, 0x172018, 1.5));
+  const key = new THREE.DirectionalLight(0xffffff, 2); key.position.set(-4, -6, 9); scene.add(key);
+}
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, .01, 5000);
 const orbit = new OrbitControls(camera, canvas); orbit.enableDamping = true;
 const model = new THREE.Group(); scene.add(model);
@@ -57,7 +66,7 @@ let catalog: Asset[] = [], current: Asset, dump: Dump, requestId = 0, appliedId 
 const loadedFonts = new Map<string, Promise<boolean>>();
 
 function resize(): void { const box = canvas.getBoundingClientRect(); renderer.setSize(box.width, box.height, false); if(model.children.length)frame();else camera.updateProjectionMatrix(); }
-function frame(): void { const bounds = new THREE.Box3().setFromObject(model); if (bounds.isEmpty()) return; const viewport=canvas.getBoundingClientRect();const aspect=viewport.width/Math.max(viewport.height,1);const center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),radius=Math.max(size.length()*.5,1);const halfWidth=Math.max(size.x,size.y,size.z,1)*.725;camera.left=-halfWidth;camera.right=halfWidth;camera.top=halfWidth/Math.max(aspect,1e-6);camera.bottom=-camera.top;const direction=new THREE.Vector3(1,-1.25,.85).normalize();camera.position.copy(center).addScaledVector(direction,radius*3);camera.up.set(0,0,1);camera.lookAt(center);camera.near=radius/300;camera.far=radius*100;camera.updateProjectionMatrix();orbit.target.copy(center);orbit.update(); }
+function frame(): void { const bounds = new THREE.Box3().setFromObject(model); if (bounds.isEmpty()) return; const viewport=canvas.getBoundingClientRect();const aspect=viewport.width/Math.max(viewport.height,1);const center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),radius=Math.max(size.length()*.5,1);const halfWidth=Math.max(size.x,size.y,size.z,1)*.725;camera.left=-halfWidth;camera.right=halfWidth;camera.top=halfWidth/Math.max(aspect,1e-6);camera.bottom=-camera.top;const direction=new THREE.Vector3(1,-1.25,.85).normalize();camera.position.copy(center).addScaledVector(direction,radius*3);camera.up.set(0,0,1);camera.lookAt(center);camera.near=radius/300;camera.far=radius*100;camera.updateProjectionMatrix();if(authoredKey&&authoredFill){authoredKey.width=authoredKey.height=radius*1.5;authoredKey.position.copy(center).addScaledVector(new THREE.Vector3(-1.8,-2.1,2.8).normalize(),radius*2.4);authoredKey.lookAt(center);authoredFill.width=authoredFill.height=radius*2;authoredFill.position.copy(center).addScaledVector(new THREE.Vector3(2,1,1).normalize(),radius*2);authoredFill.lookAt(center);}orbit.target.copy(center);orbit.update(); }
 function overrides(): Record<string, number | boolean | string | number[]> { const values: Record<string, number | boolean | string | number[]> = {}; for (const control of current.controls) { if(control.name.startsWith("__"))continue;const input=document.querySelector<HTMLInputElement|HTMLSelectElement>(`[data-control="${control.name}"]`); values[control.name]=control.type==="checkbox"?((input as HTMLInputElement|null)?.checked??control.value):control.type==="text"?(input?.value??control.value):control.type==="select"?(typeof control.value==="number"?Number(input?.value??control.value):(input?.value??control.value)):control.type==="vector"?Array.from(document.querySelectorAll<HTMLInputElement>(`[data-control="${control.name}"]`)).sort((a,b)=>Number(a.dataset.axis)-Number(b.dataset.axis)).map((item,index)=>Number(item.value??control.value[index])):rangeOverrideValue(control.value,input?.value,input?.dataset.dirty==="true"); } return values; }
 function visibleControls(): Control[] { return current.controls.some((control)=>control.name==="__materialPreview") ? current.controls : [{type:"select",name:"__materialPreview",label:"Shader preview",value:"authored",options:[{label:"Authored Blender material",value:"authored"},{label:"Normalized geometry diagnostic",value:"diagnostic"}]},...current.controls]; }
 function renderControls(): void { const controls=visibleControls();controlsHost.replaceChildren(...controls.map((control) => { const label=document.createElement("label");label.className=`assets-control assets-${control.type??"range"}`;const span=document.createElement("span");span.textContent=control.label;const row=document.createElement("div");const input=document.createElement("input");input.dataset.control=control.name;if(control.type==="checkbox"){input.type="checkbox";input.checked=control.value;input.style.width="18px";input.style.height="18px";input.addEventListener("change",queue);row.append(input);}else if(control.type==="text"){input.type="text";input.value=control.value;input.spellcheck=false;input.addEventListener("input",queue);row.append(input);}else if(control.type==="select"){const menu=document.createElement("select");menu.dataset.control=control.name;for(const item of control.options){const option=document.createElement("option");option.value=String(item.value);option.textContent=item.label;option.selected=item.value===control.value;menu.append(option);}menu.addEventListener("change",queue);row.append(menu);}else if(control.type==="vector"){control.value.forEach((value,axis)=>{const component=input.cloneNode() as HTMLInputElement;component.type="number";component.dataset.axis=String(axis);component.step=String(control.step??.01);component.value=String(value);component.setAttribute("aria-label",`${control.label} ${"XYZ"[axis]}`);component.addEventListener("input",queue);row.append(component);});}else{input.type="range";input.min=String(control.min);input.max=String(control.max);input.step=String(control.step);input.value=String(control.value);const output=document.createElement("output");output.value=Number(control.value).toFixed(control.step < .001 ? 3 : 2);input.addEventListener("input",()=>{input.dataset.dirty="true";output.value=Number(input.value).toFixed(control.step < .001 ? 3 : 2);queue();});row.append(input,output);}label.append(span,row);return label;})); reset.hidden=!controls.length; }

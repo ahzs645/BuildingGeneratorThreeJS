@@ -69,10 +69,11 @@ function glsl(value: number): string {
 }
 
 /**
- * Reconstruct the shared N03D filament look in WebGL: evaluated `col`, dense
- * generated-Z print layers, rough plastic response, and the authored darker
- * backface treatment. Blender's Wave distortion and Bump are approximated in
- * the fragment shader because Three.js has no native Blender shader-node VM.
+ * Reconstruct the shared N03D filament color branches in WebGL. Blender's
+ * COLOR blend keeps the front-side `col` value unchanged: both inputs have the
+ * same hue/saturation, so the Wave factor only blends identical HSV color.
+ * The back branch desaturates that color and scales its HSV value. Wave/Bump
+ * normal perturbation remains a separate renderer-parity target.
  */
 export function makeFilamentMaterial(
   dump: Dump,
@@ -83,10 +84,6 @@ export function makeFilamentMaterial(
   if (!config) return null;
   const color = geometry.getAttribute(config.colorAttribute);
   if (!color || color.itemSize !== 3) return null;
-  geometry.computeBoundingBox();
-  const bounds = geometry.boundingBox;
-  if (!bounds) return null;
-  const size = bounds.getSize(new THREE.Vector3());
 
   const material = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
@@ -99,19 +96,16 @@ export function makeFilamentMaterial(
   material.userData.filamentContract = config;
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", `#include <common>\nattribute vec3 ${config.colorAttribute};\nvarying vec3 vFilamentColor;\nvarying vec3 vFilamentGenerated;`)
-      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvFilamentColor = ${config.colorAttribute};\nvFilamentGenerated = (position - vec3(${glsl(bounds.min.x)}, ${glsl(bounds.min.y)}, ${glsl(bounds.min.z)})) / max(vec3(${glsl(size.x)}, ${glsl(size.y)}, ${glsl(size.z)}), vec3(1e-7));`);
+      .replace("#include <common>", `#include <common>\nattribute vec3 ${config.colorAttribute};\nvarying vec3 vFilamentColor;`)
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvFilamentColor = ${config.colorAttribute};`);
     shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", `#include <common>\nvarying vec3 vFilamentColor;\nvarying vec3 vFilamentGenerated;\nfloat filamentHash(vec3 p){p=fract(p*0.1031);p+=dot(p,p.yzx+33.33);return fract((p.x+p.y)*p.z);}`)
+      .replace("#include <common>", `#include <common>\nvarying vec3 vFilamentColor;`)
       .replace("#include <color_fragment>", `#include <color_fragment>
-float filamentWarp = (filamentHash(vFilamentGenerated * ${glsl(config.layerDetail)}) - 0.5) * ${glsl(config.layerDistortion)};
-float filamentBand = 0.5 + 0.5 * sin((vFilamentGenerated.z * ${glsl(Math.abs(config.layerScale))} + filamentWarp) * 6.28318530718);
-vec3 filamentFront = mix(max(vFilamentColor, vec3(0.0)), max(vFilamentColor, vec3(0.0)) * ${glsl(config.brightValue)}, filamentBand);
-float filamentCross = step(0.55, 0.5 + 0.5 * sin((vFilamentGenerated.x + vFilamentGenerated.y) * 34.0));
-vec3 filamentBack = max(vFilamentColor, vec3(0.0)) * mix(${glsl(config.darkValue)}, 0.0814, filamentCross * 0.22);
-diffuseColor.rgb = gl_FrontFacing ? filamentFront : filamentBack;`)
-      .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + (filamentBand - 0.5) * ${glsl(config.bumpStrength * 0.08)}, 0.0, 1.0);`);
+vec3 filamentFront = max(vFilamentColor, vec3(0.0));
+float filamentValue = max(max(filamentFront.r, filamentFront.g), filamentFront.b);
+vec3 filamentBack = vec3(filamentValue * ${glsl(config.darkValue)});
+diffuseColor.rgb = gl_FrontFacing ? filamentFront : filamentBack;`);
   };
-  material.customProgramCacheKey = () => `n03d-filament-${materialName}-${config.colorAttribute}-v1`;
+  material.customProgramCacheKey = () => `n03d-filament-${materialName}-${config.colorAttribute}-v2`;
   return material;
 }

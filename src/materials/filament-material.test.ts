@@ -44,9 +44,9 @@ test("extracts and renders the shared N03D filament shader contract", async () =
   };
   material?.onBeforeCompile(shader as never, {} as never);
   assert.match(shader.vertexShader, /attribute vec3 col/);
-  assert.match(shader.fragmentShader, /filamentBand/);
+  assert.match(shader.fragmentShader, /max\(max\(filamentFront\.r/);
   assert.match(shader.fragmentShader, /gl_FrontFacing \? filamentFront : filamentBack/);
-  assert.match(shader.fragmentShader, /roughnessFactor = clamp/);
+  assert.doesNotMatch(shader.fragmentShader, /filamentBand|filamentCross|roughnessFactor = clamp/);
   material?.dispose();
   geometry.dispose();
 });

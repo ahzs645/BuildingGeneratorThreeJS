@@ -16,5 +16,14 @@
     "pixelLuminanceCorrelation": 0.02716114428240994,
     "meanLuminanceDelta": 0.4730760836986345
   },
-  "interpretation": "The material graph's roughness semantics are now exact and the invented spatial grain is removed. The dominant remaining visual difference is the environment and light rig; the current shared RoomEnvironment is much brighter than Blender's authored studio world. Surface-mask IoU varied between browser capture sessions, so lighting progress is judged by aligned intersection luminance and must be re-baselined after the capture environment is made deterministic."
+  "authoredAreaCapture": {
+    "surfaceMaskIou": 0.94061365499473,
+    "pixelLuminanceMae": 0.20691371466487307,
+    "pixelLuminanceCorrelation": -0.06699363861750472,
+    "binaryMaskDisagreementFraction": 0.08967990139319464,
+    "macroLuminanceMae": 0.1823435793413153,
+    "macroLuminanceCorrelation": -0.2582182889691793,
+    "meanLuminanceDelta": -0.1840202694474612
+  },
+  "interpretation": "The material graph's roughness semantics are exact and the invented spatial grain is removed. The deterministic capture-only RectArea rig lowers luminance MAE from 0.5178 to 0.2069, close to the 0.2035 measured with Blender's exact studio.exr. Its negative correlation shows that the original studio reflection pattern is still missing; lighting magnitude is much closer, but environment-map parity remains pending."
 }
