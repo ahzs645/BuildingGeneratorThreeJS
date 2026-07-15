@@ -23,7 +23,7 @@
           180.8749
         ]
       },
-      "elapsed_ms": 372
+      "elapsed_ms": 375
     },
     {
       "combo": {
@@ -47,7 +47,7 @@
           180.8749
         ]
       },
-      "elapsed_ms": 141
+      "elapsed_ms": 138
     },
     {
       "combo": {
@@ -58,8 +58,8 @@
         }
       },
       "status": "ok",
-      "verts": 1764,
-      "faces": 1872,
+      "verts": 1772,
+      "faces": 1984,
       "bbox": {
         "min": [
           -190.9602,
@@ -72,7 +72,7 @@
           177.8752
         ]
       },
-      "elapsed_ms": 295
+      "elapsed_ms": 288
     },
     {
       "combo": {
@@ -96,7 +96,7 @@
           180.8749
         ]
       },
-      "elapsed_ms": 305
+      "elapsed_ms": 313
     },
     {
       "combo": {
@@ -120,7 +120,7 @@
           180.8749
         ]
       },
-      "elapsed_ms": 312
+      "elapsed_ms": 311
     }
   ]
 }

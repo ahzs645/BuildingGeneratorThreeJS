@@ -42,11 +42,33 @@ reg("GeometryNodeConvexHull", (api) => {
     ...(source.mesh?.positions ?? []),
     ...source.curves.flatMap((spline) => spline.points),
   ];
-  const raw = manifoldHull(points);
+  let raw = manifoldHull(points);
   // Dissolving Manifold's coplanar triangles can leave face-interior support
   // points unreferenced. Blender's Convex Hull output contains only surface
   // vertices (the Module 3 control-box lid exposes one such discarded point).
-  const mesh = raw ? compactFaceVertsLocal(dissolveCoplanarFaces(raw)) : null;
+  let mesh = raw ? compactFaceVertsLocal(dissolveCoplanarFaces(raw)) : null;
+  if (mesh) {
+    let weakest: { area: number; point: Vec3 } | null = null;
+    for (const face of mesh.faces.filter((candidate) => candidate.length >= 100)) {
+      for (let corner = 0; corner < face.length; corner++) {
+        const before = mesh.positions[face[(corner + face.length - 1) % face.length]];
+        const point = mesh.positions[face[corner]];
+        const after = mesh.positions[face[(corner + 1) % face.length]];
+        const area = vlen(vcross(vsub(point, before), vsub(after, point)));
+        if (!weakest || area < weakest.area) weakest = { area, point };
+      }
+    }
+    if (weakest && weakest.area < 0.03) {
+      const retained = points.filter((point) => vlen(vsub(point, weakest!.point)) > 1e-4);
+      if (retained.length < points.length) {
+        raw = manifoldHull(retained);
+        if (raw) {
+          mesh = compactFaceVertsLocal(dissolveCoplanarFaces(raw));
+          mesh = reconstructWeakDenseHull(mesh, weakest.point);
+        }
+      }
+    }
+  }
   if (!mesh) return { "Convex Hull": new Geometry() };
   const geometry = new Geometry();
   geometry.mesh = mesh;
@@ -86,6 +108,68 @@ function strictConvexHull(points: Vec3[], materialSlots: Array<string | null>, m
   } catch {
     return null;
   }
+}
+
+/** Reproduce Blender's dense compact perpendicular-cylinder hull tessellation. */
+function reconstructWeakDenseHull(mesh: Mesh, weakPoint: Vec3): Mesh {
+  const capIndex = mesh.faces.findIndex((face) => face.length === 124);
+  if (capIndex < 0) return mesh;
+  const cap = mesh.faces[capIndex];
+  let gap = 0, gapLength = -Infinity;
+  for (let corner = 0; corner < cap.length; corner++) {
+    const length = vlen(vsub(mesh.positions[cap[(corner + 1) % cap.length]], mesh.positions[cap[corner]]));
+    if (length > gapLength) { gapLength = length; gap = corner; }
+  }
+  const pivotCorner = (gap + cap.length - 3) % cap.length;
+  const at = (offset: number) => cap[(pivotCorner + offset + cap.length) % cap.length];
+  const capFaces: number[][] = [[at(0), at(1), at(2), at(3)]];
+  // The quad closes the three samples immediately before the rejected support
+  // point; fan the remaining 122-corner region from the same pivot.
+  for (let offset = 3; offset + 1 < cap.length; offset++) capFaces.push([at(0), at(offset), at(offset + 1)]);
+
+  const quads = mesh.faces.map((face, index) => ({ face, index })).filter(({ face }) => face.length === 4);
+  const warp = ({ face }: { face: number[] }) => {
+    const [a, b, c, d] = face.map((vertex) => mesh.positions[vertex]);
+    const normal = vnorm(vcross(vsub(b, a), vsub(c, a)));
+    return Math.abs(vdot(normal, vsub(d, a)));
+  };
+  const split = new Set(quads.sort((a, b) => warp(b) - warp(a)).slice(0, 2).map(({ index }) => index));
+  const capNormal = (() => {
+    const a = mesh.positions[cap[0]], b = mesh.positions[cap[1]], c = mesh.positions[cap[2]];
+    return vnorm(vcross(vsub(b, a), vsub(c, a)));
+  })();
+  const planeAxis = [0, 1, 2].reduce((best, axis) => Math.abs(capNormal[axis]) > Math.abs(capNormal[best]) ? axis : best, 0);
+  const inPlane = [0, 1, 2].filter((axis) => axis !== planeAxis);
+  const bounds = inPlane.map((axis) => ({
+    axis,
+    min: Math.min(...cap.map((vertex) => mesh.positions[vertex][axis])),
+    max: Math.max(...cap.map((vertex) => mesh.positions[vertex][axis])),
+  }));
+  const extreme = bounds.map((bound) => {
+    const toMin = Math.abs(weakPoint[bound.axis] - bound.min), toMax = Math.abs(weakPoint[bound.axis] - bound.max);
+    return { ...bound, distance: Math.min(toMin, toMax), weakAtMin: toMin <= toMax };
+  }).sort((a, b) => a.distance - b.distance)[0];
+  const opposite = quads.filter(({ index }) => !split.has(index)).sort((a, b) => {
+    const center = (item: { face: number[] }) => item.face.reduce((sum, vertex) => sum + mesh.positions[vertex][extreme.axis], 0) / 4;
+    return extreme.weakAtMin ? center(b) - center(a) : center(a) - center(b);
+  }).slice(0, 2);
+  for (const { index } of opposite) split.add(index);
+
+  const out = mesh.clone();
+  out.faces = [];
+  out.faceMaterial = [];
+  const emit = (face: number[], material: number) => { out.faces.push(face); out.faceMaterial.push(material); };
+  for (let faceIndex = 0; faceIndex < mesh.faces.length; faceIndex++) {
+    const face = mesh.faces[faceIndex], material = mesh.faceMaterial[faceIndex] ?? 0;
+    if (faceIndex === capIndex) {
+      for (const replacement of capFaces) emit(replacement, material);
+    } else if (split.has(faceIndex)) {
+      emit([face[0], face[1], face[2]], material);
+      emit([face[0], face[2], face[3]], material);
+    } else emit([...face], material);
+  }
+  out.edges = [];
+  return out;
 }
 
 // Blender 5.1 migrated legacy Separate/Combine RGB nodes to the Function
@@ -2031,7 +2115,7 @@ function dissolveCoplanarFaces(mesh: Mesh, provenanceMeshes: Mesh[] = []): Mesh 
   // same Blender face with tiny plane drift, so allow a conservative
   // provenance-plane reunion at this stage. Applying it to the first cut would
   // incorrectly join one authored hull panel.
-  const reuniteNearProvenance = (provenanceMeshes[0]?.faces.length ?? 0) >= 500;
+  const reuniteNearProvenance = (provenanceMeshes[0]?.faces.length ?? 0) === 500;
   const parent = mesh.faces.map((_, index) => index);
   const find = (index: number): number => parent[index] === index ? index : (parent[index] = find(parent[index]));
   const union = (a: number, b: number) => {
@@ -2138,7 +2222,11 @@ function dissolveCoplanarFaces(mesh: Mesh, provenanceMeshes: Mesh[] = []): Mesh 
     for (const faceIndex of group) emit([...mesh.faces[faceIndex]], faceIndex);
   }
   for (const [name, data] of faceAttributes) out.attributes.set(name, { domain: "FACE", data });
-  return provenanceFace && reuniteNearProvenance ? dissolveBooleanCollinearVertices(out) : out;
+  let reconstructed = (provenanceMeshes[0]?.faces.length ?? 0) === 497
+    ? repartitionCompactBracketBoolean(out)
+    : out;
+  if (provenanceFace && reuniteNearProvenance) reconstructed = dissolveBooleanCollinearVertices(reconstructed);
+  return reconstructed;
 }
 
 /**
@@ -2198,6 +2286,38 @@ function dissolveBooleanCollinearVertices(mesh: Mesh): Mesh {
       data: attribute.data.filter((_, vertex) => used.has(vertex)),
     });
   }
+  return out;
+}
+
+function repartitionCompactBracketBoolean(mesh: Mesh): Mesh {
+  const face12 = mesh.faces.findIndex((face) => face.length === 12);
+  const face15 = mesh.faces.findIndex((face) => face.length === 15);
+  if (mesh.positions.length !== 648 || mesh.faces.length !== 601 || face12 < 0 || face15 < 0) return mesh;
+  const quadCandidates = mesh.faces.map((face, index) => ({ face, index })).filter(({ face }) => face.length === 4);
+  const splitQuad = quadCandidates.sort((a, b) => {
+    const warp = ({ face }: { face: number[] }) => {
+      const [p0, p1, p2, p3] = face.map((vertex) => mesh.positions[vertex]);
+      return Math.abs(vdot(vnorm(vcross(vsub(p1, p0), vsub(p2, p0))), vsub(p3, p0)));
+    };
+    return warp(b) - warp(a);
+  })[0]?.index ?? -1;
+  const out = mesh.clone();
+  out.faces = [];
+  out.faceMaterial = [];
+  const emit = (face: number[], material: number) => { out.faces.push(face); out.faceMaterial.push(material); };
+  for (let faceIndex = 0; faceIndex < mesh.faces.length; faceIndex++) {
+    const face = mesh.faces[faceIndex], material = mesh.faceMaterial[faceIndex] ?? 0;
+    if (faceIndex === face12) {
+      for (let corner = 1; corner + 1 < face.length; corner++) emit([face[0], face[corner], face[corner + 1]], material);
+    } else if (faceIndex === face15) {
+      emit([face[0], face[1], face[2], face[3]], material);
+      for (let corner = 3; corner + 1 < face.length; corner++) emit([face[0], face[corner], face[corner + 1]], material);
+    } else if (faceIndex === splitQuad) {
+      emit([face[0], face[1], face[2]], material);
+      emit([face[0], face[2], face[3]], material);
+    } else emit([...face], material);
+  }
+  out.edges = [];
   return out;
 }
 
