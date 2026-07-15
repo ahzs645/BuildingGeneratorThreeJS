@@ -15,6 +15,10 @@ const n03dMetadata = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/n03d/shader-metadata.json",
   import.meta.url,
 )), "utf8"));
+const nodesNodeMetadata = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/nodes-node/shader-metadata.json",
+  import.meta.url,
+)), "utf8"));
 const catalog = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/chrome-assets/catalog.json",
   import.meta.url,
@@ -65,5 +69,19 @@ test("every N03D catalog entry loads its shared shader sidecar", () => {
   assert.equal(assets.length, 28);
   for (const asset of assets) {
     assert.equal(asset.shaderMetadata, "dojo/n03d/shader-metadata.json");
+  }
+});
+
+test("Nodes Node sidecar preserves its shared text shader groups", () => {
+  assert.equal(Object.keys(nodesNodeMetadata.materials).length, 22);
+  assert.equal(Object.keys(nodesNodeMetadata.shader_node_groups).length, 7);
+  assert.ok(nodesNodeMetadata.shader_node_groups["vtext.001"].nodes.length > 0);
+});
+
+test("every Nodes Node root loads its shared shader sidecar", () => {
+  const assets = catalog.filter((asset: any) => asset.dump.startsWith("dojo/nodes-node/"));
+  assert.equal(assets.length, 12);
+  for (const asset of assets) {
+    assert.equal(asset.shaderMetadata, "dojo/nodes-node/shader-metadata.json");
   }
 });

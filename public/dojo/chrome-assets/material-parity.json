@@ -64,6 +64,12 @@
     "sharedSidecar": "dojo/n03d/shader-metadata.json",
     "contents": "Fresh Blender 5.1 extraction shared by all 28 N03D printing catalog entries, including MatCap and index-viewer shader group internals."
   },
+  "nodesNodeShaderMetadata": {
+    "materials": 22,
+    "shaderGroups": 7,
+    "sharedSidecar": "dojo/nodes-node/shader-metadata.json",
+    "contents": "Fresh Blender 5.1 extraction shared by all 12 Nodes Node roots, including the vtext shader group internals."
+  },
   "packedStickerTextures": {
     "restored": 6,
     "missingFromBlend": ["tree sticky.png", "ryu electrify1.png"],
