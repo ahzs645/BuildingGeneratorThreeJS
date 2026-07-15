@@ -5,6 +5,7 @@
   "reachableGroups": 5,
   "reachableNodes": 64,
   "coverage": "100%",
+  "status": "exact-parity",
   "referenceFrame": 1,
   "driver": {
     "path": "bouncy header / Noise Texture / W",

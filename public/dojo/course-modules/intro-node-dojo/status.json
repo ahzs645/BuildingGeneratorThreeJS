@@ -5,6 +5,7 @@
   "reachableGroups": 3,
   "reachableNodes": 101,
   "coverage": "100%",
+  "status": "exact-topology-bounds-near",
   "referenceFrame": 1,
   "driver": {
     "path": "Geometry Nodes.032 / Noise Texture / W",

@@ -5,6 +5,7 @@
   "reachableGroups": 7,
   "reachableNodes": 163,
   "coverage": "100%",
+  "status": "exact-parity",
   "blender": {
     "verts": 3788,
     "faces": 2542,

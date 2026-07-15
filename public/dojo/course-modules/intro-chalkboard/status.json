@@ -5,6 +5,7 @@
   "reachableGroups": 7,
   "reachableNodes": 104,
   "coverage": "100%",
+  "status": "exact-topology-bounds-near",
   "blender": {
     "verts": 2226,
     "faces": 290,
