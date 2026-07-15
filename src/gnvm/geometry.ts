@@ -9,6 +9,9 @@ export interface Attribute {
   data: Elem[];
 }
 
+/** Previous-material membership retained across a Set Material operation. */
+export const MATERIAL_MATCH_ATTRIBUTE = "__gnvm_material_match";
+
 // A mesh with ngon faces. Corners are implied by faces (face i's corners are its
 // vertex-index list, in order).
 export class Mesh {
@@ -1077,7 +1080,8 @@ export function toTriSoup(g: Geometry): TriSoup {
     // Curve radius is a built-in evaluation property, not a generic mesh
     // attribute after Blender converts the curve component.
     if (name === "radius") continue;
-    if (name.startsWith("__") || !["POINT", "FACE", "CORNER"].includes(attribute.domain)) continue;
+    if ((name.startsWith("__") && name !== MATERIAL_MATCH_ATTRIBUTE)
+      || !["POINT", "FACE", "CORNER"].includes(attribute.domain)) continue;
     const itemSize: 1 | 3 = Array.isArray(attribute.data.find((value) => value !== undefined)) ? 3 : 1;
     const pointValues: Elem[] = source.positions.map(() => itemSize === 3 ? [0, 0, 0] as Vec3 : 0);
     const counts = source.positions.map(() => 0);

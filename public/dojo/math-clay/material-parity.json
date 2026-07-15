@@ -37,13 +37,17 @@
   },
   "browserContract": {
     "front": "The col point attribute feeds the Principled base color without an invented brightness band.",
-    "roughness": "The rough point attribute is used directly when present; otherwise the extracted 0.5 fallback is retained.",
-    "back": "Geometry Backfacing selects the material's black Emission branch. WebGL zeros outgoing light on backfaces so a physical specular lobe cannot leak through the emission result; the camera-facing surface remains on the Principled branch.",
-    "removedApproximation": "The former generated-Z sine band altered diffuse color and roughness even though Blender routes the Wave texture into Bump and procedural coat fields instead."
+    "proceduralField": "Generated coordinates are normalized with Blender's evaluated object bounds, mapped by 85.09765625, and evaluated through the extracted 3D White Noise plus distorted Z Wave topology. The Rec.709 color-to-float conversion and 0.8409091234207153 mix factor are preserved.",
+    "roughness": "The extracted procedural field drives the Principled roughness range from 1.0 to 0.50048828125.",
+    "bump": "The Wave-derived height range 0.98974609375 to 1.126708984375 is converted to a derivative normal perturbation using the current interpolated normal.",
+    "coat": "The same procedural field drives coat weight from -2.08837890625 to 1.2119140625 and coat roughness from 0.7176513671875 to 0.10000000149.",
+    "back": "Geometry Backfacing selects the extracted dark-HSV emission color and its Screen/Window diagonal Wave mask; only the narrow thresholded bands become black.",
+    "removedApproximation": "The former generated-Z sine approximation has been replaced by the extracted White Noise, distorted Wave, color-to-float, Bump, roughness, coat, and backface branches."
   },
-  "remaining": "Wave distortion, derivative Bump/bevel normals, and white-noise-driven coat fields remain separate front-facing material targets. They produce the dense authored layer-line relief visible in the scale-correct Blender reference.",
+  "remaining": "The Bevel For Eevee group's ambient-occlusion-assisted base normal remains separate from the implemented derivative Bump, and Three.js still uses its renderer-defined clearcoat Fresnel instead of Blender's extracted coat IOR 1.59000015. Final renderer-energy calibration and a quantitative stage-one image comparison remain pending.",
   "webglComparison": {
-    "status": "captured by connected root browser",
+    "phase": "baseline-before-stage-one-procedural-material",
+    "status": "captured before the extracted procedural shader contract was implemented",
     "browserRoute": "/chrome-assets?asset=math-clay-lorenze&capture=authored",
     "capture": "/private/tmp/math-clay-lorenze-browser-before.png",
     "surfaceMaskIou": 0.9922145240103396,
@@ -56,5 +60,16 @@
     "blackFractionDelta": -0.29944328029375816,
     "meanLuminanceDelta": 0.06320027028815364
   },
-  "interpretation": "The 0.9922 silhouette IoU confirms camera and exact geometry alignment. The browser preserves the authored front color and has no 0.5-threshold disagreement, while its brighter mean and missing fine line relief localize the remaining residual to renderer energy calibration and the unimplemented Wave/Bump and procedural coat fields."
+  "stageOneCapture": {
+    "browserRoute": "/chrome-assets?asset=math-clay-lorenze&capture=authored",
+    "capture": "/private/tmp/math-clay-lorenze-browser-stage1-768.png",
+    "resolution": [
+      768,
+      768
+    ],
+    "verts": 30644,
+    "faces": 30642,
+    "status": "The WebGL material compiled without warnings or errors and visibly restores the dense layer-line relief; quantitative image metrics are deferred until the remaining Bevel/coat-IOR renderer residual is isolated."
+  },
+  "interpretation": "The baseline 0.9922 silhouette IoU confirms camera and exact geometry alignment. Stage one now reproduces the authored Generated-coordinate White Noise/Wave field, derivative relief, dynamic roughness and coat fields, and patterned dark backface emission. The remaining visual residual is localized to the Bevel For Eevee base normal, exact coat Fresnel/IOR, and renderer-energy calibration."
 }

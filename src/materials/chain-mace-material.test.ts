@@ -36,14 +36,13 @@ test("extracts Chain & Mace's authored chrome.002 contract", () => {
   assert.equal(extractChainMaceMaterialConfig(dump, "grainy test"), null);
 });
 
-test("resolves both exact soup ranges to the evaluated chrome material", async () => {
+test("assigns the evaluated chrome material to every realized face", async () => {
   const result = await runGenerator(dump, { object: "spikey chain and mace.005", overrides: {} });
   assert.deepEqual(result.soup.stats, { verts: 120727, faces: 214718, tris: 225148 });
   assert.deepEqual(result.soup.groups, [
-    { start: 0, count: 55860, material: "chrome.002" },
-    { start: 55860, count: 619584, material: null },
+    { start: 0, count: 675444, material: "chrome.002" },
   ]);
-  assert.deepEqual(Object.keys(result.soup.attributes), ["1"]);
+  assert.deepEqual(Object.keys(result.soup.attributes), ["1", "__gnvm_material_match"]);
   assert.equal(result.soup.attributes["1"].itemSize, 1);
   assert.equal(result.soup.attributes["1"].data.filter((value) => value === 0).length, 11781);
   assert.equal(result.soup.attributes["1"].data.filter((value) => value === 1).length, 108946);
@@ -53,6 +52,10 @@ test("resolves both exact soup ranges to the evaluated chrome material", async (
   geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));
   geometry.setIndex(new THREE.BufferAttribute(result.soup.indices, 1));
   geometry.setAttribute("1", new THREE.BufferAttribute(result.soup.attributes["1"].data, 1));
+  geometry.setAttribute("__gnvm_material_match", new THREE.BufferAttribute(
+    result.soup.attributes.__gnvm_material_match.data,
+    1,
+  ));
   const roughness = attachChainMaceRoughnessAttribute(geometry, result.soup.groups);
   assert.equal(roughness?.count, 120727);
   assert.equal(Array.from(roughness?.array ?? []).filter((value) => value === 2).length, 10629);

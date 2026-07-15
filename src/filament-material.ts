@@ -22,6 +22,25 @@ export type FilamentMaterialConfig = {
   brightValue: number;
 };
 
+export type FilamentWaveConfig = {
+  distortion: number;
+  detail: number;
+  detailScale: number;
+  detailRoughness: number;
+  direction: "Z" | "DIAGONAL";
+};
+
+export type FilamentBumpGlslConfig = {
+  prefix: string;
+  coordinate: string;
+  heightFunction: (coordinate: string) => string;
+  strength: number;
+  distance: number;
+  filterWidth: number;
+  invert: boolean;
+  baseNormal?: string;
+};
+
 function input(node: RawNode | undefined, name: string, fallback: number): number {
   const value = Number(node?.inputs?.find((socket) => socket.identifier === name || socket.name === name)?.value);
   return Number.isFinite(value) ? value : fallback;
@@ -99,18 +118,59 @@ function rotateLeft32(value: number, amount: number): number {
   return ((value << amount) | (value >>> (32 - amount))) >>> 0;
 }
 
-/** A compact lookup3-style integer mixer, independently expressed for the browser VM. */
-function hashLattice3(x: number, y: number, z: number): number {
-  let a = (0xdeadbeef + (3 << 2) + 13 + (x >>> 0)) >>> 0;
-  let b = (0xdeadbeef + (3 << 2) + 13 + (y >>> 0)) >>> 0;
-  let c = (0xdeadbeef + (3 << 2) + 13 + (z >>> 0)) >>> 0;
+function finalizeHash(a: number, b: number, c: number): [number, number, number] {
   c = ((c ^ b) - rotateLeft32(b, 14)) >>> 0;
   a = ((a ^ c) - rotateLeft32(c, 11)) >>> 0;
   b = ((b ^ a) - rotateLeft32(a, 25)) >>> 0;
   c = ((c ^ b) - rotateLeft32(b, 16)) >>> 0;
   a = ((a ^ c) - rotateLeft32(c, 4)) >>> 0;
   b = ((b ^ a) - rotateLeft32(a, 14)) >>> 0;
-  return ((c ^ b) - rotateLeft32(b, 24)) >>> 0;
+  c = ((c ^ b) - rotateLeft32(b, 24)) >>> 0;
+  return [a, b, c];
+}
+
+function mixHash(a: number, b: number, c: number): [number, number, number] {
+  a = (a - c) >>> 0; a = (a ^ rotateLeft32(c, 4)) >>> 0; c = (c + b) >>> 0;
+  b = (b - a) >>> 0; b = (b ^ rotateLeft32(a, 6)) >>> 0; a = (a + c) >>> 0;
+  c = (c - b) >>> 0; c = (c ^ rotateLeft32(b, 8)) >>> 0; b = (b + a) >>> 0;
+  a = (a - c) >>> 0; a = (a ^ rotateLeft32(c, 16)) >>> 0; c = (c + b) >>> 0;
+  b = (b - a) >>> 0; b = (b ^ rotateLeft32(a, 19)) >>> 0; a = (a + c) >>> 0;
+  c = (c - b) >>> 0; c = (c ^ rotateLeft32(b, 4)) >>> 0; b = (b + a) >>> 0;
+  return [a, b, c];
+}
+
+/** A compact lookup3-style integer mixer, independently expressed for the browser VM. */
+function hashLattice3(x: number, y: number, z: number): number {
+  const seed = (0xdeadbeef + (3 << 2) + 13) >>> 0;
+  return finalizeHash((seed + (x >>> 0)) >>> 0, (seed + (y >>> 0)) >>> 0, (seed + (z >>> 0)) >>> 0)[2];
+}
+
+function hashLattice4(x: number, y: number, z: number, w: number): number {
+  const seed = (0xdeadbeef + (4 << 2) + 13) >>> 0;
+  const mixed = mixHash((seed + (x >>> 0)) >>> 0, (seed + (y >>> 0)) >>> 0, (seed + (z >>> 0)) >>> 0);
+  return finalizeHash((mixed[0] + (w >>> 0)) >>> 0, mixed[1], mixed[2])[2];
+}
+
+function float32Bits(value: number): number {
+  const buffer = new ArrayBuffer(4);
+  const view = new DataView(buffer);
+  view.setFloat32(0, Math.fround(value), true);
+  return view.getUint32(0, true);
+}
+
+/** Blender-compatible 3D White Noise Color, keyed by the exact float32 coordinate bits. */
+export function filamentWhiteNoise3(point: readonly number[]): [number, number, number] {
+  const x = float32Bits(point[0]);
+  const y = float32Bits(point[1]);
+  const z = float32Bits(point[2]);
+  const one = float32Bits(1);
+  const two = float32Bits(2);
+  const denominator = 0xffffffff;
+  return [
+    hashLattice3(x, y, z) / denominator,
+    hashLattice4(x, y, z, one) / denominator,
+    hashLattice4(x, y, z, two) / denominator,
+  ];
 }
 
 function fade(value: number): number {
@@ -147,24 +207,144 @@ export function filamentSignedNoise3(point: readonly number[]): number {
   return 0.982 * mix(z0, z1, weight[2]);
 }
 
-export function filamentWaveHeightAtGenerated(generated: readonly number[], config: FilamentMaterialConfig): number {
-  const point = generated.map((value) => (value * config.layerScale + 1e-6) * 0.999999);
+export function filamentWaveHeightAtCoordinate(
+  coordinate: readonly number[],
+  scale: number,
+  config: FilamentWaveConfig,
+): number {
+  const point = coordinate.map((value) => (value * scale + 1e-6) * 0.999999);
   let amplitude = 1;
-  let frequency = config.layerDetailScale;
+  let frequency = config.detailScale;
   let noise = 0;
   let normalization = 0;
-  for (let octave = 0; octave <= Math.floor(config.layerDetail); octave++) {
+  for (let octave = 0; octave <= Math.floor(config.detail); octave++) {
     noise += amplitude * filamentSignedNoise3(point.map((value) => value * frequency));
     normalization += amplitude;
-    amplitude *= config.layerDetailRoughness;
+    amplitude *= config.detailRoughness;
     frequency *= 2;
   }
-  const phase = 20 * point[2] + config.layerDistortion * noise / normalization;
+  const phase = (config.direction === "DIAGONAL"
+    ? 10 * (point[0] + point[1] + point[2])
+    : 20 * point[2]) + config.distortion * noise / normalization;
   return 0.5 + 0.5 * Math.sin(phase - Math.PI / 2);
+}
+
+export function filamentWaveHeightAtGenerated(generated: readonly number[], config: FilamentMaterialConfig): number {
+  return filamentWaveHeightAtCoordinate(generated, config.layerScale, {
+    distortion: config.layerDistortion,
+    detail: config.layerDetail,
+    detailScale: config.layerDetailScale,
+    detailRoughness: config.layerDetailRoughness,
+    direction: "Z",
+  });
 }
 
 function glsl(value: number): string {
   return Number.isInteger(value) ? value.toFixed(1) : `${value}`;
+}
+
+/** Shared clean-room GLSL primitives for Blender-compatible gradient and white noise. */
+export function filamentNoiseGlsl(prefix: string, includeWhiteNoise = false): string {
+  const hash4 = includeWhiteNoise ? `
+uvec3 ${prefix}MixHash(uvec3 value) {
+  value.x -= value.z; value.x ^= ${prefix}Rotl(value.z, 4u); value.z += value.y;
+  value.y -= value.x; value.y ^= ${prefix}Rotl(value.x, 6u); value.x += value.z;
+  value.z -= value.y; value.z ^= ${prefix}Rotl(value.y, 8u); value.y += value.x;
+  value.x -= value.z; value.x ^= ${prefix}Rotl(value.z, 16u); value.z += value.y;
+  value.y -= value.x; value.y ^= ${prefix}Rotl(value.x, 19u); value.x += value.z;
+  value.z -= value.y; value.z ^= ${prefix}Rotl(value.y, 4u); value.y += value.x;
+  return value;
+}
+uint ${prefix}Hash4(uvec4 key) {
+  uvec3 value = uvec3(0xdeadbeefu + 16u + 13u) + key.xyz;
+  value = ${prefix}MixHash(value); value.x += key.w;
+  return ${prefix}FinalizeHash(value).z;
+}
+vec3 ${prefix}WhiteNoise3(vec3 point) {
+  uvec3 key = floatBitsToUint(point);
+  float denominator = float(0xFFFFFFFFu);
+  return vec3(
+    float(${prefix}Hash3(key)) / denominator,
+    float(${prefix}Hash4(uvec4(key, floatBitsToUint(1.0)))) / denominator,
+    float(${prefix}Hash4(uvec4(key, floatBitsToUint(2.0)))) / denominator);
+}` : "";
+  return `uint ${prefix}Rotl(uint value, uint amount) { return (value << amount) | (value >> (32u - amount)); }
+uvec3 ${prefix}FinalizeHash(uvec3 value) {
+  value.z = (value.z ^ value.y) - ${prefix}Rotl(value.y, 14u);
+  value.x = (value.x ^ value.z) - ${prefix}Rotl(value.z, 11u);
+  value.y = (value.y ^ value.x) - ${prefix}Rotl(value.x, 25u);
+  value.z = (value.z ^ value.y) - ${prefix}Rotl(value.y, 16u);
+  value.x = (value.x ^ value.z) - ${prefix}Rotl(value.z, 4u);
+  value.y = (value.y ^ value.x) - ${prefix}Rotl(value.x, 14u);
+  value.z = (value.z ^ value.y) - ${prefix}Rotl(value.y, 24u);
+  return value;
+}
+uint ${prefix}Hash3(uvec3 key) {
+  return ${prefix}FinalizeHash(uvec3(0xdeadbeefu + 12u + 13u) + key).z;
+}
+uint ${prefix}Hash(uvec3 key) { return ${prefix}Hash3(key); }
+float ${prefix}Fade(float value) { return value * value * value * (value * (value * 6.0 - 15.0) + 10.0); }
+float ${prefix}Gradient(uint hash, vec3 point) {
+  uint h = hash & 15u;
+  float u = h < 8u ? point.x : point.y;
+  float v = h < 4u ? point.y : ((h == 12u || h == 14u) ? point.x : point.z);
+  return ((h & 1u) != 0u ? -u : u) + ((h & 2u) != 0u ? -v : v);
+}
+float ${prefix}Noise(vec3 point) {
+  ivec3 cell = ivec3(floor(point)); vec3 local = fract(point);
+  vec3 w = vec3(${prefix}Fade(local.x), ${prefix}Fade(local.y), ${prefix}Fade(local.z));
+  float n000 = ${prefix}Gradient(${prefix}Hash(uvec3(cell + ivec3(0, 0, 0))), local - vec3(0, 0, 0));
+  float n100 = ${prefix}Gradient(${prefix}Hash(uvec3(cell + ivec3(1, 0, 0))), local - vec3(1, 0, 0));
+  float n010 = ${prefix}Gradient(${prefix}Hash(uvec3(cell + ivec3(0, 1, 0))), local - vec3(0, 1, 0));
+  float n110 = ${prefix}Gradient(${prefix}Hash(uvec3(cell + ivec3(1, 1, 0))), local - vec3(1, 1, 0));
+  float n001 = ${prefix}Gradient(${prefix}Hash(uvec3(cell + ivec3(0, 0, 1))), local - vec3(0, 0, 1));
+  float n101 = ${prefix}Gradient(${prefix}Hash(uvec3(cell + ivec3(1, 0, 1))), local - vec3(1, 0, 1));
+  float n011 = ${prefix}Gradient(${prefix}Hash(uvec3(cell + ivec3(0, 1, 1))), local - vec3(0, 1, 1));
+  float n111 = ${prefix}Gradient(${prefix}Hash(uvec3(cell + ivec3(1, 1, 1))), local - vec3(1, 1, 1));
+  return 0.982 * mix(mix(mix(n000, n100, w.x), mix(n010, n110, w.x), w.y),
+                     mix(mix(n001, n101, w.x), mix(n011, n111, w.x), w.y), w.z);
+}${hash4}`;
+}
+
+export function filamentWaveFunctionGlsl(
+  prefix: string,
+  functionName: string,
+  config: FilamentWaveConfig,
+): string {
+  const octaves = Math.max(1, Math.floor(config.detail) + 1);
+  const terms = Array.from({ length: octaves }, (_, octave) => {
+    const amplitude = config.detailRoughness ** octave;
+    const frequency = config.detailScale * 2 ** octave;
+    return `${glsl(amplitude)} * ${prefix}Noise(point * ${glsl(frequency)})`;
+  });
+  const normalization = Array.from({ length: octaves }, (_, octave) => config.detailRoughness ** octave)
+    .reduce((sum, value) => sum + value, 0);
+  const phase = config.direction === "DIAGONAL"
+    ? "10.0 * (point.x + point.y + point.z)"
+    : "20.0 * point.z";
+  return `float ${functionName}(vec3 coordinate, float scale) {
+  vec3 point = (coordinate * scale + vec3(0.000001)) * 0.999999;
+  float noise = ${terms.join("\n    + ")};
+  float phase = ${phase} + ${glsl(config.distortion)} * noise / ${glsl(normalization)};
+  return 0.5 + 0.5 * sin(phase - 1.5707963267948966);
+}`;
+}
+
+/** Blender's derivative Bump core, parameterized so N03D and Math can share it. */
+export function filamentBumpGlsl(config: FilamentBumpGlslConfig): string {
+  const baseNormal = config.baseNormal ?? "normal";
+  return `float ${config.prefix}H0 = ${config.heightFunction(config.coordinate)};
+float ${config.prefix}Hx = ${config.heightFunction(`${config.coordinate} + dFdx(${config.coordinate}) * ${glsl(config.filterWidth)}`)};
+float ${config.prefix}Hy = ${config.heightFunction(`${config.coordinate} + dFdy(${config.coordinate}) * ${glsl(config.filterWidth)}`)};
+vec3 ${config.prefix}P = -vViewPosition;
+vec3 ${config.prefix}DPdx = dFdx(${config.prefix}P), ${config.prefix}DPdy = dFdy(${config.prefix}P);
+vec3 ${config.prefix}Rx = cross(${config.prefix}DPdy, ${baseNormal}), ${config.prefix}Ry = cross(${baseNormal}, ${config.prefix}DPdx);
+float ${config.prefix}Det = dot(${config.prefix}DPdx, ${config.prefix}Rx);
+vec3 ${config.prefix}Surfgrad = (${config.prefix}Hx - ${config.prefix}H0) * ${config.prefix}Rx + (${config.prefix}Hy - ${config.prefix}H0) * ${config.prefix}Ry;
+float ${config.prefix}Distance = ${config.invert ? "-" : ""}${glsl(config.distance)} * (gl_FrontFacing ? 1.0 : -1.0);
+vec3 ${config.prefix}Perturbed = normalize(${glsl(config.filterWidth)} * abs(${config.prefix}Det) * ${baseNormal}
+  - ${config.prefix}Distance * sign(${config.prefix}Det) * ${config.prefix}Surfgrad);
+normal = normalize(mix(${baseNormal}, ${config.prefix}Perturbed, max(${glsl(config.strength)}, 0.0)));`;
 }
 
 /**
@@ -208,64 +388,29 @@ vFilamentGenerated = (position - vec3(${bounds.min.map(glsl).join(", ")})) / vec
 varying vec3 vFilamentColor;
 varying vec3 vFilamentGenerated;
 
-uint filamentRotl(uint value, uint amount) { return (value << amount) | (value >> (32u - amount)); }
-uint filamentHash(uvec3 key) {
-  uint a = 0xdeadbeefu + 12u + 13u + key.x;
-  uint b = 0xdeadbeefu + 12u + 13u + key.y;
-  uint c = 0xdeadbeefu + 12u + 13u + key.z;
-  c = (c ^ b) - filamentRotl(b, 14u); a = (a ^ c) - filamentRotl(c, 11u);
-  b = (b ^ a) - filamentRotl(a, 25u); c = (c ^ b) - filamentRotl(b, 16u);
-  a = (a ^ c) - filamentRotl(c, 4u); b = (b ^ a) - filamentRotl(a, 14u);
-  return (c ^ b) - filamentRotl(b, 24u);
-}
-float filamentFade(float value) { return value * value * value * (value * (value * 6.0 - 15.0) + 10.0); }
-float filamentGradient(uint hash, vec3 point) {
-  uint h = hash & 15u;
-  float u = h < 8u ? point.x : point.y;
-  float v = h < 4u ? point.y : ((h == 12u || h == 14u) ? point.x : point.z);
-  return ((h & 1u) != 0u ? -u : u) + ((h & 2u) != 0u ? -v : v);
-}
-float filamentNoise(vec3 point) {
-  ivec3 cell = ivec3(floor(point)); vec3 local = fract(point);
-  vec3 w = vec3(filamentFade(local.x), filamentFade(local.y), filamentFade(local.z));
-  float n000 = filamentGradient(filamentHash(uvec3(cell + ivec3(0, 0, 0))), local - vec3(0, 0, 0));
-  float n100 = filamentGradient(filamentHash(uvec3(cell + ivec3(1, 0, 0))), local - vec3(1, 0, 0));
-  float n010 = filamentGradient(filamentHash(uvec3(cell + ivec3(0, 1, 0))), local - vec3(0, 1, 0));
-  float n110 = filamentGradient(filamentHash(uvec3(cell + ivec3(1, 1, 0))), local - vec3(1, 1, 0));
-  float n001 = filamentGradient(filamentHash(uvec3(cell + ivec3(0, 0, 1))), local - vec3(0, 0, 1));
-  float n101 = filamentGradient(filamentHash(uvec3(cell + ivec3(1, 0, 1))), local - vec3(1, 0, 1));
-  float n011 = filamentGradient(filamentHash(uvec3(cell + ivec3(0, 1, 1))), local - vec3(0, 1, 1));
-  float n111 = filamentGradient(filamentHash(uvec3(cell + ivec3(1, 1, 1))), local - vec3(1, 1, 1));
-  return 0.982 * mix(mix(mix(n000, n100, w.x), mix(n010, n110, w.x), w.y),
-                     mix(mix(n001, n101, w.x), mix(n011, n111, w.x), w.y), w.z);
-}
-float filamentWaveHeight(vec3 generated) {
-  vec3 point = (generated * ${glsl(config.layerScale)} + vec3(0.000001)) * 0.999999;
-  float noise = filamentNoise(point * ${glsl(config.layerDetailScale)})
-    + ${glsl(config.layerDetailRoughness)} * filamentNoise(point * ${glsl(config.layerDetailScale * 2)})
-    + ${glsl(config.layerDetailRoughness ** 2)} * filamentNoise(point * ${glsl(config.layerDetailScale * 4)});
-  float normalization = 1.0 + ${glsl(config.layerDetailRoughness)} + ${glsl(config.layerDetailRoughness ** 2)};
-  float phase = 20.0 * point.z + ${glsl(config.layerDistortion)} * noise / normalization;
-  return 0.5 + 0.5 * sin(phase - 1.5707963267948966);
-}`)
+${filamentNoiseGlsl("filament")}
+${filamentWaveFunctionGlsl("filament", "filamentWaveHeight", {
+    distortion: config.layerDistortion,
+    detail: config.layerDetail,
+    detailScale: config.layerDetailScale,
+    detailRoughness: config.layerDetailRoughness,
+    direction: "Z",
+  })}`)
       .replace("#include <color_fragment>", `#include <color_fragment>
 vec3 filamentFront = max(vFilamentColor, vec3(0.0));
 float filamentValue = max(max(filamentFront.r, filamentFront.g), filamentFront.b);
 vec3 filamentBack = vec3(filamentValue * ${glsl(config.darkValue)});
 diffuseColor.rgb = gl_FrontFacing ? filamentFront : filamentBack;`)
       .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
-float filamentH0 = filamentWaveHeight(vFilamentGenerated);
-float filamentHx = filamentWaveHeight(vFilamentGenerated + dFdx(vFilamentGenerated) * ${glsl(config.bumpFilterWidth)});
-float filamentHy = filamentWaveHeight(vFilamentGenerated + dFdy(vFilamentGenerated) * ${glsl(config.bumpFilterWidth)});
-vec3 filamentP = -vViewPosition;
-vec3 filamentDPdx = dFdx(filamentP), filamentDPdy = dFdy(filamentP);
-vec3 filamentRx = cross(filamentDPdy, normal), filamentRy = cross(normal, filamentDPdx);
-float filamentDet = dot(filamentDPdx, filamentRx);
-vec3 filamentSurfgrad = (filamentHx - filamentH0) * filamentRx + (filamentHy - filamentH0) * filamentRy;
-float filamentDistance = ${config.bumpInvert ? "-" : ""}${glsl(config.bumpDistance)} * (gl_FrontFacing ? 1.0 : -1.0);
-vec3 filamentPerturbed = normalize(${glsl(config.bumpFilterWidth)} * abs(filamentDet) * normal
-  - filamentDistance * sign(filamentDet) * filamentSurfgrad);
-normal = normalize(mix(normal, filamentPerturbed, max(${glsl(config.bumpStrength)}, 0.0)));`);
+${filamentBumpGlsl({
+    prefix: "filament",
+    coordinate: "vFilamentGenerated",
+    heightFunction: (coordinate) => `filamentWaveHeight(${coordinate}, ${glsl(config.layerScale)})`,
+    strength: config.bumpStrength,
+    distance: config.bumpDistance,
+    filterWidth: config.bumpFilterWidth,
+    invert: config.bumpInvert,
+  })}`);
   };
   material.customProgramCacheKey = () => `n03d-filament-${materialName}-${config.colorAttribute}-${bounds.min.join(",")}-${bounds.max.join(",")}-v3`;
   return material;

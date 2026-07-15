@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { Dump } from "./gnvm";
+import { MATERIAL_MATCH_ATTRIBUTE } from "./gnvm/geometry";
 import { extractChromeCrayonMaterialConfig, type ChromeCrayonMaterialConfig } from "./chrome-crayon-material";
 
 type MaterialGroup = { start: number; count: number; material: string | null };
@@ -37,6 +38,14 @@ export function attachChainMaceRoughnessAttribute(geometry: THREE.BufferGeometry
   const index = geometry.getIndex();
   if (!position || !index) return null;
   const roughness = new Float32Array(position.count);
+  const materialMatch = geometry.getAttribute(MATERIAL_MATCH_ATTRIBUTE);
+  if (materialMatch?.itemSize === 1 && materialMatch.count === position.count) {
+    for (let vertex = 0; vertex < position.count; vertex++)
+      if (materialMatch.getX(vertex) > 0.5) roughness[vertex] = 2;
+    const attribute = new THREE.BufferAttribute(roughness, 1);
+    geometry.setAttribute("rough", attribute);
+    return attribute;
+  }
   for (const group of groups) {
     if (group.material !== "chrome.002") continue;
     const end = Math.min(group.start + group.count, index.count);

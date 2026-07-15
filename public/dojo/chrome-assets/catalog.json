@@ -82,7 +82,7 @@
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/ui-window-generator.png",
     "blenderStats": { "verts": 35886, "faces": 33474 },
-    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. Authored topology matches Blender exactly at 35,886 / 33,474, with local bounds within 0.6513 units. The subdivide=0 sweep remains partial because its normalized-noise selection differs.",
+    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. Authored topology matches Blender exactly at 35,886 / 33,474, with local bounds within 0.6513 units. Both subdivision validation cases are also topology-exact; subdivide=0 is within 0.0101 bounds units.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

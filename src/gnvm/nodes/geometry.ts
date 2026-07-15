@@ -1,6 +1,6 @@
 // Geometry-operation handlers.
 import { Field, Vec3, asVec3, asNum, vadd } from "../core";
-import { Geometry, Mesh, InstanceRef, buildTopology, inverseTransformPoint, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint, transformPointFloat32, triangulateFaceIndices } from "../geometry";
+import { Geometry, Mesh, InstanceRef, MATERIAL_MATCH_ATTRIBUTE, buildTopology, inverseTransformPoint, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint, transformPointFloat32, triangulateFaceIndices } from "../geometry";
 import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitives";
 import { reg, EvalAPI, DUMP_CONTEXT } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
@@ -457,15 +457,58 @@ reg("GeometryNodeJoinGeometry", (api) => {
 });
 
 // ---- materials ------------------------------------------------------------
+/**
+ * Apply a mesh-component operation through an instance hierarchy without
+ * realizing it. Geometry Nodes lets Set Material and Store Named Attribute
+ * operate on geometry carried by instances; keeping the hierarchy intact is
+ * important for later transform and attribute propagation. Shared instance
+ * payloads are mapped once, matching Blender's shared geometry components and
+ * avoiding a separate copy for every instance reference.
+ */
+function mapInstancePayloadMeshes(source: Geometry, operation: (geometry: Geometry) => void): Geometry {
+  const mapped = new WeakMap<Geometry, Geometry>();
+  const visit = (input: Geometry): Geometry => {
+    const cached = mapped.get(input);
+    if (cached) return cached;
+    const output = input.clone();
+    mapped.set(input, output);
+    output.instances = output.instances.map((instance, index) => ({
+      ...instance,
+      geometry: visit(input.instances[index].geometry),
+    }));
+    operation(output);
+    return output;
+  };
+  return visit(source);
+}
+
 reg("GeometryNodeSetMaterial", (api) => {
-  const g = api.geo("Geometry").clone();
   const mat = api.ref("Material");
-  if (g.mesh) {
-    const slot = g.mesh.ensureMaterialSlot(mat?.name ?? null);
-    const ctx = makeFieldCtx(g, "FACE");
-    const sel = api.field("Selection").array(ctx);
-    for (let fi = 0; fi < g.mesh.faces.length; fi++) if (asNum(sel[fi] ?? 1)) g.mesh.faceMaterial[fi] = slot;
-  }
+  const selection = api.field("Selection");
+  const g = mapInstancePayloadMeshes(api.geo("Geometry"), (geometry) => {
+    if (!geometry.mesh) return;
+    const target = mat?.name ?? null;
+    const ctx = makeFieldCtx(geometry, "FACE");
+    const sel = selection.array(ctx);
+    // Preserve whether a selected face already carried the assigned material.
+    // This is source provenance, not a shader approximation: realization can
+    // otherwise collapse a mixed existing/null instance hierarchy into one
+    // material slot. Chain & Mace uses that distinction for its mace-only
+    // roughness field after Blender assigns chrome to the complete result.
+    if (geometry.mesh.materialSlots.includes(target)) {
+      const existing = geometry.mesh.attributes.get(MATERIAL_MATCH_ATTRIBUTE);
+      const data = existing?.domain === "FACE" ? [...existing.data] : [];
+      while (data.length < geometry.mesh.faces.length) data.push(0);
+      for (let fi = 0; fi < geometry.mesh.faces.length; fi++) if (asNum(sel[fi] ?? 1)) {
+        const previous = geometry.mesh.materialSlots[geometry.mesh.faceMaterial[fi] ?? 0] ?? null;
+        data[fi] = previous === target ? 1 : 0;
+      }
+      geometry.mesh.attributes.set(MATERIAL_MATCH_ATTRIBUTE, { domain: "FACE", data });
+    }
+    const slot = geometry.mesh.ensureMaterialSlot(target);
+    for (let fi = 0; fi < geometry.mesh.faces.length; fi++)
+      if (asNum(sel[fi] ?? 1)) geometry.mesh.faceMaterial[fi] = slot;
+  });
   return { Geometry: g };
 });
 
@@ -1025,11 +1068,17 @@ reg("GeometryNodeBoundBox", (api) => {
   // radius in every axis, even before the curve has a bevel/profile. Radius is
   // implicitly 1 when the attribute is absent. Text Soup uses that two-unit
   // diameter as padding when sizing its marching-squares sampling grid.
-  const radius = g.curveAttributes.get("radius");
+  // Mesh to Curve produces an evaluated wire whose Bounding Box is based on
+  // its positions only. Blender does not pad those wires by the generic
+  // Curves radius; doing so enlarged UI Window's two sampling grids by almost
+  // exactly one unit per side. Native/font Curves still use their radius.
+  const radius = g.curveAttributes.has("__gnvm_planar_mesh_curve")
+    ? null
+    : g.curveAttributes.get("radius");
   let pointIndex = 0;
   for (const spline of g.curves) {
     for (const p of spline.points) {
-      const r = Math.abs(asNum(radius?.data[pointIndex] ?? 1));
+      const r = radius === null ? 0 : Math.abs(asNum(radius?.data[pointIndex] ?? 1));
       count++;
       for (let axis = 0; axis < 3; axis++) {
         min[axis] = Math.min(min[axis], p[axis] - r);
@@ -1051,12 +1100,13 @@ const passGeometry = (api: EvalAPI) => ({ Geometry: api.geo("Geometry") });
 reg("GeometryNodeSetShadeSmooth", passGeometry);
 reg("GeometryNodeSetID", passGeometry);
 reg("GeometryNodeStoreNamedAttribute", (api) => {
-  const g = api.geo("Geometry").clone();
   const name = api.str("Name");
   const domain = (api.prop<string>("domain", "POINT") as any);
-  if (g.mesh && name) {
-    const ctx = makeFieldCtx(g, domain);
-    g.mesh.attributes.set(name, { domain, data: api.field("Value").array(ctx) });
-  }
+  const value = api.field("Value");
+  const g = mapInstancePayloadMeshes(api.geo("Geometry"), (geometry) => {
+    if (!geometry.mesh || !name) return;
+    const ctx = makeFieldCtx(geometry, domain);
+    geometry.mesh.attributes.set(name, { domain, data: value.array(ctx) });
+  });
   return { Geometry: g };
 });

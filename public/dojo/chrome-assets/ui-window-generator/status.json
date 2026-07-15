@@ -6,5 +6,5 @@
   "blender": { "verts": 35886, "faces": 33474 },
   "gnvm": { "verts": 35886, "faces": 33474 },
   "font": { "source": "dojo/fonts/pixels.ttf", "family": "Pixels Medium", "fallback": "embedded Blender-extracted outlines" },
-  "validation": "The page loads the supplied Pixels Medium TTF and visibly reports when it falls back to the embedded outline atlas. Preserving its grid corners and collapsing repeated bridge points makes the authored result and subdivide=1 sweep topology-exact. Authored local bounds remain within 0.6513 units; subdivide=0 is still partial because its normalized-noise selection differs."
+  "validation": "The page loads the supplied Pixels Medium TTF and visibly reports when it falls back to the embedded outline atlas. Preserving its grid corners and collapsing repeated bridge points keeps the supplied title topology exact. Mesh-to-Curve provenance now prevents Blender's positional wire bounds from receiving generic curve-radius padding, making the authored, subdivide=1, and subdivide=0 sweeps topology-exact; their maximum local-bounds differences are 0.6513, 0.9996, and 0.0101 units."
 }

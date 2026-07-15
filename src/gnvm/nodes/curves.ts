@@ -887,6 +887,14 @@ reg("GeometryNodeMeshToCurve", (api) => {
       domain: "POINT",
       data: chains.flatMap((chain) => chain.spline.points.map(() => 1)),
     });
+    // Keep source-component provenance even when the dump omitted authored
+    // edge-order metadata and therefore cannot provide imported tangents.
+    // Bounding Box treats Mesh-to-Curve wires as positional wires rather than
+    // padding them by the generic Curves radius.
+    out.curveAttributes.set("__gnvm_planar_mesh_curve", {
+      domain: "POINT",
+      data: chains.flatMap((chain) => chain.spline.points.map(() => 1)),
+    });
     // Blender's Mesh to Curve creates evaluated poly tangents by bisecting the
     // normalized incident edge directions. Preserve that field explicitly so
     // Curve to Mesh does not replace it with a length-weighted chord tangent.
@@ -907,7 +915,6 @@ reg("GeometryNodeMeshToCurve", (api) => {
     }
     if (meshTangents.length) {
       out.curveAttributes.set("__curve_tangent", { domain: "POINT", data: meshTangents });
-      out.curveAttributes.set("__gnvm_planar_mesh_curve", { domain: "POINT", data: meshTangents.map(() => 1) });
     }
     // carry the mesh's POINT attributes onto the flattened curve control points
     const pointAttrs = [...g.mesh.attributes].filter(([, a]) => a.domain === "POINT");
