@@ -249,6 +249,10 @@ export interface InstanceRef {
   position: Vec3;
   rotation: Vec3; // euler XYZ radians
   scale: Vec3;
+  // Preserve an evaluated Relative Object/Collection Info affine transform.
+  // Blender realizes the stored matrix directly; decomposing it to Euler and
+  // recomposing a quaternion changes axis-aligned quarter turns by several ULPs.
+  transformMatrix?: number[][];
   attributes?: Map<string, Elem>; // per-instance attribute values (broadcast on realize)
 }
 
@@ -303,6 +307,7 @@ export class Geometry {
     g.instances = this.instances.map((i) => ({
       ...i,
       position: [...i.position] as Vec3, rotation: [...i.rotation] as Vec3, scale: [...i.scale] as Vec3,
+      transformMatrix: i.transformMatrix?.map((row) => [...row]),
       attributes: i.attributes ? new Map(i.attributes) : undefined,
     }));
     for (const [k, a] of this.curveAttributes) g.curveAttributes.set(k, { domain: a.domain, data: [...a.data] });
@@ -617,6 +622,18 @@ export function transformPointFloat32(p: Vec3, pos: Vec3, rot: Vec3, scl: Vec3):
   ];
 }
 
+/** Apply an extracted Blender float32 affine matrix to a geometry point. */
+export function transformPointMatrixFloat32(p: Vec3, matrix: number[][]): Vec3 {
+  const f = Math.fround;
+  const x = f(p[0]), y = f(p[1]), z = f(p[2]);
+  return [0, 1, 2].map((axis) => {
+    const row = matrix[axis] ?? [];
+    let value = f(f(f(row[0] ?? 0) * x) + f(f(row[1] ?? 0) * y));
+    value = f(value + f(f(row[2] ?? 0) * z));
+    return f(value + f(row[3] ?? 0));
+  }) as Vec3;
+}
+
 const zeroLike = (e: Elem | undefined): Elem => (Array.isArray(e) ? [0, 0, 0] : 0);
 
 // Merge mesh b into a, offsetting vertex indices; preserves materials + attributes.
@@ -709,7 +726,9 @@ export function realizeInstances(g: Geometry): Geometry {
     const rg = realizeInstances(inst.geometry); // recursive
     if (rg.mesh) {
       const tm = rg.mesh.clone();
-      tm.positions = tm.positions.map((p) => transformPointFloat32(p, inst.position, inst.rotation, inst.scale));
+      tm.positions = tm.positions.map((p) => inst.transformMatrix
+        ? transformPointMatrixFloat32(p, inst.transformMatrix)
+        : transformPointFloat32(p, inst.position, inst.rotation, inst.scale));
       const baseV = mesh.positions.length;
       mergeMeshInto(mesh, tm); // carries the instance geometry's own attributes
       if (inst.attributes && inst.attributes.size) {
@@ -726,10 +745,18 @@ export function realizeInstances(g: Geometry): Geometry {
     for (const s of rg.curves)
       out.curves.push({
         cyclic: s.cyclic,
-        points: s.points.map((p) => transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
-        controlPoints: s.controlPoints?.map((p) => transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
-        bezierLeft: s.bezierLeft?.map((p) => transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
-        bezierRight: s.bezierRight?.map((p) => transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
+        points: s.points.map((p) => inst.transformMatrix
+          ? transformPointMatrixFloat32(p, inst.transformMatrix)
+          : transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
+        controlPoints: s.controlPoints?.map((p) => inst.transformMatrix
+          ? transformPointMatrixFloat32(p, inst.transformMatrix)
+          : transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
+        bezierLeft: s.bezierLeft?.map((p) => inst.transformMatrix
+          ? transformPointMatrixFloat32(p, inst.transformMatrix)
+          : transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
+        bezierRight: s.bezierRight?.map((p) => inst.transformMatrix
+          ? transformPointMatrixFloat32(p, inst.transformMatrix)
+          : transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
       });
   }
   if (g.mesh || mesh.positions.length || mesh.faces.length || mesh.edges.length) out.mesh = mesh;

@@ -829,6 +829,7 @@ class Invocation {
           position: [0, 0, 0],
           rotation: [0, 0, 0],
           scale: [1, 1, 1],
+          transformMatrix: undefined,
           attributes: new Map([
             ...(sourceInstance.attributes?.entries() ?? []),
             ["__instance_rotation", [0, 0, 0] as Vec3],
@@ -851,6 +852,7 @@ class Invocation {
           position: [...sourceInstance.position] as Vec3,
           rotation: [...sourceInstance.rotation] as Vec3,
           scale: [...sourceInstance.scale] as Vec3,
+          transformMatrix: sourceInstance.transformMatrix?.map((row) => [...row]),
         });
         parts.push(transformed);
       }

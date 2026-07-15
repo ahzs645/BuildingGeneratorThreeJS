@@ -97,7 +97,7 @@ function inverseTransformByMatrix(point: Vec3, matrix: Matrix4Rows): Vec3 {
   ];
 }
 
-function relativeInstanceTransform(objectMatrix: Matrix4Rows, activeMatrix: Matrix4Rows): { position: Vec3; rotation: Vec3; scale: Vec3 } {
+function relativeInstanceTransform(objectMatrix: Matrix4Rows, activeMatrix: Matrix4Rows): { position: Vec3; rotation: Vec3; scale: Vec3; transformMatrix: Matrix4Rows } {
   const relativePoint = (point: Vec3): Vec3 => inverseTransformByMatrix(transformByMatrix(point, objectMatrix), activeMatrix);
   const position = relativePoint([0, 0, 0]);
   const endpoints = [relativePoint([1, 0, 0]), relativePoint([0, 1, 0]), relativePoint([0, 0, 1])];
@@ -115,7 +115,11 @@ function relativeInstanceTransform(objectMatrix: Matrix4Rows, activeMatrix: Matr
   const rotation: Vec3 = Math.abs(sinY) < .9999999
     ? [Math.atan2(r[1][2], r[2][2]), y, Math.atan2(r[0][1], r[0][0])]
     : [Math.atan2(-r[2][1], r[1][1]), y, 0];
-  return { position, rotation, scale };
+  const transformMatrix: Matrix4Rows = [0, 1, 2].map((row) => [
+    axes[0][row], axes[1][row], axes[2][row], position[row],
+  ]);
+  transformMatrix.push([0, 0, 0, 1]);
+  return { position, rotation, scale, transformMatrix };
 }
 
 reg("GeometryNodeObjectInfo", (api) => {
@@ -185,6 +189,7 @@ reg("GeometryNodeCollectionInfo", (api) => {
       position: resetChildren ? [0, 0, 0] : relative?.position ?? ((object?.location ?? [0, 0, 0]) as Vec3),
       rotation: resetChildren ? [0, 0, 0] : relative?.rotation ?? ((object?.rotation ?? [0, 0, 0]) as Vec3),
       scale: resetChildren ? [1, 1, 1] : relative?.scale ?? ((object?.scale ?? [1, 1, 1]) as Vec3),
+      transformMatrix: resetChildren ? undefined : relative?.transformMatrix,
     });
   }
   return { Instances: out };
@@ -290,6 +295,7 @@ reg(["GeometryNodeTransform", "GeometryNodeTransformGeometry"], (api) => {
     // used by these graphs (and matches Rotate Instances' current semantics).
     inst.rotation = vadd(inst.rotation, r);
     inst.scale = [inst.scale[0] * s[0], inst.scale[1] * s[1], inst.scale[2] * s[2]];
+    inst.transformMatrix = undefined;
   }
   return { Geometry: g };
 });
@@ -348,7 +354,11 @@ reg("GeometryNodeSetPosition", (api) => {
     let i = 0;
     g.curves = g.curves.map((s) => ({ cyclic: s.cyclic, points: s.points.map((p) => move(p, i++)) }));
   } else {
-    g.instances = g.instances.map((instance, i) => ({ ...instance, position: move(instance.position, i) }));
+    g.instances = g.instances.map((instance, i) => ({
+      ...instance,
+      position: move(instance.position, i),
+      transformMatrix: undefined,
+    }));
   }
   // Geometry sets can carry a mesh and instances simultaneously. Blender
   // evaluates Set Position once per supported component; choosing the mesh's
@@ -363,7 +373,11 @@ reg("GeometryNodeSetPosition", (api) => {
     g.instances = g.instances.map((instance, i) => {
       if (!asNum(instanceSelection[i] ?? 1)) return instance;
       const base = instancePosition ? asVec3(instancePosition[i]) : instance.position;
-      return { ...instance, position: vadd(base, asVec3(instanceOffset[i] ?? [0, 0, 0])) };
+      return {
+        ...instance,
+        position: vadd(base, asVec3(instanceOffset[i] ?? [0, 0, 0])),
+        transformMatrix: undefined,
+      };
     });
   }
   return { Geometry: g };
@@ -518,7 +532,10 @@ reg("GeometryNodeInstancesToPoints", (api) => {
 reg("GeometryNodeTranslateInstances", (api) => {
   const g = api.geo("Instances").clone();
   const t = api.vec("Translation");
-  for (const inst of g.instances) inst.position = vadd(inst.position, t);
+  for (const inst of g.instances) {
+    inst.position = vadd(inst.position, t);
+    inst.transformMatrix = undefined;
+  }
   return { Instances: g };
 });
 
@@ -541,6 +558,7 @@ reg("GeometryNodeScaleInstances", (api) => {
       instance.position[1] + center[1] * (1 - factor[1]),
       instance.position[2] + center[2] * (1 - factor[2]),
     ];
+    instance.transformMatrix = undefined;
   }
   return { Instances: g };
 });
@@ -564,6 +582,7 @@ reg("GeometryNodeRotateInstances", (api) => {
     // The asset graphs rotate only around Z; component-wise Euler addition is
     // exact for that case and preserves existing point rotations.
     instance.rotation = vadd(instance.rotation, rotation);
+    instance.transformMatrix = undefined;
   }
   return { Instances: g };
 });

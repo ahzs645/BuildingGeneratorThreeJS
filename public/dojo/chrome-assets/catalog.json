@@ -847,7 +847,7 @@
     "blenderStats": { "verts": 11162, "faces": 8064 },
     "localSpace": true,
     "surfaceBounds": true,
-    "note": "The complete 296-group, 2,413-node neupipe product builds its six-way pipe layout, per-instance sleeves, signed-distance joint shell, and dual-mesh smoothing in-browser. Combined collection rotations and instance-domain For Each transforms now match Blender: the authored result is 11,252 / 8,128 versus Blender's 11,162 / 8,064 (0.81% vertex delta) with exact collection bounds, and all four parity cases remain within 1.45% topology.",
+    "note": "The complete 296-group, 2,413-node neupipe product builds its six-way pipe layout, per-instance sleeves, signed-distance joint shell, and dual-mesh smoothing in-browser. Relative collection affine transforms now survive the instance-domain For Each zone without an Euler round-trip: the authored result is 11,229 / 8,116 versus Blender's 11,162 / 8,064 (0.60% vertex delta) with exact collection bounds. The remaining 52-face residual begins at the coordinate-sensitive Convex Hull/custom ETK remesh boundary.",
     "controls": [
       { "type": "checkbox", "name": "keep structure geo", "label": "Keep structure pipes", "value": true },
       { "name": "joint size", "label": "Joint size", "min": 10, "max": 40, "step": 0.1, "value": 23.177337646484375 },

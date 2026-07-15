@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { Geometry, Mesh, realizeInstances, transformPointFloat32 } from "./geometry";
+import { Geometry, Mesh, realizeInstances, transformPointFloat32, transformPointMatrixFloat32 } from "./geometry";
 import { REGISTRY } from "./registry";
 import "./index";
 
@@ -46,6 +46,38 @@ test("Realize Instances rounds mesh and curve transforms like Blender", () => {
   assert.deepEqual(realized.curves[0].controlPoints, [expected]);
   assert.deepEqual(realized.curves[0].bezierLeft, [expected]);
   assert.deepEqual(realized.curves[0].bezierRight, [expected]);
+});
+
+test("Realize Instances preserves a Relative Collection Info affine matrix", () => {
+  const matrix = [
+    [-4.371138828673793e-8, 4.371138828673793e-8, 1, -34.46500015258789],
+    [1, 1.910685676922942e-15, 4.371138828673793e-8, 95.08610534667969],
+    [0, 1, -4.371138828673793e-8, 32.72673797607422],
+    [0, 0, 0, 1],
+  ];
+  const point: [number, number, number] = [15.556474685668945, 0, 23.177337646484375];
+  assert.deepEqual(transformPointMatrixFloat32(point, matrix), [
+    -11.287662506103516,
+    110.642578125,
+    32.72673797607422,
+  ]);
+
+  const payload = new Geometry();
+  payload.mesh = new Mesh();
+  payload.mesh.positions = [point];
+  const source = new Geometry();
+  source.instances.push({
+    geometry: payload,
+    position: [-34.46500015258789, 95.08610534667969, 32.72673797607422],
+    rotation: [Math.PI / 2, 0, Math.PI / 2],
+    scale: [1, 1, 1],
+    transformMatrix: matrix,
+  });
+  assert.deepEqual(realizeInstances(source).mesh?.positions, [[
+    -11.287662506103516,
+    110.642578125,
+    32.72673797607422,
+  ]]);
 });
 
 test("Separate Components preserves authored Bezier controls", () => {
