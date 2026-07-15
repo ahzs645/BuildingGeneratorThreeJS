@@ -2,15 +2,15 @@
   "id": "25d-chrome-crayon",
   "object": "2.5D CHROME CRAYON OBJECT",
   "root": "CHROME CRAYON 3D _4.3_DEC2024",
-  "status": "near-exact-surface",
+  "status": "exact-surface-near-exact-solid",
   "blender": {
     "verts": 97784,
     "faces": 97776
   },
   "gnvm": {
-    "verts": 97779,
-    "faces": 97778
+    "verts": 97780,
+    "faces": 97776
   },
   "coverage": "100% of reachable node types across the 22-group, 559-node closure.",
-  "validation": "The Marching Squares join is topology-exact before welding at 59,872 vertices / 46,866 faces. Its inner Merge by Distance produces 48,891 / 46,866 versus Blender's 48,896 / 46,866, leaving only five vertices of weld partitioning while preserving every base face. The authored extruded output is 97,779 / 97,778 versus Blender's 97,784 / 97,776, with a 0.0649-unit maximum bounds difference after all 665 Sigilize passes."
+  "validation": "The browser and Blender now match the 508-point Spiro repeat, the complete 59,872-vertex / 46,866-face Marching Squares join, and the welded flattened surface at 48,896 vertices / 46,866 faces. Every flattened face and pre-weld position is index-exact. The authored solid and curve-preview branches have exact face counts at 97,780 / 97,776 versus Blender's 97,784 / 97,776, with four residual solid vertices after extrusion/Sigilize and a 0.0025-unit maximum bounds difference."
 }

@@ -36,7 +36,13 @@ for link in list(nested_geometry.links):
 points = nested.nodes.new("GeometryNodeMeshLine")
 points.mode = "OFFSET"
 points.inputs["Count"].default_value = 1
-nested.links.new(nested.nodes[node_name].outputs[socket_name], points.inputs["Start Location"])
+source = nested.nodes[node_name].outputs[socket_name]
+scalar_to_vector = None
+if source.bl_idname == "NodeSocketFloat":
+    scalar_to_vector = nested.nodes.new("ShaderNodeCombineXYZ")
+    nested.links.new(source, scalar_to_vector.inputs["X"])
+    source = scalar_to_vector.outputs["Vector"]
+nested.links.new(source, points.inputs["Start Location"])
 nested.links.new(points.outputs["Mesh"], nested_geometry)
 obj.update_tag()
 bpy.context.view_layer.update()
@@ -56,6 +62,8 @@ finally:
         if old is not None:
             parent_tree.links.new(old, geometry)
     nested.nodes.remove(points)
+    if scalar_to_vector is not None:
+        nested.nodes.remove(scalar_to_vector)
 
 with open(out_path, "w", encoding="utf-8") as handle:
     json.dump({"value": value}, handle, indent=2)

@@ -1442,7 +1442,18 @@ reg("GeometryNodeSeparateComponents", (api) => {
   const meshOnly = new Geometry();
   if (g.mesh) meshOnly.mesh = g.mesh.clone();
   const curveOnly = new Geometry();
-  curveOnly.curves = g.curves.map((spline) => ({ cyclic: spline.cyclic, points: spline.points.map((point) => [...point] as Vec3) }));
+  // Separating a Curves component does not convert it to a polyline. Preserve
+  // the authored spline representation so a later Transform Geometry can move
+  // the Bézier knots/handles before Blender evaluates the rotated curve.
+  curveOnly.curves = g.curves.map((spline) => ({
+    cyclic: spline.cyclic,
+    splineType: spline.splineType,
+    resolution: spline.resolution,
+    points: spline.points.map((point) => [...point] as Vec3),
+    controlPoints: spline.controlPoints?.map((point) => [...point] as Vec3),
+    bezierLeft: spline.bezierLeft?.map((point) => [...point] as Vec3),
+    bezierRight: spline.bezierRight?.map((point) => [...point] as Vec3),
+  }));
   for (const [name, attribute] of g.curveAttributes) curveOnly.curveAttributes.set(name, { domain: attribute.domain, data: [...attribute.data] });
   const inst = new Geometry();
   inst.instances = g.instances.map((instance) => ({

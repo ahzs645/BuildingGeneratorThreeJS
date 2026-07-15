@@ -57,7 +57,7 @@ def dump_mesh_attributes(mesh):
             elif attribute.data_type == "FLOAT_VECTOR":
                 attrs[attribute.name] = {
                     "domain": attribute.domain,
-                    "data": [[round(component, 6) for component in item.vector] for item in attribute.data],
+                    "data": [[float(component) for component in item.vector] for item in attribute.data],
                 }
         except Exception:
             pass
@@ -458,7 +458,7 @@ for obj in bpy.data.objects:
         if obj.name == target_object or len(obj.data.vertices) <= 10000:
             me = obj.data
             o["mesh"] = {
-                "verts": [[round(v.co.x, 6), round(v.co.y, 6), round(v.co.z, 6)] for v in me.vertices],
+                "verts": [[float(v.co.x), float(v.co.y), float(v.co.z)] for v in me.vertices],
                 "faces": [list(p.vertices) for p in me.polygons],
                 "face_materials": [p.material_index for p in me.polygons],
                 # Preserve Blender's stored edge order, including polygon
@@ -479,7 +479,7 @@ for obj in bpy.data.objects:
                                          "data": [float(x.value) for x in a.data]}
                     elif a.data_type == "FLOAT_VECTOR":
                         attrs[a.name] = {"domain": "POINT",
-                                         "data": [[round(c, 6) for c in x.vector] for x in a.data]}
+                                         "data": [[float(c) for c in x.vector] for x in a.data]}
                 except Exception:
                     pass
             # vertex groups are readable via Named Attribute too
@@ -516,9 +516,9 @@ for obj in bpy.data.objects:
             tangents = []
             if spline.type == "BEZIER":
                 bp = list(spline.bezier_points)
-                control_points = [[round(v, 6) for v in point.co] for point in bp]
-                bezier_left = [[round(v, 6) for v in point.handle_left] for point in bp]
-                bezier_right = [[round(v, 6) for v in point.handle_right] for point in bp]
+                control_points = [[float(v) for v in point.co] for point in bp]
+                bezier_left = [[float(v) for v in point.handle_left] for point in bp]
+                bezier_right = [[float(v) for v in point.handle_right] for point in bp]
                 segments = len(bp) if cyclic else max(0, len(bp) - 1)
                 resolution = max(2, int(getattr(spline, "resolution_u", 0) or obj.data.resolution_u or 12))
                 for segment in range(segments):
@@ -526,25 +526,25 @@ for obj in bpy.data.objects:
                     p1 = bp[(segment + 1) % len(bp)]
                     for step in range(resolution):
                         factor = step / resolution
-                        points.append([round(v, 6) for v in bezier(p0.co, p0.handle_right, p1.handle_left, p1.co, factor)])
-                        tilts.append(round((1.0 - factor) * p0.tilt + factor * p1.tilt, 6))
-                        radii.append(round((1.0 - factor) * p0.radius + factor * p1.radius, 6))
-                        tangents.append([round(v, 9) for v in bezier_tangent(p0.co, p0.handle_right, p1.handle_left, p1.co, factor)])
+                        points.append([float(v) for v in bezier(p0.co, p0.handle_right, p1.handle_left, p1.co, factor)])
+                        tilts.append(float((1.0 - factor) * p0.tilt + factor * p1.tilt))
+                        radii.append(float((1.0 - factor) * p0.radius + factor * p1.radius))
+                        tangents.append([float(v) for v in bezier_tangent(p0.co, p0.handle_right, p1.handle_left, p1.co, factor)])
                 if not cyclic and bp:
-                    points.append([round(v, 6) for v in bp[-1].co])
-                    tilts.append(round(bp[-1].tilt, 6))
-                    radii.append(round(bp[-1].radius, 6))
+                    points.append([float(v) for v in bp[-1].co])
+                    tilts.append(float(bp[-1].tilt))
+                    radii.append(float(bp[-1].radius))
                     if len(bp) > 1:
-                        tangents.append([round(v, 9) for v in bezier_tangent(bp[-2].co, bp[-2].handle_right, bp[-1].handle_left, bp[-1].co, 1.0)])
+                        tangents.append([float(v) for v in bezier_tangent(bp[-2].co, bp[-2].handle_right, bp[-1].handle_left, bp[-1].co, 1.0)])
                     else:
                         tangents.append([0.0, 0.0, 1.0])
             else:
                 control_points = None
                 bezier_left = None
                 bezier_right = None
-                points = [[round(p.co.x, 6), round(p.co.y, 6), round(p.co.z, 6)] for p in spline.points]
-                tilts = [round(p.tilt, 6) for p in spline.points]
-                radii = [round(p.radius, 6) for p in spline.points]
+                points = [[float(p.co.x), float(p.co.y), float(p.co.z)] for p in spline.points]
+                tilts = [float(p.tilt) for p in spline.points]
+                radii = [float(p.radius) for p in spline.points]
             if points:
                 entry = {"points": points, "cyclic": cyclic, "tilts": tilts, "radii": radii, "tangents": tangents,
                          "resolution": int(getattr(spline, "resolution_u", 0) or obj.data.resolution_u or 12)}
@@ -566,7 +566,7 @@ for obj in bpy.data.objects:
         mesh = evaluated.to_mesh()
         try:
             o["evaluated_mesh"] = {
-                "verts": [[round(v.co.x, 6), round(v.co.y, 6), round(v.co.z, 6)] for v in mesh.vertices],
+                "verts": [[float(v.co.x), float(v.co.y), float(v.co.z)] for v in mesh.vertices],
                 "faces": [list(p.vertices) for p in mesh.polygons],
                 "face_materials": [p.material_index for p in mesh.polygons],
                 "edges": [[e.vertices[0], e.vertices[1]] for e in mesh.edges],

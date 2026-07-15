@@ -56,21 +56,30 @@ const attributes = Object.fromEntries([...(geometry.mesh?.attributes ?? [])].map
   domain: attribute.domain,
   count: attribute.data.length,
   sample: attribute.data.slice(0, 8),
+  ...(process.env.GNVM_PROBE_ATTRIBUTES === "1" ? { data: attribute.data } : {}),
 }]));
 const curve_attributes = Object.fromEntries([...geometry.curveAttributes].map(([name, attribute]) => [name, {
   domain: attribute.domain,
   count: attribute.data.length,
   sample: attribute.data.slice(0, 8),
+  ...(process.env.GNVM_PROBE_ATTRIBUTES === "1" ? { data: attribute.data } : {}),
 }]));
 const realized = realizeInstances(geometry);
 const realized_positions = [
   ...(realized.mesh?.positions ?? []),
   ...realized.curves.flatMap((curve) => curve.points),
 ];
-const realized_bbox = realized_positions.length ? {
-  min: [0, 1, 2].map((axis) => Math.min(...realized_positions.map((point) => point[axis]))),
-  max: [0, 1, 2].map((axis) => Math.max(...realized_positions.map((point) => point[axis]))),
-} : { min: [0, 0, 0], max: [0, 0, 0] };
+const realized_bbox = { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };
+for (const point of realized_positions) {
+  for (let axis = 0; axis < 3; axis++) {
+    realized_bbox.min[axis] = Math.min(realized_bbox.min[axis], point[axis]);
+    realized_bbox.max[axis] = Math.max(realized_bbox.max[axis], point[axis]);
+  }
+}
+if (!realized_positions.length) {
+  realized_bbox.min.fill(0);
+  realized_bbox.max.fill(0);
+}
 const realized_stats = {
   verts: realized.mesh?.positions.length ?? 0,
   faces: realized.mesh?.faces.length ?? 0,

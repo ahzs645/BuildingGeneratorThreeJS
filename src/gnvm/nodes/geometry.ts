@@ -1,6 +1,6 @@
 // Geometry-operation handlers.
 import { Field, Vec3, asVec3, asNum, vadd } from "../core";
-import { Geometry, Mesh, InstanceRef, buildTopology, inverseTransformPoint, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint, triangulateFaceIndices } from "../geometry";
+import { Geometry, Mesh, InstanceRef, buildTopology, inverseTransformPoint, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint, transformPointFloat32, triangulateFaceIndices } from "../geometry";
 import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitives";
 import { reg, EvalAPI, DUMP_CONTEXT } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
@@ -264,12 +264,12 @@ reg("GeometryNodeMeshCylinder", (api) => {
 reg(["GeometryNodeTransform", "GeometryNodeTransformGeometry"], (api) => {
   const g = api.geo("Geometry").clone();
   const t = api.vec("Translation"), r = api.vec("Rotation"), s = api.vec("Scale");
-  if (g.mesh) g.mesh.positions = g.mesh.positions.map((p) => transformPoint(p, t, r, s));
+  if (g.mesh) g.mesh.positions = g.mesh.positions.map((p) => transformPointFloat32(p, t, r, s));
   for (const spline of g.curves) {
-    spline.points = spline.points.map((p) => transformPoint(p, t, r, s));
-    if (spline.controlPoints) spline.controlPoints = spline.controlPoints.map((p) => transformPoint(p, t, r, s));
-    if (spline.bezierLeft) spline.bezierLeft = spline.bezierLeft.map((p) => transformPoint(p, t, r, s));
-    if (spline.bezierRight) spline.bezierRight = spline.bezierRight.map((p) => transformPoint(p, t, r, s));
+    spline.points = spline.points.map((p) => transformPointFloat32(p, t, r, s));
+    if (spline.controlPoints) spline.controlPoints = spline.controlPoints.map((p) => transformPointFloat32(p, t, r, s));
+    if (spline.bezierLeft) spline.bezierLeft = spline.bezierLeft.map((p) => transformPointFloat32(p, t, r, s));
+    if (spline.bezierRight) spline.bezierRight = spline.bezierRight.map((p) => transformPointFloat32(p, t, r, s));
     if (spline.controlPoints?.length && spline.bezierLeft?.length === spline.controlPoints.length
       && spline.bezierRight?.length === spline.controlPoints.length) {
       spline.points = evaluateBezierSpline(

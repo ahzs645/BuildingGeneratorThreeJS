@@ -501,6 +501,45 @@ export function transformPoint(p: Vec3, pos: Vec3, rot: Vec3, scl: Vec3): Vec3 {
   return vadd(rotateEulerXYZ([p[0] * scl[0], p[1] * scl[1], p[2] * scl[2]], rot), pos);
 }
 
+/** Apply Blender's float32 geometry-component transform operation order. */
+export function transformPointFloat32(p: Vec3, pos: Vec3, rot: Vec3, scl: Vec3): Vec3 {
+  const f = Math.fround;
+  const x = f(f(p[0]) * f(scl[0]));
+  const y = f(f(p[1]) * f(scl[1]));
+  const z = f(f(p[2]) * f(scl[2]));
+
+  // Transform Geometry's Rotation socket stores a quaternion. Vector/Euler
+  // inputs are converted to that quaternion before the transform matrix is
+  // built; rotating XYZ components in sequence is close, but differs by a few
+  // ULPs on repeated curves. Match Blender's EulerXYZ -> quaternion grouping.
+  const hx = f(f(rot[0]) * 0.5), hy = f(f(rot[1]) * 0.5), hz = f(f(rot[2]) * 0.5);
+  const cx = f(Math.cos(hx)), cy = f(Math.cos(hy)), cz = f(Math.cos(hz));
+  const sx = f(Math.sin(hx)), sy = f(Math.sin(hy)), sz = f(Math.sin(hz));
+  const qw = f(cx * f(cy * cz) + sx * f(sy * sz));
+  const qx = f(sx * f(cy * cz) - cx * f(sy * sz));
+  const qy = f(cx * f(sy * cz) + sx * f(cy * sz));
+  const qz = f(cx * f(cy * sz) - sx * f(sy * cz));
+
+  // Blender's quaternion-to-matrix path rounds the completed expressions,
+  // allowing the compiler's fused products before their float32 store.
+  const m00 = f(1 - 2 * (qy * qy + qz * qz));
+  const m01 = f(2 * (qx * qy - qw * qz));
+  const m02 = f(2 * (qx * qz + qw * qy));
+  const m10 = f(2 * (qx * qy + qw * qz));
+  const m11 = f(1 - 2 * (qx * qx + qz * qz));
+  const m12 = f(2 * (qy * qz - qw * qx));
+  const m20 = f(2 * (qx * qz - qw * qy));
+  const m21 = f(2 * (qy * qz + qw * qx));
+  const m22 = f(1 - 2 * (qx * qx + qy * qy));
+  const dot = (a: number, b: number, c: number): number => f(f(f(a * x) + f(b * y)) + f(c * z));
+
+  return [
+    f(dot(m00, m01, m02) + f(pos[0])),
+    f(dot(m10, m11, m12) + f(pos[1])),
+    f(dot(m20, m21, m22) + f(pos[2])),
+  ];
+}
+
 const zeroLike = (e: Elem | undefined): Elem => (Array.isArray(e) ? [0, 0, 0] : 0);
 
 // Merge mesh b into a, offsetting vertex indices; preserves materials + attributes.
