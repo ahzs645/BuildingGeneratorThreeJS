@@ -2,9 +2,9 @@
   "id": "geometry-nodes-001",
   "object": "3D CHROME CRAYON.001",
   "root": "Geometry Nodes.001",
-  "status": "partial-parity",
+  "status": "near-exact-surface",
   "blender": { "verts": 61812, "faces": 53892 },
-  "gnvm": { "verts": 62187, "faces": 53922 },
+  "gnvm": { "verts": 62109, "faces": 53890 },
   "coverage": "100% of reachable node types; the browser evaluates all 1,007 nodes in the root closure.",
-  "validation": "Four Blender/VM cases cover authored settings, wrapper switching, thickness, and wrapper dimensions. Unique anonymous capture IDs preserve the Marching Squares prototype indices through instancing, and radial no-profile Curve to Mesh normals restore the projection field. The authored Marching Squares surface is now 28,227 / 26,961 versus Blender's 28,227 / 26,960 with near-identical bounds. Final authored output is 62,187 / 53,922 versus 61,812 / 53,892 (+0.61% vertices, +0.06% faces); all four cases stay within 2.36% vertices and 0.88 units in bounds. The legacy three-pass sharpen group is intentionally held as a pass-through pending its final winding-sensitive gradient correction, leaving the authored +Z bound 0.48 units high."
+  "validation": "Four Blender/VM cases cover authored settings, wrapper switching, thickness, and wrapper dimensions. Edge Vertices now resolves endpoint positions on the point domain instead of misreading endpoint IDs as edge IDs, reducing the three-pass sharpen edge-length median from 7.346 to 0.278 versus Blender's 0.279 and aligning the sharpened shell bounds within 0.03 units. Final authored output is 62,109 / 53,890 versus Blender's 61,812 / 53,892: only two faces short and 0.48% high in vertices. The remaining final +Z difference is 0.478 units and begins outside the corrected sharpen field."
 }
