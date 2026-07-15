@@ -6,5 +6,5 @@
   "blender": { "verts": 161722, "faces": 88994 },
   "gnvm": { "verts": 161722, "faces": 88994 },
   "coverage": "100% of reachable node types; Object Info now preserves its As Instance component so the final wrapper switch matches Blender.",
-  "validation": "All six authored input cases match the recovered-Pixels.ttf Blender reference exactly at 161722 vertices, 88994 polygon faces, and rounded local bounds. Mesh to Curve now preserves attached-loop closing edges by repeating their branch pole as Blender does."
+  "validation": "All six authored input cases match the recovered-Pixels.ttf Blender reference exactly at 161722 vertices, 88994 polygon faces, and rounded local bounds. Mesh to Curve preserves attached-loop closing edges by repeating their branch pole as Blender does. Realize Instances now excludes the VM-private __font_sample_stride marker, preventing a downstream Fill Curve from dissolving already-realized glyph samples a second time while retaining authored curve attributes."
 }

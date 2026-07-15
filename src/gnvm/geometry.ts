@@ -826,6 +826,10 @@ export function realizeInstances(g: Geometry): Geometry {
         : inst.scale.map(Math.abs);
       const radiusScale = Math.cbrt(Math.max(0, matrixScales[0] * matrixScales[1] * matrixScales[2]));
       const names = new Set([...out.curveAttributes.keys(), ...rg.curveAttributes.keys()]);
+      // Extraction-only font sampling metadata is not a Blender geometry
+      // attribute. Carrying it across Realize Instances makes a later Fill
+      // Curve dissolve already-realized glyph points a second time.
+      names.delete("__font_sample_stride");
       for (const name of names) {
         const source = rg.curveAttributes.get(name);
         const target = out.curveAttributes.get(name);

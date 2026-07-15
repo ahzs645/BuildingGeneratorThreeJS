@@ -82,7 +82,7 @@
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/ui-window-generator.png",
     "blenderStats": { "verts": 35886, "faces": 33474 },
-    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. Authored topology matches Blender exactly at 35,886 / 33,474, and both subdivision cases are topology-exact. The title and secondary frame are within 0.0102 bounds units; the authored 0.6513 residual is isolated to the primary frame's Set Position.006 after 334 weighted vector Blur Attribute iterations. Blender's literal mixer rule fixes UI bounds but regresses the exact 3D Chrome Crayon Generator, so shared Weight field/domain semantics must be reconciled before retaining it.",
+    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. Authored topology matches Blender exactly at 35,886 / 33,474, and both subdivision cases are topology-exact. A 12,361-point Blender probe confirms the exact weighted Blur Attribute mixer used by the primary frame; after all 334 passes, authored and subdivision sweep bounds remain within 0.0101 units of Blender.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",
@@ -434,7 +434,7 @@
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/3d-chrome-crayon-generator.png",
     "blenderStats": { "verts": 161722, "faces": 88994 },
-    "note": "Exact Blender geometry across all six recovered-Pixels.ttf reference cases: both engines produce 161,722 vertices / 88,994 faces with matching rounded local bounds. Object Info preserves the As Instance branch, and Mesh to Curve retains attached-loop closing edges by repeating their branch pole as Blender does.",
+    "note": "Exact Blender geometry across all six recovered-Pixels.ttf reference cases: both engines produce 161,722 vertices / 88,994 faces with matching rounded local bounds. Object Info preserves the As Instance branch, Mesh to Curve retains attached-loop closing edges by repeating their branch pole, and VM-private font sampling metadata no longer crosses Realize Instances to trigger a second glyph dissolve.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

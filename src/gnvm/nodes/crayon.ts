@@ -845,12 +845,16 @@ reg("GeometryNodeBlurAttribute", (api) => {
         for (let iteration = 0; iteration < iterations; iteration++) {
           const next: Elem[] = new Array(ctx.size);
           for (let i = 0; i < ctx.size; i++) {
-            let total = scaleFloat32(current[i] ?? 0, weights[i] ?? 1);
-            let totalWeight = weights[i] ?? 1;
+            // Blender keeps the center value at weight 1. The Weight field is
+            // evaluated for the current element and controls every adjacent
+            // contribution; it is not evaluated independently on each
+            // neighbor. This matters for masks with a hard 0/1 boundary.
+            const neighborWeight = weights[i] ?? 1;
+            let total = current[i] ?? 0;
+            let totalWeight = 1;
             for (const neighbor of ctx.neighbors(i)) {
-              const w = weights[neighbor] ?? 1;
-              total = addFloat32(total, scaleFloat32(current[neighbor] ?? 0, w));
-              totalWeight = f(totalWeight + w);
+              total = addFloat32(total, scaleFloat32(current[neighbor] ?? 0, neighborWeight));
+              totalWeight = f(totalWeight + neighborWeight);
             }
             next[i] = totalWeight > 0 ? scaleFloat32(total, f(1 / totalWeight)) : current[i] ?? 0;
           }
