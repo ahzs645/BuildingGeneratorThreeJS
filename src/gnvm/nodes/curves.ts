@@ -882,16 +882,24 @@ function glyphGeometry(ch: string, size: number): Geometry {
 function atlasGlyphGeometry(fontName: string | undefined, ch: string, size: number): Geometry | null {
   const entry = fontName ? DUMP_CONTEXT.fonts[fontName]?.glyphs[ch] : undefined;
   if (!entry) return null;
+  const stride = DUMP_CONTEXT.fonts[fontName!]?.sample_stride ?? 12;
   const geometry = new Geometry();
   geometry.curves = entry.curves.map((curve) => ({
     cyclic: curve.cyclic,
-    points: curve.points.map((point) => [Number(point[0] ?? 0) * size, Number(point[1] ?? 0) * size, Number(point[2] ?? 0) * size] as Vec3),
+    points: curve.points.reduce<Vec3[]>((points, point) => {
+      const next: Vec3 = [Number(point[0] ?? 0) * size, Number(point[1] ?? 0) * size, Number(point[2] ?? 0) * size];
+      // Blender collapses repeated bridge corners in grid-font outlines before
+      // triangulating them. Keeping both visits made D/P produce one extra
+      // triangle each even though the final welded vertex count was correct.
+      if (stride === 0 && points.some((existing) => vlen(vsub(existing, next)) <= 1e-7)) return points;
+      points.push(next);
+      return points;
+    }, []),
   }));
   // Blender's evaluated CFF/Bezier curves use 12 samples per authored segment.
   // Pixel/grid fonts deliberately retain collinear cell corners, so the atlas
   // extractor marks those with a zero stride instead of applying Bezier
   // interior-point dissolution to them.
-  const stride = DUMP_CONTEXT.fonts[fontName!]?.sample_stride ?? 12;
   if (stride > 1) geometry.curveAttributes.set("__font_sample_stride", { domain: "CURVE", data: entry.curves.map(() => stride) });
   return geometry;
 }

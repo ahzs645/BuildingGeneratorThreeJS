@@ -2,9 +2,9 @@
   "id": "ui-window-generator",
   "object": "Vert.057",
   "root": "UI Window Generator.001",
-  "status": "near-exact",
+  "status": "authored-topology-exact",
   "blender": { "verts": 35886, "faces": 33474 },
-  "gnvm": { "verts": 35878, "faces": 33456 },
+  "gnvm": { "verts": 35886, "faces": 33474 },
   "font": { "source": "dojo/fonts/pixels.ttf", "family": "Pixels Medium", "fallback": "embedded Blender-extracted outlines" },
-  "validation": "The page loads the supplied Pixels Medium TTF and visibly reports when it falls back to the embedded outline atlas. Blender-compatible normalized 4D noise improves authored topology to within 0.03% vertices and 0.06% faces; maximum local-bounds difference remains 2.2816 units."
+  "validation": "The page loads the supplied Pixels Medium TTF and visibly reports when it falls back to the embedded outline atlas. Preserving its grid corners and collapsing repeated bridge points makes the authored result and subdivide=1 sweep topology-exact. Authored local bounds remain within 0.6513 units; subdivide=0 is still partial because its normalized-noise selection differs."
 }

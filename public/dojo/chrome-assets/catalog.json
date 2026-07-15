@@ -75,7 +75,7 @@
     "dump": "dojo/chrome-assets/ui-window-generator/dump.json",
     "reference": "dojo/references/chrome-assets/ui-window-generator.png",
     "blenderStats": { "verts": 35886, "faces": 33474 },
-    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. Blender-compatible 4D noise brings authored topology to 35,878 / 33,456 versus Blender's 35,886 / 33,474.",
+    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. Authored topology now matches Blender exactly at 35,886 / 33,474; normalized-noise placement remains spatially near-exact.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

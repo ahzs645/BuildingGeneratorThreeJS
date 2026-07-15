@@ -37,21 +37,38 @@ def dump_font_glyph(font, character, align_y="TOP_BASELINE"):
 
     depsgraph = bpy.context.evaluated_depsgraph_get()
     mesh = bpy.data.meshes.new_from_object(obj.evaluated_get(depsgraph))
-    edge_uses = {}
-    edge_directions = {}
-    for polygon in mesh.polygons:
-        vertices = list(polygon.vertices)
-        for index, start in enumerate(vertices):
-            end = vertices[(index + 1) % len(vertices)]
+    polygons = [list(polygon.vertices) for polygon in mesh.polygons]
+    edge_occurrences = {}
+    for polygon_index, vertices in enumerate(polygons):
+        for edge_index, start in enumerate(vertices):
+            end = vertices[(edge_index + 1) % len(vertices)]
             key = tuple(sorted((start, end)))
-            edge_uses[key] = edge_uses.get(key, 0) + 1
-            edge_directions[key] = (start, end)
-    unused = {
-        edge_directions[key]
-        for key, count in edge_uses.items()
-        if count == 1
+            edge_occurrences.setdefault(key, []).append((polygon_index, edge_index, start, end))
+    boundary = {
+        (occurrences[0][0], occurrences[0][1])
+        for occurrences in edge_occurrences.values()
+        if len(occurrences) == 1
     }
-    next_edge = {start: (start, end) for start, end in unused}
+
+    def next_boundary_halfedge(polygon_index, edge_index):
+        guard = 0
+        while guard <= sum(len(vertices) for vertices in polygons):
+            guard += 1
+            vertices = polygons[polygon_index]
+            candidate_index = (edge_index + 1) % len(vertices)
+            start = vertices[candidate_index]
+            end = vertices[(candidate_index + 1) % len(vertices)]
+            occurrences = edge_occurrences[tuple(sorted((start, end)))]
+            if len(occurrences) == 1:
+                return (polygon_index, candidate_index)
+            current = (polygon_index, candidate_index)
+            other = next((item for item in occurrences if (item[0], item[1]) != current), None)
+            if other is None:
+                return None
+            polygon_index, edge_index = other[0], other[1]
+        return None
+
+    unused = set(boundary)
     splines = []
     while unused:
         first = next(iter(unused))
@@ -60,12 +77,15 @@ def dump_font_glyph(font, character, align_y="TOP_BASELINE"):
         cyclic = False
         while edge in unused:
             unused.remove(edge)
-            start, end = edge
+            polygon_index, edge_index = edge
+            vertices = polygons[polygon_index]
+            start = vertices[edge_index]
+            end = vertices[(edge_index + 1) % len(vertices)]
             indices.append(start)
-            if end == first[0]:
+            edge = next_boundary_halfedge(polygon_index, edge_index)
+            if edge == first:
                 cyclic = True
                 break
-            edge = next_edge.get(end)
             if edge is None:
                 indices.append(end)
                 break
@@ -120,9 +140,23 @@ def dump_font_atlas(font):
             min((point[1] for point in points), default=baseline_min_y) - baseline_min_y,
             7,
         )
+    segments = 0
+    axis_aligned_segments = 0
+    for glyph in glyphs.values():
+        for spline in glyph["curves"]:
+            points = spline["points"]
+            count = len(points) if spline["cyclic"] else max(0, len(points) - 1)
+            for index in range(count):
+                start = points[index]
+                end = points[(index + 1) % len(points)]
+                segments += 1
+                if abs(end[0] - start[0]) <= 1e-7 or abs(end[1] - start[1]) <= 1e-7:
+                    axis_aligned_segments += 1
+    sample_stride = 0 if segments and axis_aligned_segments / segments >= 0.98 else 12
     return {
         "name": font.name,
         "source": os.path.basename(font_path),
+        "sample_stride": sample_stride,
         "align_offsets": align_offsets,
         "glyphs": glyphs,
     }

@@ -1,5 +1,6 @@
 """Probe a TTF through Blender's String to Curves -> Realize -> Fill path."""
 import os
+from collections import Counter
 
 import bpy
 
@@ -29,4 +30,6 @@ bpy.context.view_layer.update()
 evaluated = obj.evaluated_get(bpy.context.evaluated_depsgraph_get())
 result = evaluated.to_mesh()
 print(f"FONT_GEOMETRY_PROBE_OK {font.name}: {len(result.vertices)} verts / {len(result.polygons)} faces")
+if os.environ.get("NODE_DOJO_FONT_PROBE_VERBOSE"):
+    print("FONT_GEOMETRY_FACE_SIZES", dict(sorted(Counter(len(face.vertices) for face in result.polygons).items())))
 evaluated.to_mesh_clear()

@@ -1456,6 +1456,16 @@ function meshSignedAreaXY(m: Mesh): number {
         ] }] },
       },
     },
+    PixelFont: {
+      name: "PixelFont",
+      sample_stride: 0,
+      glyphs: {
+        P: { advance: 4, curves: [{ cyclic: true, points: [
+          [0, 0, 0], [0, 3, 0], [2, 3, 0], [2, 2, 0], [3, 2, 0], [3, 1, 0],
+          [2, 1, 0], [2, 2, 0], [1, 2, 0], [1, 1, 0], [2, 1, 0], [2, 0, 0], [1, 0, 0],
+        ] }] },
+      },
+    },
   };
   const atlasCurves = runNode("GeometryNodeStringToCurves", {
     String: "AB", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
@@ -1498,6 +1508,17 @@ function meshSignedAreaXY(m: Mesh): number {
   })["Curve Instances"] as Geometry;
   const sampledFontFill = runNode("GeometryNodeFillCurve", { Curve: sampledFontCurve, Mode: "N-gons" }).Mesh as Geometry;
   check("Fill Curve dissolves straight evaluated font samples", sampledFontFill.instances[0].geometry.mesh?.positions.length === 13, `got ${sampledFontFill.instances[0].geometry.mesh?.positions.length}`);
+  const pixelFontCurve = runNode("GeometryNodeStringToCurves", {
+    String: "P", Size: 1, Font: { datablock: "VectorFont", name: "PixelFont" },
+    "Align X": "Left", "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": 1,
+  })["Curve Instances"] as Geometry;
+  const pixelFontFill = runNode("GeometryNodeFillCurve", { Curve: pixelFontCurve, Mode: "Triangles" }).Mesh as Geometry;
+  check(
+    "Pixel font bridge corners match Blender triangulation",
+    pixelFontFill.instances[0].geometry.mesh?.positions.length === 11
+      && pixelFontFill.instances[0].geometry.mesh?.faces.length === 9,
+    `${pixelFontFill.instances[0].geometry.mesh?.positions.length ?? 0}v/${pixelFontFill.instances[0].geometry.mesh?.faces.length ?? 0}f`,
+  );
   DUMP_CONTEXT.fonts = savedFonts;
 
   const outlinedGlyph = new Geometry();

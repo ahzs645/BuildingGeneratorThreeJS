@@ -230608,6 +230608,7 @@
  "fonts": {
   "Pixels Medium": {
    "name": "Pixels Medium",
+   "sample_stride": 0,
    "align_offsets": {
     "Top": -0.9142091,
     "Top Baseline": 0.0,
