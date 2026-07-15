@@ -21,6 +21,7 @@ export interface DumpNode {
   name: string;
   type: string;
   label?: string | null;
+  group?: string;
   ui?: {
     location?: number[];
     location_absolute?: number[];
@@ -48,6 +49,7 @@ export interface GraphSocket {
   index: number;
   linked: boolean;
   visible: boolean;
+  hideValue: boolean;
   displayShape: string;
   value: unknown;
 }
@@ -74,6 +76,7 @@ export interface GraphNode {
 
 export interface GraphLink {
   id: string;
+  sourceIndex: number;
   source: string;
   sourceHandle: string;
   sourceSocketIdentifier: string;
@@ -138,6 +141,7 @@ function graphSockets(sockets: DumpSocket[] | undefined, direction: GraphSocketD
       index: socket.idx ?? index,
       linked: Boolean(socket.linked),
       visible: socket.enabled !== false && socket.hide !== true,
+      hideValue: Boolean(socket.hide_value),
       displayShape: socket.display_shape ?? "CIRCLE",
       value: Object.hasOwn(socket, "value") ? socket.value : socket.default,
     };
@@ -155,7 +159,7 @@ function estimateHeight(node: DumpNode, inputs: GraphSocket[], outputs: GraphSoc
 
 function nestedGroupName(node: DumpNode): string | undefined {
   const nodeTree = node.props?.node_tree;
-  if (!nodeTree || typeof nodeTree !== "object") return undefined;
+  if (!nodeTree || typeof nodeTree !== "object") return node.group;
   const name = (nodeTree as { name?: unknown }).name;
   return typeof name === "string" ? name : undefined;
 }
@@ -213,7 +217,7 @@ export function dumpGroupToEditorGraph(rawDump: Dump, groupName: string): Editor
   const editorByName = new Map(nodes.map((node) => [node.sourceName, node]));
   const unresolvedLinks: string[] = [];
   const duplicateLinks = new Map<string, number>();
-  const links = group.links.flatMap((link): GraphLink[] => {
+  const links = group.links.flatMap((link, sourceIndex): GraphLink[] => {
     const source = editorByName.get(link.from_node);
     const target = editorByName.get(link.to_node);
     const sourceSocket = source && chooseSocket(source.outputs, link.from_socket);
@@ -227,6 +231,7 @@ export function dumpGroupToEditorGraph(rawDump: Dump, groupName: string): Editor
     duplicateLinks.set(rawKey, occurrence + 1);
     return [{
       id: `${groupName}::${rawKey}::${occurrence}`,
+      sourceIndex,
       source: source.id,
       sourceHandle: sourceSocket.id,
       sourceSocketIdentifier: sourceSocket.identifier,

@@ -6,7 +6,7 @@ import { publicUrl } from "./base-url";
 import type { Dump, TriSoup } from "./gnvm/index";
 
 type WorkerReply =
-  | { id: number; ok: true; soup: TriSoup; coverage: { handled: number; missingTypes: { type: string; count: number }[] } }
+  | { id: number; ok: true; soup: TriSoup; probeSoup?: TriSoup; coverage: { handled: number; missingTypes: { type: string; count: number }[] } }
   | { id: number; ok: false; error: string };
 type Baseline = { results: { verts: number; faces: number; bbox: { min: number[]; max: number[] } }[] };
 
@@ -22,6 +22,7 @@ const vmCount = document.querySelector<HTMLElement>("#crayon-vm-count")!;
 const runtimeEl = document.querySelector<HTMLElement>("#crayon-runtime")!;
 const gapEl = document.querySelector<HTMLElement>("#crayon-gap")!;
 const coverageEl = document.querySelector<HTMLElement>("#crayon-coverage")!;
+const selectionEl = document.querySelector<HTMLElement>("#crayon-selection")!;
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -40,8 +41,8 @@ room.dispose(); pmrem.dispose();
 scene.add(new THREE.HemisphereLight(0xe4f0ff, 0x11151b, 1.2));
 const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(4, 7, 5); scene.add(key);
 
-const truthGroup = new THREE.Group(), vmGroup = new THREE.Group();
-scene.add(truthGroup, vmGroup);
+const truthGroup = new THREE.Group(), vmGroup = new THREE.Group(), probeGroup = new THREE.Group();
+scene.add(truthGroup, vmGroup, probeGroup);
 let split = true;
 let dump: Dump;
 let baseline: Baseline;
@@ -49,11 +50,14 @@ let runId = 0;
 let updateVersion = 0;
 let runtimeReady = false;
 let shaderMode: "diagnostic" | "chrome" = "diagnostic";
+let probeSelection: { group: string; node: string; socket?: string; type: string } | undefined;
 
 const truthDiagnostic = new THREE.MeshStandardMaterial({ color: 0xe74f4c, metalness: .28, roughness: .32, transparent: true, opacity: .36, side: THREE.DoubleSide });
 const vmDiagnostic = new THREE.MeshStandardMaterial({ color: 0x39aef5, metalness: .25, roughness: .3, transparent: true, opacity: .34, side: THREE.DoubleSide });
 const truthWireMaterial = new THREE.MeshBasicMaterial({ color: 0xff716b, wireframe: true, transparent: true, opacity: .6 });
 const vmWireMaterial = new THREE.MeshBasicMaterial({ color: 0x63c8ff, wireframe: true, transparent: true, opacity: .62 });
+const probeMaterial = new THREE.MeshBasicMaterial({ color: 0xffb84f, transparent: true, opacity: .78, depthWrite: false, side: THREE.DoubleSide });
+const probeWireMaterial = new THREE.MeshBasicMaterial({ color: 0xffe0a0, wireframe: true, transparent: true, opacity: .9, depthWrite: false });
 
 function chromeMaterial(): THREE.MeshPhysicalMaterial {
   const material = new THREE.MeshPhysicalMaterial({
@@ -132,6 +136,24 @@ function soupObject(soup: TriSoup): THREE.Object3D {
   return yup;
 }
 
+function probeObject(soup: TriSoup): THREE.Object3D {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(soup.positions, 3));
+  geometry.setAttribute("normal", new THREE.BufferAttribute(soup.normals, 3));
+  geometry.setIndex(new THREE.BufferAttribute(soup.indices, 1));
+  const solid = new THREE.Mesh(geometry, probeMaterial);
+  const wire = new THREE.Mesh(geometry, probeWireMaterial);
+  const local = new THREE.Group(); local.add(solid, wire);
+  const object = dump.objects?.find((entry) => entry.name === "CHROME CRAYON OBJECT");
+  if (object) {
+    local.position.fromArray(object.location ?? [0, 0, 0]);
+    local.rotation.set(...((object.rotation ?? [0, 0, 0]) as [number, number, number]));
+    local.scale.fromArray(object.scale ?? [1, 1, 1]);
+  }
+  const yup = new THREE.Group(); yup.rotation.x = -Math.PI / 2; yup.add(local);
+  return yup;
+}
+
 function truthObject(source: THREE.Object3D): THREE.Object3D {
   const meshes: THREE.Mesh[] = [];
   source.traverse((entry) => {
@@ -150,10 +172,11 @@ function truthObject(source: THREE.Object3D): THREE.Object3D {
 }
 
 function layoutAndFrame(): void {
-  truthGroup.position.set(0, 0, 0); vmGroup.position.set(0, 0, 0);
+  truthGroup.position.set(0, 0, 0); vmGroup.position.set(0, 0, 0); probeGroup.position.set(0, 0, 0);
   const truthBox = new THREE.Box3().setFromObject(truthGroup), vmBox = new THREE.Box3().setFromObject(vmGroup);
   const width = Math.max(truthBox.getSize(new THREE.Vector3()).x, vmBox.getSize(new THREE.Vector3()).x, 1);
   if (split) { truthGroup.position.x = -width * .62; vmGroup.position.x = width * .62; }
+  probeGroup.position.copy(vmGroup.position);
   const box = new THREE.Box3().expandByObject(truthGroup).expandByObject(vmGroup);
   const center = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
   const radius = Math.max(size.length() * .5, 1);
@@ -173,7 +196,7 @@ function evaluate(overrides: Record<string, number>): Promise<WorkerReply & { ok
       if (!event.data.ok) reject(new Error(event.data.error)); else resolve(event.data);
     };
     worker.onerror = (event) => { worker.terminate(); reject(new Error(event.message)); };
-    worker.postMessage({ id, dump, object: "CHROME CRAYON OBJECT", overrides });
+    worker.postMessage({ id, dump, object: "CHROME CRAYON OBJECT", overrides, probe: probeSelection });
   });
 }
 
@@ -192,6 +215,8 @@ async function update(): Promise<void> {
     const result = await evaluate(readOverrides());
     if (version !== updateVersion) return;
     vmGroup.clear(); vmGroup.add(soupObject(result.soup));
+    probeGroup.clear();
+    if (result.probeSoup?.indices.length) probeGroup.add(probeObject(result.probeSoup));
     applyShaderMode();
     const truth = baseline.results[0];
     truthCount.textContent = `${truth.verts.toLocaleString()} verts · ${truth.faces.toLocaleString()} faces`;
@@ -202,6 +227,9 @@ async function update(): Promise<void> {
     coverageEl.textContent = result.coverage.missingTypes.length ? `${result.coverage.missingTypes.length} missing node types` : `${result.coverage.handled} node types handled · none missing`;
     layoutAndFrame();
     setStatus("Both results loaded · graph executed end-to-end", true);
+    selectionEl.textContent = probeSelection
+      ? result.probeSoup?.indices.length ? `Output preview · ${probeSelection.node} · ${result.probeSoup.stats.faces.toLocaleString()} faces` : `Selected · ${probeSelection.node} · no evaluated geometry output`
+      : "Output preview · final geometry";
     (window as typeof window & { __CRAYON_COMPARE__?: unknown }).__CRAYON_COMPARE__ = { ready: true, stats: result.soup.stats, missing: result.coverage.missingTypes, overrides: readOverrides() };
   } catch (error) { if (version === updateVersion) setStatus(`Evaluation failed · ${error instanceof Error ? error.message : String(error)}`); }
   finally { if (version === updateVersion) updateButton.disabled = false; }
@@ -233,6 +261,11 @@ window.addEventListener("crayon-graph-change", (event) => {
   const next = (event as CustomEvent<{ dump?: Dump }>).detail?.dump;
   if (!next) return;
   dump = next;
+  if (runtimeReady) void update();
+});
+window.addEventListener("crayon-node-select", (event) => {
+  probeSelection = (event as CustomEvent<typeof probeSelection>).detail;
+  selectionEl.textContent = `Evaluating output · ${probeSelection?.node ?? "selection"}…`;
   if (runtimeReady) void update();
 });
 addEventListener("resize", () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
