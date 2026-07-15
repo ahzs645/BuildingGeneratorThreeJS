@@ -6,6 +6,7 @@
   "reachableNodes": 1130,
   "coverage": "100%",
   "status": "exact-topology-bounds-near",
+  "materialParity": "The 3-node Attribute Viewer N++ shader is now reconstructed strictly: its Geometry Attribute Vector feeds Emission Color at Strength 1. The evaluated Cube.014 soup does not contain the requested attribute_viewer_n++_ field, so Blender's missing-attribute rule resolves the 21,078-index material range to zero/black; the browser now does the same instead of substituting its green diagnostic material.",
   "blender": {
     "verts": 104454,
     "faces": 44423,

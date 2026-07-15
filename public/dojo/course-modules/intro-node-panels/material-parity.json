@@ -1,0 +1,38 @@
+{
+  "updated": "2026-07-15",
+  "target": {
+    "id": "course-intro-node-panels",
+    "object": "Cube.014",
+    "material": "Attribute Viewer N++"
+  },
+  "geometryContract": {
+    "verts": 104454,
+    "faces": 44423,
+    "tris": 108526,
+    "materialRange": {
+      "start": 62979,
+      "count": 21078,
+      "material": "Attribute Viewer N++"
+    }
+  },
+  "authoredShaderContract": {
+    "nodes": 3,
+    "links": 2,
+    "path": "Geometry Attribute attribute_viewer_n++_ Vector → Emission Color → Material Output Surface",
+    "emissionStrength": 1.0,
+    "evaluatedAttributePresent": false,
+    "blenderMissingAttributeResult": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "browserResult": "A missing named Geometry Attribute resolves to a black MeshBasic emission-equivalent material. Present valid vec3 attributes use the strict attribute-emission shader path."
+  },
+  "browserVerification": {
+    "route": "/chrome-assets?asset=course-intro-node-panels",
+    "capture": "/private/tmp/course-intro-node-panels-attribute-emission.png",
+    "runtimeSeconds": 40.59,
+    "status": "The browser reported Topology counts match Blender at 104,454 vertices / 44,423 faces and emitted no WebGL warning/error logs. The Attribute Viewer ranges render black instead of diagnostic green."
+  },
+  "remaining": "This checkpoint corrects the Attribute Viewer range only. Other node-panel material groups keep their existing constant or dedicated authored-material routes; renderer-level comparison of the complete multi-material diagram remains separate."
+}
