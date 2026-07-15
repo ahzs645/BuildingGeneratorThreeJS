@@ -2,9 +2,9 @@
   "id": "blunt-outline-crayon",
   "object": "PIXEL CRAYON.007",
   "root": "blunt outline crayon",
-  "status": "near-exact",
+  "status": "exact-topology",
   "blender": { "verts": 24719, "faces": 22853 },
-  "gnvm": { "verts": 24720, "faces": 22853 },
-  "coverage": "100% of reachable node types; profile-less NURBS Curve to Mesh now uses Blender's authored control polygon while real profile sweeps retain evaluated samples.",
-  "validation": "The authored result has Blender's exact 22,853 faces and differs by one vertex (24,720 versus 24,719), with bounds within 0.0085 units. Boolean POINT-to-FACE adaptation now uses Blender's all-corners rule, making the resolution-160 case topology-exact at 17,428 / 15,886. Two of five cases are fully topology-exact; the other three are face-exact and differ by one vertex. Maximum local-bounds difference is 0.0510 units after the full 665-pass Sigilize blur."
+  "gnvm": { "verts": 24719, "faces": 22853 },
+  "coverage": "100% of reachable node types; the portable input retains Blender's post-conversion profile-less NURBS wire while real profile sweeps retain evaluated samples.",
+  "validation": "All five Blender/browser cases are topology-exact, including the authored 24,719 / 22,853 result and resolution-160 at 17,428 / 15,886. Boolean POINT-to-FACE adaptation uses Blender's all-corners rule. Authored and outline-thickness bounds agree within 0.0001 units; the largest remaining bounds delta is 0.0420 units in the 665-pass stroke-thickness case."
 }
