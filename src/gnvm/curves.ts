@@ -1313,7 +1313,7 @@ function meshEdgesToCurvesInternal(mesh: Mesh, selected?: (vi: number) => boolea
   // Blender Mesh to Curve semantics: splines break at "poles" (valence != 2).
   // Walk pole-to-pole open chains first, then what remains are pure cycles.
   const isPole = (v: number) => (adj.get(v)?.size ?? 0) !== 2;
-  const walk = (start: number, next: number): number[] => {
+  const walk = (start: number, next: number, repeatStartOnClosure = false): number[] => {
     const chain = [start];
     let prev = start, cur = next;
     visitedEdge.add(ek(prev, cur));
@@ -1324,7 +1324,14 @@ function meshEdgesToCurvesInternal(mesh: Mesh, selected?: (vi: number) => boolea
       const nxt = nbrs[0];
       visitedEdge.add(ek(cur, nxt));
       prev = cur; cur = nxt;
-      if (cur === start) break;
+      if (cur === start) {
+        // A cycle attached to a branch pole is not a cyclic spline in
+        // Blender. It is an open pole-to-same-pole spline, so the pole occurs
+        // at both ends. Omitting this repeated endpoint silently drops the
+        // closing edge when Curve to Mesh consumes the result.
+        if (repeatStartOnClosure) chain.push(cur);
+        break;
+      }
       chain.push(cur);
     }
     return chain;
@@ -1335,7 +1342,7 @@ function meshEdgesToCurvesInternal(mesh: Mesh, selected?: (vi: number) => boolea
     if (!isPole(start)) continue;
     for (const nb of adj.get(start)!) {
       if (visitedEdge.has(ek(start, nb))) continue;
-      emit(walk(start, nb), false);
+      emit(walk(start, nb, true), false);
     }
   }
   // remaining unvisited edges belong to valence-2 cycles

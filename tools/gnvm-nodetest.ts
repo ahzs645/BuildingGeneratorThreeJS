@@ -3,7 +3,7 @@
 // Run: npx tsx tools/gnvm-nodetest.ts
 import { Field, Vec3 } from "../src/gnvm/core";
 import { Geometry, Mesh, orientClosedSurface, realizeInstances, toTriSoup, topologyOf, transformPoint, triangulateFaceIndices } from "../src/gnvm/geometry";
-import { resampleSpline, splineFrames } from "../src/gnvm/curves";
+import { meshEdgesToChains, resampleSpline, splineFrames } from "../src/gnvm/curves";
 import { DUMP_CONTEXT, EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
 import { Evaluator, gradientDirectionField, makeFieldCtx } from "../src/gnvm/evaluator";
 import "../src/gnvm/index"; // registers all handlers
@@ -828,6 +828,22 @@ function meshSignedAreaXY(m: Mesh): number {
   const authoredCurve = runNode("GeometryNodeMeshToCurve", { Mesh: authored, Selection: true }).Curve as Geometry;
   const authoredTangent = authoredCurve.curveAttributes.get("__curve_tangent")?.data[0] as Vec3;
   check("MeshToCurve stores normalized corner-bisector tangents for authored edges", Math.abs(Math.abs(authoredTangent[0]) - Math.abs(authoredTangent[1])) < .002, JSON.stringify(authoredTangent));
+}
+
+// A loop attached to a branch pole becomes an open spline whose first and
+// last points are the same pole. This preserves the loop's closing edge; a
+// cyclic spline would incorrectly merge it with the unrelated pole branches.
+{
+  const mesh = new Mesh();
+  mesh.positions = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [-1, 0, 0], [0, -1, 0]];
+  mesh.edges = [[0, 1], [1, 2], [2, 0], [0, 3], [0, 4]];
+  const chains = meshEdgesToChains(mesh);
+  const attachedLoop = chains.find(({ verts }) => verts.length === 4);
+  check("MeshToCurve repeats a pole at an attached loop closure",
+    chains.length === 3
+      && chains.reduce((sum, { verts }) => sum + verts.length, 0) === 8
+      && attachedLoop?.verts[0] === attachedLoop?.verts.at(-1),
+    JSON.stringify(chains.map(({ verts, spline }) => ({ verts, cyclic: spline.cyclic }))));
 }
 
 {
