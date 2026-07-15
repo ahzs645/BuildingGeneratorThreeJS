@@ -28,8 +28,10 @@ const rawOverrides = overridesPath ? JSON.parse(readFileSync(overridesPath, "utf
 const overrides = Array.isArray(rawOverrides) ? rawOverrides[0]?.overrides ?? {} : rawOverrides;
 FIELD_PROBE.node = nodeName;
 FIELD_PROBE.socket = socketName;
+FIELD_PROBE.group = process.env.GNVM_PROBE_GROUP ?? null;
 FIELD_PROBE.batches = [];
 const result = await runGenerator(dump, { object: objectName, overrides });
+FIELD_PROBE.group = null;
 FIELD_PROBE.node = null;
 FIELD_PROBE.socket = null;
 

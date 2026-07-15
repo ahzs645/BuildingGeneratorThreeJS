@@ -30,11 +30,18 @@ for (const override of graphOverrides) {
     socket.value = value as never;
   }
 }
-const route = JSON.parse(process.env.GNVM_PROBE_ROUTE ?? "[]") as Array<{ group: string; node: string; socket: string }>;
+const route = JSON.parse(process.env.GNVM_PROBE_ROUTE ?? "[]") as Array<{
+  group: string;
+  node: string;
+  socket: string;
+  /** Group Output socket name/identifier when the group exposes several geometries. */
+  output?: string;
+}>;
 for (const step of route) {
   const group = dump.node_groups?.[step.group];
   const output = group?.nodes.find((node) => node.type === "NodeGroupOutput");
-  const target = output?.inputs.find((socket) => socket.type === "NodeSocketGeometry");
+  const target = output?.inputs.find((socket) => socket.type === "NodeSocketGeometry"
+    && (!step.output || socket.name === step.output || socket.identifier === step.output));
   if (!group || !output || !target) throw new Error(`invalid probe route: ${JSON.stringify(step)}`);
   group.links = group.links.filter((link) => link.to_node !== output.name || link.to_socket !== target.identifier);
   group.links.push({ from_node: step.node, from_socket: step.socket, to_node: output.name, to_socket: target.identifier });

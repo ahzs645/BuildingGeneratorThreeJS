@@ -1563,6 +1563,21 @@ function meshSignedAreaXY(m: Mesh): number {
   check("vertex normal corner-weights opposing fans", approx(n, [0, 0, 0]), JSON.stringify(n));
 }
 
+// Blender 5.1 calculates mesh point normals with normalized float32 Newell
+// face normals and its safe_acos_approx corner weights. These values are from
+// the same irregular five-face mesh evaluated by Blender's Mesh::vert_normals.
+{
+  const m = new Mesh();
+  m.positions = [[0.3, -0.2, 0.1], [2.1, 0.4, -0.3], [1.4, 2.2, 0.7], [-0.6, 1.1, 0.2], [0.2, 0.3, 1.9]];
+  m.faces = [[0, 1, 2, 3], [0, 4, 1], [1, 4, 2], [2, 4, 3], [3, 4, 0]];
+  const normals = m.vertexNormals();
+  check("vertex normals follow Blender float accumulation", approx(normals[0], [0.2710078955, 0.7997940183, 0.5356156826], 2e-7), JSON.stringify(normals[0]));
+
+  const loose = new Mesh();
+  loose.positions = [[3, 4, 0]];
+  check("loose vertex normal follows Blender radial fallback", approx(loose.vertexNormals()[0], [0.6, 0.8, 0], 1e-7), JSON.stringify(loose.vertexNormals()[0]));
+}
+
 // (P) MeshBoolean respects Blender's FLOAT / EXACT solver selection.
 {
   const { ensureManifold, isManifoldMesh, manifoldBooleanMany } = await import("../src/gnvm/boolean");

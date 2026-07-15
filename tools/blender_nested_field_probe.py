@@ -9,9 +9,11 @@ import bpy
 args = sys.argv[sys.argv.index("--") + 1 :]
 object_name, out_path, group_name, geometry_spec, field_spec, domain = args
 obj = bpy.data.objects[object_name]
+world_matrix = obj.matrix_world.copy()
 tree = bpy.data.node_groups[group_name]
 probe_scene = bpy.data.scenes.new("__NODE_DOJO_FIELD_PROBE_SCENE")
 probe_scene.collection.objects.link(obj)
+obj.matrix_world = world_matrix
 bpy.context.window.scene = probe_scene
 obj.hide_viewport = False
 obj.hide_render = False
@@ -116,7 +118,16 @@ for step in json.loads(os.environ.get("NODE_DOJO_PROBE_ROUTE", "[]")):
     route_tree = bpy.data.node_groups[step["group"]]
     route_node = route_tree.nodes[step["node"]]
     route_output = next(node for node in route_tree.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output)
-    route_target = next(socket for socket in route_output.inputs if socket.type == "GEOMETRY")
+    route_target = next(
+        socket
+        for socket in route_output.inputs
+        if socket.type == "GEOMETRY"
+        and (
+            not step.get("output")
+            or socket.name == step["output"]
+            or socket.identifier == step["output"]
+        )
+    )
     route_source = route_node.outputs[step["socket"]]
     route_links.append((route_tree, route_target, route_target.links[0].from_socket if route_target.is_linked else None))
     for link in list(route_target.links):

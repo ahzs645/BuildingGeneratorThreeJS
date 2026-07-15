@@ -2,7 +2,7 @@
 // engine runs under plain node/tsx for self-tests; the browser viewer converts
 // the triangle soup to a BufferGeometry.
 
-import { Vec3, Domain, Elem, asNum, asVec3, vadd, vscale, vsub, vdot, vlen, vnorm } from "./core";
+import { Vec3, Domain, Elem, asNum, asVec3, vadd, vscale, vsub, vlen, vnorm } from "./core";
 
 export interface Attribute {
   domain: Domain;
@@ -365,21 +365,53 @@ export function invalidateMeshCaches(mesh: Mesh): void {
   vertexNormalsCacheMeta.delete(mesh);
 }
 
+const f32 = Math.fround;
+
+function normalizeBlenderFloat(vector: Vec3): Vec3 {
+  const x = f32(vector[0]);
+  const y = f32(vector[1]);
+  const z = f32(vector[2]);
+  const lengthSquared = f32(f32(f32(x * x) + f32(y * y)) + f32(z * z));
+  const length = f32(Math.sqrt(lengthSquared));
+  if (!(length > 0)) return [0, 0, 0];
+  const inverse = f32(1 / length);
+  return [f32(x * inverse), f32(y * inverse), f32(z * inverse)];
+}
+
+/** Blender's float-only `safe_acos_approx`, used for mesh corner weights. */
+function safeAcosApproxBlenderFloat(value: number): number {
+  const x = f32(value);
+  const absolute = f32(Math.abs(x));
+  // The nested subtraction is intentional: Blender uses it to clamp values
+  // outside [-1, 1] and crush denormals using float arithmetic.
+  const magnitude = absolute < 1 ? f32(1 - f32(1 - absolute)) : 1;
+  let polynomial = f32(-0.02164095);
+  polynomial = f32(0.077980478 + f32(magnitude * polynomial));
+  polynomial = f32(-0.213300989 + f32(magnitude * polynomial));
+  polynomial = f32(1.5707963267 + f32(magnitude * polynomial));
+  const angle = f32(f32(Math.sqrt(f32(1 - magnitude))) * polynomial);
+  return x < 0 ? f32(f32(Math.PI) - angle) : angle;
+}
+
 function computeVertexNormals(mesh: Mesh): Vec3[] {
   const faceNormalWeights = mesh.faces.map((f) => {
-    // Newell vector before normalization. Its magnitude tracks face area, which
-    // keeps tiny rim/cap faces from dominating smooth vertex normals.
+    // Blender calculates normalized Newell face normals in float precision.
     let nx = 0, ny = 0, nz = 0;
     for (let i = 0; i < f.length; i++) {
       const cur = mesh.positions[f[i]];
       const nxt = mesh.positions[f[(i + 1) % f.length]];
-      nx += (cur[1] - nxt[1]) * (cur[2] + nxt[2]);
-      ny += (cur[2] - nxt[2]) * (cur[0] + nxt[0]);
-      nz += (cur[0] - nxt[0]) * (cur[1] + nxt[1]);
+      nx = f32(nx + f32(f32(cur[1] - nxt[1]) * f32(cur[2] + nxt[2])));
+      ny = f32(ny + f32(f32(cur[2] - nxt[2]) * f32(cur[0] + nxt[0])));
+      nz = f32(nz + f32(f32(cur[0] - nxt[0]) * f32(cur[1] + nxt[1])));
     }
     return [nx, ny, nz] as Vec3;
   });
-  const faceNormals = faceNormalWeights.map((n) => vnorm(n));
+  const faceNormals = faceNormalWeights.map((normal) => {
+    const normalized = normalizeBlenderFloat(normal);
+    return normalized[0] === 0 && normalized[1] === 0 && normalized[2] === 0
+      ? [0, 0, 1] as Vec3
+      : normalized;
+  });
   const incident: number[][] = mesh.positions.map(() => []);
   // Blender's mesh point normals are corner-angle weighted. Equal face
   // weighting badly tilts a rounded n-gon rim toward its two wall quads: the
@@ -395,22 +427,36 @@ function computeVertexNormals(mesh: Mesh): Vec3[] {
       const p = mesh.positions[vi];
       const prev = mesh.positions[f[(k - 1 + f.length) % f.length]];
       const next = mesh.positions[f[(k + 1) % f.length]];
-      const a = vnorm(vsub(prev, p));
-      const b = vnorm(vsub(next, p));
-      const angle = Math.acos(Math.max(-1, Math.min(1, vdot(a, b))));
-      acc[vi] = vadd(acc[vi], vscale(n, Number.isFinite(angle) ? angle : 0));
+      const a = normalizeBlenderFloat([
+        f32(prev[0] - p[0]),
+        f32(prev[1] - p[1]),
+        f32(prev[2] - p[2]),
+      ]);
+      const b = normalizeBlenderFloat([
+        f32(next[0] - p[0]),
+        f32(next[1] - p[1]),
+        f32(next[2] - p[2]),
+      ]);
+      const dot = f32(f32(f32(a[0] * b[0]) + f32(a[1] * b[1])) + f32(a[2] * b[2]));
+      const angle = safeAcosApproxBlenderFloat(dot);
+      const current = acc[vi];
+      acc[vi] = [
+        f32(current[0] + f32(n[0] * angle)),
+        f32(current[1] + f32(n[1] * angle)),
+        f32(current[2] + f32(n[2] * angle)),
+      ];
     }
   }
 
   return acc.map((n, vi) => {
     const fis = incident[vi];
-    if (!fis.length) return [0, 0, 1] as Vec3;
+    if (!fis.length) return normalizeBlenderFloat(mesh.positions[vi]);
     // Blender does not select one of several opposing normal fans on a
     // non-manifold point. It corner-angle-weights every incident face and
     // normalizes the resulting sum. This is observable on the Bolt Generator's
     // tap thread: choosing one fan moves nine seam points by about 0.5 units and
     // prevents the authored Heal Mesh weld from closing the surface.
-    return vnorm(n);
+    return normalizeBlenderFloat(n);
   });
 }
 

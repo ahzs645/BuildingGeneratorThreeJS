@@ -25,10 +25,11 @@ export type Program = Record<string, RawGroup>;
 // Per-node geometry trace for debugging (off by default; near-zero cost when off).
 export const TRACE: { on: boolean; log: { group: string; node: string; type: string; out: string; verts: number; faces: number; curves: number; inst: number; bbox?: string }[] } = { on: false, log: [] };
 export const FIELD_PROBE: {
+  group: string | null;
   node: string | null;
   socket: string | null;
   batches: { domain: Domain; positions: Vec3[]; values: import("./core").Elem[]; targets?: Vec3[] }[];
-} = { node: null, socket: null, batches: [] };
+} = { group: null, node: null, socket: null, batches: [] };
 
 export const GEOMETRY_PROBE: { group: string | null; node: string | null; socket: string | null; geometry: Geometry | null } = {
   group: null,
@@ -594,7 +595,10 @@ class Invocation {
     const node = this.byName.get(name);
     let outs: Record<string, SockVal> = {};
     if (node) outs = this.dispatch(node);
-    if (node && FIELD_PROBE.node === node.name && FIELD_PROBE.socket) {
+    if (node
+      && (!FIELD_PROBE.group || FIELD_PROBE.group === this.group.name)
+      && FIELD_PROBE.node === node.name
+      && FIELD_PROBE.socket) {
       const original = outs[FIELD_PROBE.socket];
       if (original instanceof Field) {
         outs = { ...outs, [FIELD_PROBE.socket]: Field.make((context) => {

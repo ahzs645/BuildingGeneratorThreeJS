@@ -2,7 +2,11 @@
 
 Usage:
   blender --background file.blend --python tools/blender_nested_geometry_socket_dump.py -- \
-    OBJECT OUT.json GROUP[/GROUP...] INNER_NODE:SOCKET [direct|realize|points|instance_points]
+    OBJECT OUT.json GROUP[:OUTPUT][/GROUP[:OUTPUT]...] INNER_NODE:SOCKET [direct|realize|points|instance_points]
+
+When a container group node has multiple geometry outputs, append the output
+name or identifier (for example ``Group.008:wrapper``). The legacy form keeps
+using the first geometry output.
 """
 import bpy
 import json
@@ -16,26 +20,48 @@ mode = args[4] if len(args) > 4 else "direct"
 node_name, socket_name = spec.split(":", 1)
 obj = bpy.data.objects[object_name]
 if obj.name not in bpy.context.view_layer.objects and bpy.context.scene.collection.objects.get(obj.name) is None:
+    world_matrix = obj.matrix_world.copy()
     bpy.context.scene.collection.objects.link(obj)
+    # Linking an object from an excluded asset-library collection can rebuild
+    # matrix_world from stale collection state. Preserve the authored world
+    # transform so the probe does not manufacture a relative-transform delta.
+    obj.matrix_world = world_matrix
 modifier = next(item for item in obj.modifiers if item.type == "NODES" and item.node_group)
 root = modifier.node_group
 tree = root
 rewired = []
 root_source = None
 root_geometry = None
-for container_name in container_path.split("/"):
+tree_output_identifier = None
+for container_spec in container_path.split("/"):
+    container_name, separator, container_socket = container_spec.partition(":")
     container = tree.nodes[container_name]
     output = next(node for node in tree.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output)
-    geometry = next(socket for socket in output.inputs if socket.type == "GEOMETRY")
+    geometry = next(
+        socket
+        for socket in output.inputs
+        if socket.type == "GEOMETRY"
+        and (tree_output_identifier is None or socket.identifier == tree_output_identifier)
+    )
     old = geometry.links[0].from_socket if geometry.is_linked else None
     for link in list(geometry.links):
         tree.links.remove(link)
-    container_output = next(socket for socket in container.outputs if socket.type == "GEOMETRY")
+    if separator:
+        container_output = next(
+            socket
+            for socket in container.outputs
+            if socket.name == container_socket or socket.identifier == container_socket
+        )
+        if container_output.type != "GEOMETRY":
+            raise TypeError(f"container output is not geometry: {container_spec}")
+    else:
+        container_output = next(socket for socket in container.outputs if socket.type == "GEOMETRY")
     tree.links.new(container_output, geometry)
     rewired.append((tree, geometry, old))
     if tree == root:
         root_source = container_output
         root_geometry = geometry
+    tree_output_identifier = container_output.identifier
     tree = container.node_tree
 
 nested = tree
@@ -45,7 +71,12 @@ if repeat_iterations is not None:
         if repeat_input.bl_idname == "GeometryNodeRepeatInput":
             repeat_input.inputs["Iterations"].default_value = int(repeat_iterations)
 nested_output = next(node for node in nested.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output)
-nested_geometry = next(socket for socket in nested_output.inputs if socket.type == "GEOMETRY")
+nested_geometry = next(
+    socket
+    for socket in nested_output.inputs
+    if socket.type == "GEOMETRY"
+    and (tree_output_identifier is None or socket.identifier == tree_output_identifier)
+)
 old_nested = nested_geometry.links[0].from_socket if nested_geometry.is_linked else None
 for link in list(nested_geometry.links):
     nested.links.remove(link)
