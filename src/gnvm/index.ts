@@ -5,6 +5,7 @@ import { DUMP_CONTEXT, MISSING, REGISTRY } from "./registry";
 import { ensureManifold } from "./boolean";
 import { evaluateBezierSpline } from "./bezier";
 import { matchLegacyCurvePassthrough } from "./nodes/geometry";
+import { resolveObjectDependencyOrder, type ExtractionMetadataV1 } from "./dependency-metadata";
 
 // Registering the handler modules populates the REGISTRY.
 import "./nodes/math";
@@ -45,6 +46,7 @@ export interface Dump {
   images?: { name: string; filepath?: string; size: number[]; pixels_rgba8?: string; channels?: number }[];
   fonts?: Record<string, import("./registry").FontAtlas>;
   dependency_objects?: string[];
+  extraction_metadata?: ExtractionMetadataV1;
   objects?: {
     name: string;
     location?: number[];
@@ -222,10 +224,11 @@ export async function runGenerator(dump: Dump, opts: { object?: string; override
   // Evaluate reachable referenced-object modifier roots before the main root.
   // Object Info sees Blender's evaluated geometry set, including curve-only
   // outputs that cannot be represented by Object.to_mesh() during extraction.
-  const dependencyNames = new Set(dump.dependency_objects ?? []);
-  for (const object of DUMP_CONTEXT.objects) {
-    if (object.name === found.objectName) continue;
-    if (!dependencyNames.has(object.name)) continue;
+  const dependencyNames = resolveObjectDependencyOrder(dump, found.group, found.objectName);
+  const objectsByName = new Map(DUMP_CONTEXT.objects.map((object) => [object.name, object]));
+  for (const dependencyName of dependencyNames) {
+    const object = objectsByName.get(dependencyName);
+    if (!object) continue;
     const modifier = object.modifiers?.find((candidate) => candidate.type === "NODES" && candidate.node_group && dump.node_groups[candidate.node_group]);
     if (!modifier?.node_group) continue;
     const dependencyGroup: any = dump.node_groups[modifier.node_group];

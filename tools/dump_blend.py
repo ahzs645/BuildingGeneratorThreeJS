@@ -1,6 +1,7 @@
 """Dump geometry node trees, objects, and materials from a .blend to JSON."""
 import bpy
 import base64
+import hashlib
 import json
 import os
 import sys
@@ -447,6 +448,8 @@ for obj in bpy.data.objects:
          "rotation": list(obj.rotation_euler), "scale": list(obj.scale),
          "matrix_world": [[round(float(value), 9) for value in row] for row in resolved_world_matrix(obj)],
          "visible": not obj.hide_render, "modifiers": [], "materials": [m.name for m in obj.data.materials if m is not None] if obj.type in ("MESH", "CURVE") and obj.data else []}
+    if obj.get("node_dojo_dependency_snapshot"):
+        o["node_dojo_dependency_snapshot"] = str(obj["node_dojo_dependency_snapshot"])
     if obj.type == "MESH" and obj.data:
         o["mesh_stats"] = {"verts": len(obj.data.vertices), "faces": len(obj.data.polygons)}
         # Embed small BASE meshes (pre-modifier obj.data): ObjectInfo materializes
@@ -699,6 +702,254 @@ else:
         except Exception as error:
             result["fonts"][font_name] = {"name": font_name, "error": repr(error), "glyphs": {}}
             print(f"FONT_ATLAS_ERROR {font_name}: {error!r}")
+
+
+def build_extraction_metadata(payload):
+    """Build an additive v1 metadata index without changing dump payloads."""
+    object_ids = {
+        obj["name"]: f"object:{index:06d}"
+        for index, obj in enumerate(sorted(payload["objects"], key=lambda item: item["name"]), 1)
+    }
+    group_ids = {
+        name: f"node_tree:{index:06d}"
+        for index, name in enumerate(sorted(payload["node_groups"]), 1)
+    }
+    groups = {}
+    for group_name in sorted(payload["node_groups"]):
+        group = payload["node_groups"][group_name]
+        group_id = group_ids[group_name]
+        node_ids = {
+            node["name"]: f"{group_id}/node:{index:06d}"
+            for index, node in enumerate(group.get("nodes", []), 1)
+        }
+        interface_ids = [
+            {
+                "index": index,
+                "id": f"{group_id}/interface:{index:06d}",
+                **({"identifier": item["identifier"]} if item.get("identifier") else {}),
+            }
+            for index, item in enumerate(group.get("interface", []), 1)
+        ]
+        socket_ids = []
+        for node in group.get("nodes", []):
+            node_id = node_ids[node["name"]]
+            for direction in ("input", "output"):
+                for index, socket in enumerate(node.get(f"{direction}s", []), 1):
+                    socket_ids.append({
+                        "node": node["name"],
+                        "direction": direction,
+                        "index": index,
+                        "id": f"{node_id}/{direction}:{index:06d}",
+                        **({"identifier": socket["identifier"]} if socket.get("identifier") else {}),
+                    })
+        groups[group_name] = {
+            "id": group_id,
+            "nodes": node_ids,
+            "interface": interface_ids,
+            "sockets": socket_ids,
+        }
+
+    object_payloads = {obj["name"]: obj for obj in payload["objects"]}
+    collections = {entry["name"]: entry for entry in payload["collections"]}
+    images = {entry["name"]: entry for entry in payload["images"]}
+    kind_map = {
+        "object": "object", "collection": "collection", "material": "material",
+        "image": "image", "vectorfont": "font", "font": "font",
+        "scene": "scene", "nodetree": "node_tree", "geometrynodetree": "node_tree",
+    }
+    descriptors = []
+    descriptor_keys = set()
+
+    def availability(kind, name):
+        if kind == "object":
+            item = object_payloads.get(name)
+            if not item:
+                return "unavailable"
+            return "embedded" if any(key in item for key in ("mesh", "curves", "evaluated_mesh")) else "referenced"
+        if kind == "collection":
+            return "embedded" if name in collections else "unavailable"
+        if kind == "material":
+            return "embedded" if name in payload["materials"] else "unavailable"
+        if kind == "image":
+            item = images.get(name)
+            if not item:
+                return "unavailable"
+            return "embedded" if item.get("pixels_rgba8") else "referenced"
+        if kind == "font":
+            return "embedded" if name in payload["fonts"] else "referenced"
+        if kind == "scene":
+            return "referenced"
+        if kind == "node_tree":
+            return "embedded" if name in payload["node_groups"] else "unavailable"
+        return "unavailable"
+
+    def target_id(kind, name):
+        if kind == "object":
+            return object_ids.get(name)
+        if kind == "node_tree":
+            return group_ids.get(name)
+        return f"{kind}:{name}"
+
+    def library_path(kind, name):
+        stores = {
+            "object": bpy.data.objects, "collection": bpy.data.collections,
+            "material": bpy.data.materials, "image": bpy.data.images,
+            "font": bpy.data.fonts, "scene": bpy.data.scenes, "node_tree": bpy.data.node_groups,
+        }
+        datablock = stores.get(kind).get(name) if stores.get(kind) else None
+        library = getattr(datablock, "library", None)
+        return bpy.path.abspath(library.filepath) if library else None
+
+    def add_descriptor(kind, source, name, provenance):
+        if not name:
+            return
+        key = (kind, source.get("tree"), source.get("node"), source.get("socket"),
+               source.get("direction"), source.get("object"), source.get("modifier"), name, provenance)
+        if key in descriptor_keys:
+            return
+        descriptor_keys.add(key)
+        target = {"name": name, "id": target_id(kind, name), "library_path": library_path(kind, name)}
+        if kind == "object" and object_payloads.get(name, {}).get("node_dojo_dependency_snapshot"):
+            target["snapshot"] = object_payloads[name]["node_dojo_dependency_snapshot"]
+        source_id = dict(source)
+        if source.get("tree") in groups:
+            source_id["tree_id"] = groups[source["tree"]]["id"]
+            if source.get("node") in groups[source["tree"]]["nodes"]:
+                source_id["node_id"] = groups[source["tree"]]["nodes"][source["node"]]
+                sockets = groups[source["tree"]]["sockets"]
+                direction = source.get("direction")
+                matches = [entry for entry in sockets if entry["node"] == source.get("node")
+                           and entry["direction"] == direction and entry.get("identifier") == source.get("socket")]
+                if matches:
+                    source_id["socket_id"] = matches[0]["id"]
+        descriptors.append({
+            "id": f"dependency:{len(descriptors) + 1:06d}",
+            "kind": kind,
+            "source": source_id,
+            "target": target,
+            "required": True,
+            "availability": availability(kind, name),
+            "provenance": provenance,
+        })
+
+    def scan_value(value, source, provenance):
+        if isinstance(value, dict):
+            datablock = str(value.get("datablock", "")).lower()
+            kind = kind_map.get(datablock)
+            if kind and isinstance(value.get("name"), str):
+                add_descriptor(kind, source, value["name"], provenance)
+            for nested in value.values():
+                scan_value(nested, source, provenance)
+        elif isinstance(value, list):
+            for nested in value:
+                scan_value(nested, source, provenance)
+
+    for group_name, group in payload["node_groups"].items():
+        for node in group.get("nodes", []):
+            if node.get("group"):
+                add_descriptor("node_tree", {
+                    "tree": group_name, "node": node["name"], "direction": "nested_tree",
+                }, node["group"], "nested_tree")
+            for direction in ("input", "output"):
+                for socket in node.get(f"{direction}s", []):
+                    scan_value(socket.get("value", socket.get("default")), {
+                        "tree": group_name, "node": node["name"], "socket": socket.get("identifier"),
+                        "direction": direction,
+                    }, "node_socket")
+            scan_value(node.get("props"), {"tree": group_name, "node": node["name"]}, "node_socket")
+        for item in group.get("interface", []):
+            scan_value(item.get("default"), {"tree": group_name, "socket": item.get("identifier"), "direction": "input"}, "node_socket")
+
+    for obj in payload["objects"]:
+        for modifier in obj.get("modifiers", []):
+            for socket, value in (modifier.get("input_values") or {}).items():
+                scan_value(value, {
+                    "object": obj["name"], "modifier": modifier.get("name"), "socket": socket,
+                    "direction": "modifier_input",
+                }, "modifier_input")
+
+    # Keep the legacy list populated for old consumers while typed descriptors
+    # become the authoritative record for new extraction.
+    payload["dependency_objects"] = sorted(set(payload.get("dependency_objects", [])) | {
+        descriptor["target"]["name"]
+        for descriptor in descriptors
+        if descriptor["kind"] == "object" and descriptor["availability"] != "unavailable"
+    })
+
+    object_graph = {}
+    for descriptor in descriptors:
+        source_tree = descriptor["source"].get("tree")
+        if descriptor["kind"] != "object" or not source_tree:
+            continue
+        for obj in payload["objects"]:
+            if any(mod.get("type") == "NODES" and mod.get("node_group") == source_tree for mod in obj.get("modifiers", [])):
+                object_graph.setdefault(obj["name"], set()).add(descriptor["target"]["name"])
+    warnings = []
+    visited = set()
+    visiting = []
+    def find_cycles(name):
+        if name in visiting:
+            path = visiting[visiting.index(name):] + [name]
+            if not any(warning.get("path") == path for warning in warnings):
+                warnings.append({
+                    "code": "DEPENDENCY_CYCLE",
+                    "message": "Evaluated object dependencies contain a cycle; use an authoritative frozen snapshot when reproducibility matters.",
+                    "path": path,
+                })
+            return
+        if name in visited:
+            return
+        visiting.append(name)
+        for target in object_graph.get(name, set()):
+            find_cycles(target)
+        visiting.pop()
+        visited.add(name)
+    for object_name in object_graph:
+        find_cycles(object_name)
+    for obj in payload["objects"]:
+        if obj.get("node_dojo_dependency_snapshot"):
+            warnings.append({
+                "code": "FROZEN_EVALUATED_DEPENDENCY",
+                "message": f"{obj['name']} uses an explicitly frozen evaluated dependency snapshot.",
+                "path": [obj["name"]],
+            })
+
+    roots = []
+    if target_object and target_object in object_ids:
+        roots.append(object_ids[target_object])
+    root_groups = []
+    if target_object:
+        target_payload = object_payloads.get(target_object, {})
+        root_groups = [group_ids[modifier["node_group"]] for modifier in target_payload.get("modifiers", [])
+                       if modifier.get("type") == "NODES" and modifier.get("node_group") in group_ids]
+    source = {}
+    if bpy.data.filepath:
+        source["filename"] = os.path.basename(bpy.data.filepath)
+        try:
+            digest = hashlib.sha256()
+            with open(bpy.data.filepath, "rb") as blend_file:
+                for chunk in iter(lambda: blend_file.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            source["fingerprint_sha256"] = digest.hexdigest()
+        except Exception as error:
+            warnings.append({"code": "SOURCE_FINGERPRINT_FAILED", "message": repr(error)})
+
+    return {
+        "schema_version": 1,
+        "extractor": {"name": "tools/dump_blend.py", "version": "1.1", "blender_version": bpy.app.version_string},
+        "source": source,
+        "roots": {"objects": roots, "node_groups": root_groups},
+        "provenance": {
+            "payload": "Blender RNA plus evaluated dependency snapshots",
+            "dependency_policy": "reachable typed datablock pointers; legacy dependency_objects retained",
+        },
+        "warnings": warnings,
+        "ids": {"objects": object_ids, "node_groups": groups},
+        "dependencies": descriptors,
+    }
+
+
+result["extraction_metadata"] = build_extraction_metadata(result)
 
 with open(out_path, "w", encoding="utf-8") as f:
     json.dump(result, f, indent=1, default=str)

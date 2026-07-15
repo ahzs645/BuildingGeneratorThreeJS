@@ -21,6 +21,9 @@ target.data = frozen
 for modifier in list(target.modifiers):
     if modifier.type == "NODES":
         target.modifiers.remove(modifier)
+# dump_blend.py preserves this marker in extraction metadata so consumers can
+# distinguish an authoritative evaluated snapshot from an ordinary base mesh.
+target["node_dojo_dependency_snapshot"] = "frozen_evaluated_modifier_stack_v1"
 target.update_tag()
 bpy.context.view_layer.update()
 print(f"HAT_FRONT_DEPENDENCY_FROZEN {len(frozen.vertices)} verts / {len(frozen.polygons)} faces")

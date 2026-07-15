@@ -40,9 +40,18 @@ Reviewed against authoritative repository state on 2026-07-14. No implementation
 
 The current dump remains version 1 input until Blender round-trip fixtures justify a new contract.
 
-1. Add an optional sidecar/envelope without changing node payloads: `schema_version`, extractor/Blender versions, source fingerprint, root object/group IDs, warnings, and provenance.
-2. Assign exact document-local object, node, interface item, and socket IDs during extraction. Keep current names/identifiers for compatibility and diagnostics. These IDs preserve identity inside one export; cross-export persistence requires a separate opt-in policy, such as UUID custom properties stored in the `.blend`.
-3. Add typed external dependency descriptors for objects, collections, materials, images, fonts, scenes, and nested trees. Record source tree/node/socket, target datablock/tree, nested path, provenance, library path, direction, and whether the dependency is embedded, referenced, unavailable, required, or optional.
+The first metadata slice is now implemented as an optional top-level `extraction_metadata` object. It is strictly additive: existing node, socket, link, modifier, object, and `dependency_objects` payloads retain their version-1 meanings, and dumps without metadata remain valid. New extraction records:
+
+- `schema_version: 1`, extractor/Blender versions, source basename and SHA-256 fingerprint, document-local root IDs, provenance, and structured warnings;
+- a separate document-local ID index for objects, node trees, nodes, interface items, and sockets, leaving runtime payload keys unchanged;
+- typed dependency descriptors with exact source tree/node/socket (or modifier input), target ID/name/library path, requiredness, availability, and provenance for object, collection, material, image, font, scene, and nested-tree references;
+- dependency-cycle warnings and explicit frozen-snapshot provenance. `tools/freeze_hat_front_dependency.py` marks its evaluated `hat front` snapshot so a subsequent extraction can distinguish it from an authored base mesh.
+
+GN-VM resolves dependencies from reachable typed descriptors, preserves `dependency_objects` as a legacy fallback, and derives reachable object pointers from old node payloads when both are absent. That last compatibility path makes the committed Send Nodes Hat fixture authoritative: `embroidery` already serializes `Object Info → hat front`, so the VM evaluates/provides `hat front` automatically without embedding a hard-coded final embroidery mesh.
+
+1. **Implemented:** add an optional metadata envelope without changing node payloads: `schema_version`, extractor/Blender versions, source fingerprint, root object/group IDs, warnings, and provenance.
+2. **First slice implemented:** assign exact document-local object, node, interface item, and socket IDs during extraction. Keep current names/identifiers for compatibility and diagnostics. These IDs preserve identity inside one export; cross-export persistence requires a separate opt-in policy, such as UUID custom properties stored in the `.blend`.
+3. **First slice implemented:** add typed external dependency descriptors for objects, collections, materials, images, fonts, scenes, and nested trees. Remaining extensions include explicit nested paths and optional dependencies.
 4. Represent hierarchy and ordering explicitly: parent frame IDs, interface panel parent/order, ordered multi-input links, paired zones, and stable reroute input/output IDs.
 5. Build dependency indexes (predecessors/successors), cycle diagnostics, dirty propagation, and cached GN-VM cooking as derived metadata. These optimize evaluation but never override Blender behavior.
 6. Introduce a versioned inverse adapter only after round-trip fixtures prove lossless node/socket/link/interface reconstruction in Blender. Import should be phased: allocate trees/nodes and register IDs; resolve parents/dynamic properties and externals; create links; then restore multi-input order.
@@ -65,6 +74,7 @@ Until step 6 is proven, editor-only XYFlow position changes and JSON exports are
 ```sh
 npm test
 npx tsx tools/gnvm-nodetest.ts
+npx tsx tools/validate_dump_dependencies.ts public/dojo/send-nodes-hat/dump.json "embroidery crv" --evaluate
 npm run build
 ```
 
