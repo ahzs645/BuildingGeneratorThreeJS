@@ -1,0 +1,1 @@
+{"source":"blender","blender_version":"5.1.2","object":"10pt spoke flat stickie","modifier":"GeometryNodes","node_group":"gn.sticker control","results":[{"combo":{"name":"authored default","overrides":{}},"status":"ok","verts":4,"faces":1,"bbox":{"min":[-11.2642,-11.6327,0.0],"max":[11.2642,11.6327,0.0]},"elapsed_ms":1.1}]}

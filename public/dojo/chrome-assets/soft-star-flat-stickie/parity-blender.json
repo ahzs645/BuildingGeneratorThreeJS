@@ -1,0 +1,1 @@
+{"source":"blender","blender_version":"5.1.2","object":"8pt soft star flat stickie.001","modifier":"GeometryNodes","node_group":"gn.sticker control.001","results":[{"combo":{"name":"authored default","overrides":{}},"status":"ok","verts":4,"faces":1,"bbox":{"min":[-18.446,-18.446,0.0],"max":[18.446,18.446,0.0]},"elapsed_ms":0.6}]}

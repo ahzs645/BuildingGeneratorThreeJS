@@ -1,0 +1,1 @@
+{"source":"blender","blender_version":"5.1.2","object":"Vert.017","modifier":"GeometryNodes","node_group":"polarity sticker","results":[{"combo":{"name":"authored default","overrides":{}},"status":"ok","verts":68,"faces":4,"bbox":{"min":[-23.5167,-23.5167,0.0],"max":[23.5167,23.5167,0.0]},"elapsed_ms":0.7}]}

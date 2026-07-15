@@ -183,6 +183,7 @@
     "dump": "dojo/chrome-assets/outline-sticker/dump.json",
     "reference": "dojo/references/chrome-assets/outline-sticker.png",
     "blenderStats": { "verts": 1056, "faces": 1025 },
+    "note": "Authored output matches Blender exactly at 1,056 vertices / 1,025 faces with identical four-decimal local bounds; scale and outline remain editable in-browser.",
     "controls": [
       { "name": "scale", "label": "Scale", "min": 2, "max": 18, "step": 0.000001, "value": 11.558334350585938 },
       { "name": "outline", "label": "Outline", "min": 0, "max": 2, "step": 0.000001, "value": 0.49366679787635803 }
@@ -195,6 +196,7 @@
     "dump": "dojo/chrome-assets/soft-star-flat-stickie/dump.json",
     "reference": "dojo/references/chrome-assets/soft-star-flat-stickie.png",
     "blenderStats": { "verts": 4, "faces": 1 },
+    "note": "The authored soft-star sticker control graph preserves the source quad exactly in topology and four-decimal local bounds.",
     "controls": []
   },
   {
@@ -204,6 +206,7 @@
     "dump": "dojo/chrome-assets/spoke-flat-stickie/dump.json",
     "reference": "dojo/references/chrome-assets/spoke-flat-stickie.png",
     "blenderStats": { "verts": 4, "faces": 1 },
+    "note": "The authored 10-point spoke sticker control graph preserves the source quad exactly in topology and four-decimal local bounds.",
     "controls": []
   },
   {
@@ -241,6 +244,7 @@
     "dump": "dojo/chrome-assets/period-pack-shape/dump.json",
     "reference": "dojo/references/chrome-assets/period-pack-shape.png",
     "blenderStats": { "verts": 28, "faces": 1 },
+    "note": "Authored 28-sided period-pack shape matches Blender exactly in topology and four-decimal local bounds.",
     "controls": []
   },
   {
@@ -250,6 +254,7 @@
     "dump": "dojo/chrome-assets/polarity-sticker/dump.json",
     "reference": "dojo/references/chrome-assets/polarity-sticker.png",
     "blenderStats": { "verts": 68, "faces": 4 },
+    "note": "Authored four-part polarity sticker matches Blender exactly in topology and four-decimal local bounds.",
     "controls": []
   },
   {
@@ -259,6 +264,7 @@
     "dump": "dojo/chrome-assets/flat-stickie-pack/dump.json",
     "reference": "dojo/references/chrome-assets/flat-stickie-pack.png",
     "blenderStats": { "verts": 28, "faces": 7 },
+    "note": "All seven transformed sticker instances match Blender exactly in topology and four-decimal local bounds.",
     "controls": []
   },
   {
