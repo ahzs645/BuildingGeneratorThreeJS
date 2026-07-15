@@ -33,6 +33,9 @@ jobs:
       - name: Run Geometry Nodes regression tests
         run: npx tsx tools/gnvm-nodetest.ts
 
+      - name: Validate Geometry Nodes editor adapter
+        run: npm test
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
 

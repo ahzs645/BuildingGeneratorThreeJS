@@ -49,6 +49,14 @@ drives a baked Blender-truth variant and a fresh GN-VM evaluation, with overlay,
 side-by-side, wire/material, triangle, highlighted-material, and envelope-delta
 comparisons. The former standalone `/gnvm` page redirects into this workspace.
 
+`/crayon` includes the Blender-like Geometry Nodes workspace for the extracted
+Chrome Crayon graph. It preserves authored groups, frames, reroutes, socket order,
+and stable socket identifiers; search, selection, breadcrumbs, minimap, wiring,
+value edits, and undo/redo are connected to the existing GN-VM Web Worker and
+Three.js parity viewport. Architecture, reference-project licensing, and the
+Tree Clipper metadata migration plan are documented in
+[`docs/GEOMETRY_NODES_WORKSPACE.md`](docs/GEOMETRY_NODES_WORKSPACE.md).
+
 ## GitHub Pages
 
 Pushing `main` deploys the static React studio through
