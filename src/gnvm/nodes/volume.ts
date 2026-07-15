@@ -18,7 +18,8 @@ function isVolumeGrid(value: unknown): value is VolumeGrid {
   return !!value && typeof value === "object" && (value as VolumeGrid).kind === "GNVM_VOLUME_GRID";
 }
 
-function splitNonManifoldFans(mesh: Mesh): void {
+function splitNonManifoldFans(mesh: Mesh): number {
+  const initialVertices = mesh.positions.length;
   const edgeFaces = new Map<string, { vertices: [number, number]; faces: number[] }>();
   const pointFaces: number[][] = mesh.positions.map(() => []);
   for (let face = 0; face < mesh.faces.length; face++) {
@@ -32,7 +33,7 @@ function splitNonManifoldFans(mesh: Mesh): void {
       else edgeFaces.set(key, { vertices: a < b ? [a, b] : [b, a], faces: [face] });
     }
   }
-  if (![...edgeFaces.values()].some((edge) => edge.faces.length !== 2)) return;
+  if (![...edgeFaces.values()].some((edge) => edge.faces.length !== 2)) return 0;
   const edgesAtPoint: { vertices: [number, number]; faces: number[] }[][] = mesh.positions.map(() => []);
   for (const edge of edgeFaces.values()) {
     edgesAtPoint[edge.vertices[0]].push(edge);
@@ -69,6 +70,30 @@ function splitNonManifoldFans(mesh: Mesh): void {
         mesh.faces[face] = mesh.faces[face].map((candidate) => candidate === vertex ? replacement : candidate);
     }
   }
+  return mesh.positions.length - initialVertices;
+}
+
+export interface SurfaceNetsDiagnostics {
+  resolution: Vec3;
+  activeCells: number;
+  activeCellComponents: Record<string, number>;
+  ambiguousFaces: number;
+  crossedGridEdges: number;
+  emittedQuads: number;
+  skippedMissingVertex: number;
+  skippedDuplicateVertex: number;
+  preSplitVertices: number;
+  preSplitFaces: number;
+  splitVerticesAdded: number;
+  postSplitVertices: number;
+  postSplitFaces: number;
+}
+
+let surfaceNetsDiagnosticSink: ((diagnostics: SurfaceNetsDiagnostics) => void) | null = null;
+
+/** Install a process-local diagnostic callback; intended for parity tooling. */
+export function setSurfaceNetsDiagnosticSink(sink: ((diagnostics: SurfaceNetsDiagnostics) => void) | null): void {
+  surfaceNetsDiagnosticSink = sink;
 }
 
 // Blender's OpenVDB mesher uses a surface-net topology: one vertex in every
@@ -77,6 +102,10 @@ function splitNonManifoldFans(mesh: Mesh): void {
 // emitted by Marching Cubes.
 function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, origin: Vec3, spacing: Vec3): Mesh {
   const mesh = new Mesh();
+  const diagnosticSink = surfaceNetsDiagnosticSink;
+  let activeCells = 0;
+  let ambiguousFaces = 0;
+  const activeCellComponents = new Map<number, number>();
   const sample = (x: number, y: number, z: number) => values[z * resolution[0] * resolution[1] + y * resolution[0] + x];
   const cellResolution: Vec3 = [resolution[0] - 1, resolution[1] - 1, resolution[2] - 1];
   const cellIndex = (x: number, y: number, z: number) => z * cellResolution[0] * cellResolution[1] + y * cellResolution[0] + x;
@@ -113,6 +142,7 @@ function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, 
     const below = cornerValues.some((value) => value < isolation);
     const above = cornerValues.some((value) => value >= isolation);
     if (!below || !above) continue;
+    if (diagnosticSink) activeCells++;
     const edgePoints: (Vec3 | null)[] = cellEdges.map(() => null);
     for (let edge = 0; edge < cellEdges.length; edge++) {
       const [a, b] = cellEdges[edge];
@@ -134,6 +164,7 @@ function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, 
       const crossed = face.edges.filter((edge) => edgePoints[edge] !== null);
       if (crossed.length === 2) join(crossed[0], crossed[1]);
       else if (crossed.length === 4) {
+        if (diagnosticSink) ambiguousFaces++;
         const shifted = face.corners.map((corner) => cornerValues[corner] - isolation);
         const determinant = shifted[0] * shifted[2] - shifted[1] * shifted[3];
         const [e0, e1, e2, e3] = face.edges;
@@ -156,6 +187,8 @@ function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, 
       const edges = components.get(component);
       if (edges) edges.push(edge); else components.set(component, [edge]);
     }
+    if (diagnosticSink)
+      activeCellComponents.set(components.size, (activeCellComponents.get(components.size) ?? 0) + 1);
     const edgeVertices = new Int32Array(12).fill(-1);
     for (const edges of components.values()) {
       let sum: Vec3 = [0, 0, 0];
@@ -170,9 +203,16 @@ function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, 
     cellEdgeVertices.set(cellIndex(x, y, z), edgeVertices);
   }
 
+  let crossedGridEdges = 0;
+  let emittedQuads = 0;
+  let skippedMissingVertex = 0;
+  let skippedDuplicateVertex = 0;
   const addQuad = (indices: number[], forward: boolean) => {
-    if (indices.some((index) => index < 0) || new Set(indices).size !== 4) return;
+    if (diagnosticSink) crossedGridEdges++;
+    if (indices.some((index) => index < 0)) { if (diagnosticSink) skippedMissingVertex++; return; }
+    if (new Set(indices).size !== 4) { if (diagnosticSink) skippedDuplicateVertex++; return; }
     mesh.faces.push(forward ? indices : [...indices].reverse());
+    if (diagnosticSink) emittedQuads++;
   };
   const cellEdge = (x: number, y: number, z: number, edge: number) => cellEdgeVertices.get(cellIndex(x, y, z))?.[edge] ?? -1;
   for (let z = 1; z < resolution[2] - 1; z++) for (let y = 1; y < resolution[1] - 1; y++) for (let x = 1; x < resolution[0] - 1; x++) {
@@ -187,7 +227,24 @@ function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, 
     if ((value < isolation) !== (crossZ < isolation))
       addQuad([cellEdge(x - 1, y - 1, z, 11), cellEdge(x, y - 1, z, 10), cellEdge(x, y, z, 8), cellEdge(x - 1, y, z, 9)], value < isolation);
   }
-  splitNonManifoldFans(mesh);
+  const preSplitVertices = mesh.positions.length;
+  const preSplitFaces = mesh.faces.length;
+  const splitVerticesAdded = splitNonManifoldFans(mesh);
+  diagnosticSink?.({
+    resolution: [...resolution] as Vec3,
+    activeCells,
+    activeCellComponents: Object.fromEntries([...activeCellComponents].map(([count, cells]) => [String(count), cells])),
+    ambiguousFaces,
+    crossedGridEdges,
+    emittedQuads,
+    skippedMissingVertex,
+    skippedDuplicateVertex,
+    preSplitVertices,
+    preSplitFaces,
+    splitVerticesAdded,
+    postSplitVertices: mesh.positions.length,
+    postSplitFaces: mesh.faces.length,
+  });
   return mesh;
 }
 
