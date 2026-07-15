@@ -1,9 +1,11 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
 import { rangeOverrideValue } from "./chrome-asset-controls";
 import type { Dump, TriSoup } from "./gnvm/index";
 import { makeAttributeEmissionMaterial } from "./attribute-emission-material";
+import { makeChromeCrayonMaterial } from "./chrome-crayon-material";
 import { makeImagePixelStipplerMaterial } from "./image-pixel-stippler-material";
 
 type RangeControl = { type?: "range"; name: string; label: string; min: number; max: number; step: number; value: number };
@@ -13,7 +15,7 @@ type VectorControl = { type: "vector"; name: string; label: string; value: [numb
 type SelectControl = { type: "select"; name: string; label: string; value: number | string; options: { label: string; value: number | string }[] };
 type Control = RangeControl | CheckboxControl | TextControl | VectorControl | SelectControl;
 type AssetFont = { url: string; family: string; requiredFor: string; fallback: string };
-type Asset = { id: string; title: string; object: string; dump: string; reference: string; blenderStats: { verts: number; faces: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission"; controls: Control[] };
+type Asset = { id: string; title: string; object: string; dump: string; reference: string; blenderStats: { verts: number; faces: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon"; controls: Control[] };
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
@@ -31,6 +33,10 @@ const note = document.querySelector<HTMLElement>("#assets-note")!;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
 const scene = new THREE.Scene();
+const room = new RoomEnvironment();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(room, .04).texture;
+room.dispose(); pmrem.dispose();
 scene.add(new THREE.HemisphereLight(0xf1f6ed, 0x172018, 1.5));
 const key = new THREE.DirectionalLight(0xffffff, 2); key.position.set(-4, -6, 9); scene.add(key);
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, .01, 5000);
@@ -74,7 +80,9 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
       geometry.addGroup(group.start,group.count,index);
       const authored=current.material==="image-pixel-stippler"
         ? makeImagePixelStipplerMaterial(dump,geometry,group.material??"")
-        : makeAttributeEmissionMaterial(dump,geometry,group.material??"");
+        : current.material==="chrome-crayon"
+          ? makeChromeCrayonMaterial(dump,geometry,group.material??"")
+          : makeAttributeEmissionMaterial(dump,geometry,group.material??"");
       materials.push(authored??diagnosticMaterial());
     }
   }
