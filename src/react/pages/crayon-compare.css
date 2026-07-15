@@ -23,3 +23,6 @@
 /* First authoring slice: compact Blender-like socket controls and graph history. */
 .graph-actions{display:flex;gap:4px;margin-left:auto}.blender-flow-toolbar .graph-actions button{width:auto;min-width:24px;padding:0 6px;font-size:8px}.graph-file-input{display:none}
 .blender-socket-row{min-height:15px}.socket-editor{margin-left:auto;min-width:0;width:48px;height:13px;box-sizing:border-box;border:1px solid #3b4045;border-radius:2px;padding:0 3px;background:#17191c;color:#cbd2d7;font:6.5px/1 ui-monospace,monospace}.socket-editor:focus{outline:1px solid #d48335;border-color:#d48335}.socket-check{width:10px;height:10px;padding:0;accent-color:#d787b7}.socket-vector{width:62px}.blender-node .react-flow__handle{width:8px;height:8px;opacity:.01}.blender-node .react-flow__handle:hover{opacity:1}.crayon-graph .react-flow__edge.selected .react-flow__edge-path{stroke:#fff!important;stroke-width:3px!important}
+
+/* Hardened Geometry Nodes workspace. */
+.crayon-graph{height:min(66vh,720px);min-height:460px}.crayon-graph-workspace{height:calc(100% - 38px)}.crayon-graph .react-flow__node-blenderFrame{pointer-events:auto}.crayon-graph .gn-workspace .react-flow{height:auto;background:#1b1d20}
