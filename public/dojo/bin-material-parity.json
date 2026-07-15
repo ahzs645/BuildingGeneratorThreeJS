@@ -1,0 +1,99 @@
+{
+  "updated": "2026-07-15",
+  "target": {
+    "route": "/bin",
+    "materials": ["3D", "3D.004"],
+    "source": "dojo/dump_bin.json"
+  },
+  "authoredShaderContract": {
+    "waveCoordinate": "Texture Coordinate Object → Mapping POINT rotation Y=1.5707963705062866 → Wave Bands X/SIN",
+    "wave": {
+      "scale": 236.75997924804688,
+      "distortion": 0.05000000447034836,
+      "detail": 4.699999809265137,
+      "detailScale": 1,
+      "detailRoughness": 0.5,
+      "phaseOffset": 3.1999998092651367
+    },
+    "noiseCoordinate": "Texture Coordinate Generated → identity Mapping POINT → normalized 3D Noise FBM",
+    "noise": {
+      "scale": 2000,
+      "detail": 2,
+      "roughness": 0.5,
+      "lacunarity": 2,
+      "distortion": 0
+    },
+    "mix": {
+      "type": "RGBA",
+      "a": "Noise Fac",
+      "b": "Wave Color",
+      "factor": 0.9431818127632141
+    },
+    "bump": {
+      "strength": 0.3588068187236786,
+      "distance": 1.0700000524520874,
+      "filterWidth": 1,
+      "invert": false
+    }
+  },
+  "scalarProbes": [
+    {
+      "object": [0, 0, 0],
+      "generated": [0, 0, 0],
+      "blender": 0.970703125,
+      "browserCpuOracle": 0.9707867434037479,
+      "absoluteDelta": 0.0000836184037479
+    },
+    {
+      "object": [0.125, -0.25, 0.375],
+      "generated": [0.125, 0.25, 0.375],
+      "blender": 0.15625,
+      "browserCpuOracle": 0.16029763891546298,
+      "absoluteDelta": 0.00404763891546298
+    },
+    {
+      "object": [-0.33, 0.07, 0.42],
+      "generated": [0.77, 0.13, 0.91],
+      "blender": 0.039276123046875,
+      "browserCpuOracle": 0.03764159867166841,
+      "absoluteDelta": 0.00163452437520659
+    },
+    {
+      "object": [0.91, -0.44, -0.18],
+      "generated": [0.01, 0.99, 0.5],
+      "blender": 0.211669921875,
+      "browserCpuOracle": 0.2175868430303216,
+      "absoluteDelta": 0.0059169211553216
+    }
+  ],
+  "probeMethod": "Blender 5.1.2 rendered the extracted Wave/Noise/Mix branch through Emission to OpenEXR after replacing only the two coordinate sources with explicit vector fixtures. The browser CPU oracle uses the same clean-room Blender-compatible noise core as the WebGL shader.",
+  "browserImplementation": {
+    "objectCoordinates": "Local mesh position, preserving Blender Object coordinates for the shaded object.",
+    "generatedCoordinates": "Local position normalized by the bounds of the complete evaluated object, not by each material primitive.",
+    "bump": "The shared Blender-derived finite-derivative Bump reconstruction evaluates the mixed height at the base and screen-space offset coordinates.",
+    "replacedApproximation": "Removed the prior hash noise, scale-20 object noise, 2π wave, multiplied phase offset, and omitted bump distance."
+  },
+  "liveBrowserVerification": {
+    "route": "/bin",
+    "backend": "in-app Chrome WebGL2",
+    "result": "Both authored materials compiled and rendered in Shared WebGL preview with no shader error or warning.",
+    "repeatUpdateCheck": "Three consecutive same-input evaluations completed with no console error after explicit geometry, material, texture, and program disposal was added.",
+    "expectedRuntimeWarning": "The local Blender bake bridge was unavailable, so the page correctly used its baked Blender fallback.",
+    "materialIdentity": "Source names 3D and 3D.004 remain intact; selection 5 reports 212 Blender and 220 GN-VM highlighted triangles, an eight-triangle tessellation delta."
+  },
+  "rendererApproximation": {
+    "status": "material-semantic reconstruction, not pixel-identical Blender rendering",
+    "scalarProbeMaxAbsoluteDelta": 0.0059169211553216,
+    "reasons": [
+      "The clean-room WebGL noise helper and browser shader arithmetic do not preserve every Blender float32 intermediate.",
+      "Three.js MeshPhysicalMaterial lighting and normal integration differ from Blender Eevee/Cycles Principled BSDF.",
+      "The browser derives Bump through WebGL screen-space derivatives, so sampling and antialiasing remain renderer-dependent."
+    ],
+    "imageComparison": "Pending a controlled matched-camera and matched-lighting Blender/WebGL capture; no pixel-parity claim is made."
+  },
+  "ankermakeBed": {
+    "sourceImage": "ankermake bed.png",
+    "sourceState": "The extracted Blender image datablock has size [0, 0] and points to an unavailable external file.",
+    "browserState": "The existing labeled procedural print-bed fallback is intentionally preserved until the original image is recovered."
+  }
+}

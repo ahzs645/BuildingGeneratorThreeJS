@@ -3,6 +3,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import { makeBinAuthoredMaterial } from "./bin-authored-material";
+import type { FilamentBounds } from "./filament-material";
 import type { Dump, TriSoup } from "./gnvm/index";
 import { BIN_DEFAULTS, BIN_PARAMETERS } from "./bin-params";
 
@@ -124,43 +126,11 @@ function ankermakeBedTexture(): THREE.CanvasTexture {
   return bedTexture;
 }
 
-function addAuthoredBinBump(material: THREE.MeshStandardMaterial, name: string): THREE.MeshStandardMaterial {
-  material.flatShading = false;
-  material.onBeforeCompile = (shader) => {
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", "#include <common>\nvarying vec3 vBinObjectPosition;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvBinObjectPosition = position;");
-    shader.fragmentShader = shader.fragmentShader.replace("#include <common>", `#include <common>
-varying vec3 vBinObjectPosition;
-float binHash(vec3 p) {
-  p = fract(p * 0.1031);
-  p += dot(p, p.yzx + 33.33);
-  return fract((p.x + p.y) * p.z);
-}
-float binNoise(vec3 p) {
-  vec3 i = floor(p), f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(mix(binHash(i), binHash(i + vec3(1,0,0)), f.x), mix(binHash(i + vec3(0,1,0)), binHash(i + vec3(1,1,0)), f.x), f.y), mix(mix(binHash(i + vec3(0,0,1)), binHash(i + vec3(1,0,1)), f.x), mix(binHash(i + vec3(0,1,1)), binHash(i + vec3(1,1,1)), f.x), f.y), f.z);
-}
-`).replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
-vec3 binP = vBinObjectPosition;
-float binFine = binNoise(binP * 20.0);
-float binPhase = (binP.z * 11.83799896 + 3.1999998) * 6.2831853;
-float binWaveAA = clamp(1.0 - fwidth(binPhase) / 6.2831853, 0.0, 1.0);
-float binWave = 0.5 + 0.5 * sin(binPhase + binFine * 0.05) * binWaveAA;
-float binHeight = mix(binFine, binWave, 0.9431818);
-vec3 binSigmaX = dFdx(vBinObjectPosition), binSigmaY = dFdy(vBinObjectPosition);
-vec3 binR1 = cross(binSigmaY, normal), binR2 = cross(normal, binSigmaX);
-float binDet = dot(binSigmaX, binR1);
-vec3 binGrad = sign(binDet) * (dFdx(binHeight) * binR1 + dFdy(binHeight) * binR2);
-normal = normalize(abs(binDet) * normal - binGrad * 0.3588068);
-`);
-  };
-  material.customProgramCacheKey = () => `dojo-bin-wave-noise-bump-${name}-v1`;
-  return material;
-}
-
-function materialFor(name: string | null): THREE.Material {
+function materialFor(name: string | null, generatedBounds?: FilamentBounds): THREE.Material {
+  if (name && generatedBounds) {
+    const authored = makeBinAuthoredMaterial(dump, generatedBounds, name);
+    if (authored) return authored;
+  }
   const tree = name ? dump.materials?.[name] : undefined;
   const principled = tree?.nodes?.find((node) => node.type === "ShaderNodeBsdfPrincipled");
   const emission = tree?.nodes?.find((node) => node.type === "ShaderNodeEmission");
@@ -189,7 +159,67 @@ function materialFor(name: string | null): THREE.Material {
     side: THREE.DoubleSide,
     flatShading: false,
   });
-  return namedMaterial(name, name === "3D" || name === "3D.004" ? addAuthoredBinBump(material, name) : material);
+  return namedMaterial(name, material);
+}
+
+function boxBounds(box: THREE.Box3): FilamentBounds {
+  return { min: box.min.toArray(), max: box.max.toArray() };
+}
+
+function geometryBounds(geometry: THREE.BufferGeometry): FilamentBounds {
+  geometry.computeBoundingBox();
+  return boxBounds(geometry.boundingBox ?? new THREE.Box3(new THREE.Vector3(-1), new THREE.Vector3(1)));
+}
+
+function rootBoundsInMeshSpace(root: THREE.Object3D, target: THREE.Mesh): FilamentBounds {
+  root.updateMatrixWorld(true);
+  const inverseTarget = target.matrixWorld.clone().invert();
+  const result = new THREE.Box3();
+  const corner = new THREE.Vector3();
+  root.traverse((object) => {
+    const mesh = object as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    mesh.geometry.computeBoundingBox();
+    const box = mesh.geometry.boundingBox;
+    if (!box) return;
+    for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
+      corner.set(x, y, z).applyMatrix4(mesh.matrixWorld).applyMatrix4(inverseTarget);
+      result.expandByPoint(corner);
+    }
+  });
+  return boxBounds(result.isEmpty() ? new THREE.Box3(new THREE.Vector3(-1), new THREE.Vector3(1)) : result);
+}
+
+function disposeMaterial(material: THREE.Material, textures: Set<THREE.Texture>): void {
+  for (const value of Object.values(material)) if (value instanceof THREE.Texture && !textures.has(value)) {
+    textures.add(value);
+    value.dispose();
+  }
+  material.dispose();
+}
+
+function disposeObjectTree(root: THREE.Object3D): void {
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
+  const textures = new Set<THREE.Texture>();
+  root.traverse((object) => {
+    const mesh = object as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    if (!geometries.has(mesh.geometry)) {
+      geometries.add(mesh.geometry);
+      mesh.geometry.dispose();
+    }
+    const assigned = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const material of assigned) if (!materials.has(material)) {
+      materials.add(material);
+      disposeMaterial(material, textures);
+    }
+  });
+}
+
+function clearAndDispose(group: THREE.Group): void {
+  disposeObjectTree(group);
+  group.clear();
 }
 
 function soupGeometry(soup: TriSoup): THREE.BufferGeometry {
@@ -204,8 +234,9 @@ function soupGeometry(soup: TriSoup): THREE.BufferGeometry {
 
 function vmRoots(soup: TriSoup): { solid: THREE.Group; wire: THREE.Group } {
   const geometry = soupGeometry(soup);
-  const solidMaterials = soup.groups.map((group) => materialFor(group.material));
-  if (!solidMaterials.length) solidMaterials.push(materialFor(null));
+  const generatedBounds = geometryBounds(geometry);
+  const solidMaterials = soup.groups.map((group) => materialFor(group.material, generatedBounds));
+  if (!solidMaterials.length) solidMaterials.push(materialFor(null, generatedBounds));
   const solidMesh = new THREE.Mesh(geometry, solidMaterials.length === 1 ? solidMaterials[0] : solidMaterials);
   const wireMesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: 0x4bb7ff, wireframe: true, transparent: true, opacity: 0.55, depthWrite: false }));
   const object = dump.objects?.find((item) => item.name === "Procedural Drawer") as ({ location?: number[]; rotation?: number[]; scale?: number[] } | undefined);
@@ -227,15 +258,23 @@ function vmRoots(soup: TriSoup): { solid: THREE.Group; wire: THREE.Group } {
 }
 
 function truthRoots(root: THREE.Object3D): { solid: THREE.Object3D; wire: THREE.Object3D } {
+  root.updateMatrixWorld(true);
+  const loaderMaterials = new Set<THREE.Material>();
+  const loaderTextures = new Set<THREE.Texture>();
   root.traverse((object) => {
     const mesh = object as THREE.Mesh;
     if (!mesh.isMesh) return;
     const wasArray = Array.isArray(mesh.material);
     const materials: THREE.Material[] = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    // Use the same dump-derived palette on both engines. The source bin has no
-    // image textures, so this is both deterministic and avoids glTF-versus-VM
-    // shader differences obscuring the comparison.
-    const mapped = materials.map((material) => materialFor(material.name || null));
+    // Use the same dump-derived authored materials on both engines. The sole
+    // image dependency (the unavailable AnkerMake bed image) deliberately
+    // continues through the shared labeled procedural fallback.
+    const generatedBounds = rootBoundsInMeshSpace(root, mesh);
+    const mapped = materials.map((material) => materialFor(material.name || null, generatedBounds));
+    for (const material of materials) if (!loaderMaterials.has(material)) {
+      loaderMaterials.add(material);
+      disposeMaterial(material, loaderTextures);
+    }
     // GLTFLoader represents each primitive as a single-material mesh with no
     // geometry groups. Turning that into a one-item array makes Three.js draw
     // no solid triangles; preserve single materials as single materials.
@@ -386,9 +425,12 @@ async function updateComparison(overrides = readOverrides()): Promise<void> {
   const started = performance.now();
   try {
     const [blender, vm] = await Promise.all([loadBlenderTruth(overrides), runVm(overrides, id)]);
-    if (id !== runId) return;
-    truthGroup.clear();
-    vmGroup.clear();
+    if (id !== runId) {
+      disposeObjectTree(blender.root);
+      return;
+    }
+    clearAndDispose(truthGroup);
+    clearAndDispose(vmGroup);
     // A previous side-by-side view leaves display-only offsets on the groups.
     // Metrics must always compare the authored meshes in the same origin.
     truthGroup.position.set(0, 0, 0);
