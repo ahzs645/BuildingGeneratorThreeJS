@@ -103,6 +103,12 @@ reg("GeometryNodeInputNormal", () => ({
 reg("GeometryNodeInputTangent", () => ({
   Tangent: Field.perElem((i, ctx) => {
     if (ctx.component !== "CURVE") return [0, 0, 0] as Vec3;
+    // Evaluated curve operations such as Resample Curve preserve Blender's
+    // tangent frame explicitly. Prefer that frame over rebuilding a chord:
+    // at unequal adjacent segment lengths the chord is length-weighted, while
+    // Blender uses the normalized segment bisector.
+    const authored = ctx.attr?.("__curve_tangent", i);
+    if (Array.isArray(authored)) return authored as Vec3;
     const p = ctx.position ? ctx.position(i) : ([0, 0, 0] as Vec3);
     const neighbors = ctx.neighbors?.(i) ?? [];
     let prev = p, next = p;

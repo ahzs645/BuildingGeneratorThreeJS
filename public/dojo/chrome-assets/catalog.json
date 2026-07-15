@@ -6,7 +6,7 @@
     "dump": "dojo/chrome-assets/chain-and-mace/dump.json",
     "reference": "dojo/references/chrome-assets/chain-and-mace.png",
     "blenderStats": { "verts": 120727, "faces": 214718 },
-    "note": "All five Blender/browser sweeps have exact topology after Split Edges was taught to process instanced mesh components. Authored bounds differ by 0.0187 units; the ball-only placement case remains 0.1421 units from Blender.",
+    "note": "All five Blender/browser sweeps have exact topology and local bounds within 0.0001 units. Resampled curve tangents now preserve Blender's evaluated normalized-segment-bisector frame, including the formerly divergent ball-only placement.",
     "controls": [
       { "name": "ball size", "label": "Ball size", "min": 0.5, "max": 5, "step": 0.000001, "value": 2.3904571533203125 },
       { "name": "chain twist", "label": "Chain twist", "min": 0, "max": 20, "step": 0.000001, "value": 7.980133056640625 },

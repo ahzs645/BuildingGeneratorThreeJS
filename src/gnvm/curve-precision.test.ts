@@ -7,6 +7,7 @@ import { makeFieldCtx } from "./evaluator";
 import { Geometry } from "./geometry";
 import "./nodes/crayon";
 import "./nodes/geometry";
+import "./nodes/inputs";
 import { EvalAPI, REGISTRY } from "./registry";
 
 test("Bezier evaluation follows Blender float32 forward differences", () => {
@@ -89,4 +90,22 @@ test("Curve to Points rebuilds stale imported tangents after Poly conversion", (
 
   assert.ok(Math.abs((tangents[1] as number[])[0] - Math.SQRT1_2) < 1e-12);
   assert.ok(Math.abs((tangents[1] as number[])[1] - Math.SQRT1_2) < 1e-12);
+});
+
+test("Curve Tangent prefers the evaluated Resample Curve frame", () => {
+  const geometry = new Geometry();
+  geometry.curves = [{ cyclic: false, points: [[0, 0, 0], [1, 0, 0], [1, 3, 0]] }];
+  geometry.curveAttributes.set("__curve_tangent", {
+    domain: "POINT",
+    data: [[1, 0, 0], [Math.SQRT1_2, Math.SQRT1_2, 0], [0, 1, 0]],
+  });
+
+  const handler = REGISTRY.get("GeometryNodeInputTangent");
+  assert.ok(handler);
+  const tangent = handler({} as EvalAPI).Tangent as Field;
+  const values = tangent.array(makeFieldCtx(geometry, "POINT"));
+
+  assert.deepEqual(values[0], [1, 0, 0]);
+  assert.deepEqual(values[1], [Math.SQRT1_2, Math.SQRT1_2, 0]);
+  assert.deepEqual(values[2], [0, 1, 0]);
 });

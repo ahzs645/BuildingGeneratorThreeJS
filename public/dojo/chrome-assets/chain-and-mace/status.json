@@ -2,9 +2,9 @@
   "id": "chain-and-mace",
   "object": "spikey chain and mace.005",
   "root": "dojo_chain and mace",
-  "status": "topology-exact-sweep",
+  "status": "exact-parity-sweep",
   "blender": { "verts": 120727, "faces": 214718 },
   "gnvm": { "verts": 120727, "faces": 214718 },
-  "coverage": "All five authored input sweeps execute with exact vertex and face counts.",
-  "validation": "Split Edges now processes mesh components inside instances, matching Blender autosmooth topology. Authored local bounds differ by 0.0187 units; the largest remaining positional difference is 0.1421 units in the ball-only case and originates upstream of autosmooth."
+  "coverage": "All five authored input sweeps execute with exact vertex and face counts and local bounds within 0.0001 units of Blender.",
+  "validation": "Split Edges processes mesh components inside instances, matching Blender autosmooth topology. Curve Tangent now consumes Resample Curve's evaluated normalized-segment-bisector frame instead of rebuilding a length-weighted chord; the 39 pre-twist instance transforms match Blender within 0.000086 units."
 }
