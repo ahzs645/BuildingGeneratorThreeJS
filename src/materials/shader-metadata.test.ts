@@ -23,6 +23,10 @@ const mathClayMetadata = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/math-clay/shader-metadata.json",
   import.meta.url,
 )), "utf8"));
+const sendNodesHatMetadata = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/send-nodes-hat/shader-metadata.json",
+  import.meta.url,
+)), "utf8"));
 const catalog = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/chrome-assets/catalog.json",
   import.meta.url,
@@ -101,5 +105,19 @@ test("every Math Clay root loads its shared shader sidecar", () => {
   assert.equal(assets.length, 13);
   for (const asset of assets) {
     assert.equal(asset.shaderMetadata, "dojo/math-clay/shader-metadata.json");
+  }
+});
+
+test("Send Nodes Hat sidecar preserves its viewport shader groups", () => {
+  assert.equal(Object.keys(sendNodesHatMetadata.materials).length, 11);
+  assert.equal(Object.keys(sendNodesHatMetadata.shader_node_groups).length, 4);
+  assert.ok(sendNodesHatMetadata.shader_node_groups["MatCap Material II"].nodes.length > 0);
+});
+
+test("every Send Nodes Hat root loads its shared shader sidecar", () => {
+  const assets = catalog.filter((asset: any) => asset.dump.startsWith("dojo/send-nodes-hat/"));
+  assert.equal(assets.length, 4);
+  for (const asset of assets) {
+    assert.equal(asset.shaderMetadata, "dojo/send-nodes-hat/shader-metadata.json");
   }
 });

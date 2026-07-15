@@ -76,6 +76,12 @@
     "sharedSidecar": "dojo/math-clay/shader-metadata.json",
     "contents": "Fresh Blender 5.1 extraction shared by all 13 Math Clay roots, including the authored toon and bevel shader groups."
   },
+  "sendNodesHatShaderMetadata": {
+    "materials": 11,
+    "shaderGroups": 4,
+    "sharedSidecar": "dojo/send-nodes-hat/shader-metadata.json",
+    "contents": "Fresh Blender 5.1 extraction shared by all four exact Send Nodes Hat roots, including MatCap and index-viewer shader group internals."
+  },
   "packedStickerTextures": {
     "restored": 6,
     "missingFromBlend": ["tree sticky.png", "ryu electrify1.png"],
