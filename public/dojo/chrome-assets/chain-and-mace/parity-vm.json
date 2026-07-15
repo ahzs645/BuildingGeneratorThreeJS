@@ -9,7 +9,7 @@
         "overrides": {}
       },
       "status": "ok",
-      "verts": 119450,
+      "verts": 120727,
       "faces": 214718,
       "bbox": {
         "min": [
@@ -23,7 +23,7 @@
           109.2253
         ]
       },
-      "elapsed_ms": 952,
+      "elapsed_ms": 1723,
       "export": "00-authored-default.json"
     },
     {
@@ -34,7 +34,7 @@
         }
       },
       "status": "ok",
-      "verts": 193992,
+      "verts": 195269,
       "faces": 354494,
       "bbox": {
         "min": [
@@ -48,7 +48,7 @@
           112.321
         ]
       },
-      "elapsed_ms": 1385,
+      "elapsed_ms": 2307,
       "export": "01-smaller-links.json"
     },
     {
@@ -59,7 +59,7 @@
         }
       },
       "status": "ok",
-      "verts": 119450,
+      "verts": 120727,
       "faces": 214718,
       "bbox": {
         "min": [
@@ -73,7 +73,7 @@
           109.2253
         ]
       },
-      "elapsed_ms": 856,
+      "elapsed_ms": 1742,
       "export": "02-more-twist.json"
     },
     {
@@ -98,7 +98,7 @@
           53.3839
         ]
       },
-      "elapsed_ms": 725,
+      "elapsed_ms": 1608,
       "export": "03-ball-only.json"
     },
     {
@@ -109,7 +109,7 @@
         }
       },
       "status": "ok",
-      "verts": 119450,
+      "verts": 120727,
       "faces": 214718,
       "bbox": {
         "min": [
@@ -123,7 +123,7 @@
           65.9206
         ]
       },
-      "elapsed_ms": 832,
+      "elapsed_ms": 1644,
       "export": "04-opposite-end.json"
     }
   ]

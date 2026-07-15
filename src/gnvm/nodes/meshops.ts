@@ -1003,8 +1003,21 @@ reg("GeometryNodeExtrudeMesh", extrudeMesh);
 // ---- Split Edges ----------------------------------------------------------
 // Split all selected edges. The bin subdivision uses Selection=all, which fully
 // unwelds every face (each face gets its own copy of its vertices).
-reg("GeometryNodeSplitEdges", (api) => {
+function splitEdges(api: EvalAPI): Record<string, Geometry> {
   const g = api.geo("Mesh").clone();
+  // Mesh component operations in Blender also apply inside the geometry held
+  // by instances without realizing their transforms. Keeping the component
+  // instanced avoids changing instance-domain fields while still allowing
+  // autosmooth groups to split sharp seams in each payload mesh.
+  if (g.instances.length) {
+    g.instances = g.instances.map((instance) => {
+      const nestedApi: EvalAPI = {
+        ...api,
+        geo: (name) => name === "Mesh" ? instance.geometry : api.geo(name),
+      };
+      return { ...instance, geometry: splitEdges(nestedApi).Mesh };
+    });
+  }
   if (!g.mesh) return { Mesh: g };
   const m = g.mesh;
   const ctx = makeFieldCtx(g, "EDGE");
@@ -1105,7 +1118,8 @@ reg("GeometryNodeSplitEdges", (api) => {
   for (const [name, a] of m.attributes) if (a.domain === "FACE") nm.attributes.set(name, { domain: "FACE", data: [...a.data] });
   g.mesh = nm;
   return { Mesh: g };
-});
+}
+reg("GeometryNodeSplitEdges", splitEdges);
 
 function subdivideMesh(api: EvalAPI): Record<string, Geometry> {
   const g = api.geo("Mesh").clone();

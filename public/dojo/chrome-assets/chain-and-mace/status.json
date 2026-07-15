@@ -1,0 +1,10 @@
+{
+  "id": "chain-and-mace",
+  "object": "spikey chain and mace.005",
+  "root": "dojo_chain and mace",
+  "status": "topology-exact-sweep",
+  "blender": { "verts": 120727, "faces": 214718 },
+  "gnvm": { "verts": 120727, "faces": 214718 },
+  "coverage": "All five authored input sweeps execute with exact vertex and face counts.",
+  "validation": "Split Edges now processes mesh components inside instances, matching Blender autosmooth topology. Authored local bounds differ by 0.0187 units; the largest remaining positional difference is 0.1421 units in the ball-only case and originates upstream of autosmooth."
+}

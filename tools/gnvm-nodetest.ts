@@ -1122,6 +1122,21 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Split Edges rebuilds selected face edges without quadratic duplicates", out.mesh?.positions.length === 8 && out.mesh.faces.length === 2 && out.mesh.edges.length === 7, `got ${out.mesh?.positions.length}v/${out.mesh?.edges.length}e`);
 }
 
+// Split Edges operates on mesh components nested inside instances without
+// realizing their transforms. Blender's autosmooth helper depends on this to
+// split each linked asset while preserving the surrounding instance component.
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]];
+  m.faces = [[0, 1, 2], [0, 2, 3]];
+  const payload = new Geometry();
+  payload.mesh = m;
+  const g = new Geometry();
+  g.instances = [{ geometry: payload, position: [2, 3, 4], rotation: [0, 0, 0], scale: [1, 1, 1] }];
+  const out = runNode("GeometryNodeSplitEdges", { Mesh: g, Selection: true }).Mesh as Geometry;
+  check("Split Edges processes instance payload meshes without realization", !out.mesh && out.instances.length === 1 && out.instances[0].geometry.mesh?.positions.length === 6 && out.instances[0].position[0] === 2, `got ${out.mesh ? "realized" : "instanced"}/${out.instances[0]?.geometry.mesh?.positions.length ?? 0}v`);
+}
+
 {
   const m = new Mesh();
   m.positions = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0]];
