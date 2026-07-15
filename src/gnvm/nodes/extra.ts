@@ -22,7 +22,7 @@ import { Geometry, Mesh, mergeMeshInto, realizeInstances, rotateEulerXYZ, Spline
 import { fillCurves, meshEdgesToChains, splineLength, splineSegments, splineFrames } from "../curves";
 import { makeFieldCtx } from "../evaluator";
 import { reg, EvalAPI } from "../registry";
-import { isManifoldReady, manifoldBoolean, manifoldBooleanBox, manifoldHull } from "../boolean";
+import { isManifoldMesh, isManifoldReady, manifoldBoolean, manifoldBooleanBox, manifoldBooleanMany, manifoldHull } from "../boolean";
 import { asBezierSpline } from "../bezier";
 import { Vector3 as ThreeVector3 } from "three";
 import { ConvexHull as ThreeConvexHull } from "three/examples/jsm/math/ConvexHull.js";
@@ -3322,6 +3322,20 @@ reg("GeometryNodeMeshBoolean", (api) => {
       // AABB fallback as FLOAT in that case.
       const clipped = clipToBox(mesh1, boxes[0], op === "INTERSECT");
       return { Mesh: clipped, "Intersecting Edges": Field.of(0) };
+    }
+
+    // Blender consumes all values on a Boolean multi-input socket as one
+    // operation. Keep Manifold's closed triangle solids intact for the whole
+    // batch and reconstruct polygons only once. Pairwise reconstruction can
+    // turn a harmless coincident duplicate cutter into a non-manifold second
+    // input and grow a few thousand triangles into tens of thousands.
+    if (mesh2s.length > 1 && mesh2s.every((geometry) => !!geometry.mesh)) {
+      const raw = manifoldBooleanMany(mesh1.mesh, mesh2s.map((geometry) => geometry.mesh!), op);
+      if (raw) {
+        const reconstructed = dissolveCoplanarFaces(raw, [mesh1.mesh, ...mesh2s.map((geometry) => geometry.mesh!)]);
+        out.mesh = isManifoldMesh(reconstructed) ? reconstructed : raw;
+        return { Mesh: out, "Intersecting Edges": Field.of(0) };
+      }
     }
 
     // Multi-operand / mesh cutters: fold left with Manifold.

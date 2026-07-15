@@ -291,6 +291,26 @@ function meshSignedAreaXY(m: Mesh): number {
   check("CurveToMesh wire preserves POINT attributes", !!captured && approx(captured.flat(), [1, 2, 3, 4, 5, 6]));
 }
 
+// Profile-less NURBS conversion exposes its authored control polygon. A real
+// profile sweep continues to use the dense evaluated spline.
+{
+  const source = curve([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], false);
+  source.curveAttributes.set("control_id", { domain: "POINT", data: [10, 20, 30, 40] });
+  const nurbs = runNode("GeometryNodeCurveSplineType", { Curve: source }, { spline_type: "NURBS" }).Curve as Geometry;
+  const wire = runNode("GeometryNodeCurveToMesh", {
+    Curve: nurbs,
+    "Profile Curve": new Geometry(),
+    "Fill Caps": false,
+    Scale: 1,
+  }).Mesh as Geometry;
+  check("CurveToMesh profile-less NURBS uses control points",
+    wire.mesh?.positions.length === 4 && wire.mesh.edges.length === 3,
+    `${wire.mesh?.positions.length}v/${wire.mesh?.edges.length}e`);
+  check("CurveToMesh profile-less NURBS remaps POINT attributes",
+    JSON.stringify(wire.mesh?.attributes.get("control_id")?.data) === JSON.stringify([10, 20, 30, 40]),
+    JSON.stringify(wire.mesh?.attributes.get("control_id")?.data));
+}
+
 {
   const source = curves([
     { points: [[0, 0, 0], [1, 0, 0]], cyclic: false },
@@ -1310,8 +1330,15 @@ function meshSignedAreaXY(m: Mesh): number {
 
 // (P) MeshBoolean respects Blender's FLOAT / EXACT solver selection.
 {
-  const { ensureManifold } = await import("../src/gnvm/boolean");
+  const { ensureManifold, isManifoldMesh, manifoldBooleanMany } = await import("../src/gnvm/boolean");
   await ensureManifold();
+
+  const batchSource = box([-2, -2, -2], [2, 2, 2]);
+  const batchCutter = box([0, -1, -1], [3, 1, 1]);
+  const batchDifference = manifoldBooleanMany(batchSource.mesh!, [batchCutter.mesh!, batchCutter.mesh!], "DIFFERENCE");
+  check("MeshBoolean batches coincident duplicate cutters into one valid solid",
+    !!batchDifference && isManifoldMesh(batchDifference) && batchDifference.faces.length < 100,
+    `${batchDifference?.positions.length}v/${batchDifference?.faces.length}f`);
 
   const hullSource = box([-1, -1, -1], [1, 1, 1]);
   hullSource.mesh!.positions.push(...box([3, -1, -1], [5, 1, 1]).mesh!.positions);

@@ -357,7 +357,7 @@
     "dump": "dojo/chrome-assets/blunt-outline-crayon/dump.json",
     "reference": "dojo/references/chrome-assets/blunt-outline-crayon.png",
     "blenderStats": { "verts": 24719, "faces": 22853 },
-    "note": "The authored browser mesh is within 0.21% of Blender's vertices and 0.20% of its faces. Five thickness/resolution/smoothing cases remain within 0.28% vertices and 0.4539 bounds units after the full 665-pass blur.",
+    "note": "Profile-less NURBS conversion restores Blender's control-polygon proximity wire. The authored browser mesh has Blender's exact 22,853 faces and differs by one vertex (24,720 versus 24,719), with bounds within 0.0085 units. Across five cases the maximum vertex delta is 0.08% and maximum bounds difference is 0.0510 units.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",
@@ -809,7 +809,7 @@
     "dump": "dojo/joints/bubble-putty/dump.json",
     "reference": "dojo/references/joints/bubble-putty.png",
     "blenderStats": { "verts": 3302, "faces": 4675 },
-    "note": "The full 46-group, 828-node putty generator runs in-browser. Structure preview is exact at 8,040 / 9,300; BMesh Ico Sphere sampling, procedural noise, nearest-surface mixing, tight wrap, and dynamic triangulation now match Blender through the pre-boolean surface. The finalized browser shell is 34,326 vertices / 57,075 triangles versus Blender's 3,302 vertices / 4,675 polygons (6,608 triangles); the remaining gap is final volume/boolean tessellation.",
+    "note": "The full 46-group, 828-node putty generator runs in-browser. Structure preview is exact at 8,040 / 9,300; BMesh Ico Sphere sampling, procedural noise, nearest-surface mixing, tight wrap, and dynamic triangulation match Blender through the pre-boolean surface. Batched duplicate cutters reduce the finalized shell from an invalid 34,326 / 57,075 pairwise result to a valid 3,603 vertices / 2,480 polygons (7,278 triangles), versus Blender's 3,302 / 4,675 polygons (6,608 triangles).",
     "controls": [
       { "type": "checkbox", "name": "finalize for export", "label": "Finalized shell", "value": true },
       { "name": "Puttiness", "label": "Puttiness", "min": 0, "max": 1, "step": 0.01, "value": 0.6353210806846619 },

@@ -559,10 +559,26 @@ reg("GeometryNodeCurveToMesh", (api) => {
     flatBase += r.points.length;
     if (!profiles.length) {
       // no profile: emit the rail as an edge-only wire
+      // Blender exposes the authored NURBS control polygon on this profile-less
+      // conversion path. The dense evaluated spline is used only when sweeping
+      // an actual profile; using it here over-tessellates proximity source wires.
+      const wirePoints = r.splineType === "NURBS" && r.controlPoints?.length
+        ? r.controlPoints
+        : r.points;
+      const wirePointIndices = wirePoints === r.points
+        ? wirePoints.map((_, index) => index)
+        : wirePoints.map((point) => {
+          let nearest = 0, nearestDistance = Infinity;
+          for (let index = 0; index < r.points.length; index++) {
+            const distance = vlen(vsub(r.points[index], point));
+            if (distance < nearestDistance) { nearest = index; nearestDistance = distance; }
+          }
+          return nearest;
+        });
       const base = mesh.positions.length;
-      for (const p of r.points) mesh.positions.push([...p] as Vec3);
-      for (let i = 0; i + 1 < r.points.length; i++) mesh.edges.push([base + i, base + i + 1]);
-      if (r.cyclic && r.points.length > 2) mesh.edges.push([base + r.points.length - 1, base]);
+      for (const p of wirePoints) mesh.positions.push([...p] as Vec3);
+      for (let i = 0; i + 1 < wirePoints.length; i++) mesh.edges.push([base + i, base + i + 1]);
+      if (r.cyclic && wirePoints.length > 2) mesh.edges.push([base + wirePoints.length - 1, base]);
       // Curve to Mesh without a profile is also Blender's curve-to-wire
       // conversion. Anonymous POINT attributes survive that conversion one to
       // one. ETK_Loft Curves captures the source Position, converts the curve
@@ -570,11 +586,11 @@ reg("GeometryNodeCurveToMesh", (api) => {
       // collapses the loft to the origin.
       for (const [name, attribute] of railPointAttributes) {
         const target = mesh.attributes.get(name) ?? { domain: "POINT" as const, data: [] };
-        for (let i = 0; i < r.points.length; i++) target.data.push(attribute.data[railBase + i] ?? 0);
+        for (const index of wirePointIndices) target.data.push(attribute.data[railBase + index] ?? 0);
         mesh.attributes.set(name, target);
       }
       const curveWire = mesh.attributes.get("__curve_wire") ?? { domain: "POINT" as const, data: [] };
-      for (let i = 0; i < r.points.length; i++) curveWire.data.push(1);
+      for (let i = 0; i < wirePoints.length; i++) curveWire.data.push(1);
       mesh.attributes.set("__curve_wire", curveWire);
       continue;
     }

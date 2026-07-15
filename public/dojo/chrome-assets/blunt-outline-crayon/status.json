@@ -4,7 +4,7 @@
   "root": "blunt outline crayon",
   "status": "near-exact",
   "blender": { "verts": 24719, "faces": 22853 },
-  "gnvm": { "verts": 24668, "faces": 22808 },
-  "coverage": "100% of reachable node types; Set Spline Resolution preserves the already evaluated imported curve samples.",
-  "validation": "Authored vertex delta is 0.21% and face delta is 0.20%. Across five cases, maximum vertex delta is 0.28% and maximum local-bounds difference is 0.4539 units after honoring the full 665-pass Sigilize blur."
+  "gnvm": { "verts": 24720, "faces": 22853 },
+  "coverage": "100% of reachable node types; profile-less NURBS Curve to Mesh now uses Blender's authored control polygon while real profile sweeps retain evaluated samples.",
+  "validation": "The authored result has Blender's exact 22,853 faces and differs by one vertex (24,720 versus 24,719), with bounds within 0.0085 units. Three of five thickness/resolution/smoothing cases are face-exact, stroke-thickness 35 is fully topology-exact, and the remaining resolution-160 case differs by 13 vertices / 14 faces. Maximum vertex delta is 0.08% and maximum local-bounds difference is 0.0510 units after the full 665-pass Sigilize blur."
 }

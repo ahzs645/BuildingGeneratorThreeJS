@@ -12,9 +12,9 @@ type ManifoldMod = {
   Manifold: {
     new (mesh: any): any;
     cube: (size: number | Vec3, center?: boolean) => any;
-    union: (a: any, b: any) => any;
-    difference: (a: any, b: any) => any;
-    intersection: (a: any, b: any) => any;
+    union: ((a: any, b: any) => any) & ((manifolds: readonly any[]) => any);
+    difference: ((a: any, b: any) => any) & ((manifolds: readonly any[]) => any);
+    intersection: ((a: any, b: any) => any) & ((manifolds: readonly any[]) => any);
     hull: (points: readonly Vec3[]) => any;
   };
   Mesh: new (opts: {
@@ -213,6 +213,59 @@ export function manifoldBoolean(a: Mesh, b: Mesh, op: BooleanOp): Mesh | null {
     ma.delete?.();
     mb.delete?.();
     return null;
+  }
+}
+
+/**
+ * Evaluate a closed multi-input Boolean in one Manifold operation. Rebuilding
+ * polygons between pairwise folds changes the next input triangulation and can
+ * amplify coincident-cutter seams into invalid geometry.
+ */
+export function manifoldBooleanMany(a: Mesh, operands: Mesh[], op: BooleanOp): Mesh | null {
+  if (!mod || !operands.length) return null;
+  const solids = [a, ...operands].map(meshToManifold);
+  if (solids.some((solid) => !solid)) {
+    for (const solid of solids) solid?.delete?.();
+    return null;
+  }
+  let result: any | null = null;
+  try {
+    const valid = solids as any[];
+    result = op === "UNION"
+      ? mod.Manifold.union(valid)
+      : op === "INTERSECT"
+        ? mod.Manifold.intersection(valid)
+        : mod.Manifold.difference(valid);
+    if ((typeof result.status === "function" && result.status() !== "NoError")
+      || (typeof result.isEmpty === "function" && result.isEmpty())) return null;
+    if (op === "DIFFERENCE" && isMeasurePreservingDifference(valid[0], result)) {
+      return a.clone();
+    }
+    const outMesh = manifoldGLToMesh(result.getMesh());
+    return outMesh.faces.length ? outMesh : null;
+  } catch {
+    return null;
+  } finally {
+    result?.delete?.();
+    for (const solid of solids) solid?.delete?.();
+  }
+}
+
+/** True only when the mesh's current polygon fan triangulation is a valid solid. */
+export function isManifoldMesh(mesh: Mesh): boolean {
+  if (!mod) return false;
+  const gl = meshToManifoldGL(mesh);
+  if (!gl) return false;
+  let solid: any | null = null;
+  try {
+    const mgl = new mod.Mesh({ numProp: 3, vertProperties: gl.vertProperties, triVerts: gl.triVerts });
+    solid = new mod.Manifold(mgl);
+    return (typeof solid.status !== "function" || solid.status() === "NoError")
+      && (typeof solid.isEmpty !== "function" || !solid.isEmpty());
+  } catch {
+    return false;
+  } finally {
+    solid?.delete?.();
   }
 }
 

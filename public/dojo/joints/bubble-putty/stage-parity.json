@@ -109,11 +109,12 @@
         "bbox": { "min": [-2.2326, -2.6957, -3.9315], "max": [4.2015, 3.698, 3.2504] }
       },
       "gnvm_after": {
-        "verts": 34326,
-        "faces": 57075,
+        "verts": 3603,
+        "faces": 2480,
+        "triangles": 7278,
         "bbox": { "min": [-1.5862, -2.1273, -3.4024], "max": [3.6093, 3.5198, 3.4078] }
       },
-      "classification": "upstream dynamic-triangulation surface is exact; final volume/boolean tessellation remains the topology blocker with 0.0359 max-absolute bounds difference"
+      "classification": "upstream dynamic-triangulation surface is exact; batching the duplicate cutter inputs removes the invalid pairwise-fold explosion, leaving the final CSG solver's coincident-surface semantics as the topology blocker with 0.0359 max-absolute bounds difference"
     }
   ]
 }
