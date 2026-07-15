@@ -1115,8 +1115,18 @@ reg("GeometryNodeAttributeStatistic", (api) => {
   const domain = domainProp(api, "POINT");
   const vector = api.prop<string>("data_type", "FLOAT").includes("VECTOR");
   const ctx = makeFieldCtx(g, domain);
-  const vals = api.field("Attribute").array(ctx);
-  const sel = api.field("Selection").array(ctx);
+  const onDomain = (field: Field): Elem[] => {
+    if (!field.srcDomain || field.srcDomain === domain || !ctx.toDomain) return field.array(ctx);
+    const source = field.array(makeFieldCtx(g, field.srcDomain));
+    return Array.from({ length: ctx.size }, (_, index) => ctx.toDomain!(field.srcDomain!, source, index) ?? 0);
+  };
+  // Attribute Statistic evaluates the incoming field on its selected domain.
+  // Topology inputs retain their intrinsic domain, so they must be adapted
+  // once at this boundary. The Dojo fill-holes group asks for POINT statistics
+  // of an EDGE length field; evaluating that field directly in a point context
+  // produced all zeroes and disabled its nearest-boundary snap.
+  const vals = onDomain(api.field("Attribute"));
+  const sel = onDomain(api.field("Selection"));
   const picked = vals.filter((_, i) => boolOn(sel[i] ?? 1));
   if (!picked.length) {
     const z = Field.of(elemZero(vector));

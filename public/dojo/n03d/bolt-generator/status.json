@@ -2,9 +2,9 @@
   "id": "n03d-bolt-generator",
   "object": "Bolt Gen_DHTS_Thru Head v03.002",
   "root": "BOLT GEN DHTS v03_Thru Head_1JUL2024",
-  "status": "visual-near-parity",
+  "status": "topology-parity",
   "blender": { "verts": 8646, "faces": 8535 },
   "gnvm": { "verts": 8646, "faces": 8535 },
   "coverage": "100% of reachable node types across the 36-group bolt closure.",
-  "validation": "Six Blender/VM cases cover authored settings, length, head sides, thread-only, tap, and spacer modes. Every case has exact local bounds; five cases, including authored 8,646 / 8,535 and the eight-sided head, are topology-exact. Tap mode remains within 0.30% vertices."
+  "validation": "Six Blender/VM cases cover authored settings, length, head sides, thread-only, tap, and spacer modes. Every case now has exact topology and exact local bounds, including authored 8,646 / 8,535, eight-sided head 8,650 / 8,537, thread-only 8,086 / 8,086, and tap mode 2,009 / 2,667."
 }

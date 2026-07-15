@@ -71,7 +71,11 @@ reg("GeometryNodeCurveSpiral", (api) => {
   const direction = api.bool("Reverse") ? 1 : -1;
   // Blender defines Resolution as samples per full rotation and includes both
   // endpoints of the open spiral.
-  const segments = Math.max(1, Math.round(Math.abs(rotations) * resolution));
+  // The node truncates the fractional segment count. At 8.936 rotations and
+  // resolution 111 Blender emits 991 segments (992 endpoint-inclusive points),
+  // while rounding emits one extra spiral point and shifts every nearest-edge
+  // query against the curve.
+  const segments = Math.max(1, Math.floor(Math.abs(rotations) * resolution));
   const points: Vec3[] = [];
   for (let i = 0; i <= segments; i++) {
     const factor = i / segments;

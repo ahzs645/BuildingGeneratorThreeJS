@@ -320,81 +320,15 @@ function computeVertexNormals(mesh: Mesh): Vec3[] {
     }
   }
 
-  let normalTopo: Topology | null = null;
-  let islandCenter: Vec3[] | null = null;
-  const centerFor = (vi: number): Vec3 => {
-    if (!islandCenter) {
-      normalTopo = computeTopology(mesh);
-      const sums: Vec3[] = Array.from({ length: normalTopo.pointIslandCount }, () => [0, 0, 0]);
-      const counts = new Array(normalTopo.pointIslandCount).fill(0);
-      for (let i = 0; i < mesh.positions.length; i++) {
-        const island = normalTopo.pointIsland[i] ?? 0;
-        sums[island] = vadd(sums[island], mesh.positions[i]);
-        counts[island]++;
-      }
-      islandCenter = sums.map((s, i) => vscale(s, counts[i] ? 1 / counts[i] : 0));
-    }
-    return islandCenter[normalTopo?.pointIsland[vi] ?? 0] ?? [0, 0, 0];
-  };
-
-  const hasOpposingNormals = (fis: number[]): boolean => {
-    for (let a = 0; a < fis.length; a++) {
-      const na = faceNormals[fis[a]];
-      for (let b = a + 1; b < fis.length; b++) {
-        if (vdot(na, faceNormals[fis[b]]) < -0.5) return true;
-      }
-    }
-    return false;
-  };
-
-  const splitNormal = (vi: number, fis: number[]): Vec3 => {
-    const outward = vnorm(vsub(mesh.positions[vi], centerFor(vi)));
-    let best: Vec3 = [0, 0, 0];
-    let bestCount = -1;
-    let bestOut = -Infinity;
-    for (const seedFi of fis) {
-      const seed = faceNormals[seedFi];
-      let sum: Vec3 = [0, 0, 0];
-      const cluster: number[] = [];
-      let count = 0;
-      for (const fi of fis) {
-        const n = faceNormals[fi];
-        if (vdot(seed, n) >= 0) {
-          sum = vadd(sum, n);
-          cluster.push(fi);
-          count++;
-        }
-      }
-      if (cluster.length > 1) {
-        const areas = cluster.map((fi) => vlen(faceNormalWeights[fi]));
-        const minArea = Math.min(...areas);
-        const maxArea = Math.max(...areas);
-        if (maxArea > 1e-12 && minArea / maxArea < 1e-3) {
-          sum = [0, 0, 0];
-          for (const fi of cluster) sum = vadd(sum, faceNormalWeights[fi]);
-        }
-      }
-      const dir = vnorm(sum);
-      const out = vlen(outward) > 0 ? vdot(dir, outward) : 0;
-      // At a welded seam, the two shell sides can contribute opposing normal
-      // fans. The old count-first choice could select the inward fan merely
-      // because the seam has one more tiny cap face on that side, folding the
-      // next outer-shell displacement through the inner shell. Prefer the
-      // cluster that faces away from the connected component's center; face
-      // count remains the tie-breaker for genuinely co-directional fans.
-      if (out > bestOut + 1e-9 || (Math.abs(out - bestOut) <= 1e-9 && count > bestCount)) {
-        best = dir;
-        bestCount = count;
-        bestOut = out;
-      }
-    }
-    return vlen(best) > 0 ? best : vnorm(acc[vi]);
-  };
-
   return acc.map((n, vi) => {
     const fis = incident[vi];
     if (!fis.length) return [0, 0, 1] as Vec3;
-    return hasOpposingNormals(fis) ? splitNormal(vi, fis) : vnorm(n);
+    // Blender does not select one of several opposing normal fans on a
+    // non-manifold point. It corner-angle-weights every incident face and
+    // normalizes the resulting sum. This is observable on the Bolt Generator's
+    // tap thread: choosing one fan moves nine seam points by about 0.5 units and
+    // prevents the authored Heal Mesh weld from closing the surface.
+    return vnorm(n);
   });
 }
 

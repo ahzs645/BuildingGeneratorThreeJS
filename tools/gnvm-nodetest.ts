@@ -1169,6 +1169,22 @@ function meshSignedAreaXY(m: Mesh): number {
   check("AttributeStatistic mean/min/max", (out.Mean as Field).value === 14 / 3 && (out.Min as Field).value === 2 && (out.Max as Field).value === 8);
 }
 
+// Attribute Statistic adapts topology fields to its configured domain once.
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [1, 0, 0], [3, 0, 0]];
+  m.edges = [[0, 1], [1, 2]];
+  const g = new Geometry();
+  g.mesh = m;
+  const edgeLength = Field.perElem((i) => i + 1).tagged("EDGE");
+  const out = runNode("GeometryNodeAttributeStatistic", {
+    Geometry: g, Selection: true, Attribute: edgeLength,
+  }, { domain: "POINT", data_type: "FLOAT" });
+  check("AttributeStatistic adapts EDGE values onto POINTS",
+    (out.Min as Field).value === 1 && (out.Max as Field).value === 2,
+    `${(out.Min as Field).value}/${(out.Max as Field).value}`);
+}
+
 // (J) FieldAtIndex samples Value on its declared source domain, not the consumer domain
 {
   const value = Field.perElem((i) => i * 10);
@@ -1455,14 +1471,14 @@ function meshSignedAreaXY(m: Mesh): number {
   check("mutated clone gets fresh topology", ct1 !== ct2 && t1 !== ct2 && ct2.edges.length === 5, `edges=${ct2.edges.length}`);
 }
 
-// (O2) Vertex normals split opposing face-normal fans instead of canceling.
+// (O2) Vertex normals include every corner at non-manifold opposing fans.
 {
   const m = new Mesh();
   m.positions = [[1, 0, 0], [1, 1, 0], [1, 0, 1], [1, -1, 0], [1, 0, -1], [0, 0, 0]];
   m.faces = [[0, 2, 1], [0, 3, 2], [0, 4, 1], [0, 3, 4]];
   m.edges = [[0, 5]];
   const n = m.vertexNormals()[0];
-  check("vertex normal chooses outward opposing fan", approx(n, [1, 0, 0]), JSON.stringify(n));
+  check("vertex normal corner-weights opposing fans", approx(n, [0, 0, 0]), JSON.stringify(n));
 }
 
 // (P) MeshBoolean respects Blender's FLOAT / EXACT solver selection.
@@ -2637,6 +2653,12 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Curve Spiral uses samples per rotation", spiral.curves[0].points.length === 17, `got ${spiral.curves[0].points.length}`);
   check("Curve Spiral endpoints", approx(spiral.curves[0].points[0], [1, 0, 0]) && approx(spiral.curves[0].points[16], [2, 0, 4]));
   check("Curve Spiral default winding follows Blender", spiral.curves[0].points[1][1] < 0);
+  const fractionalSpiral = runNode("GeometryNodeCurveSpiral", {
+    Resolution: 8, Rotations: 2.2, "Start Radius": 1, "End Radius": 2, Height: 4, Reverse: false,
+  }).Curve as Geometry;
+  check("Curve Spiral truncates fractional segment counts",
+    fractionalSpiral.curves[0].points.length === 18,
+    `got ${fractionalSpiral.curves[0].points.length}`);
   const reversedSpiral = runNode("GeometryNodeCurveSpiral", {
     Resolution: 8, Rotations: 2, "Start Radius": 1, "End Radius": 2, Height: 4, Reverse: true,
   }).Curve as Geometry;
