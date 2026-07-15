@@ -914,7 +914,23 @@ reg("GeometryNodeBoundBox", (api) => {
     for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], p[k]); max[k] = Math.max(max[k], p[k]); }
   };
   for (const p of g.mesh?.positions ?? []) eat(p);
-  for (const s of g.curves) for (const p of s.points) eat(p);
+  // Blender's bounds for a Curves component include each control point's
+  // radius in every axis, even before the curve has a bevel/profile. Radius is
+  // implicitly 1 when the attribute is absent. Text Soup uses that two-unit
+  // diameter as padding when sizing its marching-squares sampling grid.
+  const radius = g.curveAttributes.get("radius");
+  let pointIndex = 0;
+  for (const spline of g.curves) {
+    for (const p of spline.points) {
+      const r = Math.abs(asNum(radius?.data[pointIndex] ?? 1));
+      count++;
+      for (let axis = 0; axis < 3; axis++) {
+        min[axis] = Math.min(min[axis], p[axis] - r);
+        max[axis] = Math.max(max[axis], p[axis] + r);
+      }
+      pointIndex++;
+    }
+  }
   if (!count) { min = [0, 0, 0]; max = [0, 0, 0]; }
   const size: Vec3 = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
   const center: Vec3 = [(max[0] + min[0]) / 2, (max[1] + min[1]) / 2, (max[2] + min[2]) / 2];

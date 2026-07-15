@@ -216,6 +216,7 @@ reg("GeometryNodeCurveToPoints", (api) => {
   let inputOffset = 0;
   const sourceTangents = input.curveAttributes.get("__curve_tangent")?.data;
   const sourceNormals = input.curveAttributes.get("__curve_normal")?.data;
+  const importedTangents = input.curveAttributes.get("__curve_imported_tangent");
   const sampledTangents: Vec3[][] = [];
   const sampledNormals: Vec3[][] = [];
   const sampleVectors = (s: { points: Vec3[]; cyclic: boolean }, sampledPoints: Vec3[], values?: Elem[]): Vec3[] => {
@@ -241,14 +242,23 @@ reg("GeometryNodeCurveToPoints", (api) => {
   };
   const sampled = input.curves.map((s) => {
     const sourceFrames = splineFrames(s.points, s.cyclic);
+    // Set Spline Type -> Poly replaces an imported curve's evaluated samples
+    // with its authored control points. Its old evaluated tangent field is no
+    // longer valid on that new topology; Blender recomputes poly corner frames
+    // before Curve to Points resamples them. The retained provenance marker and
+    // absence of controlPoints distinguish the converted result from the
+    // original imported spline.
+    const convertedImportedPoly = Boolean(importedTangents && sourceTangents && !s.controlPoints);
     // Curve to Points samples the evaluated frame of the input curve. When no
     // explicit frame attributes are present, Blender interpolates tangents and
     // normals from the original curve before resampling; deriving a fresh
     // frame from the coarser output points creates an alternating rotation
     // error whenever the source/output counts are not multiples (32 -> 24 on
     // the Intro emblem's spike ring).
-    const values = sourceTangents?.slice(inputOffset, inputOffset + s.points.length)
-      ?? sourceFrames.map((frame) => frame.tangent);
+    const values = convertedImportedPoly
+      ? sourceFrames.map((frame) => frame.tangent)
+      : sourceTangents?.slice(inputOffset, inputOffset + s.points.length)
+        ?? sourceFrames.map((frame) => frame.tangent);
     const normalValues = sourceNormals?.slice(inputOffset, inputOffset + s.points.length)
       ?? sourceFrames.map((frame) => frame.normal);
     inputOffset += s.points.length;
@@ -275,7 +285,7 @@ reg("GeometryNodeCurveToPoints", (api) => {
     // by an entire segment. A genuinely different sample count (32 -> 24 on
     // the Intro emblem) still needs source-frame interpolation.
     const keepsPointCount = result.points.length === s.points.length;
-    sampledTangents.push(sourceTangents || !keepsPointCount
+    sampledTangents.push(convertedImportedPoly || sourceTangents || !keepsPointCount
       ? sampleVectors(s, result.points, values)
       : []);
     sampledNormals.push(sourceNormals || !keepsPointCount

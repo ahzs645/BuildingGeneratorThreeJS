@@ -181,6 +181,10 @@ function baseGeometryOf(dump: Dump, objectName: string): Geometry | null {
       // stored value. Keep the provenance so those semantics can diverge.
       g.curveAttributes.set("__curve_imported_tangent", { domain: "CURVE", data: g.curves.map(() => 1) });
     }
+    const normals = obj.curves.flatMap((s: any) => s.normals ?? []);
+    if (normals.length === g.curvePointCount()) {
+      g.curveAttributes.set("__curve_normal", { domain: "POINT", data: normals });
+    }
     applyPreNodesHooks(dump, obj, g);
   }
   return g.mesh || g.curves.length ? g : null;

@@ -82,7 +82,7 @@ export interface DumpObject {
   materials?: string[];
   mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][]; attributes?: Record<string, { domain: import("./core").Domain; data: Elem[] }> };
   evaluated_mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][]; materials?: (string | null)[]; attributes?: Record<string, { domain: import("./core").Domain; data: Elem[] }> };
-  curves?: { points: number[][]; control_points?: number[][]; bezier_left?: number[][]; bezier_right?: number[][]; cyclic: boolean; resolution?: number; tilts?: number[]; radii?: number[]; tangents?: number[][] }[];
+  curves?: { points: number[][]; control_points?: number[][]; bezier_left?: number[][]; bezier_right?: number[][]; cyclic: boolean; resolution?: number; tilts?: number[]; radii?: number[]; tangents?: number[][]; normals?: number[][] }[];
   modifiers?: { type: string; node_group?: string; input_values?: Record<string, any>; object?: string; vertex_indices?: number[]; matrix_inverse?: number[][]; strength?: number }[];
 }
 export const DUMP_CONTEXT: {

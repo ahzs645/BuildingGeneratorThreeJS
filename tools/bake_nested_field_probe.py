@@ -26,6 +26,14 @@ geometry_input = next((s for s in consumer.inputs if s.bl_idname == "NodeSocketG
 assert geometry_input is not None, f"linked geometry input not found on {consumer_name}"
 geometry_source = geometry_input.links[0].from_socket
 
+# Named attributes cannot store Blender's Rotation socket directly. Convert it
+# to Euler XYZ so rotation-valued fields can use the same probe path as vectors.
+stored_field = field
+if field.bl_idname == "NodeSocketRotation":
+    rotation_to_euler = nested.nodes.new("FunctionNodeRotationToEuler")
+    nested.links.new(field, rotation_to_euler.inputs["Rotation"])
+    stored_field = rotation_to_euler.outputs["Euler"]
+
 store = nested.nodes.new("GeometryNodeStoreNamedAttribute")
 store.domain = domain
 data_types = {
@@ -33,11 +41,12 @@ data_types = {
     "NodeSocketInt": "INT",
     "NodeSocketVector": "FLOAT_VECTOR",
     "NodeSocketFloat": "FLOAT",
+    "NodeSocketRotation": "FLOAT_VECTOR",
 }
 store.data_type = data_types.get(field.bl_idname, "FLOAT")
 store.inputs["Name"].default_value = "__nested_probe"
 nested.links.new(geometry_source, store.inputs["Geometry"])
-nested.links.new(field, store.inputs["Value"])
+nested.links.new(stored_field, store.inputs["Value"])
 
 nested_output = next(n for n in nested.nodes if n.bl_idname == "NodeGroupOutput" and n.is_active_output)
 nested_geometry = next(s for s in nested_output.inputs if s.bl_idname == "NodeSocketGeometry")
@@ -48,7 +57,12 @@ if os.environ.get("NODE_DOJO_PROBE_IN_PLACE") == "1":
 else:
     for link in list(nested_geometry.links):
         nested.links.remove(link)
-    nested.links.new(store.outputs["Geometry"], nested_geometry)
+    if os.environ.get("NODE_DOJO_PROBE_POINTS_TO_VERTICES") == "1":
+        points_to_vertices = nested.nodes.new("GeometryNodePointsToVertices")
+        nested.links.new(store.outputs["Geometry"], points_to_vertices.inputs["Points"])
+        nested.links.new(points_to_vertices.outputs["Mesh"], nested_geometry)
+    else:
+        nested.links.new(store.outputs["Geometry"], nested_geometry)
 
 instance = root.nodes[instance_name]
 for name, value in json.loads(os.environ.get("NODE_DOJO_NESTED_INSTANCE_OVERRIDES", "{}")).items():
