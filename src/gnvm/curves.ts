@@ -19,23 +19,54 @@ export function splineLength(s: Spline): number {
 // Resample a spline to `count` evenly-spaced points along arc length.
 export function resampleSpline(s: Spline, count: number): Spline {
   count = Math.max(2, Math.floor(count));
+  // `points` is Blender's evaluated curve domain. Authored Bezier controls are
+  // retained separately for nodes that explicitly operate on handles; curve
+  // resampling must consume the already-evaluated (and possibly transformed)
+  // points instead of re-evaluating stale controls.
   const pts = s.points;
   if (pts.length < 2) return { points: pts.map((p) => [...p] as Vec3), cyclic: s.cyclic };
-  const segs = splineSegments(s);
-  const segLen = segs.map(([a, b]) => vlen(vsub(pts[b], pts[a])));
-  const total = segLen.reduce((n, l) => n + l, 0);
+  const segs = splineSegments({ ...s, points: pts });
+  const segLen = segs.map(([a, b]) => {
+    const dx = Math.fround(Math.fround(pts[b][0]) - Math.fround(pts[a][0]));
+    const dy = Math.fround(Math.fround(pts[b][1]) - Math.fround(pts[a][1]));
+    const dz = Math.fround(Math.fround(pts[b][2]) - Math.fround(pts[a][2]));
+    let squared = Math.fround(Math.fround(dx * dx) + Math.fround(dy * dy));
+    squared = Math.fround(squared + Math.fround(dz * dz));
+    return Math.fround(Math.sqrt(squared));
+  });
+  const cumulative: number[] = [];
+  let total = 0;
+  for (const length of segLen) {
+    total = Math.fround(total + length);
+    cumulative.push(total);
+  }
   if (total < 1e-9) return { points: [pts[0], pts[0]].map((p) => [...p] as Vec3), cyclic: s.cyclic };
   const out: Vec3[] = [];
   const n = s.cyclic ? count : count - 1;
-  for (let i = 0; i <= n; i++) {
-    if (!s.cyclic && i === n) { out.push([...pts[pts.length - 1]] as Vec3); break; }
-    if (s.cyclic && i === n) break; // don't duplicate the closing point
-    let d = (i / n) * total;
+  const step = Math.fround(total / n);
+  for (let i = 0; i < count; i++) {
+    const distance = Math.min(total, Math.fround(i * step));
     let si = 0;
-    while (si < segs.length - 1 && d > segLen[si]) { d -= segLen[si]; si++; }
+    if (distance >= total) {
+      si = segs.length - 1;
+    } else {
+      // Blender uses upper_bound, so a sample exactly on a boundary belongs
+      // to the following segment with factor zero.
+      while (si < segs.length - 1 && distance >= cumulative[si]) si++;
+    }
     const [a, b] = segs[si];
-    const t = segLen[si] > 1e-9 ? d / segLen[si] : 0;
-    out.push(vadd(pts[a], vscale(vsub(pts[b], pts[a]), t)));
+    const previous = si === 0 ? 0 : cumulative[si - 1];
+    const segmentLength = Math.fround(cumulative[si] - previous);
+    const inverseLength = segmentLength > 1e-9 ? Math.fround(1 / segmentLength) : 0;
+    const t = distance >= total
+      ? 1
+      : Math.fround(Math.fround(distance - previous) * inverseLength);
+    const inverse = Math.fround(1 - t);
+    out.push([
+      Math.fround(Math.fround(Math.fround(pts[a][0]) * inverse) + Math.fround(Math.fround(pts[b][0]) * t)),
+      Math.fround(Math.fround(Math.fround(pts[a][1]) * inverse) + Math.fround(Math.fround(pts[b][1]) * t)),
+      Math.fround(Math.fround(Math.fround(pts[a][2]) * inverse) + Math.fround(Math.fround(pts[b][2]) * t)),
+    ]);
   }
   return { points: out, cyclic: s.cyclic };
 }

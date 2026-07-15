@@ -15,15 +15,53 @@ function defaultHandles(points: Vec3[], cyclic: boolean): { left: Vec3[]; right:
   return { left: points.map(clonePoint), right: points.map(clonePoint) };
 }
 
-function cubicBezier(a: Vec3, b: Vec3, c: Vec3, d: Vec3, t: number): Vec3 {
-  const u = 1 - t;
-  const u2 = u * u;
-  const t2 = t * t;
-  return [
-    u2 * u * a[0] + 3 * u2 * t * b[0] + 3 * u * t2 * c[0] + t2 * t * d[0],
-    u2 * u * a[1] + 3 * u2 * t * b[1] + 3 * u * t2 * c[1] + t2 * t * d[1],
-    u2 * u * a[2] + 3 * u2 * t * b[2] + 3 * u * t2 * c[2] + t2 * t * d[2],
-  ];
+function fadd(a: number, b: number): number {
+  return Math.fround(Math.fround(a) + Math.fround(b));
+}
+
+function fsub(a: number, b: number): number {
+  return Math.fround(Math.fround(a) - Math.fround(b));
+}
+
+function fmul(a: number, b: number): number {
+  return Math.fround(Math.fround(a) * Math.fround(b));
+}
+
+function add(a: Vec3, b: Vec3): Vec3 {
+  return [fadd(a[0], b[0]), fadd(a[1], b[1]), fadd(a[2], b[2])];
+}
+
+function sub(a: Vec3, b: Vec3): Vec3 {
+  return [fsub(a[0], b[0]), fsub(a[1], b[1]), fsub(a[2], b[2])];
+}
+
+function scale(a: Vec3, factor: number): Vec3 {
+  return [fmul(a[0], factor), fmul(a[1], factor), fmul(a[2], factor)];
+}
+
+// Blender evaluates Bezier segments with float32 forward differences rather
+// than independently evaluating the cubic polynomial at every parameter. The
+// accumulated rounding is observable after arc-length resampling and changes
+// a handful of Chrome Crayon marching intersections.
+function evaluateSegmentForward(a: Vec3, b: Vec3, c: Vec3, d: Vec3, sampleCount: number): Vec3[] {
+  const inverse = Math.fround(1 / sampleCount);
+  const inverseSquared = fmul(inverse, inverse);
+  const inverseCubed = fmul(inverseSquared, inverse);
+  const rt1 = scale(scale(sub(b, a), 3), inverse);
+  const rt2 = scale(scale(add(sub(a, scale(b, 2)), c), 3), inverseSquared);
+  const rt3 = scale(add(sub(d, a), scale(sub(b, c), 3)), inverseCubed);
+  let q0 = clonePoint(a).map(Math.fround) as Vec3;
+  let q1 = add(add(rt1, rt2), rt3);
+  let q2 = add(scale(rt2, 2), scale(rt3, 6));
+  const q3 = scale(rt3, 6);
+  const result: Vec3[] = [];
+  for (let sample = 0; sample < sampleCount; sample++) {
+    result.push(clonePoint(q0));
+    q0 = add(q0, q1);
+    q1 = add(q1, q2);
+    q2 = add(q2, q3);
+  }
+  return result;
 }
 
 export function evaluateBezierSpline(
@@ -34,22 +72,20 @@ export function evaluateBezierSpline(
   samplesPerSegment = BEZIER_SAMPLES_PER_SEGMENT,
 ): Vec3[] {
   if (controlPoints.length < 2) return controlPoints.map(clonePoint);
+  samplesPerSegment = Math.max(1, Math.floor(samplesPerSegment));
   const evaluated: Vec3[] = [];
   const segmentCount = cyclic ? controlPoints.length : controlPoints.length - 1;
   for (let segment = 0; segment < segmentCount; segment++) {
     const next = (segment + 1) % controlPoints.length;
-    const startSample = segment === 0 ? 0 : 1;
-    const endSample = cyclic ? samplesPerSegment - 1 : samplesPerSegment;
-    for (let sample = startSample; sample <= endSample; sample++) {
-      evaluated.push(cubicBezier(
-        controlPoints[segment],
-        rightHandles[segment] ?? controlPoints[segment],
-        leftHandles[next] ?? controlPoints[next],
-        controlPoints[next],
-        sample / samplesPerSegment,
-      ));
-    }
+    evaluated.push(...evaluateSegmentForward(
+      controlPoints[segment],
+      rightHandles[segment] ?? controlPoints[segment],
+      leftHandles[next] ?? controlPoints[next],
+      controlPoints[next],
+      samplesPerSegment,
+    ));
   }
+  if (!cyclic) evaluated.push(clonePoint(controlPoints[controlPoints.length - 1]).map(Math.fround) as Vec3);
   return evaluated;
 }
 

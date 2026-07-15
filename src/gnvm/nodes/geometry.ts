@@ -4,6 +4,7 @@ import { Geometry, Mesh, InstanceRef, buildTopology, inverseTransformPoint, merg
 import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitives";
 import { reg, EvalAPI, DUMP_CONTEXT } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
+import { evaluateBezierSpline } from "../bezier";
 
 export function matchLegacyCurvePassthrough(geometry: Geometry): void {
   // A legacy Curve datablock routed through an otherwise empty Geometry Nodes
@@ -262,6 +263,18 @@ reg(["GeometryNodeTransform", "GeometryNodeTransformGeometry"], (api) => {
   for (const spline of g.curves) {
     spline.points = spline.points.map((p) => transformPoint(p, t, r, s));
     if (spline.controlPoints) spline.controlPoints = spline.controlPoints.map((p) => transformPoint(p, t, r, s));
+    if (spline.bezierLeft) spline.bezierLeft = spline.bezierLeft.map((p) => transformPoint(p, t, r, s));
+    if (spline.bezierRight) spline.bezierRight = spline.bezierRight.map((p) => transformPoint(p, t, r, s));
+    if (spline.controlPoints?.length && spline.bezierLeft?.length === spline.controlPoints.length
+      && spline.bezierRight?.length === spline.controlPoints.length) {
+      spline.points = evaluateBezierSpline(
+        spline.controlPoints,
+        spline.cyclic,
+        spline.bezierLeft,
+        spline.bezierRight,
+        spline.resolution,
+      );
+    }
   }
   for (const inst of g.instances) {
     inst.position = transformPoint(inst.position, t, r, s);
@@ -359,6 +372,8 @@ reg("GeometryNodeJoinGeometry", (api) => {
       resolution: s.resolution,
       points: s.points.map((p) => [...p] as Vec3),
       controlPoints: s.controlPoints?.map((p) => [...p] as Vec3),
+      bezierLeft: s.bezierLeft?.map((p) => [...p] as Vec3),
+      bezierRight: s.bezierRight?.map((p) => [...p] as Vec3),
     });
   }
   return { Geometry: out };
