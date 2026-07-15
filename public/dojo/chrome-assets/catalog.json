@@ -357,7 +357,7 @@
     "dump": "dojo/chrome-assets/blunt-outline-crayon/dump.json",
     "reference": "dojo/references/chrome-assets/blunt-outline-crayon.png",
     "blenderStats": { "verts": 24719, "faces": 22853 },
-    "note": "Profile-less NURBS conversion restores Blender's control-polygon proximity wire. The authored browser mesh has Blender's exact 22,853 faces and differs by one vertex (24,720 versus 24,719), with bounds within 0.0085 units. Across five cases the maximum vertex delta is 0.08% and maximum bounds difference is 0.0510 units.",
+    "note": "Profile-less NURBS conversion restores Blender's control-polygon proximity wire, and all-corners boolean domain adaptation makes the resolution-160 case topology-exact. The authored browser mesh has Blender's exact 22,853 faces and differs by one vertex (24,720 versus 24,719), with bounds within 0.0085 units.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

@@ -18,11 +18,17 @@ const wrap = (v: Input): SockVal =>
 
 // `linked` marks which named inputs should report as connected (for nodes that
 // branch on socket.linked, e.g. SetPosition / InstanceOnPoints).
-function runNode(type: string, inputs: Record<string, Input>, props: Record<string, any> = {}, linked: string[] = []) {
+function runNode(
+  type: string,
+  inputs: Record<string, Input>,
+  props: Record<string, any> = {},
+  linked: string[] = [],
+  inputTypes: Record<string, string> = {},
+) {
   const h = REGISTRY.get(type);
   if (!h) throw new Error(`no handler: ${type}`);
   const rawInputs: RawSocket[] = Object.keys(inputs).map((name, idx) => ({
-    name, identifier: name, idx, type: "NodeSocketFloat", linked: linked.includes(name), value: null,
+    name, identifier: name, idx, type: inputTypes[name] ?? "NodeSocketFloat", linked: linked.includes(name), value: null,
   }));
   const raw = (n: string) => inputs[n];
   const api: EvalAPI = {
@@ -320,6 +326,26 @@ function meshSignedAreaXY(m: Mesh): number {
   const captured = runNode("GeometryNodeCaptureAttribute", { Geometry: source, Value: index }, { domain: "CURVE" });
   const values = (captured.Attribute as Field).array(makeFieldCtx(captured.Geometry as Geometry, "POINT")) as number[];
   check("Capture Attribute broadcasts CURVE values to points", approx(values, [0, 0, 1, 1, 1]), JSON.stringify(values));
+}
+
+{
+  const source = new Geometry();
+  source.mesh = new Mesh();
+  source.mesh.positions = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]];
+  source.mesh.faces = [[0, 1, 2, 3]];
+  const values = Array.from({ length: 5 }, (_, trueCorners) => {
+    const pointBool = Field.perElem((i) => i < trueCorners ? 1 : 0).tagged("POINT");
+    const captured = runNode(
+      "GeometryNodeCaptureAttribute",
+      { Geometry: source, Value: pointBool },
+      { domain: "FACE" },
+      ["Value"],
+      { Value: "NodeSocketBool" },
+    );
+    return (captured.Attribute as Field).array(makeFieldCtx(captured.Geometry as Geometry, "FACE"))[0];
+  });
+  check("Capture Attribute boolean POINT to FACE requires every corner",
+    JSON.stringify(values) === JSON.stringify([0, 0, 0, 0, 1]), JSON.stringify(values));
 }
 
 // Anonymous capture IDs must not collide when identically named nodes from

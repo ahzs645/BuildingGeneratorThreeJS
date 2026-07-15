@@ -596,6 +596,19 @@ reg("GeometryNodeCaptureAttribute", (api) => {
     } else {
       data = value.array(ctx);
     }
+    // Boolean POINT -> FACE adaptation is an AND across every face corner in
+    // Blender: even a three-true/one-false quad resolves false. Retaining the
+    // numeric average makes downstream switches choose the wrong marching-
+    // squares cell whenever only some corners are selected.
+    const valueSocket = api.node.inputs.find((socket) => socket.identifier === "Value" || socket.name === "Value");
+    if (valueSocket?.type === "NodeSocketBool") {
+      if (value.srcDomain === "POINT" && domain === "FACE" && g.mesh) {
+        const sourceData = value.array(makeFieldCtx(g, "POINT"));
+        data = g.mesh.faces.map((face) => face.every((vertex) => asNum(sourceData[vertex] ?? 0) > 0) ? 1 : 0);
+      } else {
+        data = data.map((item) => asNum(item) > 0 ? 1 : 0);
+      }
+    }
     if (FIELD_PROBE.node === api.node.name && (FIELD_PROBE.socket === "Value" || FIELD_PROBE.socket === "Attribute")) {
       FIELD_PROBE.batches.push({
         domain,
