@@ -1,4 +1,4 @@
-import { Elem, Vec3, asNum, asVec3, vadd } from "../core";
+import { Elem, Vec3, asNum, asVec3, vadd, vlen, vnorm, vsub } from "../core";
 import { evaluateBezierSpline } from "../bezier";
 import { Geometry, Spline } from "../geometry";
 import { makeFieldCtx } from "../evaluator";
@@ -10,6 +10,29 @@ function authoredSpline(source: Spline): Spline {
     resolution: source.resolution,
     points: (source.controlPoints?.length ? source.controlPoints : source.points).map((point) => [...point] as Vec3),
   };
+}
+
+function evaluatedBezierTangents(spline: Spline): Vec3[] {
+  const points = spline.points;
+  if (points.length < 2) return points.map(() => [0, 0, 1] as Vec3);
+  return points.map((point, index) => {
+    let tangent: Vec3;
+    if (!spline.cyclic && index === 0) {
+      tangent = vsub(spline.bezierRight?.[0] ?? points[1], spline.controlPoints?.[0] ?? point);
+      if (vlen(tangent) <= 1e-9) tangent = vsub(points[1], point);
+    } else if (!spline.cyclic && index + 1 === points.length) {
+      const last = (spline.controlPoints?.length ?? 1) - 1;
+      tangent = vsub(spline.controlPoints?.[last] ?? point, spline.bezierLeft?.[last] ?? points[index - 1]);
+      if (vlen(tangent) <= 1e-9) tangent = vsub(point, points[index - 1]);
+    } else {
+      const previous = points[(index - 1 + points.length) % points.length];
+      const next = points[(index + 1) % points.length];
+      const bisector = vadd(vnorm(vsub(point, previous)), vnorm(vsub(next, point)));
+      tangent = vlen(bisector) > 1e-9 ? bisector : vsub(next, previous);
+    }
+    const normalized = vnorm(tangent);
+    return vlen(normalized) > 1e-9 ? normalized : [0, 0, 1];
+  });
 }
 
 reg("GeometryNodeSetCurveHandlePositions", (api) => {
@@ -56,8 +79,19 @@ reg("GeometryNodeSetCurveHandlePositions", (api) => {
     };
   });
   if (frameChanged) {
-    out.curveAttributes.delete("__curve_tangent");
-    out.curveAttributes.delete("__curve_imported_tangent");
+    // Handle edits invalidate the extracted source frame. Blender evaluates
+    // open Bezier endpoints from their exact handles, not from the first/last
+    // sampled chord; retaining that derivative is observable in Curve to Mesh.
+    out.curveAttributes.set("__curve_tangent", {
+      domain: "POINT",
+      data: out.curves.flatMap(evaluatedBezierTangents),
+    });
+    out.curveAttributes.set("__curve_imported_tangent", {
+      domain: "CURVE",
+      data: out.curves.map(() => 1),
+    });
+    // Normals depend on the entire tangent path and must be transported again
+    // by the eventual frame consumer.
     out.curveAttributes.delete("__curve_normal");
   }
   return { Curve: out };

@@ -96,8 +96,8 @@ test("builds the Noodle Pair physical material without changing its geometry", a
   assert.equal(material.roughness, expectedConfig.roughness);
   assert.equal(material.userData.nodeColorVtextRenderer.status, "independently expressed renderer approximation");
   assert.deepEqual(material.userData.nodeColorVtextBounds, {
-    min: [-1.1105543375015259, -1.627370834350586, -1.0523862838745117],
-    max: [7.758215427398682, 0.03999947011470795, 8.645318031311035],
+    min: [-1.1101469993591309, -1.6273714303970337, -1.05240797996521],
+    max: [7.757761478424072, 0.040000032633543015, 8.64538860321045],
   });
 
   const shader = {
