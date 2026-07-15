@@ -2164,6 +2164,20 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 {
+  const flat = new Geometry();
+  flat.mesh = new Mesh();
+  flat.mesh.positions = [[0, 0, 0], [0, 0, 0], [1, 0, 0]];
+  flat.mesh.faces = [[0, 1, 2]];
+  const out = runNode(
+    "GeometryNodeExtrudeMesh",
+    { Mesh: flat, Selection: true, Offset: [0, 0, 0], "Offset Scale": -1, Individual: false },
+    { mode: "FACES" },
+  ).Mesh as Geometry;
+  check("FACE extrude gives zero-area faces Blender's +Z fallback normal",
+    out.mesh?.positions.slice(3).every((position) => position[2] === -1));
+}
+
+{
   const payload = curve([[1, 0, 0], [2, 0, 0]], false);
   const instanced = new Geometry();
   instanced.instances = [{ geometry: payload, position: [1, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }];

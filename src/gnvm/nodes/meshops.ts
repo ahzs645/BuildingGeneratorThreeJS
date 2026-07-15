@@ -878,8 +878,15 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
   for (let fi = 0; fi < mesh.faces.length; fi++) if (!selMask[fi]) { out.faces.push([...mesh.faces[fi]]); out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0); srcFace.push(fi); }
   const topFaceIdx: number[] = [];
 
-  const deltaFor = (v: number, avgNormal: Vec3): Vec3 =>
-    offArr ? vscale(asVec3(offArr[v] ?? [0, 0, 0]), scale) : vscale(vnorm(avgNormal), scale);
+  const deltaFor = (v: number, avgNormal: Vec3): Vec3 => {
+    if (offArr) return vscale(asVec3(offArr[v] ?? [0, 0, 0]), scale);
+    const normal = vnorm(avgNormal);
+    // Blender's mesh-normal cache assigns +Z to a zero-area face normal.
+    // Marching Squares can intentionally retain a triangle whose first two
+    // vertices coincide; Offset Scale must still extrude that face instead of
+    // leaving its duplicate boundary points on the source plane.
+    return vscale(normal[0] || normal[1] || normal[2] ? normal : [0, 0, 1], scale);
+  };
 
   if (individual) {
     for (const fi of selFaces) {

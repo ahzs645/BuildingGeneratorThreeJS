@@ -872,7 +872,7 @@
     "reference": "dojo/references/chrome-assets/25d-chrome-crayon.png",
     "blenderStats": { "verts": 97784, "faces": 97776 },
     "localSpace": true,
-    "note": "The 22-group, 559-node root now has an exact Blender Marching Squares surface: 59,872 / 46,866 before welding and 48,896 / 46,866 after welding, with every pre-weld position and face index matching. The authored solid is 97,780 / 97,776 versus Blender's 97,784 / 97,776, preserving every face with four residual post-extrusion vertices and bounds within 0.0025 units after all 665 Sigilize passes.",
+    "note": "Exact Blender counts and four-decimal bounds across all three authored branches: 97,784 / 97,776 for the solid and curve preview, and 48,896 / 46,866 when flattened. The browser also matches the 508-point Spiro repeat and the full 59,872 / 46,866 Marching Squares join. Blur Attribute reproduces all 665 float32 Sigilize passes, while region extrusion preserves Blender's +Z normal fallback on zero-area boundary triangles.",
     "controls": [
       { "type": "checkbox", "name": "FLATTEN", "label": "Flatten surface", "value": false }
     ]

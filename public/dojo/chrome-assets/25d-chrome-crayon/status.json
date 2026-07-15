@@ -2,15 +2,15 @@
   "id": "25d-chrome-crayon",
   "object": "2.5D CHROME CRAYON OBJECT",
   "root": "CHROME CRAYON 3D _4.3_DEC2024",
-  "status": "exact-surface-near-exact-solid",
+  "status": "exact-sweep",
   "blender": {
     "verts": 97784,
     "faces": 97776
   },
   "gnvm": {
-    "verts": 97780,
+    "verts": 97784,
     "faces": 97776
   },
   "coverage": "100% of reachable node types across the 22-group, 559-node closure.",
-  "validation": "The browser and Blender match the 508-point Spiro repeat, the complete 59,872-vertex / 46,866-face Marching Squares join, and the welded flattened surface at 48,896 vertices / 46,866 faces. Blur Attribute now follows Blender's float32 accumulation and reciprocal-multiply path across all 665 Sigilize passes, making the flattened and authored solid bounds exact to four decimals. The authored solid and curve-preview branches have exact face counts at 97,780 / 97,776 versus Blender's 97,784 / 97,776; only four residual vertices remain in the extrusion/final-weld topology."
+  "validation": "All three authored validation branches now match Blender in vertex count, face count, and four-decimal bounds: the solid and curve preview are 97,784 / 97,776, while the flattened surface is 48,896 / 46,866. The browser also matches the 508-point Spiro repeat and the complete 59,872 / 46,866 Marching Squares join. Blur Attribute follows Blender's float32 accumulation and reciprocal-multiply path across all 665 Sigilize passes, and region extrusion applies Blender's +Z fallback normal to the four retained zero-area boundary triangles."
 }
