@@ -8,11 +8,13 @@
   "assetSpecificReconstructions": {
     "explicitCatalogAssets": 5,
     "automaticRecognition": "Strict graph-and-attribute recognition also applies the attribute-emission and Chrome Crayon reconstructions to compatible materials in default catalog assets.",
+    "recognizedN03dFilamentAssignments": 15,
     "implementations": [
       "Chrome Crayon procedural roughness",
       "Chain and Mace face roughness",
       "attribute-driven emission",
       "attribute-driven Principled color, roughness, and metallic",
+      "N03D filament color, layer bands, rough plastic, and backface treatment",
       "Image Pixel Stippler WebGL material"
     ]
   },
