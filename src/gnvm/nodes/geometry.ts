@@ -125,6 +125,53 @@ function translationMatrix(translation: Vec3): Matrix4Rows {
   ];
 }
 
+function axisAngleMatrix(axisValue: Vec3, angleValue: number): Matrix4Rows {
+  const f = Math.fround;
+  const length = Math.hypot(axisValue[0], axisValue[1], axisValue[2]) || 1;
+  const x = f(axisValue[0] / length);
+  const y = f(axisValue[1] / length);
+  const z = f(axisValue[2] / length);
+  const angle = f(angleValue);
+  const c = f(Math.cos(angle));
+  const s = f(Math.sin(angle));
+  const t = f(1 - c);
+  return [
+    [f(f(t * x) * x + c), f(f(t * x) * y - f(s * z)), f(f(t * x) * z + f(s * y)), 0],
+    [f(f(t * x) * y + f(s * z)), f(f(t * y) * y + c), f(f(t * y) * z - f(s * x)), 0],
+    [f(f(t * x) * z - f(s * y)), f(f(t * y) * z + f(s * x)), f(f(t * z) * z + c), 0],
+    [0, 0, 0, 1],
+  ];
+}
+
+/** Match Blender's node_geo_rotate_instances.cc matrix operation. */
+function rotateInstanceMatrix(
+  base: Matrix4Rows,
+  rotation: Vec3,
+  pivot: Vec3,
+  local: boolean,
+): Matrix4Rows {
+  const f = Math.fround;
+  let rotationMatrix: Matrix4Rows;
+  let usedPivot: Vec3;
+  if (local) {
+    const axis = (column: number): Vec3 => [base[0][column], base[1][column], base[2][column]];
+    const x = axisAngleMatrix(axis(0), rotation[0]);
+    const y = axisAngleMatrix(axis(1), rotation[1]);
+    const z = axisAngleMatrix(axis(2), rotation[2]);
+    rotationMatrix = multiplyInstanceMatrices(multiplyInstanceMatrices(z, y), x);
+    usedPivot = transformPointMatrixFloat32(pivot, base);
+  }
+  else {
+    rotationMatrix = instanceMatrix([0, 0, 0], rotation, [1, 1, 1]);
+    usedPivot = pivot.map(f) as Vec3;
+  }
+  const shifted = base.map((row) => [...row]);
+  for (let row = 0; row < 3; row++) shifted[row][3] = f(f(shifted[row][3]) - f(usedPivot[row]));
+  const result = multiplyInstanceMatrices(rotationMatrix, shifted);
+  for (let row = 0; row < 3; row++) result[row][3] = f(f(result[row][3]) + f(usedPivot[row]));
+  return result;
+}
+
 function transformByMatrix(point: Vec3, matrix: Matrix4Rows): Vec3 {
   return [
     matrix[0][0] * point[0] + matrix[0][1] * point[1] + matrix[0][2] * point[2] + matrix[0][3],
@@ -701,21 +748,23 @@ reg("GeometryNodeRotateInstances", (api) => {
     const instance = g.instances[i];
     const rotation = asVec3(rotations[i] ?? [0, 0, 0]);
     const pivot = asVec3(pivots[i] ?? [0, 0, 0]);
+    // Capture the incoming matrix before updating the compatibility Euler.
+    // Blender rotates the existing transform; building this matrix afterward
+    // applies the requested rotation twice.
+    const baseMatrix = instance.transformMatrix
+      ?? (taggedRotationQuaternion(rotation)
+        ? instanceMatrix(instance.position, instance.rotation, instance.scale)
+        : undefined);
     if (!local) {
       const relative = [instance.position[0] - pivot[0], instance.position[1] - pivot[1], instance.position[2] - pivot[2]] as Vec3;
       instance.position = vadd(pivot, rotateEulerXYZ(relative, rotation));
     }
-    // The asset graphs rotate only around Z; component-wise Euler addition is
-    // exact for that case and preserves existing point rotations.
+    // Retain the socket-compatible Euler value for downstream fields. The
+    // transformMatrix above remains authoritative whenever native rotations
+    // would otherwise be lost to an Euler round-trip.
     instance.rotation = vadd(instance.rotation, rotation);
-    if (instance.transformMatrix) {
-      const rotationMatrix = instanceMatrix([0, 0, 0], rotation, [1, 1, 1]);
-      const toPivot = translationMatrix(pivot);
-      const fromPivot = translationMatrix([-pivot[0], -pivot[1], -pivot[2]]);
-      const delta = multiplyInstanceMatrices(multiplyInstanceMatrices(toPivot, rotationMatrix), fromPivot);
-      instance.transformMatrix = local
-        ? multiplyInstanceMatrices(instance.transformMatrix, delta)
-        : multiplyInstanceMatrices(delta, instance.transformMatrix);
+    if (baseMatrix) {
+      instance.transformMatrix = rotateInstanceMatrix(baseMatrix, rotation, pivot, local);
       instance.position = [instance.transformMatrix[0][3], instance.transformMatrix[1][3], instance.transformMatrix[2][3]];
     }
   }

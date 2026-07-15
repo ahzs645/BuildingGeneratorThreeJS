@@ -55,3 +55,38 @@ test("Instance on Points composes a native rotation quaternion without an Euler 
   assert.deepEqual(translated.instances[0].position, [11, 20, 0]);
   assert.deepEqual(realizeInstances(translated).mesh?.positions, [[11, 21, 0]]);
 });
+
+test("Rotate Instances uses Blender's incoming-matrix local axes without double rotation", () => {
+  const payload = new Geometry();
+  payload.curves = [{
+    cyclic: false,
+    points: [[0, 0, 23.177337646484375], [0, 0, -23.177337646484375]],
+  }];
+  const instances = new Geometry();
+  instances.instances.push({
+    geometry: payload,
+    position: [-34.46500015258789, 95.08610534667969, 32.72673797607422],
+    rotation: [0, 0, 0],
+    scale: [1, 1, 1],
+  });
+
+  // Blender's Instance Rotation probe for Dowel .005. The Euler is the socket
+  // compatibility value; the non-enumerable quaternion is the actual Rotation
+  // socket payload consumed by Rotate Instances.
+  const rotation = [Math.fround(Math.PI / 2), 0, Math.fround(Math.PI / 2)] as Vec3 & {
+    [key: symbol]: [number, number, number, number];
+  };
+  rotation[Symbol.for("gnvm.rotationQuaternion")] = [0.5, 0.5, 0.5, 0.5];
+  const rotate = REGISTRY.get("GeometryNodeRotateInstances");
+  assert.ok(rotate);
+  const result = rotate({
+    geo: () => instances,
+    field: (name: string) => Field.of(name === "Rotation" ? rotation : name === "Pivot Point" ? [0, 0, 0] : 1),
+    bool: (name: string) => name === "Local Space",
+  } as never).Instances as Geometry;
+
+  assert.deepEqual(realizeInstances(result).curves[0].points, [
+    [-11.287662506103516, 95.08610534667969, 32.72673797607422],
+    [-57.642337799072266, 95.08610534667969, 32.72673797607422],
+  ]);
+});
