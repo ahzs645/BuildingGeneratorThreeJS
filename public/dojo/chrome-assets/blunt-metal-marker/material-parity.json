@@ -1,0 +1,56 @@
+{
+  "updated": "2026-07-15",
+  "target": {
+    "id": "blunt-metal-marker",
+    "object": "Chrome Marker Extruded",
+    "material": "chrome.002"
+  },
+  "geometryContract": {
+    "verts": 97691,
+    "faces": 97669,
+    "tris": 195420,
+    "group": {
+      "start": 0,
+      "count": 586260,
+      "material": "chrome.002"
+    }
+  },
+  "authoredShaderContract": {
+    "baseColor": [
+      0.800000011920929,
+      0.800000011920929,
+      0.800000011920929
+    ],
+    "metallic": 1.0,
+    "roughnessPath": "Generated → anisotropic Mapping → 3D Noise → Map Range [-1,1] × Geometry Attribute rough → Principled Roughness",
+    "roughnessAttribute": "rough",
+    "evaluatedRoughnessAttributePresent": false,
+    "blenderMissingAttributeResult": 0.0,
+    "finalRoughness": 0.0,
+    "generatedScale": [
+      131.2701416015625,
+      131.2701416015625,
+      1875.470870733261
+    ],
+    "noise": {
+      "dimensions": "3D",
+      "detail": 2.0,
+      "roughness": 0.5,
+      "lacunarity": 2.0,
+      "distortion": 31.20849609375,
+      "mapFrom": [
+        0.0,
+        1.0
+      ],
+      "mapTo": [
+        -1.0,
+        1.0
+      ]
+    }
+  },
+  "browserVerification": {
+    "route": "/chrome-assets?asset=blunt-metal-marker",
+    "status": "Verified in the live WebGL comparison on 2026-07-15: the browser reports 97,691 vertices / 97,669 faces, labels the topology as matching Blender, and the authored-material mode renders the expected polished chrome instead of the diagnostic fallback."
+  },
+  "remaining": "The live browser capture verifies authored material routing and polished zero roughness. The isolated Blender reference remains a normalized geometry render, so final reflection-pattern matching depends on a shared Blender/WebGL environment-lighting fixture rather than this graph's deterministic missing-attribute result."
+}

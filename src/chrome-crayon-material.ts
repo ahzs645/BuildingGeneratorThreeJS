@@ -146,7 +146,7 @@ export function makeChromeCrayonMaterial(
   const config = extractChromeCrayonMaterialConfig(dump, materialName);
   if (!config) return null;
   const roughness = geometry.getAttribute(config.roughnessAttribute);
-  if (!roughness || roughness.itemSize !== 1) return null;
+  if (roughness && roughness.itemSize !== 1) return null;
 
   geometry.computeBoundingBox();
   const bounds = geometry.boundingBox;
@@ -161,10 +161,11 @@ export function makeChromeCrayonMaterial(
   });
   material.name = `${materialName} · authored Chrome Crayon reconstruction`;
   material.userData.chromeCrayonContract = config;
+  material.userData.chromeCrayonAttributeResolution = roughness ? "geometry-color" : "missing-zero";
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", `#include <common>\nattribute float ${config.roughnessAttribute};\nvarying vec3 vCrayonGenerated;\nvarying float vCrayonRough;`)
-      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvCrayonGenerated = (position - vec3(${glsl(bounds.min.x)}, ${glsl(bounds.min.y)}, ${glsl(bounds.min.z)})) / max(vec3(${glsl(size.x)}, ${glsl(size.y)}, ${glsl(size.z)}), vec3(1e-7));\nvCrayonRough = ${config.roughnessAttribute};`);
+      .replace("#include <common>", `#include <common>\n${roughness ? `attribute float ${config.roughnessAttribute};\n` : ""}varying vec3 vCrayonGenerated;\nvarying float vCrayonRough;`)
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvCrayonGenerated = (position - vec3(${glsl(bounds.min.x)}, ${glsl(bounds.min.y)}, ${glsl(bounds.min.z)})) / max(vec3(${glsl(size.x)}, ${glsl(size.y)}, ${glsl(size.z)}), vec3(1e-7));\nvCrayonRough = ${roughness ? config.roughnessAttribute : "0.0"};`);
     shader.fragmentShader = shader.fragmentShader.replace("#include <common>", `#include <common>
 varying vec3 vCrayonGenerated;
 varying float vCrayonRough;
@@ -191,6 +192,6 @@ float crayonFac = crayonNoise(crayonNoisePosition);
 float crayonMappedRoughness = ${glsl(config.noise.toMin)} + (crayonFac - ${glsl(config.noise.fromMin)}) * (${glsl(config.noise.toMax)} - ${glsl(config.noise.toMin)}) / max(${glsl(config.noise.fromMax)} - ${glsl(config.noise.fromMin)}, 1e-7);
 roughnessFactor = clamp(crayonMappedRoughness * max(vCrayonRough, 0.0), 0.0, 1.0);`);
   };
-  material.customProgramCacheKey = () => `chrome-crayon-${materialName}-v1`;
+  material.customProgramCacheKey = () => `chrome-crayon-${materialName}-${roughness ? "rough" : "missing-zero"}-v2`;
   return material;
 }
