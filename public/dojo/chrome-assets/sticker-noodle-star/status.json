@@ -1,0 +1,10 @@
+{
+  "id": "sticker-noodle-star",
+  "object": "Sticker Noodle Brush",
+  "root": "dot periodic brush.003",
+  "status": "exact-sweep",
+  "blender": { "verts": 716079, "faces": 715520 },
+  "gnvm": { "verts": 716079, "faces": 715520 },
+  "coverage": "100% of reachable node types across the 2-group, 46-node closure.",
+  "validation": "Exact Blender topology across six cases covering distance, dot size, outer and inner star radii, and point count—including the 1,002,287-vertex seven-point result. Four-decimal bounds differ by at most 0.0001 units."
+}

@@ -803,8 +803,10 @@ reg("GeometryNodeSplineParameter", () => ({
 
 reg("GeometryNodeCurveStar", (api) => {
   const count = Math.max(2, Math.round(api.num("Points") || 8));
-  const inner = api.num("Inner Radius");
-  const outer = api.num("Outer Radius");
+  // Distance sockets clamp negative radii before Blender generates the
+  // primitive. Graphs commonly derive the inner radius by subtraction.
+  const inner = Math.max(0, api.num("Inner Radius"));
+  const outer = Math.max(0, api.num("Outer Radius"));
   const twist = api.num("Twist");
   const points: Vec3[] = [];
   for (let i = 0; i < count * 2; i++) {

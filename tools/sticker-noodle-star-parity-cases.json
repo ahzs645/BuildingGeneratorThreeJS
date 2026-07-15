@@ -1,0 +1,8 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "dot distance 1", "overrides": { "Dot Distance": 1 } },
+  { "name": "dot size 1", "overrides": { "dot size": 1 } },
+  { "name": "outer 0.5", "overrides": { "outer": 0.5 } },
+  { "name": "inner 0.5", "overrides": { "inner": 0.5 } },
+  { "name": "points 7", "overrides": { "Points": 7 } }
+]

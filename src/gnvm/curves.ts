@@ -205,7 +205,13 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?:
   // lying in world XY. Derive a stable, winding-independent plane normal so a
   // slightly tilted board outline keeps a constant profile-up direction.
   const horizontalPlanar = rail.cyclic && rp.length > 2
-    && rp.every((point) => Math.abs(point[2] - rp[0][2]) < 1e-8);
+    && rp.every((point) => Math.abs(point[2] - rp[0][2]) < 1e-8)
+    // A fully collapsed cyclic rail has no in-plane tangent. Blender falls
+    // back to its generic +Z frame and retains both profile axes.
+    && rp.some((point, index) => {
+      const next = rp[(index + 1) % rp.length];
+      return Math.hypot(next[0] - point[0], next[1] - point[1]) > 1e-9;
+    });
   let tiltedPlanarNormal: Vec3 | null = null;
   if (planarFromMesh && !horizontalPlanar && rail.cyclic && rp.length > 2) {
     for (let index = 1; index + 1 < rp.length; index++) {

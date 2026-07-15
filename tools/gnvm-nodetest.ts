@@ -360,6 +360,11 @@ function meshSignedAreaXY(m: Mesh): number {
   const star = runNode("GeometryNodeCurveStar", { Points: 5, "Inner Radius": .5, "Outer Radius": 1, Twist: 0 }).Curve as Geometry;
   check("Curve Star alternates ten cyclic points", star.curves[0].cyclic && star.curves[0].points.length === 10);
   check("Curve Star starts on outer +X", approx(star.curves[0].points[0], [1, 0, 0]));
+  const clamped = runNode("GeometryNodeCurveStar", {
+    Points: 3, "Inner Radius": -2, "Outer Radius": -1, Twist: 0,
+  }).Curve as Geometry;
+  check("Curve Star clamps negative distance radii",
+    clamped.curves[0].points.every((point) => approx(point, [0, 0, 0])));
   const collapsed = curve([[0, 0, 0], [0, 0, 0], [0, 0, 0]], true);
   const filleted = runNode("GeometryNodeFilletCurve", { Curve: collapsed, Radius: .2, Count: 3, "Limit Radius": true }).Curve as Geometry;
   check("Fillet Curve retains count on collapsed corners", filleted.curvePointCount() === 12, `points=${filleted.curvePointCount()}`);
@@ -570,6 +575,18 @@ function meshSignedAreaXY(m: Mesh): number {
     JSON.stringify(mesh.faces) === JSON.stringify([[0, 1, 3, 2]]),
     JSON.stringify(mesh.faces),
   );
+}
+
+{
+  const collapsedRail = curve([[0, 0, 0], [0, 0, 0], [0, 0, 0]], true);
+  const squareProfile = curve([[-1, -1, 0], [1, -1, 0], [1, 1, 0], [-1, 1, 0]], true);
+  const swept = runNode("GeometryNodeCurveToMesh", {
+    Curve: collapsedRail, "Profile Curve": squareProfile, "Fill Caps": false,
+  }).Mesh as Geometry;
+  const xs = swept.mesh!.positions.map((point) => point[0]);
+  const ys = swept.mesh!.positions.map((point) => point[1]);
+  check("CurveToMesh retains both profile axes on a collapsed cyclic rail",
+    Math.min(...xs) === -1 && Math.max(...xs) === 1 && Math.min(...ys) === -1 && Math.max(...ys) === 1);
 }
 
 {
