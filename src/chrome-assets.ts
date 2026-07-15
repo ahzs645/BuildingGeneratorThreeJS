@@ -118,7 +118,7 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
           ? makeAttributeEmissionMaterial(dump,geometry,group.material??"")
           : makeAttributeEmissionMaterial(dump,geometry,group.material??"")
             ?? makeAttributePrincipledMaterial(dump,geometry,group.material??"")
-            ?? makeFilamentMaterial(dump,geometry,group.material??"")
+            ?? makeFilamentMaterial(dump,geometry,group,group.material??"")
             ?? makeCrossSectionFilamentMaterial(dump,geometry,group.material??"")
             ?? makeMahoganyMaterial(dump,geometry,group.material??"")
             ?? makeToonCyclesMaterial(dump,group.material??"")

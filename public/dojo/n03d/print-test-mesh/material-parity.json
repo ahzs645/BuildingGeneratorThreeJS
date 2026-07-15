@@ -40,5 +40,17 @@
     "macroLuminanceCorrelation": 0.8084655279389585,
     "meanLuminanceDelta": 0.027288621982416453
   },
-  "interpretation": "Camera and geometry align. Replacing the capture-only RoomEnvironment, hemisphere light, and directional light with scale-relative RectArea lights reduces full-surface luminance MAE by 91.3%. The filament front is now the exact col attribute and its back is the achromatic max-RGB value branch used by Blender. Removing the graph-inaccurate color and roughness bands changes MAE only from 0.0630 to 0.0644; the remaining material residual is the unimplemented procedural Wave/Bump normal perturbation. The generic flat.w Background contract is implemented."
+  "authoredAreaWaveBump": {
+    "surfaceMaskIou": 0.9978688812725196,
+    "intersectionPixels": 272514,
+    "pixelLuminanceMae": 0.07413296188046477,
+    "pixelLuminanceCorrelation": 0.5468408290783874,
+    "binaryMaskDisagreementFraction": 0.0036365104178133966,
+    "macroLuminanceMae": 0.04703801369226936,
+    "macroLuminanceCorrelation": 0.9394658852821984,
+    "blackFractionDelta": -0.07807049438618424,
+    "meanLuminanceDelta": 0.008302996785018293,
+    "capture": "/private/tmp/n03d-print-test-authored-bump.png"
+  },
+  "interpretation": "Camera and geometry align. The filament front is the exact col attribute and its back is Blender's achromatic max-RGB value branch. The browser now derives Generated coordinates from the filament material group's bounds, evaluates a clean-room lookup3/Perlin fBm Z wave, and applies forward-derivative bump normals. Relative to exact colors without bump, macro luminance MAE improves from 0.0628 to 0.0470, macro correlation from 0.808 to 0.939, and mean luminance delta from +0.0273 to +0.0083. Pixel MAE rises from 0.0644 to 0.0741 because the subpixel line pattern remains phase and raster-filter sensitive; high-frequency shader parity is not yet exact. The generic flat.w Background contract is implemented."
 }
