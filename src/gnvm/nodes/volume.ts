@@ -222,11 +222,21 @@ function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, 
   let emittedQuads = 0;
   let skippedMissingVertex = 0;
   let skippedDuplicateVertex = 0;
-  const addQuad = (indices: number[], forward: boolean) => {
+  const addQuad = (indices: number[], forward: boolean, alternateDiagonal: boolean) => {
     if (diagnosticSink) crossedGridEdges++;
     if (indices.some((index) => index < 0)) { if (diagnosticSink) skippedMissingVertex++; return; }
     if (new Set(indices).size !== 4) { if (diagnosticSink) skippedDuplicateVertex++; return; }
-    mesh.faces.push(forward ? indices : [...indices].reverse());
+    // OpenVDB's polygon loops use the opposite winding from the incident-cell
+    // ring above. X/Y loops also begin one corner later than Z, which selects
+    // the other fan diagonal when Manifold consumes the authored quad. Keeping
+    // both details matches Blender's Volume to Mesh polygon/loop-triangle order.
+    mesh.faces.push(alternateDiagonal
+      ? forward
+        ? [indices[1], indices[0], indices[3], indices[2]]
+        : [indices[2], indices[3], indices[0], indices[1]]
+      : forward
+        ? [indices[0], indices[3], indices[2], indices[1]]
+        : [indices[3], indices[0], indices[1], indices[2]]);
     if (diagnosticSink) emittedQuads++;
   };
   const cellEdge = (x: number, y: number, z: number, edge: number) => cellEdgeVertices.get(cellIndex(x, y, z))?.[edge] ?? -1;
@@ -238,13 +248,13 @@ function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, 
     const value = sample(x, y, z);
     const crossX = sample(x + 1, y, z);
     if (y > 0 && z > 0 && (value < isolation) !== (crossX < isolation))
-      addQuad([cellEdge(x, y - 1, z - 1, 3), cellEdge(x, y, z - 1, 2), cellEdge(x, y, z, 0), cellEdge(x, y - 1, z, 1)], value < isolation);
+      addQuad([cellEdge(x, y - 1, z - 1, 3), cellEdge(x, y, z - 1, 2), cellEdge(x, y, z, 0), cellEdge(x, y - 1, z, 1)], value < isolation, true);
     const crossY = sample(x, y + 1, z);
     if (x > 0 && z > 0 && (value < isolation) !== (crossY < isolation))
-      addQuad([cellEdge(x - 1, y, z - 1, 7), cellEdge(x - 1, y, z, 5), cellEdge(x, y, z, 4), cellEdge(x, y, z - 1, 6)], value < isolation);
+      addQuad([cellEdge(x - 1, y, z - 1, 7), cellEdge(x - 1, y, z, 5), cellEdge(x, y, z, 4), cellEdge(x, y, z - 1, 6)], value < isolation, true);
     const crossZ = sample(x, y, z + 1);
     if (x > 0 && y > 0 && (value < isolation) !== (crossZ < isolation))
-      addQuad([cellEdge(x - 1, y - 1, z, 11), cellEdge(x, y - 1, z, 10), cellEdge(x, y, z, 8), cellEdge(x - 1, y, z, 9)], value < isolation);
+      addQuad([cellEdge(x - 1, y - 1, z, 11), cellEdge(x, y - 1, z, 10), cellEdge(x, y, z, 8), cellEdge(x - 1, y, z, 9)], value < isolation, false);
   }
   const preSplitVertices = mesh.positions.length;
   const preSplitFaces = mesh.faces.length;

@@ -28,3 +28,29 @@ test("surface nets closes a crossing on each axis' negative boundary", () => {
     assert.equal(mesh.faces[0].length, 4);
   }
 });
+
+test("surface nets preserves Blender's directional quad winding and diagonals", () => {
+  const resolution: Vec3 = [4, 4, 4];
+  const index = (x: number, y: number, z: number) => z * resolution[0] * resolution[1] + y * resolution[0] + x;
+  const expectedForward = [
+    [1, 0, 2, 3],
+    [2, 0, 1, 3],
+    [0, 2, 3, 1],
+  ];
+  const expectedReverse = [
+    [3, 2, 0, 1],
+    [3, 1, 0, 2],
+    [2, 0, 1, 3],
+  ];
+
+  for (const inside of [true, false]) for (let axis = 0; axis < 3; axis++) {
+    const values = new Float32Array(4 * 4 * 4).fill(inside ? 1 : -1);
+    const coordinate: Vec3 = [1, 1, 1];
+    coordinate[axis] = 0;
+    values[index(...coordinate)] = inside ? -1 : 1;
+
+    const mesh = surfaceNetsForTest(values, resolution, 0, [0, 0, 0], [1, 1, 1]);
+    assert.equal(mesh.faces.length, 1, `axis ${axis}, inside=${inside}`);
+    assert.deepEqual(mesh.faces[0], (inside ? expectedForward : expectedReverse)[axis]);
+  }
+});

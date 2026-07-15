@@ -70,8 +70,10 @@ the matching opposite ambiguous face.
 The VM now uses those Apache-2.0 OpenVDB tables directly. At TPMS.018's first
 `Volume to Mesh` boundary, Blender and GN-VM both produce 22,932 vertices and
 22,938 quads. The 188 ambiguous faces resolve to 22,356 one-component cells and
-288 two-component cells, with zero missing or duplicate quad corners. The
-remaining full-result difference begins at the downstream hard-sphere Boolean.
+288 two-component cells, with zero missing or duplicate quad corners. All
+22,938 unordered quad vertex sets match Blender. Matching OpenVDB's opposite
+winding plus its distinct X/Y and Z loop starts also preserves Blender's fan
+diagonals when those quads enter the downstream hard-sphere Boolean.
 
 ## Thirteen-root regression snapshot
 
@@ -107,14 +109,16 @@ recognize, while retaining source materials and FACE attributes.
 The shared change leaves all eight topology-exact roots unchanged and improves
 the three hard-sphere variants:
 
-| Root object | Previous browser | Native provenance | Blender |
+| Root object | Previous browser | Native provenance + loop ordering | Blender |
 | --- | ---: | ---: | ---: |
 | Math Clay Study.008 | 17,137 / 28,606 | 17,137 / 15,481 | 16,249 / 15,459 |
 | Math Clay Study.013 | 85,663 / 86,457 | 88,024 / 86,024 | 87,099 / 85,390 |
-| Math Clay Study.001 | 14,868 / 25,617 | 14,868 / 13,610 | 14,190 / 13,558 |
+| Math Clay Study.001 | 14,868 / 25,617 | 14,858 / 13,558 | 14,190 / 13,558 |
 
-TPMS.018 remains closed with 28,476 edges, edge incidence two everywhere, and
-Euler characteristic two. Running the same provenance reconstruction on the
-Blender-extracted pre-Boolean surface and sphere produces exactly Blender's
-13,558 polygon count; the remaining browser delta is therefore upstream input
-precision and Manifold-vs-Blender FLOAT solver geometry, not lost polygon IDs.
+TPMS.018 remains closed with 28,414 edges, edge incidence two everywhere, and
+Euler characteristic two. Its browser result now matches Blender's final
+13,558-polygon count exactly. Coordinate morph tests leave the result unchanged,
+while substituting Blender's quad loop order removes the former 52-polygon
+delta. The remaining 668-vertex difference is therefore Manifold-vs-Blender
+FLOAT-solver vertex partitioning, not lost polygon IDs, coordinate arithmetic,
+or missing surface geometry.
