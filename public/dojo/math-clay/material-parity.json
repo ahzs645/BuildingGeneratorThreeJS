@@ -1,0 +1,60 @@
+{
+  "updated": "2026-07-15",
+  "target": {
+    "id": "math-clay-lorenze",
+    "object": "Math Clay Study.002",
+    "title": "Math Clay · Twisted Saddle"
+  },
+  "blenderReference": {
+    "image": "dojo/references/math-clay/lorenze-authored.png",
+    "metadata": "dojo/references/math-clay/lorenze-authored.json",
+    "engine": "BLENDER_EEVEE",
+    "geometryNodesOnly": true,
+    "authoredLightScale": 28.0,
+    "authoredLightScaleReason": "The isolated reference rig places and sizes its Area lights from the object radius, but Blender Area energy is total power. Scaling the 1000/500 W pair by 28 compensates for this asset's 58.49-unit radius relative to the 11.06-unit N03D calibration target.",
+    "verts": 30644,
+    "faces": 30642,
+    "resolution": [
+      768,
+      768
+    ],
+    "opaqueSurfacePixels": 290573,
+    "opaqueSurfaceFraction": 0.4926435682508681,
+    "opaqueSurfaceMeanRgb": [
+      0.090649867405,
+      0.087141937199,
+      0.006960837285
+    ],
+    "opaqueSurfaceMaxRgb": [
+      0.439215686275,
+      0.427450980392,
+      0.121568627451
+    ],
+    "opaqueSurfaceMeanLuminance": 0.082098647747,
+    "evaluatedMaterialFaces": {
+      "Filament and Cross Section 1OCT2024": 30642
+    }
+  },
+  "browserContract": {
+    "front": "The col point attribute feeds the Principled base color without an invented brightness band.",
+    "roughness": "The rough point attribute is used directly when present; otherwise the extracted 0.5 fallback is retained.",
+    "back": "Geometry Backfacing selects the material's black Emission branch. WebGL zeros outgoing light on backfaces so a physical specular lobe cannot leak through the emission result; the camera-facing surface remains on the Principled branch.",
+    "removedApproximation": "The former generated-Z sine band altered diffuse color and roughness even though Blender routes the Wave texture into Bump and procedural coat fields instead."
+  },
+  "remaining": "Wave distortion, derivative Bump/bevel normals, and white-noise-driven coat fields remain separate front-facing material targets. They produce the dense authored layer-line relief visible in the scale-correct Blender reference.",
+  "webglComparison": {
+    "status": "captured by connected root browser",
+    "browserRoute": "/chrome-assets?asset=math-clay-lorenze&capture=authored",
+    "capture": "/private/tmp/math-clay-lorenze-browser-before.png",
+    "surfaceMaskIou": 0.9922145240103396,
+    "intersectionPixels": 290573,
+    "pixelLuminanceMae": 0.06681107434904528,
+    "pixelLuminanceCorrelation": 0.8153217951676137,
+    "binaryMaskDisagreementFraction": 0.0,
+    "macroLuminanceMae": 0.06276196228894165,
+    "macroLuminanceCorrelation": 0.8429957732804999,
+    "blackFractionDelta": -0.29944328029375816,
+    "meanLuminanceDelta": 0.06320027028815364
+  },
+  "interpretation": "The 0.9922 silhouette IoU confirms camera and exact geometry alignment. The browser preserves the authored front color and has no 0.5-threshold disagreement, while its brighter mean and missing fine line relief localize the remaining residual to renderer energy calibration and the unimplemented Wave/Bump and procedural coat fields."
+}

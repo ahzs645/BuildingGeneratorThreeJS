@@ -7,6 +7,8 @@ Usage:
 Set ``NODE_DOJO_AUTHORED_MATERIAL=1`` for an isolated Eevee material render,
 and ``NODE_DOJO_GN_ONLY=1`` to disable source modifiers after the first active
 Geometry Nodes modifier before adding the temporary realization pass.
+``NODE_DOJO_AUTHORED_LIGHT_SCALE`` optionally multiplies the authored Area
+light powers for large or small assets while preserving the shared rig layout.
 """
 import json
 import math
@@ -162,15 +164,16 @@ if authored_material:
     scene.render.engine = "BLENDER_EEVEE"
     scene.view_settings.view_transform = "Standard"
     scene.view_settings.look = "Medium High Contrast"
+    authored_light_scale = float(os.environ.get("NODE_DOJO_AUTHORED_LIGHT_SCALE", "1"))
     key_data = bpy.data.lights.new("__NODE_DOJO_REFERENCE_KEY", "AREA")
-    key_data.energy = 1000.0
+    key_data.energy = 1000.0 * authored_light_scale
     key_data.size = radius * 1.5
     key = bpy.data.objects.new("__NODE_DOJO_REFERENCE_KEY", key_data)
     scene.collection.objects.link(key)
     key.location = center + Vector((-1.8, -2.1, 2.8)).normalized() * radius * 2.4
     key.rotation_euler = (center - key.location).to_track_quat("-Z", "Y").to_euler()
     fill_data = bpy.data.lights.new("__NODE_DOJO_REFERENCE_FILL", "AREA")
-    fill_data.energy = 500.0
+    fill_data.energy = 500.0 * authored_light_scale
     fill_data.size = radius * 2.0
     fill = bpy.data.objects.new("__NODE_DOJO_REFERENCE_FILL", fill_data)
     scene.collection.objects.link(fill)
@@ -208,6 +211,7 @@ if meta_path:
         "engine": scene.render.engine,
         "authored_material": authored_material,
         "geometry_nodes_only": gn_only,
+        "authored_light_scale": authored_light_scale if authored_material else None,
     }
     with open(meta_path, "w", encoding="utf-8") as handle:
         json.dump(stats, handle, indent=2)

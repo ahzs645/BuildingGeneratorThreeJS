@@ -2,7 +2,7 @@
   "source": "math clay download.blend",
   "status": "13-distinct-roots-live",
   "coverage": "Every reachable node type across all thirteen distinct Math Clay surface roots has a browser handler.",
-  "materialParity": "The shared literal flat.w Background material now renders as its authored unlit linear 0.8 gray wherever a Math Clay output assigns it. Toon outline, npr glass, and the larger cross-section shader remain separate parity targets.",
+  "materialParity": "The shared literal flat.w Background material renders as its authored unlit linear 0.8 gray. The Twisted Saddle's evaluated Filament and Cross Section material now follows Geometry Backfacing into its black Emission branch instead of applying an invented color/roughness sine band; its exact Blender Eevee reference is dojo/references/math-clay/lorenze-authored.png. Front-facing Wave distortion, Bump/bevel normals, white-noise coat fields, toon outline, and npr glass remain separate parity targets.",
   "variants": [
     { "id": "math-clay-lorenze-001", "object": "Math Clay Study.003", "root": "lorenze.001", "groups": 16, "nodes": 223, "status": "exact-topology", "blender": { "verts": 23968, "faces": 23966 }, "gnvm": { "verts": 23968, "faces": 23966 }, "bboxMaxDiff": 0.0001 },
     { "id": "math-clay-lorenze", "object": "Math Clay Study.002", "root": "lorenze", "groups": 16, "nodes": 224, "status": "exact-topology", "blender": { "verts": 30644, "faces": 30642 }, "gnvm": { "verts": 30644, "faces": 30642 }, "bboxMaxDiff": 0.0001 },
