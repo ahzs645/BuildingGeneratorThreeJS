@@ -225,7 +225,21 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
   // Map element i of THIS domain from an array resolved on another domain
   // (Blender's implicit attribute interpolation).
   const toDomain = (src: Domain, arr: (import("./core").Elem | undefined)[], i: number): import("./core").Elem | undefined => {
-    if (src === domain || !mesh) return arr[i];
+    if (src === domain) return arr[i];
+    if (!mesh) {
+      // Curve-domain fields are constant for every point of their spline.
+      // Returning arr[i] here broadcast only the first N spline values to the
+      // first N points and defaulted the rest to zero (the 3D Fill Curve helper
+      // consequently stacked nearly every outline on the same unit circle).
+      if (src === "CURVE" && domain === "POINT") return arr[splineOfPoint[i] ?? 0];
+      if (src === "POINT" && domain === "CURVE") {
+        let start = 0;
+        for (let spline = 0; spline < i; spline++) start += geo.curves[spline]?.points.length ?? 0;
+        const count = geo.curves[i]?.points.length ?? 0;
+        return avgElems(arr.slice(start, start + count));
+      }
+      return arr[i];
+    }
     if (src === "POINT") {
       if (domain === "FACE") return avgElems(mesh.faces[i]?.map((vi) => arr[vi]));
       if (domain === "CORNER") return arr[C().vert[i]];

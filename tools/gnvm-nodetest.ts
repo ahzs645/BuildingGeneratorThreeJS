@@ -907,6 +907,35 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 {
+  const source = curves([
+    { points: [[0, 0, 0], [1, 0, 0], [2, 0, 0]], cyclic: false },
+    { points: [[0, 1, 0], [1, 1, 0]], cyclic: false },
+  ]);
+  const curveIndex = Field.perElem((i) => i);
+  const evaluated = runNode("GeometryNodeFieldOnDomain", { Value: curveIndex }, { domain: "CURVE" }).Value as Field;
+  check("EvaluateOnDomain broadcasts CURVE values to every spline point",
+    approx(evaluated.array(makeFieldCtx(source, "POINT")) as number[], [0, 0, 0, 1, 1]));
+}
+
+// Offset Point in Curve stays inside each spline, rejects open endpoints, and
+// wraps cyclic splines. The unlinked Point Index input means the current point.
+{
+  const source = curves([
+    { points: [[0, 0, 0], [1, 0, 0], [2, 0, 0]], cyclic: false },
+    { points: [[0, 1, 0], [1, 1, 0], [2, 1, 0]], cyclic: true },
+  ]);
+  const ctx = makeFieldCtx(source, "POINT");
+  const next = runNode("GeometryNodeOffsetPointInCurve", { "Point Index": 0, Offset: 1 });
+  check("OffsetPointInCurve open +1 indices and validity",
+    approx((next["Point Index"] as Field).array(ctx) as number[], [1, 2, 0, 4, 5, 3])
+    && approx((next["Is Valid Offset"] as Field).array(ctx) as number[], [1, 1, 0, 1, 1, 1]));
+  const previous = runNode("GeometryNodeOffsetPointInCurve", { "Point Index": 0, Offset: -1 });
+  check("OffsetPointInCurve open -1 rejects start and cyclic wraps",
+    approx((previous["Point Index"] as Field).array(ctx) as number[], [0, 0, 1, 5, 3, 4])
+    && approx((previous["Is Valid Offset"] as Field).array(ctx) as number[], [0, 1, 1, 1, 1, 1]));
+}
+
+{
   const source = new Geometry();
   source.mesh = new Mesh();
   source.mesh.positions = [[0, 0, 0], [1, 0, 0], [2, 0, 0]];
@@ -1553,6 +1582,14 @@ function meshSignedAreaXY(m: Mesh): number {
     "Text Box Width": 2,
   })["Curve Instances"] as Geometry;
   check("StringToCurves center alignment ignores trailing wrap space", Math.abs(centeredWrap.instances[0].position[0] + .8) < 1e-9, `x=${centeredWrap.instances[0].position[0]}`);
+  const compressedCenteredWrap = runNode("GeometryNodeStringToCurves", {
+    String: "A B", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
+    "Align X": "Center", "Character Spacing": .7, "Word Spacing": 1, "Line Spacing": .5,
+    "Text Box Width": 2,
+  })["Curve Instances"] as Geometry;
+  check("StringToCurves keeps compressed wrap-separator centering residual",
+    Math.abs(compressedCenteredWrap.instances[0].position[0] + .77) < 1e-9,
+    `x=${compressedCenteredWrap.instances[0].position[0]}`);
   const leftPivotWrap = runNode("GeometryNodeStringToCurves", {
     String: "A B", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
     "Align X": "Center", "Pivot Point": "Bottom Left", "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": .5,

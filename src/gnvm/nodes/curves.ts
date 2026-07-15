@@ -1025,6 +1025,17 @@ reg("GeometryNodeStringToCurves", (api) => {
       lineWidth += advanceOf(ch);
     }
     if (alignmentEnd > 0) lineWidth -= spacingExtra;
+    // A wrap separator remains an empty instance at the end of the preceding
+    // line. Blender excludes its nominal width from centering, but retains the
+    // amount removed by sub-1 character spacing. This is observable on the
+    // Alkhemikal helper: both wrapped lines shift left by half of that residual
+    // while the final line (without a separator) stays fixed.
+    if (alignmentEnd < chars.length && advanceScale < 1) {
+      for (const ch of chars.slice(alignmentEnd)) {
+        const nominal = size * (atlas?.glyphs[ch]?.advance ?? .7) * (ch === " " ? wordSpacing : 1);
+        lineWidth += nominal * (1 - advanceScale);
+      }
+    }
     let x = 0;
     if (alignX === "CENTER") x = -lineWidth / 2;
     else if (alignX === "RIGHT") x = -lineWidth;

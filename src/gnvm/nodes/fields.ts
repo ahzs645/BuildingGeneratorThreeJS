@@ -31,6 +31,52 @@ reg("GeometryNodeFieldAtIndex", (api) => {
   };
 });
 
+// Offset Point in Curve returns a flattened point index, but offsets within the
+// source spline only.  An unconnected Point Index socket is Blender's implicit
+// current-index field (the dumped socket value is misleadingly zero).  Open
+// splines report invalid beyond either endpoint; cyclic splines wrap.
+reg("GeometryNodeOffsetPointInCurve", (api) => {
+  const pointSocket = api.node.inputs.find((socket) =>
+    socket.name === "Point Index" || socket.identifier === "Point Index");
+  const pointIndex = api.field("Point Index");
+  const offset = api.field("Offset");
+
+  const resolve = (ctx: Parameters<Field["array"]>[0]) => {
+    const points = pointSocket?.linked ? pointIndex.array(ctx) : null;
+    const offsets = offset.array(ctx);
+    const indices: Elem[] = new Array(ctx.size);
+    const valid: Elem[] = new Array(ctx.size);
+
+    for (let i = 0; i < ctx.size; i++) {
+      const source = Math.trunc(asNum(points?.[i] ?? i));
+      const local = ctx.splineIndex?.(source) ?? source;
+      const count = ctx.splinePointCount?.(source) ?? ctx.size;
+      const start = source - local;
+      const delta = Math.trunc(asNum(offsets[i] ?? 0));
+      let target = local + delta;
+      const cyclic = ctx.splineCyclic?.(source) ?? false;
+
+      if (count > 0 && cyclic) {
+        target = ((target % count) + count) % count;
+        indices[i] = start + target;
+        valid[i] = 1;
+      } else if (count > 0 && target >= 0 && target < count) {
+        indices[i] = start + target;
+        valid[i] = 1;
+      } else {
+        indices[i] = 0;
+        valid[i] = 0;
+      }
+    }
+    return { indices, valid };
+  };
+
+  return {
+    "Point Index": Field.make((ctx) => resolve(ctx).indices).tagged("POINT"),
+    "Is Valid Offset": Field.make((ctx) => resolve(ctx).valid).tagged("POINT"),
+  };
+});
+
 // Evaluate on Domain (a.k.a. Interpolate Domain): resolve the value field on the
 // node's declared domain, then interpolate onto the consumer's domain. The
 // distinction matters: e.g. Normal on POINT (smooth vertex normals) vs CORNER

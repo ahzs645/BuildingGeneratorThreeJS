@@ -96,7 +96,7 @@
     "dump": "dojo/chrome-assets/string-to-text-002/dump.json",
     "reference": "dojo/references/chrome-assets/string-to-text-002.png",
     "blenderStats": { "verts": 4446, "faces": 26 },
-    "note": "Authored face topology is exact; the browser differs by 5.62% vertices because its poly-fillet bookkeeping is approximate, while local bounds remain within 0.60 units.",
+    "note": "Exact Blender/browser topology and bounds across the fourteen-case text, size, alignment, spacing, wrapping, and fill sweep.",
     "controls": [
       { "type": "text", "name": "String", "label": "Text", "value": "3D Chrome Crayon" },
       { "name": "Align", "label": "Align: left / center / right", "min": 0, "max": 2, "step": 1, "value": 1 },
@@ -136,7 +136,7 @@
     "dump": "dojo/chrome-assets/string-to-text/dump.json",
     "reference": "dojo/references/chrome-assets/string-to-text.png",
     "blenderStats": { "verts": 246, "faces": 20 },
-    "note": "The packed SF Intermosaic glyph outlines and all authored faces match Blender; the VM omits 24 loose/bookkeeping vertices and keeps the authored bounds within 0.39 units.",
+    "note": "The packed SF Intermosaic glyph outlines, all authored faces, and all swept bounds match Blender; the VM omits 24 loose fill-bookkeeping vertices.",
     "controls": [
       { "type": "text", "name": "String", "label": "Text", "value": "3D Chrome Crayon" },
       { "name": "Align", "label": "Align: left / center / right", "min": 0, "max": 2, "step": 1, "value": 1 },
