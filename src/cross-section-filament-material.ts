@@ -8,7 +8,8 @@ type RawMaterial = { nodes?: RawNode[]; links?: RawLink[] };
 
 export type CrossSectionFilamentConfig = {
   colorAttribute: string;
-  roughnessAttribute: string;
+  roughnessAttribute: string | null;
+  roughnessFallback: number;
   layerAttribute: string;
   mappingScale: number;
   waveDistortion: number;
@@ -17,12 +18,16 @@ export type CrossSectionFilamentConfig = {
 };
 
 function input(node: RawNode | undefined, name: string, fallback: number): number {
-  const value = Number(node?.inputs?.find((socket) => socket.identifier === name || socket.name === name)?.value);
+  const raw = node?.inputs?.find((socket) => socket.identifier === name || socket.name === name)?.value;
+  if (raw === null || raw === undefined) return fallback;
+  const value = Number(raw);
   return Number.isFinite(value) ? value : fallback;
 }
 
 function output(node: RawNode | undefined, name: string, fallback: number): number {
-  const value = Number(node?.outputs?.find((socket) => socket.identifier === name || socket.name === name)?.default);
+  const raw = node?.outputs?.find((socket) => socket.identifier === name || socket.name === name)?.default;
+  if (raw === null || raw === undefined) return fallback;
+  const value = Number(raw);
   return Number.isFinite(value) ? value : fallback;
 }
 
@@ -53,11 +58,12 @@ export function extractCrossSectionFilamentConfig(dump: Dump, materialName: stri
   const colorLink = principled ? links.find((link) => link.from_node === colorNode?.name && link.to_node === principled.name && link.to_socket === "Base Color") : undefined;
   const roughnessLink = principled ? links.find((link) => link.from_node === roughnessNode?.name && link.to_node === principled.name && link.to_socket === "Roughness") : undefined;
   const layerLink = wave ? links.find((link) => link.from_node === layerNode?.name && link.to_node === wave.name && link.to_socket === "Scale") : undefined;
-  if (!surfaceMix || !principled || !colorLink || !roughnessLink || !layerLink || !mappingNode || !scaleNode) return null;
+  if (!surfaceMix || !principled || !colorLink || !layerLink || !mappingNode || !scaleNode) return null;
 
   return {
     colorAttribute: "col",
-    roughnessAttribute: "rough",
+    roughnessAttribute: roughnessLink ? "rough" : null,
+    roughnessFallback: input(principled, "Roughness", 0.5),
     layerAttribute: "layer",
     mappingScale: output(scaleNode, "Value", 85),
     waveDistortion: input(wave, "Distortion", 0),
@@ -78,9 +84,9 @@ export function makeCrossSectionFilamentMaterial(
   const config = extractCrossSectionFilamentConfig(dump, materialName);
   if (!config) return null;
   const color = geometry.getAttribute(config.colorAttribute);
-  const roughness = geometry.getAttribute(config.roughnessAttribute);
+  const roughness = config.roughnessAttribute ? geometry.getAttribute(config.roughnessAttribute) : null;
   const layer = geometry.getAttribute(config.layerAttribute);
-  if (!color || color.itemSize !== 3 || !roughness || roughness.itemSize !== 1 || !layer || layer.itemSize !== 1) return null;
+  if (!color || color.itemSize !== 3 || (config.roughnessAttribute && (!roughness || roughness.itemSize !== 1)) || !layer || layer.itemSize !== 1) return null;
   geometry.computeBoundingBox();
   const bounds = geometry.boundingBox;
   if (!bounds) return null;
@@ -90,9 +96,11 @@ export function makeCrossSectionFilamentMaterial(
   material.name = `${materialName} · joint filament reconstruction`;
   material.userData.crossSectionFilamentContract = config;
   material.onBeforeCompile = (shader) => {
+    const roughnessDeclaration = config.roughnessAttribute ? `attribute float ${config.roughnessAttribute};` : "";
+    const roughnessValue = config.roughnessAttribute ?? glsl(config.roughnessFallback);
     shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", `#include <common>\nattribute vec3 ${config.colorAttribute};\nattribute float ${config.roughnessAttribute};\nattribute float ${config.layerAttribute};\nvarying vec3 vJointColor;\nvarying float vJointRoughness;\nvarying float vJointLayer;\nvarying vec3 vJointGenerated;`)
-      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvJointColor=${config.colorAttribute};\nvJointRoughness=${config.roughnessAttribute};\nvJointLayer=${config.layerAttribute};\nvJointGenerated=(position-vec3(${glsl(bounds.min.x)},${glsl(bounds.min.y)},${glsl(bounds.min.z)}))/max(vec3(${glsl(size.x)},${glsl(size.y)},${glsl(size.z)}),vec3(1e-7));`);
+      .replace("#include <common>", `#include <common>\nattribute vec3 ${config.colorAttribute};\n${roughnessDeclaration}\nattribute float ${config.layerAttribute};\nvarying vec3 vJointColor;\nvarying float vJointRoughness;\nvarying float vJointLayer;\nvarying vec3 vJointGenerated;`)
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvJointColor=${config.colorAttribute};\nvJointRoughness=${roughnessValue};\nvJointLayer=${config.layerAttribute};\nvJointGenerated=(position-vec3(${glsl(bounds.min.x)},${glsl(bounds.min.y)},${glsl(bounds.min.z)}))/max(vec3(${glsl(size.x)},${glsl(size.y)},${glsl(size.z)}),vec3(1e-7));`);
     shader.fragmentShader = shader.fragmentShader
       .replace("#include <common>", "#include <common>\nvarying vec3 vJointColor;\nvarying float vJointRoughness;\nvarying float vJointLayer;\nvarying vec3 vJointGenerated;")
       .replace("#include <color_fragment>", `#include <color_fragment>
