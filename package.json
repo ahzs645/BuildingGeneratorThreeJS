@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:geometry-nodes": "tsx tools/geometry-nodes-adapter-test.ts"
   },
   "dependencies": {
     "@gltf-transform/core": "^4.4.1",
