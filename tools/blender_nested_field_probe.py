@@ -6,6 +6,18 @@ import sys
 import bpy
 
 
+font_override = os.environ.get("NODE_DOJO_FONT_OVERRIDE")
+if font_override:
+    replacement_font = bpy.data.fonts.load(font_override, check_existing=True)
+    for node_group in bpy.data.node_groups:
+        for candidate in node_group.nodes:
+            if candidate.bl_idname != "GeometryNodeStringToCurves":
+                continue
+            font_socket = candidate.inputs.get("Font")
+            if font_socket is not None:
+                font_socket.default_value = replacement_font
+
+
 args = sys.argv[sys.argv.index("--") + 1 :]
 object_name, out_path, group_name, geometry_spec, field_spec, domain = args
 obj = bpy.data.objects[object_name]
