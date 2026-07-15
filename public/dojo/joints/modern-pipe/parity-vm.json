@@ -9,7 +9,7 @@
         "overrides": {}
       },
       "status": "ok",
-      "verts": 11229,
+      "verts": 11230,
       "faces": 8116,
       "bbox": {
         "min": [
@@ -23,7 +23,7 @@
           116.6512
         ]
       },
-      "elapsed_ms": 21410
+      "elapsed_ms": 20183
     },
     {
       "combo": {
@@ -47,7 +47,7 @@
           116.6512
         ]
       },
-      "elapsed_ms": 19179
+      "elapsed_ms": 17555
     },
     {
       "combo": {
@@ -57,7 +57,7 @@
         }
       },
       "status": "ok",
-      "verts": 6261,
+      "verts": 6262,
       "faces": 3358,
       "bbox": {
         "min": [
@@ -71,7 +71,7 @@
           32.6264
         ]
       },
-      "elapsed_ms": 21728
+      "elapsed_ms": 19709
     },
     {
       "combo": {
@@ -95,7 +95,7 @@
           32.6264
         ]
       },
-      "elapsed_ms": 21728
+      "elapsed_ms": 21025
     }
   ]
 }

@@ -11,6 +11,120 @@ function curveGeo(splines: Spline[]): Geometry {
   return g;
 }
 
+// CurvesGeometry stores evaluated poly frames as float3. Keep the operations
+// below in the same float32 order as curve_poly.cc; sub-ULP frame drift becomes
+// observable after a profile sweep is transformed and fed to Convex Hull.
+function evaluatedPolyFramesFloat32(points: Vec3[], cyclic: boolean): { tangent: Vec3; normal: Vec3 }[] {
+  const f = Math.fround;
+  const add = (a: Vec3, b: Vec3): Vec3 => [f(a[0] + b[0]), f(a[1] + b[1]), f(a[2] + b[2])];
+  const sub = (a: Vec3, b: Vec3): Vec3 => [f(a[0] - b[0]), f(a[1] - b[1]), f(a[2] - b[2])];
+  const scale = (a: Vec3, value: number): Vec3 => [f(a[0] * value), f(a[1] * value), f(a[2] * value)];
+  const dot = (a: Vec3, b: Vec3): number => {
+    let value = f(f(a[0] * b[0]) + f(a[1] * b[1]));
+    return f(value + f(a[2] * b[2]));
+  };
+  const cross = (a: Vec3, b: Vec3): Vec3 => [
+    f(f(a[1] * b[2]) - f(a[2] * b[1])),
+    f(f(a[2] * b[0]) - f(a[0] * b[2])),
+    f(f(a[0] * b[1]) - f(a[1] * b[0])),
+  ];
+  const length = (value: Vec3): number => f(Math.sqrt(dot(value, value)));
+  const normalize = (value: Vec3): Vec3 => {
+    const magnitude = length(value);
+    return magnitude < 1e-20 ? [0, 0, 0] : [
+      f(value[0] / magnitude), f(value[1] / magnitude), f(value[2] / magnitude),
+    ];
+  };
+  const angleNormalized = (a: Vec3, b: Vec3): number => {
+    if (dot(a, b) >= 0) return f(f(2) * f(Math.asin(Math.min(1, f(length(sub(a, b)) / f(2))))));
+    return f(f(Math.PI) - f(f(2) * f(Math.asin(Math.min(1, f(length(add(a, b)) / f(2)))))));
+  };
+  const rotateDirection = (direction: Vec3, axis: Vec3, angle: number): Vec3 => {
+    if (angle === 0) return direction;
+    const axisScaled = scale(axis, dot(direction, axis));
+    const difference = sub(direction, axisScaled);
+    const perpendicular = cross(axis, difference);
+    return add(axisScaled, add(scale(difference, f(Math.cos(angle))), scale(perpendicular, f(Math.sin(angle)))));
+  };
+
+  if (!points.length) return [];
+  if (points.length === 1) return [{ tangent: [0, 0, 1], normal: [1, 0, 0] }];
+
+  const tangents = points.map(() => [0, 0, 1] as Vec3);
+  let firstValid = -1;
+  for (let i = 0; i + 1 < points.length; i++) {
+    const delta = sub(points[i + 1], points[i]);
+    const magnitude = length(delta);
+    if (magnitude < 1e-9) continue;
+    tangents[i] = [f(delta[0] / magnitude), f(delta[1] / magnitude), f(delta[2] / magnitude)];
+    firstValid = i;
+    break;
+  }
+  if (firstValid < 0) return tangents.map((tangent) => ({ tangent, normal: [1, 0, 0] as Vec3 }));
+  for (let i = 0; i < firstValid; i++) tangents[i] = tangents[firstValid];
+
+  let previousDirection = tangents[firstValid];
+  let previousEqual = false;
+  const bisect = (position: Vec3, next: Vec3): Vec3 => {
+    const wasEqual = previousEqual;
+    const delta = sub(next, position);
+    const magnitude = length(delta);
+    previousEqual = magnitude < 1e-9;
+    if (previousEqual) return previousDirection;
+    const oldDirection = previousDirection;
+    previousDirection = [f(delta[0] / magnitude), f(delta[1] / magnitude), f(delta[2] / magnitude)];
+    if (wasEqual) return previousDirection;
+    const tangent = add(oldDirection, previousDirection);
+    const tangentLength = length(tangent);
+    if (tangentLength < 0.6627619) {
+      if (tangentLength < 2e-7) return previousDirection;
+      return normalize(cross(cross(previousDirection, oldDirection), sub(previousDirection, oldDirection)));
+    }
+    return [f(tangent[0] / tangentLength), f(tangent[1] / tangentLength), f(tangent[2] / tangentLength)];
+  };
+  for (let i = firstValid + 1; i + 1 < points.length; i++) tangents[i] = bisect(points[i], points[i + 1]);
+  if (cyclic) {
+    tangents[points.length - 1] = bisect(points[points.length - 1], points[0]);
+    tangents[0] = bisect(points[0], points[1]);
+  }
+  else {
+    const delta = sub(points[points.length - 1], points[points.length - 2]);
+    const magnitude = length(delta);
+    tangents[points.length - 1] = magnitude < 1e-9
+      ? previousDirection
+      : [f(delta[0] / magnitude), f(delta[1] / magnitude), f(delta[2] / magnitude)];
+  }
+
+  const normals = points.map(() => [1, 0, 0] as Vec3);
+  const firstTangent = tangents[0];
+  normals[0] = Math.abs(firstTangent[0]) + Math.abs(firstTangent[1]) < 1e-4
+    ? [1, 0, 0]
+    : normalize([firstTangent[1], f(-firstTangent[0]), 0]);
+  const nextNormal = (lastNormal: Vec3, lastTangent: Vec3, tangent: Vec3): Vec3 => {
+    const angle = angleNormalized(lastTangent, tangent);
+    if (angle === 0) return lastNormal;
+    const axis = normalize(cross(lastTangent, tangent));
+    if (length(axis) < 1e-20) return lastNormal;
+    return normalize(rotateDirection(lastNormal, axis, angle));
+  };
+  for (let i = 1; i < points.length; i++) normals[i] = nextNormal(normals[i - 1], tangents[i - 1], tangents[i]);
+  if (cyclic) {
+    const uncorrected = nextNormal(normals[normals.length - 1], tangents[tangents.length - 1], tangents[0]);
+    let correction = angleNormalized(normals[0], uncorrected);
+    if (dot(cross(uncorrected, normals[0]), tangents[0]) < 0) correction = f(f(Math.PI * 2) - correction);
+    if (correction > Math.PI) correction = f(correction - f(Math.PI * 2));
+    const step = f(correction / normals.length);
+    for (let i = 0; i < normals.length; i++) normals[i] = rotateDirection(normals[i], tangents[i], f(step * i));
+  }
+  // Minimum-twist normals for a horizontal planar poly curve stay in that
+  // plane. Tiny Z values here only come from emulating the cyclic correction
+  // with JavaScript scalar math; Blender's float3 path retains exact zero.
+  if (points.every((point) => f(point[2]) === f(points[0][2]))) {
+    for (const normal of normals) normal[2] = 0;
+  }
+  return tangents.map((tangent, index) => ({ tangent, normal: normals[index] }));
+}
+
 // ---- primitives -----------------------------------------------------------
 reg("GeometryNodeCurvePrimitiveQuadrilateral", (api) => {
   const w = (api.num("Width") || 1) / 2;
@@ -200,26 +314,10 @@ reg("GeometryNodeResampleCurve", (api) => {
       // frame instead of deriving a fresh chord from its coarser samples.
       const tangents: Vec3[] = [];
       const normals: Vec3[] = [];
-      const rotate = (v: Vec3, axis: Vec3, angle: number): Vec3 => {
-        const c = Math.cos(angle), sn = Math.sin(angle);
-        return vadd(vadd(vscale(v, c), vscale(vcross(axis, v), sn)), vscale(axis, vdot(axis, v) * (1 - c)));
-      };
       for (const spline of o.curves) {
-        const frames = splineFrames(spline.points, spline.cyclic);
-        const localTangents = frames.map((frame) => frame.tangent);
-        let normal = vcross(localTangents[0] ?? [0, 0, 1], [0, 0, 1]);
-        if (vlen(normal) < 1e-8) normal = [1, 0, 0];
-        normal = vnorm(normal);
-        for (let i = 0; i < localTangents.length; i++) {
-          if (i) {
-            const axis = vcross(localTangents[i - 1], localTangents[i]);
-            const sin = vlen(axis);
-            if (sin > 1e-8) normal = rotate(normal, vscale(axis, 1 / sin), Math.atan2(sin, vdot(localTangents[i - 1], localTangents[i])));
-            normal = vnorm(vsub(normal, vscale(localTangents[i], vdot(normal, localTangents[i]))));
-          }
-          tangents.push(localTangents[i]);
-          normals.push(normal);
-        }
+        const frames = evaluatedPolyFramesFloat32(spline.points, spline.cyclic);
+        tangents.push(...frames.map((frame) => frame.tangent));
+        normals.push(...frames.map((frame) => frame.normal));
       }
       o.curveAttributes.set("__curve_tangent", { domain: "POINT", data: tangents });
       o.curveAttributes.set("__curve_normal", { domain: "POINT", data: normals });
@@ -544,6 +642,7 @@ reg("GeometryNodeCurveToMesh", (api) => {
   mesh.materialSlots = [null];
   const profiles = prof.curves;
   const tangentAttribute = rail.curveAttributes.get("__curve_tangent")?.data;
+  const normalAttribute = rail.curveAttributes.get("__curve_normal")?.data;
   const importedTangentAttribute = rail.curveAttributes.has("__curve_imported_tangent");
   const railWasInstanced = railInput.instances.length > 0;
   const planarFromMesh = rail.curveAttributes.has("__gnvm_planar_mesh_curve");
@@ -556,6 +655,12 @@ reg("GeometryNodeCurveToMesh", (api) => {
     const railBase = flatBase;
     const scales = scaleArr ? scaleArr.slice(flatBase, flatBase + r.points.length) : undefined;
     const importedTangents = tangentAttribute?.slice(flatBase, flatBase + r.points.length).map(asVec3);
+    // Realize Instances currently transforms curve positions but not vector
+    // attributes. Do not reuse a payload-space normal after an instance-space
+    // rotation; the tangent branch below already reconstructs those frames.
+    const normalOverrides = railWasInstanced
+      ? undefined
+      : normalAttribute?.slice(flatBase, flatBase + r.points.length).map(asVec3);
     const tangentOverrides = importedTangentAttribute
       ? r.points.map((point, index, points) => {
           if (points.length < 2) return [0, 0, 1] as Vec3;
@@ -648,7 +753,7 @@ reg("GeometryNodeCurveToMesh", (api) => {
         profileBase += p.points.length;
         continue;
       }
-      const sm = sweep(r, p, caps, scales, tangentOverrides, planarFromMesh);
+      const sm = sweep(r, p, caps, scales, tangentOverrides, normalOverrides, planarFromMesh);
       const base = mesh.positions.length;
       for (const pos of sm.positions) mesh.positions.push(pos);
       for (let fi = 0; fi < sm.faces.length; fi++) { mesh.faces.push(sm.faces[fi].map((v) => v + base)); mesh.faceMaterial.push(0); }

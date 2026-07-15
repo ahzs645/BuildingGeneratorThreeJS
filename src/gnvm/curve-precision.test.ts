@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { evaluateBezierSpline } from "./bezier";
-import { Field } from "./core";
+import { Field, Vec3 } from "./core";
 import { resampleSpline, sweep } from "./curves";
 import { makeFieldCtx } from "./evaluator";
 import { Geometry } from "./geometry";
@@ -143,6 +143,37 @@ test("Curve to Mesh preserves the evaluated Resample Curve frame", () => {
     [-2, 0, 1],
     [0, 3, 1],
   ]);
+});
+
+test("Resample Curve preserves Blender float32 minimum-twist frames through sweep", () => {
+  const circleHandler = REGISTRY.get("GeometryNodeCurvePrimitiveCircle");
+  const resampleHandler = REGISTRY.get("GeometryNodeResampleCurve");
+  assert.ok(circleHandler && resampleHandler);
+  const circle = circleHandler({
+    num: (name: string) => name === "Resolution" ? 33 : 15.556474685668945,
+  } as EvalAPI).Curve as Geometry;
+  const resampled = resampleHandler({
+    geo: () => circle,
+    str: () => "COUNT",
+    prop: (_name: string, fallback: unknown) => fallback,
+    num: (name: string) => name === "Count" ? 86 : 0.1,
+  } as unknown as EvalAPI).Curve as Geometry;
+  const tangents = resampled.curveAttributes.get("__curve_tangent")?.data as number[][];
+  const normals = resampled.curveAttributes.get("__curve_normal")?.data as number[][];
+
+  assert.deepEqual(resampled.curves[0].points[34], [-12.302580833435059, 9.50066089630127, 0]);
+  assert.deepEqual(tangents[34], [-0.6090847849845886, -0.7931051254272461, 0]);
+  assert.deepEqual(normals[34], [-0.7931050658226013, 0.609084963798523, 0]);
+
+  const mesh = sweep(
+    resampled.curves[0],
+    { cyclic: true, points: [[-0.43476709723472595, 0.14126437902450562, 0], [0, 0, 0]] },
+    false,
+    undefined,
+    tangents as Vec3[],
+    normals as Vec3[],
+  );
+  assert.deepEqual(mesh.positions[34 * 2], [-11.957764625549316, 9.23585033416748, -0.14126437902450562]);
 });
 
 test("Align Rotation preserves native Curve to Points quaternion at 180 degrees", () => {

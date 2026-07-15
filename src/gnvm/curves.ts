@@ -219,7 +219,15 @@ export function splineFrames(pts: Vec3[], cyclic: boolean, tangentOverrides?: Ve
 
 // Sweep a profile spline along a rail spline -> mesh. `scales` (optional) is a
 // per-rail-point profile scale (Blender's Curve to Mesh "Scale" / curve radius).
-export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?: number[], tangentOverrides?: Vec3[], planarFromMesh = false): Mesh {
+export function sweep(
+  rail: Spline,
+  profile: Spline,
+  fillCaps: boolean,
+  scales?: number[],
+  tangentOverrides?: Vec3[],
+  normalOverrides?: Vec3[],
+  planarFromMesh = false,
+): Mesh {
   const mesh = new Mesh();
   const rp = rail.points;
   const pp = profile.points;
@@ -291,20 +299,35 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?:
     // the extra half-turn changes which slightly asymmetric resampled-circle
     // point reaches each extremum and moves the generated joint boundary.
     const evaluatedFrameSign = tangentOverrides?.length ? 1 : -1;
-    const normal = horizontalPlanar
-      ? vnorm([frame.tangent[1] * planarOrientation, -frame.tangent[0] * planarOrientation, 0])
+    // Evaluated curve normals carry Blender's minimum-twist transport and its
+    // small float32 cyclic correction. Rebuilding them only from the tangent
+    // loses that roll and changes coordinate-sensitive hull membership.
+    const evaluatedNormal = normalOverrides?.[i] && vlen(normalOverrides[i]) > 1e-9
+      ? normalOverrides[i]
+      : null;
+    const normal = evaluatedNormal
+      ? evaluatedNormal
+      : horizontalPlanar
+        ? vnorm([frame.tangent[1] * planarOrientation, -frame.tangent[0] * planarOrientation, 0])
       : tiltedPlanarNormal
         ? vscale(vnorm(vcross(tiltedPlanarNormal, frame.tangent)), planarOrientation)
       : planarOpen && Math.abs(planarTurn) > 1e-6
         ? frame.normal
         : vscale(frame.normal, evaluatedFrameSign);
-    const binormal = horizontalPlanar
+    const binormal = evaluatedNormal
+      ? vnorm(vcross(frame.tangent, evaluatedNormal))
+      : horizontalPlanar
       ? vnorm(vcross(frame.tangent, normal))
       : tiltedPlanarNormal ? tiltedPlanarNormal : vscale(frame.binormal, evaluatedFrameSign);
-    const s = scales?.[i] ?? 1;
+    const f = Math.fround;
+    const s = f(scales?.[i] ?? 1);
     for (let j = 0; j < np; j++) {
-      const px = pp[j][0] * s, py = pp[j][1] * s;
-      mesh.positions.push(vadd(rp[i], vadd(vscale(normal, px), vscale(binormal, py))));
+      const px = f(f(pp[j][0]) * s), py = f(f(pp[j][1]) * s);
+      mesh.positions.push([0, 1, 2].map((axis) => {
+        const normalOffset = f(f(normal[axis]) * px);
+        const binormalOffset = f(f(binormal[axis]) * py);
+        return f(f(f(rp[i][axis]) + normalOffset) + binormalOffset);
+      }) as Vec3);
     }
   }
   const ringCount = rail.cyclic ? nr : nr - 1;
