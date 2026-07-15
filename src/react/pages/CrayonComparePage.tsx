@@ -6,6 +6,19 @@ import "./crayon-compare.css";
 
 const loadCrayonCompare = () => import("../../crayon-compare");
 
+const editorConfig = {
+  dumpUrl: "dojo/crayon/dump.json",
+  objectName: "CHROME CRAYON OBJECT",
+  rootGroupName: "CHROME CRAYON 3D _4.3_DEC2024",
+  events: {
+    change: "crayon-graph-change",
+    nodeSelect: "crayon-node-select",
+    resize: "crayon-graph-resize",
+  },
+  storageKey: "crayon-gnvm-draft",
+  downloadFileName: "chrome-crayon-edited.json",
+} as const;
+
 const controls = [
   { name: "Sigilize", min: 3, max: 50, step: 1, value: 20 },
   { name: "Soften", min: 0, max: 8, step: 1, value: 0 },
@@ -61,7 +74,7 @@ export default function CrayonComparePage(): React.JSX.Element {
       <section className="crayon-note"><span className="panel-label">Semantic contract</span><p>Blender remains the behavior oracle. The editor projects the extracted JSON while GN-VM evaluates the untouched graph payload.</p><p>Click a node with a geometry output to request an amber intermediate-geometry probe in the Three.js viewport. Double-click group nodes to navigate their nested tree.</p></section>
     </aside>
     {!graphOpen && <button className="graph-toggle" type="button" onClick={() => setGraphOpen(true)}>Show Geometry Nodes workspace</button>}
-    {graphOpen && <section className={`crayon-graph ${graphMaximized ? "maximized" : ""}`}><header><b>Geometry Nodes</b><div className="graph-window-actions"><span>pan · zoom · box-select · reconnect noodles · F3 search · double-click groups</span><button type="button" onClick={() => setGraphMaximized((maximized) => !maximized)} title={graphMaximized ? "Restore workspace" : "Maximize workspace"}>{graphMaximized ? "Restore" : "Maximize"}</button><button type="button" onClick={closeGraph} title="Hide workspace">Hide</button></div></header><GeometryNodesEditor /></section>}
+    {graphOpen && <section className={`crayon-graph ${graphMaximized ? "maximized" : ""}`}><header><b>Geometry Nodes</b><div className="graph-window-actions"><span>pan · zoom · box-select · reconnect noodles · F3 search · double-click groups</span><button type="button" onClick={() => setGraphMaximized((maximized) => !maximized)} title={graphMaximized ? "Restore workspace" : "Maximize workspace"}>{graphMaximized ? "Restore" : "Maximize"}</button><button type="button" onClick={closeGraph} title="Hide workspace">Hide</button></div></header><GeometryNodesEditor config={editorConfig} /></section>}
     <div className="crayon-help">Three.js viewport · drag to orbit · scroll to zoom</div>
   </main>;
 }

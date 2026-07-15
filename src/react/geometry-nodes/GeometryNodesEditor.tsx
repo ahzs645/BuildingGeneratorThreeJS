@@ -18,6 +18,7 @@ import "@xyflow/react/dist/style.css";
 import { publicUrl } from "../../base-url";
 import type { Dump } from "../../gnvm";
 import { dumpGroupToEditorGraph, graphWorkingSetNodeIds, searchEditorGraphs, type EditorGraph, type EditorGraphSearchResult, type GraphNode, type GraphSocket } from "../../geometry-nodes/graph-model";
+import { resolveEditorRootGroup, type GeometryNodesEditorConfig } from "./editor-config";
 
 type NodeCardData = {
   node: GraphNode;
@@ -135,7 +136,7 @@ function refreshLinkedFlags(graph: Dump["node_groups"][string]): void {
   }
 }
 
-export default function GeometryNodesEditor(): React.JSX.Element {
+export default function GeometryNodesEditor({ config }: { config: GeometryNodesEditorConfig }): React.JSX.Element {
   const [dump, setDump] = useState<Dump | null>(null);
   const [groupName, setGroupName] = useState("");
   const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([]);
@@ -175,19 +176,23 @@ export default function GeometryNodesEditor(): React.JSX.Element {
   }), [commit, groupName]);
 
   useEffect(() => {
-    fetch(publicUrl("dojo/crayon/dump.json"), { cache: "no-store" }).then((response) => response.json()).then((loaded: Dump) => {
-      const root = loaded.objects?.flatMap((object) => object.modifiers ?? []).find((modifier) => modifier.node_group)?.node_group;
+    fetch(publicUrl(config.dumpUrl), { cache: "no-store" }).then((response) => {
+      if (!response.ok) throw new Error(`Failed to load Geometry Nodes dump (${response.status})`);
+      return response.json();
+    }).then((loaded: Dump) => {
+      const root = resolveEditorRootGroup(loaded, config);
       setDump(loaded);
-      if (root) { setGroupName(root); setBreadcrumbs([{ group: root }]); }
+      setGroupName(root);
+      setBreadcrumbs([{ group: root }]);
     }).catch((error) => console.error("GEOMETRY_NODES_EDITOR_LOAD", error));
-  }, []);
+  }, [config]);
 
   useEffect(() => {
     if (!dump) return;
-    const timer = window.setTimeout(() => window.dispatchEvent(new CustomEvent("crayon-graph-change", { detail: { dump } })), 180);
-    if (dirty) localStorage.setItem("crayon-gnvm-draft", JSON.stringify(dump));
+    const timer = window.setTimeout(() => window.dispatchEvent(new CustomEvent(config.events.change, { detail: { dump } })), 180);
+    if (dirty) localStorage.setItem(config.storageKey, JSON.stringify(dump));
     return () => window.clearTimeout(timer);
-  }, [dump, dirty]);
+  }, [config.events.change, config.storageKey, dump, dirty]);
 
   useEffect(() => {
     if (!dump || !groupName) return;
@@ -310,12 +315,12 @@ export default function GeometryNodesEditor(): React.JSX.Element {
       window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => frameWorkingSet(240));
     };
-    window.addEventListener("crayon-graph-resize", reframe);
+    window.addEventListener(config.events.resize, reframe);
     return () => {
       window.cancelAnimationFrame(frame);
-      window.removeEventListener("crayon-graph-resize", reframe);
+      window.removeEventListener(config.events.resize, reframe);
     };
-  }, [frameWorkingSet]);
+  }, [config.events.resize, frameWorkingSet]);
 
   useEffect(() => {
     if (!pendingFocus || pendingFocus.groupName !== groupName || !graph) return;
@@ -363,16 +368,16 @@ export default function GeometryNodesEditor(): React.JSX.Element {
   const saveJson = (): void => {
     if (!dump) return;
     const url = URL.createObjectURL(new Blob([`${JSON.stringify(dump, null, 2)}\n`], { type: "application/json" }));
-    const anchor = document.createElement("a"); anchor.href = url; anchor.download = "chrome-crayon-edited.json"; document.body.append(anchor); anchor.click(); anchor.remove();
+    const anchor = document.createElement("a"); anchor.href = url; anchor.download = config.downloadFileName; document.body.append(anchor); anchor.click(); anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1_000); setDirty(false);
   };
   const importJson = async (file: File): Promise<void> => {
     const parsed = JSON.parse(await file.text()) as Dump;
     if (!parsed.node_groups || !parsed.objects) throw new Error("Not a portable Geometry Nodes dump");
+    const root = resolveEditorRootGroup(parsed, config);
     if (dump) setUndoStack((items) => [...items, dump]);
     setDump(parsed); setRedoStack([]); setDirty(true);
-    const root = parsed.objects.flatMap((object) => object.modifiers ?? []).find((modifier) => modifier.node_group)?.node_group;
-    if (root) { setGroupName(root); setBreadcrumbs([{ group: root }]); }
+    setGroupName(root); setBreadcrumbs([{ group: root }]);
   };
 
   return <div className="blender-flow-wrap">
@@ -389,7 +394,7 @@ export default function GeometryNodesEditor(): React.JSX.Element {
       if (!("node" in data)) return;
       setSelected(data.node);
       const geometryOutput = data.node.outputs.find((socket) => socket.type === "NodeSocketGeometry");
-      window.dispatchEvent(new CustomEvent("crayon-node-select", { detail: { group: groupName, node: data.node.sourceName, socket: geometryOutput?.identifier, type: data.node.sourceType } }));
+      window.dispatchEvent(new CustomEvent(config.events.nodeSelect, { detail: { group: groupName, node: data.node.sourceName, socket: geometryOutput?.identifier, type: data.node.sourceType } }));
     }} onNodeDoubleClick={(_event, flowNode) => {
       const data = flowNode.data as NodeCardData | FrameData;
       if ("node" in data) openNestedGroup(data.node);
