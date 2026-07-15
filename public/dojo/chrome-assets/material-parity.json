@@ -20,7 +20,8 @@
       "joint Pipe Icon front-emission/back-transparent outline",
       "UI Window normal-band and geometry-color shader",
       "packed Chrome Asset sticker image/alpha materials",
-      "Image Pixel Stippler WebGL material"
+      "Image Pixel Stippler WebGL material",
+      "graph-recognized _Toon Cycles ShaderA normal-band Background raster reconstruction"
     ]
   },
   "genericConstantMapper": {
@@ -74,7 +75,8 @@
     "materials": 12,
     "shaderGroups": 2,
     "sharedSidecar": "dojo/math-clay/shader-metadata.json",
-    "contents": "Fresh Blender 5.1 extraction shared by all 13 Math Clay roots, including the authored toon and bevel shader groups."
+    "contents": "Fresh Blender 5.1 extraction shared by all 13 Math Clay roots, including the authored toon and bevel shader groups.",
+    "toonCyclesAudit": "The portable _Toon Cycles ShaderA graph is reconstructed when assigned, but none of the 13 current catalog default outputs reaches _Toon Cycles NODES or assigns toon cycles shader; their visible default material is visuals."
   },
   "sendNodesHatShaderMetadata": {
     "materials": 11,

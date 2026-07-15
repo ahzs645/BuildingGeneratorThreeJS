@@ -13,6 +13,7 @@ import { makeAttributePrincipledMaterial } from "./attribute-principled-material
 import { makeFilamentMaterial } from "./filament-material";
 import { makeCrossSectionFilamentMaterial } from "./cross-section-filament-material";
 import { makeMahoganyMaterial } from "./mahogany-material";
+import { makeToonCyclesMaterial } from "./toon-cycles-material";
 import { makeToonOutlineMaterial } from "./toon-outline-material";
 import { makeGreyUiMaterial } from "./grey-ui-material";
 import { makePackedStickerMaterial } from "./packed-sticker-material";
@@ -104,6 +105,7 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
             ?? makeFilamentMaterial(dump,geometry,group.material??"")
             ?? makeCrossSectionFilamentMaterial(dump,geometry,group.material??"")
             ?? makeMahoganyMaterial(dump,geometry,group.material??"")
+            ?? makeToonCyclesMaterial(dump,group.material??"")
             ?? makeToonOutlineMaterial(dump,group.material??"")
             ?? makeGreyUiMaterial(dump,geometry,group.material??"")
             ?? makePackedStickerMaterial(dump,geometry,group,group.material??"")
