@@ -1158,7 +1158,10 @@ function subdivideOnce(mesh: Mesh, catmullClark: boolean, edgeCrease = 0): Mesh 
   // Edge points
   const edgePts: Vec3[] = edges.map((e) => {
     const midpoint = vscale(vadd(mesh.positions[e.a], mesh.positions[e.b]), 0.5);
-    if (!catmullClark || e.faces.length < 2) {
+    // OpenSubdiv treats both boundary and non-manifold edges as infinitely
+    // sharp. Averaging only the first two faces of a 3+ face edge rounds the
+    // shared seam and changes downstream Edge Angle selections.
+    if (!catmullClark || e.faces.length !== 2) {
       return midpoint;
     }
     // avg of endpoints + adjacent face points
@@ -1187,6 +1190,9 @@ function subdivideOnce(mesh: Mesh, catmullClark: boolean, edgeCrease = 0): Mesh 
     const n = vertFaces[vi].length;
     if (n === 0) return [...p] as Vec3;
     // boundary: average of incident boundary edge midpoints + original
+    // A vertex touching a non-manifold edge is a sharp corner in OpenSubdiv;
+    // unlike an ordinary two-edge boundary it must not slide along that seam.
+    if (vertEdges[vi].some((ei) => edges[ei].faces.length > 2)) return [...p] as Vec3;
     const isBoundary = vertEdges[vi].some((ei) => edges[ei].faces.length < 2);
     if (isBoundary) {
       let acc: Vec3 = [0, 0, 0];

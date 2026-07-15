@@ -1643,6 +1643,28 @@ function meshSignedAreaXY(m: Mesh): number {
   check("SubdivisionSurface densifies verts", (sub.mesh?.positions.length ?? 0) > 8, `verts=${sub.mesh?.positions.length}`);
 }
 
+// Blender/OpenSubdiv keeps 3+ face seams infinitely sharp. Edge Angle is
+// undefined on the same non-manifold edge and evaluates to zero.
+{
+  const mesh = new Mesh();
+  mesh.positions = [
+    [0, 0, 0], [0, 0, 2],
+    [1, 0, 0], [0, 1, 0], [-1, 0, 0],
+  ];
+  mesh.faces = [[0, 1, 2], [0, 3, 1], [0, 1, 4]];
+  const geometry = new Geometry();
+  geometry.mesh = mesh;
+  const topology = topologyOf(mesh);
+  const seam = topology.edges.findIndex((edge) => edge.verts[0] === 0 && edge.verts[1] === 1);
+  const angles = (runNode("GeometryNodeInputMeshEdgeAngle", {})["Unsigned Angle"] as Field).array(makeFieldCtx(geometry, "EDGE"));
+  check("Edge Angle is zero on non-manifold edges", Number(angles[seam]) === 0, `angle=${angles[seam]}`);
+  const subdivided = runNode("GeometryNodeSubdivisionSurface", { Mesh: geometry, Level: 1, "Edge Crease": 0 }).Mesh as Geometry;
+  const seamPoint = subdivided.mesh?.positions[mesh.positions.length + mesh.faces.length + seam];
+  check("SubdivisionSurface preserves non-manifold seam endpoints",
+    !!subdivided.mesh && approx(subdivided.mesh.positions[0], [0, 0, 0]) && approx(subdivided.mesh.positions[1], [0, 0, 2]));
+  check("SubdivisionSurface uses the non-manifold edge midpoint", !!seamPoint && approx(seamPoint, [0, 0, 1]), JSON.stringify(seamPoint));
+}
+
 // (W) Scalar math follows Blender's safe domains; unknown VectorMath is not ADD
 {
   // |a-b| < k so the smooth term subtracts from min

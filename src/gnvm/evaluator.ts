@@ -287,7 +287,9 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
     edgeAngle: (i, signed = false) => {
       if (!mesh) return 0;
       const edge = T().edges[i];
-      if (!edge || edge.faces.length < 2) return 0;
+      // Blender defines Edge Angle only for manifold edges with exactly two
+      // adjacent faces. Boundary and 3+ face non-manifold edges return zero.
+      if (!edge || edge.faces.length !== 2) return 0;
       const first = mesh.faceNormal(edge.faces[0]);
       const second = mesh.faceNormal(edge.faces[1]);
       const angle = Math.acos(Math.max(-1, Math.min(1, vdot(first, second))));

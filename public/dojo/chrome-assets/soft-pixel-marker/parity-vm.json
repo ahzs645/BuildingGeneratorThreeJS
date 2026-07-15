@@ -9,7 +9,7 @@
         "overrides": {}
       },
       "status": "ok",
-      "verts": 8450,
+      "verts": 8455,
       "faces": 5664,
       "bbox": {
         "min": [
@@ -23,7 +23,7 @@
           33.2569
         ]
       },
-      "elapsed_ms": 742,
+      "elapsed_ms": 159,
       "export": "00-authored-default.json"
     },
     {
@@ -34,7 +34,7 @@
         }
       },
       "status": "ok",
-      "verts": 7954,
+      "verts": 7976,
       "faces": 4992,
       "bbox": {
         "min": [
@@ -48,7 +48,7 @@
           33.2569
         ]
       },
-      "elapsed_ms": 564,
+      "elapsed_ms": 103,
       "export": "01-line-weight-15.json"
     },
     {
@@ -59,7 +59,7 @@
         }
       },
       "status": "ok",
-      "verts": 15146,
+      "verts": 15101,
       "faces": 12192,
       "bbox": {
         "min": [
@@ -73,7 +73,7 @@
           33.2569
         ]
       },
-      "elapsed_ms": 2899,
+      "elapsed_ms": 254,
       "export": "02-pixel-size-0-2.json"
     },
     {
@@ -84,7 +84,7 @@
         }
       },
       "status": "ok",
-      "verts": 2380,
+      "verts": 2335,
       "faces": 1416,
       "bbox": {
         "min": [
@@ -98,7 +98,7 @@
           33.2569
         ]
       },
-      "elapsed_ms": 80,
+      "elapsed_ms": 55,
       "export": "03-subdivision-level-1.json"
     },
     {
@@ -109,7 +109,7 @@
         }
       },
       "status": "ok",
-      "verts": 6238,
+      "verts": 6157,
       "faces": 5664,
       "bbox": {
         "min": [
@@ -123,7 +123,7 @@
           33.2569
         ]
       },
-      "elapsed_ms": 599,
+      "elapsed_ms": 97,
       "export": "04-edge-crease-0.json"
     },
     {
@@ -134,7 +134,7 @@
         }
       },
       "status": "ok",
-      "verts": 7488,
+      "verts": 7413,
       "faces": 5664,
       "bbox": {
         "min": [
@@ -148,7 +148,7 @@
           21.2569
         ]
       },
-      "elapsed_ms": 699,
+      "elapsed_ms": 106,
       "export": "05-height-10.json"
     }
   ]

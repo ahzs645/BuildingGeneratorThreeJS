@@ -10,6 +10,16 @@ args = sys.argv[sys.argv.index("--") + 1 :]
 object_name, out_path, group_name, geometry_spec, field_spec, domain = args
 obj = bpy.data.objects[object_name]
 tree = bpy.data.node_groups[group_name]
+probe_scene = bpy.data.scenes.new("__NODE_DOJO_FIELD_PROBE_SCENE")
+probe_scene.collection.objects.link(obj)
+bpy.context.window.scene = probe_scene
+obj.hide_viewport = False
+obj.hide_render = False
+obj.hide_set(False)
+if os.environ.get("NODE_DOJO_LOCAL_SPACE") == "1":
+    obj.location = (0, 0, 0)
+    obj.rotation_euler = (0, 0, 0)
+    obj.scale = (1, 1, 1)
 geometry_node, geometry_socket = geometry_spec.split(":", 1)
 field_node, field_socket = field_spec.split(":", 1)
 group_output = next(node for node in tree.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output)
@@ -88,7 +98,18 @@ try:
     else:
         values = [item.value for item in attribute.data]
     positions = [[float(vertex.co.x), float(vertex.co.y), float(vertex.co.z)] for vertex in mesh.vertices]
-    payload = {"domain": domain.upper(), "values": values, "positions": positions, "verts": len(mesh.vertices), "faces": len(mesh.polygons), "edges": len(mesh.edges)}
+    edge_vertices = [[int(vertex) for vertex in edge.vertices] for edge in mesh.edges]
+    faces = [[int(vertex) for vertex in polygon.vertices] for polygon in mesh.polygons]
+    payload = {
+        "domain": domain.upper(),
+        "values": values,
+        "positions": positions,
+        "edge_vertices": edge_vertices,
+        "face_vertices": faces,
+        "verts": len(mesh.vertices),
+        "faces": len(mesh.polygons),
+        "edges": len(mesh.edges),
+    }
 finally:
     evaluated.to_mesh_clear()
     for route_tree, route_target, route_original in reversed(route_links):
