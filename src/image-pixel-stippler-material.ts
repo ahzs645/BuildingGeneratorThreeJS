@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { Dump } from "./gnvm";
+import type { Dump, TriSoup } from "./gnvm";
 
 type RawInput = { name: string; identifier: string; linked: boolean; value: unknown };
 type RawNode = {
@@ -172,6 +172,36 @@ const imageFragmentShader = /* glsl */`
   out vec4 fragColor;
   void main() { fragColor = vec4(max(vImage, vec3(0.0)), 1.0); }
 `;
+
+/**
+ * Three.js normally interpolates indexed vertex attributes. Blender keeps a
+ * FACE-domain color constant across every triangle corner, so retain that
+ * domain by expanding the render geometry and stamping each emitted corner
+ * from the source face recorded by toTriSoup().
+ */
+export function expandFaceDomainMaterialAttributes(
+  geometry: THREE.BufferGeometry,
+  soup: TriSoup,
+): THREE.BufferGeometry {
+  const triangleFaces = soup.triangleFaces;
+  const faceAttributes = Object.entries(soup.attributes).filter(([, attribute]) =>
+    attribute.domain === "FACE" && attribute.domainData);
+  if (!geometry.index || !triangleFaces || !faceAttributes.length) return geometry;
+  const expanded = geometry.toNonIndexed();
+  const cornerCount = soup.indices.length;
+  for (const [name, attribute] of faceAttributes) {
+    const source = attribute.domainData!;
+    const data = new Float32Array(cornerCount * attribute.itemSize);
+    for (let corner = 0; corner < cornerCount; corner++) {
+      const face = triangleFaces[Math.floor(corner / 3)] ?? 0;
+      for (let component = 0; component < attribute.itemSize; component++) {
+        data[corner * attribute.itemSize + component] = source[face * attribute.itemSize + component] ?? 0;
+      }
+    }
+    expanded.setAttribute(name, new THREE.BufferAttribute(data, attribute.itemSize));
+  }
+  return expanded;
+}
 
 export function makeImagePixelStipplerMaterial(
   dump: Dump,

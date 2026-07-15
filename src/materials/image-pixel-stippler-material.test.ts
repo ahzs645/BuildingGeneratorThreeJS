@@ -4,7 +4,11 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import * as THREE from "three";
 import { runGenerator, type Dump } from "../gnvm";
-import { extractImagePixelStipplerConfig, makeImagePixelStipplerMaterial } from "../image-pixel-stippler-material";
+import {
+  expandFaceDomainMaterialAttributes,
+  extractImagePixelStipplerConfig,
+  makeImagePixelStipplerMaterial,
+} from "../image-pixel-stippler-material";
 
 const dump = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/chrome-assets/img-pixel-stippler/dump.json",
@@ -37,11 +41,28 @@ test("exports and wires img, dens, and grid attributes on the exact authored mes
   assert.equal(result.soup.attributes.dens.data[0], 333);
   assert.ok(Math.abs(result.soup.attributes.grid.data[0] - 0.4826087951660156) < 1e-7);
   assert.ok(result.soup.attributes.img.data.some((value) => value > 0.99));
+  assert.equal(result.soup.attributes.img.domain, "FACE");
+  assert.equal(result.soup.attributes.img.domainData?.length, result.soup.stats.faces * 3);
+  assert.equal(result.soup.triangleFaces?.length, result.soup.stats.tris);
 
-  const geometry = new THREE.BufferGeometry();
+  let geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));
   for (const [name, attribute] of Object.entries(result.soup.attributes)) {
     geometry.setAttribute(name, new THREE.BufferAttribute(attribute.data, attribute.itemSize));
+  }
+  geometry.setIndex(new THREE.BufferAttribute(result.soup.indices, 1));
+  const expanded = expandFaceDomainMaterialAttributes(geometry, result.soup);
+  assert.notEqual(expanded, geometry);
+  geometry.dispose();
+  geometry = expanded;
+  assert.equal(geometry.index, null);
+  assert.equal(geometry.getAttribute("img").count, result.soup.indices.length);
+  const flatImage = geometry.getAttribute("img");
+  for (let triangle = 0; triangle < Math.min(result.soup.stats.tris, 100); triangle++) {
+    for (let component = 0; component < 3; component++) {
+      assert.equal(flatImage.array[triangle * 9 + component], flatImage.array[triangle * 9 + 3 + component]);
+      assert.equal(flatImage.array[triangle * 9 + component], flatImage.array[triangle * 9 + 6 + component]);
+    }
   }
   const material = makeImagePixelStipplerMaterial(dump, geometry, "img stippler shader.001");
   assert.ok(material?.isShaderMaterial);

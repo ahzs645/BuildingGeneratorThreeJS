@@ -806,7 +806,15 @@ export interface TriSoup {
   positions: Float32Array; // xyz per vertex (indexed)
   normals: Float32Array;
   indices: Uint32Array;
-  attributes: Record<string, { itemSize: 1 | 3; data: Float32Array }>;
+  /** Source face for every emitted triangle, in the same order as indices. */
+  triangleFaces?: Uint32Array;
+  attributes: Record<string, {
+    itemSize: 1 | 3;
+    data: Float32Array;
+    domain?: "POINT" | "FACE" | "CORNER";
+    /** Uninterpolated values retained for flat FACE-domain material inputs. */
+    domainData?: Float32Array;
+  }>;
   groups: { start: number; count: number; material: string | null }[]; // per material slot
   stats: { verts: number; faces: number; tris: number };
 }
@@ -993,24 +1001,30 @@ export function toTriSoup(g: Geometry): TriSoup {
   // otherwise identical to Blender.
   const slotCount = Math.max(1, mesh.materialSlots.length);
   const perSlot: number[][] = Array.from({ length: slotCount }, () => []);
+  const perSlotFaces: number[][] = Array.from({ length: slotCount }, () => []);
   let triCount = 0;
   for (let fi = 0; fi < mesh.faces.length; fi++) {
     const f = mesh.faces[fi];
     const slot = mesh.faceMaterial[fi] ?? 0;
     for (const triangle of triangulateFaceIndices(mesh, f)) {
       perSlot[slot].push(...triangle);
+      perSlotFaces[slot].push(fi);
       triCount++;
     }
   }
   const indices = new Uint32Array(triCount * 3);
+  const triangleFaces = new Uint32Array(triCount);
   const groups: TriSoup["groups"] = [];
   let cursor = 0;
+  let triangleCursor = 0;
   for (let s = 0; s < slotCount; s++) {
     const tri = perSlot[s];
     if (!tri.length) continue;
     groups.push({ start: cursor, count: tri.length, material: mesh.materialSlots[s] ?? null });
     indices.set(tri, cursor);
+    triangleFaces.set(perSlotFaces[s], triangleCursor);
     cursor += tri.length;
+    triangleCursor += perSlotFaces[s].length;
   }
   const attributes: TriSoup["attributes"] = {};
   for (const [name, attribute] of source.attributes) {
@@ -1043,12 +1057,26 @@ export function toTriSoup(g: Geometry): TriSoup {
         data[i * 3] = vector[0]; data[i * 3 + 1] = vector[1]; data[i * 3 + 2] = vector[2];
       } else data[i] = asNum(value ?? 0);
     }
-    attributes[name] = { itemSize, data };
+    let domainData: Float32Array | undefined;
+    if (attribute.domain === "FACE") {
+      domainData = new Float32Array(source.faces.length * itemSize);
+      for (let face = 0; face < source.faces.length; face++) {
+        const value = attribute.data[face] ?? (itemSize === 3 ? [0, 0, 0] : 0);
+        if (itemSize === 3) {
+          const vector = asVec3(value);
+          domainData[face * 3] = vector[0];
+          domainData[face * 3 + 1] = vector[1];
+          domainData[face * 3 + 2] = vector[2];
+        } else domainData[face] = asNum(value);
+      }
+    }
+    attributes[name] = { itemSize, data, domain: attribute.domain as "POINT" | "FACE" | "CORNER", domainData };
   }
   return {
     positions,
     normals: normArr,
     indices,
+    triangleFaces,
     attributes,
     groups,
     stats: { verts: mesh.positions.length, faces: mesh.faces.length, tris: triCount },

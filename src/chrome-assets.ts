@@ -7,7 +7,7 @@ import type { Dump, TriSoup } from "./gnvm/index";
 import { makeAttributeEmissionMaterial } from "./attribute-emission-material";
 import { attachChainMaceRoughnessAttribute, makeChainMaceMaterial } from "./chain-mace-material";
 import { makeChromeCrayonMaterial } from "./chrome-crayon-material";
-import { makeImagePixelStipplerMaterial } from "./image-pixel-stippler-material";
+import { expandFaceDomainMaterialAttributes, makeImagePixelStipplerMaterial } from "./image-pixel-stippler-material";
 import { makeBasicBlenderMaterial } from "./blender-basic-material";
 import { makeAttributePrincipledMaterial } from "./attribute-principled-material";
 import { makeFilamentMaterial } from "./filament-material";
@@ -62,11 +62,19 @@ function overrides(): Record<string, number | boolean | string | number[]> { con
 function visibleControls(): Control[] { return current.controls.some((control)=>control.name==="__materialPreview") ? current.controls : [{type:"select",name:"__materialPreview",label:"Shader preview",value:"authored",options:[{label:"Authored Blender material",value:"authored"},{label:"Normalized geometry diagnostic",value:"diagnostic"}]},...current.controls]; }
 function renderControls(): void { const controls=visibleControls();controlsHost.replaceChildren(...controls.map((control) => { const label=document.createElement("label");label.className=`assets-control assets-${control.type??"range"}`;const span=document.createElement("span");span.textContent=control.label;const row=document.createElement("div");const input=document.createElement("input");input.dataset.control=control.name;if(control.type==="checkbox"){input.type="checkbox";input.checked=control.value;input.style.width="18px";input.style.height="18px";input.addEventListener("change",queue);row.append(input);}else if(control.type==="text"){input.type="text";input.value=control.value;input.spellcheck=false;input.addEventListener("input",queue);row.append(input);}else if(control.type==="select"){const menu=document.createElement("select");menu.dataset.control=control.name;for(const item of control.options){const option=document.createElement("option");option.value=String(item.value);option.textContent=item.label;option.selected=item.value===control.value;menu.append(option);}menu.addEventListener("change",queue);row.append(menu);}else if(control.type==="vector"){control.value.forEach((value,axis)=>{const component=input.cloneNode() as HTMLInputElement;component.type="number";component.dataset.axis=String(axis);component.step=String(control.step??.01);component.value=String(value);component.setAttribute("aria-label",`${control.label} ${"XYZ"[axis]}`);component.addEventListener("input",queue);row.append(component);});}else{input.type="range";input.min=String(control.min);input.max=String(control.max);input.step=String(control.step);input.value=String(control.value);const output=document.createElement("output");output.value=Number(control.value).toFixed(control.step < .001 ? 3 : 2);input.addEventListener("input",()=>{input.dataset.dirty="true";output.value=Number(input.value).toFixed(control.step < .001 ? 3 : 2);queue();});row.append(input,output);}label.append(span,row);return label;})); reset.hidden=!controls.length; }
 function makeMesh(soup: TriSoup): THREE.Mesh {
-  const geometry = new THREE.BufferGeometry();
+  let geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(soup.positions, 3));
   geometry.setAttribute("normal", new THREE.BufferAttribute(soup.normals, 3));
   for (const [name, attribute] of Object.entries(soup.attributes ?? {})) geometry.setAttribute(name, new THREE.BufferAttribute(attribute.data, attribute.itemSize));
   geometry.setIndex(new THREE.BufferAttribute(soup.indices, 1));
+  for (const [index, group] of soup.groups.entries()) geometry.addGroup(group.start, group.count, index);
+  if (current.material === "image-pixel-stippler") {
+    const expanded = expandFaceDomainMaterialAttributes(geometry, soup);
+    if (expanded !== geometry) {
+      geometry.dispose();
+      geometry = expanded;
+    }
+  }
   if (current.surfaceBounds && soup.indices.length) {
     const bounds = new THREE.Box3();
     const point = new THREE.Vector3();
@@ -89,8 +97,7 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
   const materials: THREE.Material[]=[];
   if(useAuthored&&current.material==="chain-mace")attachChainMaceRoughnessAttribute(geometry,soup.groups);
   if(useAuthored&&soup.groups.length){
-    for(const [index,group] of soup.groups.entries()){
-      geometry.addGroup(group.start,group.count,index);
+    for(const group of soup.groups){
       const materialName=group.material??(current.material==="chain-mace"?soup.groups.find((candidate)=>candidate.material)?.material:"")??"";
       const authored=current.material==="image-pixel-stippler"
         ? makeImagePixelStipplerMaterial(dump,geometry,group.material??"")
