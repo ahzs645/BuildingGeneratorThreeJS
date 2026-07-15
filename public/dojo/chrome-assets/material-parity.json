@@ -82,6 +82,12 @@
     "sharedSidecar": "dojo/send-nodes-hat/shader-metadata.json",
     "contents": "Fresh Blender 5.1 extraction shared by all four exact Send Nodes Hat roots, including MatCap and index-viewer shader group internals."
   },
+  "courseShaderMetadata": {
+    "intro": { "materials": 74, "shaderGroups": 11, "sharedSidecar": "dojo/course-modules/intro-shader-metadata.json" },
+    "module3": { "materials": 83, "shaderGroups": 10, "sharedSidecar": "dojo/course-modules/module3-shader-metadata.json" },
+    "module4": { "materials": 77, "shaderGroups": 12, "sharedSidecar": "dojo/course-modules/module4-shader-metadata.json" },
+    "coverage": "Every one of the 96 catalog assets now loads a portable material tree and internal shader-group sidecar."
+  },
   "packedStickerTextures": {
     "restored": 6,
     "missingFromBlend": ["tree sticky.png", "ryu electrify1.png"],

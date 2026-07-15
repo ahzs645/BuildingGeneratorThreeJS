@@ -27,6 +27,18 @@ const sendNodesHatMetadata = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/send-nodes-hat/shader-metadata.json",
   import.meta.url,
 )), "utf8"));
+const introCourseMetadata = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/course-modules/intro-shader-metadata.json",
+  import.meta.url,
+)), "utf8"));
+const module3CourseMetadata = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/course-modules/module3-shader-metadata.json",
+  import.meta.url,
+)), "utf8"));
+const module4CourseMetadata = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/course-modules/module4-shader-metadata.json",
+  import.meta.url,
+)), "utf8"));
 const catalog = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/chrome-assets/catalog.json",
   import.meta.url,
@@ -122,4 +134,17 @@ test("every Send Nodes Hat root loads its shared shader sidecar", () => {
   for (const asset of assets) {
     assert.equal(asset.shaderMetadata, "dojo/send-nodes-hat/shader-metadata.json");
   }
+});
+
+test("course sidecars preserve the authored material libraries", () => {
+  assert.deepEqual([
+    [Object.keys(introCourseMetadata.materials).length, Object.keys(introCourseMetadata.shader_node_groups).length],
+    [Object.keys(module3CourseMetadata.materials).length, Object.keys(module3CourseMetadata.shader_node_groups).length],
+    [Object.keys(module4CourseMetadata.materials).length, Object.keys(module4CourseMetadata.shader_node_groups).length],
+  ], [[74, 11], [83, 10], [77, 12]]);
+});
+
+test("all 96 catalog assets now load portable shader metadata", () => {
+  assert.equal(catalog.length, 96);
+  assert.equal(catalog.filter((asset: any) => typeof asset.shaderMetadata === "string").length, 96);
 });
