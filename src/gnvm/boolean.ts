@@ -21,8 +21,38 @@ type ManifoldMod = {
     numProp?: number;
     vertProperties: Float32Array;
     triVerts: Uint32Array;
+    faceID?: Uint32Array;
   }) => any;
 };
+
+interface ManifoldGL {
+  numProp: number;
+  vertProperties: Float32Array | number[];
+  triVerts: Uint32Array | number[];
+  faceID?: Uint32Array | number[];
+  numVert?: number;
+  numTri?: number;
+}
+
+export interface ManifoldFaceSource {
+  mesh: Mesh;
+  firstFaceID: number;
+  faceCount: number;
+}
+
+export interface ManifoldFaceProvenance {
+  faceID: Uint32Array;
+  sources: ManifoldFaceSource[];
+}
+
+// Boolean provenance is implementation metadata, not a Geometry Nodes
+// attribute. Keeping it weakly associated with the raw triangle mesh lets the
+// polygon reconstruction stage consume it without leaking it to user geometry.
+const manifoldFaceProvenance = new WeakMap<Mesh, ManifoldFaceProvenance>();
+
+export function getManifoldFaceProvenance(mesh: Mesh): ManifoldFaceProvenance | null {
+  return manifoldFaceProvenance.get(mesh) ?? null;
+}
 
 let mod: ManifoldMod | null = null;
 let initPromise: Promise<void> | null = null;
@@ -45,8 +75,12 @@ export function isManifoldReady(): boolean {
   return mod !== null;
 }
 
-/** Fan-triangulate ngons into a Manifold MeshGL (positions only, numProp=3). */
-export function meshToManifoldGL(mesh: Mesh): { vertProperties: Float32Array; triVerts: Uint32Array } | null {
+/** Fan-triangulate ngons while retaining one source ID per authored polygon. */
+export function meshToManifoldGL(
+  mesh: Mesh,
+  firstFaceID = 0,
+  sourceFaces?: readonly number[],
+): { vertProperties: Float32Array; triVerts: Uint32Array; faceID: Uint32Array } | null {
   if (!mesh.positions.length || !mesh.faces.length) return null;
   const verts = new Float32Array(mesh.positions.length * 3);
   for (let i = 0; i < mesh.positions.length; i++) {
@@ -56,18 +90,21 @@ export function meshToManifoldGL(mesh: Mesh): { vertProperties: Float32Array; tr
     verts[i * 3 + 2] = p[2];
   }
   const tris: number[] = [];
-  for (const f of mesh.faces) {
+  const faceID: number[] = [];
+  for (let face = 0; face < mesh.faces.length; face++) {
+    const f = mesh.faces[face];
     if (f.length < 3) continue;
     // Fan from first corner (matches our toTriSoup convention).
     for (let i = 1; i + 1 < f.length; i++) {
       tris.push(f[0], f[i], f[i + 1]);
+      faceID.push(firstFaceID + (sourceFaces?.[face] ?? face));
     }
   }
   if (!tris.length) return null;
-  return { vertProperties: verts, triVerts: new Uint32Array(tris) };
+  return { vertProperties: verts, triVerts: new Uint32Array(tris), faceID: new Uint32Array(faceID) };
 }
 
-export function manifoldGLToMesh(gl: { numProp: number; vertProperties: Float32Array | number[]; triVerts: Uint32Array | number[]; numVert?: number; numTri?: number }): Mesh {
+export function manifoldGLToMesh(gl: ManifoldGL, sources: ManifoldFaceSource[] = []): Mesh {
   const numProp = gl.numProp || 3;
   const vp = gl.vertProperties;
   const tv = gl.triVerts;
@@ -84,16 +121,23 @@ export function manifoldGLToMesh(gl: { numProp: number; vertProperties: Float32A
     m.faces.push([tv[o], tv[o + 1], tv[o + 2]]);
     m.faceMaterial.push(0);
   }
+  if (sources.length && gl.faceID?.length === nTri) {
+    manifoldFaceProvenance.set(m, {
+      faceID: Uint32Array.from(gl.faceID),
+      sources: sources.map((source) => ({ ...source })),
+    });
+  }
   return m;
 }
 
 /** Weld near-coincident verts before Manifold — reduces NotManifold from micro gaps. */
-function weldMesh(mesh: Mesh, eps = 1e-5): Mesh {
+function weldMesh(mesh: Mesh, eps = 1e-5): { mesh: Mesh; sourceFaces: number[] } {
   const cell = eps;
   const key = (p: Vec3) =>
     `${Math.round(p[0] / cell)}_${Math.round(p[1] / cell)}_${Math.round(p[2] / cell)}`;
   const map = new Map<string, number>();
   const out = new Mesh();
+  const sourceFaces: number[] = [];
   out.materialSlots = [...mesh.materialSlots];
   const remap: number[] = new Array(mesh.positions.length);
   for (let i = 0; i < mesh.positions.length; i++) {
@@ -114,18 +158,28 @@ function weldMesh(mesh: Mesh, eps = 1e-5): Mesh {
     if (uniq.length < 3) continue;
     out.faces.push(f);
     out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
+    sourceFaces.push(fi);
   }
-  return out;
+  return { mesh: out, sourceFaces };
 }
 
-function meshToManifold(mesh: Mesh): any | null {
+function meshToManifold(mesh: Mesh, firstFaceID = 0): any | null {
   if (!mod) return null;
   // Try raw mesh first, then a light weld pass for near-manifold shells.
-  for (const candidate of [mesh, weldMesh(mesh)]) {
-    const gl = meshToManifoldGL(candidate);
+  const welded = weldMesh(mesh);
+  for (const candidate of [
+    { mesh, sourceFaces: undefined },
+    welded,
+  ]) {
+    const gl = meshToManifoldGL(candidate.mesh, firstFaceID, candidate.sourceFaces);
     if (!gl) continue;
     try {
-      const mgl = new mod.Mesh({ numProp: 3, vertProperties: gl.vertProperties, triVerts: gl.triVerts });
+      const mgl = new mod.Mesh({
+        numProp: 3,
+        vertProperties: gl.vertProperties,
+        triVerts: gl.triVerts,
+        faceID: gl.faceID,
+      });
       const man = new mod.Manifold(mgl);
       if (typeof man.status === "function" && man.status() !== "NoError") {
         man.delete?.();
@@ -180,8 +234,13 @@ export type BooleanOp = "UNION" | "DIFFERENCE" | "INTERSECT";
  */
 export function manifoldBoolean(a: Mesh, b: Mesh, op: BooleanOp): Mesh | null {
   if (!mod) return null;
-  const ma = meshToManifold(a);
-  const mb = meshToManifold(b);
+  if (a.faces.length + b.faces.length >= 0xffffffff) return null;
+  const sources: ManifoldFaceSource[] = [
+    { mesh: a, firstFaceID: 0, faceCount: a.faces.length },
+    { mesh: b, firstFaceID: a.faces.length, faceCount: b.faces.length },
+  ];
+  const ma = meshToManifold(a, sources[0].firstFaceID);
+  const mb = meshToManifold(b, sources[1].firstFaceID);
   if (!ma || !mb) {
     ma?.delete?.();
     mb?.delete?.();
@@ -204,7 +263,7 @@ export function manifoldBoolean(a: Mesh, b: Mesh, op: BooleanOp): Mesh | null {
       mb.delete?.();
       return a.clone();
     }
-    const outMesh = manifoldGLToMesh(result.getMesh());
+    const outMesh = manifoldGLToMesh(result.getMesh(), sources);
     result.delete?.();
     ma.delete?.();
     mb.delete?.();
@@ -223,7 +282,15 @@ export function manifoldBoolean(a: Mesh, b: Mesh, op: BooleanOp): Mesh | null {
  */
 export function manifoldBooleanMany(a: Mesh, operands: Mesh[], op: BooleanOp): Mesh | null {
   if (!mod || !operands.length) return null;
-  const solids = [a, ...operands].map(meshToManifold);
+  let nextFaceID = 0;
+  const sources: ManifoldFaceSource[] = [a, ...operands].map((mesh) => {
+    const source = { mesh, firstFaceID: nextFaceID, faceCount: mesh.faces.length };
+    nextFaceID += mesh.faces.length;
+    return source;
+  });
+  // 0xffffffff is reserved by several mesh formats as an invalid/sentinel ID.
+  if (nextFaceID >= 0xffffffff) return null;
+  const solids = sources.map((source) => meshToManifold(source.mesh, source.firstFaceID));
   if (solids.some((solid) => !solid)) {
     for (const solid of solids) solid?.delete?.();
     return null;
@@ -241,7 +308,7 @@ export function manifoldBooleanMany(a: Mesh, operands: Mesh[], op: BooleanOp): M
     if (op === "DIFFERENCE" && isMeasurePreservingDifference(valid[0], result)) {
       return a.clone();
     }
-    const outMesh = manifoldGLToMesh(result.getMesh());
+    const outMesh = manifoldGLToMesh(result.getMesh(), sources);
     return outMesh.faces.length ? outMesh : null;
   } catch {
     return null;

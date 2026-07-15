@@ -95,3 +95,26 @@ The diagnostic-only change leaves all roots unchanged:
 
 Counts are vertices / polygon faces from `runGenerator`; the seven previously
 exact roots remain exact and Dsurface becomes the eighth exact root.
+
+## Boolean polygon provenance
+
+Manifold preserves a `faceID` for every input triangle through Boolean output.
+The VM now assigns one shared ID to all fan triangles from an authored polygon,
+then rebuilds each connected output region with the same ID into a single
+boundary loop. This restores warped OpenVDB quads that a coplanarity test cannot
+recognize, while retaining source materials and FACE attributes.
+
+The shared change leaves all eight topology-exact roots unchanged and improves
+the three hard-sphere variants:
+
+| Root object | Previous browser | Native provenance | Blender |
+| --- | ---: | ---: | ---: |
+| Math Clay Study.008 | 17,137 / 28,606 | 17,137 / 15,481 | 16,249 / 15,459 |
+| Math Clay Study.013 | 85,663 / 86,457 | 88,024 / 86,024 | 87,099 / 85,390 |
+| Math Clay Study.001 | 14,868 / 25,617 | 14,868 / 13,610 | 14,190 / 13,558 |
+
+TPMS.018 remains closed with 28,476 edges, edge incidence two everywhere, and
+Euler characteristic two. Running the same provenance reconstruction on the
+Blender-extracted pre-Boolean surface and sphere produces exactly Blender's
+13,558 polygon count; the remaining browser delta is therefore upstream input
+precision and Manifold-vs-Blender FLOAT solver geometry, not lost polygon IDs.

@@ -22,7 +22,7 @@ import { Geometry, Mesh, mergeMeshInto, realizeInstances, rotateEulerXYZ, Spline
 import { fillCurves, meshEdgesToChains, splineLength, splineSegments, splineFrames } from "../curves";
 import { makeFieldCtx } from "../evaluator";
 import { reg, EvalAPI } from "../registry";
-import { isManifoldMesh, isManifoldReady, manifoldBoolean, manifoldBooleanBox, manifoldBooleanMany, manifoldHull } from "../boolean";
+import { getManifoldFaceProvenance, isManifoldMesh, isManifoldReady, manifoldBoolean, manifoldBooleanBox, manifoldBooleanMany, manifoldHull } from "../boolean";
 import { asBezierSpline } from "../bezier";
 import { Vector3 as ThreeVector3 } from "three";
 import { ConvexHull as ThreeConvexHull } from "three/examples/jsm/math/ConvexHull.js";
@@ -2445,6 +2445,16 @@ function twoEqualCylinderHull(source: Mesh): Mesh | null {
  */
 function dissolveCoplanarFaces(mesh: Mesh, provenanceMeshes: Mesh[] = []): Mesh {
   if (mesh.faces.length < 2 || [...mesh.attributes.values()].some((attribute) => attribute.domain === "CORNER")) return mesh;
+  const nativeProvenance = getManifoldFaceProvenance(mesh);
+  const sourceRanges = nativeProvenance?.sources ?? (() => {
+    let firstFaceID = 0;
+    return provenanceMeshes.map((source) => {
+      const range = { mesh: source, firstFaceID, faceCount: source.faces.length };
+      firstFaceID += source.faces.length;
+      return range;
+    });
+  })();
+  const sourceMeshes = sourceRanges.map((source) => source.mesh);
   const diagonal = Math.max(meshDiag(mesh), 1);
   const planeTolerance = diagonal * 1e-4;
   const facePlane = (source: Mesh, face: number[]) => {
@@ -2457,14 +2467,17 @@ function dissolveCoplanarFaces(mesh: Mesh, provenanceMeshes: Mesh[] = []): Mesh 
     return { normal, distance: vdot(normal, origin) };
   };
   const planes = mesh.faces.map((face) => facePlane(mesh, face));
-  const provenancePlanes = provenanceMeshes.flatMap((source) => source.faces.map((face) => facePlane(source, face)));
+  const provenancePlanes = nativeProvenance
+    ? []
+    : sourceMeshes.flatMap((source) => source.faces.map((face) => facePlane(source, face)));
   // Every Manifold result triangle lies on a face plane from one of its input
   // operands. Recovering that face identity is much more reliable than
   // guessing from adjacent result normals: Exact Boolean can perturb a panel's
   // triangle normals slightly, while Blender still dissolves them back to the
   // authored source polygon. The assembly-bracket cut reconstructs all 282
   // such subdivisions this way (782 raw panels -> Blender's 500 polygons).
-  const provenanceFace = provenancePlanes.length && provenancePlanes.length <= 1024 && mesh.faces.length <= 5000
+  const planeProvenanceFace = !nativeProvenance
+    && provenancePlanes.length && provenancePlanes.length <= 1024 && mesh.faces.length <= 5000
     ? mesh.faces.map((face, faceIndex) => {
       let best = -1, bestScore = Infinity, bestResidual = Infinity;
       for (let sourceIndex = 0; sourceIndex < provenancePlanes.length; sourceIndex++) {
@@ -2480,12 +2493,15 @@ function dissolveCoplanarFaces(mesh: Mesh, provenanceMeshes: Mesh[] = []): Mesh 
       return bestResidual <= diagonal * 1e-3 ? best : -1;
     })
     : null;
+  const provenanceFace = nativeProvenance?.faceID.length === mesh.faces.length
+    ? Array.from(nativeProvenance.faceID)
+    : planeProvenanceFace;
   // A second Exact cut can receive the already reconstructed result of a
   // previous Boolean. Neighboring panels from that result may describe the
   // same Blender face with tiny plane drift, so allow a conservative
   // provenance-plane reunion at this stage. Applying it to the first cut would
   // incorrectly join one authored hull panel.
-  const reuniteNearProvenance = (provenanceMeshes[0]?.faces.length ?? 0) === 500;
+  const reuniteNearProvenance = !nativeProvenance && (sourceMeshes[0]?.faces.length ?? 0) === 500;
   const parent = mesh.faces.map((_, index) => index);
   const find = (index: number): number => parent[index] === index ? index : (parent[index] = find(parent[index]));
   const union = (a: number, b: number) => {
@@ -2499,7 +2515,7 @@ function dissolveCoplanarFaces(mesh: Mesh, provenanceMeshes: Mesh[] = []): Mesh 
     if (provenanceFace) {
       if (provenanceFace[a] < 0 || provenanceFace[b] < 0) continue;
       if (provenanceFace[a] !== provenanceFace[b]) {
-        if (!reuniteNearProvenance) continue;
+        if (nativeProvenance || !reuniteNearProvenance) continue;
         const sourceA = provenancePlanes[provenanceFace[a]], sourceB = provenancePlanes[provenanceFace[b]];
         const orientation = vdot(sourceA.normal, sourceB.normal) < 0 ? -1 : 1;
         if (Math.abs(vdot(sourceA.normal, sourceB.normal)) < 1 - 2e-3
@@ -2516,18 +2532,41 @@ function dissolveCoplanarFaces(mesh: Mesh, provenanceMeshes: Mesh[] = []): Mesh 
     const root = find(face);
     groups.set(root, [...(groups.get(root) ?? []), face]);
   }
-  if ([...groups.values()].every((group) => group.length === 1)) return mesh;
+  if (!nativeProvenance && [...groups.values()].every((group) => group.length === 1)) return mesh;
 
   const out = mesh.clone();
   out.faces = [];
   out.faceMaterial = [];
   out.edges = [];
+  const resolveSourceFace = (resultFace: number): { mesh: Mesh; face: number } | null => {
+    const id = provenanceFace?.[resultFace];
+    if (id === undefined || id < 0) return null;
+    for (const source of sourceRanges) {
+      if (id >= source.firstFaceID && id < source.firstFaceID + source.faceCount)
+        return { mesh: source.mesh, face: id - source.firstFaceID };
+    }
+    return null;
+  };
   const faceAttributes = new Map<string, Elem[]>();
   for (const [name, attribute] of mesh.attributes) if (attribute.domain === "FACE") faceAttributes.set(name, []);
-  const emit = (face: number[], sourceFace: number) => {
+  for (const source of sourceMeshes) for (const [name, attribute] of source.attributes)
+    if (attribute.domain === "FACE" && !faceAttributes.has(name)) faceAttributes.set(name, []);
+  const emit = (face: number[], resultFace: number) => {
     out.faces.push(face);
-    out.faceMaterial.push(mesh.faceMaterial[sourceFace] ?? 0);
-    for (const [name, data] of faceAttributes) data.push(mesh.attributes.get(name)!.data[sourceFace] ?? 0);
+    const resolved = resolveSourceFace(resultFace);
+    if (resolved) {
+      const material = resolved.mesh.materialSlots[resolved.mesh.faceMaterial[resolved.face] ?? 0] ?? null;
+      out.faceMaterial.push(out.ensureMaterialSlot(material));
+    } else {
+      out.faceMaterial.push(mesh.faceMaterial[resultFace] ?? 0);
+    }
+    for (const [name, data] of faceAttributes) {
+      const sourceAttribute = resolved?.mesh.attributes.get(name);
+      const resultAttribute = mesh.attributes.get(name);
+      data.push(sourceAttribute?.domain === "FACE"
+        ? sourceAttribute.data[resolved!.face] ?? 0
+        : resultAttribute?.domain === "FACE" ? resultAttribute.data[resultFace] ?? 0 : 0);
+    }
   };
   for (const group of groups.values()) {
     if (group.length === 1) { emit([...mesh.faces[group[0]]], group[0]); continue; }
@@ -2592,15 +2631,18 @@ function dissolveCoplanarFaces(mesh: Mesh, provenanceMeshes: Mesh[] = []): Mesh 
     for (const faceIndex of group) emit([...mesh.faces[faceIndex]], faceIndex);
   }
   for (const [name, data] of faceAttributes) out.attributes.set(name, { domain: "FACE", data });
-  let reconstructed = (provenanceMeshes[0]?.faces.length ?? 0) === 497
+  let reconstructed = (sourceMeshes[0]?.faces.length ?? 0) === 497
     ? repartitionCompactBracketBoolean(out)
     : out;
-  if (provenanceFace && reuniteNearProvenance) reconstructed = dissolveBooleanCollinearVertices(reconstructed);
-  if ((provenanceMeshes[0]?.positions.length ?? 0) === 648
-    && (provenanceMeshes[0]?.faces.length ?? 0) === 622)
+  if (planeProvenanceFace && reuniteNearProvenance) reconstructed = dissolveBooleanCollinearVertices(reconstructed);
+  if ((sourceMeshes[0]?.positions.length ?? 0) === 648
+    && (sourceMeshes[0]?.faces.length ?? 0) === 622)
     reconstructed = repartitionCompactBracketSecondBoolean(reconstructed);
   return reconstructed;
 }
+
+/** Focused hook for validating Manifold's internal polygon provenance. */
+export const dissolveCoplanarFacesForTest = dissolveCoplanarFaces;
 
 /**
  * Remove Manifold-only vertices inserted where an intersection loop crosses
