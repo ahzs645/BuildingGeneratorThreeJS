@@ -83,9 +83,12 @@ const vertexShader = /* glsl */`
   void main() {
     vec3 safeSize = max(generatedSize, vec3(1e-8));
     vGenerated = (position - generatedMin) / safeSize;
-    if (generatedSize.x < 1e-8) vGenerated.x = 0.0;
-    if (generatedSize.y < 1e-8) vGenerated.y = 0.0;
-    if (generatedSize.z < 1e-8) vGenerated.z = 0.0;
+    // Blender centers Generated coordinates on a degenerate texspace axis.
+    // This matters for planar meshes feeding 3D procedural textures: using
+    // zero here selects a completely different Voronoi lattice slice.
+    if (generatedSize.x < 1e-8) vGenerated.x = 0.5;
+    if (generatedSize.y < 1e-8) vGenerated.y = 0.5;
+    if (generatedSize.z < 1e-8) vGenerated.z = 0.5;
     vImage = img;
     vDensity = dens;
     vRandomness = grid;

@@ -184,7 +184,7 @@
     "reference": "dojo/references/chrome-assets/img-pixel-stippler-shader.png",
     "blenderStats": { "verts": 72094, "faces": 71550 },
     "material": "image-pixel-stippler",
-    "note": "Exact Blender geometry and four-decimal bounds across fifteen cases. The left pane is now a reproducible Eevee render of the packed authored material. The WebGL reconstruction shares its PCG3D Voronoi point semantics and named attributes, but aligned 768px evidence still has 0.303 binary-mask disagreement and only 0.428 macro luminance correlation, so shader parity is not claimed.",
+    "note": "Exact Blender geometry and four-decimal bounds across fifteen cases. The left pane is a reproducible Eevee render of the packed authored material. A direct Blender diagnostic also confirms that Generated coordinates center the planar Z axis at 0.5, which the WebGL reconstruction now preserves. Aligned 768px evidence still has 0.307 binary-mask disagreement and only 0.434 macro luminance correlation, so Voronoi/filtering shader parity is not claimed.",
     "controls": [
       { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored WebGL reconstruction", "value": "authored" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },
       { "name": "pixelate", "label": "Pixelate", "min": 0, "max": 1, "step": 0.000001, "value": 0.5988134145736694 },
