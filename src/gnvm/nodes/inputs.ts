@@ -49,6 +49,16 @@ reg("GeometryNodeImageTexture", (api) => {
   const width = image?.size?.[0] ?? 0, height = image?.size?.[1] ?? 0;
   const vector = api.field("Vector");
   const extension = api.prop<string>("extension", "REPEAT");
+  const interpolation = api.prop<string>("interpolation", "Linear").toUpperCase();
+  const texel = (x: number, y: number): { color: Vec3; alpha: number } => {
+    if (!bytes || !width || !height) return { color: [0, 0, 0], alpha: 0 };
+    if (extension === "CLIP" && (x < 0 || x >= width || y < 0 || y >= height))
+      return { color: [0, 0, 0], alpha: 0 };
+    const wrappedX = extension === "CLIP" ? Math.max(0, Math.min(width - 1, x)) : ((x % width) + width) % width;
+    const wrappedY = extension === "CLIP" ? Math.max(0, Math.min(height - 1, y)) : ((y % height) + height) % height;
+    const offset = (wrappedY * width + wrappedX) * 4;
+    return { color: [bytes[offset] / 255, bytes[offset + 1] / 255, bytes[offset + 2] / 255], alpha: bytes[offset + 3] / 255 };
+  };
   const sample = (element: import("../core").Elem): { color: Vec3; alpha: number } => {
     if (!bytes || !width || !height) return { color: [0, 0, 0], alpha: 0 };
     const coordinate = Array.isArray(element) ? element : [0, 0, 0];
@@ -59,15 +69,25 @@ reg("GeometryNodeImageTexture", (api) => {
     } else {
       u = ((u % 1) + 1) % 1; v = ((v % 1) + 1) % 1;
     }
-    const x = Math.min(width - 1, Math.max(0, Math.round(u * (width - 1))));
-    const y = Math.min(height - 1, Math.max(0, Math.round(v * (height - 1))));
-    const offset = (y * width + x) * 4;
-    return { color: [bytes[offset] / 255, bytes[offset + 1] / 255, bytes[offset + 2] / 255], alpha: bytes[offset + 3] / 255 };
+    if (interpolation !== "LINEAR")
+      return texel(Math.round(u * (width - 1)), Math.round(v * (height - 1)));
+    // Linear filtering uses half-texel centers. With CLIP, the interpolation
+    // footprint beyond the image is transparent, matching Blender's reduced
+    // color and alpha at UV-map borders.
+    const x = u * width - .5, y = v * height - .5;
+    const x0 = Math.floor(x), y0 = Math.floor(y), tx = x - x0, ty = y - y0;
+    const p00 = texel(x0, y0), p10 = texel(x0 + 1, y0), p01 = texel(x0, y0 + 1), p11 = texel(x0 + 1, y0 + 1);
+    const blend = (a: number, b: number, t: number) => a + (b - a) * t;
+    const channel = (index: number) => blend(blend(p00.color[index], p10.color[index], tx), blend(p01.color[index], p11.color[index], tx), ty);
+    return {
+      color: [channel(0), channel(1), channel(2)],
+      alpha: blend(blend(p00.alpha, p10.alpha, tx), blend(p01.alpha, p11.alpha, tx), ty),
+    };
   };
-  return {
-    Color: Field.make((ctx) => vector.array(ctx).map((value) => sample(value).color)),
-    Alpha: Field.make((ctx) => vector.array(ctx).map((value) => sample(value).alpha)),
-  };
+  const color = Field.make((ctx) => vector.array(ctx).map((value) => sample(value).color));
+  const alpha = Field.make((ctx) => vector.array(ctx).map((value) => sample(value).alpha));
+  if (vector.srcDomain) { color.srcDomain = vector.srcDomain; alpha.srcDomain = vector.srcDomain; }
+  return { Color: color, Alpha: alpha };
 });
 
 reg("GeometryNodeInputIndex", () => ({

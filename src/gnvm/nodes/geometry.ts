@@ -188,9 +188,20 @@ reg("GeometryNodeCollectionInfo", (api) => {
 reg("GeometryNodeMeshCube", (api) => ({
   Mesh: meshCube(api.vec("Size"), api.num("Vertices X") || 2, api.num("Vertices Y") || 2, api.num("Vertices Z") || 2),
 }));
-reg("GeometryNodeMeshGrid", (api) => ({
-  Mesh: meshGrid(api.num("Size X"), api.num("Size Y"), api.num("Vertices X") || 3, api.num("Vertices Y") || 3),
-}));
+reg("GeometryNodeMeshGrid", (api) => {
+  const verticesX = Math.floor(api.num("Vertices X"));
+  const verticesY = Math.floor(api.num("Vertices Y"));
+  return {
+    Mesh: meshGrid(api.num("Size X"), api.num("Size Y"), verticesX, verticesY),
+    // Grid's anonymous UV field lives on the point domain. Downstream image
+    // sampling may consume it on faces, so retain the domain tag and let the
+    // evaluator perform Blender's implicit point-to-face interpolation.
+    "UV Map": Field.perElem((index) => {
+      if (verticesX < 2 || verticesY < 2) return [0, 0, 0];
+      return [Math.floor(index / verticesY) / (verticesX - 1), (index % verticesY) / (verticesY - 1), 0];
+    }).tagged("POINT"),
+  };
+});
 reg("GeometryNodeMeshCircle", (api) => ({
   Mesh: meshCircle(api.num("Vertices") || 32, api.num("Radius") || 1, (api.prop<string>("fill_type", "NONE") as any)),
 }));

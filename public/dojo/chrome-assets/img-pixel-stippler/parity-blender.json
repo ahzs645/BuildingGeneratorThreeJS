@@ -1,1 +1,439 @@
-{"source":"blender","blender_version":"5.1.2","object":"IMG PIXEL STIPPLER","modifier":"GeometryNodes","node_group":"IMG STIPPLE","saved_values":{"Image":"queen of swerds","pixelate":0.5988134145736694,"stippler/full color":false,"STIPPLE DENSITY":333.0,"structure":0.5173912048339844,"crop":false,"Radius":52.22583770751953,"Count":0,"Contrast":0.6395052671432495,"Hue":0.5,"Bright":0.5425091981887817,"Saturation":1.0609873533248901,"Value":1.0},"results":[{"combo":{"name":"authored baseline","overrides":{}},"status":"ok","verts":72094,"faces":71550,"bbox":{"min":[-282.0,-398.5,0.0],"max":[282.0,398.5,0.0]},"elapsed_ms":32.8},{"combo":{"name":"coarse pixels","overrides":{"pixelate":0.9}},"status":"ok","verts":4424,"faces":4290,"bbox":{"min":[-282.0,-398.5,0.0],"max":[282.0,398.5,0.0]},"elapsed_ms":3.3},{"combo":{"name":"lower density","overrides":{"STIPPLE DENSITY":150.0}},"status":"ok","verts":72094,"faces":71550,"bbox":{"min":[-282.0,-398.5,0.0],"max":[282.0,398.5,0.0]},"elapsed_ms":32.5},{"combo":{"name":"strong structure","overrides":{"structure":0.8}},"status":"ok","verts":72094,"faces":71550,"bbox":{"min":[-282.0,-398.5,0.0],"max":[282.0,398.5,0.0]},"elapsed_ms":32.8}]}
+{
+  "source": "blender",
+  "blender_version": "5.1.2",
+  "object": "IMG PIXEL STIPPLER",
+  "modifier": "GeometryNodes",
+  "node_group": "IMG STIPPLE",
+  "saved_values": {
+    "Image": "queen of swerds",
+    "pixelate": 0.5988134145736694,
+    "stippler/full color": false,
+    "STIPPLE DENSITY": 333.0,
+    "structure": 0.5173912048339844,
+    "crop": false,
+    "Radius": 52.22583770751953,
+    "Count": 0,
+    "Contrast": 0.6395052671432495,
+    "Hue": 0.5,
+    "Bright": 0.5425091981887817,
+    "Saturation": 1.0609873533248901,
+    "Value": 1.0
+  },
+  "results": [
+    {
+      "combo": {
+        "name": "authored baseline",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282.0,
+          -398.5,
+          0.0
+        ],
+        "max": [
+          282.0,
+          398.5,
+          0.0
+        ]
+      },
+      "elapsed_ms": 32.8,
+      "export": "00-authored-baseline.glb"
+    },
+    {
+      "combo": {
+        "name": "coarse pixels",
+        "overrides": {
+          "pixelate": 0.9
+        }
+      },
+      "status": "ok",
+      "verts": 4424,
+      "faces": 4290,
+      "bbox": {
+        "min": [
+          -282.0,
+          -398.5,
+          0.0
+        ],
+        "max": [
+          282.0,
+          398.5,
+          0.0
+        ]
+      },
+      "elapsed_ms": 3.5,
+      "export": "01-coarse-pixels.glb"
+    },
+    {
+      "combo": {
+        "name": "medium pixels",
+        "overrides": {
+          "pixelate": 0.5
+        }
+      },
+      "status": "ok",
+      "verts": 112236,
+      "faces": 111557,
+      "bbox": {
+        "min": [
+          -282.0,
+          -398.5,
+          0.0
+        ],
+        "max": [
+          282.0,
+          398.5,
+          0.0
+        ]
+      },
+      "elapsed_ms": 50.9,
+      "export": "02-medium-pixels.glb"
+    },
+    {
+      "combo": {
+        "name": "empty grid endpoint",
+        "overrides": {
+          "pixelate": 1.0
+        }
+      },
+      "status": "ok",
+      "verts": 0,
+      "faces": 0,
+      "bbox": {
+        "min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "max": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "elapsed_ms": 0.9,
+      "export": "03-empty-grid-endpoint.glb"
+    },
+    {
+      "combo": {
+        "name": "crop authored zero fillet",
+        "overrides": {
+          "crop": true
+        }
+      },
+      "status": "ok",
+      "verts": 5694,
+      "faces": 5544,
+      "bbox": {
+        "min": [
+          -96.5067,
+          122.8082,
+          0.0
+        ],
+        "max": [
+          96.5067,
+          303.261,
+          0.0
+        ]
+      },
+      "elapsed_ms": 5.6,
+      "export": "04-crop-authored-zero-fillet.glb"
+    },
+    {
+      "combo": {
+        "name": "crop rounded",
+        "overrides": {
+          "crop": true,
+          "Radius": 10.0,
+          "Count": 4
+        }
+      },
+      "status": "ok",
+      "verts": 5673,
+      "faces": 5523,
+      "bbox": {
+        "min": [
+          -96.5067,
+          122.8082,
+          0.0
+        ],
+        "max": [
+          96.5067,
+          303.261,
+          0.0
+        ]
+      },
+      "elapsed_ms": 5.8,
+      "export": "05-crop-rounded.glb"
+    },
+    {
+      "combo": {
+        "name": "full color",
+        "overrides": {
+          "stippler/full color": true
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282.0,
+          -398.5,
+          0.0
+        ],
+        "max": [
+          282.0,
+          398.5,
+          0.0
+        ]
+      },
+      "elapsed_ms": 33.5,
+      "export": "06-full-color.glb"
+    },
+    {
+      "combo": {
+        "name": "lower density",
+        "overrides": {
+          "STIPPLE DENSITY": 150.0
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282.0,
+          -398.5,
+          0.0
+        ],
+        "max": [
+          282.0,
+          398.5,
+          0.0
+        ]
+      },
+      "elapsed_ms": 34.2,
+      "export": "07-lower-density.glb"
+    },
+    {
+      "combo": {
+        "name": "minimum density",
+        "overrides": {
+          "STIPPLE DENSITY": 25.0
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282.0,
+          -398.5,
+          0.0
+        ],
+        "max": [
+          282.0,
+          398.5,
+          0.0
+        ]
+      },
+      "elapsed_ms": 34.5,
+      "export": "08-minimum-density.glb"
+    },
+    {
+      "combo": {
+        "name": "maximum density",
+        "overrides": {
+          "STIPPLE DENSITY": 500.0
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282.0,
+          -398.5,
+          0.0
+        ],
+        "max": [
+          282.0,
+          398.5,
+          0.0
+        ]
+      },
+      "elapsed_ms": 34.2,
+      "export": "09-maximum-density.glb"
+    },
+    {
+      "combo": {
+        "name": "minimum structure",
+        "overrides": {
+          "structure": 0.0
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282.0,
+          -398.5,
+          0.0
+        ],
+        "max": [
+          282.0,
+          398.5,
+          0.0
+        ]
+      },
+      "elapsed_ms": 32.8,
+      "export": "10-minimum-structure.glb"
+    },
+    {
+      "combo": {
+        "name": "strong structure",
+        "overrides": {
+          "structure": 0.8
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282.0,
+          -398.5,
+          0.0
+        ],
+        "max": [
+          282.0,
+          398.5,
+          0.0
+        ]
+      },
+      "elapsed_ms": 33.2,
+      "export": "11-strong-structure.glb"
+    },
+    {
+      "combo": {
+        "name": "maximum structure",
+        "overrides": {
+          "structure": 1.0
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282.0,
+          -398.5,
+          0.0
+        ],
+        "max": [
+          282.0,
+          398.5,
+          0.0
+        ]
+      },
+      "elapsed_ms": 34.4,
+      "export": "12-maximum-structure.glb"
+    },
+    {
+      "combo": {
+        "name": "neutral color correction",
+        "overrides": {
+          "Contrast": 0.0,
+          "Hue": 0.5,
+          "Bright": 0.0,
+          "Saturation": 1.0,
+          "Value": 1.0
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282.0,
+          -398.5,
+          0.0
+        ],
+        "max": [
+          282.0,
+          398.5,
+          0.0
+        ]
+      },
+      "elapsed_ms": 33.6,
+      "export": "13-neutral-color-correction.glb"
+    },
+    {
+      "combo": {
+        "name": "extreme color correction",
+        "overrides": {
+          "Contrast": 1.0,
+          "Hue": 0.1,
+          "Bright": 1.0,
+          "Saturation": 0.0,
+          "Value": 0.5
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282.0,
+          -398.5,
+          0.0
+        ],
+        "max": [
+          282.0,
+          398.5,
+          0.0
+        ]
+      },
+      "elapsed_ms": 36.0,
+      "export": "14-extreme-color-correction.glb"
+    }
+  ],
+  "export_dir": "/tmp/img-stippler-blender-export",
+  "cosmetic_geometry": {
+    "method": "evaluated face material; verts are unique vertices referenced by faces with the material",
+    "combo": {
+      "name": "DEFAULT",
+      "overrides": {}
+    },
+    "materials": {
+      "img stippler shader.001": {
+        "faces": 71550,
+        "verts": 72094
+      }
+    },
+    "text": {
+      "materials": [
+        "emit.004"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "clickme": {
+      "materials": [
+        "emit.003"
+      ],
+      "faces": 0,
+      "verts": 0
+    },
+    "total": {
+      "faces": 71550,
+      "verts": 72094
+    }
+  }
+}

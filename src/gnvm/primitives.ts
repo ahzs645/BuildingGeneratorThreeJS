@@ -98,13 +98,21 @@ export function meshCube(size: Vec3, vx = 2, vy = 2, vz = 2): Geometry {
 
 export function meshGrid(sizeX: number, sizeY: number, vx: number, vy: number): Geometry {
   const m = new Mesh();
-  vx = Math.max(2, Math.floor(vx));
-  vy = Math.max(2, Math.floor(vy));
+  vx = Math.floor(vx);
+  vy = Math.floor(vy);
   // A malformed or unsupported upstream field must not be allowed to allocate
   // an unbounded browser mesh. Blender's Grid node is constrained by available
   // memory too; fail explicitly so parity diagnostics identify the source node.
   if (!Number.isFinite(vx) || !Number.isFinite(vy) || vx * vy > 2_000_000)
     throw new Error(`Mesh Grid resolution is too large (${vx} x ${vy})`);
+  // Linked integer fields can drive the resolution below the node UI's normal
+  // minimum. Blender then emits an empty mesh; clamping to 2 fabricated a quad
+  // at Image Pixel Stippler's Pixelate=1 endpoint.
+  if (vx < 2 || vy < 2) {
+    const empty = new Geometry();
+    empty.mesh = m;
+    return empty;
+  }
   // Blender stores Grid vertices X-major (all Y samples for one X before the
   // next X). Geometry looks identical either way, but Index/Field at Index
   // consumers rely on this order (the Dojo bin samples corners recursively).

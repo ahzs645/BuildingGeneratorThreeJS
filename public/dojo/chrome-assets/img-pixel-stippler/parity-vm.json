@@ -1,1 +1,390 @@
-{"source":"gnvm","dump":"public/dojo/chrome-assets/img-pixel-stippler/dump.json","object":"IMG PIXEL STIPPLER","results":[{"combo":{"name":"authored baseline","overrides":{}},"status":"ok","verts":72094,"faces":71550,"bbox":{"min":[-282,-398.5,0],"max":[282,398.5,0]},"elapsed_ms":1583},{"combo":{"name":"coarse pixels","overrides":{"pixelate":0.9}},"status":"ok","verts":4424,"faces":4290,"bbox":{"min":[-282,-398.5,0],"max":[282,398.5,0]},"elapsed_ms":92},{"combo":{"name":"lower density","overrides":{"STIPPLE DENSITY":150}},"status":"ok","verts":72094,"faces":71550,"bbox":{"min":[-282,-398.5,0],"max":[282,398.5,0]},"elapsed_ms":1401},{"combo":{"name":"strong structure","overrides":{"structure":0.8}},"status":"ok","verts":72094,"faces":71550,"bbox":{"min":[-282,-398.5,0],"max":[282,398.5,0]},"elapsed_ms":1422}]}
+{
+  "source": "gnvm",
+  "dump": "public/dojo/chrome-assets/img-pixel-stippler/dump.json",
+  "object": "IMG PIXEL STIPPLER",
+  "results": [
+    {
+      "combo": {
+        "name": "authored baseline",
+        "overrides": {}
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 1689,
+      "export": "00-authored-baseline.json"
+    },
+    {
+      "combo": {
+        "name": "coarse pixels",
+        "overrides": {
+          "pixelate": 0.9
+        }
+      },
+      "status": "ok",
+      "verts": 4424,
+      "faces": 4290,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 92,
+      "export": "01-coarse-pixels.json"
+    },
+    {
+      "combo": {
+        "name": "medium pixels",
+        "overrides": {
+          "pixelate": 0.5
+        }
+      },
+      "status": "ok",
+      "verts": 112236,
+      "faces": 111557,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 2241,
+      "export": "02-medium-pixels.json"
+    },
+    {
+      "combo": {
+        "name": "empty grid endpoint",
+        "overrides": {
+          "pixelate": 1
+        }
+      },
+      "status": "ok",
+      "verts": 0,
+      "faces": 0,
+      "bbox": {
+        "min": [
+          0,
+          0,
+          0
+        ],
+        "max": [
+          0,
+          0,
+          0
+        ]
+      },
+      "elapsed_ms": 1,
+      "export": "03-empty-grid-endpoint.json"
+    },
+    {
+      "combo": {
+        "name": "crop authored zero fillet",
+        "overrides": {
+          "crop": true
+        }
+      },
+      "status": "ok",
+      "verts": 5694,
+      "faces": 5544,
+      "bbox": {
+        "min": [
+          -96.5067,
+          122.8082,
+          0
+        ],
+        "max": [
+          96.5067,
+          303.261,
+          0
+        ]
+      },
+      "elapsed_ms": 1387,
+      "export": "04-crop-authored-zero-fillet.json"
+    },
+    {
+      "combo": {
+        "name": "crop rounded",
+        "overrides": {
+          "crop": true,
+          "Radius": 10,
+          "Count": 4
+        }
+      },
+      "status": "ok",
+      "verts": 5673,
+      "faces": 5523,
+      "bbox": {
+        "min": [
+          -96.5067,
+          122.8082,
+          0
+        ],
+        "max": [
+          96.5067,
+          303.261,
+          0
+        ]
+      },
+      "elapsed_ms": 1445,
+      "export": "05-crop-rounded.json"
+    },
+    {
+      "combo": {
+        "name": "full color",
+        "overrides": {
+          "stippler/full color": true
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 1451,
+      "export": "06-full-color.json"
+    },
+    {
+      "combo": {
+        "name": "lower density",
+        "overrides": {
+          "STIPPLE DENSITY": 150
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 1502,
+      "export": "07-lower-density.json"
+    },
+    {
+      "combo": {
+        "name": "minimum density",
+        "overrides": {
+          "STIPPLE DENSITY": 25
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 1444,
+      "export": "08-minimum-density.json"
+    },
+    {
+      "combo": {
+        "name": "maximum density",
+        "overrides": {
+          "STIPPLE DENSITY": 500
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 1482,
+      "export": "09-maximum-density.json"
+    },
+    {
+      "combo": {
+        "name": "minimum structure",
+        "overrides": {
+          "structure": 0
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 1494,
+      "export": "10-minimum-structure.json"
+    },
+    {
+      "combo": {
+        "name": "strong structure",
+        "overrides": {
+          "structure": 0.8
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 1607,
+      "export": "11-strong-structure.json"
+    },
+    {
+      "combo": {
+        "name": "maximum structure",
+        "overrides": {
+          "structure": 1
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 1482,
+      "export": "12-maximum-structure.json"
+    },
+    {
+      "combo": {
+        "name": "neutral color correction",
+        "overrides": {
+          "Contrast": 0,
+          "Hue": 0.5,
+          "Bright": 0,
+          "Saturation": 1,
+          "Value": 1
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 1352,
+      "export": "13-neutral-color-correction.json"
+    },
+    {
+      "combo": {
+        "name": "extreme color correction",
+        "overrides": {
+          "Contrast": 1,
+          "Hue": 0.1,
+          "Bright": 1,
+          "Saturation": 0,
+          "Value": 0.5
+        }
+      },
+      "status": "ok",
+      "verts": 72094,
+      "faces": 71550,
+      "bbox": {
+        "min": [
+          -282,
+          -398.5,
+          0
+        ],
+        "max": [
+          282,
+          398.5,
+          0
+        ]
+      },
+      "elapsed_ms": 1415,
+      "export": "14-extreme-color-correction.json"
+    }
+  ]
+}

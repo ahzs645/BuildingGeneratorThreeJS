@@ -377,7 +377,11 @@ reg("GeometryNodeSampleCurve", (api) => {
 reg("GeometryNodeFilletCurve", (api) => {
   const g = api.geo("Curve");
   const radius = api.num("Radius");
-  const count = api.num("Count") || 1;
+  const count = Math.max(0, Math.round(api.num("Count")));
+  // A linked zero is meaningful even though the node panel normally presents
+  // Count with a positive minimum: Blender bypasses the fillet and preserves
+  // the original curve component unchanged.
+  if (count === 0) return { Curve: g.clone() };
   const limit = api.bool("Limit Radius");
   const out = new Geometry();
   out.curves = g.curves.map((s) => filletSpline(s, radius, count, limit));

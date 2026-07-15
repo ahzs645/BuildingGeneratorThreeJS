@@ -481,6 +481,13 @@ function meshSignedAreaXY(m: Mesh): number {
   check("FilletCurve tangent pt on BC = (1,0.5,0)", approx(fp[3], [1, 0.5, 0]), JSON.stringify(fp[3]));
 }
 
+{
+  const source = curve([[0, 0, 0], [1, 0, 0], [1, 1, 0]], false);
+  source.curveAttributes.set("source", { domain: "POINT", data: [1, 2, 3] });
+  const out = runNode("GeometryNodeFilletCurve", { Curve: source, Radius: 0.5, Count: 0 }).Curve as Geometry;
+  check("Fillet Curve count zero preserves the source curve", out.curvePointCount() === 3 && out.curveAttributes.get("source")?.data[2] === 3, `got ${out.curvePointCount()} points`);
+}
+
 // (D2) Set Spline Type NURBS: open cubic smoothing approximates interior controls
 {
   const c = runNode(
@@ -633,6 +640,18 @@ function meshSignedAreaXY(m: Mesh): number {
   const authoredCurve = runNode("GeometryNodeMeshToCurve", { Mesh: authored, Selection: true }).Curve as Geometry;
   const authoredTangent = authoredCurve.curveAttributes.get("__curve_tangent")?.data[0] as Vec3;
   check("MeshToCurve stores normalized corner-bisector tangents for authored edges", Math.abs(Math.abs(authoredTangent[0]) - Math.abs(authoredTangent[1])) < .002, JSON.stringify(authoredTangent));
+}
+
+{
+  const out = runNode("GeometryNodeMeshGrid", { "Size X": 2, "Size Y": 2, "Vertices X": 1, "Vertices Y": 2 });
+  const grid = out.Mesh as Geometry;
+  const uv = out["UV Map"] as Field;
+  check("MeshGrid below two vertices emits an empty mesh", grid.mesh?.positions.length === 0 && grid.mesh.faces.length === 0);
+  const regular = runNode("GeometryNodeMeshGrid", { "Size X": 2, "Size Y": 2, "Vertices X": 2, "Vertices Y": 3 });
+  const regularGrid = regular.Mesh as Geometry;
+  const regularUv = regular["UV Map"] as Field;
+  check("MeshGrid UV follows its X-major point order", approx(regularUv.array(makeFieldCtx(regularGrid, "POINT")).flat() as number[], [0, 0, 0, 0, .5, 0, 0, 1, 0, 1, 0, 0, 1, .5, 0, 1, 1, 0]));
+  check("empty MeshGrid retains a point-domain UV field", uv.srcDomain === "POINT");
 }
 
 // (F) FillCurve NGON: triangle -> 1 face, 3 verts
@@ -2297,6 +2316,13 @@ function meshSignedAreaXY(m: Mesh): number {
   const colorsB = (sampled.Color as Field).array(imageCtx);
   check("Image Texture samples CLIP edge pixels", approx(colorsA[0] as number[], [1, 0, 0]) && approx(colorsA[1] as number[], [0, 1, 0]));
   check("field arrays memoize per context", colorsA === colorsB);
+  const pointUv = Field.perElem(() => [.5, .5, 0]).tagged("POINT");
+  const linear = runNode("GeometryNodeImageTexture", {
+    Image: imageRef, Vector: pointUv, Frame: 0,
+  }, { extension: "CLIP", interpolation: "Linear" }, ["Vector"]);
+  const midpoint = (linear.Color as Field).array(makeFieldCtx(curve([[0, 0, 0]], false), "POINT"))[0];
+  check("Image Texture linearly interpolates adjacent pixels", approx(midpoint as number[], [.5, .5, 0]));
+  check("Image Texture preserves the UV source domain", (linear.Color as Field).srcDomain === "POINT");
   DUMP_CONTEXT.images = savedImages;
 }
 

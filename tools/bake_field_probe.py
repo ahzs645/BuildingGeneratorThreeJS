@@ -29,9 +29,10 @@ for s in src.outputs:
         break
 assert out_sock is not None, f"socket {src_socket} not found on {src_node}"
 is_vec = out_sock.bl_idname.startswith("NodeSocketVector")
+is_color = out_sock.bl_idname.startswith("NodeSocketColor")
 
 store = tree.nodes.new("GeometryNodeStoreNamedAttribute")
-store.data_type = "FLOAT_VECTOR" if is_vec else "FLOAT"
+store.data_type = "FLOAT_VECTOR" if is_vec else "FLOAT_COLOR" if is_color else "FLOAT"
 store.domain = "POINT"
 store.inputs["Name"].default_value = "__probe"
 tree.links.new(from_sock, store.inputs["Geometry"])
@@ -60,16 +61,18 @@ dg = bpy.context.evaluated_depsgraph_get()
 ev = obj.evaluated_get(dg)
 m = ev.to_mesh()
 attr = m.attributes.get("__probe")
-if attr and is_vec:
+if attr and is_color:
+    vals = [[round(c, 5) for c in a.color] for a in attr.data]
+elif attr and is_vec:
     vals = [[round(c, 5) for c in a.vector] for a in attr.data]
 else:
     vals = [round(a.value, 5) for a in attr.data] if attr else []
-print(f"FIELD_PROBE_OK: {len(vals)} values (vector={is_vec})")
+print(f"FIELD_PROBE_OK: {len(vals)} values (vector={is_vec}, color={is_color})")
 if vals and not is_vec:
     s = sorted(vals)
     n = len(s)
     print(f"  stats: min={s[0]} p25={s[n//4]} med={s[n//2]} p75={s[3*n//4]} max={s[-1]}")
-elif vals:
+elif vals and is_vec:
     import math
     mags = sorted(math.sqrt(v[0]**2 + v[1]**2 + v[2]**2) for v in vals)
     n = len(mags)
