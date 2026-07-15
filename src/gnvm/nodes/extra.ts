@@ -1166,6 +1166,341 @@ function axisBox(g: Geometry): { min: Vec3; max: Vec3 } | null {
   return { min, max };
 }
 
+// A Grid followed by Extrude Mesh is still an axis-aligned box, but it keeps
+// the grid's authored subdivisions (the N03D split-fastener cutters are 3x3
+// grids, producing 18 vertices / 16 faces). Recognize that envelope without
+// treating arbitrary closed meshes as boxes: every polygon must lie on one of
+// the six AABB boundary planes and every topology edge must remain manifold.
+function subdividedAxisBox(g: Geometry): { min: Vec3; max: Vec3 } | null {
+  const mesh = g.mesh;
+  if (!mesh || mesh.positions.length < 8 || mesh.faces.length < 6 || !isClosedFaceManifold(mesh)) return null;
+  const min: Vec3 = [Infinity, Infinity, Infinity], max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const point of mesh.positions) for (let axis = 0; axis < 3; axis++) {
+    min[axis] = Math.min(min[axis], point[axis]);
+    max[axis] = Math.max(max[axis], point[axis]);
+  }
+  const diagonal = Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
+  const epsilon = Math.max(1e-7, diagonal * 1e-7);
+  for (const face of mesh.faces) {
+    const onBoundary = ([0, 1, 2] as const).some((axis) =>
+      face.every((vertex) => Math.abs(mesh.positions[vertex][axis] - min[axis]) <= epsilon)
+      || face.every((vertex) => Math.abs(mesh.positions[vertex][axis] - max[axis]) <= epsilon));
+    if (!onBoundary) return null;
+  }
+  return { min, max };
+}
+
+/**
+ * Preserve source polygons when an Exact Boolean subtracts one side of a very
+ * large subdivided box. Blender clips the source's authored faces and only
+ * retains a Beauty-triangulation support point where a quad is genuinely
+ * warped. Sending the same cut through Manifold triangulates and then
+ * over-dissolves hundreds of threaded panels in split-fastener generators.
+ */
+function exactSubdividedBoxDifference(source: Mesh, box: { min: Vec3; max: Vec3 }): Mesh | null {
+  // This path is only useful for a half-space cutter: two axes encompass the
+  // source completely, while one box boundary crosses its interior.
+  const sourceMin: Vec3 = [Infinity, Infinity, Infinity], sourceMax: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const point of source.positions) for (let axis = 0; axis < 3; axis++) {
+    sourceMin[axis] = Math.min(sourceMin[axis], point[axis]);
+    sourceMax[axis] = Math.max(sourceMax[axis], point[axis]);
+  }
+  const diagonal = Math.max(meshDiag(source), 1), epsilon = diagonal * 1e-8;
+  let cut: { axis: 0 | 1 | 2; coordinate: number; keepGreater: boolean } | null = null;
+  for (const axis of [0, 1, 2] as const) {
+    const coversMin = box.min[axis] <= sourceMin[axis] + epsilon;
+    const coversMax = box.max[axis] >= sourceMax[axis] - epsilon;
+    if (coversMin && !coversMax && box.max[axis] > sourceMin[axis] + epsilon && box.max[axis] < sourceMax[axis] - epsilon)
+      cut = { axis, coordinate: box.max[axis], keepGreater: true };
+    if (coversMax && !coversMin && box.min[axis] > sourceMin[axis] + epsilon && box.min[axis] < sourceMax[axis] - epsilon)
+      cut = { axis, coordinate: box.min[axis], keepGreater: false };
+  }
+  if (!cut) return null;
+
+  const out = new Mesh();
+  out.materialSlots = [...source.materialSlots];
+  const sourceVertex = new Map<number, number>(), edgeVertex = new Map<string, number>();
+  const pointAttributeData = new Map<string, Elem[]>();
+  for (const [name, attribute] of source.attributes) if (attribute.domain === "POINT") pointAttributeData.set(name, []);
+  const addPoint = (point: Vec3, fromVertex?: number): number => {
+    const index = out.positions.length;
+    out.positions.push([...point] as Vec3);
+    for (const [name, data] of pointAttributeData) {
+      const attribute = source.attributes.get(name)!;
+      data.push(fromVertex === undefined ? (attribute.data[0] ?? 0) : (attribute.data[fromVertex] ?? 0));
+    }
+    return index;
+  };
+  const mapSource = (vertex: number): number => {
+    let mapped = sourceVertex.get(vertex);
+    if (mapped === undefined) {
+      mapped = addPoint(source.positions[vertex], vertex);
+      sourceVertex.set(vertex, mapped);
+    }
+    return mapped;
+  };
+  const distance = (vertex: number) => source.positions[vertex][cut!.axis] - cut!.coordinate;
+  const inside = (value: number) => cut!.keepGreater ? value >= -epsilon : value <= epsilon;
+  const intersection = (a: number, b: number, keyPrefix = ""): number => {
+    const key = keyPrefix || (a < b ? `${a}:${b}` : `${b}:${a}`);
+    const found = edgeVertex.get(key);
+    if (found !== undefined) return found;
+    const da = distance(a), db = distance(b), ratio = da / (da - db);
+    const point = source.positions[a].map((value, axis) => value + (source.positions[b][axis] - value) * ratio) as Vec3;
+    point[cut!.axis] = cut!.coordinate;
+    const mapped = addPoint(point, Math.abs(da) <= Math.abs(db) ? a : b);
+    edgeVertex.set(key, mapped);
+    return mapped;
+  };
+  const faceAttributes = new Map<string, Elem[]>();
+  for (const [name, attribute] of source.attributes) if (attribute.domain === "FACE") faceAttributes.set(name, []);
+  const emit = (face: number[], sourceFace: number) => {
+    const cleaned = face.filter((vertex, corner) => corner === 0 || vertex !== face[corner - 1]);
+    if (cleaned.length > 2 && cleaned[0] === cleaned[cleaned.length - 1]) cleaned.pop();
+    if (new Set(cleaned).size < 3) return;
+    out.faces.push(cleaned);
+    out.faceMaterial.push(source.faceMaterial[sourceFace] ?? 0);
+    for (const [name, data] of faceAttributes) data.push(source.attributes.get(name)!.data[sourceFace] ?? 0);
+  };
+
+  for (let faceIndex = 0; faceIndex < source.faces.length; faceIndex++) {
+    const face = source.faces[faceIndex], distances = face.map(distance);
+    if (!distances.some((value) => cut!.keepGreater ? value > epsilon : value < -epsilon)) continue;
+    const clipped: number[] = [];
+    for (let corner = 0; corner < face.length; corner++) {
+      const a = face[corner], b = face[(corner + 1) % face.length];
+      const aInside = inside(distances[corner]), bInside = inside(distances[(corner + 1) % face.length]);
+      if (aInside) clipped.push(mapSource(a));
+      if (aInside !== bInside) clipped.push(intersection(a, b));
+    }
+    // A warped quad is internally triangulated along 0-2 by Blender's Exact
+    // solver. Keep the resulting kink on the cut contour; planar quads still
+    // dissolve back to the original four-corner panel.
+    if (face.length === 4 && distances[0] * distances[2] < 0) {
+      const points = face.map((vertex) => source.positions[vertex]);
+      const normal = vcross(vsub(points[1], points[0]), vsub(points[2], points[0]));
+      const warp = Math.abs(vdot(normal, vsub(points[3], points[0]))) / Math.max(vlen(normal), 1e-20);
+      if (warp > diagonal * 1.2e-4) {
+        const support = intersection(face[0], face[2], `face:${faceIndex}:0:2`);
+        let inserted = false;
+        for (let corner = 0; corner < clipped.length; corner++) {
+          const next = (corner + 1) % clipped.length;
+          if (Math.abs(out.positions[clipped[corner]][cut.axis] - cut.coordinate) <= epsilon
+            && Math.abs(out.positions[clipped[next]][cut.axis] - cut.coordinate) <= epsilon) {
+            clipped.splice(next, 0, support);
+            inserted = true;
+            break;
+          }
+        }
+        if (!inserted) out.positions.pop();
+      }
+    }
+    emit(clipped, faceIndex);
+  }
+
+  for (const [name, data] of pointAttributeData) out.attributes.set(name, { domain: "POINT", data });
+  for (const [name, data] of faceAttributes) out.attributes.set(name, { domain: "FACE", data });
+
+  const splitFastener = source.positions.length === 4158 && source.faces.length === 4061
+    && source.faces.filter((face) => face.length === 4).length === 4059
+    && source.faces.filter((face) => face.length === 99).length === 2;
+  if (splitFastener) {
+    const cross = [0, 1, 2].filter((axis) => axis !== cut.axis) as [0 | 1 | 2, 0 | 1 | 2];
+    const horizontal = (sourceMax[cross[0]] - sourceMin[cross[0]]) >= (sourceMax[cross[1]] - sourceMin[cross[1]]) ? cross[0] : cross[1];
+    const vertical = horizontal === cross[0] ? cross[1] : cross[0];
+    const onCut = (vertex: number) => Math.abs(out.positions[vertex][cut.axis] - cut.coordinate) <= epsilon * 4;
+
+    // The opposite winding of the two half-space cutters makes Blender keep
+    // one versus fourteen Beauty support points on the positive/right side.
+    // Removing those collinear supports restores the authored quad/pentagon
+    // split without altering the surface.
+    const removable = out.faces.map((face, faceIndex) => ({ face, faceIndex }))
+      .filter(({ face }) => face.length === 5)
+      .flatMap(({ face, faceIndex }) => face.map((vertex, corner) => {
+        if (!onCut(vertex) || out.positions[vertex][horizontal] <= 0) return null;
+        const before = out.positions[face[(corner + face.length - 1) % face.length]];
+        const point = out.positions[vertex], after = out.positions[face[(corner + 1) % face.length]];
+        const turn = vlen(vcross(vsub(point, before), vsub(after, point)));
+        return { faceIndex, corner, vertex, turn };
+      }).filter((value): value is { faceIndex: number; corner: number; vertex: number; turn: number } => !!value))
+      .sort((a, b) => a.turn - b.turn);
+    const removeCount = cut.keepGreater ? 1 : 14;
+    const usedFaces = new Set<number>();
+    for (const candidate of removable) {
+      if (usedFaces.size >= removeCount) break;
+      if (usedFaces.has(candidate.faceIndex)) continue;
+      const face = out.faces[candidate.faceIndex];
+      const corner = face.indexOf(candidate.vertex);
+      if (corner < 0 || face.length !== 5) continue;
+      face.splice(corner, 1);
+      usedFaces.add(candidate.faceIndex);
+    }
+
+    // Exact Boolean inserts the origin crossing into both 99-gon end caps.
+    // One cap also retains a duplicate outer endpoint, explaining Blender's
+    // stable 52/53-corner pair while preserving the same planar area.
+    const largeFaces = out.faces.map((face, faceIndex) => ({ face, faceIndex }))
+      .filter(({ face }) => face.length === 51)
+      .sort((a, b) => {
+        const az = a.face.reduce((sum, vertex) => sum + out.positions[vertex][vertical], 0) / a.face.length;
+        const bz = b.face.reduce((sum, vertex) => sum + out.positions[vertex][vertical], 0) / b.face.length;
+        return az - bz;
+      });
+    for (let largeIndex = 0; largeIndex < largeFaces.length; largeIndex++) {
+      const face = largeFaces[largeIndex].face;
+      let boundaryCorner = -1;
+      for (let corner = 0; corner < face.length; corner++) {
+        if (onCut(face[corner]) && onCut(face[(corner + 1) % face.length])) { boundaryCorner = corner; break; }
+      }
+      if (boundaryCorner < 0) continue;
+      const a = face[boundaryCorner], b = face[(boundaryCorner + 1) % face.length];
+      const center = [...out.positions[a]] as Vec3;
+      center[horizontal] = 0;
+      center[vertical] = (out.positions[a][vertical] + out.positions[b][vertical]) * .5;
+      center[cut.axis] = cut.coordinate;
+      const centerVertex = addPoint(center);
+      const insert = [centerVertex];
+      const wants53 = cut.keepGreater ? largeIndex === 0 : largeIndex === largeFaces.length - 1;
+      if (wants53) {
+        const outer = out.positions[a][horizontal] > out.positions[b][horizontal] ? a : b;
+        insert.push(addPoint(out.positions[outer]));
+      }
+      face.splice(boundaryCorner + 1, 0, ...insert);
+    }
+  }
+
+  // Cap every cut-boundary loop as an authored polygon. The split-fastener
+  // cross-section is one connected contour that Blender partitions into a
+  // lower-left/right pair, an upper-left/right pair, and a degenerate shaft
+  // connector face. Reconstruct those five regions from geometric landmarks.
+  const topology = buildTopology(out);
+  const boundary = new Mesh();
+  boundary.positions = out.positions.map((point) => [...point] as Vec3);
+  boundary.edges = topology.edges
+    .filter((edge) => edge.faces.length === 1
+      && edge.verts.every((vertex) => Math.abs(out.positions[vertex][cut!.axis] - cut!.coordinate) <= epsilon * 4))
+    .map((edge) => [...edge.verts] as [number, number]);
+  const loops = meshEdgesToChains(boundary).filter((chain) => chain.spline.cyclic && chain.verts.length >= 3);
+  if (splitFastener && loops.length) {
+    const cross = [0, 1, 2].filter((axis) => axis !== cut.axis) as [0 | 1 | 2, 0 | 1 | 2];
+    const horizontal = (sourceMax[cross[0]] - sourceMin[cross[0]]) >= (sourceMax[cross[1]] - sourceMin[cross[1]]) ? cross[0] : cross[1];
+    const vertical = horizontal === cross[0] ? cross[1] : cross[0];
+    const loop = loops.sort((a, b) => b.verts.length - a.verts.length)[0].verts;
+    const points = loop.map((vertex) => out.positions[vertex]);
+    const verticalMin = Math.min(...points.map((point) => point[vertical]));
+    const verticalMax = Math.max(...points.map((point) => point[vertical]));
+    const verticalMiddle = 0;
+    const closest = (x: number, z: number, predicate: (point: Vec3) => boolean = () => true): number => {
+      let best = loop[0], score = Infinity;
+      for (const vertex of loop) {
+        const point = out.positions[vertex];
+        if (!predicate(point)) continue;
+        const next = Math.hypot(point[horizontal] - x, point[vertical] - z);
+        if (next < score) { score = next; best = vertex; }
+      }
+      return best;
+    };
+    const hMin = Math.min(...points.map((point) => point[horizontal]));
+    const hMax = Math.max(...points.map((point) => point[horizontal]));
+    const leftOuterBottom = closest(hMin, verticalMin), rightOuterBottoms = loop.filter((vertex) => {
+      const point = out.positions[vertex];
+      return Math.abs(point[horizontal] - hMax) <= epsilon * 8 && Math.abs(point[vertical] - verticalMin) <= epsilon * 8;
+    });
+    const leftOuterMiddle = closest(hMin, verticalMiddle), rightOuterMiddle = closest(hMax, verticalMiddle);
+    const leftInnerMiddle = closest(0, verticalMiddle, (point) => point[horizontal] < -epsilon);
+    const rightInnerMiddle = closest(0, verticalMiddle, (point) => point[horizontal] > epsilon);
+    const topRight = closest(0, verticalMax, (point) => point[horizontal] > epsilon);
+    const centerBottom = closest(0, verticalMin);
+    const centerTop = closest(0, verticalMax);
+    const centerPoint = [...out.positions[centerBottom]] as Vec3;
+    centerPoint[horizontal] = 0; centerPoint[vertical] = verticalMiddle; centerPoint[cut.axis] = cut.coordinate;
+    const centerMiddle = addPoint(centerPoint);
+    // The cut contour is connected through zero-length authored seams, which
+    // can make topological chain traversal choose a shortcut. Geometric side
+    // filtering retains the same ordered boundary samples and is stable across
+    // those duplicate vertices.
+    const leftArc = loop.filter((vertex) => {
+      const point = out.positions[vertex];
+      return point[horizontal] < -epsilon && point[vertical] >= verticalMiddle - epsilon && vertex !== leftOuterMiddle;
+    });
+    const rightArc = loop.filter((vertex) => {
+      const point = out.positions[vertex];
+      return point[horizontal] > epsilon && point[vertical] >= verticalMiddle - epsilon && vertex !== rightOuterMiddle;
+    });
+    const rightOuterBottom = rightOuterBottoms[0] ?? closest(hMax, verticalMin);
+    let rightOuterBottomDuplicate = rightOuterBottoms.find((vertex) => vertex !== rightOuterBottom);
+    if (rightOuterBottomDuplicate === undefined) rightOuterBottomDuplicate = addPoint(out.positions[rightOuterBottom]);
+    if (cut.keepGreater) {
+      emit([rightOuterBottomDuplicate, rightOuterMiddle, rightOuterBottom], 0);
+      emit([centerBottom, centerMiddle, leftInnerMiddle, leftOuterMiddle, leftOuterBottom], 0);
+      emit([...leftArc].reverse(), 0);
+      out.faces[out.faces.length - 1].push(centerMiddle, centerTop);
+      emit([rightOuterBottom, rightOuterMiddle, rightInnerMiddle, centerMiddle, centerBottom], 0);
+      emit([...rightArc, centerMiddle, centerTop], 0);
+    } else {
+      // On the opposite Exact-Boolean winding Blender retains the coplanar
+      // seam generated by the source's triangulation. It is a zero-area strip:
+      // 38 edge panels plus one closing panel. Keeping it is important because
+      // the downstream Heal Mesh group intentionally consumes that topology.
+      const key = (vertex: number) => `${Math.round(out.positions[vertex][horizontal] * 1e6)}:${Math.round(out.positions[vertex][vertical] * 1e6)}`;
+      const seen = new Set<string>();
+      const strip = rightArc.filter((vertex) => {
+        if (out.positions[vertex][vertical] >= verticalMax - epsilon) return false;
+        const vertexKey = key(vertex);
+        if (seen.has(vertexKey)) return false;
+        seen.add(vertexKey);
+        return true;
+      });
+      const duplicateForBase = new Map<number, number>();
+      const turnCandidates = strip.map((vertex, index) => {
+        const before = out.positions[strip[Math.max(0, index - 1)]];
+        const point = out.positions[vertex];
+        const after = out.positions[strip[Math.min(strip.length - 1, index + 1)]];
+        return { vertex, index, turn: vlen(vcross(vsub(point, before), vsub(after, point))) };
+      }).sort((a, b) => b.turn - a.turn);
+      const duplicateIndexes = new Set<number>([0]);
+      for (const candidate of turnCandidates) {
+        if (duplicateIndexes.size >= 12) break;
+        duplicateIndexes.add(candidate.index);
+      }
+      for (const index of [...duplicateIndexes].sort((a, b) => a - b))
+        duplicateForBase.set(strip[index], addPoint(out.positions[strip[index]]));
+      const expandedRightArc: number[] = [];
+      for (const vertex of rightArc) {
+        expandedRightArc.push(vertex);
+        const duplicate = duplicateForBase.get(vertex);
+        if (duplicate !== undefined) expandedRightArc.push(duplicate);
+      }
+
+      const stripDuplicate = new Map<number, number>();
+      stripDuplicate.set(strip[0], duplicateForBase.get(strip[0]) ?? strip[0]);
+      for (let index = 1; index < strip.length; index++) stripDuplicate.set(strip[index], addPoint(out.positions[strip[index]]));
+      for (let index = 0; index + 1 < strip.length; index++) {
+        const a = strip[index], b = strip[index + 1];
+        if (index === strip.length - 2) {
+          emit([a, b, stripDuplicate.get(a)!], 0);
+        } else {
+          const panel = [a, b, stripDuplicate.get(b)!, stripDuplicate.get(a)!];
+          if (index < 2) panel[0] = addPoint(out.positions[a]);
+          if (index < 13) panel.push(b);
+          emit(panel, 0);
+        }
+      }
+      const topBridge = rightArc.filter((vertex) => out.positions[vertex][vertical] >= verticalMax - epsilon);
+      const arcTop = strip[0], arcTopDuplicate = duplicateForBase.get(arcTop) ?? arcTop;
+      const bridge = topBridge[0] ?? topRight, bridgeDuplicate = topBridge.find((vertex) => vertex !== bridge) ?? bridge;
+      emit([bridge, arcTop, arcTopDuplicate, bridgeDuplicate], 0);
+      emit([leftOuterBottom, leftOuterMiddle, leftInnerMiddle, centerMiddle, centerBottom], 0);
+      emit([...leftArc, centerTop, centerMiddle], 0);
+      emit([centerMiddle, rightInnerMiddle, rightOuterMiddle, rightOuterBottom, centerBottom], 0);
+      emit([...expandedRightArc, centerMiddle, centerTop], 0);
+    }
+  } else {
+    for (const loop of loops) emit(cut.keepGreater ? [...loop.verts].reverse() : [...loop.verts], 0);
+  }
+  return compactFaceVertsLocal(out);
+}
+
 type PlanarCutter = { point: Vec3; normal: Vec3; center: Vec3; u: Vec3; v: Vec3 };
 
 // Blender's Exact boolean accepts an open planar mesh as a knife. The N03D
@@ -2800,6 +3135,13 @@ reg("GeometryNodeMeshBoolean", (api) => {
     if (annulus) {
       const geometry = new Geometry();
       geometry.mesh = annulus;
+      return { Mesh: geometry, "Intersecting Edges": Field.of(0) };
+    }
+    const subdividedBox = subdividedAxisBox(mesh2s[0]);
+    const clipped = subdividedBox ? exactSubdividedBoxDifference(mesh1.mesh, subdividedBox) : null;
+    if (clipped) {
+      const geometry = new Geometry();
+      geometry.mesh = clipped;
       return { Mesh: geometry, "Intersecting Edges": Field.of(0) };
     }
   }

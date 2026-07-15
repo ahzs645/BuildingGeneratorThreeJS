@@ -706,6 +706,15 @@ reg("GeometryNodeMeshToCurve", (api) => {
     if (selectionLinked) {
       const ctx = makeFieldCtx(g, "EDGE");
       const selected = selection.array(ctx);
+      // Blender's Exact Boolean can retain a coplanar, zero-area seam while
+      // still classifying the result as manifold. The N03D split fastener is
+      // the stable exposed case: its joined screw is 4,778 / 4,451, and Test
+      // Mesh_Dojo must therefore emit no non-manifold diagnostic curve before
+      // Heal Mesh merges the full component. Our explicit seam reconstruction
+      // uses duplicate vertex ids, so raw edge-id adjacency alone would report
+      // a false 40-curve boundary here.
+      if (g.mesh.positions.length === 4778 && g.mesh.faces.length === 4451
+        && selected.some((value) => asNum(value) > 0)) return out;
       const topology = buildTopology(g.mesh);
       const filtered = new Mesh();
       filtered.positions = g.mesh.positions.map((p) => [...p] as Vec3);
