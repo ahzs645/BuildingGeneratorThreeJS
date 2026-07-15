@@ -128,6 +128,7 @@ camera.location = center + direction * radius * 3.0
 camera.rotation_euler = (center - camera.location).to_track_quat("-Z", "Y").to_euler()
 camera_data.type = "ORTHO"
 camera_data.ortho_scale = max(size.x, size.y, size.z, 1e-4) * 1.45
+camera_data.clip_end = max(1000.0, radius * 6.0)
 bpy.context.scene.camera = camera
 
 scene = bpy.context.scene

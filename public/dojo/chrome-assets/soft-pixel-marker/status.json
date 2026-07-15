@@ -4,5 +4,5 @@
   "status": "exact-authored",
   "blender": { "verts": 8455, "faces": 5664 },
   "gnvm": { "verts": 8455, "faces": 5664 },
-  "validation": "All six Blender/browser cases have exact vertex and face counts, covering the authored result, line weight, pixel size, subdivision level, edge crease, and height. Local bounds differ by at most 0.0001 units."
+  "validation": "All six Blender/browser cases have exact vertex and face counts, covering the authored result, line weight, pixel size, subdivision level, edge crease, and height. Local bounds differ by at most 0.0001 units. The Blender reference has been regenerated from the realized 8,455 / 5,664 surface; the former transparent image came from framing the Curve object's stale source bounds, which placed the camera beyond its 1,000-unit far clip. The reference renderer now derives bounds from realized vertices and expands clip_end defensively."
 }
