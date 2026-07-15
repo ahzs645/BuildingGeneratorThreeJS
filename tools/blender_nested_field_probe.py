@@ -68,9 +68,15 @@ else:
     field_output = tree.nodes[field_node].outputs[field_socket]
 rotation_converter = None
 if field_output.bl_idname == "NodeSocketRotation":
-    rotation_converter = tree.nodes.new("FunctionNodeRotationToEuler")
-    tree.links.new(field_output, rotation_converter.inputs["Rotation"])
-    field_output = rotation_converter.outputs["Euler"]
+    quaternion_component = os.environ.get("NODE_DOJO_ROTATION_COMPONENT", "").upper()
+    if quaternion_component in {"W", "X", "Y", "Z"}:
+        rotation_converter = tree.nodes.new("FunctionNodeRotationToQuaternion")
+        tree.links.new(field_output, rotation_converter.inputs["Rotation"])
+        field_output = rotation_converter.outputs[quaternion_component]
+    else:
+        rotation_converter = tree.nodes.new("FunctionNodeRotationToEuler")
+        tree.links.new(field_output, rotation_converter.inputs["Rotation"])
+        field_output = rotation_converter.outputs["Euler"]
 store = tree.nodes.new("GeometryNodeStoreNamedAttribute")
 store.data_type = "FLOAT_VECTOR" if field_output.bl_idname.startswith("NodeSocketVector") else {
     "NodeSocketBool": "BOOLEAN",

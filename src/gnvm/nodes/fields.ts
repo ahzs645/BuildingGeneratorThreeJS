@@ -135,6 +135,12 @@ const quatMultiply = (a: Quat, b: Quat): Quat => [
   a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
   a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],
 ];
+const quatMultiplyFloat32 = (a: Quat, b: Quat): Quat => [
+  Math.fround(a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1]),
+  Math.fround(a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0]),
+  Math.fround(a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3]),
+  Math.fround(a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]),
+];
 function quatFromEulerXYZ(e: Vec3): Quat {
   const [sx, cx] = [Math.sin(e[0] / 2), Math.cos(e[0] / 2)];
   const [sy, cy] = [Math.sin(e[1] / 2), Math.cos(e[1] / 2)];
@@ -155,6 +161,12 @@ function quatToMatrix(q0: Quat): number[][] {
   ];
 }
 const quatToEulerXYZ = (q: Quat): Vec3 => matrixToEulerXYZ(quatToMatrix(q));
+const tagQuaternion = (q: Quat): TaggedRotation => {
+  const stored = q.map(Math.fround) as Quat;
+  const euler = quatToEulerXYZ(stored) as TaggedRotation;
+  Object.defineProperty(euler, ROTATION_QUATERNION, { value: stored, enumerable: false });
+  return euler;
+};
 function quatRotate(q: Quat, v: Vec3): Vec3 {
   const u: Vec3 = [q[0], q[1], q[2]];
   const s = q[3];
@@ -232,7 +244,7 @@ reg("FunctionNodeAlignRotationToVector", (api) => {
       const base = native ? quatNormalize(native) : quatFromEulerXYZ(asVec3(r));
       const currentAxis = quatRotate(base, localAxis);
       const delta = quatSlerpIdentity(quatFromTo(currentAxis, asVec3(v), axisSel, Boolean(native)), asNum(f));
-      return quatToEulerXYZ(quatMultiply(delta, base));
+      return tagQuaternion(quatMultiplyFloat32(delta, base));
     }),
   };
 });
@@ -241,9 +253,11 @@ reg("FunctionNodeRotateRotation", (api) => {
   const global = api.prop<string>("rotation_space", "GLOBAL") === "GLOBAL";
   return {
     Rotation: fieldMap([api.field("Rotation"), api.field("Rotate By")], (r, by) => {
-      const base = quatFromEulerXYZ(asVec3(r));
-      const secondary = quatFromEulerXYZ(asVec3(by));
-      return quatToEulerXYZ(global ? quatMultiply(secondary, base) : quatMultiply(base, secondary));
+      const base = taggedQuaternion(r) ?? quatFromEulerXYZ(asVec3(r));
+      const secondary = taggedQuaternion(by) ?? quatFromEulerXYZ(asVec3(by));
+      return tagQuaternion(global
+        ? quatMultiplyFloat32(secondary, base)
+        : quatMultiplyFloat32(base, secondary));
     }),
   };
 });

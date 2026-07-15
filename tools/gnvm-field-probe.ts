@@ -37,6 +37,10 @@ const batches = FIELD_PROBE.batches.map((batch) => ({
   domain: batch.domain,
   positions: batch.positions,
   values: batch.values,
+  rotation_quaternions: batch.values.map((value) =>
+    Array.isArray(value)
+      ? (value as unknown as { [key: symbol]: [number, number, number, number] })[Symbol.for("gnvm.rotationQuaternion")] ?? null
+      : null),
   targets: batch.targets,
 }));
 writeFileSync(outPath, `${JSON.stringify({ node: nodeName, socket: socketName, overrides, batches }, null, 2)}\n`);
