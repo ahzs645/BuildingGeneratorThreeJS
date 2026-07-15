@@ -69,6 +69,7 @@ export interface Dump {
     }[];
   }[];
   materials?: Record<string, { nodes?: { type: string; inputs?: { name: string; identifier: string; linked: boolean; value: unknown }[] }[] }>;
+  shader_node_groups?: Record<string, unknown>;
 }
 
 // Find the modifier group name for an object (or the first NODES modifier in the file).

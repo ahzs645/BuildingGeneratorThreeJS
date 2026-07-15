@@ -359,7 +359,8 @@ result = {
         "fps": bpy.context.scene.render.fps,
         "fps_base": bpy.context.scene.render.fps_base,
     },
-    "objects": [], "collections": [], "node_groups": {}, "materials": {}, "images": [], "fonts": {}, "dependency_objects": []
+    "objects": [], "collections": [], "node_groups": {}, "shader_node_groups": {},
+    "materials": {}, "images": [], "fonts": {}, "dependency_objects": []
 }
 
 dependency_collection_names = set()
@@ -652,6 +653,13 @@ if target_object is None:
     for tree in bpy.data.node_groups:
         if tree.bl_idname == "GeometryNodeTree" and tree.name not in done:
             result["node_groups"][tree.name] = dump_tree(tree)
+
+# ShaderNodeGroup material nodes otherwise contain only a datablock reference.
+# Keep shader graphs separate from executable Geometry Nodes programs while
+# making their authored internals portable to the browser material VM.
+for tree in bpy.data.node_groups:
+    if tree.bl_idname == "ShaderNodeTree":
+        result["shader_node_groups"][tree.name] = dump_tree(tree)
 
 for mat in bpy.data.materials:
     if mat.use_nodes and mat.node_tree:
