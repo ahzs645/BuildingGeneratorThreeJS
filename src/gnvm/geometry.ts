@@ -96,6 +96,26 @@ export class Mesh {
 export function triangulateFaceIndices(mesh: Mesh, face: number[]): [number, number, number][] {
   if (face.length < 3) return [];
   if (face.length === 3) return [[face[0], face[1], face[2]]];
+  if (face.length === 4) {
+    // Blender's corner-triangle cache starts with the 0-2 diagonal and flips
+    // only when that split produces opposing triangle directions. Geometry
+    // Proximity samples these triangles directly, so a generic ear-clipping
+    // diagonal visibly changes nearest positions on non-planar quad meshes.
+    const f = Math.fround;
+    const [v1, v2, v3, v4] = face.map((index) => mesh.positions[index].map(f) as Vec3);
+    const subtract = (a: Vec3, b: Vec3): Vec3 => [f(a[0] - b[0]), f(a[1] - b[1]), f(a[2] - b[2])];
+    const cross = (a: Vec3, b: Vec3): Vec3 => [
+      f(f(a[1] * b[2]) - f(a[2] * b[1])),
+      f(f(a[2] * b[0]) - f(a[0] * b[2])),
+      f(f(a[0] * b[1]) - f(a[1] * b[0])),
+    ];
+    const dot = (a: Vec3, b: Vec3) => f(f(f(a[0] * b[0]) + f(a[1] * b[1])) + f(a[2] * b[2]));
+    const d12 = subtract(v2, v1), d13 = subtract(v3, v1), d14 = subtract(v4, v1);
+    const flip = dot(cross(d12, d13), cross(d14, d13)) > 0;
+    return flip
+      ? [[face[0], face[1], face[3]], [face[1], face[2], face[3]]]
+      : [[face[0], face[1], face[2]], [face[0], face[2], face[3]]];
+  }
   const normal = (() => {
     let x = 0, y = 0, z = 0;
     for (let i = 0; i < face.length; i++) {

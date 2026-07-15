@@ -41,9 +41,9 @@
       "gnvm_after": {
         "verts": 10272,
         "faces": 20480,
-        "bbox": { "min": [-1.9138, -2.4269, -3.6632], "max": [3.9222, 3.8456, 3.7327] }
+        "bbox": { "min": [-1.9138, -2.4273, -3.6632], "max": [3.9192, 3.8456, 3.7332] }
       },
-      "classification": "fixed: Blender hash-derived distortion offsets"
+      "classification": "exact rounded bounds: Blender hash-derived distortion offsets plus BMesh Ico Sphere sampling"
     },
     {
       "stage": "nearest-surface mix",
@@ -58,9 +58,9 @@
       "gnvm_after": {
         "verts": 10272,
         "faces": 20480,
-        "bbox": { "min": [-1.61, -2.6439, -3.6802], "max": [3.8918, 3.6966, 3.5401] }
+        "bbox": { "min": [-1.6115, -2.6132, -3.6769], "max": [3.8816, 3.7009, 3.528] }
       },
-      "classification": "next field mismatch: Geometry Proximity position / nearest-surface semantics"
+      "classification": "fixed: BMesh Ico Sphere sampling and float32 Geometry Proximity; rounded bounds exact"
     },
     {
       "stage": "tight wrap and dual mesh",
@@ -74,9 +74,9 @@
       "gnvm_after": {
         "verts": 1352,
         "faces": 1350,
-        "bbox": { "min": [-1.6008, -2.4642, -3.458], "max": [3.692, 3.573, 3.4743] }
+        "bbox": { "min": [-1.6018, -2.4843, -3.4666], "max": [3.7022, 3.573, 3.4759] }
       },
-      "classification": "topology exact; downstream of nearest-surface field mismatch"
+      "classification": "topology and rounded bounds exact"
     },
     {
       "stage": "dynamic triangulation",
@@ -90,9 +90,9 @@
       "gnvm_after": {
         "verts": 1352,
         "faces": 2700,
-        "bbox": { "min": [-1.5838, -2.3849, -3.3992], "max": [3.6246, 3.5192, 3.4055] }
+        "bbox": { "min": [-1.5862, -2.391, -3.4024], "max": [3.6293, 3.5198, 3.4078] }
       },
-      "classification": "topology exact"
+      "classification": "topology and rounded bounds exact"
     },
     {
       "stage": "exact boolean",
@@ -109,11 +109,11 @@
         "bbox": { "min": [-2.2326, -2.6957, -3.9315], "max": [4.2015, 3.698, 3.2504] }
       },
       "gnvm_after": {
-        "verts": 35252,
-        "faces": 59732,
-        "bbox": { "min": [-1.5838, -2.1235, -3.3961], "max": [3.6006, 3.5192, 3.4055] }
+        "verts": 34326,
+        "faces": 57075,
+        "bbox": { "min": [-1.5862, -2.1273, -3.4024], "max": [3.6093, 3.5198, 3.4078] }
       },
-      "classification": "bounds improved from 0.6464 to 0.0272 max-absolute difference; volume/boolean tessellation remains primary topology blocker"
+      "classification": "upstream dynamic-triangulation surface is exact; final volume/boolean tessellation remains the topology blocker with 0.0359 max-absolute bounds difference"
     }
   ]
 }

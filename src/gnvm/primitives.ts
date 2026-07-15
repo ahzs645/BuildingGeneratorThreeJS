@@ -181,45 +181,89 @@ export function meshLine(count: number, start: Vec3, offset: Vec3): Geometry {
 /** Welded icosphere matching Blender's subdivision counts (12/20, 42/80, ...). */
 export function meshIcoSphere(radius = 1, subdivisions = 2): Geometry {
   const m = new Mesh();
-  const phi = (1 + Math.sqrt(5)) / 2;
+  // Blender's BMesh primitive uses these historical seed coordinates, then
+  // cuts every original edge into 2^(subdivisions-1) linear segments and
+  // projects the resulting triangular grid onto the sphere. Recursively
+  // normalizing midpoints produces the same counts but a different sampling
+  // (up to ~0.023 radius units at level 4), which becomes visible to Position-
+  // driven textures and displacement.
   const seed: Vec3[] = [
-    [-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0],
-    [0, -1, phi], [0, 1, phi], [0, -1, -phi], [0, 1, -phi],
-    [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1],
+    [0, 0, -200],
+    [144.72, -105.144, -89.443],
+    [-55.277, -170.128, -89.443],
+    [-178.885, 0, -89.443],
+    [-55.277, 170.128, -89.443],
+    [144.72, 105.144, -89.443],
+    [55.277, -170.128, 89.443],
+    [-144.72, -105.144, 89.443],
+    [-144.72, 105.144, 89.443],
+    [55.277, 170.128, 89.443],
+    [178.885, 0, 89.443],
+    [0, 0, 200],
   ];
-  m.positions = seed.map((point) => {
-    const length = Math.hypot(point[0], point[1], point[2]);
-    return [point[0] / length, point[1] / length, point[2] / length] as Vec3;
-  });
-  m.faces = [
-    [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
-    [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
-    [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
-    [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1],
+  const seedFaces = [
+    [0, 1, 2], [1, 0, 5], [0, 2, 3], [0, 3, 4], [0, 4, 5],
+    [1, 5, 10], [2, 1, 6], [3, 2, 7], [4, 3, 8], [5, 4, 9],
+    [1, 10, 6], [2, 6, 7], [3, 7, 8], [4, 8, 9], [5, 9, 10],
+    [6, 10, 11], [7, 6, 11], [8, 7, 11], [9, 8, 11], [10, 9, 11],
   ];
-  const levels = Math.max(1, Math.min(8, Math.floor(subdivisions)));
-  for (let level = 1; level < levels; level++) {
-    const midpointCache = new Map<string, number>();
-    const midpoint = (a: number, b: number): number => {
-      const key = a < b ? `${a}_${b}` : `${b}_${a}`;
-      const cached = midpointCache.get(key);
-      if (cached !== undefined) return cached;
-      const pa = m.positions[a], pb = m.positions[b];
-      const point: Vec3 = [(pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2, (pa[2] + pb[2]) / 2];
-      const length = Math.hypot(point[0], point[1], point[2]);
-      const index = m.positions.length;
-      m.positions.push([point[0] / length, point[1] / length, point[2] / length]);
-      midpointCache.set(key, index);
-      return index;
-    };
-    const faces: number[][] = [];
-    for (const [a, b, c] of m.faces) {
-      const ab = midpoint(a, b), bc = midpoint(b, c), ca = midpoint(c, a);
-      faces.push([a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]);
+  const f = Math.fround;
+  const level = Math.max(1, Math.min(10, Math.floor(subdivisions)));
+  const frequency = 1 << (level - 1);
+  const outputRadius = f(Math.abs(radius));
+  const vertexCache = new Map<string, number>();
+  const keyFor = (vertices: number[], weights: number[]) => vertices
+    .map((vertex, index) => [vertex, weights[index]] as const)
+    .filter((entry) => entry[1] !== 0)
+    .sort((a, b) => a[0] - b[0])
+    .map((entry) => `${entry[0]}:${entry[1]}`)
+    .join("|");
+  const project = (vertices: number[], weights: number[]): Vec3 => {
+    if (outputRadius === 0) return [0, 0, 0];
+    const point: Vec3 = [0, 0, 0];
+    for (let axis = 0; axis < 3; axis++) {
+      let value = f(f(seed[vertices[0]][axis]) * f(weights[0]));
+      value = f(value + f(f(seed[vertices[1]][axis]) * f(weights[1])));
+      value = f(value + f(f(seed[vertices[2]][axis]) * f(weights[2])));
+      point[axis] = f(value / frequency);
     }
-    m.faces = faces;
+    let lengthSquared = f(f(point[0] * point[0]) + f(point[1] * point[1]));
+    lengthSquared = f(lengthSquared + f(point[2] * point[2]));
+    const length = f(Math.sqrt(lengthSquared));
+    return length === 0 ? [0, 0, 0] : [
+      f(f(point[0] / length) * outputRadius),
+      f(f(point[1] / length) * outputRadius),
+      f(f(point[2] / length) * outputRadius),
+    ];
+  };
+  const vertex = (vertices: number[], weights: number[]) => {
+    const key = keyFor(vertices, weights);
+    const cached = vertexCache.get(key);
+    if (cached !== undefined) return cached;
+    const index = m.positions.length;
+    m.positions.push(project(vertices, weights));
+    vertexCache.set(key, index);
+    return index;
+  };
+  // Keep Blender's twelve seed vertices first; Index fields can observe this.
+  for (let index = 0; index < seed.length; index++) {
+    const weights = [frequency, 0, 0];
+    vertexCache.set(keyFor([index, index, index], weights), m.positions.length);
+    m.positions.push(project([index, index, index], weights));
   }
-  m.positions = m.positions.map((point) => [point[0] * radius, point[1] * radius, point[2] * radius]);
+  for (const face of seedFaces) {
+    const grid: number[][] = [];
+    for (let i = 0; i <= frequency; i++) {
+      grid[i] = [];
+      for (let j = 0; j <= frequency - i; j++) {
+        grid[i][j] = vertex(face, [frequency - i - j, i, j]);
+      }
+    }
+    for (let i = 0; i < frequency; i++) for (let j = 0; j < frequency - i; j++) {
+      m.faces.push([grid[i][j], grid[i + 1][j], grid[i][j + 1]]);
+      if (i + j < frequency - 1) m.faces.push([grid[i + 1][j], grid[i + 1][j + 1], grid[i][j + 1]]);
+    }
+  }
   m.faceMaterial = m.faces.map(() => 0);
   m.materialSlots = [null];
   const g = new Geometry();

@@ -1,5 +1,5 @@
 // Geometry-operation handlers.
-import { Field, Vec3, asVec3, asNum, vadd, vdot, vsub } from "../core";
+import { Field, Vec3, asVec3, asNum, vadd } from "../core";
 import { Geometry, Mesh, InstanceRef, buildTopology, inverseTransformPoint, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint, triangulateFaceIndices } from "../geometry";
 import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitives";
 import { reg, EvalAPI, DUMP_CONTEXT } from "../registry";
@@ -687,34 +687,53 @@ function proximityBvh(mesh: Mesh): ProximityBvh | null {
   return result;
 }
 
-function closestTrianglePoint(point: Vec3, triangle: ProximityTriangle): Vec3 {
-  const ab = vsub(triangle.b, triangle.a), ac = vsub(triangle.c, triangle.a), ap = vsub(point, triangle.a);
-  const d1 = vdot(ab, ap), d2 = vdot(ac, ap);
-  if (d1 <= 0 && d2 <= 0) return triangle.a;
-  const bp = vsub(point, triangle.b), d3 = vdot(ab, bp), d4 = vdot(ac, bp);
-  if (d3 >= 0 && d4 <= d3) return triangle.b;
-  const vc = d1 * d4 - d3 * d2;
+export function closestTrianglePointFloat32(point: Vec3, rawTriangle: Pick<ProximityTriangle, "a" | "b" | "c">): Vec3 {
+  // Blender calls closest_on_tri_to_point_v3 with float mesh coordinates.
+  // Preserve both its region-test order and each intervening float32 result.
+  const f = Math.fround;
+  const vec = (value: Vec3): Vec3 => [f(value[0]), f(value[1]), f(value[2])];
+  const subtract = (a: Vec3, b: Vec3): Vec3 => [f(a[0] - b[0]), f(a[1] - b[1]), f(a[2] - b[2])];
+  const dot = (a: Vec3, b: Vec3) => {
+    let value = f(f(a[0] * b[0]) + f(a[1] * b[1]));
+    value = f(value + f(a[2] * b[2]));
+    return value;
+  };
+  const madd = (a: Vec3, b: Vec3, factor: number): Vec3 => [
+    f(a[0] + f(b[0] * factor)),
+    f(a[1] + f(b[1] * factor)),
+    f(a[2] + f(b[2] * factor)),
+  ];
+  const p = vec(point), a = vec(rawTriangle.a), b = vec(rawTriangle.b), c = vec(rawTriangle.c);
+  const ab = subtract(b, a), ac = subtract(c, a), ap = subtract(p, a);
+  const d1 = dot(ab, ap), d2 = dot(ac, ap);
+  if (d1 <= 0 && d2 <= 0) return a;
+  const bp = subtract(p, b), d3 = dot(ab, bp), d4 = dot(ac, bp);
+  if (d3 >= 0 && d4 <= d3) return b;
+  const vc = f(f(d1 * d4) - f(d3 * d2));
   if (vc <= 0 && d1 >= 0 && d3 <= 0) {
-    const t = d1 / (d1 - d3);
-    return [triangle.a[0] + ab[0] * t, triangle.a[1] + ab[1] * t, triangle.a[2] + ab[2] * t];
+    const squared = f(d1 - d3);
+    return squared === 0 ? a : madd(a, ab, f(d1 / squared));
   }
-  const cp = vsub(point, triangle.c), d5 = vdot(ab, cp), d6 = vdot(ac, cp);
-  if (d6 >= 0 && d5 <= d6) return triangle.c;
-  const vb = d5 * d2 - d1 * d6;
+  const cp = subtract(p, c), d5 = dot(ab, cp), d6 = dot(ac, cp);
+  if (d6 >= 0 && d5 <= d6) return c;
+  const vb = f(f(d5 * d2) - f(d1 * d6));
   if (vb <= 0 && d2 >= 0 && d6 <= 0) {
-    const t = d2 / (d2 - d6);
-    return [triangle.a[0] + ac[0] * t, triangle.a[1] + ac[1] * t, triangle.a[2] + ac[2] * t];
+    const squared = f(d2 - d6);
+    return squared === 0 ? a : madd(a, ac, f(d2 / squared));
   }
-  const va = d3 * d6 - d5 * d4;
-  if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
-    const edge = vsub(triangle.c, triangle.b);
-    const t = (d4 - d3) / (d4 - d3 + d5 - d6);
-    return [triangle.b[0] + edge[0] * t, triangle.b[1] + edge[1] * t, triangle.b[2] + edge[2] * t];
+  const va = f(f(d3 * d6) - f(d5 * d4));
+  const d43 = f(d4 - d3), d56 = f(d5 - d6);
+  if (va <= 0 && d43 >= 0 && d56 >= 0) {
+    const squared = f(d43 + d56);
+    if (squared === 0) return b;
+    const edge = subtract(c, b);
+    return madd(b, edge, f(d43 / squared));
   }
-  const denominator = va + vb + vc;
-  if (Math.abs(denominator) < 1e-20) return triangle.a;
-  const v = vb / denominator, w = vc / denominator;
-  return [triangle.a[0] + ab[0] * v + ac[0] * w, triangle.a[1] + ab[1] * v + ac[1] * w, triangle.a[2] + ab[2] * v + ac[2] * w];
+  const denominator = f(1 / f(f(va + vb) + vc));
+  const v = f(vb * denominator), w = f(vc * denominator);
+  const acw: Vec3 = [f(ac[0] * w), f(ac[1] * w), f(ac[2] * w)];
+  const result = madd(a, ab, v);
+  return [f(result[0] + acw[0]), f(result[1] + acw[1]), f(result[2] + acw[2])];
 }
 
 function boxDistanceSquared(point: Vec3, min: Vec3, max: Vec3): number {
@@ -728,24 +747,36 @@ function boxDistanceSquared(point: Vec3, min: Vec3, max: Vec3): number {
 
 function nearestFacePoint(point: Vec3, root: ProximityBvh | null): { d: number; q: Vec3 } {
   if (!root) return { d: 0, q: [0, 0, 0] };
+  const f = Math.fround;
+  const p: Vec3 = [f(point[0]), f(point[1]), f(point[2])];
+  const distanceSquared = (a: Vec3, b: Vec3) => {
+    const delta: Vec3 = [f(a[0] - b[0]), f(a[1] - b[1]), f(a[2] - b[2])];
+    let value = f(f(delta[0] * delta[0]) + f(delta[1] * delta[1]));
+    value = f(value + f(delta[2] * delta[2]));
+    return value;
+  };
   let bestSquared = Infinity;
   let best: Vec3 = [0, 0, 0];
   const visit = (node: ProximityBvh) => {
-    if (boxDistanceSquared(point, node.min, node.max) >= bestSquared) return;
+    if (boxDistanceSquared(p, node.min, node.max) >= bestSquared) return;
     if (node.triangles) {
       for (const triangle of node.triangles) {
-        const q = closestTrianglePoint(point, triangle);
-        const delta = vsub(point, q), squared = vdot(delta, delta);
+        const q = closestTrianglePointFloat32(p, triangle);
+        const squared = distanceSquared(q, p);
         if (squared < bestSquared) { bestSquared = squared; best = q; }
       }
       return;
     }
     const children = [node.left, node.right].filter((child): child is ProximityBvh => !!child)
-      .sort((a, b) => boxDistanceSquared(point, a.min, a.max) - boxDistanceSquared(point, b.min, b.max));
+      .sort((a, b) => boxDistanceSquared(p, a.min, a.max) - boxDistanceSquared(p, b.min, b.max));
     for (const child of children) visit(child);
   };
   visit(root);
-  return { d: Math.sqrt(bestSquared), q: best };
+  return { d: f(Math.sqrt(bestSquared)), q: best };
+}
+
+export function nearestFacePointFloat32(point: Vec3, mesh: Mesh): { d: number; q: Vec3 } {
+  return nearestFacePoint(point, proximityBvh(mesh));
 }
 
 export function nearestEdgePointFloat32(point: Vec3, segments: [Vec3, Vec3][]): { d: number; q: Vec3 } {

@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { nearestEdgePointFloat32 } from "./nodes/geometry";
+import { Mesh, triangulateFaceIndices } from "./geometry";
+import { closestTrianglePointFloat32, nearestEdgePointFloat32 } from "./nodes/geometry";
 import { blenderMergeTargets } from "./nodes/meshops";
-import { meshGrid } from "./primitives";
+import { meshGrid, meshIcoSphere } from "./primitives";
 
 test("Mesh Grid preserves Blender float32 step and X-major vertex order", () => {
   const positions = meshGrid(313.1252193450928, 287.75, 4, 3).mesh?.positions;
@@ -36,6 +37,32 @@ test("Geometry Proximity uses Blender float32 closest-edge arithmetic", () => {
     d: 5.726995944976807,
     q: [72.19184112548828, 21.81319236755371, 2.023311138153076],
   });
+});
+
+test("face proximity follows Blender float32 triangle projection", () => {
+  const position = closestTrianglePointFloat32(
+    [0.37, -0.21, 0.84],
+    { a: [-0.4, 0.2, 0.1], b: [1.3, -0.6, 0.3], c: [0.1, 1.1, -0.8] },
+  );
+
+  assert.deepEqual(position, [0.44999995827674866, -0.20000000298023224, 0.20000001788139343]);
+});
+
+test("quad tessellation uses Blender's stable 0-2 diagonal", () => {
+  const mesh = new Mesh();
+  mesh.positions = [[0, 0, 0], [1, 0, 0], [1, 1, 0.1], [0, 1, 0]];
+
+  assert.deepEqual(triangulateFaceIndices(mesh, [0, 1, 2, 3]), [[0, 1, 2], [0, 2, 3]]);
+});
+
+test("Ico Sphere uses Blender's BMesh seed and projected grid", () => {
+  const mesh = meshIcoSphere(1, 4).mesh!;
+
+  assert.equal(mesh.positions.length, 642);
+  assert.equal(mesh.faces.length, 1280);
+  assert.deepEqual(mesh.positions[0], [0, 0, -1]);
+  assert.ok(mesh.positions.some((position) => position.every((value, axis) =>
+    Math.abs(value - [-0.2579365074634552, -0.7938604354858398, -0.5506852865219116][axis]) < 1e-7)));
 });
 
 test("Merge by Distance keeps Blender's index-ordered representative targets", () => {
