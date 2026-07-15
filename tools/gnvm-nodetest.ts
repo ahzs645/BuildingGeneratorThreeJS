@@ -886,6 +886,24 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Mix RGBA exposes Result_Color", approx(mixed.value as number[], [1, 2, 3]));
 }
 
+// Blender evaluates Vector Mix as separately rounded float32 weighted products.
+// A reversed edge can therefore land one ULP away from its forward orientation.
+{
+  const a = 130.2687073, b = 135.4019012;
+  const va = 0.5092515945, vb = 0.6774517298, threshold = 0.55517578125;
+  const forwardFactor = (threshold - va) / (vb - va);
+  const reverseFactor = (threshold - vb) / (va - vb);
+  const forward = runNode("ShaderNodeMix", {
+    Factor_Float: forwardFactor, A_Vector: [a, 0, 0], B_Vector: [b, 0, 0],
+  }, { data_type: "VECTOR", clamp_factor: true }).Result_Vector as Field;
+  const reverse = runNode("ShaderNodeMix", {
+    Factor_Float: reverseFactor, A_Vector: [b, 0, 0], B_Vector: [a, 0, 0],
+  }, { data_type: "VECTOR", clamp_factor: true }).Result_Vector as Field;
+  check("Vector Mix preserves Blender float32 edge orientation",
+    (forward.value as Vec3)[0] === 131.67022705078125
+    && (reverse.value as Vec3)[0] === 131.6702423095703);
+}
+
 // (I2) MenuSwitch: string menu selects the matching enum item
 {
   const out = runNode(

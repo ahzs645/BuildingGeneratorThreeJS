@@ -35,6 +35,23 @@ if probe_overrides:
         if identifier is None:
             raise KeyError(f"modifier input not found: {name}")
         modifier[identifier] = value
+
+# A deeply nested field can be surfaced through an existing group output before
+# the parent group stores it. This keeps all of the original group inputs and
+# evaluation contexts intact, which is important for field-at-index diagnostics.
+inner_output_links = []
+for remap in json.loads(os.environ.get("NODE_DOJO_PROBE_INNER_OUTPUTS", "[]")):
+    inner_tree = bpy.data.node_groups[remap["group"]]
+    inner_group_output = next(
+        node for node in inner_tree.nodes
+        if node.bl_idname == "NodeGroupOutput" and node.is_active_output
+    )
+    target = inner_group_output.inputs[remap["output"]]
+    source = inner_tree.nodes[remap["node"]].outputs[remap["socket"]]
+    inner_output_links.append((inner_tree, target, target.links[0].from_socket if target.is_linked else None))
+    for link in list(target.links):
+        inner_tree.links.remove(link)
+    inner_tree.links.new(source, target)
 geometry_node, geometry_socket = geometry_spec.split(":", 1)
 field_node, field_socket = field_spec.split(":", 1)
 group_output = next(node for node in tree.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output)
@@ -132,6 +149,11 @@ finally:
             route_tree.links.remove(link)
         if route_original is not None:
             route_tree.links.new(route_original, route_target)
+    for inner_tree, target, inner_original in reversed(inner_output_links):
+        for link in list(target.links):
+            inner_tree.links.remove(link)
+        if inner_original is not None:
+            inner_tree.links.new(inner_original, target)
     for link in list(geometry_output.links):
         tree.links.remove(link)
     if original is not None:

@@ -308,6 +308,15 @@ reg("ShaderNodeMix", (api) => {
   let fac = api.field("Factor_Float");
   if (fac.isConst && fac.value === 0) fac = api.field("Factor"); // fallback socket name
   const lerp = (t: number, a: number, b: number) => a + (clampF ? Math.max(0, Math.min(1, t)) : t) * (b - a);
+  // Blender's vector Mix is evaluated as float32 weighted products rather
+  // than the algebraically equivalent double-precision a + t * (b - a).
+  // The operation order matters for reversed mesh-edge endpoints: the two
+  // orientations can intentionally land one ULP apart before Merge by Distance.
+  const vectorMix = (t: number, a: number, b: number) => {
+    const factor = Math.fround(clampF ? Math.max(0, Math.min(1, t)) : t);
+    const inverse = Math.fround(1 - factor);
+    return Math.fround(Math.fround(inverse * Math.fround(a)) + Math.fround(factor * Math.fround(b)));
+  };
   const out = (result: Field) => ({
     Result: result,
     Result_Float: result,
@@ -319,7 +328,7 @@ reg("ShaderNodeMix", (api) => {
     const aName = dt === "RGBA" ? "A_Color" : dt === "ROTATION" ? "A_Rotation" : "A_Vector";
     const bName = dt === "RGBA" ? "B_Color" : dt === "ROTATION" ? "B_Rotation" : "B_Vector";
     const a = api.field(aName), b = api.field(bName);
-    return out(fieldMap([fac, a, b], (t, x, y) => { const u = asVec3(x), v = asVec3(y), tt = num(t); return [lerp(tt, u[0], v[0]), lerp(tt, u[1], v[1]), lerp(tt, u[2], v[2])] as Vec3; }));
+    return out(fieldMap([fac, a, b], (t, x, y) => { const u = asVec3(x), v = asVec3(y), tt = num(t); return [vectorMix(tt, u[0], v[0]), vectorMix(tt, u[1], v[1]), vectorMix(tt, u[2], v[2])] as Vec3; }));
   }
   const a = api.field("A_Float"), b = api.field("B_Float");
   return out(fieldMap([fac, a, b], (t, x, y) => lerp(num(t), num(x), num(y))));
