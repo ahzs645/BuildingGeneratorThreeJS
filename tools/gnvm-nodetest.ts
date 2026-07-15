@@ -620,6 +620,21 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 {
+  const c = runNode(
+    "GeometryNodeCurveSplineType",
+    { Curve: curve([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], true) },
+    { spline_type: "NURBS" },
+  ).Curve as Geometry;
+  check("SetSplineType cyclic NURBS starts at Blender's second-control span",
+    approx(c.curves[0].points[0], [5 / 6, 1 / 6, 0], 1e-7), JSON.stringify(c.curves[0].points[0]));
+  const tangents = c.curveAttributes.get("__curve_tangent")?.data as Vec3[] | undefined;
+  check("SetSplineType cyclic NURBS rebuilds evaluated tangents",
+    !!tangents && tangents.length === c.curves[0].points.length
+      && !approx(tangents[0], tangents[1], 1e-5),
+    `points=${c.curves[0].points.length} tangents=${tangents?.length ?? 0}`);
+}
+
+{
   const source = curve([[0, 0, 0], [.5, .25, 0], [1, 0, 0]], false);
   const resolved = runNode("GeometryNodeSetSplineResolution", { Geometry: source, Selection: true, Resolution: 12 }).Geometry as Geometry;
   check("Set Spline Resolution preserves imported evaluated samples", resolved.curvePointCount() === 3);
@@ -710,6 +725,16 @@ function meshSignedAreaXY(m: Mesh): number {
   check("CurveToMesh spans rail z 0..2", Math.abs(Math.min(...zs)) < 1e-6 && Math.abs(Math.max(...zs) - 2) < 1e-6);
 }
 
+{
+  const rail = curve([[1, 0, 0], [0, 1, 0], [-1, 0, 0], [0, -1, 0]], true);
+  const profile = curve([[1, 0, 0], [0, 1, 0], [-1, 0, 0], [0, -1, 0]], true);
+  const mesh = (runNode("GeometryNodeCurveToMesh", {
+    Curve: rail, "Profile Curve": profile, "Fill Caps": false, Scale: 1,
+  }).Mesh as Geometry).mesh!;
+  check("CurveToMesh points cyclic planar profile +X outward",
+    approx(mesh.positions[0], [2, 0, 0], 1e-7), JSON.stringify(mesh.positions[0]));
+}
+
 // Blender maps a profile's local +X to the negative transported normal and
 // local +Y to the negative binormal. This intentionally asymmetric case was
 // measured with tools/blender_curve_to_mesh_axes_probe.py.
@@ -763,8 +788,11 @@ function meshSignedAreaXY(m: Mesh): number {
   const profile = curve([[0, 0, 0], [1, 0, 0]], false);
   const mesh = (runNode("GeometryNodeCurveToMesh", { Curve: rail, "Profile Curve": profile, "Fill Caps": false }).Mesh as Geometry).mesh!;
   check(
-    "CurveToMesh sweeps positive planar profiles toward loop interior",
-    mesh.positions.every((point) => point[0] >= -1e-6 && point[0] <= 4 + 1e-6 && point[1] >= -1e-6 && point[1] <= 3 + 1e-6),
+    "CurveToMesh sweeps positive planar profiles toward loop exterior",
+    Math.min(...mesh.positions.map((point) => point[0])) < -.7
+      && Math.max(...mesh.positions.map((point) => point[0])) > 4.7
+      && Math.min(...mesh.positions.map((point) => point[1])) < -.7
+      && Math.max(...mesh.positions.map((point) => point[1])) > 3.7,
     JSON.stringify(mesh.positions),
   );
 }
@@ -1115,6 +1143,18 @@ function meshSignedAreaXY(m: Mesh): number {
   const out = runNode("GeometryNodeScaleElements", { Geometry: g, Selection: true, Scale: 2, Center: [0, 0, 0], "Scale Mode": "Uniform", Axis: [1, 0, 0] }, { domain: "FACE" }).Geometry as Geometry;
   const p = out.mesh!.positions;
   check("ScaleElements quad scale 2 about center", approx(p[0], [-0.5, -0.5, 0]) && approx(p[2], [1.5, 1.5, 0]), JSON.stringify(p));
+}
+
+{
+  const g = new Geometry();
+  g.mesh = new Mesh();
+  g.mesh.positions = [[0, 0, 2], [-1, -1, 0], [1, -1, 0], [1, 1, 0], [-1, 1, 0]];
+  g.mesh.faces = [[0, 1, 2], [0, 2, 3], [0, 3, 4], [0, 4, 1], [1, 4, 3, 2]];
+  const out = runNode("GeometryNodeScaleElements", {
+    Geometry: g, Selection: true, Scale: 2, Center: [0, 0, 0], "Scale Mode": "Uniform", Axis: [1, 0, 0],
+  }, { domain: "FACE" }).Geometry as Geometry;
+  check("ScaleElements centers connected fans by element centers",
+    approx(out.mesh!.positions[0], [0, 0, 52 / 15], 1e-7), JSON.stringify(out.mesh!.positions[0]));
 }
 
 // (I6) AttributeStatistic: scalar mean/min/max on a known POINT attribute

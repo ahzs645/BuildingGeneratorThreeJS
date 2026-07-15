@@ -62,6 +62,24 @@ test("pairwise Boolean reconstructs warped source polygons and FACE data", async
   assert.equal(getManifoldFaceProvenance(reconstructed), null, "provenance must remain internal to the raw mesh");
 });
 
+test("pairwise Boolean removes internal fan-diagonal intersection vertices", async () => {
+  await ensureManifold();
+  const source = box([0, 0, 0], [1, 1, 1], 0.2, "source");
+  const cutter = box([-1, -1, -1], [0.5, 2, 2], 0, "cutter");
+  const raw = manifoldBoolean(source, cutter, "INTERSECT");
+  assert.ok(raw);
+  assert.equal(raw.positions.length, 9, "Manifold exposes the warped top face's fan-diagonal crossing");
+
+  const reconstructed = dissolveCoplanarFacesForTest(raw, [source, cutter]);
+  assert.equal(reconstructed.positions.length, 8);
+  assert.equal(reconstructed.faces.length, 6);
+  assert.ok(reconstructed.faces.every((face) => face.length === 4));
+  assert.ok(!reconstructed.positions.some((point) =>
+    Math.abs(point[0] - 0.5) < 1e-6
+    && Math.abs(point[1] - 0.5) < 1e-6
+    && Math.abs(point[2] - 1.1) < 1e-6));
+});
+
 test("batch Boolean assigns non-colliding face IDs across operands", async () => {
   await ensureManifold();
   const meshes = [

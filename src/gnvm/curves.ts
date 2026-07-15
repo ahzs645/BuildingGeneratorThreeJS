@@ -285,13 +285,15 @@ export function sweep(rail: Spline, profile: Spline, fillCaps: boolean, scales?:
   for (let i = 0; i < nr; i++) {
     const frame = frames[i];
     const normal = horizontalPlanar
-      ? vnorm([-frame.tangent[1] * planarOrientation, frame.tangent[0] * planarOrientation, 0])
+      ? vnorm([frame.tangent[1] * planarOrientation, -frame.tangent[0] * planarOrientation, 0])
       : tiltedPlanarNormal
         ? vscale(vnorm(vcross(tiltedPlanarNormal, frame.tangent)), planarOrientation)
       : planarOpen && Math.abs(planarTurn) > 1e-6
         ? frame.normal
         : vscale(frame.normal, -1);
-    const binormal = tiltedPlanarNormal ? tiltedPlanarNormal : vscale(frame.binormal, -1);
+    const binormal = horizontalPlanar
+      ? vnorm(vcross(frame.tangent, normal))
+      : tiltedPlanarNormal ? tiltedPlanarNormal : vscale(frame.binormal, -1);
     const s = scales?.[i] ?? 1;
     for (let j = 0; j < np; j++) {
       const px = pp[j][0] * s, py = pp[j][1] * s;

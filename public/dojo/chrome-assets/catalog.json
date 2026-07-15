@@ -445,7 +445,7 @@
     "dump": "dojo/chrome-assets/chain-link-spikey/dump.json",
     "reference": "dojo/references/chrome-assets/chain-link-spikey.png",
     "blenderStats": { "verts": 2867, "faces": 5376 },
-    "note": "Visual near-parity: vector Map Range now builds the authored Marching Cubes grid, cyclic curve tangents orient all four spikes outward, and Blender's origin-based collapsed-apex Cone is reproduced. Browser output is 2,745 / 4,896; the remaining Mesh-to-SDF sampling difference shortens the X bounds by up to 0.559 units.",
+    "note": "Exact Blender topology at 2,867 / 5,376 with local bounds within 0.0001 units. Cyclic NURBS span order and evaluated tangents reproduce the authored 9,324-point tube, while element-center Scale Elements weighting aligns all four cone fans and the downstream Marching Cubes surface.",
     "controls": []
   },
   {
@@ -911,7 +911,7 @@
     "reference": "dojo/references/math-clay/lorenze-007.png",
     "blenderStats": { "verts": 16249, "faces": 15459 },
     "localSpace": true,
-    "note": "OpenVDB edge groups and native Boolean face provenance bring the rounded curl to 17,137 vertices / 15,481 polygons versus Blender's 16,249 / 15,459, only 22 polygons apart with bounds within 0.0007 units.",
+    "note": "Exact Blender topology at 16,249 vertices / 15,459 polygons, including the complete face-size histogram and closed-manifold incidence. Polygon-level Boolean cleanup removes intersection vertices that lie only on Manifold's internal input fan diagonals; bounds remain within 0.0007 units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 3 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
@@ -1001,7 +1001,7 @@
     "reference": "dojo/references/math-clay/tpms-016.png",
     "blenderStats": { "verts": 87099, "faces": 85390 },
     "localSpace": true,
-    "note": "Blender-equivalent float32 Stepped Map Range restores the cross-section lattice field before its hard-sphere cut: browser 87,226 / 85,323 versus Blender 87,099 / 85,390, with bounds within 0.0013 units.",
+    "note": "Blender-equivalent float32 Stepped Map Range and polygon-level Boolean cleanup bring the cross-section lattice to 87,016 / 85,312 versus Blender 87,099 / 85,390, with bounds within 0.0013 units. Its remaining gap starts before the Boolean in a field mesh that is 40 vertices and faces above Blender.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.0638302564620972 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.4, "max": 1.5, "step": 0.02, "value": 0.4216800034046173 },
@@ -1016,7 +1016,7 @@
     "reference": "dojo/references/math-clay/tpms-018.png",
     "blenderStats": { "verts": 14190, "faces": 13558 },
     "localSpace": true,
-    "note": "The twin-bowl Volume to Mesh stage is exact at 22,932 vertices / 22,938 quads. Native Boolean face provenance reconstructs the cut to 14,858 vertices / 13,558 polygons, matching Blender's polygon count; the remaining 668-vertex delta is FLOAT-solver partitioning, and final bounds align within 0.0002 units.",
+    "note": "Exact Blender topology at 14,190 vertices / 13,558 polygons, including the complete face-size histogram and closed-manifold incidence. Its pre-Boolean Volume to Mesh stage is also exact at 22,932 / 22,938, and final bounds align within 0.0002 units.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.0638302564620972 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },

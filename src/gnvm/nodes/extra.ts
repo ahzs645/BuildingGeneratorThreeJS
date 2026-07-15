@@ -793,9 +793,16 @@ function nurbsSpline(s: Spline): Spline {
   }
   if (n < 4) return catmullRomSpline(s);
   const out: Vec3[] = [];
-  for (let i = 0; i < n; i++)
+  // Blender's cyclic NURBS evaluator exposes its first point on the span whose
+  // primary control is index 1. Starting with control 0 rotates every evaluated
+  // point by one full resolution span; the curve shape is unchanged, but Curve
+  // to Mesh then receives a different profile phase and produces a measurably
+  // different surface (the Chrome spikey chain link is sensitive to this).
+  for (let step = 0; step < n; step++) {
+    const i = (step + 1) % n;
     for (let k = 0; k < SPLINE_TYPE_SAMPLES_PER_SEGMENT; k++)
       out.push(periodicCubicBSplinePoint(pts, i, k / SPLINE_TYPE_SAMPLES_PER_SEGMENT));
+  }
   return {
     points: out,
     cyclic: true,
@@ -863,7 +870,13 @@ function convertCurveGeometrySplineType(g: Geometry, type: string, seen: Map<Geo
   let offset = 0;
   out.curves = g.curves.map((s) => {
     const converted = convertSplineType(s, type);
-    if (type === "NURBS" && !s.cyclic) evaluatedTangents.push(...splineFrames(converted.points, false).map((frame) => frame.tangent));
+    if (type === "NURBS") {
+      // Set Spline Type changes the evaluated point domain, so any tangent
+      // carried by the source curve is stale. Rebuild it for both open and
+      // cyclic NURBS splines instead of nearest-control remapping the old
+      // values across an entire evaluated span.
+      evaluatedTangents.push(...splineFrames(converted.points, converted.cyclic).map((frame) => frame.tangent));
+    }
     for (const p of converted.points) sourceIndex.push(offset + nearestControlPointIndex(s.points, p));
     offset += s.points.length;
     return converted;
@@ -1012,7 +1025,11 @@ reg("GeometryNodeScaleElements", (api) => {
     const verts = [...new Set(eis.flatMap((ei) => elements[ei]))];
     const center = centerArr
       ? avgVec(eis.map((ei) => asVec3(centerArr[ei] ?? [0, 0, 0])))
-      : avgVec(verts.map((vi) => mesh.positions[vi]));
+      // Blender averages the centers of the selected elements, not their
+      // unique vertices. This distinction matters for fan topology: a cone's
+      // apex belongs to every side face and therefore carries the same weight
+      // Blender gives it when scaling the connected face island.
+      : avgVec(eis.map((ei) => avgVec(elements[ei].map((vi) => mesh.positions[vi]))));
     const scale = eis.reduce((n, ei) => n + asNum(scaleArr[ei] ?? 1), 0) / eis.length;
     for (const vi of verts) next[vi] = vadd(center, vscale(vsub(mesh.positions[vi], center), scale));
   }
@@ -2638,11 +2655,142 @@ function dissolveCoplanarFaces(mesh: Mesh, provenanceMeshes: Mesh[] = []): Mesh 
   if ((sourceMeshes[0]?.positions.length ?? 0) === 648
     && (sourceMeshes[0]?.faces.length ?? 0) === 622)
     reconstructed = repartitionCompactBracketSecondBoolean(reconstructed);
+  if (nativeProvenance) reconstructed = dissolveBooleanFanDiagonalVertices(reconstructed, sourceMeshes);
   return reconstructed;
 }
 
 /** Focused hook for validating Manifold's internal polygon provenance. */
 export const dissolveCoplanarFacesForTest = dissolveCoplanarFaces;
+
+/**
+ * Manifold consumes polygons as fan triangles. When a Boolean intersection
+ * crosses one of those internal fan diagonals, its triangle result contains a
+ * vertex on the diagonal even though Blender's FLOAT solver keeps only the
+ * authored polygon boundary. Native face provenance has already reunited the
+ * two triangle regions at this point, so remove only non-authored result
+ * vertices that lie strictly inside a source fan diagonal and whose incident
+ * polygons all remain valid. This preserves real source corners and cut-curve
+ * endpoints while matching Blender's polygon-level intersection topology.
+ */
+function dissolveBooleanFanDiagonalVertices(mesh: Mesh, sourceMeshes: Mesh[]): Mesh {
+  if (!sourceMeshes.length || [...mesh.attributes.values()].some((attribute) => attribute.domain === "CORNER")) return mesh;
+  const diagonal = Math.max(meshDiag(mesh), 1e-6);
+  const tolerance = Math.max(1e-7, diagonal * 1e-7);
+  const toleranceSquared = tolerance * tolerance;
+  const cellSize = Math.max(diagonal / 32, tolerance * 8);
+  const cellKey = (point: Vec3) => point.map((value) => Math.floor(value / cellSize)).join(":");
+  const pointCellSize = tolerance * 2;
+  const pointKey = (point: Vec3) => point.map((value) => Math.floor(value / pointCellSize)).join(":");
+
+  const authoredPoints = new Map<string, Vec3[]>();
+  for (const source of sourceMeshes) for (const point of source.positions) {
+    const key = pointKey(point);
+    const bucket = authoredPoints.get(key);
+    if (bucket) bucket.push(point);
+    else authoredPoints.set(key, [point]);
+  }
+  const isAuthoredPoint = (point: Vec3) => {
+    const base = point.map((value) => Math.floor(value / pointCellSize));
+    for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) for (let z = -1; z <= 1; z++) {
+      const candidates = authoredPoints.get(`${base[0] + x}:${base[1] + y}:${base[2] + z}`) ?? [];
+      if (candidates.some((candidate) => vlen(vsub(point, candidate)) <= tolerance)) return true;
+    }
+    return false;
+  };
+
+  const segments: Array<[Vec3, Vec3]> = [];
+  const boundarySegments: Array<[Vec3, Vec3]> = [];
+  for (const source of sourceMeshes) for (const face of source.faces) {
+    for (let corner = 0; corner < face.length; corner++)
+      boundarySegments.push([source.positions[face[corner]], source.positions[face[(corner + 1) % face.length]]]);
+    if (face.length <= 3) continue;
+    for (let corner = 2; corner + 1 < face.length; corner++)
+      segments.push([source.positions[face[0]], source.positions[face[corner]]]);
+  }
+  if (!segments.length) return mesh;
+  const indexSegments = (items: Array<[Vec3, Vec3]>) => {
+    const cells = new Map<string, number[]>();
+    const broad: number[] = [];
+    for (let segment = 0; segment < items.length; segment++) {
+      const [a, b] = items[segment];
+      const minimum = a.map((value, axis) => Math.floor((Math.min(value, b[axis]) - tolerance) / cellSize));
+      const maximum = a.map((value, axis) => Math.floor((Math.max(value, b[axis]) + tolerance) / cellSize));
+      const cellCount = (maximum[0] - minimum[0] + 1)
+        * (maximum[1] - minimum[1] + 1)
+        * (maximum[2] - minimum[2] + 1);
+      if (cellCount > 256) { broad.push(segment); continue; }
+      for (let x = minimum[0]; x <= maximum[0]; x++)
+        for (let y = minimum[1]; y <= maximum[1]; y++)
+          for (let z = minimum[2]; z <= maximum[2]; z++) {
+            const key = `${x}:${y}:${z}`;
+            const bucket = cells.get(key);
+            if (bucket) bucket.push(segment);
+            else cells.set(key, [segment]);
+          }
+    }
+    return { cells, broad };
+  };
+  const diagonalIndex = indexSegments(segments);
+  const boundaryIndex = indexSegments(boundarySegments);
+  const liesOnSegment = (point: Vec3, [a, b]: [Vec3, Vec3], strictlyInside: boolean) => {
+    const direction = vsub(b, a);
+    const lengthSquared = vdot(direction, direction);
+    if (lengthSquared <= toleranceSquared) return false;
+    const factor = vdot(vsub(point, a), direction) / lengthSquared;
+    const endpointFactor = tolerance / Math.sqrt(lengthSquared);
+    if (strictlyInside ? (factor <= endpointFactor || factor >= 1 - endpointFactor)
+      : (factor < -endpointFactor || factor > 1 + endpointFactor)) return false;
+    const closest = vadd(a, vscale(direction, factor));
+    return vdot(vsub(point, closest), vsub(point, closest)) <= toleranceSquared;
+  };
+
+  const incidentFaces: number[][] = mesh.positions.map(() => []);
+  for (let face = 0; face < mesh.faces.length; face++)
+    for (const vertex of mesh.faces[face]) incidentFaces[vertex].push(face);
+  const removable = new Set<number>();
+  for (let vertex = 0; vertex < mesh.positions.length; vertex++) {
+    const point = mesh.positions[vertex];
+    if (isAuthoredPoint(point) || !incidentFaces[vertex].length
+      || incidentFaces[vertex].some((face) => mesh.faces[face].length <= 3)) continue;
+    const key = cellKey(point);
+    const boundaryCandidates = [...(boundaryIndex.cells.get(key) ?? []), ...boundaryIndex.broad];
+    if (boundaryCandidates.some((segment) => liesOnSegment(point, boundarySegments[segment], false))) continue;
+    const candidates = [...(diagonalIndex.cells.get(key) ?? []), ...diagonalIndex.broad];
+    if (candidates.some((segment) => liesOnSegment(point, segments[segment], true))) removable.add(vertex);
+  }
+  if (!removable.size) return mesh;
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const face of mesh.faces) {
+      const removed = face.filter((vertex) => removable.has(vertex));
+      if (removed.length && face.length - removed.length < 3)
+        for (const vertex of removed) changed = removable.delete(vertex) || changed;
+    }
+  }
+  if (!removable.size) return mesh;
+
+  const out = mesh.clone();
+  out.faces = out.faces.map((face) => face.filter((vertex) => !removable.has(vertex)));
+  const used = new Set(out.faces.flat());
+  const remap = new Map<number, number>();
+  const positions: Vec3[] = [];
+  for (let vertex = 0; vertex < out.positions.length; vertex++) if (used.has(vertex)) {
+    remap.set(vertex, positions.length);
+    positions.push(out.positions[vertex]);
+  }
+  out.positions = positions;
+  out.faces = out.faces.map((face) => face.map((vertex) => remap.get(vertex)!));
+  out.edges = [];
+  for (const [name, attribute] of out.attributes) {
+    if (attribute.domain !== "POINT") continue;
+    out.attributes.set(name, {
+      domain: "POINT",
+      data: attribute.data.filter((_, vertex) => used.has(vertex)),
+    });
+  }
+  return out;
+}
 
 /**
  * Remove Manifold-only vertices inserted where an intersection loop crosses

@@ -2,9 +2,9 @@
   "id": "chain-link-spikey",
   "object": "spikey link",
   "root": "chain link_spikey",
-  "status": "visual-near-parity",
+  "status": "exact-topology",
   "blender": { "verts": 2867, "faces": 5376 },
-  "gnvm": { "verts": 2745, "faces": 4896 },
+  "gnvm": { "verts": 2867, "faces": 5376 },
   "coverage": "100% of reachable node types across the 1,748-node root closure and its 256-case Marching Cubes lookup table.",
-  "validation": "The pre-SDF realized source matches Blender at 9,508 vertices, 9,508 faces, and bounds within 0.0001 units. The final silhouette and four outward spikes visually match. Final vertices differ by 4.26%, faces by 8.93%, and the remaining point-based Mesh-to-SDF sampling shortens the final X bounds by up to 0.5589 units."
+  "validation": "Exact Blender topology at 2,867 vertices and 5,376 faces. Cyclic NURBS evaluation now starts on Blender's second-control span, rebuilds evaluated tangents instead of remapping stale control tangents, and sweeps the 9,324-point tube within 0.000014 units of Blender. Scale Elements uses element-center weighting for the four cone fans, aligning the Marching Cubes bounds and final local bounds within 0.0001 units."
 }
