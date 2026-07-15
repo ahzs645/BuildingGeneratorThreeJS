@@ -1,6 +1,7 @@
 // Per-node test harness for the GN-VM (inspired by ThreeGN's per-node tests, but
 // built against our EvalAPI directly — no graph machinery needed).
 // Run: npx tsx tools/gnvm-nodetest.ts
+import { readFileSync } from "node:fs";
 import { Field, Vec3 } from "../src/gnvm/core";
 import { Geometry, Mesh, orientClosedSurface, realizeInstances, toTriSoup, topologyOf, transformPoint, triangulateFaceIndices } from "../src/gnvm/geometry";
 import { meshEdgesToChains, resampleSpline, splineFrames } from "../src/gnvm/curves";
@@ -55,6 +56,13 @@ const curve = (points: Vec3[], cyclic: boolean): Geometry =>
 
 const curves = (items: { points: Vec3[]; cyclic: boolean }[]): Geometry =>
   Object.assign(new Geometry(), { curves: items });
+
+const courseCurveChainReference = JSON.parse(readFileSync(
+  new URL("./course-curve-chain-blender-reference.json", import.meta.url), "utf8",
+)) as {
+  parameters: { width: number; height: number; radius: number; count: number; length: number };
+  stages: Record<string, { count: number; bounds: { min: Vec3; max: Vec3 }; samples: { index: number; position: Vec3 }[] }>;
+};
 
 const box = (min: Vec3, max: Vec3): Geometry => {
   const m = new Mesh();
@@ -618,6 +626,42 @@ function meshSignedAreaXY(m: Mesh): number {
   source.curveAttributes.set("source", { domain: "POINT", data: [1, 2, 3] });
   const out = runNode("GeometryNodeFilletCurve", { Curve: source, Radius: 0.5, Count: 0 }).Curve as Geometry;
   check("Fillet Curve count zero preserves the source curve", out.curvePointCount() === 3 && out.curveAttributes.get("source")?.data[2] === 3, `got ${out.curvePointCount()} points`);
+}
+
+// Blender 5.1.2 micro-reference for the Intro Node Panels' rounded lower-edge
+// construction. This guards the shared primitive/type/fillet/resample semantics
+// independently of the 1,130-node asset graph.
+{
+  const parameters = courseCurveChainReference.parameters;
+  const quadrilateral = runNode("GeometryNodeCurvePrimitiveQuadrilateral", {
+    Width: parameters.width, Height: parameters.height,
+  }, { mode: "RECTANGLE" }).Curve as Geometry;
+  const bezier = runNode("GeometryNodeCurveSplineType", {
+    Curve: quadrilateral,
+  }, { spline_type: "BEZIER" }).Curve as Geometry;
+  const fillet = runNode("GeometryNodeFilletCurve", {
+    Curve: bezier, Radius: parameters.radius, Count: parameters.count, "Limit Radius": false, Mode: "Poly" as any,
+  }).Curve as Geometry;
+  const resample = runNode("GeometryNodeResampleCurve", {
+    Curve: fillet, Mode: "Length" as any, Count: 10, Length: parameters.length,
+  }).Curve as Geometry;
+  const stages: Record<string, Geometry> = { quadrilateral, bezier, fillet, resample };
+  for (const [name, geometry] of Object.entries(stages)) {
+    const reference = courseCurveChainReference.stages[name];
+    const points = geometry.curves.flatMap((spline) => spline.points);
+    const bounds = {
+      min: [0, 1, 2].map((axis) => Math.min(...points.map((point) => point[axis]))) as Vec3,
+      max: [0, 1, 2].map((axis) => Math.max(...points.map((point) => point[axis]))) as Vec3,
+    };
+    const sampleError = Math.max(...reference.samples.flatMap((sample) =>
+      points[sample.index].map((value, axis) => Math.abs(value - sample.position[axis]))));
+    check(`Course curve chain ${name} matches Blender coordinates`,
+      points.length === reference.count
+        && approx(bounds.min, reference.bounds.min, 2e-6)
+        && approx(bounds.max, reference.bounds.max, 2e-6)
+        && sampleError < 2e-6,
+      `points=${points.length}/${reference.count} sampleError=${sampleError} bounds=${JSON.stringify(bounds)}`);
+  }
 }
 
 // (D2) Set Spline Type NURBS: open cubic smoothing approximates interior controls
