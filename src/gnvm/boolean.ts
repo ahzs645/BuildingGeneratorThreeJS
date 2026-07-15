@@ -160,6 +160,18 @@ function boxToManifold(box: { min: Vec3; max: Vec3 }): any | null {
   }
 }
 
+/**
+ * Manifold still emits a freshly triangulated mesh when a DIFFERENCE operand
+ * does not touch the source solid. Preserve the authored polygon topology when
+ * the CSG result has exactly the same solid measures instead.
+ */
+function isMeasurePreservingDifference(source: any, result: any): boolean {
+  if (typeof source.volume !== "function" || typeof result.volume !== "function"
+    || typeof source.surfaceArea !== "function" || typeof result.surfaceArea !== "function") return false;
+  const same = (a: number, b: number) => Math.abs(a - b) <= 1e-10 * Math.max(1, Math.abs(a), Math.abs(b));
+  return same(source.volume(), result.volume()) && same(source.surfaceArea(), result.surfaceArea());
+}
+
 export type BooleanOp = "UNION" | "DIFFERENCE" | "INTERSECT";
 
 /**
@@ -185,6 +197,12 @@ export function manifoldBoolean(a: Mesh, b: Mesh, op: BooleanOp): Mesh | null {
       ma.delete?.();
       mb.delete?.();
       return null;
+    }
+    if (op === "DIFFERENCE" && isMeasurePreservingDifference(ma, result)) {
+      result.delete?.();
+      ma.delete?.();
+      mb.delete?.();
+      return a.clone();
     }
     const outMesh = manifoldGLToMesh(result.getMesh());
     result.delete?.();
@@ -218,6 +236,12 @@ export function manifoldBooleanBox(a: Mesh, box: { min: Vec3; max: Vec3 }, op: B
       ma.delete?.();
       mb.delete?.();
       return null;
+    }
+    if (op === "DIFFERENCE" && isMeasurePreservingDifference(ma, result)) {
+      result.delete?.();
+      ma.delete?.();
+      mb.delete?.();
+      return a.clone();
     }
     const outMesh = manifoldGLToMesh(result.getMesh());
     result.delete?.();

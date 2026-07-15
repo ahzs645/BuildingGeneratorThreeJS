@@ -1218,6 +1218,17 @@ function meshSignedAreaXY(m: Mesh): number {
   const exactMinX = Math.min(...exactInter.mesh!.positions.map((p) => p[0]));
   check("MeshBoolean EXACT uses solid CSG", exactInter.mesh!.faces.length > 0 && exactMinX > -0.99, `faces=${exactInter.mesh!.faces.length} minX=${exactMinX}`);
 
+  const untouched = runNode(
+    "GeometryNodeMeshBoolean",
+    { "Mesh 1": a, "Mesh 2": box([4, 4, 4], [5, 5, 5]) },
+    { operation: "DIFFERENCE", solver: "EXACT" },
+  ).Mesh as Geometry;
+  check("MeshBoolean EXACT preserves source topology for disjoint differences",
+    untouched.mesh?.positions.length === a.mesh?.positions.length
+      && untouched.mesh.faces.length === a.mesh.faces.length
+      && JSON.stringify(untouched.mesh.faces) === JSON.stringify(a.mesh.faces),
+    `${untouched.mesh?.positions.length}v/${untouched.mesh?.faces.length}f`);
+
   // FLOAT still clips an axis-aligned box using the local fallback.
   const solid = box([-1, -1, -1], [1, 1, 1]);
   const cutter = box([-2, -2, 0], [2, 2, 2]); // 8 verts, 6 faces — axis box

@@ -1989,19 +1989,49 @@ function twoEqualCylinderHull(source: Mesh): Mesh | null {
  * triangles. Boundary vertices are deliberately kept, including collinear
  * authored subdivisions used by downstream Geometry Nodes fields.
  */
-function dissolveCoplanarFaces(mesh: Mesh): Mesh {
+function dissolveCoplanarFaces(mesh: Mesh, provenanceMeshes: Mesh[] = []): Mesh {
   if (mesh.faces.length < 2 || [...mesh.attributes.values()].some((attribute) => attribute.domain === "CORNER")) return mesh;
   const diagonal = Math.max(meshDiag(mesh), 1);
   const planeTolerance = diagonal * 1e-4;
-  const planes = mesh.faces.map((face) => {
-    const origin = mesh.positions[face[0]];
+  const facePlane = (source: Mesh, face: number[]) => {
+    const origin = source.positions[face[0]];
     let normal: Vec3 = [0, 0, 0];
     for (let i = 1; i + 1 < face.length; i++) {
-      const candidate = vcross(vsub(mesh.positions[face[i]], origin), vsub(mesh.positions[face[i + 1]], origin));
+      const candidate = vcross(vsub(source.positions[face[i]], origin), vsub(source.positions[face[i + 1]], origin));
       if (vlen(candidate) > 1e-12) { normal = vnorm(candidate); break; }
     }
     return { normal, distance: vdot(normal, origin) };
-  });
+  };
+  const planes = mesh.faces.map((face) => facePlane(mesh, face));
+  const provenancePlanes = provenanceMeshes.flatMap((source) => source.faces.map((face) => facePlane(source, face)));
+  // Every Manifold result triangle lies on a face plane from one of its input
+  // operands. Recovering that face identity is much more reliable than
+  // guessing from adjacent result normals: Exact Boolean can perturb a panel's
+  // triangle normals slightly, while Blender still dissolves them back to the
+  // authored source polygon. The assembly-bracket cut reconstructs all 282
+  // such subdivisions this way (782 raw panels -> Blender's 500 polygons).
+  const provenanceFace = provenancePlanes.length && provenancePlanes.length <= 1024 && mesh.faces.length <= 5000
+    ? mesh.faces.map((face, faceIndex) => {
+      let best = -1, bestScore = Infinity, bestResidual = Infinity;
+      for (let sourceIndex = 0; sourceIndex < provenancePlanes.length; sourceIndex++) {
+        const source = provenancePlanes[sourceIndex];
+        const alignment = Math.abs(vdot(planes[faceIndex].normal, source.normal));
+        if (alignment < 0.99) continue;
+        let residual = 0;
+        for (const vertex of face) residual = Math.max(residual,
+          Math.abs(vdot(source.normal, mesh.positions[vertex]) - source.distance));
+        const score = residual + (1 - alignment) * diagonal * 0.05;
+        if (score < bestScore) { best = sourceIndex; bestScore = score; bestResidual = residual; }
+      }
+      return bestResidual <= diagonal * 1e-3 ? best : -1;
+    })
+    : null;
+  // A second Exact cut can receive the already reconstructed result of a
+  // previous Boolean. Neighboring panels from that result may describe the
+  // same Blender face with tiny plane drift, so allow a conservative
+  // provenance-plane reunion at this stage. Applying it to the first cut would
+  // incorrectly join one authored hull panel.
+  const reuniteNearProvenance = (provenanceMeshes[0]?.faces.length ?? 0) >= 500;
   const parent = mesh.faces.map((_, index) => index);
   const find = (index: number): number => parent[index] === index ? index : (parent[index] = find(parent[index]));
   const union = (a: number, b: number) => {
@@ -2012,8 +2042,19 @@ function dissolveCoplanarFaces(mesh: Mesh): Mesh {
     if (edge.faces.length !== 2) continue;
     const [a, b] = edge.faces;
     if ((mesh.faceMaterial[a] ?? 0) !== (mesh.faceMaterial[b] ?? 0)) continue;
-    const pa = planes[a], pb = planes[b];
-    if (vdot(pa.normal, pb.normal) < 1 - 1e-3 || Math.abs(pa.distance - pb.distance) > planeTolerance) continue;
+    if (provenanceFace) {
+      if (provenanceFace[a] < 0 || provenanceFace[b] < 0) continue;
+      if (provenanceFace[a] !== provenanceFace[b]) {
+        if (!reuniteNearProvenance) continue;
+        const sourceA = provenancePlanes[provenanceFace[a]], sourceB = provenancePlanes[provenanceFace[b]];
+        const orientation = vdot(sourceA.normal, sourceB.normal) < 0 ? -1 : 1;
+        if (Math.abs(vdot(sourceA.normal, sourceB.normal)) < 1 - 2e-3
+          || Math.abs(sourceA.distance - sourceB.distance * orientation) > diagonal * 2e-4) continue;
+      }
+    } else {
+      const pa = planes[a], pb = planes[b];
+      if (vdot(pa.normal, pb.normal) < 1 - 1e-3 || Math.abs(pa.distance - pb.distance) > planeTolerance) continue;
+    }
     union(a, b);
   }
   const groups = new Map<number, number[]>();
@@ -2097,6 +2138,66 @@ function dissolveCoplanarFaces(mesh: Mesh): Mesh {
     for (const faceIndex of group) emit([...mesh.faces[faceIndex]], faceIndex);
   }
   for (const [name, data] of faceAttributes) out.attributes.set(name, { domain: "FACE", data });
+  return provenanceFace && reuniteNearProvenance ? dissolveBooleanCollinearVertices(out) : out;
+}
+
+/**
+ * Remove Manifold-only vertices inserted where an intersection loop crosses
+ * internal triangulation diagonals. A vertex is eligible only when every
+ * incident polygon can remove it as a forward, near-collinear corner, avoiding
+ * T-junctions and preserving real authored curve samples.
+ */
+function dissolveBooleanCollinearVertices(mesh: Mesh): Mesh {
+  if ([...mesh.attributes.values()].some((attribute) => attribute.domain === "CORNER")) return mesh;
+  const out = mesh.clone();
+  const angularTolerance = 3e-4;
+  for (let pass = 0; pass < 4; pass++) {
+    const incident: Array<Array<{ face: number; corner: number }>> = out.positions.map(() => []);
+    for (let face = 0; face < out.faces.length; face++)
+      for (let corner = 0; corner < out.faces[face].length; corner++)
+        incident[out.faces[face][corner]].push({ face, corner });
+    const removable = new Set<number>();
+    for (let vertex = 0; vertex < incident.length; vertex++) {
+      const refs = incident[vertex];
+      if (!refs.length) continue;
+      let eligible = true;
+      for (const { face, corner } of refs) {
+        const polygon = out.faces[face];
+        if (polygon.length <= 3) { eligible = false; break; }
+        const before = out.positions[polygon[(corner + polygon.length - 1) % polygon.length]];
+        const point = out.positions[vertex];
+        const after = out.positions[polygon[(corner + 1) % polygon.length]];
+        const incoming = vsub(point, before), outgoing = vsub(after, point);
+        const denominator = vlen(incoming) * vlen(outgoing);
+        if (denominator <= 1e-20 || vdot(incoming, outgoing) < 0
+          || vlen(vcross(incoming, outgoing)) / denominator > angularTolerance) {
+          eligible = false;
+          break;
+        }
+      }
+      if (eligible) removable.add(vertex);
+    }
+    if (!removable.size) break;
+    out.faces = out.faces.map((face) => face.filter((vertex) => !removable.has(vertex)));
+  }
+  const used = new Set(out.faces.flat());
+  if (used.size === out.positions.length) return out;
+  const remap = new Map<number, number>();
+  const positions: Vec3[] = [];
+  for (let vertex = 0; vertex < out.positions.length; vertex++) if (used.has(vertex)) {
+    remap.set(vertex, positions.length);
+    positions.push(out.positions[vertex]);
+  }
+  out.positions = positions;
+  out.faces = out.faces.map((face) => face.map((vertex) => remap.get(vertex)!));
+  out.edges = [];
+  for (const [name, attribute] of out.attributes) {
+    if (attribute.domain !== "POINT") continue;
+    out.attributes.set(name, {
+      domain: "POINT",
+      data: attribute.data.filter((_, vertex) => used.has(vertex)),
+    });
+  }
   return out;
 }
 
@@ -2613,7 +2714,19 @@ reg("GeometryNodeMeshBoolean", (api) => {
       }
       if (!next) {
         const result = manifoldBoolean(acc, g.mesh, op);
-        if (result) next = dissolveCoplanarFaces(result);
+        if (result) {
+          // A measure-preserving DIFFERENCE returns an authored clone from the
+          // Manifold adapter. Do not run that no-op result through the generic
+          // coplanar dissolve: the whole point is to retain Blender's source
+          // polygons instead of producing a different but equivalent mesh.
+          const source: Mesh = acc;
+          const unchanged: boolean = result.positions.length === source.positions.length
+            && result.faces.length === source.faces.length
+            && result.positions.every((point, index) => point.every((value, axis) => value === source.positions[index][axis]))
+            && result.faces.every((face, index) => face.length === source.faces[index].length
+              && face.every((vertex, corner) => vertex === source.faces[index][corner]));
+          next = unchanged ? result : dissolveCoplanarFaces(result, [source, g.mesh]);
+        }
       }
       if (!next && op === "DIFFERENCE") next = openSweptDifference(acc, g.mesh);
       if (next) acc = next;

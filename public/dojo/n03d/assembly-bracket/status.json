@@ -2,15 +2,15 @@
   "id": "n03d-assembly-bracket",
   "object": "Cube.035",
   "root": "asmbly_bracket.001",
-  "status": "visual-near-parity",
+  "status": "exact-authored",
   "blender": {
     "verts": 1743,
     "faces": 1816
   },
   "gnvm": {
-    "verts": 1771,
-    "faces": 1940
+    "verts": 1743,
+    "faces": 1816
   },
   "coverage": "100% of reachable node types across the 54-group, 1,662-node closure.",
-  "validation": "All five authored, diameter, screw, solid, and split-for-print cases have exact local bounds. The high-resolution two-cylinder arm hull matches Blender's internal 168 / 86 topology exactly, and the shared Heal Mesh output now matches Blender exactly at 831 / 1,189 after aligning Spiral winding, Cone storage order, Extrude Mesh boundary allocation, and pinched-face weld cleanup. The remaining delta is isolated to the two Exact Boolean intersection stages. Authored output is 1,771 / 1,940 versus Blender's 1,743 / 1,816, and every case stays within 2.32% vertices."
+  "validation": "The authored, solid-bracket, and half-screw cases match Blender exactly at 1,743 / 1,816 with identical four-decimal local bounds. The high-resolution two-cylinder hull is exact at 168 / 86, the shared Heal Mesh output is exact at 831 / 1,189, and Exact Boolean face provenance plus collinear intersection cleanup restores the authored bracket shell to 912 / 627. Compact-diameter and split-for-print variants retain exact bounds but remain 2.38% and 3.82% low in vertices respectively; those resolution-dependent Boolean branches are the remaining parameter-sweep work."
 }
