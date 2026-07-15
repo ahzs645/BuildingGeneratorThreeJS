@@ -2,10 +2,10 @@
   "source": "gnvm",
   "object": "Bolt Gen_DHTS_Thru Head v03.003",
   "node_group": "BOLT GEN DHTS v03_Thru Head_1JUL2024.005",
-  "evaluation_ms": 181416,
+  "evaluation_ms": 153425,
   "result": {
-    "verts": 16220,
-    "faces": 16222,
+    "verts": 16222,
+    "faces": 16224,
     "bbox": {
       "min": [-7.965978145599365, -7.9692230224609375, 0.0],
       "max": [7.978952884674072, 7.969223499298096, 27.215957641601562]

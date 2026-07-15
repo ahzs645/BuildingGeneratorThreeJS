@@ -86,7 +86,12 @@ reg("GeometryNodeImageTexture", (api) => {
   };
   const color = Field.make((ctx) => vector.array(ctx).map((value) => sample(value).color));
   const alpha = Field.make((ctx) => vector.array(ctx).map((value) => sample(value).alpha));
-  if (vector.srcDomain) { color.srcDomain = vector.srcDomain; alpha.srcDomain = vector.srcDomain; }
+  if (vector.srcDomain) {
+    color.srcDomain = vector.srcDomain;
+    alpha.srcDomain = vector.srcDomain;
+    color.srcDomainValueType = vector.srcDomainValueType;
+    alpha.srcDomainValueType = vector.srcDomainValueType;
+  }
   return { Color: color, Alpha: alpha };
 });
 

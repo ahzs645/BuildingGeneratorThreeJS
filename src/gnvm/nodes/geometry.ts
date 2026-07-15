@@ -588,8 +588,9 @@ reg("GeometryNodeCaptureAttribute", (api) => {
   if (g.mesh && (g.mesh.domainSize(domain) > 0 || !g.curves.length)) {
     const ctx = makeFieldCtx(g, domain);
     const value = api.field("Value");
+    const valueSocket = api.node.inputs.find((socket) => socket.identifier === "Value" || socket.name === "Value");
     let data: import("../core").Elem[];
-    if (value.srcDomain && value.srcDomain !== domain && ctx.toDomain) {
+    if (value.srcDomain && value.srcDomain !== domain && ctx.toDomain && value.srcDomainValueType !== "NUMERIC") {
       const source = value.srcDomain;
       const sourceData = value.array(makeFieldCtx(g, source));
       data = Array.from({ length: ctx.size }, (_, i) => ctx.toDomain!(source, sourceData, i) ?? 0);
@@ -600,9 +601,8 @@ reg("GeometryNodeCaptureAttribute", (api) => {
     // Blender: even a three-true/one-false quad resolves false. Retaining the
     // numeric average makes downstream switches choose the wrong marching-
     // squares cell whenever only some corners are selected.
-    const valueSocket = api.node.inputs.find((socket) => socket.identifier === "Value" || socket.name === "Value");
     if (valueSocket?.type === "NodeSocketBool") {
-      if (value.srcDomain === "POINT" && domain === "FACE" && g.mesh) {
+      if (value.srcDomain === "POINT" && value.srcDomainValueType !== "NUMERIC" && domain === "FACE" && g.mesh) {
         const sourceData = value.array(makeFieldCtx(g, "POINT"));
         data = g.mesh.faces.map((face) => face.every((vertex) => asNum(sourceData[vertex] ?? 0) > 0) ? 1 : 0);
       } else {
@@ -655,7 +655,12 @@ reg("GeometryNodeCaptureAttribute", (api) => {
     Geometry: g,
     // tagged with the capture domain so boolean chains over face captures can
     // be evaluated on FACE and converted once at the consumer (Blender order)
-    Attribute: Field.perElem((i, ctx) => (ctx.attr ? (ctx.attr(name, i) ?? 0) : 0)).tagged(domain),
+    Attribute: Field.perElem((i, ctx) => (ctx.attr ? (ctx.attr(name, i) ?? 0) : 0)).tagged(
+      domain,
+      api.node.inputs.find((socket) => socket.identifier === "Value" || socket.name === "Value")?.type === "NodeSocketBool"
+        ? "BOOLEAN"
+        : "NUMERIC",
+    ),
   };
 });
 

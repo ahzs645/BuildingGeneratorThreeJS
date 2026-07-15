@@ -474,7 +474,13 @@ reg("GeometryNodeSampleNearest", (api) => {
 
 type Triangle = { a: Vec3; b: Vec3; c: Vec3; normal: Vec3 };
 type Hit = { hit: number; position: Vec3; normal: Vec3; distance: number };
-type TriangleBvh = { min: Vec3; max: Vec3; left?: TriangleBvh; right?: TriangleBvh; triangles?: Triangle[] };
+type TriangleBvh = {
+  min: Vec3;
+  max: Vec3;
+  mainAxis: number;
+  children?: [TriangleBvh, TriangleBvh?];
+  triangle?: Triangle;
+};
 
 /** Blender's float3 normalize path stores the dot, sqrt and divisions as float32. */
 export function normalizeBlenderFloat3(value: Vec3): Vec3 {
@@ -499,60 +505,190 @@ function blenderTriangleNormal(a: Vec3, b: Vec3, c: Vec3): Vec3 {
   ]);
 }
 
-function triangleBounds(triangle: Triangle): { min: Vec3; max: Vec3; center: Vec3 } {
-  const min: Vec3 = [Math.min(triangle.a[0], triangle.b[0], triangle.c[0]), Math.min(triangle.a[1], triangle.b[1], triangle.c[1]), Math.min(triangle.a[2], triangle.b[2], triangle.c[2])];
-  const max: Vec3 = [Math.max(triangle.a[0], triangle.b[0], triangle.c[0]), Math.max(triangle.a[1], triangle.b[1], triangle.c[1]), Math.max(triangle.a[2], triangle.b[2], triangle.c[2])];
-  return { min, max, center: [(min[0] + max[0]) * .5, (min[1] + max[1]) * .5, (min[2] + max[2]) * .5] };
+const BLENDER_FLT_EPSILON = 1.1920928955078125e-7;
+const BLENDER_FLT_MAX = 3.4028234663852886e38;
+
+function triangleLeaf(triangle: Triangle): TriangleBvh {
+  const f = Math.fround;
+  const min: Vec3 = [0, 0, 0], max: Vec3 = [0, 0, 0];
+  for (let axis = 0; axis < 3; axis++) {
+    const lower = Math.min(triangle.a[axis], triangle.b[axis], triangle.c[axis]);
+    const upper = Math.max(triangle.a[axis], triangle.b[axis], triangle.c[axis]);
+    // BLI_bvhtree_new clamps its requested zero epsilon to FLT_EPSILON, then
+    // inflates every primitive bound. Tangent rays depend on this rounding.
+    min[axis] = f(lower - BLENDER_FLT_EPSILON);
+    max[axis] = f(upper + BLENDER_FLT_EPSILON);
+  }
+  return { min, max, mainAxis: 0, triangle };
 }
 
+function branchBounds(leaves: TriangleBvh[], begin: number, end: number): { min: Vec3; max: Vec3; mainAxis: number } {
+  const min: Vec3 = [Infinity, Infinity, Infinity], max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (let index = begin; index < end; index++) for (let axis = 0; axis < 3; axis++) {
+    min[axis] = Math.min(min[axis], leaves[index].min[axis]);
+    max[axis] = Math.max(max[axis], leaves[index].max[axis]);
+  }
+  const f = Math.fround;
+  const x = f(max[0] - min[0]), y = f(max[1] - min[1]), z = f(max[2] - min[2]);
+  const mainAxis = x > y ? (x > z ? 0 : 2) : (y > z ? 1 : 2);
+  return { min, max, mainAxis };
+}
+
+function insertionSortLeaves(leaves: TriangleBvh[], begin: number, end: number, axis: number): void {
+  for (let index = begin; index < end; index++) {
+    let destination = index;
+    const item = leaves[index];
+    while (destination !== begin && item.max[axis] < leaves[destination - 1].max[axis]) {
+      leaves[destination] = leaves[destination - 1];
+      destination--;
+    }
+    leaves[destination] = item;
+  }
+}
+
+function medianOfThreeLeaf(leaves: TriangleBvh[], low: number, middle: number, high: number, axis: number): TriangleBvh {
+  const a = leaves[low], b = leaves[middle], c = leaves[high];
+  if (b.max[axis] < a.max[axis]) {
+    if (c.max[axis] < b.max[axis]) return b;
+    if (c.max[axis] < a.max[axis]) return c;
+    return a;
+  }
+  if (c.max[axis] < b.max[axis]) return c.max[axis] < a.max[axis] ? a : c;
+  return b;
+}
+
+function partitionLeaves(leaves: TriangleBvh[], low: number, high: number, pivot: TriangleBvh, axis: number): number {
+  let left = low, right = high;
+  while (true) {
+    while (leaves[left].max[axis] < pivot.max[axis]) left++;
+    right--;
+    while (pivot.max[axis] < leaves[right].max[axis]) right--;
+    if (!(left < right)) return left;
+    [leaves[left], leaves[right]] = [leaves[right], leaves[left]];
+    left++;
+  }
+}
+
+function partitionNthLeaf(leaves: TriangleBvh[], begin: number, end: number, nth: number, axis: number): void {
+  while (end - begin > 3) {
+    const cut = partitionLeaves(
+      leaves,
+      begin,
+      end,
+      medianOfThreeLeaf(leaves, begin, Math.floor((begin + end) / 2), end - 1, axis),
+      axis,
+    );
+    if (cut <= nth) begin = cut;
+    else end = cut;
+  }
+  insertionSortLeaves(leaves, begin, end, axis);
+}
+
+/** Build Blender's binary min-leaf implicit BLI_kdopbvh tree. */
 function triangleBvh(triangles: Triangle[]): TriangleBvh | undefined {
   if (!triangles.length) return undefined;
-  const bounds = triangles.map(triangleBounds);
-  const min: Vec3 = [Infinity, Infinity, Infinity], max: Vec3 = [-Infinity, -Infinity, -Infinity];
-  for (const entry of bounds) for (let axis = 0; axis < 3; axis++) {
-    min[axis] = Math.min(min[axis], entry.min[axis]); max[axis] = Math.max(max[axis], entry.max[axis]);
+  const leaves = triangles.map(triangleLeaf);
+  if (leaves.length === 1) return leaves[0];
+
+  const leafCount = leaves.length;
+  const branches: TriangleBvh[] = new Array(leafCount);
+  const leavesPerChild: number[] = [];
+  const branchesOnLevel: number[] = [1];
+  let completeLeafCount = 1;
+  while (completeLeafCount < leafCount) completeLeafCount *= 2;
+  leavesPerChild[0] = completeLeafCount;
+  for (let depth = 1; leavesPerChild[depth - 1]; depth++) {
+    branchesOnLevel[depth] = branchesOnLevel[depth - 1] * 2;
+    leavesPerChild[depth] = Math.floor(leavesPerChild[depth - 1] / 2);
   }
-  if (triangles.length <= 12) return { min, max, triangles };
-  const spans = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
-  const axis = spans[1] > spans[0] ? (spans[2] > spans[1] ? 2 : 1) : (spans[2] > spans[0] ? 2 : 0);
-  const ordered = triangles.map((triangle, index) => ({ triangle, center: bounds[index].center[axis] })).sort((a, b) => a.center - b.center);
-  const middle = Math.floor(ordered.length / 2);
-  return { min, max, left: triangleBvh(ordered.slice(0, middle).map((entry) => entry.triangle)), right: triangleBvh(ordered.slice(middle).map((entry) => entry.triangle)) };
+  const remaining = leafCount - leavesPerChild[1];
+  const remainLeaves = remaining * 2;
+  const implicitLeafIndex = (depth: number, childIndex: number): number => {
+    const minimum = childIndex * leavesPerChild[depth - 1];
+    if (minimum <= remainLeaves) return minimum;
+    if (leavesPerChild[depth])
+      return leafCount - (branchesOnLevel[depth - 1] - childIndex) * leavesPerChild[depth];
+    return remainLeaves;
+  };
+
+  const branchCount = leafCount - 1;
+  for (let levelStart = 1, depth = 1; levelStart <= branchCount; levelStart *= 2, depth++) {
+    const nextLevelStart = levelStart * 2;
+    const levelEnd = Math.min(nextLevelStart, branchCount + 1);
+    for (let branchIndex = levelStart; branchIndex < levelEnd; branchIndex++) {
+      const levelIndex = branchIndex - levelStart;
+      const begin = implicitLeafIndex(depth, levelIndex);
+      const end = implicitLeafIndex(depth, levelIndex + 1);
+      const bounds = branchBounds(leaves, begin, end);
+      const branch = branches[branchIndex] ??= { ...bounds };
+      branch.min = bounds.min;
+      branch.max = bounds.max;
+      branch.mainAxis = bounds.mainAxis;
+
+      const middleChildIndex = branchIndex * 2 + 1 - nextLevelStart;
+      const middle = implicitLeafIndex(depth + 1, middleChildIndex);
+      partitionNthLeaf(leaves, begin, end, middle, branch.mainAxis);
+
+      const children: [TriangleBvh, TriangleBvh?] = [leaves[begin]];
+      for (let child = 0; child < 2; child++) {
+        const childBranchIndex = branchIndex * 2 + child;
+        const childLevelIndex = childBranchIndex - nextLevelStart;
+        const childBegin = implicitLeafIndex(depth + 1, childLevelIndex);
+        const childEnd = implicitLeafIndex(depth + 1, childLevelIndex + 1);
+        const node = childEnd - childBegin > 1
+          ? (branches[childBranchIndex] ??= { min: [0, 0, 0], max: [0, 0, 0], mainAxis: 0 })
+          : childEnd - childBegin === 1 ? leaves[childBegin] : undefined;
+        if (child === 0 && node) children[0] = node;
+        else if (node) children[1] = node;
+      }
+      branch.children = children;
+    }
+  }
+  return branches[1];
 }
 
-function rayBox(origin: Vec3, direction: Vec3, min: Vec3, max: Vec3, distance: number): boolean {
-  let near = 0, far = distance;
+function blenderRayBoxDistance(origin: Vec3, direction: Vec3, node: TriangleBvh, hitDistance: number): number {
+  const f = Math.fround;
+  const near: number[] = [], far: number[] = [];
   for (let axis = 0; axis < 3; axis++) {
-    if (Math.abs(direction[axis]) < 1e-12) {
-      if (origin[axis] < min[axis] || origin[axis] > max[axis]) return false;
-      continue;
-    }
-    let a = (min[axis] - origin[axis]) / direction[axis], b = (max[axis] - origin[axis]) / direction[axis];
-    if (a > b) [a, b] = [b, a];
-    near = Math.max(near, a); far = Math.min(far, b);
-    if (near > far) return false;
+    const dot = Math.abs(direction[axis]) < BLENDER_FLT_EPSILON ? 0 : direction[axis];
+    const inverse = dot === 0 ? BLENDER_FLT_MAX : f(1 / dot);
+    const lower = inverse < 0 ? node.max[axis] : node.min[axis];
+    const upper = inverse < 0 ? node.min[axis] : node.max[axis];
+    near[axis] = f(f(lower - origin[axis]) * inverse);
+    far[axis] = f(f(upper - origin[axis]) * inverse);
   }
-  return true;
+  if (near[0] > far[1] || far[0] < near[1]
+    || near[0] > far[2] || far[0] < near[2]
+    || near[1] > far[2] || far[1] < near[2]
+    || far[0] < 0 || far[1] < 0 || far[2] < 0
+    || near[0] > hitDistance || near[1] > hitDistance || near[2] > hitDistance) return Infinity;
+  return Math.max(near[0], near[1], near[2]);
 }
 
 function rayBvh(origin: Vec3, direction: Vec3, maxDistance: number, root?: TriangleBvh): Hit | null {
   if (!root) return null;
   let best: Hit | null = null;
   let bestDistance = maxDistance;
-  const stack = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!rayBox(origin, direction, node.min, node.max, bestDistance)) continue;
-    if (node.triangles) {
-      for (const triangle of node.triangles) {
-        const hit = rayTriangle(origin, direction, bestDistance, triangle);
-        if (hit && hit.distance < bestDistance) { best = hit; bestDistance = hit.distance; }
-      }
-    } else {
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
+  const visit = (node: TriangleBvh): void => {
+    if (blenderRayBoxDistance(origin, direction, node, bestDistance) >= bestDistance) return;
+    if (node.triangle) {
+      const hit = rayTriangle(origin, direction, bestDistance, node.triangle);
+      if (hit && hit.distance < bestDistance) { best = hit; bestDistance = hit.distance; }
+      return;
     }
-  }
+    const children = node.children;
+    if (!children) return;
+    if (direction[node.mainAxis] > 0) {
+      visit(children[0]);
+      if (children[1]) visit(children[1]);
+    }
+    else {
+      if (children[1]) visit(children[1]);
+      visit(children[0]);
+    }
+  };
+  visit(root);
   return best;
 }
 function rayTriangle(origin: Vec3, direction: Vec3, maxDistance: number, tri: Triangle): Hit | null {
@@ -600,6 +736,17 @@ function rayTriangle(origin: Vec3, direction: Vec3, maxDistance: number, tri: Tr
 export function blenderRaycastTriangleForTest(origin: Vec3, direction: Vec3, maxDistance: number, a: Vec3, b: Vec3, c: Vec3): Hit | null {
   const triangle = { a, b, c, normal: blenderTriangleNormal(a, b, c) };
   return rayTriangle(origin, normalizeBlenderFloat3(direction), maxDistance, triangle);
+}
+
+/** Focused hook for validating Blender's BVH build and coincident-hit order. */
+export function blenderRaycastTrianglesForTest(
+  origin: Vec3,
+  direction: Vec3,
+  maxDistance: number,
+  coordinates: [Vec3, Vec3, Vec3][],
+): Hit | null {
+  const triangles = coordinates.map(([a, b, c]) => ({ a, b, c, normal: blenderTriangleNormal(a, b, c) }));
+  return rayBvh(origin.map(Math.fround) as Vec3, normalizeBlenderFloat3(direction), Math.fround(maxDistance), triangleBvh(triangles));
 }
 
 function pointSegmentDistance2D(point: Vec3, a: Vec3, b: Vec3): number {

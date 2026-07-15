@@ -80,6 +80,11 @@ export class Field {
   // each leaf first excludes boundary verts (NOT(anyAdjacent) != noneAdjacent).
   // Tags propagate through fieldMap when all non-const inputs agree.
   srcDomain?: Domain;
+  // What kind of captured value established srcDomain. Numeric fields are
+  // interpolated onto the consumer domain before downstream operations run;
+  // boolean fields keep their source domain through boolean chains and adapt
+  // only the final mask. Leaving this unset preserves intrinsic-field behavior.
+  srcDomainValueType?: "NUMERIC" | "BOOLEAN";
 
   private constructor(
     public readonly fn: (ctx: FieldCtx) => Elem[],
@@ -103,8 +108,9 @@ export class Field {
     });
   }
 
-  tagged(domain: Domain): Field {
+  tagged(domain: Domain, valueType?: "NUMERIC" | "BOOLEAN"): Field {
     this.srcDomain = domain;
+    this.srcDomainValueType = valueType;
     return this;
   }
 
@@ -149,7 +155,13 @@ export function fieldMap(inputs: Field[], op: (...vals: Elem[]) => Elem): Field 
   const domains = new Set(inputs.filter((f) => !f.isConst).map((f) => f.srcDomain));
   if (domains.size === 1) {
     const d = [...domains][0];
-    if (d) out.srcDomain = d;
+    if (d) {
+      out.srcDomain = d;
+      const valueTypes = new Set(inputs
+        .filter((f) => !f.isConst && f.srcDomain === d)
+        .map((f) => f.srcDomainValueType));
+      if (valueTypes.size === 1) out.srcDomainValueType = [...valueTypes][0];
+    }
   }
   return out;
 }

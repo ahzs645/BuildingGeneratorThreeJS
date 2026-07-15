@@ -709,7 +709,7 @@ export function realizeInstances(g: Geometry): Geometry {
     const rg = realizeInstances(inst.geometry); // recursive
     if (rg.mesh) {
       const tm = rg.mesh.clone();
-      tm.positions = tm.positions.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale));
+      tm.positions = tm.positions.map((p) => transformPointFloat32(p, inst.position, inst.rotation, inst.scale));
       const baseV = mesh.positions.length;
       mergeMeshInto(mesh, tm); // carries the instance geometry's own attributes
       if (inst.attributes && inst.attributes.size) {
@@ -726,10 +726,10 @@ export function realizeInstances(g: Geometry): Geometry {
     for (const s of rg.curves)
       out.curves.push({
         cyclic: s.cyclic,
-        points: s.points.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale)),
-        controlPoints: s.controlPoints?.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale)),
-        bezierLeft: s.bezierLeft?.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale)),
-        bezierRight: s.bezierRight?.map((p) => transformPoint(p, inst.position, inst.rotation, inst.scale)),
+        points: s.points.map((p) => transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
+        controlPoints: s.controlPoints?.map((p) => transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
+        bezierLeft: s.bezierLeft?.map((p) => transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
+        bezierRight: s.bezierRight?.map((p) => transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
       });
   }
   if (g.mesh || mesh.positions.length || mesh.faces.length || mesh.edges.length) out.mesh = mesh;

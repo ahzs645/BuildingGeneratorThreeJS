@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { blenderRaycastTriangleForTest, normalizeBlenderFloat3 } from "./nodes/crayon";
+import {
+  blenderRaycastTriangleForTest,
+  blenderRaycastTrianglesForTest,
+  normalizeBlenderFloat3,
+} from "./nodes/crayon";
 
 test("Raycast normalizes directions through Blender float32 divisions", () => {
   assert.deepEqual(normalizeBlenderFloat3([
@@ -25,4 +29,15 @@ test("Raycast uses Blender's float32 watertight triangle intersection", () => {
   assert.deepEqual(hit.position, [
     7.659682273864746, -2.1884806156158447, 1.094240427017212,
   ]);
+});
+
+test("Raycast follows Blender BVH traversal order for coincident hits", () => {
+  const hit = blenderRaycastTrianglesForTest([0.25, 0.25, 0], [0, 0, 1], 100, [
+    [[0, 0, 1], [1, 0, 1], [0, 1, 1]],
+    [[0, 0, 1], [0, 1, 1], [1, 0, 1]],
+  ]);
+
+  assert.ok(hit);
+  assert.equal(hit.distance, 1);
+  assert.deepEqual(hit.normal, [0, 0, -1]);
 });
