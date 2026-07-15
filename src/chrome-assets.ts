@@ -5,6 +5,7 @@ import { publicUrl } from "./base-url";
 import { rangeOverrideValue } from "./chrome-asset-controls";
 import type { Dump, TriSoup } from "./gnvm/index";
 import { makeAttributeEmissionMaterial } from "./attribute-emission-material";
+import { attachChainMaceRoughnessAttribute, makeChainMaceMaterial } from "./chain-mace-material";
 import { makeChromeCrayonMaterial } from "./chrome-crayon-material";
 import { makeImagePixelStipplerMaterial } from "./image-pixel-stippler-material";
 
@@ -15,7 +16,7 @@ type VectorControl = { type: "vector"; name: string; label: string; value: [numb
 type SelectControl = { type: "select"; name: string; label: string; value: number | string; options: { label: string; value: number | string }[] };
 type Control = RangeControl | CheckboxControl | TextControl | VectorControl | SelectControl;
 type AssetFont = { url: string; family: string; requiredFor: string; fallback: string };
-type Asset = { id: string; title: string; object: string; dump: string; reference: string; blenderStats: { verts: number; faces: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon"; controls: Control[] };
+type Asset = { id: string; title: string; object: string; dump: string; reference: string; blenderStats: { verts: number; faces: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; controls: Control[] };
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
@@ -74,12 +75,17 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
   };
   const previewMode=document.querySelector<HTMLSelectElement>('[data-control="__materialPreview"]')?.value;
   const useAuthored=Boolean(current.material)&&previewMode!=="diagnostic";
+  const source = (dump.objects as any[] | undefined)?.find((object) => object.name === current.object);
   const materials: THREE.Material[]=[];
+  if(useAuthored&&current.material==="chain-mace")attachChainMaceRoughnessAttribute(geometry,soup.groups);
   if(useAuthored&&soup.groups.length){
     for(const [index,group] of soup.groups.entries()){
       geometry.addGroup(group.start,group.count,index);
+      const materialName=group.material??(current.material==="chain-mace"?soup.groups.find((candidate)=>candidate.material)?.material:"")??"";
       const authored=current.material==="image-pixel-stippler"
         ? makeImagePixelStipplerMaterial(dump,geometry,group.material??"")
+        : current.material==="chain-mace"
+          ? makeChainMaceMaterial(dump,geometry,materialName)
         : current.material==="chrome-crayon"
           ? makeChromeCrayonMaterial(dump,geometry,group.material??"")
           : makeAttributeEmissionMaterial(dump,geometry,group.material??"");
@@ -88,7 +94,6 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
   }
   if(!materials.length)materials.push(diagnosticMaterial());
   const mesh = new THREE.Mesh(geometry, materials.length===1?materials[0]:materials);
-  const source = (dump.objects as any[] | undefined)?.find((object) => object.name === current.object);
   if (!current.localSpace && source?.rotation) mesh.rotation.set(Number(source.rotation[0] ?? 0), Number(source.rotation[1] ?? 0), Number(source.rotation[2] ?? 0));
   if (!current.localSpace && source?.scale) mesh.scale.set(Number(source.scale[0] ?? 1), Number(source.scale[1] ?? 1), Number(source.scale[2] ?? 1));
   return mesh;

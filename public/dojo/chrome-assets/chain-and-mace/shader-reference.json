@@ -1,0 +1,80 @@
+{
+  "source_file": "NO3D Chrome Asset Library.blend",
+  "source_project": "Node Dojo 2/Blender Tutorial/Utilities/All_N03D_Tools_Asset_Libraries/NO3D Chrome Asset Library.blend",
+  "object": "spikey chain and mace.005",
+  "engine": "BLENDER_EEVEE",
+  "resolution": [
+    768,
+    768
+  ],
+  "camera": {
+    "type": "ORTHO",
+    "direction": [
+      0.5517372488975525,
+      -0.6896715760231018,
+      0.4689766764640808
+    ],
+    "ortho_scale": 262.3351135253906,
+    "frame_scale": 1.45
+  },
+  "geometry": {
+    "verts": 120727,
+    "faces": 214718,
+    "bbox": {
+      "min": [
+        -112.94660186767578,
+        -279.5846252441406,
+        27.16302490234375
+      ],
+      "max": [
+        49.653968811035156,
+        -119.00789642333984,
+        208.08380126953125
+      ]
+    }
+  },
+  "materials": {
+    "source_object_slots": [
+      "grainy test"
+    ],
+    "evaluated_slots": [
+      "chrome.002",
+      null
+    ],
+    "faces": {
+      "chrome.002": 214718
+    },
+    "geometry_attributes": [
+      "position",
+      ".edge_verts",
+      ".corner_vert",
+      ".corner_edge",
+      "material_index",
+      "1",
+      "rough"
+    ],
+    "attribute_stats": {
+      "rough": {
+        "domain": "FACE",
+        "count": 214718,
+        "min": 0.0,
+        "max": 2.0,
+        "value_counts": {
+          "0.0": 205408,
+          "2.0": 9310
+        }
+      },
+      "1": {
+        "domain": "POINT",
+        "count": 120727,
+        "min": 1.0,
+        "max": 1.0,
+        "value_counts": {
+          "1.0": 120727
+        }
+      }
+    },
+    "shader_named_attribute": "rough",
+    "missing_attribute_value": 0.0
+  }
+}
