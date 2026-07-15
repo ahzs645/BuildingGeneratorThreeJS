@@ -75,11 +75,11 @@ function splitNonManifoldFans(mesh: Mesh): void {
 // active voxel cell and one quad around every crossed grid edge. Building that
 // topology directly is both smaller and more faithful than pairing triangles
 // emitted by Marching Cubes.
-function surfaceNets(values: Float32Array, resolution: number, isolation: number, origin: Vec3, spacing: number): Mesh {
+function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, origin: Vec3, spacing: Vec3): Mesh {
   const mesh = new Mesh();
-  const sample = (x: number, y: number, z: number) => values[z * resolution * resolution + y * resolution + x];
-  const cellResolution = resolution - 1;
-  const cellIndex = (x: number, y: number, z: number) => z * cellResolution * cellResolution + y * cellResolution + x;
+  const sample = (x: number, y: number, z: number) => values[z * resolution[0] * resolution[1] + y * resolution[0] + x];
+  const cellResolution: Vec3 = [resolution[0] - 1, resolution[1] - 1, resolution[2] - 1];
+  const cellIndex = (x: number, y: number, z: number) => z * cellResolution[0] * cellResolution[1] + y * cellResolution[0] + x;
   const cornerOffsets: Vec3[] = [
     [0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0],
     [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1],
@@ -103,12 +103,12 @@ function surfaceNets(values: Float32Array, resolution: number, isolation: number
   ];
   const cellEdgeVertices = new Map<number, Int32Array>();
   const gridPoint = (x: number, y: number, z: number): Vec3 => [
-    origin[0] + x * spacing,
-    origin[1] + y * spacing,
-    origin[2] + z * spacing,
+    origin[0] + x * spacing[0],
+    origin[1] + y * spacing[1],
+    origin[2] + z * spacing[2],
   ];
 
-  for (let z = 0; z < cellResolution; z++) for (let y = 0; y < cellResolution; y++) for (let x = 0; x < cellResolution; x++) {
+  for (let z = 0; z < cellResolution[2]; z++) for (let y = 0; y < cellResolution[1]; y++) for (let x = 0; x < cellResolution[0]; x++) {
     const cornerValues = cornerOffsets.map(([dx, dy, dz]) => sample(x + dx, y + dy, z + dz));
     const below = cornerValues.some((value) => value < isolation);
     const above = cornerValues.some((value) => value >= isolation);
@@ -175,7 +175,7 @@ function surfaceNets(values: Float32Array, resolution: number, isolation: number
     mesh.faces.push(forward ? indices : [...indices].reverse());
   };
   const cellEdge = (x: number, y: number, z: number, edge: number) => cellEdgeVertices.get(cellIndex(x, y, z))?.[edge] ?? -1;
-  for (let z = 1; z < resolution - 1; z++) for (let y = 1; y < resolution - 1; y++) for (let x = 1; x < resolution - 1; x++) {
+  for (let z = 1; z < resolution[2] - 1; z++) for (let y = 1; y < resolution[1] - 1; y++) for (let x = 1; x < resolution[0] - 1; x++) {
     const value = sample(x, y, z);
     const crossX = sample(x + 1, y, z);
     if ((value < isolation) !== (crossX < isolation))
@@ -200,15 +200,11 @@ reg("GeometryNodeVolumeCube", (api) => {
     Math.max(4, Math.round(api.num("Resolution Z"))),
   ];
   const voxelSize: Vec3 = [
-    Math.max(1e-9, (max[0] - min[0]) / resolution[0]),
-    Math.max(1e-9, (max[1] - min[1]) / resolution[1]),
-    Math.max(1e-9, (max[2] - min[2]) / resolution[2]),
+    Math.max(1e-9, (max[0] - min[0]) / Math.max(1, resolution[0] - 1)),
+    Math.max(1e-9, (max[1] - min[1]) / Math.max(1, resolution[1] - 1)),
+    Math.max(1e-9, (max[2] - min[2]) / Math.max(1, resolution[2] - 1)),
   ];
-  const origin: Vec3 = [
-    min[0] + voxelSize[0] * 0.5,
-    min[1] + voxelSize[1] * 0.5,
-    min[2] + voxelSize[2] * 0.5,
-  ];
+  const origin: Vec3 = [...min];
   const background = api.num("Background");
   const values = new Float32Array(resolution[0] * resolution[1] * resolution[2]);
   const density = api.field("Density");
@@ -221,9 +217,9 @@ reg("GeometryNodeVolumeCube", (api) => {
     sampleGeometry.mesh = sampleMesh;
     for (let y = 0; y < resolution[1]; y++) for (let x = 0; x < resolution[0]; x++) {
       sampleMesh.positions.push([
-        origin[0] + x * voxelSize[0],
-        origin[1] + y * voxelSize[1],
-        origin[2] + z * voxelSize[2],
+        min[0] + x * voxelSize[0],
+        min[1] + y * voxelSize[1],
+        min[2] + z * voxelSize[2],
       ]);
     }
     const slice = density.array(makeFieldCtx(sampleGeometry, "POINT"));
@@ -273,48 +269,36 @@ reg("GeometryNodeVolumeToMesh", (api) => {
   const volume = api.input("Volume") as unknown;
   if (!isVolumeGrid(volume)) return { Mesh: new Geometry() };
 
-  const spans: Vec3 = [
-    Math.max(1e-6, volume.max[0] - volume.min[0]),
-    Math.max(1e-6, volume.max[1] - volume.min[1]),
-    Math.max(1e-6, volume.max[2] - volume.min[2]),
-  ];
-  const center: Vec3 = [
-    (volume.min[0] + volume.max[0]) * 0.5,
-    (volume.min[1] + volume.max[1]) * 0.5,
-    (volume.min[2] + volume.max[2]) * 0.5,
-  ];
-  const maxSpan = Math.max(...spans);
-  // Volume Cube resolutions count voxels, whose samples lie at cell centers;
-  // dividing by (resolution - 1) incorrectly treats them as endpoint samples.
   const sampleSpacing = Math.max(...volume.voxelSize);
   const resolutionMode = api.str("Resolution Mode").toUpperCase();
   const requestedSpacing = resolutionMode === "SIZE"
     ? Math.max(1e-6, api.num("Voxel Size") || sampleSpacing)
     : sampleSpacing;
-  const coreResolution = Math.max(8, Math.min(180, Math.ceil(maxSpan / requestedSpacing)));
-  const spacing = Math.max(requestedSpacing, maxSpan / coreResolution);
-  // Keep two background samples around the authored cube, matching the old
-  // mesher's padding and ensuring every crossed edge has four adjacent cells.
-  const resolution = coreResolution + 4;
-  const coreOrigin: Vec3 = [
-    center[0] - (coreResolution - 1) * spacing * 0.5,
-    center[1] - (coreResolution - 1) * spacing * 0.5,
-    center[2] - (coreResolution - 1) * spacing * 0.5,
-  ];
-  const origin: Vec3 = [coreOrigin[0] - 2 * spacing, coreOrigin[1] - 2 * spacing, coreOrigin[2] - 2 * spacing];
-  const sampledGrid = new Float32Array(resolution * resolution * resolution);
+  // OpenVDB's GridTransformer keeps the source transform's translation and
+  // scales only its voxel basis. Preserve that minimum-bound origin instead of
+  // re-centering the target lattice. For anisotropic grids Blender chooses the
+  // maximum source voxel size as the requested-size reference.
+  const factor = sampleSpacing / requestedSpacing;
+  const spacing: Vec3 = volume.voxelSize.map((size) => size / factor) as Vec3;
+  const coreCells: Vec3 = volume.resolution.map((count) => Math.max(1, Math.floor((count - 1) * factor))) as Vec3;
+  const coreSamples: Vec3 = coreCells.map((count) => count + 1) as Vec3;
+  // Keep two background samples outside the transformed active grid so every
+  // crossed edge has four adjacent cells, without changing the core origin.
+  const resolution: Vec3 = coreSamples.map((count) => count + 4) as Vec3;
+  const origin: Vec3 = volume.min.map((minimum, axis) => minimum - 2 * spacing[axis]) as Vec3;
+  const sampledGrid = new Float32Array(resolution[0] * resolution[1] * resolution[2]);
 
-  for (let z = 0; z < resolution; z++) for (let y = 0; y < resolution; y++) for (let x = 0; x < resolution; x++)
-    sampledGrid[z * resolution * resolution + y * resolution + x] = sampleVolume(volume, [
-      origin[0] + x * spacing,
-      origin[1] + y * spacing,
-      origin[2] + z * spacing,
+  for (let z = 0; z < resolution[2]; z++) for (let y = 0; y < resolution[1]; y++) for (let x = 0; x < resolution[0]; x++)
+    sampledGrid[z * resolution[0] * resolution[1] + y * resolution[0] + x] = sampleVolume(volume, [
+      origin[0] + x * spacing[0],
+      origin[1] + y * spacing[1],
+      origin[2] + z * spacing[2],
     ]);
 
   // A deterministic half-open tie break prevents exact-zero SDF samples from
   // producing four faces on one dual edge. The offset is far below the voxel
   // scale and mirrors Blender/OpenVDB's stable treatment of the zero level set.
-  const isolation = api.num("Threshold") - Math.max(1e-7, spacing * 1e-6);
+  const isolation = api.num("Threshold") - Math.max(1e-7, Math.max(...spacing) * 1e-6);
   const mesh = surfaceNets(sampledGrid, resolution, isolation, origin, spacing);
   mesh.materialSlots = [null];
   const geometry = new Geometry();

@@ -809,6 +809,29 @@ function meshSignedAreaXY(m: Mesh): number {
     `grid=${surface.mesh?.faces.length} size=${refinedSurface.mesh?.faces.length}`);
 }
 
+// Blender Volume Cube samples inclusive endpoints, and OpenVDB Size-mode
+// resampling preserves the source minimum as the target transform origin.
+{
+  const halfSpace = Field.perElem((i, ctx) => (ctx.position?.(i)?.[0] ?? 0) - 0.13);
+  const volume = runNode("GeometryNodeVolumeCube", {
+    Density: halfSpace, Background: -100,
+    Min: [-1, -1, -1], Max: [1, 1, 1],
+    "Resolution X": 5, "Resolution Y": 5, "Resolution Z": 5,
+  }).Volume as any;
+  check("Volume Cube uses inclusive endpoint spacing",
+    approx(volume.origin, [-1, -1, -1], 1e-9)
+    && approx(volume.voxelSize, [0.5, 0.5, 0.5], 1e-9));
+  const surface = runNode("GeometryNodeVolumeToMesh", {
+    Volume: volume, "Resolution Mode": "Size", "Voxel Size": 0.5, Threshold: 0,
+  }).Mesh as Geometry;
+  const plane = surface.mesh!.positions.filter((point) => Math.abs(point[0] - 0.13) < 1e-4);
+  const coordinates = (axis: 1 | 2) => [...new Set(plane.map((point) => point[axis].toFixed(6)))].map(Number).sort((a, b) => a - b);
+  check("Volume to Mesh preserves the minimum-bound lattice",
+    approx(coordinates(1), [-0.75, -0.25, 0.25, 0.75], 1e-6)
+    && approx(coordinates(2), [-0.75, -0.25, 0.25, 0.75], 1e-6),
+    JSON.stringify({ y: coordinates(1), z: coordinates(2) }));
+}
+
 {
   const target = new Geometry();
   target.mesh = new Mesh();
