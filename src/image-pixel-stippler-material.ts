@@ -103,14 +103,23 @@ const stippleFragmentShader = /* glsl */`
   varying vec3 vImage;
   varying float vDensity;
   varying float vRandomness;
+  out vec4 fragColor;
 
+  // GLSL expression of the PCG3D integer hash used by Blender's Apache-2.0
+  // Cycles shader implementation. Uint arithmetic gives the required 32-bit
+  // wraparound for negative and positive cell coordinates.
   vec3 hash3(vec3 cell) {
-    vec3 p = vec3(
-      dot(cell, vec3(127.1, 311.7, 74.7)),
-      dot(cell, vec3(269.5, 183.3, 246.1)),
-      dot(cell, vec3(113.5, 271.9, 124.6))
-    );
-    return fract(sin(p) * 43758.5453123);
+    uvec3 v = uvec3(ivec3(cell));
+    v = v * uvec3(1664525u) + uvec3(1013904223u);
+    v.x += v.y * v.z;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
+    v = v ^ (v >> uvec3(16u));
+    v.x += v.y * v.z;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
+    v = v & uvec3(0x7fffffffu);
+    return vec3(v) / 2147483647.0;
   }
 
   vec3 rotateXYZ(vec3 p, vec3 r) {
@@ -128,7 +137,9 @@ const stippleFragmentShader = /* glsl */`
       for (int y = -1; y <= 1; y++) {
         for (int x = -1; x <= 1; x++) {
           vec3 cell = vec3(float(x), float(y), float(z));
-          vec3 point = cell + mix(vec3(0.5), hash3(base + cell), clamp(randomness, 0.0, 1.0));
+          // Blender scales the hashed point offset from the cell corner; zero
+          // randomness therefore lands on the corner, not the cell center.
+          vec3 point = cell + hash3(base + cell) * clamp(randomness, 0.0, 1.0);
           nearest = min(nearest, length(point - local));
         }
       }
@@ -144,15 +155,22 @@ const stippleFragmentShader = /* glsl */`
     float imageValue = dot(vImage, vec3(0.2126, 0.7152, 0.0722));
     float source = clampThreshold > 0.5 ? clamp(imageValue, 0.0, 1.0) : imageValue;
     float threshold = mix(thresholdMin, thresholdMax, source);
-    float firstGreaterThan = distanceToFeature > threshold ? 1.0 : 0.0;
-    float mask = firstGreaterThan > threshold ? 1.0 : 0.0;
-    gl_FragColor = vec4(vec3(mask), 1.0);
+    // Eevee temporally filters the two hard comparisons. Derivative-width
+    // smoothing supplies the equivalent single-frame coverage in WebGL.
+    float firstDelta = distanceToFeature - threshold;
+    float firstWidth = max(fwidth(firstDelta), 1e-5);
+    float firstGreaterThan = smoothstep(-firstWidth, firstWidth, firstDelta);
+    float secondDelta = firstGreaterThan - threshold;
+    float secondWidth = max(fwidth(secondDelta), 1e-5);
+    float mask = smoothstep(-secondWidth, secondWidth, secondDelta);
+    fragColor = vec4(vec3(mask), 1.0);
   }
 `;
 
 const imageFragmentShader = /* glsl */`
   varying vec3 vImage;
-  void main() { gl_FragColor = vec4(max(vImage, vec3(0.0)), 1.0); }
+  out vec4 fragColor;
+  void main() { fragColor = vec4(max(vImage, vec3(0.0)), 1.0); }
 `;
 
 export function makeImagePixelStipplerMaterial(
@@ -170,6 +188,7 @@ export function makeImagePixelStipplerMaterial(
     return new THREE.ShaderMaterial({
       vertexShader,
       fragmentShader: imageFragmentShader,
+      glslVersion: THREE.GLSL3,
       uniforms: { generatedMin: { value: generatedMin }, generatedSize: { value: generatedSize } },
       side: THREE.DoubleSide,
       toneMapped: false,
@@ -181,6 +200,7 @@ export function makeImagePixelStipplerMaterial(
     name: "Image Pixel Stippler · WebGL reconstruction",
     vertexShader,
     fragmentShader: stippleFragmentShader,
+    glslVersion: THREE.GLSL3,
     uniforms: {
       generatedMin: { value: generatedMin },
       generatedSize: { value: generatedSize },

@@ -6,5 +6,12 @@
   "blender": { "verts": 72094, "faces": 71550 },
   "gnvm": { "verts": 72094, "faces": 71550 },
   "coverage": "100% of reachable node types across the 3-group, 170-node closure.",
-  "validation": "Exact Blender topology and four-decimal bounds across fifteen cases covering pixelation (including the empty endpoint), crop with zero and rounded fillets, full-color mode, density/structure extremes, and HSV/contrast controls. Grid exposes Blender's point-domain UV field and Image Texture performs linear CLIP sampling of the packed queen-of-swords image. The authored img attribute average is within 0.0007 per RGB channel of Blender. The gallery now transfers img/dens/grid to an independently authored WebGL reconstruction of the extracted Mapping, Map Range, 3D F1 Voronoi, and Greater Than chain. A shader-rendered Blender reference or probe is still required before claiming Blender shader parity."
+  "validation": "Exact Blender topology and four-decimal bounds across fifteen cases covering pixelation (including the empty endpoint), crop with zero and rounded fillets, full-color mode, density/structure extremes, and HSV/contrast controls. Grid exposes Blender's point-domain UV field and Image Texture performs linear CLIP sampling of the packed queen-of-swords image. A reproducible Blender 5.1.2 Eevee fixture now renders the packed authored material at 768x768. The gallery transfers img/dens/grid and uses Blender's PCG3D cell-corner/randomness semantics. Aligned evidence has 0.9949 surface-mask IoU, but 0.3033 binary-mask disagreement, 0.4277 macro luminance correlation, and -0.1040 mean-luminance delta; shader parity is therefore not claimed. Residuals include viewport filtering/sampling and may include Generated-coordinate or renderer-specific hash behavior.",
+  "shader_evidence": {
+    "blender_renderer": "tools/render_stippler_shader_reference.py",
+    "webgl_capture_route": "/chrome-assets?asset=img-pixel-stippler&capture=stippler-shader",
+    "mask_comparator": "tools/compare_stippler_shader_masks.py",
+    "reference": "public/dojo/references/chrome-assets/img-pixel-stippler-shader.png",
+    "comparison": "public/dojo/chrome-assets/img-pixel-stippler/shader-comparison.json"
+  }
 }

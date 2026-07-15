@@ -1,0 +1,70 @@
+{
+  "source_file": "NO3D Chrome Asset Library.blend",
+  "source_project": "Node Dojo 2/Blender Tutorial/Utilities/All_N03D_Tools_Asset_Libraries/NO3D Chrome Asset Library.blend",
+  "object": "IMG PIXEL STIPPLER",
+  "material": "img stippler shader.001",
+  "engine": "BLENDER_EEVEE",
+  "resolution": [
+    768,
+    768
+  ],
+  "camera": {
+    "type": "ORTHO",
+    "direction": [
+      0.5517372488975525,
+      -0.6896715760231018,
+      0.4689766764640808
+    ],
+    "ortho_scale": 400.2275390625,
+    "frame_scale": 1.45
+  },
+  "geometry": {
+    "verts": 72094,
+    "faces": 71550,
+    "bbox": {
+      "min": [
+        889.849609375,
+        -248.16522216796875,
+        81.4962158203125
+      ],
+      "max": [
+        1085.1754150390625,
+        27.853759765625,
+        81.4962158203125
+      ]
+    }
+  },
+  "shader": {
+    "mapping_rotation": [
+      0.0,
+      0.0,
+      2.159372329711914
+    ],
+    "mapping_scale": [
+      1.0,
+      1.414306640625,
+      1.0
+    ],
+    "map_to_min": 0.9615478515625,
+    "map_to_max": -0.2576904296875,
+    "map_clamp": true,
+    "voronoi_dimensions": "3D",
+    "voronoi_distance": "EUCLIDEAN",
+    "voronoi_feature": "F1",
+    "voronoi_normalize": false,
+    "math_operations": [
+      "GREATER_THAN",
+      "GREATER_THAN"
+    ]
+  },
+  "mask": {
+    "opaque_pixels": 93094,
+    "black_pixels": 52022,
+    "white_pixels": 13367,
+    "gray_pixels": 27705,
+    "black_fraction": 0.5588115238361226,
+    "white_fraction": 0.1435860528068404,
+    "gray_fraction": 0.29760242335703696,
+    "mean_luminance": 0.28205559248235784
+  }
+}

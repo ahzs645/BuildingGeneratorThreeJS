@@ -21,10 +21,12 @@ const typePixelBrushEditorConfig = {
 
 export default function ChromeAssetsPage(): React.JSX.Element {
   usePageRuntime("Node Dojo Asset Library · Blender vs browser", loadChromeAssets);
-  const [activeAssetId, setActiveAssetId] = useState(() => new URLSearchParams(location.search).get("asset") ?? "");
+  const query = new URLSearchParams(location.search);
+  const [activeAssetId, setActiveAssetId] = useState(() => query.get("asset") ?? "");
   const [graphOpen, setGraphOpen] = useState(true);
   const [graphMaximized, setGraphMaximized] = useState(false);
   const showTypePixelBrushGraph = activeAssetId === "type-pixel-brush";
+  const shaderCapture = query.get("capture") === "stippler-shader" && activeAssetId === "img-pixel-stippler";
 
   useEffect(() => {
     const selected = (event: Event): void => {
@@ -52,7 +54,7 @@ export default function ChromeAssetsPage(): React.JSX.Element {
     setGraphOpen(false);
   };
 
-  return <main className={`assets-shell ${showTypePixelBrushGraph && graphOpen ? "graph-open" : ""}`}>
+  return <main className={`assets-shell ${showTypePixelBrushGraph && graphOpen ? "graph-open" : ""} ${shaderCapture ? "shader-capture" : ""}`}>
     <StudioLink />
     <header className="assets-head"><p>Node Dojo coverage lab</p><h1>Live Asset Library</h1><div id="assets-status">Loading catalog…</div></header>
     <section className="assets-compare">

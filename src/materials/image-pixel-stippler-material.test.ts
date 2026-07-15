@@ -46,6 +46,9 @@ test("exports and wires img, dens, and grid attributes on the exact authored mes
   const material = makeImagePixelStipplerMaterial(dump, geometry, "img stippler shader.001");
   assert.ok(material?.isShaderMaterial);
   assert.equal(material?.name, "Image Pixel Stippler · WebGL reconstruction");
+  assert.equal(material?.glslVersion, THREE.GLSL3);
+  assert.match(material?.fragmentShader ?? "", /1664525u/);
+  assert.match(material?.fragmentShader ?? "", /cell \+ hash3\(base \+ cell\) \* clamp\(randomness/);
   assert.deepEqual(material?.uniforms.mappingScale.value.toArray(), [1, 1.414306640625, 1]);
   geometry.dispose();
   material?.dispose();

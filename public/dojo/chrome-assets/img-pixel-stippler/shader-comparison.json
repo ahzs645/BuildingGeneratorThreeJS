@@ -1,0 +1,45 @@
+{
+  "captures": {
+    "blender": "img-pixel-stippler-shader.png",
+    "webgl": "img-pixel-stippler-shader-webgl.png",
+    "resolution": [
+      768,
+      768
+    ],
+    "alignment": "same square orthographic camera direction and 1.45 framing scale"
+  },
+  "blender": {
+    "surface_pixels": 93094,
+    "black_pixels": 52022,
+    "white_pixels": 13367,
+    "gray_pixels": 27705,
+    "black_fraction": 0.5588115238361226,
+    "white_fraction": 0.1435860528068404,
+    "gray_fraction": 0.29760242335703696,
+    "mean_luminance": 0.28205559248235784
+  },
+  "webgl": {
+    "surface_pixels": 93570,
+    "black_pixels": 69215,
+    "white_pixels": 10111,
+    "gray_pixels": 14244,
+    "black_fraction": 0.7397135834134873,
+    "white_fraction": 0.10805813829218766,
+    "gray_fraction": 0.15222827829432511,
+    "mean_luminance": 0.17806739164057367
+  },
+  "comparison": {
+    "surface_mask_iou": 0.9949128994335792,
+    "intersection_pixels": 93094,
+    "pixel_luminance_mae": 0.3026378311430269,
+    "pixel_luminance_correlation": 0.16662382883845878,
+    "binary_mask_disagreement_fraction": 0.3032741100393151,
+    "macro_block_size": 32,
+    "macro_block_count": 114,
+    "macro_luminance_mae": 0.17712194490355465,
+    "macro_luminance_correlation": 0.42771719173544803,
+    "black_fraction_delta": 0.1809020595773646,
+    "mean_luminance_delta": -0.10398820084178417
+  },
+  "interpretation": "The aligned silhouette and visible image structure validate the capture context, but the occupancy, macro correlation, and pixel disagreement do not establish shader parity. Residual differences include viewport filtering/sampling and may include Generated-coordinate or renderer-specific hash behavior."
+}
