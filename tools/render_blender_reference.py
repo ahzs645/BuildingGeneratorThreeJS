@@ -3,6 +3,10 @@
 Usage:
   blender --background FILE.blend --python tools/render_blender_reference.py -- \
     OBJECT_NAME OUT.png [OUT.json] [LOCAL]
+
+Set ``NODE_DOJO_AUTHORED_MATERIAL=1`` for an isolated Eevee material render,
+and ``NODE_DOJO_GN_ONLY=1`` to disable source modifiers after the first active
+Geometry Nodes modifier before adding the temporary realization pass.
 """
 import json
 import math
@@ -40,6 +44,18 @@ local_space = len(args) > 3 and args[3].upper() == "LOCAL"
 obj = bpy.data.objects.get(object_name)
 if obj is None:
     raise RuntimeError(f'object not found: "{object_name}"')
+
+if os.environ.get("NODE_DOJO_GN_ONLY") == "1":
+    found_geometry_nodes = False
+    for modifier in obj.modifiers:
+        if not found_geometry_nodes and modifier.type == "NODES" and modifier.node_group:
+            found_geometry_nodes = True
+            continue
+        if found_geometry_nodes:
+            modifier.show_viewport = False
+            modifier.show_render = False
+    if not found_geometry_nodes:
+        raise RuntimeError(f'Geometry Nodes modifier not found: "{object_name}"')
 
 override_payload = os.environ.get("NODE_DOJO_OVERRIDES")
 if override_payload:
@@ -133,19 +149,40 @@ bpy.context.scene.camera = camera
 
 scene = bpy.context.scene
 scene.render.image_settings.file_format = "PNG"
-scene.render.engine = "BLENDER_WORKBENCH"
-scene.display.shading.light = "STUDIO"
-scene.display.shading.color_type = "MATERIAL"
-scene.display.shading.show_shadows = True
-scene.display.shading.show_cavity = True
-scene.display.shading.cavity_type = "BOTH"
-scene.display.shading.show_specular_highlight = True
+authored_material = os.environ.get("NODE_DOJO_AUTHORED_MATERIAL") == "1"
+if authored_material:
+    scene.render.engine = "BLENDER_EEVEE"
+    scene.view_settings.view_transform = "Standard"
+    scene.view_settings.look = "Medium High Contrast"
+    key_data = bpy.data.lights.new("__NODE_DOJO_REFERENCE_KEY", "AREA")
+    key_data.energy = 1000.0
+    key_data.size = radius * 1.5
+    key = bpy.data.objects.new("__NODE_DOJO_REFERENCE_KEY", key_data)
+    scene.collection.objects.link(key)
+    key.location = center + Vector((-1.8, -2.1, 2.8)).normalized() * radius * 2.4
+    key.rotation_euler = (center - key.location).to_track_quat("-Z", "Y").to_euler()
+    fill_data = bpy.data.lights.new("__NODE_DOJO_REFERENCE_FILL", "AREA")
+    fill_data.energy = 500.0
+    fill_data.size = radius * 2.0
+    fill = bpy.data.objects.new("__NODE_DOJO_REFERENCE_FILL", fill_data)
+    scene.collection.objects.link(fill)
+    fill.location = center + Vector((2.0, 1.0, 1.0)).normalized() * radius * 2.0
+    fill.rotation_euler = (center - fill.location).to_track_quat("-Z", "Y").to_euler()
+else:
+    scene.render.engine = "BLENDER_WORKBENCH"
+    scene.display.shading.light = "STUDIO"
+    scene.display.shading.color_type = "MATERIAL"
+    scene.display.shading.show_shadows = True
+    scene.display.shading.show_cavity = True
+    scene.display.shading.cavity_type = "BOTH"
+    scene.display.shading.show_specular_highlight = True
 scene.render.resolution_x = 768
 scene.render.resolution_y = 768
 scene.render.resolution_percentage = 100
 scene.render.film_transparent = True
 scene.render.filepath = out_path
-scene.view_settings.look = "AgX - Medium High Contrast"
+if not authored_material:
+    scene.view_settings.look = "AgX - Medium High Contrast"
 bpy.ops.render.render(write_still=True)
 
 if meta_path:
@@ -158,6 +195,8 @@ if meta_path:
         "verts": mesh_verts,
         "faces": mesh_faces,
         "materials": [slot.material.name if slot.material else None for slot in obj.material_slots],
+        "engine": scene.render.engine,
+        "authored_material": authored_material,
     }
     with open(meta_path, "w", encoding="utf-8") as handle:
         json.dump(stats, handle, indent=2)

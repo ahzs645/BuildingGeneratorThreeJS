@@ -1,0 +1,21 @@
+{
+  "object": "print test mesh",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -5.86973762512207,
+      -5.5,
+      -5.86973762512207
+    ],
+    "max": [
+      5.86973762512207,
+      9.126971244812012,
+      5.86973762512207
+    ]
+  },
+  "verts": 16751,
+  "faces": 9065,
+  "materials": [],
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true
+}
