@@ -16,6 +16,20 @@ const [groupName, nodeName, socketName, outPath] = target.length === 4
   ? target
   : [null, target[0], target[1], target[2]];
 const dump = JSON.parse(readFileSync(dumpPath, "utf8")) as Dump;
+const graphOverrides = JSON.parse(process.env.GNVM_PROBE_GRAPH_OVERRIDES ?? "[]") as Array<{
+  group: string;
+  node: string;
+  inputs: Record<string, unknown>;
+}>;
+for (const override of graphOverrides) {
+  const node = dump.node_groups?.[override.group]?.nodes.find((candidate) => candidate.name === override.node);
+  if (!node) throw new Error(`invalid graph override: ${JSON.stringify(override)}`);
+  for (const [name, value] of Object.entries(override.inputs)) {
+    const socket = node.inputs.find((candidate) => candidate.name === name || candidate.identifier === name);
+    if (!socket) throw new Error(`invalid graph override input: ${override.group}.${override.node}.${name}`);
+    socket.value = value as never;
+  }
+}
 const route = JSON.parse(process.env.GNVM_PROBE_ROUTE ?? "[]") as Array<{ group: string; node: string; socket: string }>;
 for (const step of route) {
   const group = dump.node_groups?.[step.group];

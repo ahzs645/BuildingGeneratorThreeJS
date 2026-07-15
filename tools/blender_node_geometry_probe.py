@@ -62,6 +62,17 @@ for name, value in node_overrides.items():
     if socket is None:
         raise KeyError(f"node input not found: {node_name}.{name}")
     socket.default_value = value
+graph_overrides = json.loads(os.environ.get("NODE_DOJO_PROBE_GRAPH_OVERRIDES", "[]"))
+for override in graph_overrides:
+    override_group = bpy.data.node_groups.get(override["group"])
+    override_node = override_group.nodes.get(override["node"]) if override_group else None
+    if override_node is None:
+        raise RuntimeError(f"missing graph override node: {override!r}")
+    for name, value in override.get("inputs", {}).items():
+        socket = override_node.inputs.get(name)
+        if socket is None:
+            raise KeyError(f"graph override input not found: {override_node.name}.{name}")
+        socket.default_value = value
 source = node.outputs.get(socket_name)
 target = next((socket for socket in group_output.inputs if socket.type == "GEOMETRY"), None)
 if source is None or target is None:
