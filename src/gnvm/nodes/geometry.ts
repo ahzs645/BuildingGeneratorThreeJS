@@ -71,6 +71,59 @@ function geometryOfDumpObject(obj: (typeof DUMP_CONTEXT.objects)[number] | undef
 }
 
 type Matrix4Rows = number[][];
+type Quaternion = [number, number, number, number];
+const ROTATION_QUATERNION = Symbol.for("gnvm.rotationQuaternion");
+
+function taggedRotationQuaternion(rotation: Vec3): Quaternion | undefined {
+  return (rotation as Vec3 & { [ROTATION_QUATERNION]?: Quaternion })[ROTATION_QUATERNION];
+}
+
+function instanceMatrix(position: Vec3, rotation: Vec3, scale: Vec3): Matrix4Rows {
+  const f = Math.fround;
+  const quaternion = taggedRotationQuaternion(rotation);
+  let axes: Vec3[];
+  if (quaternion) {
+    const [x, y, z, w] = quaternion.map(f) as Quaternion;
+    const rows = [
+      [f(1 - 2 * (y * y + z * z)), f(2 * (x * y - w * z)), f(2 * (x * z + w * y))],
+      [f(2 * (x * y + w * z)), f(1 - 2 * (x * x + z * z)), f(2 * (y * z - w * x))],
+      [f(2 * (x * z - w * y)), f(2 * (y * z + w * x)), f(1 - 2 * (x * x + y * y))],
+    ];
+    axes = [0, 1, 2].map((column) => [
+      f(rows[0][column] * f(scale[column])),
+      f(rows[1][column] * f(scale[column])),
+      f(rows[2][column] * f(scale[column])),
+    ] as Vec3);
+  } else {
+    axes = [
+      rotateEulerXYZ([scale[0], 0, 0], rotation),
+      rotateEulerXYZ([0, scale[1], 0], rotation),
+      rotateEulerXYZ([0, 0, scale[2]], rotation),
+    ];
+  }
+  return [0, 1, 2].map((row) => [
+    f(axes[0][row]), f(axes[1][row]), f(axes[2][row]), f(position[row]),
+  ]).concat([[0, 0, 0, 1]]);
+}
+
+function multiplyInstanceMatrices(a: Matrix4Rows, b: Matrix4Rows): Matrix4Rows {
+  const f = Math.fround;
+  return [0, 1, 2, 3].map((row) => [0, 1, 2, 3].map((column) => {
+    let value = f(f(a[row][0]) * f(b[0][column]));
+    value = f(value + f(f(a[row][1]) * f(b[1][column])));
+    value = f(value + f(f(a[row][2]) * f(b[2][column])));
+    return f(value + f(f(a[row][3]) * f(b[3][column])));
+  }));
+}
+
+function translationMatrix(translation: Vec3): Matrix4Rows {
+  return [
+    [1, 0, 0, Math.fround(translation[0])],
+    [0, 1, 0, Math.fround(translation[1])],
+    [0, 0, 1, Math.fround(translation[2])],
+    [0, 0, 0, 1],
+  ];
+}
 
 function transformByMatrix(point: Vec3, matrix: Matrix4Rows): Vec3 {
   return [
@@ -490,13 +543,25 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
       ? instance.instances[((requestedIndex % instance.instances.length) + instance.instances.length) % instance.instances.length]
       : null;
     const outerRotation = asVec3(rot[i] ?? [0, 0, 0]);
+    const nativeRotation = taggedRotationQuaternion(outerRotation);
+    const outerMatrix = nativeRotation ? instanceMatrix(pts[i], outerRotation, s) : undefined;
+    const pickedMatrix = picked
+      ? picked.transformMatrix ?? instanceMatrix(picked.position, picked.rotation, picked.scale)
+      : undefined;
+    const transformMatrix = outerMatrix
+      ? pickedMatrix ? multiplyInstanceMatrices(outerMatrix, pickedMatrix) : outerMatrix
+      : undefined;
+    const composedPosition = transformMatrix
+      ? [transformMatrix[0][3], transformMatrix[1][3], transformMatrix[2][3]] as Vec3
+      : picked ? transformPoint(picked.position, pts[i], outerRotation, s) : pts[i];
     out.instances.push({
       geometry: picked?.geometry ?? instance,
       // A picked child keeps its own transform. Compose its origin through the
       // point transform before placing it in the parent geometry.
-      position: picked ? transformPoint(picked.position, pts[i], outerRotation, s) : pts[i],
+      position: composedPosition,
       rotation: picked ? vadd(outerRotation, picked.rotation) : outerRotation,
       scale: picked ? [s[0] * picked.scale[0], s[1] * picked.scale[1], s[2] * picked.scale[2]] : s,
+      transformMatrix,
       attributes,
     } as InstanceRef);
   }
@@ -534,7 +599,10 @@ reg("GeometryNodeTranslateInstances", (api) => {
   const t = api.vec("Translation");
   for (const inst of g.instances) {
     inst.position = vadd(inst.position, t);
-    inst.transformMatrix = undefined;
+    if (inst.transformMatrix) {
+      inst.transformMatrix = multiplyInstanceMatrices(translationMatrix(t), inst.transformMatrix);
+      inst.position = [inst.transformMatrix[0][3], inst.transformMatrix[1][3], inst.transformMatrix[2][3]];
+    }
   }
   return { Instances: g };
 });
@@ -558,7 +626,13 @@ reg("GeometryNodeScaleInstances", (api) => {
       instance.position[1] + center[1] * (1 - factor[1]),
       instance.position[2] + center[2] * (1 - factor[2]),
     ];
-    instance.transformMatrix = undefined;
+    if (instance.transformMatrix) {
+      for (let row = 0; row < 3; row++) {
+        for (let column = 0; column < 3; column++)
+          instance.transformMatrix[row][column] = Math.fround(instance.transformMatrix[row][column] * factor[column]);
+        instance.transformMatrix[row][3] = Math.fround(instance.position[row]);
+      }
+    }
   }
   return { Instances: g };
 });
@@ -582,7 +656,16 @@ reg("GeometryNodeRotateInstances", (api) => {
     // The asset graphs rotate only around Z; component-wise Euler addition is
     // exact for that case and preserves existing point rotations.
     instance.rotation = vadd(instance.rotation, rotation);
-    instance.transformMatrix = undefined;
+    if (instance.transformMatrix) {
+      const rotationMatrix = instanceMatrix([0, 0, 0], rotation, [1, 1, 1]);
+      const toPivot = translationMatrix(pivot);
+      const fromPivot = translationMatrix([-pivot[0], -pivot[1], -pivot[2]]);
+      const delta = multiplyInstanceMatrices(multiplyInstanceMatrices(toPivot, rotationMatrix), fromPivot);
+      instance.transformMatrix = local
+        ? multiplyInstanceMatrices(instance.transformMatrix, delta)
+        : multiplyInstanceMatrices(delta, instance.transformMatrix);
+      instance.position = [instance.transformMatrix[0][3], instance.transformMatrix[1][3], instance.transformMatrix[2][3]];
+    }
   }
   return { Instances: g };
 });
