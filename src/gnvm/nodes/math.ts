@@ -286,15 +286,33 @@ reg("ShaderNodeMapRange", (api) => {
   const clamp = api.prop<boolean>("clamp", true);
   const interp = api.prop<string>("interpolation_type", "LINEAR");
   const dataType = api.prop<string>("data_type", "FLOAT");
-  const mapFactor = (x: number, fromMin: number, fromMax: number) => {
+  const safeDivideF32 = (numerator: number, denominator: number) => {
+    const divisor = Math.fround(denominator);
+    return divisor === 0 ? 0 : Math.fround(Math.fround(numerator) / divisor);
+  };
+  const mapFactor = (x: number, fromMin: number, fromMax: number, steps = 4) => {
+    if (interp === "STEPPED") {
+      // Blender evaluates Map Range sockets as floats, including each
+      // intermediate in floor(factor * (steps + 1)) / steps. Keeping that
+      // ordering is observable in Volume Cube fields near an iso threshold.
+      const factor = safeDivideF32(
+        Math.fround(Math.fround(x) - Math.fround(fromMin)),
+        Math.fround(Math.fround(fromMax) - Math.fround(fromMin)),
+      );
+      const bucket = Math.floor(Math.fround(factor * Math.fround(Math.fround(steps) + 1)));
+      return safeDivideF32(bucket, steps);
+    }
     let factor = fromMax - fromMin === 0 ? 0 : (x - fromMin) / (fromMax - fromMin);
     if (interp === "SMOOTHSTEP") factor = factor <= 0 ? 0 : factor >= 1 ? 1 : factor * factor * (3 - 2 * factor);
     else if (interp === "SMOOTHERSTEP")
       factor = factor <= 0 ? 0 : factor >= 1 ? 1 : factor * factor * factor * (factor * (factor * 6 - 15) + 10);
     return factor;
   };
-  const mapComponent = (x: number, fromMin: number, fromMax: number, toMin: number, toMax: number) => {
-    let result = toMin + mapFactor(x, fromMin, fromMax) * (toMax - toMin);
+  const mapComponent = (x: number, fromMin: number, fromMax: number, toMin: number, toMax: number, steps = 4) => {
+    const factor = mapFactor(x, fromMin, fromMax, steps);
+    let result = interp === "STEPPED"
+      ? Math.fround(Math.fround(toMin) + Math.fround(factor * Math.fround(Math.fround(toMax) - Math.fround(toMin))))
+      : toMin + factor * (toMax - toMin);
     if (clamp) result = toMax >= toMin ? Math.max(toMin, Math.min(toMax, result)) : Math.max(toMax, Math.min(toMin, result));
     return result;
   };
@@ -304,21 +322,22 @@ reg("ShaderNodeMapRange", (api) => {
     const fromMax = api.field("From_Max_FLOAT3");
     const toMin = api.field("To_Min_FLOAT3");
     const toMax = api.field("To_Max_FLOAT3");
-    const result = fieldMap([vector, fromMin, fromMax, toMin, toMax], (value, f0, f1, t0, t1) => {
-      const x = asVec3(value), a = asVec3(f0), b = asVec3(f1), c = asVec3(t0), d = asVec3(t1);
+    const steps = api.field("Steps_FLOAT3");
+    const result = fieldMap([vector, fromMin, fromMax, toMin, toMax, steps], (value, f0, f1, t0, t1, stepValue) => {
+      const x = asVec3(value), a = asVec3(f0), b = asVec3(f1), c = asVec3(t0), d = asVec3(t1), s = asVec3(stepValue);
       return [
-        mapComponent(x[0], a[0], b[0], c[0], d[0]),
-        mapComponent(x[1], a[1], b[1], c[1], d[1]),
-        mapComponent(x[2], a[2], b[2], c[2], d[2]),
+        mapComponent(x[0], a[0], b[0], c[0], d[0], s[0]),
+        mapComponent(x[1], a[1], b[1], c[1], d[1], s[1]),
+        mapComponent(x[2], a[2], b[2], c[2], d[2], s[2]),
       ] as Vec3;
     });
     return { Vector: result, Result: result };
   }
-  const v = api.field("Value"), fmin = api.field("From Min"), fmax = api.field("From Max"), tmin = api.field("To Min"), tmax = api.field("To Max");
+  const v = api.field("Value"), fmin = api.field("From Min"), fmax = api.field("From Max"), tmin = api.field("To Min"), tmax = api.field("To Max"), steps = api.field("Steps");
   return {
-    Result: fieldMap([v, fmin, fmax, tmin, tmax], (a, b, c, d, e) => {
-      const x = num(a), b0 = num(b), b1 = num(c), t0 = num(d), t1 = num(e);
-      const result = mapComponent(x, b0, b1, t0, t1);
+    Result: fieldMap([v, fmin, fmax, tmin, tmax, steps], (a, b, c, d, e, stepValue) => {
+      const x = num(a), b0 = num(b), b1 = num(c), t0 = num(d), t1 = num(e), stepCount = num(stepValue);
+      const result = mapComponent(x, b0, b1, t0, t1, stepCount);
       // Blender's scalar linear Map Range is evaluated in float precision.
       // This is observable when a distance field drives marching-square case
       // thresholds, where one ULP can select a different edge intersection.

@@ -430,12 +430,27 @@ function meshSignedAreaXY(m: Mesh): number {
   }, { interpolation_type: "SMOOTHERSTEP", clamp: false }).Result as Field;
   check("Map Range Smoother Step clamps its interpolation factor", Math.abs(Number(mapped.value) - 3) < 1e-9, `got ${mapped.value}`);
 
+  const stepped = runNode("ShaderNodeMapRange", {
+    Value: 0.810211181640625, "From Min": 0, "From Max": 0.78179931640625,
+    "To Min": 0, "To Max": 1, Steps: 3.5335693359375,
+  }, { interpolation_type: "STEPPED", clamp: false }).Result as Field;
+  check("Map Range Stepped uses Blender float32 bucket arithmetic",
+    Number(stepped.value) === Math.fround(4 / Math.fround(3.5335693359375)), `got ${stepped.value}`);
+
   const mappedVector = runNode("ShaderNodeMapRange", {
     Vector: [0.5, 0.25, 0.75],
     From_Min_FLOAT3: [0, 0, 0], From_Max_FLOAT3: [1, 1, 1],
     To_Min_FLOAT3: [-2, 10, 100], To_Max_FLOAT3: [2, 14, 108],
   }, { data_type: "FLOAT_VECTOR", interpolation_type: "LINEAR", clamp: false }).Vector as Field;
   check("Map Range vector mode uses FLOAT3 sockets component-wise", approx(mappedVector.value as number[], [0, 11, 106]), `got ${mappedVector.value}`);
+
+  const steppedVector = runNode("ShaderNodeMapRange", {
+    Vector: [1, 0.5, -0.25],
+    From_Min_FLOAT3: [0, 0, 0], From_Max_FLOAT3: [1, 1, 1],
+    To_Min_FLOAT3: [0, 0, 0], To_Max_FLOAT3: [1, 1, 1], Steps_FLOAT3: [3, 2, 3],
+  }, { data_type: "FLOAT_VECTOR", interpolation_type: "STEPPED", clamp: false }).Vector as Field;
+  check("Map Range vector Stepped quantizes each component",
+    approx(steppedVector.value as number[], [Math.fround(4 / 3), 0.5, Math.fround(-1 / 3)]), `got ${steppedVector.value}`);
 
   const wave = runNode("ShaderNodeTexWave", {
     Vector: [0.5, 0, 0], Scale: 1, Distortion: 0, Detail: 2,
