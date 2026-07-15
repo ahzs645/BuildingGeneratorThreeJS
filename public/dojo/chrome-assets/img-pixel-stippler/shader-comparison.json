@@ -19,27 +19,27 @@
     "mean_luminance": 0.28205559248235784
   },
   "webgl": {
-    "surface_pixels": 93502,
-    "black_pixels": 68244,
-    "white_pixels": 10169,
-    "gray_pixels": 15089,
-    "black_fraction": 0.7298667408183782,
-    "white_fraction": 0.10875703193514577,
-    "gray_fraction": 0.16137622724647602,
-    "mean_luminance": 0.18213745026612552
+    "surface_pixels": 93500,
+    "black_pixels": 66738,
+    "white_pixels": 8557,
+    "gray_pixels": 18205,
+    "black_fraction": 0.7137754010695188,
+    "white_fraction": 0.09151871657754011,
+    "gray_fraction": 0.19470588235294117,
+    "mean_luminance": 0.18119380483758488
   },
   "comparison": {
-    "surface_mask_iou": 0.9956364569741823,
+    "surface_mask_iou": 0.9956577540106952,
     "intersection_pixels": 93094,
-    "pixel_luminance_mae": 0.3037929732640983,
-    "pixel_luminance_correlation": 0.16627798618279768,
-    "binary_mask_disagreement_fraction": 0.30657185210647303,
+    "pixel_luminance_mae": 0.2985265090592236,
+    "pixel_luminance_correlation": 0.17417068942928143,
+    "binary_mask_disagreement_fraction": 0.30276924398994565,
     "macro_block_size": 32,
     "macro_block_count": 114,
-    "macro_luminance_mae": 0.1756788144419214,
-    "macro_luminance_correlation": 0.4335964763005283,
-    "black_fraction_delta": 0.17105521698225556,
-    "mean_luminance_delta": -0.09991814221623233
+    "macro_luminance_mae": 0.1759472373019263,
+    "macro_luminance_correlation": 0.4312385735994042,
+    "black_fraction_delta": 0.1549638772333961,
+    "mean_luminance_delta": -0.10086178764477297
   },
-  "interpretation": "The aligned silhouette and visible image structure validate the capture context. Blender's degenerate Generated Z coordinate is now reproduced as 0.5, improving macro correlation and mean occupancy relative to the exact zero-axis A/B capture, but pixel disagreement still does not establish shader parity. The residual is localized to Voronoi/hash and Eevee filtering semantics."
+  "interpretation": "The aligned silhouette and visible image structure validate the capture context. Generated coordinates, signed PCG3D hashing, and both authored Greater Than nodes now follow Blender source semantics; a deterministic 4x4 footprint filters the final binary result instead of smoothing internal node values. Pixel disagreement and correlation improve, but the remaining renderer-sampling and precision residual does not establish shader parity."
 }

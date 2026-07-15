@@ -108,20 +108,20 @@ const stippleFragmentShader = /* glsl */`
   varying float vRandomness;
   out vec4 fragColor;
 
-  // GLSL expression of the PCG3D integer hash used by Blender's Apache-2.0
-  // Cycles shader implementation. Uint arithmetic gives the required 32-bit
-  // wraparound for negative and positive cell coordinates.
+  // Exact signed PCG3D integer hash used by Blender's GPU shader. The signed
+  // right shift is significant for negative lanes; converting to uint would
+  // turn it into a logical shift and select different feature points.
   vec3 hash3(vec3 cell) {
-    uvec3 v = uvec3(ivec3(cell));
-    v = v * uvec3(1664525u) + uvec3(1013904223u);
+    ivec3 v = ivec3(cell);
+    v = v * 1664525 + 1013904223;
     v.x += v.y * v.z;
     v.y += v.z * v.x;
     v.z += v.x * v.y;
-    v = v ^ (v >> uvec3(16u));
+    v = v ^ (v >> 16);
     v.x += v.y * v.z;
     v.y += v.z * v.x;
     v.z += v.x * v.y;
-    v = v & uvec3(0x7fffffffu);
+    v = v & ivec3(0x7fffffff);
     return vec3(v) / 2147483647.0;
   }
 
@@ -150,22 +150,36 @@ const stippleFragmentShader = /* glsl */`
     return nearest;
   }
 
+  float authoredMask(vec3 mapped, float density, float randomness, float threshold) {
+    float distanceToFeature = voronoiF1(mapped * max(density, 0.0), randomness);
+    float firstGreaterThan = distanceToFeature > threshold ? 1.0 : 0.0;
+    return firstGreaterThan > threshold ? 1.0 : 0.0;
+  }
+
   void main() {
     vec3 mapped = rotateXYZ(vGenerated * mappingScale, mappingRotation);
-    float distanceToFeature = voronoiF1(mapped * max(vDensity, 0.0), vRandomness);
     // Blender converts Color to Value before Map Range. Rec.709 luminance is
     // used here as an independently authored WebGL equivalent.
     float imageValue = dot(vImage, vec3(0.2126, 0.7152, 0.0722));
     float source = clampThreshold > 0.5 ? clamp(imageValue, 0.0, 1.0) : imageValue;
     float threshold = mix(thresholdMin, thresholdMax, source);
-    // Eevee temporally filters the two hard comparisons. Derivative-width
-    // smoothing supplies the equivalent single-frame coverage in WebGL.
-    float firstDelta = distanceToFeature - threshold;
-    float firstWidth = max(fwidth(firstDelta), 1e-5);
-    float firstGreaterThan = smoothstep(-firstWidth, firstWidth, firstDelta);
-    float secondDelta = firstGreaterThan - threshold;
-    float secondWidth = max(fwidth(secondDelta), 1e-5);
-    float mask = smoothstep(-secondWidth, secondWidth, secondDelta);
+    // Preserve both authored Greater Than nodes at every sample. Eevee filters
+    // the rendered result through jittered samples; a deterministic 4x4 pixel
+    // footprint supplies the browser equivalent without smoothing node values.
+    vec3 pixelX = dFdx(mapped);
+    vec3 pixelY = dFdy(mapped);
+    float mask = 0.0;
+    for (int sampleY = 0; sampleY < 4; sampleY++) {
+      for (int sampleX = 0; sampleX < 4; sampleX++) {
+        float offsetX = (float(sampleX) + 0.5) * 0.25 - 0.5;
+        float offsetY = (float(sampleY) + 0.5) * 0.25 - 0.5;
+        mask += authoredMask(mapped + pixelX * offsetX + pixelY * offsetY,
+                             vDensity,
+                             vRandomness,
+                             threshold);
+      }
+    }
+    mask *= 0.0625;
     fragColor = vec4(vec3(mask), 1.0);
   }
 `;

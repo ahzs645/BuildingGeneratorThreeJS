@@ -68,8 +68,12 @@ test("exports and wires img, dens, and grid attributes on the exact authored mes
   assert.ok(material?.isShaderMaterial);
   assert.equal(material?.name, "Image Pixel Stippler · WebGL reconstruction");
   assert.equal(material?.glslVersion, THREE.GLSL3);
-  assert.match(material?.fragmentShader ?? "", /1664525u/);
+  assert.match(material?.fragmentShader ?? "", /ivec3 v = ivec3\(cell\)/);
+  assert.match(material?.fragmentShader ?? "", /v = v \^ \(v >> 16\)/);
   assert.match(material?.fragmentShader ?? "", /cell \+ hash3\(base \+ cell\) \* clamp\(randomness/);
+  assert.match(material?.fragmentShader ?? "", /distanceToFeature > threshold \? 1\.0 : 0\.0/);
+  assert.match(material?.fragmentShader ?? "", /sampleY < 4/);
+  assert.doesNotMatch(material?.fragmentShader ?? "", /smoothstep/);
   assert.match(material?.vertexShader ?? "", /generatedSize\.z < 1e-8\) vGenerated\.z = 0\.5/);
   assert.deepEqual(material?.uniforms.mappingScale.value.toArray(), [1, 1.414306640625, 1]);
   geometry.dispose();
