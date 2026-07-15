@@ -451,7 +451,7 @@
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/geometry-nodes-001.png",
     "blenderStats": { "verts": 61812, "faces": 53892 },
-    "note": "The full 1,007-node root now evaluates Edge Vertices endpoint positions on the point domain, bringing the three-pass sharpen field to Blender-scale edge lengths and shell bounds within 0.03 units. Final authored output is 62,109 / 53,890 versus Blender's 61,812 / 53,892: only two faces short and 0.48% high in vertices. The remaining final +Z difference is 0.478 units and begins outside the corrected sharpen field.",
+    "note": "The full 1,007-node root now executes Blender's authored three-pass sharpen group, including face-domain Gradient Direction normalization before point interpolation. Authored output is 61,659 / 53,893 versus Blender's 61,812 / 53,892 (0.25% vertex delta and one face); all four parameter cases stay within 0.46% vertices and 0.0372 units in bounds.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

@@ -2031,6 +2031,30 @@ function meshSignedAreaXY(m: Mesh): number {
   const xGradient = Field.perElem((i, ctx) => ctx.position?.(i)[0] ?? 0);
   const directions = gradientDirectionField(xGradient, false).array(makeFieldCtx(plane, "POINT")) as Vec3[];
   check("Gradient Direction reconstructs a planar +X scalar gradient", directions.every((value) => approx(value, [1, 0, 0])), JSON.stringify(directions));
+
+  // The group normalizes on FACE before its output is adapted to POINT. A
+  // shared triangle/quad vertex must therefore average one unit direction from
+  // each face, rather than weighting them by their 1/3 and 1/2 corner means.
+  const mixed = new Geometry();
+  mixed.mesh = new Mesh();
+  mixed.mesh.positions = [
+    [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
+    [0, 1, 0], [0, 0, 1],
+  ];
+  mixed.mesh.faces = [[0, 1, 2, 3], [0, 4, 5]];
+  const xzGradient = Field.perElem((i, ctx) => {
+    const position = ctx.position?.(i) ?? [0, 0, 0];
+    return position[0] + position[2];
+  });
+  const mixedDirections = gradientDirectionField(xzGradient, false).array(makeFieldCtx(mixed, "POINT")) as Vec3[];
+  const equalFaceAverage: Vec3 = [
+    mixedDirections[1][0] + mixedDirections[4][0],
+    mixedDirections[1][1] + mixedDirections[4][1],
+    mixedDirections[1][2] + mixedDirections[4][2],
+  ];
+  const equalLength = Math.hypot(...equalFaceAverage);
+  const expectedShared = equalFaceAverage.map((component) => component / equalLength) as Vec3;
+  check("Gradient Direction normalizes faces before point interpolation", approx(mixedDirections[0], expectedShared), `${JSON.stringify(mixedDirections[0])} vs ${JSON.stringify(expectedShared)}`);
 }
 
 // (S) MeshCone frustum

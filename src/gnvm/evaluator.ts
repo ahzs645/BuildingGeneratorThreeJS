@@ -505,9 +505,15 @@ export function gradientDirectionField(gradient: Field, solenoidal: boolean): Fi
       faceDirections[face] = vscale(direction, (count - 2) / count);
       cornerStart += count;
     }
-    if (ctx.domain === "FACE") return faceDirections.map(vnorm);
+    // The authored group evaluates this corner field on the FACE domain and
+    // normalizes it there before Blender adapts the result to the consuming
+    // point domain. Normalize every face first: carrying the corner-average
+    // magnitude into FACE -> POINT interpolation incorrectly weights triangles
+    // by 1/3 and quads by 1/2.
+    const normalizedFaceDirections = faceDirections.map(vnorm);
+    if (ctx.domain === "FACE") return normalizedFaceDirections;
     if (!ctx.toDomain) return Array.from({ length: ctx.size }, () => [0, 0, 0] as Vec3);
-    return Array.from({ length: ctx.size }, (_, i) => vnorm(asVec3(ctx.toDomain!("FACE", faceDirections, i) ?? [0, 0, 0])));
+    return Array.from({ length: ctx.size }, (_, i) => vnorm(asVec3(ctx.toDomain!("FACE", normalizedFaceDirections, i) ?? [0, 0, 0])));
   });
 }
 
@@ -636,14 +642,6 @@ class Invocation {
       }
       case "GeometryNodeGroup": {
         if (!node.group) return {};
-        if (node.group === "sharpen mesh") {
-          // This cosmetic three-pass curvature flow is numerically unstable
-          // when its legacy anonymous fields are evaluated outside Blender.
-          // Preserve the already parity-matched surface until the remaining
-          // face-winding differences in Gradient Direction are eliminated.
-          const mesh = this.pull(node, "Socket_1");
-          return { Socket_0: mesh instanceof Geometry ? mesh.clone() : new Geometry() };
-        }
         if (node.group === "Gradient Direction") {
           const input = this.pull(node, "Input_1");
           const mode = this.pull(node, "Input_2");

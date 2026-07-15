@@ -4,7 +4,7 @@
   "root": "Geometry Nodes.001",
   "status": "near-exact-surface",
   "blender": { "verts": 61812, "faces": 53892 },
-  "gnvm": { "verts": 62109, "faces": 53890 },
+  "gnvm": { "verts": 61659, "faces": 53893 },
   "coverage": "100% of reachable node types; the browser evaluates all 1,007 nodes in the root closure.",
-  "validation": "Four Blender/VM cases cover authored settings, wrapper switching, thickness, and wrapper dimensions. Edge Vertices now resolves endpoint positions on the point domain instead of misreading endpoint IDs as edge IDs, reducing the three-pass sharpen edge-length median from 7.346 to 0.278 versus Blender's 0.279 and aligning the sharpened shell bounds within 0.03 units. Final authored output is 62,109 / 53,890 versus Blender's 61,812 / 53,892: only two faces short and 0.48% high in vertices. The remaining final +Z difference is 0.478 units and begins outside the corrected sharpen field."
+  "validation": "Four Blender/VM cases cover authored settings, wrapper switching, thickness, and wrapper dimensions. The VM now evaluates the authored three-pass sharpen group instead of bypassing it, and Gradient Direction normalizes on the face domain before point interpolation. Authored output improves from 62,109 / 53,890 to 61,659 / 53,893 versus Blender's 61,812 / 53,892 (0.25% low in vertices and one face high), with bounds within 0.0303 units. Thickness 6 is within 0.46% vertices, 19 faces, and 0.0372 units; the 60 by 45 wrapper is within 0.13% vertices, two faces, and 0.0100 units. The first remaining topology divergence is upstream Merge by Distance at 53,907 / 53,893 versus 53,906 / 53,892; the residual split-vertex count follows small Gradient Direction differences around the 30-degree autosmooth threshold."
 }
