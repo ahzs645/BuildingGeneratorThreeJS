@@ -1,6 +1,12 @@
 import { asNum, Field, Vec3 } from "../core";
 import { makeFieldCtx } from "../evaluator";
 import { Geometry, Mesh } from "../geometry";
+import {
+  OPENVDB_AMBIGUOUS_FACE,
+  openVdbCellSigns,
+  openVdbEdgeGroup,
+  openVdbGroupCount,
+} from "../openvdb-edge-groups";
 import { reg, SockVal } from "../registry";
 
 interface VolumeGrid {
@@ -136,17 +142,9 @@ function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, 
     [0, 2], [1, 3], [4, 6], [5, 7],
     [0, 4], [1, 5], [2, 6], [3, 7],
   ];
-  // Each face lists its corners cyclically and the corresponding perimeter
-  // edges. Ambiguous checkerboards use the bilinear asymptotic determinant,
-  // consistently on both cells sharing the face. A center-value average is
-  // not equivalent when the two diagonal sign pairs have unequal magnitude.
-  const cellFaces: { corners: [number, number, number, number]; edges: [number, number, number, number] }[] = [
-    { corners: [0, 1, 3, 2], edges: [0, 5, 1, 4] },
-    { corners: [4, 6, 7, 5], edges: [6, 3, 7, 2] },
-    { corners: [0, 4, 5, 1], edges: [8, 2, 9, 0] },
-    { corners: [2, 3, 7, 6], edges: [1, 11, 3, 10] },
-    { corners: [0, 2, 6, 4], edges: [4, 10, 6, 8] },
-    { corners: [1, 5, 7, 3], edges: [9, 7, 11, 5] },
+  const cellFaceEdges: [number, number, number, number][] = [
+    [0, 5, 1, 4], [6, 3, 7, 2], [8, 2, 9, 0],
+    [1, 11, 3, 10], [4, 10, 6, 8], [9, 7, 11, 5],
   ];
   const cellEdgeVertices = new Map<number, Int32Array>();
   const gridPoint = (x: number, y: number, z: number): Vec3 => [
@@ -154,6 +152,21 @@ function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, 
     origin[1] + y * spacing[1],
     origin[2] + z * spacing[2],
   ];
+  const rawCellSigns = (x: number, y: number, z: number): number => openVdbCellSigns(
+    cornerOffsets.map(([dx, dy, dz]) => sample(x + dx, y + dy, z + dz)),
+    isolation,
+  );
+  const correctedCellSigns = (signs: number, x: number, y: number, z: number): number => {
+    const face = OPENVDB_AMBIGUOUS_FACE[signs];
+    if (!face) return signs;
+    const neighborOffsets: Vec3[] = [
+      [0, 0, -1], [1, 0, 0], [0, 0, 1], [-1, 0, 0], [0, -1, 0], [0, 1, 0],
+    ];
+    const oppositeFace = [3, 4, 1, 2, 6, 5];
+    const offset = neighborOffsets[face - 1];
+    const neighborSigns = rawCellSigns(x + offset[0], y + offset[1], z + offset[2]);
+    return OPENVDB_AMBIGUOUS_FACE[neighborSigns] === oppositeFace[face - 1] ? 255 - signs : signs;
+  };
 
   for (let z = 0; z < cellResolution[2]; z++) for (let y = 0; y < cellResolution[1]; y++) for (let x = 0; x < cellResolution[0]; x++) {
     const cornerValues = cornerOffsets.map(([dx, dy, dz]) => sample(x + dx, y + dy, z + dz));
@@ -175,40 +188,24 @@ function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, 
         z + oa[2] + (ob[2] - oa[2]) * t,
       );
     }
-    const parent = Array.from({ length: 12 }, (_, edge) => edge);
-    const root = (edge: number): number => parent[edge] === edge ? edge : (parent[edge] = root(parent[edge]));
-    const join = (a: number, b: number) => { const ra = root(a), rb = root(b); if (ra !== rb) parent[ra] = rb; };
-    for (const face of cellFaces) {
-      const crossed = face.edges.filter((edge) => edgePoints[edge] !== null);
-      if (crossed.length === 2) join(crossed[0], crossed[1]);
-      else if (crossed.length === 4) {
-        if (diagnosticSink) ambiguousFaces++;
-        const shifted = face.corners.map((corner) => cornerValues[corner] - isolation);
-        const determinant = shifted[0] * shifted[2] - shifted[1] * shifted[3];
-        const [e0, e1, e2, e3] = face.edges;
-        if (determinant > 0) { join(e0, e1); join(e2, e3); }
-        else if (determinant < 0) { join(e3, e0); join(e1, e2); }
-        else {
-          // Exact symmetric saddle: the face center supplies a deterministic
-          // tie-break without disagreeing across the two incident cells.
-          const centerInside = shifted.reduce((sum, value) => sum + value, 0) < 0;
-          const firstInside = shifted[0] < 0;
-          if (centerInside === firstInside) { join(e0, e1); join(e2, e3); }
-          else { join(e3, e0); join(e1, e2); }
-        }
-      }
-    }
-    const components = new Map<number, number[]>();
+    if (diagnosticSink)
+      for (const face of cellFaceEdges) if (face.filter((edge) => edgePoints[edge] !== null).length === 4) ambiguousFaces++;
+    // OpenVDB uses a fixed topology table, then complements certain ambiguous
+    // masks when the adjacent cell presents the matching opposite face. This
+    // is deliberately sign-only; scalar asymptotic determinants choose a
+    // different topology from Blender in locally ambiguous TPMS cells.
+    const signs = correctedCellSigns(openVdbCellSigns(cornerValues, isolation), x, y, z);
+    const components = Array.from({ length: openVdbGroupCount(signs) }, () => [] as number[]);
     for (let edge = 0; edge < edgePoints.length; edge++) {
       if (!edgePoints[edge]) continue;
-      const component = root(edge);
-      const edges = components.get(component);
-      if (edges) edges.push(edge); else components.set(component, [edge]);
+      const group = openVdbEdgeGroup(signs, edge);
+      if (group > 0) components[group - 1].push(edge);
     }
     if (diagnosticSink)
-      activeCellComponents.set(components.size, (activeCellComponents.get(components.size) ?? 0) + 1);
+      activeCellComponents.set(components.length, (activeCellComponents.get(components.length) ?? 0) + 1);
     const edgeVertices = new Int32Array(12).fill(-1);
-    for (const edges of components.values()) {
+    for (const edges of components) {
+      if (!edges.length) continue;
       let sum: Vec3 = [0, 0, 0];
       for (const edge of edges) {
         const point = edgePoints[edge]!;

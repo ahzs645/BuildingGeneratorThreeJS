@@ -59,6 +59,20 @@ The scalar-grid diagnostic callback remains available to export the 64-cubed
 Volume Cube grid and 71-cubed transformed grid, including transform metadata,
 isolation, counts, and a byte-level hash.
 
+## OpenVDB ambiguous cells
+
+The follow-up TPMS.018 investigation established that Blender/OpenVDB does not
+use a scalar asymptotic determinant for ambiguous cells. OpenVDB classifies the
+eight corner signs with fixed `sAmbiguousFace` and `sEdgeGroupTable` lookup
+tables, and conditionally complements a mask when its neighboring cell exposes
+the matching opposite ambiguous face.
+
+The VM now uses those Apache-2.0 OpenVDB tables directly. At TPMS.018's first
+`Volume to Mesh` boundary, Blender and GN-VM both produce 22,932 vertices and
+22,938 quads. The 188 ambiguous faces resolve to 22,356 one-component cells and
+288 two-component cells, with zero missing or duplicate quad corners. The
+remaining full-result difference begins at the downstream hard-sphere Boolean.
+
 ## Thirteen-root regression snapshot
 
 The diagnostic-only change leaves all roots unchanged:
@@ -67,7 +81,7 @@ The diagnostic-only change leaves all roots unchanged:
 | --- | ---: | ---: |
 | Math Clay Study.003 | 23,968 / 23,966 | 23,968 / 23,966 |
 | Math Clay Study.002 | 30,644 / 30,642 | 30,644 / 30,642 |
-| Math Clay Study.008 | 17,061 / 28,525 | 17,055 / 28,467 |
+| Math Clay Study.008 | 17,061 / 28,525 | 17,137 / 28,606 |
 | Math Clay Study.006 | 29,226 / 29,226 | 29,226 / 29,226 |
 | Math Clay Study.007 | 108,958 / 108,924 | 108,958 / 108,924 |
 | Math Clay Study.014 | 129,503 / 125,916 | 129,503 / 127,614 |

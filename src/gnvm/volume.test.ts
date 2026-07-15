@@ -2,6 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { Vec3 } from "./core";
 import { surfaceNetsForTest } from "./nodes/volume";
+import { OPENVDB_AMBIGUOUS_FACE, OPENVDB_EDGE_GROUPS, openVdbGroupCount } from "./openvdb-edge-groups";
+
+test("bundles the complete OpenVDB ambiguous-cell topology tables", () => {
+  assert.equal(OPENVDB_AMBIGUOUS_FACE.length, 256);
+  assert.equal(OPENVDB_EDGE_GROUPS.length, 256 * 13);
+  assert.equal(OPENVDB_AMBIGUOUS_FACE[52], 2);
+  assert.equal(openVdbGroupCount(52), 1);
+  assert.equal(openVdbGroupCount(255 - 52), 2);
+});
 
 test("surface nets closes a crossing on each axis' negative boundary", () => {
   const resolution: Vec3 = [4, 4, 4];
