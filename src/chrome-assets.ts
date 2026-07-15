@@ -11,6 +11,7 @@ import { makeImagePixelStipplerMaterial } from "./image-pixel-stippler-material"
 import { makeBasicBlenderMaterial } from "./blender-basic-material";
 import { makeAttributePrincipledMaterial } from "./attribute-principled-material";
 import { makeFilamentMaterial } from "./filament-material";
+import { makeCrossSectionFilamentMaterial } from "./cross-section-filament-material";
 
 type RangeControl = { type?: "range"; name: string; label: string; min: number; max: number; step: number; value: number };
 type CheckboxControl = { type: "checkbox"; name: string; label: string; value: boolean };
@@ -97,6 +98,7 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
           : makeAttributeEmissionMaterial(dump,geometry,group.material??"")
             ?? makeAttributePrincipledMaterial(dump,geometry,group.material??"")
             ?? makeFilamentMaterial(dump,geometry,group.material??"")
+            ?? makeCrossSectionFilamentMaterial(dump,geometry,group.material??"")
             ?? makeChromeCrayonMaterial(dump,geometry,group.material??"")
             ?? makeBasicBlenderMaterial(dump,group.material??"");
       if(authored instanceof THREE.MeshStandardMaterial)authored.flatShading=current.flatShading??false;
