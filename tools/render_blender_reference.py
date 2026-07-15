@@ -45,7 +45,8 @@ obj = bpy.data.objects.get(object_name)
 if obj is None:
     raise RuntimeError(f'object not found: "{object_name}"')
 
-if os.environ.get("NODE_DOJO_GN_ONLY") == "1":
+gn_only = os.environ.get("NODE_DOJO_GN_ONLY") == "1"
+if gn_only:
     found_geometry_nodes = False
     for modifier in obj.modifiers:
         if not found_geometry_nodes and modifier.type == "NODES" and modifier.node_group:
@@ -113,6 +114,13 @@ evaluated = obj.evaluated_get(depsgraph)
 mesh = evaluated.to_mesh()
 mesh_verts = len(mesh.vertices) if mesh else None
 mesh_faces = len(mesh.polygons) if mesh else None
+evaluated_materials = [material.name if material else None for material in mesh.materials] if mesh else []
+evaluated_material_faces = {}
+if mesh:
+    for polygon in mesh.polygons:
+        name = evaluated_materials[polygon.material_index] if polygon.material_index < len(evaluated_materials) else None
+        key = name or "<none>"
+        evaluated_material_faces[key] = evaluated_material_faces.get(key, 0) + 1
 if mesh and os.environ.get("NODE_DOJO_SURFACE_BOUNDS") == "1" and mesh.polygons:
     surface_indices = {index for polygon in mesh.polygons for index in polygon.vertices}
     corners = [evaluated.matrix_world @ mesh.vertices[index].co for index in surface_indices]
@@ -195,11 +203,15 @@ if meta_path:
         "verts": mesh_verts,
         "faces": mesh_faces,
         "materials": [slot.material.name if slot.material else None for slot in obj.material_slots],
+        "evaluated_materials": evaluated_materials,
+        "evaluated_material_faces": evaluated_material_faces,
         "engine": scene.render.engine,
         "authored_material": authored_material,
+        "geometry_nodes_only": gn_only,
     }
     with open(meta_path, "w", encoding="utf-8") as handle:
         json.dump(stats, handle, indent=2)
+        handle.write("\n")
 
 if mesh:
     evaluated.to_mesh_clear()

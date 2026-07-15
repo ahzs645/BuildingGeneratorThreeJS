@@ -16,6 +16,15 @@
   "verts": 16751,
   "faces": 9065,
   "materials": [],
+  "evaluated_materials": [
+    "flat.w",
+    "filament .02 mm.002"
+  ],
+  "evaluated_material_faces": {
+    "flat.w": 8960,
+    "filament .02 mm.002": 105
+  },
   "engine": "BLENDER_EEVEE",
-  "authored_material": true
+  "authored_material": true,
+  "geometry_nodes_only": true
 }

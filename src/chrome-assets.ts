@@ -123,7 +123,6 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
     }
   }
   if(!materials.length)materials.push(diagnosticMaterial());
-  canvas.dataset.materials = JSON.stringify(materials.map((item)=>item.name));
   const mesh = new THREE.Mesh(geometry, materials.length===1?materials[0]:materials);
   if (!current.localSpace && source?.rotation) mesh.rotation.set(Number(source.rotation[0] ?? 0), Number(source.rotation[1] ?? 0), Number(source.rotation[2] ?? 0));
   if (!current.localSpace && source?.scale) mesh.scale.set(Number(source.scale[0] ?? 1), Number(source.scale[1] ?? 1), Number(source.scale[2] ?? 1));

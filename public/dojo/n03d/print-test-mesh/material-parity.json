@@ -1,0 +1,24 @@
+{
+  "capture": {
+    "resolution": [768, 768],
+    "blenderReference": "../../references/n03d/print-test-mesh-shader.png",
+    "browserRoute": "/chrome-assets?asset=n03d-print-test-mesh&capture=authored",
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometry": "Geometry Nodes only; the post-GN Bevel modifier is disabled in Blender"
+  },
+  "materialGroups": [
+    { "material": "flat.w", "triangles": 17920, "browser": "literal Background material" },
+    { "material": "filament .02 mm.002", "triangles": 200, "browser": "portable filament approximation" }
+  ],
+  "comparison": {
+    "surfaceMaskIou": 0.9917000822350467,
+    "intersectionPixels": 272541,
+    "pixelLuminanceMae": 0.7377595189644236,
+    "pixelLuminanceCorrelation": 0.20276789466583178,
+    "binaryMaskDisagreementFraction": 0.992628632022338,
+    "macroLuminanceMae": 0.7193384824841786,
+    "macroLuminanceCorrelation": -0.07682215075613709,
+    "meanLuminanceDelta": 0.7314765561496585
+  },
+  "interpretation": "Camera and geometry align, but whole-asset shader parity fails. The few large filament faces occlude much of the high-triangle-count flat.w diagnostic geometry, and their browser reconstruction is much brighter than Blender Eevee. The generic flat.w Background contract is implemented; the next material target for this asset is the filament shader plus its lighting environment."
+}
