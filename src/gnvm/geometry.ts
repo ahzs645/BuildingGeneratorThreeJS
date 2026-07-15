@@ -798,7 +798,39 @@ export function orientShellOutward(mesh: Mesh): void {
 
 export function toTriSoup(g: Geometry): TriSoup {
   const realized = g.instances.length ? realizeInstances(g) : g;
-  const source = realized.mesh ?? new Mesh();
+  const realizedMesh = realized.mesh ?? new Mesh();
+  // Point-cloud components are represented internally as loose mesh positions
+  // so existing field/instance code can share the POINT domain. Blender's
+  // evaluated mesh output does not include those points, though. Strip only
+  // positions explicitly stamped as point-cloud data and still unreferenced by
+  // a mesh face/edge; a later conversion that gives them topology remains a
+  // normal mesh and is retained.
+  const marker = realizedMesh.attributes.get("__gnvm_point_cloud");
+  let source = realizedMesh;
+  if (marker?.domain === "POINT") {
+    const referenced = new Set<number>();
+    for (const face of realizedMesh.faces) for (const vertex of face) referenced.add(vertex);
+    for (const edge of realizedMesh.edges) { referenced.add(edge[0]); referenced.add(edge[1]); }
+    const retained = realizedMesh.positions.map((_, vertex) => referenced.has(vertex) || asNum(marker.data[vertex] ?? 0) <= 0);
+    if (retained.some((value) => !value)) {
+      const filtered = new Mesh();
+      filtered.materialSlots = [...realizedMesh.materialSlots];
+      const remap = new Map<number, number>();
+      for (let vertex = 0; vertex < realizedMesh.positions.length; vertex++) if (retained[vertex]) {
+        remap.set(vertex, filtered.positions.length);
+        filtered.positions.push([...realizedMesh.positions[vertex]] as Vec3);
+      }
+      filtered.faces = realizedMesh.faces.map((face) => face.map((vertex) => remap.get(vertex)!));
+      filtered.faceMaterial = [...realizedMesh.faceMaterial];
+      filtered.edges = realizedMesh.edges.map(([a, b]) => [remap.get(a)!, remap.get(b)!]);
+      for (const [name, attribute] of realizedMesh.attributes) {
+        filtered.attributes.set(name, attribute.domain === "POINT"
+          ? { domain: "POINT", data: attribute.data.filter((_, vertex) => retained[vertex]) }
+          : { domain: attribute.domain, data: [...attribute.data] });
+      }
+      source = filtered;
+    }
+  }
   const mesh = new Mesh();
   mesh.positions = source.positions;
   mesh.materialSlots = [...source.materialSlots];

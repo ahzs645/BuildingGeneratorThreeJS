@@ -473,6 +473,7 @@ reg("GeometryNodeInstancesToPoints", (api) => {
     for (const name of instanceAttributeNames) instanceAttributeData.get(name)!.push(source.instances[i].attributes?.get(name) ?? 0);
   }
   mesh.attributes.set("radius", { domain: "POINT", data: radiusData });
+  mesh.attributes.set("__gnvm_point_cloud", { domain: "POINT", data: mesh.positions.map(() => 1) });
   for (const [name, data] of instanceAttributeData) mesh.attributes.set(name, { domain: "POINT", data });
   out.mesh = mesh;
   return { Points: out };

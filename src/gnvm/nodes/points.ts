@@ -128,6 +128,7 @@ reg("GeometryNodeDistributePointsOnFaces", (api) => {
   }
   points.mesh.attributes.set("normal", { domain: "POINT" as Domain, data: normals });
   points.mesh.attributes.set("rotation", { domain: "POINT" as Domain, data: rotations });
+  points.mesh.attributes.set("__gnvm_point_cloud", { domain: "POINT" as Domain, data: points.mesh.positions.map(() => 1) });
   return {
     Points: points,
     Normal: Field.perElem((index) => normals[index] ?? [0, 0, 1]),

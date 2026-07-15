@@ -1355,6 +1355,7 @@ reg("GeometryNodeMeshToPoints", (api) => {
       const data = kept.map((i) => ctx.attr?.(name, i) ?? 0);
       m.attributes.set(name, { domain: "POINT", data });
     }
+    m.attributes.set("__gnvm_point_cloud", { domain: "POINT", data: m.positions.map(() => 1) });
     out.mesh = m;
   }
   return { Points: out };

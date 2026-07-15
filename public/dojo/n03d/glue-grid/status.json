@@ -2,9 +2,9 @@
   "id": "n03d-glue-grid",
   "object": "GLUE GRID",
   "root": "Geometry Nodes.012",
-  "status": "surface-parity",
+  "status": "topology-exact-bounds-near",
   "blender": { "verts": 4736, "faces": 4096 },
-  "gnvm": { "verts": 4752, "faces": 4096 },
+  "gnvm": { "verts": 4736, "faces": 4096 },
   "coverage": "100% of reachable node types across the 7-group, 93-node closure.",
-  "validation": "The authored 4x4 grid has exact face topology and face-referenced bounds within 0.0004 units. The VM retains the graph's 16-point Points component in its aggregate vertex count; Blender's evaluated mesh count omits that non-surface component."
+  "validation": "The authored 4x4 grid now matches Blender exactly at 4,736 vertices and 4,096 faces. Point-cloud components are retained for Geometry Nodes field and instancing evaluation but omitted from the final evaluated mesh, matching Blender. Bounds remain within 0.0004 units."
 }

@@ -1016,6 +1016,26 @@ function meshSignedAreaXY(m: Mesh): number {
   check("toTriSoup preserves a collapsed long fan quad", soup.indices.length === 6, `tris=${soup.indices.length / 3}`);
 }
 
+// Point-cloud components share the VM's internal POINT representation with
+// loose mesh vertices, but Blender omits them from an evaluated mesh. Once a
+// point gains real face topology it must remain part of the exported mesh.
+{
+  const loose = new Mesh();
+  loose.positions = [[0, 0, 0], [1, 0, 0]];
+  loose.attributes.set("__gnvm_point_cloud", { domain: "POINT", data: [1, 1] });
+  const looseGeometry = new Geometry();
+  looseGeometry.mesh = loose;
+  check("toTriSoup omits point-cloud-only positions", toTriSoup(looseGeometry).stats.verts === 0);
+
+  const surfaced = loose.clone();
+  surfaced.positions.push([0, 1, 0]);
+  surfaced.attributes.get("__gnvm_point_cloud")!.data.push(1);
+  surfaced.faces = [[0, 1, 2]];
+  const surfacedGeometry = new Geometry();
+  surfacedGeometry.mesh = surfaced;
+  check("toTriSoup retains point-cloud positions after meshing", toTriSoup(surfacedGeometry).stats.verts === 3);
+}
+
 // (M) MergeByDistance selection=false vertices do not participate in welding
 {
   const m = new Mesh();

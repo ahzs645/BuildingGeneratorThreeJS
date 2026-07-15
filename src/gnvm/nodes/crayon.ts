@@ -259,6 +259,7 @@ reg("GeometryNodeCurveToPoints", (api) => {
   mesh.attributes.set("__curve_tangent", { domain: "POINT", data: tangents });
   mesh.attributes.set("__curve_normal", { domain: "POINT", data: normals });
   mesh.attributes.set("__curve_rotation", { domain: "POINT", data: rotations });
+  mesh.attributes.set("__gnvm_point_cloud", { domain: "POINT", data: mesh.positions.map(() => 1) });
   out.mesh = mesh;
   if (FIELD_PROBE.node === api.node.name) {
     const requested = FIELD_PROBE.socket ?? "Rotation";

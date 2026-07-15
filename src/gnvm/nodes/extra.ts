@@ -1119,6 +1119,7 @@ reg("GeometryNodePoints", (api) => {
   const ctx = { size: count, domain: "POINT" as Domain, index: (i: number) => i };
   const arr = posF.array(ctx as never);
   for (let i = 0; i < count; i++) m.positions.push(asVec3(arr[i] ?? [0, 0, 0]));
+  m.attributes.set("__gnvm_point_cloud", { domain: "POINT", data: Array(count).fill(1) });
   geo.mesh = m;
   return { Geometry: geo, Points: geo };
 });
