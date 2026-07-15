@@ -121,6 +121,10 @@ function matrixToEulerXYZ(M: number[][]): Vec3 {
 }
 
 type Quat = [number, number, number, number];
+const ROTATION_QUATERNION = Symbol.for("gnvm.rotationQuaternion");
+type TaggedRotation = Vec3 & { [ROTATION_QUATERNION]?: Quat };
+const taggedQuaternion = (value: Elem): Quat | undefined =>
+  Array.isArray(value) ? (value as TaggedRotation)[ROTATION_QUATERNION] : undefined;
 const quatNormalize = (q: Quat): Quat => {
   const length = Math.hypot(q[0], q[1], q[2], q[3]) || 1;
   return [q[0] / length, q[1] / length, q[2] / length, q[3] / length];
@@ -158,7 +162,7 @@ function quatRotate(q: Quat, v: Vec3): Vec3 {
   const uuv = vcross(u, uv);
   return [v[0] + 2 * (s * uv[0] + uuv[0]), v[1] + 2 * (s * uv[1] + uuv[1]), v[2] + 2 * (s * uv[2] + uuv[2])];
 }
-function quatFromTo(from0: Vec3, to0: Vec3, axisSel: string): Quat {
+function quatFromTo(from0: Vec3, to0: Vec3, axisSel: string, nativeRotation = false): Quat {
   const from = vnorm(from0), to = vnorm(to0);
   const dot = Math.max(-1, Math.min(1, vdot(from, to)));
   if (dot > 1 - 1e-10) return [0, 0, 0, 1];
@@ -166,7 +170,18 @@ function quatFromTo(from0: Vec3, to0: Vec3, axisSel: string): Quat {
     // AUTO keeps the named axis' conventional roll reference stable. Project
     // that reference onto the perpendicular plane so Y -> -Y rotates around Z,
     // matching Blender's outward-facing cyclic-curve instances.
-    const reference: Vec3 = axisSel === "Y" ? [0, 0, 1] : axisSel === "Z" ? [1, 0, 0] : [0, 1, 0];
+    // Curve sockets carry a native quaternion. At the exact 180-degree
+    // singularity Blender's AUTO pivot for native Z-axis rotations is Y. An
+    // Euler socket reconstructed from the visually identical [pi, 0, 0]
+    // contains a tiny quaternion W component and follows the X-pivot branch
+    // instead. Preserve that distinction: Modern Pipe's cap rails depend on
+    // the native curve rotation becoming a pi roll around Z, while an authored
+    // Euler constant must continue collapsing to identity.
+    const reference: Vec3 = axisSel === "Y"
+      ? [0, 0, 1]
+      : axisSel === "Z"
+        ? nativeRotation ? [0, 1, 0] : [1, 0, 0]
+        : [0, 1, 0];
     let pivot: Vec3 = [
       reference[0] - from[0] * vdot(reference, from),
       reference[1] - from[1] * vdot(reference, from),
@@ -213,9 +228,10 @@ reg("FunctionNodeAlignRotationToVector", (api) => {
   const factor = api.field("Factor");
   return {
     Rotation: fieldMap([rotation, vector, factor], (r, v, f) => {
-      const base = quatFromEulerXYZ(asVec3(r));
+      const native = taggedQuaternion(r);
+      const base = native ? quatNormalize(native) : quatFromEulerXYZ(asVec3(r));
       const currentAxis = quatRotate(base, localAxis);
-      const delta = quatSlerpIdentity(quatFromTo(currentAxis, asVec3(v), axisSel), asNum(f));
+      const delta = quatSlerpIdentity(quatFromTo(currentAxis, asVec3(v), axisSel, Boolean(native)), asNum(f));
       return quatToEulerXYZ(quatMultiply(delta, base));
     }),
   };

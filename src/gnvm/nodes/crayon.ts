@@ -8,6 +8,9 @@ import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 import { reg, EvalAPI } from "../registry";
 
 const DOMAINS = new Set<Domain>(["POINT", "EDGE", "FACE", "CORNER", "CURVE", "INSTANCE"]);
+type Quat = [number, number, number, number];
+const ROTATION_QUATERNION = Symbol.for("gnvm.rotationQuaternion");
+type TaggedRotation = Vec3 & { [ROTATION_QUATERNION]?: Quat };
 const domainOf = (api: EvalAPI, fallback: Domain = "POINT"): Domain => {
   const raw = api.prop<string>("domain", fallback) as Domain;
   return DOMAINS.has(raw) ? raw : fallback;
@@ -303,9 +306,37 @@ reg("GeometryNodeCurveToPoints", (api) => {
     ];
     const y = Math.asin(Math.max(-1, Math.min(1, -m[2][0])));
     const cy = Math.cos(y);
-    return Math.abs(cy) > 1e-6
+    const euler = (Math.abs(cy) > 1e-6
       ? [Math.atan2(m[2][1], m[2][2]), y, Math.atan2(m[1][0], m[0][0])]
-      : [Math.atan2(-m[1][2], m[1][1]), y, 0];
+      : [Math.atan2(-m[1][2], m[1][1]), y, 0]) as TaggedRotation;
+
+    // Rotation sockets are quaternions inside Blender. Keep the exact frame
+    // quaternion alongside the Euler compatibility value so downstream
+    // rotation nodes can distinguish a native 180-degree curve frame from an
+    // Euler value that merely displays the same [pi, 0, 0]. The metadata is
+    // deliberately non-enumerable, leaving dumps/probes and ordinary vector
+    // consumers unchanged.
+    const trace = m[0][0] + m[1][1] + m[2][2];
+    let quaternion: Quat;
+    if (trace > 0) {
+      const s = 2 * Math.sqrt(trace + 1);
+      quaternion = [(m[2][1] - m[1][2]) / s, (m[0][2] - m[2][0]) / s, (m[1][0] - m[0][1]) / s, s / 4];
+    } else if (m[0][0] > m[1][1] && m[0][0] > m[2][2]) {
+      const s = 2 * Math.sqrt(1 + m[0][0] - m[1][1] - m[2][2]);
+      quaternion = [s / 4, (m[0][1] + m[1][0]) / s, (m[0][2] + m[2][0]) / s, (m[2][1] - m[1][2]) / s];
+    } else if (m[1][1] > m[2][2]) {
+      const s = 2 * Math.sqrt(1 + m[1][1] - m[0][0] - m[2][2]);
+      quaternion = [(m[0][1] + m[1][0]) / s, s / 4, (m[1][2] + m[2][1]) / s, (m[0][2] - m[2][0]) / s];
+    } else {
+      const s = 2 * Math.sqrt(1 + m[2][2] - m[0][0] - m[1][1]);
+      quaternion = [(m[0][2] + m[2][0]) / s, (m[1][2] + m[2][1]) / s, s / 4, (m[1][0] - m[0][1]) / s];
+    }
+    const qLength = Math.hypot(...quaternion) || 1;
+    Object.defineProperty(euler, ROTATION_QUATERNION, {
+      value: quaternion.map((component) => component / qLength) as Quat,
+      enumerable: false,
+    });
+    return euler;
   };
   const transportedFrames = (points: Vec3[], supplied: Vec3[], cyclic: boolean) => {
     if (!supplied.length) return splineFrames(points, cyclic);

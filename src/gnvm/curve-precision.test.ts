@@ -8,6 +8,7 @@ import { Geometry } from "./geometry";
 import "./nodes/crayon";
 import "./nodes/geometry";
 import "./nodes/inputs";
+import "./nodes/fields";
 import { EvalAPI, REGISTRY } from "./registry";
 
 test("Bezier evaluation follows Blender float32 forward differences", () => {
@@ -108,4 +109,41 @@ test("Curve Tangent prefers the evaluated Resample Curve frame", () => {
   assert.deepEqual(values[0], [1, 0, 0]);
   assert.deepEqual(values[1], [Math.SQRT1_2, Math.SQRT1_2, 0]);
   assert.deepEqual(values[2], [0, 1, 0]);
+});
+
+test("Align Rotation preserves native Curve to Points quaternion at 180 degrees", () => {
+  const curve = new Geometry();
+  curve.curves = [{ cyclic: false, points: [[0, 0, 1], [0, 0, -1]] }];
+  const curveToPoints = REGISTRY.get("GeometryNodeCurveToPoints");
+  const alignRotation = REGISTRY.get("FunctionNodeAlignRotationToVector");
+  assert.ok(curveToPoints && alignRotation);
+
+  const sampled = curveToPoints({
+    geo: () => curve,
+    num: (name: string) => name === "Count" ? 2 : 0.1,
+    prop: (_name: string, fallback: unknown) => fallback === "COUNT" ? "COUNT" : fallback,
+    node: { name: "Curve to Points", inputs: [] },
+  } as unknown as EvalAPI);
+  const points = sampled.Points as Geometry;
+  const nativeRotation = sampled.Rotation as Field;
+  const aligned = alignRotation({
+    field: (name: string) => name === "Rotation"
+      ? nativeRotation
+      : Field.of(name === "Vector" ? [0, 0, 1] : 1),
+    prop: (_name: string, fallback: unknown) => fallback === "X" ? "Z" : fallback,
+  } as unknown as EvalAPI).Rotation as Field;
+  const values = aligned.array(makeFieldCtx(points, "POINT")) as number[][];
+
+  for (const value of values) {
+    assert.ok(Math.abs(value[0]) < 1e-6);
+    assert.ok(Math.abs(value[1]) < 1e-6);
+    assert.ok(Math.abs(Math.abs(value[2]) - Math.PI) < 1e-6);
+  }
+
+  const eulerConstant = alignRotation({
+    field: (name: string) => Field.of(name === "Rotation" ? [Math.PI, 0, 0] : name === "Vector" ? [0, 0, 1] : 1),
+    prop: (_name: string, fallback: unknown) => fallback === "X" ? "Z" : fallback,
+  } as unknown as EvalAPI).Rotation as Field;
+  const constantValue = eulerConstant.array(makeFieldCtx(points, "POINT"))[0] as number[];
+  assert.ok(constantValue.every((component) => Math.abs(component) < 1e-6));
 });
