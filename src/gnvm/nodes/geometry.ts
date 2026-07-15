@@ -1064,22 +1064,34 @@ reg("GeometryNodeProximity", (api) => {
     if (!pts.length) return { d: 0, q: [0, 0, 0] };
     if (faces) return nearestFacePoint(p, faces);
     if (segments.length) return nearestEdgePointFloat32(p, segments);
+    // Blender's point BVH stores float coordinates and BVHTreeNearest.dist_sq
+    // is a float. Recomputing this path in JavaScript doubles moved every
+    // Chrome Crayon proximity sample, then amplified the error in the marching
+    // squares edge-interpolation divide.
+    const f = Math.fround;
+    const sample: Vec3 = [f(p[0]), f(p[1]), f(p[2])];
+    const point = (value: Vec3): Vec3 => [f(value[0]), f(value[1]), f(value[2])];
+    const distanceSquared = (a: Vec3, b: Vec3) => {
+      const dx = f(a[0] - b[0]), dy = f(a[1] - b[1]), dz = f(a[2] - b[2]);
+      let result = f(f(dx * dx) + f(dy * dy));
+      result = f(result + f(dz * dz));
+      return result;
+    };
     let bestSq = Infinity;
     let bestIndex = 0;
     const visit = (node: KdNode | null) => {
       if (!node) return;
-      const q = pts[node.index];
-      const dx = p[0] - q[0], dy = p[1] - q[1], dz = p[2] - q[2];
-      const dSq = dx * dx + dy * dy + dz * dz;
+      const q = point(pts[node.index]);
+      const dSq = distanceSquared(sample, q);
       if (dSq < bestSq) { bestSq = dSq; bestIndex = node.index; }
-      const delta = p[node.axis] - q[node.axis];
+      const delta = f(sample[node.axis] - q[node.axis]);
       const near = delta <= 0 ? node.left : node.right;
       const far = delta <= 0 ? node.right : node.left;
       visit(near);
-      if (delta * delta < bestSq) visit(far);
+      if (f(delta * delta) < bestSq) visit(far);
     };
     visit(kdRoot);
-    return { d: Math.sqrt(bestSq), q: pts[bestIndex] };
+    return { d: f(Math.sqrt(bestSq)), q: point(pts[bestIndex]) };
   };
   const sample = (ctx: import("../core").FieldCtx, i: number, arr: import("../core").Elem[] | null): Vec3 =>
     arr ? asVec3(arr[i] ?? [0, 0, 0]) : ctx.position?.(i) ?? [0, 0, 0];

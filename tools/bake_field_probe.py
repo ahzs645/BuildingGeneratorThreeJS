@@ -4,7 +4,7 @@ Usage: blender --background FILE.blend --python bake_field_probe.py -- \
     OBJECT GROUP SRC_NODE SRC_SOCKET CONSUMER_NODE OUT.json [overrides.json]
 Stores SRC_NODE.SRC_SOCKET (FLOAT, POINT) on the geometry entering
 CONSUMER_NODE.Geometry and dumps per-vertex {value, x, y, z}."""
-import bpy, json, sys
+import bpy, json, os, sys
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 obj_name, group_name, src_node, src_socket, consumer_node, out_path = argv[:6]
@@ -37,12 +37,28 @@ store.domain = "POINT"
 store.inputs["Name"].default_value = "__probe"
 tree.links.new(from_sock, store.inputs["Geometry"])
 tree.links.new(out_sock, store.inputs["Value"])
-# rewire consumer to take the stored geometry
-for l in list(geo_in.links):
-    tree.links.remove(l)
-tree.links.new(store.outputs["Geometry"], geo_in)
+if os.environ.get("NODE_DOJO_PROBE_DIRECT_OUTPUT") == "1":
+    group_output = next(
+        node for node in tree.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output
+    )
+    geometry_output = next(socket for socket in group_output.inputs if socket.type == "GEOMETRY")
+    for link in list(geometry_output.links):
+        tree.links.remove(link)
+    tree.links.new(store.outputs["Geometry"], geometry_output)
+else:
+    # Rewire the consumer to preserve the original downstream evaluation.
+    for l in list(geo_in.links):
+        tree.links.remove(l)
+    tree.links.new(store.outputs["Geometry"], geo_in)
 
 obj = bpy.data.objects[obj_name]
+if obj.name not in bpy.context.view_layer.objects:
+    probe_scene = bpy.data.scenes.new("__NODE_DOJO_FIELD_PROBE_SCENE")
+    probe_scene.collection.objects.link(obj)
+    bpy.context.window.scene = probe_scene
+obj.hide_viewport = False
+obj.hide_render = False
+obj.hide_set(False)
 if overrides_path:
     overrides = json.load(open(overrides_path))
     modifier = next((m for m in obj.modifiers if m.type == "NODES" and m.node_group == tree), None)
@@ -61,12 +77,14 @@ dg = bpy.context.evaluated_depsgraph_get()
 ev = obj.evaluated_get(dg)
 m = ev.to_mesh()
 attr = m.attributes.get("__probe")
+full_precision = os.environ.get("NODE_DOJO_PROBE_FULL_PRECISION") == "1"
+encode = (lambda value: value) if full_precision else (lambda value: round(value, 5))
 if attr and is_color:
-    vals = [[round(c, 5) for c in a.color] for a in attr.data]
+    vals = [[encode(c) for c in a.color] for a in attr.data]
 elif attr and is_vec:
-    vals = [[round(c, 5) for c in a.vector] for a in attr.data]
+    vals = [[encode(c) for c in a.vector] for a in attr.data]
 else:
-    vals = [round(a.value, 5) for a in attr.data] if attr else []
+    vals = [encode(a.value) for a in attr.data] if attr else []
 print(f"FIELD_PROBE_OK: {len(vals)} values (vector={is_vec}, color={is_color})")
 if vals and not is_vec:
     s = sorted(vals)
@@ -77,7 +95,7 @@ elif vals and is_vec:
     mags = sorted(math.sqrt(v[0]**2 + v[1]**2 + v[2]**2) for v in vals)
     n = len(mags)
     print(f"  |v| stats: min={mags[0]:.4f} p25={mags[n//4]:.4f} med={mags[n//2]:.4f} p75={mags[3*n//4]:.4f} max={mags[-1]:.4f}")
-positions = [[round(c, 5) for c in vertex.co] for vertex in m.vertices]
+positions = [[encode(c) for c in vertex.co] for vertex in m.vertices]
 with open(out_path, "w") as f:
     json.dump({"values": vals, "positions": positions, "overrides": json.load(open(overrides_path)) if overrides_path else {}}, f)
 ev.to_mesh_clear()

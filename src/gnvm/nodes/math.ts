@@ -69,9 +69,10 @@ reg("ShaderNodeMath", (api) => {
   return {
     Value: fieldMap([a, b, c], (x, y, z) => {
       const result = f(num(x), num(y), num(z));
-      // Float Math sockets store float32 values. ADD is especially visible in
-      // generated grid dimensions, where double precision shifts every point.
-      return op === "ADD" || op === "DIVIDE" ? Math.fround(result) : result;
+      // Every Math output socket stores a float. Keeping selected operations in
+      // JavaScript double precision leaks through Field at Index and moves
+      // Marching Squares' reconstructed points across weld thresholds.
+      return Math.fround(result);
     }),
   };
 });

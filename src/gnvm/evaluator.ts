@@ -307,7 +307,34 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
       if (!edge || edge.faces.length !== 2) return 0;
       const first = mesh.faceNormal(edge.faces[0]);
       const second = mesh.faceNormal(edge.faces[1]);
-      const angle = Math.acos(Math.max(-1, Math.min(1, vdot(first, second))));
+      // Blender's angle_normalized_v3v3 deliberately avoids acos(dot): it
+      // measures the (possibly negated) normal delta and calls float asinf.
+      // The more accurate formulation is observable at Auto Smooth cutoffs,
+      // where acos selected a different set of Chrome Crayon edges.
+      const f = Math.fround;
+      const dotFloat = (a: Vec3, b: Vec3) => {
+        let value = f(f(a[0] * b[0]) + f(a[1] * b[1]));
+        value = f(value + f(a[2] * b[2]));
+        return value;
+      };
+      const lengthBetween = (a: Vec3, b: Vec3) => {
+        const x = f(a[0] - b[0]), y = f(a[1] - b[1]), z = f(a[2] - b[2]);
+        let squared = f(f(x * x) + f(y * y));
+        squared = f(squared + f(z * z));
+        return f(Math.sqrt(squared));
+      };
+      const safeAsin = (value: number) => value <= -1
+        ? f(-Math.PI / 2)
+        : value >= 1
+          ? f(Math.PI / 2)
+          : f(Math.asin(value));
+      let angle: number;
+      if (dotFloat(first, second) >= 0) {
+        angle = f(f(2) * safeAsin(f(lengthBetween(first, second) / f(2))));
+      } else {
+        const negated: Vec3 = [f(-second[0]), f(-second[1]), f(-second[2])];
+        angle = f(f(Math.PI) - f(f(2) * safeAsin(f(lengthBetween(first, negated) / f(2)))));
+      }
       if (!signed) return angle;
       const direction = vnorm(vsub(mesh.positions[edge.verts[1]], mesh.positions[edge.verts[0]]));
       return vdot(vcross(first, second), direction) < 0 ? -angle : angle;

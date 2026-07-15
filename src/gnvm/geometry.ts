@@ -33,10 +33,25 @@ export class Mesh {
   }
 
   faceCenter(fi: number): Vec3 {
-    const f = this.faces[fi];
-    let c: Vec3 = [0, 0, 0];
-    for (const vi of f) c = vadd(c, this.positions[vi]);
-    return vscale(c, 1 / f.length);
+    const face = this.faces[fi];
+    if (!face.length) return [0, 0, 0];
+    const f = Math.fround;
+    if (face.length === 3 || face.length === 4) {
+      // Blender special-cases triangles and quads with a left-associated float
+      // sum followed by direct division. Marching Squares converts these
+      // centers to points and exposes a one-ULP difference in every instance.
+      return [0, 1, 2].map((axis) => {
+        let sum = f(this.positions[face[0]][axis]);
+        for (let corner = 1; corner < face.length; corner++)
+          sum = f(sum + f(this.positions[face[corner]][axis]));
+        return f(sum / f(face.length));
+      }) as Vec3;
+    }
+    const weight = f(1 / f(face.length));
+    const center: Vec3 = [0, 0, 0];
+    for (const vertex of face) for (let axis = 0; axis < 3; axis++)
+      center[axis] = f(center[axis] + f(f(this.positions[vertex][axis]) * weight));
+    return center;
   }
 
   faceNormal(fi: number): Vec3 {

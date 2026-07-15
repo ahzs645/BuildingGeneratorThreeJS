@@ -5,6 +5,7 @@ import { DUMP_CONTEXT, MISSING, REGISTRY } from "./registry";
 import { ensureManifold } from "./boolean";
 import { ensureBulletHull } from "./bullet-hull";
 import { evaluateBezierSpline } from "./bezier";
+import type { Vec3 } from "./core";
 import { matchLegacyCurvePassthrough } from "./nodes/geometry";
 import { resolveObjectDependencyOrder, type ExtractionMetadataV1 } from "./dependency-metadata";
 
@@ -174,14 +175,32 @@ function baseGeometryOf(dump: Dump, objectName: string): Geometry | null {
     g.mesh = m;
   }
   if (obj?.curves) {
-    g.curves = obj.curves.map((s: any) => ({
-      cyclic: Boolean(s.cyclic),
-      resolution: s.resolution,
-      points: s.points.map((p: number[]) => [p[0], p[1], p[2]]),
-      controlPoints: s.control_points?.map((p: number[]) => [p[0], p[1], p[2]]),
-      bezierLeft: s.bezier_left?.map((p: number[]) => [p[0], p[1], p[2]]),
-      bezierRight: s.bezier_right?.map((p: number[]) => [p[0], p[1], p[2]]),
-    }));
+    g.curves = obj.curves.map((s: any) => {
+      const copy = (points: number[][] | undefined): Vec3[] | undefined =>
+        points?.map((point) => [point[0], point[1], point[2]] as Vec3);
+      const controlPoints = copy(s.control_points);
+      const bezierLeft = copy(s.bezier_left);
+      const bezierRight = copy(s.bezier_right);
+      const authoredBezier = Boolean(
+        controlPoints?.length
+          && bezierLeft?.length === controlPoints.length
+          && bezierRight?.length === controlPoints.length,
+      );
+      return {
+        cyclic: Boolean(s.cyclic),
+        resolution: s.resolution,
+        // Extracted evaluated points pass through Python doubles. Blender
+        // rebuilds authored Bezier splines from float controls and handles;
+        // doing the same here prevents those stale doubles from shifting every
+        // downstream arc-length sample and marching-square intersection.
+        points: authoredBezier
+          ? evaluateBezierSpline(controlPoints!, Boolean(s.cyclic), bezierLeft!, bezierRight!, s.resolution)
+          : (copy(s.points) ?? []),
+        controlPoints,
+        bezierLeft,
+        bezierRight,
+      };
+    });
     const tilts = obj.curves.flatMap((s: any) => s.tilts ?? s.points.map(() => 0));
     if (tilts.some((value: number) => value !== 0)) g.curveAttributes.set("tilt", { domain: "POINT", data: tilts });
     const radii = obj.curves.flatMap((s: any) => s.radii ?? s.points.map(() => 1));
