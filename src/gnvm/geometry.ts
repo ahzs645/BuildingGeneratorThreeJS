@@ -818,27 +818,81 @@ export function mergeMeshInto(a: Mesh, b: Mesh): void {
   }
 }
 
+type InstanceMatrix = number[][];
+
+function multiplyInstanceTransformMatrices(a: InstanceMatrix, b: InstanceMatrix): InstanceMatrix {
+  const f = Math.fround;
+  return [0, 1, 2, 3].map((row) => [0, 1, 2, 3].map((column) => {
+    let value = f(f(a[row][0]) * f(b[0][column]));
+    value = f(value + f(f(a[row][1]) * f(b[1][column])));
+    value = f(value + f(f(a[row][2]) * f(b[2][column])));
+    return f(value + f(f(a[row][3]) * f(b[3][column])));
+  }));
+}
+
+function instanceMatrixRadiusScale(matrix: InstanceMatrix): number {
+  const scales = [0, 1, 2].map((column) => Math.hypot(
+    matrix[0]?.[column] ?? 0,
+    matrix[1]?.[column] ?? 0,
+    matrix[2]?.[column] ?? 0,
+  ));
+  return Math.cbrt(Math.max(0, scales[0] * scales[1] * scales[2]));
+}
+
 // Realize instances into the mesh (bakes transforms, merges geometry, propagates
 // per-instance attributes onto the realized vertices — Blender's realize semantics).
-export function realizeInstances(g: Geometry): Geometry {
+//
+// Blender composes nested instance transforms before applying the resulting
+// matrix to a leaf component. Baking and rounding the child first, then baking
+// and rounding its parent, changes quarter-turn coordinates by a few ULPs and
+// can alter a following Convex Hull. Keep explicit instance matrices pending
+// until a mesh/curve leaf is reached, then transform every point exactly once.
+export function realizeInstances(
+  g: Geometry,
+  pendingMatrix?: InstanceMatrix,
+  pendingRadiusScale = 1,
+): Geometry {
   const out = new Geometry();
   const mesh = g.mesh ? g.mesh.clone() : new Mesh();
+  if (g.mesh && pendingMatrix) {
+    mesh.positions = mesh.positions.map((point) => transformPointMatrixFloat32(point, pendingMatrix));
+  }
   // base curves pass through; instanced curves get appended transformed below
   out.curves = g.curves.map((s) => ({
     cyclic: s.cyclic,
-    points: s.points.map((p) => [...p] as Vec3),
-    controlPoints: s.controlPoints?.map((p) => [...p] as Vec3),
-    bezierLeft: s.bezierLeft?.map((p) => [...p] as Vec3),
-    bezierRight: s.bezierRight?.map((p) => [...p] as Vec3),
+    points: s.points.map((p) => pendingMatrix ? transformPointMatrixFloat32(p, pendingMatrix) : [...p] as Vec3),
+    controlPoints: s.controlPoints?.map((p) => pendingMatrix ? transformPointMatrixFloat32(p, pendingMatrix) : [...p] as Vec3),
+    bezierLeft: s.bezierLeft?.map((p) => pendingMatrix ? transformPointMatrixFloat32(p, pendingMatrix) : [...p] as Vec3),
+    bezierRight: s.bezierRight?.map((p) => pendingMatrix ? transformPointMatrixFloat32(p, pendingMatrix) : [...p] as Vec3),
   }));
-  for (const [k, a] of g.curveAttributes) out.curveAttributes.set(k, { domain: a.domain, data: [...a.data] });
+  for (const [k, a] of g.curveAttributes) out.curveAttributes.set(k, {
+    domain: a.domain,
+    data: k === "radius" && a.domain === "POINT" && pendingRadiusScale !== 1
+      ? a.data.map((value) => asNum(value) * pendingRadiusScale)
+      : [...a.data],
+  });
   for (const inst of g.instances) {
-    const rg = realizeInstances(inst.geometry); // recursive
+    const explicitMatrix = inst.transformMatrix;
+    const childMatrix = explicitMatrix
+      ? pendingMatrix
+        ? multiplyInstanceTransformMatrices(pendingMatrix, explicitMatrix)
+        : explicitMatrix
+      : undefined;
+    const childRadiusScale = explicitMatrix
+      ? pendingRadiusScale * instanceMatrixRadiusScale(explicitMatrix)
+      : 1;
+    const rg = realizeInstances(inst.geometry, childMatrix, childRadiusScale); // recursive
+    const transformGenericPoint = (point: Vec3): Vec3 => {
+      let transformed = transformPointFloat32(point, inst.position, inst.rotation, inst.scale);
+      if (pendingMatrix) transformed = transformPointMatrixFloat32(transformed, pendingMatrix);
+      return transformed;
+    };
     if (rg.mesh) {
       const tm = rg.mesh.clone();
-      tm.positions = tm.positions.map((p) => inst.transformMatrix
-        ? transformPointMatrixFloat32(p, inst.transformMatrix)
-        : transformPointFloat32(p, inst.position, inst.rotation, inst.scale));
+      // An explicit matrix was carried to the leaf and has already been
+      // applied. Legacy Euler instances retain their established sequential
+      // float32 path, followed by any explicit parent matrix.
+      if (!explicitMatrix) tm.positions = tm.positions.map(transformGenericPoint);
       const baseV = mesh.positions.length;
       mergeMeshInto(mesh, tm); // carries the instance geometry's own attributes
       if (inst.attributes && inst.attributes.size) {
@@ -859,18 +913,16 @@ export function realizeInstances(g: Geometry): Geometry {
     for (const s of rg.curves)
       out.curves.push({
         cyclic: s.cyclic,
-        points: s.points.map((p) => inst.transformMatrix
-          ? transformPointMatrixFloat32(p, inst.transformMatrix)
-          : transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
-        controlPoints: s.controlPoints?.map((p) => inst.transformMatrix
-          ? transformPointMatrixFloat32(p, inst.transformMatrix)
-          : transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
-        bezierLeft: s.bezierLeft?.map((p) => inst.transformMatrix
-          ? transformPointMatrixFloat32(p, inst.transformMatrix)
-          : transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
-        bezierRight: s.bezierRight?.map((p) => inst.transformMatrix
-          ? transformPointMatrixFloat32(p, inst.transformMatrix)
-          : transformPointFloat32(p, inst.position, inst.rotation, inst.scale)),
+        points: explicitMatrix ? s.points.map((p) => [...p] as Vec3) : s.points.map(transformGenericPoint),
+        controlPoints: explicitMatrix
+          ? s.controlPoints?.map((p) => [...p] as Vec3)
+          : s.controlPoints?.map(transformGenericPoint),
+        bezierLeft: explicitMatrix
+          ? s.bezierLeft?.map((p) => [...p] as Vec3)
+          : s.bezierLeft?.map(transformGenericPoint),
+        bezierRight: explicitMatrix
+          ? s.bezierRight?.map((p) => [...p] as Vec3)
+          : s.bezierRight?.map(transformGenericPoint),
       });
     if (addedCurves) {
       // Realizing a scaled curve instance transforms its built-in radius along
@@ -878,14 +930,10 @@ export function realizeInstances(g: Geometry): Geometry {
       // Points scale of .27 therefore makes a following Curve to Mesh profile
       // .27 times as wide. Preserve all curve attributes while flattening and
       // apply the transform's uniform scale to that radius field.
-      const matrixScales = inst.transformMatrix
-        ? [0, 1, 2].map((column) => Math.hypot(
-            inst.transformMatrix?.[0]?.[column] ?? 0,
-            inst.transformMatrix?.[1]?.[column] ?? 0,
-            inst.transformMatrix?.[2]?.[column] ?? 0,
-          ))
-        : inst.scale.map(Math.abs);
-      const radiusScale = Math.cbrt(Math.max(0, matrixScales[0] * matrixScales[1] * matrixScales[2]));
+      const genericScales = inst.scale.map(Math.abs);
+      const radiusScale = explicitMatrix
+        ? 1
+        : pendingRadiusScale * Math.cbrt(Math.max(0, genericScales[0] * genericScales[1] * genericScales[2]));
       const names = new Set([...out.curveAttributes.keys(), ...rg.curveAttributes.keys()]);
       // Extraction-only font sampling metadata is not a Blender geometry
       // attribute. Carrying it across Realize Instances makes a later Fill
