@@ -108,13 +108,13 @@
         "faces": 102007,
         "bbox": { "min": [-2.2326, -2.6957, -3.9315], "max": [4.2015, 3.698, 3.2504] }
       },
-      "gnvm_after": {
-        "verts": 3290,
-        "faces": 6584,
-        "triangles": 6584,
+    "gnvm_after": {
+      "verts": 3303,
+      "faces": 6610,
+      "triangles": 6610,
         "bbox": { "min": [-1.5862, -2.1273, -3.4024], "max": [3.5734, 3.5198, 3.4078] }
       },
-      "classification": "near-exact authored result: exact rounded bounds with 12 fewer vertices / 24 fewer triangles than Blender. Replaying Blender-exact operands yields 3,301 / 6,606, separating one vertex / two triangles of native CSG tessellation from 11 vertices / 22 triangles of pre-CSG float32 drift"
+    "classification": "near-exact authored result: exact rounded bounds with one more vertex / two more triangles than Blender. Full-precision dependency payloads remove the former 11-vertex / 22-triangle cutter sensitivity. Replaying Blender-exact operands yields 3,301 / 6,606, separating two vertices / four triangles of remaining pre-CSG surface drift from the opposite one vertex / two triangles of native CSG tessellation"
     }
   ]
 }

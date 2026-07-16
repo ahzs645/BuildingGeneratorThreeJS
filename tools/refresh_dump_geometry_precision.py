@@ -1,7 +1,7 @@
 """Copy full-precision object geometry from a freshly extracted dump.
 
 Usage:
-  python tools/refresh_dump_geometry_precision.py TARGET.json FRESH.json OBJECT [OBJECT ...]
+  python tools/refresh_dump_geometry_precision.py TARGET.json FRESH.json [--keys=KEY,...] OBJECT [OBJECT ...]
 
 This deliberately leaves the target dump's graph, dependency closure, fonts,
 and extraction metadata unchanged. It is useful when re-extracting an older
@@ -13,9 +13,17 @@ import struct
 import sys
 
 
-target_path, fresh_path, *object_names = sys.argv[1:]
+target_path, fresh_path, *arguments = sys.argv[1:]
+precision_keys = ("matrix_world", "relative_matrices", "mesh", "curves", "evaluated_mesh")
+if arguments and arguments[0].startswith("--keys="):
+    selected = tuple(key for key in arguments.pop(0).removeprefix("--keys=").split(",") if key)
+    unknown = sorted(set(selected) - set(precision_keys))
+    if unknown:
+        raise SystemExit(f"unknown precision keys: {', '.join(unknown)}")
+    precision_keys = selected
+object_names = arguments
 if not object_names:
-    raise SystemExit("usage: TARGET.json FRESH.json OBJECT [OBJECT ...]")
+    raise SystemExit("usage: TARGET.json FRESH.json [--keys=KEY,...] OBJECT [OBJECT ...]")
 
 with open(target_path, encoding="utf-8") as handle:
     target = json.load(handle)
@@ -24,9 +32,6 @@ with open(fresh_path, encoding="utf-8") as handle:
 
 target_objects = {item["name"]: item for item in target.get("objects", [])}
 fresh_objects = {item["name"]: item for item in fresh.get("objects", [])}
-precision_keys = ("matrix_world", "relative_matrices", "mesh", "curves", "evaluated_mesh")
-
-
 def shortest_float32(value):
     """Keep every Blender float bit while avoiding Python's long double spelling."""
     if isinstance(value, float):

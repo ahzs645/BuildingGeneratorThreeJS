@@ -11,8 +11,8 @@
         }
       },
       "status": "ok",
-      "verts": 3290,
-      "faces": 6584,
+      "verts": 3303,
+      "faces": 6610,
       "bbox": {
         "min": [
           -1.5862,
@@ -25,7 +25,7 @@
           3.4078
         ]
       },
-      "elapsed_ms": 4037
+      "elapsed_ms": 3770
     },
     {
       "combo": {
@@ -36,8 +36,8 @@
         }
       },
       "status": "ok",
-      "verts": 3290,
-      "faces": 6584,
+      "verts": 3303,
+      "faces": 6610,
       "bbox": {
         "min": [
           -1.5862,
@@ -50,7 +50,7 @@
           3.4078
         ]
       },
-      "elapsed_ms": 4427
+      "elapsed_ms": 3576
     },
     {
       "combo": {
@@ -61,8 +61,8 @@
         }
       },
       "status": "ok",
-      "verts": 3290,
-      "faces": 6584,
+      "verts": 3303,
+      "faces": 6610,
       "bbox": {
         "min": [
           -1.5862,
@@ -75,7 +75,7 @@
           3.4078
         ]
       },
-      "elapsed_ms": 3954
+      "elapsed_ms": 3557
     },
     {
       "combo": {
@@ -99,7 +99,7 @@
           5.3532
         ]
       },
-      "elapsed_ms": 4018
+      "elapsed_ms": 3533
     }
   ]
 }

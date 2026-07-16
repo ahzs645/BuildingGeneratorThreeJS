@@ -1,0 +1,28 @@
+[
+  {
+    "name": "finalized authored",
+    "overrides": {
+      "finalize for export": true
+    }
+  },
+  {
+    "name": "finalized puttiness 0.35",
+    "overrides": {
+      "finalize for export": true,
+      "Puttiness": 0.35
+    }
+  },
+  {
+    "name": "finalized soften 2",
+    "overrides": {
+      "finalize for export": true,
+      "Soften": 2
+    }
+  },
+  {
+    "name": "structure preview",
+    "overrides": {
+      "finalize for export": false
+    }
+  }
+]
