@@ -205,6 +205,21 @@ test("Curve to Mesh preserves the evaluated Resample Curve frame", () => {
   ]);
 });
 
+test("Resample Curve count truncates a fractional integer-socket value", () => {
+  const source = new Geometry();
+  source.curves = [{ cyclic: false, points: [[0, 0, 0], [1, 0, 0]] }];
+  const handler = REGISTRY.get("GeometryNodeResampleCurve");
+  assert.ok(handler);
+  const result = handler({
+    geo: () => source,
+    str: () => "COUNT",
+    prop: (_name: string, fallback: unknown) => fallback,
+    num: (name: string) => name === "Count" ? 3.9 : 0.1,
+  } as unknown as EvalAPI).Curve as Geometry;
+
+  assert.equal(result.curvePointCount(), 3);
+});
+
 test("Resample Curve preserves Blender float32 minimum-twist frames through sweep", () => {
   const circleHandler = REGISTRY.get("GeometryNodeCurvePrimitiveCircle");
   const resampleHandler = REGISTRY.get("GeometryNodeResampleCurve");

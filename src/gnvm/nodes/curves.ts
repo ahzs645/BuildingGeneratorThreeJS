@@ -247,8 +247,9 @@ reg("GeometryNodeResampleCurve", (api) => {
   // Blender 4+/5 exposes the mode as a menu input socket; older dumps use a prop.
   const menu = api.str("Mode").toUpperCase().replace(/[^A-Z]/g, "");
   const mode = menu || api.prop<string>("mode", "COUNT");
-  // Blender's implicit float->int socket conversion rounds (148.6 -> 149).
-  const count = Math.round(api.num("Count")) || 10;
+  // Blender truncates the linked value at this integer socket boundary.
+  // Bubble Vase's 148.609 profile density therefore produces 148 points.
+  const count = Math.trunc(api.num("Count")) || 10;
   const length = api.num("Length") || 0.1;
   const resampleOne = (s: Spline): Spline => {
     if (mode === "EVALUATED") return { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };

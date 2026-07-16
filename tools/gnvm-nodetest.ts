@@ -2355,7 +2355,7 @@ function meshSignedAreaXY(m: Mesh): number {
   check("unknown VectorMath does not ADD", !approx(got, [11, 22, 33]) && approx(got, [1, 2, 3]), JSON.stringify(got));
 }
 
-// (X) A linked float entering a group Int socket is rounded at the boundary.
+// (X) A linked float entering a group Int socket is truncated at the boundary.
 // Spin uses the same socket both for Repeat Input's count and its angle divisor;
 // retaining the incoming fraction in only the divisor leaves a closure gap.
 {
