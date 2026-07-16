@@ -16,15 +16,36 @@ export function splineLength(s: Spline): number {
   return L;
 }
 
-// Resample a spline to `count` evenly-spaced points along arc length.
-export function resampleSpline(s: Spline, count: number): Spline {
+export interface SplineSample {
+  /** Source segment start-point index. */
+  a: number;
+  /** Source segment end-point index. */
+  b: number;
+  /** Blender float32 interpolation factor within the source segment. */
+  factor: number;
+}
+
+export interface ResampledSpline {
+  spline: Spline;
+  samples: SplineSample[];
+}
+
+// Resample a spline to `count` evenly-spaced points along arc length while
+// retaining Blender's source-segment lookup. Curve fields must reuse this
+// metadata: recovering the factor by projecting an already-rounded position
+// back onto the input curve can select a neighboring segment or move the
+// factor by several ULPs.
+export function resampleSplineWithSamples(s: Spline, count: number): ResampledSpline {
   count = Math.max(2, Math.floor(count));
   // `points` is Blender's evaluated curve domain. Authored Bezier controls are
   // retained separately for nodes that explicitly operate on handles; curve
   // resampling must consume the already-evaluated (and possibly transformed)
   // points instead of re-evaluating stale controls.
   const pts = s.points;
-  if (pts.length < 2) return { points: pts.map((p) => [...p] as Vec3), cyclic: s.cyclic };
+  if (pts.length < 2) return {
+    spline: { points: pts.map((p) => [...p] as Vec3), cyclic: s.cyclic },
+    samples: pts.map((_, index) => ({ a: index, b: index, factor: 0 })),
+  };
   const segs = splineSegments({ ...s, points: pts });
   const segLen = segs.map(([a, b]) => {
     const dx = Math.fround(Math.fround(pts[b][0]) - Math.fround(pts[a][0]));
@@ -40,8 +61,12 @@ export function resampleSpline(s: Spline, count: number): Spline {
     total = Math.fround(total + length);
     cumulative.push(total);
   }
-  if (total < 1e-9) return { points: [pts[0], pts[0]].map((p) => [...p] as Vec3), cyclic: s.cyclic };
+  if (total < 1e-9) return {
+    spline: { points: [pts[0], pts[0]].map((p) => [...p] as Vec3), cyclic: s.cyclic },
+    samples: [{ a: 0, b: 0, factor: 0 }, { a: 0, b: 0, factor: 0 }],
+  };
   const out: Vec3[] = [];
+  const samples: SplineSample[] = [];
   const n = s.cyclic ? count : count - 1;
   const step = Math.fround(total / n);
   // Blender's `sample_uniform` evaluates ranges of 512 samples with a shared
@@ -79,6 +104,7 @@ export function resampleSpline(s: Spline, count: number): Spline {
       hintInverseLength = inverseLength;
     }
     const [a, b] = segs[si];
+    samples.push({ a, b, factor: t });
     const inverse = Math.fround(1 - t);
     out.push([
       Math.fround(Math.fround(Math.fround(pts[a][0]) * inverse) + Math.fround(Math.fround(pts[b][0]) * t)),
@@ -86,7 +112,12 @@ export function resampleSpline(s: Spline, count: number): Spline {
       Math.fround(Math.fround(Math.fround(pts[a][2]) * inverse) + Math.fround(Math.fround(pts[b][2]) * t)),
     ]);
   }
-  return { points: out, cyclic: s.cyclic };
+  return { spline: { points: out, cyclic: s.cyclic }, samples };
+}
+
+// Compatibility wrapper for consumers that only need the resampled geometry.
+export function resampleSpline(s: Spline, count: number): Spline {
+  return resampleSplineWithSamples(s, count).spline;
 }
 
 // Round the corners of a poly spline: each interior corner becomes an arc of

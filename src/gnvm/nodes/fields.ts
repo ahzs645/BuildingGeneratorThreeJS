@@ -1,5 +1,5 @@
 // Field-plumbing nodes: sample-at-index, evaluate-on-domain, align-euler.
-import { Field, fieldMap, Vec3, Elem, Domain, asNum, asVec3, vnorm, vcross, vdot, vlen } from "../core";
+import { Field, fieldMap, Vec3, Elem, Domain, asNum, asVec3, vnorm, vnormBlenderFloat, vcross, vdot, vlen } from "../core";
 import { reg } from "../registry";
 import { buildTopology } from "../geometry";
 
@@ -135,22 +135,34 @@ const quatMultiply = (a: Quat, b: Quat): Quat => [
   a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
   a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],
 ];
-const quatMultiplyFloat32 = (a: Quat, b: Quat): Quat => [
-  Math.fround(a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1]),
-  Math.fround(a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0]),
-  Math.fround(a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3]),
-  Math.fround(a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]),
-];
+const quatMultiplyFloat32 = (a: Quat, b: Quat): Quat => {
+  const f = Math.fround;
+  const mul = (x: number, y: number) => f(f(x) * f(y));
+  const add = (x: number, y: number) => f(f(x) + f(y));
+  const sub = (x: number, y: number) => f(f(x) - f(y));
+  return [
+    sub(add(add(mul(a[3], b[0]), mul(a[0], b[3])), mul(a[1], b[2])), mul(a[2], b[1])),
+    add(sub(add(mul(a[3], b[1]), mul(a[1], b[3])), mul(a[0], b[2])), mul(a[2], b[0])),
+    add(sub(add(mul(a[3], b[2]), mul(a[2], b[3])), mul(a[1], b[0])), mul(a[0], b[1])),
+    sub(sub(sub(mul(a[3], b[3]), mul(a[0], b[0])), mul(a[1], b[1])), mul(a[2], b[2])),
+  ];
+};
 function quatFromEulerXYZ(e: Vec3): Quat {
-  const [sx, cx] = [Math.sin(e[0] / 2), Math.cos(e[0] / 2)];
-  const [sy, cy] = [Math.sin(e[1] / 2), Math.cos(e[1] / 2)];
-  const [sz, cz] = [Math.sin(e[2] / 2), Math.cos(e[2] / 2)];
-  return quatNormalize([
-    sx * cy * cz - cx * sy * sz,
-    cx * sy * cz + sx * cy * sz,
-    cx * cy * sz - sx * sy * cz,
-    cx * cy * cz + sx * sy * sz,
-  ]);
+  const f = Math.fround;
+  const mul = (a: number, b: number) => f(f(a) * f(b));
+  const halfX = f(f(e[0]) * 0.5);
+  const halfY = f(f(e[1]) * 0.5);
+  const halfZ = f(f(e[2]) * 0.5);
+  const cosX = f(Math.cos(halfX)), cosY = f(Math.cos(halfY)), cosZ = f(Math.cos(halfZ));
+  const sinX = f(Math.sin(halfX)), sinY = f(Math.sin(halfY)), sinZ = f(Math.sin(halfZ));
+  const cosCos = mul(cosX, cosZ), cosSin = mul(cosX, sinZ);
+  const sinCos = mul(sinX, cosZ), sinSin = mul(sinX, sinZ);
+  return [
+    f(mul(cosY, sinCos) - mul(sinY, cosSin)),
+    f(mul(cosY, sinSin) + mul(sinY, cosCos)),
+    f(mul(cosY, cosSin) - mul(sinY, sinCos)),
+    f(mul(cosY, cosCos) + mul(sinY, sinSin)),
+  ];
 }
 function quatToMatrix(q0: Quat): number[][] {
   const [x, y, z, w] = quatNormalize(q0);
@@ -173,6 +185,85 @@ function quatRotate(q: Quat, v: Vec3): Vec3 {
   const uv = vcross(u, v);
   const uuv = vcross(u, uv);
   return [v[0] + 2 * (s * uv[0] + uuv[0]), v[1] + 2 * (s * uv[1] + uuv[1]), v[2] + 2 * (s * uv[2] + uuv[2])];
+}
+
+// Blender's Quaternion::transform_point float32 evaluation order. This is
+// intentionally not replaced with the shorter cross-product identity: Align
+// Rotation to Vector feeds the rounded result into a threshold-sensitive
+// axis-angle construction.
+function quatRotateFloat32(q: Quat, v: Vec3): Vec3 {
+  const f = Math.fround;
+  const mul = (x: number, y: number) => f(f(x) * f(y));
+  const add = (x: number, y: number) => f(f(x) + f(y));
+  const sub = (x: number, y: number) => f(f(x) - f(y));
+  const sw = sub(sub(-mul(q[0], v[0]), mul(q[1], v[1])), mul(q[2], v[2]));
+  const sx = sub(add(mul(q[3], v[0]), mul(q[1], v[2])), mul(q[2], v[1]));
+  const sy = sub(add(mul(q[3], v[1]), mul(q[2], v[0])), mul(q[0], v[2]));
+  const sz = sub(add(mul(q[3], v[2]), mul(q[0], v[1])), mul(q[1], v[0]));
+  return [
+    add(sub(add(mul(sw, -q[0]), mul(sx, q[3])), mul(sy, q[2])), mul(sz, q[1])),
+    add(sub(add(mul(sw, -q[1]), mul(sy, q[3])), mul(sz, q[0])), mul(sx, q[2])),
+    add(sub(add(mul(sw, -q[2]), mul(sz, q[3])), mul(sx, q[1])), mul(sy, q[0])),
+  ];
+}
+
+function vectorLengthFloat32(v: Vec3): number {
+  const f = Math.fround;
+  let squared = f(f(v[0]) * f(v[0]));
+  squared = f(squared + f(f(v[1]) * f(v[1])));
+  squared = f(squared + f(f(v[2]) * f(v[2])));
+  return f(Math.sqrt(squared));
+}
+
+function angleNormalizedFloat32(a: Vec3, b: Vec3): number {
+  const f = Math.fround;
+  let dot = f(f(a[0]) * f(b[0]));
+  dot = f(dot + f(f(a[1]) * f(b[1])));
+  dot = f(dot + f(f(a[2]) * f(b[2])));
+  const distance = (rhs: Vec3): number => vectorLengthFloat32([
+    f(f(a[0]) - f(rhs[0])),
+    f(f(a[1]) - f(rhs[1])),
+    f(f(a[2]) - f(rhs[2])),
+  ]);
+  if (dot >= 0) return f(2 * f(Math.asin(Math.min(1, f(distance(b) / 2)))));
+  const opposite = b.map((component) => f(-component)) as Vec3;
+  return f(f(Math.PI) - f(2 * f(Math.asin(Math.min(1, f(distance(opposite) / 2))))));
+}
+
+function axisAngleQuaternionFloat32(axis: Vec3, angle: number): Quat {
+  const f = Math.fround;
+  const normalized = vnormBlenderFloat(axis);
+  const half = f(f(angle) / 2);
+  const sin = f(Math.sin(half));
+  return [
+    f(normalized[0] * sin),
+    f(normalized[1] * sin),
+    f(normalized[2] * sin),
+    f(Math.cos(half)),
+  ];
+}
+
+function alignQuaternionAutoPivotFloat32(base: Quat, vector: Vec3, localAxis: Vec3, factor: number): Quat {
+  const f = Math.fround;
+  const target = vector.map(f) as Vec3;
+  if (target.every((component) => component === 0)) return base.map(f) as Quat;
+  const oldAxis = quatRotateFloat32(base.map(f) as Quat, localAxis);
+  const newAxis = vnormBlenderFloat(target);
+  const crossHighPrecision = (a: Vec3, b: Vec3): Vec3 => [
+    f(a[1] * b[2] - a[2] * b[1]),
+    f(a[2] * b[0] - a[0] * b[2]),
+    f(a[0] * b[1] - a[1] * b[0]),
+  ];
+  let rotationAxis = crossHighPrecision(oldAxis, newAxis);
+  if (rotationAxis.every((component) => component === 0)) {
+    rotationAxis = crossHighPrecision(oldAxis, [1, 0, 0]);
+    if (rotationAxis.every((component) => component === 0)) {
+      rotationAxis = crossHighPrecision(oldAxis, [0, 1, 0]);
+    }
+  }
+  const fullAngle = angleNormalizedFloat32(oldAxis, newAxis);
+  const angle = f(f(factor) * fullAngle);
+  return quatMultiplyFloat32(axisAngleQuaternionFloat32(rotationAxis, angle), base.map(f) as Quat);
 }
 function quatFromTo(from0: Vec3, to0: Vec3, axisSel: string, nativeRotation = false): Quat {
   const from = vnorm(from0), to = vnorm(to0);
@@ -241,7 +332,10 @@ reg("FunctionNodeAlignRotationToVector", (api) => {
   return {
     Rotation: fieldMap([rotation, vector, factor], (r, v, f) => {
       const native = taggedQuaternion(r);
-      const base = native ? quatNormalize(native) : quatFromEulerXYZ(asVec3(r));
+      const base = native ? native : quatFromEulerXYZ(asVec3(r));
+      if (api.prop<string>("pivot_axis", "AUTO") === "AUTO") {
+        return tagQuaternion(alignQuaternionAutoPivotFloat32(base, asVec3(v), localAxis, asNum(f)));
+      }
       const currentAxis = quatRotate(base, localAxis);
       const delta = quatSlerpIdentity(quatFromTo(currentAxis, asVec3(v), axisSel, Boolean(native)), asNum(f));
       return tagQuaternion(quatMultiplyFloat32(delta, base));

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { evaluateBezierSpline } from "./bezier";
 import { Field, Vec3 } from "./core";
-import { resampleSpline, sweep } from "./curves";
+import { resampleSpline, resampleSplineWithSamples, sweep } from "./curves";
 import { makeFieldCtx } from "./evaluator";
 import { Geometry } from "./geometry";
 import "./nodes/crayon";
@@ -70,6 +70,24 @@ test("open curve resampling preserves Blender's cached final-segment factor", ()
   assert.deepEqual(result.points[3], [
     -7.90931510925293, -8.589097023010254, -3.6223859786987305,
   ]);
+});
+
+test("curve resampling exposes the exact segment factors used for positions", () => {
+  const result = resampleSplineWithSamples({
+    cyclic: false,
+    points: [[0.1, 0.2, 0.3], [2.4, 0.3, -0.2], [2.9, 3.1, 0.7]],
+  }, 4);
+
+  assert.deepEqual(result.samples, [
+    { a: 0, b: 1, factor: 0 },
+    { a: 0, b: 1, factor: 0.7554448246955872 },
+    { a: 1, b: 2, factor: 0.4034397602081299 },
+    { a: 1, b: 2, factor: 1 },
+  ]);
+  assert.deepEqual(result.spline, resampleSpline({
+    cyclic: false,
+    points: [[0.1, 0.2, 0.3], [2.4, 0.3, -0.2], [2.9, 3.1, 0.7]],
+  }, 4));
 });
 
 test("Curve Circle follows Blender float32 sincos sampling", () => {
@@ -241,4 +259,28 @@ test("Align Rotation preserves native Curve to Points quaternion at 180 degrees"
   } as unknown as EvalAPI).Rotation as Field;
   const constantValue = eulerConstant.array(makeFieldCtx(points, "POINT"))[0] as number[];
   assert.ok(constantValue.every((component) => Math.abs(component) < 1e-6));
+});
+
+test("Align Rotation AUTO pivot matches Blender's float32 near-half-turn path", () => {
+  const rotation = [0, 0, 0] as Vec3 & { [key: symbol]: number[] };
+  Object.defineProperty(rotation, Symbol.for("gnvm.rotationQuaternion"), {
+    value: [0.9990286827087402, -0.04404761642217636, 0.0012336671352386475, -0.00005441904067993164],
+    enumerable: false,
+  });
+  const handler = REGISTRY.get("FunctionNodeAlignRotationToVector");
+  assert.ok(handler);
+  const output = handler({
+    field: (name: string) => Field.of(name === "Rotation" ? rotation : name === "Vector" ? [0, 0, 1] : 1),
+    prop: (name: string, fallback: unknown) => name === "axis" ? "Z" : name === "pivot_axis" ? "AUTO" : fallback,
+  } as unknown as EvalAPI).Rotation as Field;
+  const geometry = new Geometry();
+  geometry.curves = [{ cyclic: false, points: [[0, 0, 0]] }];
+  const result = output.array(makeFieldCtx(geometry, "POINT"))[0] as Vec3 & { [key: symbol]: number[] };
+
+  assert.deepEqual(result[Symbol.for("gnvm.rotationQuaternion")], [
+    -2.176966518163681e-8,
+    9.566640812863625e-10,
+    0.9990285038948059,
+    -0.044068753719329834,
+  ]);
 });

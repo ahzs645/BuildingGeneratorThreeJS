@@ -3,7 +3,7 @@
 // milestone remains easy to audit against its Blender source.
 import { Field, FieldCtx, Vec3, Elem, Domain, asNum, asVec3, vadd, vsub, vscale, vdot, vcross, vlen, vnorm, vnormBlenderFloat } from "../core";
 import { Geometry, Mesh, buildTopology, invalidateMeshCaches, orientClosedSurface, realizeInstances, triangulateFaceIndices } from "../geometry";
-import { resampleSpline, splineFrames, splineLength } from "../curves";
+import { resampleSplineWithSamples, SplineSample, splineFrames, splineLength } from "../curves";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 import { reg, EvalAPI } from "../registry";
 
@@ -219,25 +219,18 @@ reg("GeometryNodeCurveToPoints", (api) => {
   const importedTangents = input.curveAttributes.get("__curve_imported_tangent");
   const sampledTangents: Vec3[][] = [];
   const sampledNormals: Vec3[][] = [];
-  const sampleVectors = (s: { points: Vec3[]; cyclic: boolean }, sampledPoints: Vec3[], values?: Elem[]): Vec3[] => {
-    if (!values?.length || s.points.length < 2) return [];
-    return sampledPoints.map((point) => {
-      let bestDistance = Infinity;
-      let best: Vec3 = asVec3(values[0]);
-      const segmentCount = s.cyclic ? s.points.length : s.points.length - 1;
-      for (let i = 0; i < segmentCount; i++) {
-        const j = (i + 1) % s.points.length;
-        const a = s.points[i], delta = vsub(s.points[j], a);
-        const denom = Math.max(1e-12, vdot(delta, delta));
-        const t = Math.max(0, Math.min(1, vdot(vsub(point, a), delta) / denom));
-        const closest = vadd(a, vscale(delta, t));
-        const distance = vlen(vsub(point, closest));
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          best = vnorm(vadd(vscale(asVec3(values[i]), 1 - t), vscale(asVec3(values[j]), t)));
-        }
-      }
-      return best;
+  const sampleVectors = (samples: SplineSample[], values?: Elem[]): Vec3[] => {
+    if (!values?.length) return [];
+    const f = Math.fround;
+    return samples.map(({ a, b, factor }) => {
+      const va = asVec3(values[a] ?? values[0]);
+      const vb = asVec3(values[b] ?? va);
+      const inverse = f(1 - factor);
+      return vnormBlenderFloat([
+        f(f(f(va[0]) * inverse) + f(f(vb[0]) * factor)),
+        f(f(f(va[1]) * inverse) + f(f(vb[1]) * factor)),
+        f(f(f(va[2]) * inverse) + f(f(vb[2]) * factor)),
+      ]);
     });
   };
   const sampled = input.curves.map((s) => {
@@ -263,8 +256,10 @@ reg("GeometryNodeCurveToPoints", (api) => {
       ?? sourceFrames.map((frame) => frame.normal);
     inputOffset += s.points.length;
     let result: { points: Vec3[]; cyclic: boolean };
+    let samples: SplineSample[];
     if (mode === "EVALUATED") {
       result = { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
+      samples = s.points.map((_, index) => ({ a: index, b: index, factor: 0 }));
     } else if (mode === "LENGTH") {
       // Blender fits whole requested-length intervals independently on every
       // spline. Open splines include the endpoint after those intervals, so a
@@ -273,11 +268,18 @@ reg("GeometryNodeCurveToPoints", (api) => {
       // second point to each short ground-fuzz spline.
       const fittedIntervals = Math.floor(splineLength(s) / length);
       const n = Math.max(1, fittedIntervals + (s.cyclic ? 0 : 1));
-      result = n === 1
-        ? { points: s.points.length ? [[...s.points[0]] as Vec3] : [], cyclic: false }
-        : resampleSpline(s, n);
+      if (n === 1) {
+        result = { points: s.points.length ? [[...s.points[0]] as Vec3] : [], cyclic: false };
+        samples = s.points.length ? [{ a: 0, b: 0, factor: 0 }] : [];
+      } else {
+        const resampled = resampleSplineWithSamples(s, n);
+        result = resampled.spline;
+        samples = resampled.samples;
+      }
     } else {
-      result = resampleSpline(s, count);
+      const resampled = resampleSplineWithSamples(s, count);
+      result = resampled.spline;
+      samples = resampled.samples;
     }
     // When Count preserves a poly spline's point count, Blender constructs the
     // evaluated frame from the redistributed output polyline. Interpolating
@@ -286,10 +288,10 @@ reg("GeometryNodeCurveToPoints", (api) => {
     // the Intro emblem) still needs source-frame interpolation.
     const keepsPointCount = result.points.length === s.points.length;
     sampledTangents.push(convertedImportedPoly || sourceTangents || !keepsPointCount
-      ? sampleVectors(s, result.points, values)
+      ? sampleVectors(samples, values)
       : []);
     sampledNormals.push(sourceNormals || !keepsPointCount
-      ? sampleVectors(s, result.points, normalValues)
+      ? sampleVectors(samples, normalValues)
       : []);
     return result;
   });
@@ -297,6 +299,16 @@ reg("GeometryNodeCurveToPoints", (api) => {
   const mesh = new Mesh();
   const tangents: Vec3[] = [], normals: Vec3[] = [], rotations: Vec3[] = [];
   const frameRotation = (normal: Vec3, binormal: Vec3, tangent: Vec3): Vec3 => {
+    const f = Math.fround;
+    const crossFloat32 = (a: Vec3, b: Vec3): Vec3 => [
+      f(f(a[1] * b[2]) - f(a[2] * b[1])),
+      f(f(a[2] * b[0]) - f(a[0] * b[2])),
+      f(f(a[0] * b[1]) - f(a[1] * b[0])),
+    ];
+    // Curve to Points does not use the curve normal directly as the matrix X
+    // axis. Blender first rebuilds an orthonormal basis in float32.
+    binormal = vnormBlenderFloat(crossFloat32(tangent, normal));
+    normal = crossFloat32(binormal, tangent);
     // Matrix columns are the rotated local X/Y/Z axes. Blender's curve-point
     // rotation uses X=normal, Y=binormal, Z=tangent.
     const m = [
@@ -310,30 +322,63 @@ reg("GeometryNodeCurveToPoints", (api) => {
       ? [Math.atan2(m[2][1], m[2][2]), y, Math.atan2(m[1][0], m[0][0])]
       : [Math.atan2(-m[1][2], m[1][1]), y, 0]) as TaggedRotation;
 
-    // Rotation sockets are quaternions inside Blender. Keep the exact frame
-    // quaternion alongside the Euler compatibility value so downstream
-    // rotation nodes can distinguish a native 180-degree curve frame from an
-    // Euler value that merely displays the same [pi, 0, 0]. The metadata is
-    // deliberately non-enumerable, leaving dumps/probes and ordinary vector
-    // consumers unchanged.
-    const trace = m[0][0] + m[1][1] + m[2][2];
-    let quaternion: Quat;
-    if (trace > 0) {
-      const s = 2 * Math.sqrt(trace + 1);
-      quaternion = [(m[2][1] - m[1][2]) / s, (m[0][2] - m[2][0]) / s, (m[1][0] - m[0][1]) / s, s / 4];
-    } else if (m[0][0] > m[1][1] && m[0][0] > m[2][2]) {
-      const s = 2 * Math.sqrt(1 + m[0][0] - m[1][1] - m[2][2]);
-      quaternion = [s / 4, (m[0][1] + m[1][0]) / s, (m[0][2] + m[2][0]) / s, (m[2][1] - m[1][2]) / s];
-    } else if (m[1][1] > m[2][2]) {
-      const s = 2 * Math.sqrt(1 + m[1][1] - m[0][0] - m[2][2]);
-      quaternion = [(m[0][1] + m[1][0]) / s, s / 4, (m[1][2] + m[2][1]) / s, (m[0][2] - m[2][0]) / s];
+    // Blender 5.1's normalized_to_quat_fast (Mike Day's branch selection),
+    // with MatBase's column-major accessor translated to the row-major matrix
+    // above. It canonicalizes W and avoids unconditional normalization.
+    const at = (column: number, row: number) => f(m[row][column]);
+    let x = 0, yq = 0, z = 0, w = 1;
+    let s: number;
+    if (at(2, 2) < 0) {
+      if (at(0, 0) > at(1, 1)) {
+        const trace = f(f(f(1 + at(0, 0)) - at(1, 1)) - at(2, 2));
+        s = f(2 * f(Math.sqrt(trace)));
+        if (at(1, 2) < at(2, 1)) s = f(-s);
+        x = f(0.25 * s);
+        s = f(1 / s);
+        w = f(f(at(1, 2) - at(2, 1)) * s);
+        yq = f(f(at(0, 1) + at(1, 0)) * s);
+        z = f(f(at(2, 0) + at(0, 2)) * s);
+        if (trace === 1 && w === 0 && yq === 0 && z === 0) x = 1;
+      } else {
+        const trace = f(f(f(1 - at(0, 0)) + at(1, 1)) - at(2, 2));
+        s = f(2 * f(Math.sqrt(trace)));
+        if (at(2, 0) < at(0, 2)) s = f(-s);
+        yq = f(0.25 * s);
+        s = f(1 / s);
+        w = f(f(at(2, 0) - at(0, 2)) * s);
+        x = f(f(at(0, 1) + at(1, 0)) * s);
+        z = f(f(at(1, 2) + at(2, 1)) * s);
+        if (trace === 1 && w === 0 && x === 0 && z === 0) yq = 1;
+      }
+    } else if (at(0, 0) < -at(1, 1)) {
+      const trace = f(f(f(1 - at(0, 0)) - at(1, 1)) + at(2, 2));
+      s = f(2 * f(Math.sqrt(trace)));
+      if (at(0, 1) < at(1, 0)) s = f(-s);
+      z = f(0.25 * s);
+      s = f(1 / s);
+      w = f(f(at(0, 1) - at(1, 0)) * s);
+      x = f(f(at(2, 0) + at(0, 2)) * s);
+      yq = f(f(at(1, 2) + at(2, 1)) * s);
+      if (trace === 1 && w === 0 && x === 0 && yq === 0) z = 1;
     } else {
-      const s = 2 * Math.sqrt(1 + m[2][2] - m[0][0] - m[1][1]);
-      quaternion = [(m[0][2] + m[2][0]) / s, (m[1][2] + m[2][1]) / s, s / 4, (m[1][0] - m[0][1]) / s];
+      const trace = f(f(f(1 + at(0, 0)) + at(1, 1)) + at(2, 2));
+      s = f(2 * f(Math.sqrt(trace)));
+      w = f(0.25 * s);
+      s = f(1 / s);
+      x = f(f(at(1, 2) - at(2, 1)) * s);
+      yq = f(f(at(2, 0) - at(0, 2)) * s);
+      z = f(f(at(0, 1) - at(1, 0)) * s);
+      if (trace === 1 && x === 0 && yq === 0 && z === 0) w = 1;
     }
-    const qLength = Math.hypot(...quaternion) || 1;
+    let quaternion: Quat = [x, yq, z, w];
+    let lengthSquared = f(f(x * x) + f(yq * yq));
+    lengthSquared = f(f(lengthSquared + f(z * z)) + f(w * w));
+    if (Math.abs(f(lengthSquared - 1)) >= 0.0002) {
+      const inverseLength = f(1 / f(Math.sqrt(lengthSquared)));
+      quaternion = quaternion.map((component) => f(component * inverseLength)) as Quat;
+    }
     Object.defineProperty(euler, ROTATION_QUATERNION, {
-      value: quaternion.map((component) => component / qLength) as Quat,
+      value: quaternion,
       enumerable: false,
     });
     return euler;
