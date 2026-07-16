@@ -1253,6 +1253,7 @@ reg("GeometryNodeBoundBox", (api) => {
   // Curves radius; doing so enlarged UI Window's two sampling grids by almost
   // exactly one unit per side. Native/font Curves still use their radius.
   const radius = g.curveAttributes.has("__gnvm_planar_mesh_curve")
+    || g.curveAttributes.has("__gnvm_planar_font_curve")
     ? null
     : g.curveAttributes.get("radius");
   let pointIndex = 0;

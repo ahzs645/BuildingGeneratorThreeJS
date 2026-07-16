@@ -131,6 +131,18 @@ test("Bounding Box does not pad Mesh to Curve wires by implicit radius", () => {
   assert.deepEqual((outputs.Max as Field).value, [5, 7, 11]);
 });
 
+test("Bounding Box does not pad String to Curves outlines by implicit radius", () => {
+  const geometry = new Geometry();
+  geometry.curves = [{ cyclic: true, points: [[2, 3, 4], [5, 7, 11]] }];
+  geometry.curveAttributes.set("__gnvm_planar_font_curve", { domain: "CURVE", data: [1] });
+  const handler = REGISTRY.get("GeometryNodeBoundBox");
+  assert.ok(handler);
+  const outputs = handler({ geo: () => geometry } as EvalAPI);
+
+  assert.deepEqual((outputs.Min as Field).value, [2, 3, 4]);
+  assert.deepEqual((outputs.Max as Field).value, [5, 7, 11]);
+});
+
 test("Curve to Points rebuilds stale imported tangents after Poly conversion", () => {
   const geometry = new Geometry();
   geometry.curves = [{ cyclic: false, points: [[0, 0, 0], [1, 0, 0], [1, 1, 0]] }];

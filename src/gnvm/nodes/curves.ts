@@ -1064,6 +1064,13 @@ const GLYPHS: Record<string, Vec3[][]> = (() => {
   return g;
 })();
 
+function geometryBoundsFromPositionsOnly(geometry: Geometry): void {
+  geometry.curveAttributes.set("__gnvm_planar_font_curve", {
+    domain: "CURVE",
+    data: geometry.curves.map(() => 1),
+  });
+}
+
 function glyphGeometry(ch: string, size: number): Geometry {
   const fallback: Vec3[][] = [[[0.05, 0, 0], [0.55, 0, 0], [0.55, 1, 0], [0.05, 1, 0], [0.05, 0, 0]]];
   const polys: Vec3[][] = GLYPHS[ch] ?? fallback;
@@ -1090,6 +1097,11 @@ function glyphGeometry(ch: string, size: number): Geometry {
       ] });
     }
   }
+  // String to Curves produces positional font outlines. Blender's Bounding
+  // Box does not expand those outlines by the generic Curve radius (unlike a
+  // native Curve Line/Circle component). Keep that provenance through nested
+  // instancing so downstream centering groups use the authored glyph bounds.
+  geometryBoundsFromPositionsOnly(g);
   return g;
 }
 
@@ -1110,6 +1122,7 @@ function atlasGlyphGeometry(fontName: string | undefined, ch: string, size: numb
       return points;
     }, []),
   }));
+  geometryBoundsFromPositionsOnly(geometry);
   // Blender's evaluated CFF/Bezier curves use 12 samples per authored segment.
   // Pixel/grid fonts deliberately retain collinear cell corners, so the atlas
   // extractor marks those with a zero stride instead of applying Bezier

@@ -1,0 +1,18 @@
+[
+  { "id": "pin-split-a", "group": "CLEVIS PIN 31MAY2024_v1.001", "node": "Join Geometry.003", "socket": "Geometry" },
+  { "id": "pin-split-b", "group": "CLEVIS PIN 31MAY2024_v1.001", "node": "Set Position.006", "socket": "Geometry" },
+  { "id": "pin-split-joined", "group": "CLEVIS PIN 31MAY2024_v1.001", "node": "Join Geometry.007", "socket": "Geometry" },
+  { "id": "pin-group-output", "group": "CLEVIS PIN 31MAY2024_v1.001", "node": "Switch", "socket": "Output" },
+  { "id": "center-bounds", "group": "G_Center Geometry", "node": "Bounding Box", "socket": "Bounding Box" },
+  { "id": "box-pin-instance", "group": "proc.box", "node": "Instance on Points", "socket": "Instances" },
+  { "id": "box-pin-realized", "group": "proc.box", "node": "Realize Instances.001", "socket": "Geometry" },
+  { "id": "box-pin-centered", "group": "proc.box", "node": "Group.007", "socket": "Output_1" },
+  { "id": "box-pin-set-center", "group": "proc.box", "node": "Group.010", "socket": "Output_1" },
+  { "id": "box-pin-center-joined", "group": "proc.box", "node": "Join Geometry.003", "socket": "Geometry" },
+  { "id": "box-pin-transformed", "group": "proc.box", "node": "Transform Geometry.002", "socket": "Geometry" },
+  { "id": "box-pin-switch", "group": "proc.box", "node": "Switch", "socket": "Output" },
+  { "id": "box-before-position", "group": "proc.box", "node": "Join Geometry.002", "socket": "Geometry" },
+  { "id": "box-output", "group": "proc.box", "node": "Set Position", "socket": "Geometry" },
+  { "id": "root-before-realize", "group": "Geometry Nodes.003", "node": "Join Geometry", "socket": "Geometry" },
+  { "id": "root-output", "group": "Geometry Nodes.003", "node": "Realize Instances", "socket": "Geometry" }
+]

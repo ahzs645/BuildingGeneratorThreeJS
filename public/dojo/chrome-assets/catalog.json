@@ -1403,7 +1403,7 @@
     "faces": 87165
   },
   "localSpace": true,
-  "note": "Complete 529-node authored storage-box assembly with exact Blender topology across all eight size, seam, height, animated-lid, and split-pin cases. Authored output is 90,928 / 87,165 and split-pin output is 83,154 / 79,693; bounds differ by at most 0.0011. Dense open-shell Exact Booleans retain the dowel-bore boundary samples, mixed-component Set Position keeps the referenced pin on the animated lid, and concave-ngon triangulation removes the former wall spikes.",
+  "note": "Complete 529-node authored storage-box assembly with exact Blender topology across all eight size, seam, height, animated-lid, and split-pin cases. Authored output is 90,928 / 87,165 and split-pin output is 83,154 / 79,693; all bounds differ by at most 0.0001. Font-outline positional bounds keep the centered split-print pin on the build plane, dense open-shell Exact Booleans retain the dowel-bore boundary samples, and concave-ngon triangulation removes the former wall spikes.",
   "controls": [
     {
       "name": "width",
