@@ -69,8 +69,12 @@
   },
   "browserVerification": {
     "route": "/chrome-assets?asset=send-nodes-hat-embroidery",
-    "capture": "/private/tmp/send-nodes-hat-stitch-stage1-studio.png",
-    "status": "The material compiled in WebGL without warning/error console messages and the page reported Topology counts match Blender at 188,934 vertices / 188,160 faces."
+    "capture": "../references/send-nodes-hat/embroidery-webgl.png",
+    "resolution": [1280, 720],
+    "devicePixelRatio": 1,
+    "runtimeSeconds": 1.81,
+    "warningErrorLogs": 0,
+    "status": "The committed side-by-side browser capture reports Topology counts match Blender at 188,934 vertices / 188,160 faces, and the authored stitch material compiled without WebGL warning/error messages."
   },
-  "remaining": "The generic Chrome Assets camera keeps a one-unit minimum frame size, so this 0.0868-unit local-space embroidery appears smaller than the isolated Blender reference. The authored transparent-background capture also needs a defined transmission backdrop before it can be used for quantitative image metrics. Those presentation issues are separate from the implemented sitch.001 shader graph and exact geometry."
+  "remaining": "The committed side-by-side capture makes the presentation gap explicit: the generic Chrome Assets camera keeps a one-unit minimum frame size, so this 0.0868-unit local-space embroidery appears much smaller than the isolated Blender reference. A matched camera and defined transmission backdrop are still required before quantitative image metrics are meaningful. Those presentation issues are separate from the implemented sitch.001 shader graph and exact geometry."
 }
