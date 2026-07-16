@@ -209,229 +209,245 @@ reg("GeometryNodeDuplicateElements", (api) => {
 
 reg("GeometryNodeCurveToPoints", (api) => {
   const curveInput = api.geo("Curve");
-  const input = curveInput.instances.length ? realizeInstances(curveInput) : curveInput;
   const mode = api.prop<string>("mode", "COUNT");
   const count = Math.max(1, Math.round(api.num("Count")));
   const length = Math.max(1e-9, api.num("Length") || 0.1);
-  let inputOffset = 0;
-  const sourceTangents = input.curveAttributes.get("__curve_tangent")?.data;
-  const sourceNormals = input.curveAttributes.get("__curve_normal")?.data;
-  const importedTangents = input.curveAttributes.get("__curve_imported_tangent");
-  const sampledTangents: Vec3[][] = [];
-  const sampledNormals: Vec3[][] = [];
-  const sampleVectors = (samples: SplineSample[], values?: Elem[]): Vec3[] => {
-    if (!values?.length) return [];
-    const f = Math.fround;
-    return samples.map(({ a, b, factor }) => {
-      const va = asVec3(values[a] ?? values[0]);
-      const vb = asVec3(values[b] ?? va);
-      const inverse = f(1 - factor);
-      return vnormBlenderFloat([
-        f(f(f(va[0]) * inverse) + f(f(vb[0]) * factor)),
-        f(f(f(va[1]) * inverse) + f(f(vb[1]) * factor)),
-        f(f(f(va[2]) * inverse) + f(f(vb[2]) * factor)),
-      ]);
-    });
-  };
-  const sampled = input.curves.map((s) => {
-    const sourceFrames = splineFrames(s.points, s.cyclic);
-    // Set Spline Type -> Poly replaces an imported curve's evaluated samples
-    // with its authored control points. Its old evaluated tangent field is no
-    // longer valid on that new topology; Blender recomputes poly corner frames
-    // before Curve to Points resamples them. The retained provenance marker and
-    // absence of controlPoints distinguish the converted result from the
-    // original imported spline.
-    const convertedImportedPoly = Boolean(importedTangents && sourceTangents && !s.controlPoints);
-    // Curve to Points samples the evaluated frame of the input curve. When no
-    // explicit frame attributes are present, Blender interpolates tangents and
-    // normals from the original curve before resampling; deriving a fresh
-    // frame from the coarser output points creates an alternating rotation
-    // error whenever the source/output counts are not multiples (32 -> 24 on
-    // the Intro emblem's spike ring).
-    const values = convertedImportedPoly
-      ? sourceFrames.map((frame) => frame.tangent)
-      : sourceTangents?.slice(inputOffset, inputOffset + s.points.length)
-        ?? sourceFrames.map((frame) => frame.tangent);
-    const normalValues = sourceNormals?.slice(inputOffset, inputOffset + s.points.length)
-      ?? sourceFrames.map((frame) => frame.normal);
-    inputOffset += s.points.length;
-    let result: { points: Vec3[]; cyclic: boolean };
-    let samples: SplineSample[];
-    if (mode === "EVALUATED") {
-      result = { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
-      samples = s.points.map((_, index) => ({ a: index, b: index, factor: 0 }));
-    } else if (mode === "LENGTH") {
-      // Blender fits whole requested-length intervals independently on every
-      // spline. Open splines include the endpoint after those intervals, so a
-      // spline shorter than Length still emits one point. The old rounded,
-      // minimum-two rule made dense hat stitches too sparse while adding a
-      // second point to each short ground-fuzz spline.
-      const fittedIntervals = Math.floor(splineLength(s) / length);
-      const n = Math.max(1, fittedIntervals + (s.cyclic ? 0 : 1));
-      if (n === 1) {
-        result = { points: s.points.length ? [[...s.points[0]] as Vec3] : [], cyclic: false };
-        samples = s.points.length ? [{ a: 0, b: 0, factor: 0 }] : [];
+  const converted = new WeakMap<Geometry, Geometry>();
+  const convertInput = (input: Geometry): Geometry => {
+    const cached = converted.get(input);
+    if (cached) return cached;
+    let inputOffset = 0;
+    const sourceTangents = input.curveAttributes.get("__curve_tangent")?.data;
+    const sourceNormals = input.curveAttributes.get("__curve_normal")?.data;
+    const importedTangents = input.curveAttributes.get("__curve_imported_tangent");
+    const sampledTangents: Vec3[][] = [];
+    const sampledNormals: Vec3[][] = [];
+    const sampleVectors = (samples: SplineSample[], values?: Elem[]): Vec3[] => {
+      if (!values?.length) return [];
+      const f = Math.fround;
+      return samples.map(({ a, b, factor }) => {
+        const va = asVec3(values[a] ?? values[0]);
+        const vb = asVec3(values[b] ?? va);
+        const inverse = f(1 - factor);
+        return vnormBlenderFloat([
+          f(f(f(va[0]) * inverse) + f(f(vb[0]) * factor)),
+          f(f(f(va[1]) * inverse) + f(f(vb[1]) * factor)),
+          f(f(f(va[2]) * inverse) + f(f(vb[2]) * factor)),
+        ]);
+      });
+    };
+    const sampled = input.curves.map((s) => {
+      const sourceFrames = splineFrames(s.points, s.cyclic);
+      // Set Spline Type -> Poly replaces an imported curve's evaluated samples
+      // with its authored control points. Its old evaluated tangent field is no
+      // longer valid on that new topology; Blender recomputes poly corner frames
+      // before Curve to Points resamples them. The retained provenance marker and
+      // absence of controlPoints distinguish the converted result from the
+      // original imported spline.
+      const convertedImportedPoly = Boolean(importedTangents && sourceTangents && !s.controlPoints);
+      // Curve to Points samples the evaluated frame of the input curve. When no
+      // explicit frame attributes are present, Blender interpolates tangents and
+      // normals from the original curve before resampling; deriving a fresh
+      // frame from the coarser output points creates an alternating rotation
+      // error whenever the source/output counts are not multiples (32 -> 24 on
+      // the Intro emblem's spike ring).
+      const values = convertedImportedPoly
+        ? sourceFrames.map((frame) => frame.tangent)
+        : sourceTangents?.slice(inputOffset, inputOffset + s.points.length)
+          ?? sourceFrames.map((frame) => frame.tangent);
+      const normalValues = sourceNormals?.slice(inputOffset, inputOffset + s.points.length)
+        ?? sourceFrames.map((frame) => frame.normal);
+      inputOffset += s.points.length;
+      let result: { points: Vec3[]; cyclic: boolean };
+      let samples: SplineSample[];
+      if (mode === "EVALUATED") {
+        result = { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
+        samples = s.points.map((_, index) => ({ a: index, b: index, factor: 0 }));
+      } else if (mode === "LENGTH") {
+        // Blender fits whole requested-length intervals independently on every
+        // spline. Open splines include the endpoint after those intervals, so a
+        // spline shorter than Length still emits one point. The old rounded,
+        // minimum-two rule made dense hat stitches too sparse while adding a
+        // second point to each short ground-fuzz spline.
+        const fittedIntervals = Math.floor(splineLength(s) / length);
+        const n = Math.max(1, fittedIntervals + (s.cyclic ? 0 : 1));
+        if (n === 1) {
+          result = { points: s.points.length ? [[...s.points[0]] as Vec3] : [], cyclic: false };
+          samples = s.points.length ? [{ a: 0, b: 0, factor: 0 }] : [];
+        } else {
+          const resampled = resampleSplineWithSamples(s, n);
+          result = resampled.spline;
+          samples = resampled.samples;
+        }
       } else {
-        const resampled = resampleSplineWithSamples(s, n);
+        const resampled = resampleSplineWithSamples(s, count);
         result = resampled.spline;
         samples = resampled.samples;
       }
-    } else {
-      const resampled = resampleSplineWithSamples(s, count);
-      result = resampled.spline;
-      samples = resampled.samples;
-    }
-    // When Count preserves a poly spline's point count, Blender constructs the
-    // evaluated frame from the redistributed output polyline. Interpolating
-    // the original corner frames instead rotates Text Soup's glyph instances
-    // by an entire segment. A genuinely different sample count (32 -> 24 on
-    // the Intro emblem) still needs source-frame interpolation.
-    const keepsPointCount = result.points.length === s.points.length;
-    sampledTangents.push(convertedImportedPoly || sourceTangents || !keepsPointCount
-      ? sampleVectors(samples, values)
-      : []);
-    sampledNormals.push(sourceNormals || !keepsPointCount
-      ? sampleVectors(samples, normalValues)
-      : []);
-    return result;
-  });
-  const out = new Geometry();
-  const mesh = new Mesh();
-  const tangents: Vec3[] = [], normals: Vec3[] = [], rotations: Vec3[] = [];
-  const frameRotation = (normal: Vec3, binormal: Vec3, tangent: Vec3): Vec3 => {
-    const f = Math.fround;
-    const crossFloat32 = (a: Vec3, b: Vec3): Vec3 => [
-      f(f(a[1] * b[2]) - f(a[2] * b[1])),
-      f(f(a[2] * b[0]) - f(a[0] * b[2])),
-      f(f(a[0] * b[1]) - f(a[1] * b[0])),
-    ];
-    // Curve to Points does not use the curve normal directly as the matrix X
-    // axis. Blender first rebuilds an orthonormal basis in float32.
-    binormal = vnormBlenderFloat(crossFloat32(tangent, normal));
-    normal = crossFloat32(binormal, tangent);
-    // Matrix columns are the rotated local X/Y/Z axes. Blender's curve-point
-    // rotation uses X=normal, Y=binormal, Z=tangent.
-    const m = [
-      [normal[0], binormal[0], tangent[0]],
-      [normal[1], binormal[1], tangent[1]],
-      [normal[2], binormal[2], tangent[2]],
-    ];
-    const y = Math.asin(Math.max(-1, Math.min(1, -m[2][0])));
-    const cy = Math.cos(y);
-    const euler = (Math.abs(cy) > 1e-6
-      ? [Math.atan2(m[2][1], m[2][2]), y, Math.atan2(m[1][0], m[0][0])]
-      : [Math.atan2(-m[1][2], m[1][1]), y, 0]) as TaggedRotation;
-
-    // Blender 5.1's normalized_to_quat_fast (Mike Day's branch selection),
-    // with MatBase's column-major accessor translated to the row-major matrix
-    // above. It canonicalizes W and avoids unconditional normalization.
-    const at = (column: number, row: number) => f(m[row][column]);
-    let x = 0, yq = 0, z = 0, w = 1;
-    let s: number;
-    if (at(2, 2) < 0) {
-      if (at(0, 0) > at(1, 1)) {
-        const trace = f(f(f(1 + at(0, 0)) - at(1, 1)) - at(2, 2));
-        s = f(2 * f(Math.sqrt(trace)));
-        if (at(1, 2) < at(2, 1)) s = f(-s);
-        x = f(0.25 * s);
-        s = f(1 / s);
-        w = f(f(at(1, 2) - at(2, 1)) * s);
-        yq = f(f(at(0, 1) + at(1, 0)) * s);
-        z = f(f(at(2, 0) + at(0, 2)) * s);
-        if (trace === 1 && w === 0 && yq === 0 && z === 0) x = 1;
-      } else {
-        const trace = f(f(f(1 - at(0, 0)) + at(1, 1)) - at(2, 2));
-        s = f(2 * f(Math.sqrt(trace)));
-        if (at(2, 0) < at(0, 2)) s = f(-s);
-        yq = f(0.25 * s);
-        s = f(1 / s);
-        w = f(f(at(2, 0) - at(0, 2)) * s);
-        x = f(f(at(0, 1) + at(1, 0)) * s);
-        z = f(f(at(1, 2) + at(2, 1)) * s);
-        if (trace === 1 && w === 0 && x === 0 && z === 0) yq = 1;
-      }
-    } else if (at(0, 0) < -at(1, 1)) {
-      const trace = f(f(f(1 - at(0, 0)) - at(1, 1)) + at(2, 2));
-      s = f(2 * f(Math.sqrt(trace)));
-      if (at(0, 1) < at(1, 0)) s = f(-s);
-      z = f(0.25 * s);
-      s = f(1 / s);
-      w = f(f(at(0, 1) - at(1, 0)) * s);
-      x = f(f(at(2, 0) + at(0, 2)) * s);
-      yq = f(f(at(1, 2) + at(2, 1)) * s);
-      if (trace === 1 && w === 0 && x === 0 && yq === 0) z = 1;
-    } else {
-      const trace = f(f(f(1 + at(0, 0)) + at(1, 1)) + at(2, 2));
-      s = f(2 * f(Math.sqrt(trace)));
-      w = f(0.25 * s);
-      s = f(1 / s);
-      x = f(f(at(1, 2) - at(2, 1)) * s);
-      yq = f(f(at(2, 0) - at(0, 2)) * s);
-      z = f(f(at(0, 1) - at(1, 0)) * s);
-      if (trace === 1 && x === 0 && yq === 0 && z === 0) w = 1;
-    }
-    let quaternion: Quat = [x, yq, z, w];
-    let lengthSquared = f(f(x * x) + f(yq * yq));
-    lengthSquared = f(f(lengthSquared + f(z * z)) + f(w * w));
-    if (Math.abs(f(lengthSquared - 1)) >= 0.0002) {
-      const inverseLength = f(1 / f(Math.sqrt(lengthSquared)));
-      quaternion = quaternion.map((component) => f(component * inverseLength)) as Quat;
-    }
-    Object.defineProperty(euler, ROTATION_QUATERNION, {
-      value: quaternion,
-      enumerable: false,
+      // When Count preserves a poly spline's point count, Blender constructs the
+      // evaluated frame from the redistributed output polyline. Interpolating
+      // the original corner frames instead rotates Text Soup's glyph instances
+      // by an entire segment. A genuinely different sample count (32 -> 24 on
+      // the Intro emblem) still needs source-frame interpolation.
+      const keepsPointCount = result.points.length === s.points.length;
+      sampledTangents.push(convertedImportedPoly || sourceTangents || !keepsPointCount
+        ? sampleVectors(samples, values)
+        : []);
+      sampledNormals.push(sourceNormals || !keepsPointCount
+        ? sampleVectors(samples, normalValues)
+        : []);
+      return result;
     });
-    return euler;
-  };
-  const transportedFrames = (points: Vec3[], supplied: Vec3[], cyclic: boolean) => {
-    if (!supplied.length) return splineFrames(points, cyclic);
-    const ts = supplied.map((t) => vnorm(t));
-    const rotate = (v: Vec3, axis: Vec3, angle: number): Vec3 => {
-      const c = Math.cos(angle), sn = Math.sin(angle);
-      return vadd(vadd(vscale(v, c), vscale(vcross(axis, v), sn)), vscale(axis, vdot(axis, v) * (1 - c)));
-    };
-    let normal = vcross(ts[0], [0, 0, 1]);
-    if (vlen(normal) < 1e-8) normal = [1, 0, 0];
-    normal = vnorm(normal);
-    const frames: { tangent: Vec3; normal: Vec3; binormal: Vec3 }[] = [];
-    for (let i = 0; i < ts.length; i++) {
-      if (i) {
-        const axis = vcross(ts[i - 1], ts[i]);
-        const sin = vlen(axis);
-        if (sin > 1e-8) normal = rotate(normal, vscale(axis, 1 / sin), Math.atan2(sin, vdot(ts[i - 1], ts[i])));
-        normal = vnorm(vsub(normal, vscale(ts[i], vdot(normal, ts[i]))));
+    const out = new Geometry();
+    converted.set(input, out);
+    const mesh = new Mesh();
+    const tangents: Vec3[] = [], normals: Vec3[] = [], rotations: Vec3[] = [];
+    const frameRotation = (normal: Vec3, binormal: Vec3, tangent: Vec3): Vec3 => {
+      const f = Math.fround;
+      const crossFloat32 = (a: Vec3, b: Vec3): Vec3 => [
+        f(f(a[1] * b[2]) - f(a[2] * b[1])),
+        f(f(a[2] * b[0]) - f(a[0] * b[2])),
+        f(f(a[0] * b[1]) - f(a[1] * b[0])),
+      ];
+      // Curve to Points does not use the curve normal directly as the matrix X
+      // axis. Blender first rebuilds an orthonormal basis in float32.
+      binormal = vnormBlenderFloat(crossFloat32(tangent, normal));
+      normal = crossFloat32(binormal, tangent);
+      // Matrix columns are the rotated local X/Y/Z axes. Blender's curve-point
+      // rotation uses X=normal, Y=binormal, Z=tangent.
+      const m = [
+        [normal[0], binormal[0], tangent[0]],
+        [normal[1], binormal[1], tangent[1]],
+        [normal[2], binormal[2], tangent[2]],
+      ];
+      const y = Math.asin(Math.max(-1, Math.min(1, -m[2][0])));
+      const cy = Math.cos(y);
+      const euler = (Math.abs(cy) > 1e-6
+        ? [Math.atan2(m[2][1], m[2][2]), y, Math.atan2(m[1][0], m[0][0])]
+        : [Math.atan2(-m[1][2], m[1][1]), y, 0]) as TaggedRotation;
+
+      // Blender 5.1's normalized_to_quat_fast (Mike Day's branch selection),
+      // with MatBase's column-major accessor translated to the row-major matrix
+      // above. It canonicalizes W and avoids unconditional normalization.
+      const at = (column: number, row: number) => f(m[row][column]);
+      let x = 0, yq = 0, z = 0, w = 1;
+      let s: number;
+      if (at(2, 2) < 0) {
+        if (at(0, 0) > at(1, 1)) {
+          const trace = f(f(f(1 + at(0, 0)) - at(1, 1)) - at(2, 2));
+          s = f(2 * f(Math.sqrt(trace)));
+          if (at(1, 2) < at(2, 1)) s = f(-s);
+          x = f(0.25 * s);
+          s = f(1 / s);
+          w = f(f(at(1, 2) - at(2, 1)) * s);
+          yq = f(f(at(0, 1) + at(1, 0)) * s);
+          z = f(f(at(2, 0) + at(0, 2)) * s);
+          if (trace === 1 && w === 0 && yq === 0 && z === 0) x = 1;
+        } else {
+          const trace = f(f(f(1 - at(0, 0)) + at(1, 1)) - at(2, 2));
+          s = f(2 * f(Math.sqrt(trace)));
+          if (at(2, 0) < at(0, 2)) s = f(-s);
+          yq = f(0.25 * s);
+          s = f(1 / s);
+          w = f(f(at(2, 0) - at(0, 2)) * s);
+          x = f(f(at(0, 1) + at(1, 0)) * s);
+          z = f(f(at(1, 2) + at(2, 1)) * s);
+          if (trace === 1 && w === 0 && x === 0 && z === 0) yq = 1;
+        }
+      } else if (at(0, 0) < -at(1, 1)) {
+        const trace = f(f(f(1 - at(0, 0)) - at(1, 1)) + at(2, 2));
+        s = f(2 * f(Math.sqrt(trace)));
+        if (at(0, 1) < at(1, 0)) s = f(-s);
+        z = f(0.25 * s);
+        s = f(1 / s);
+        w = f(f(at(0, 1) - at(1, 0)) * s);
+        x = f(f(at(2, 0) + at(0, 2)) * s);
+        yq = f(f(at(1, 2) + at(2, 1)) * s);
+        if (trace === 1 && w === 0 && x === 0 && yq === 0) z = 1;
+      } else {
+        const trace = f(f(f(1 + at(0, 0)) + at(1, 1)) + at(2, 2));
+        s = f(2 * f(Math.sqrt(trace)));
+        w = f(0.25 * s);
+        s = f(1 / s);
+        x = f(f(at(1, 2) - at(2, 1)) * s);
+        yq = f(f(at(2, 0) - at(0, 2)) * s);
+        z = f(f(at(0, 1) - at(1, 0)) * s);
+        if (trace === 1 && x === 0 && yq === 0 && z === 0) w = 1;
       }
-      frames.push({ tangent: ts[i], normal, binormal: vnorm(vcross(ts[i], normal)) });
-    }
-    return frames;
-  };
-  for (let splineIndex = 0; splineIndex < sampled.length; splineIndex++) {
-    const s = sampled[splineIndex];
-    let frames = transportedFrames(s.points, sampledTangents[splineIndex] ?? [], s.cyclic);
-    const retainedNormals = sampledNormals[splineIndex] ?? [];
-    if (retainedNormals.length === frames.length) {
-      frames = frames.map((frame, i) => {
-        const normal = vnorm(vsub(retainedNormals[i], vscale(frame.tangent, vdot(retainedNormals[i], frame.tangent))));
-        return { tangent: frame.tangent, normal, binormal: vnorm(vcross(frame.tangent, normal)) };
+      let quaternion: Quat = [x, yq, z, w];
+      let lengthSquared = f(f(x * x) + f(yq * yq));
+      lengthSquared = f(f(lengthSquared + f(z * z)) + f(w * w));
+      if (Math.abs(f(lengthSquared - 1)) >= 0.0002) {
+        const inverseLength = f(1 / f(Math.sqrt(lengthSquared)));
+        quaternion = quaternion.map((component) => f(component * inverseLength)) as Quat;
+      }
+      Object.defineProperty(euler, ROTATION_QUATERNION, {
+        value: quaternion,
+        enumerable: false,
       });
+      return euler;
+    };
+    const transportedFrames = (points: Vec3[], supplied: Vec3[], cyclic: boolean) => {
+      if (!supplied.length) return splineFrames(points, cyclic);
+      const ts = supplied.map((t) => vnorm(t));
+      const rotate = (v: Vec3, axis: Vec3, angle: number): Vec3 => {
+        const c = Math.cos(angle), sn = Math.sin(angle);
+        return vadd(vadd(vscale(v, c), vscale(vcross(axis, v), sn)), vscale(axis, vdot(axis, v) * (1 - c)));
+      };
+      let normal = vcross(ts[0], [0, 0, 1]);
+      if (vlen(normal) < 1e-8) normal = [1, 0, 0];
+      normal = vnorm(normal);
+      const frames: { tangent: Vec3; normal: Vec3; binormal: Vec3 }[] = [];
+      for (let i = 0; i < ts.length; i++) {
+        if (i) {
+          const axis = vcross(ts[i - 1], ts[i]);
+          const sin = vlen(axis);
+          if (sin > 1e-8) normal = rotate(normal, vscale(axis, 1 / sin), Math.atan2(sin, vdot(ts[i - 1], ts[i])));
+          normal = vnorm(vsub(normal, vscale(ts[i], vdot(normal, ts[i]))));
+        }
+        frames.push({ tangent: ts[i], normal, binormal: vnorm(vcross(ts[i], normal)) });
+      }
+      return frames;
+    };
+    for (let splineIndex = 0; splineIndex < sampled.length; splineIndex++) {
+      const s = sampled[splineIndex];
+      let frames = transportedFrames(s.points, sampledTangents[splineIndex] ?? [], s.cyclic);
+      const retainedNormals = sampledNormals[splineIndex] ?? [];
+      if (retainedNormals.length === frames.length) {
+        frames = frames.map((frame, i) => {
+          const normal = vnorm(vsub(retainedNormals[i], vscale(frame.tangent, vdot(retainedNormals[i], frame.tangent))));
+          return { tangent: frame.tangent, normal, binormal: vnorm(vcross(frame.tangent, normal)) };
+        });
+      }
+      for (let i = 0; i < s.points.length; i++) {
+        mesh.positions.push([...s.points[i]] as Vec3);
+        tangents.push(frames[i]?.tangent ?? [1, 0, 0]);
+        normals.push(frames[i]?.normal ?? [0, 0, 1]);
+        rotations.push(frameRotation(frames[i]?.normal ?? [1, 0, 0], frames[i]?.binormal ?? [0, 1, 0], frames[i]?.tangent ?? [0, 0, 1]));
+      }
     }
-    for (let i = 0; i < s.points.length; i++) {
-      mesh.positions.push([...s.points[i]] as Vec3);
-      tangents.push(frames[i]?.tangent ?? [1, 0, 0]);
-      normals.push(frames[i]?.normal ?? [0, 0, 1]);
-      rotations.push(frameRotation(frames[i]?.normal ?? [1, 0, 0], frames[i]?.binormal ?? [0, 1, 0], frames[i]?.tangent ?? [0, 0, 1]));
+    mesh.attributes.set("__curve_tangent", { domain: "POINT", data: tangents });
+    mesh.attributes.set("__curve_normal", { domain: "POINT", data: normals });
+    mesh.attributes.set("__curve_rotation", { domain: "POINT", data: rotations });
+    mesh.attributes.set("__gnvm_point_cloud", { domain: "POINT", data: mesh.positions.map(() => 1) });
+    if (mesh.positions.length) out.mesh = mesh;
+    out.instances = input.instances.map((instance) => ({
+      ...instance,
+      geometry: convertInput(instance.geometry),
+      position: [...instance.position] as Vec3,
+      rotation: [...instance.rotation] as Vec3,
+      scale: [...instance.scale] as Vec3,
+      transformMatrix: instance.transformMatrix?.map((row) => [...row]),
+      attributes: instance.attributes ? new Map(instance.attributes) : undefined,
+    }));
+    if (FIELD_PROBE.node === api.node.name) {
+      const requested = FIELD_PROBE.socket ?? "Rotation";
+      const values = requested === "Tangent" ? tangents : requested === "Normal" ? normals : rotations;
+      FIELD_PROBE.batches.push({ domain: "POINT", positions: mesh.positions, values });
     }
-  }
-  mesh.attributes.set("__curve_tangent", { domain: "POINT", data: tangents });
-  mesh.attributes.set("__curve_normal", { domain: "POINT", data: normals });
-  mesh.attributes.set("__curve_rotation", { domain: "POINT", data: rotations });
-  mesh.attributes.set("__gnvm_point_cloud", { domain: "POINT", data: mesh.positions.map(() => 1) });
-  out.mesh = mesh;
-  if (FIELD_PROBE.node === api.node.name) {
-    const requested = FIELD_PROBE.socket ?? "Rotation";
-    const values = requested === "Tangent" ? tangents : requested === "Normal" ? normals : rotations;
-    FIELD_PROBE.batches.push({ domain: "POINT", positions: mesh.positions, values });
-  }
+    return out;
+  };
+  const out = convertInput(curveInput);
   const attr = (name: string, fallback: Vec3) => Field.perElem((i, ctx) => ctx.attr?.(name, i) ?? fallback).tagged("POINT");
   return {
     Points: out,

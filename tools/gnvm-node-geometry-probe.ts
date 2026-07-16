@@ -69,9 +69,11 @@ const instance_payloads = geometry.instances.map((instance) => ({
   faces: instance.geometry.mesh?.faces.length ?? 0,
   curves: instance.geometry.curves.length,
   instances: instance.geometry.instances.length,
+  sample_positions: instance.geometry.mesh?.positions.slice(0, 8),
   position: instance.position,
   rotation: instance.rotation,
   scale: instance.scale,
+  transform_matrix: instance.transformMatrix,
 }));
 const attributes = Object.fromEntries([...(geometry.mesh?.attributes ?? [])].map(([name, attribute]) => [name, {
   domain: attribute.domain,

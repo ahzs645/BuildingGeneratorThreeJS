@@ -78,6 +78,63 @@ function taggedRotationQuaternion(rotation: Vec3): Quaternion | undefined {
   return (rotation as Vec3 & { [ROTATION_QUATERNION]?: Quaternion })[ROTATION_QUATERNION];
 }
 
+/**
+ * Match Blender's `math::to_euler(Quaternion)` float path. Blender first
+ * creates a float matrix with double-precision quaternion products, then
+ * extracts the lower-Manhattan-length XYZ Euler solution. Keeping this path
+ * matters at quarter turns: the resulting cosine is a small positive float,
+ * while an Euler socket display round-trip produces a small negative float.
+ */
+function quaternionToEulerXYZBlender(quaternion: Quaternion): Vec3 {
+  const f = Math.fround;
+  const [x, y, z, w] = quaternion.map(f) as Quaternion;
+  const q0 = Math.SQRT2 * w;
+  const q1 = Math.SQRT2 * x;
+  const q2 = Math.SQRT2 * y;
+  const q3 = Math.SQRT2 * z;
+  const qda = q0 * q1;
+  const qdb = q0 * q2;
+  const qdc = q0 * q3;
+  const qaa = q1 * q1;
+  const qab = q1 * q2;
+  const qac = q1 * q3;
+  const qbb = q2 * q2;
+  const qbc = q2 * q3;
+  const qcc = q3 * q3;
+  // Blender matrices are indexed [column][row]. Each assignment below casts
+  // the double intermediate back to the Quaternion's float scalar type.
+  const matrix = [
+    [f(1 - qbb - qcc), f(qdc + qab), f(-qdb + qac)],
+    [f(-qdc + qab), f(1 - qaa - qcc), f(qda + qbc)],
+    [f(qdb + qac), f(-qda + qbc), f(1 - qaa - qbb)],
+  ];
+  const cy = f(Math.hypot(matrix[0][0], matrix[0][1]));
+  let first: Vec3;
+  let second: Vec3;
+  if (cy > 16 * 1.1920928955078125e-7) {
+    first = [
+      f(Math.atan2(matrix[1][2], matrix[2][2])),
+      f(Math.atan2(-matrix[0][2], cy)),
+      f(Math.atan2(matrix[0][1], matrix[0][0])),
+    ];
+    second = [
+      f(Math.atan2(-matrix[1][2], -matrix[2][2])),
+      f(Math.atan2(-matrix[0][2], -cy)),
+      f(Math.atan2(-matrix[0][1], -matrix[0][0])),
+    ];
+  }
+  else {
+    first = [
+      f(Math.atan2(-matrix[2][1], matrix[1][1])),
+      f(Math.atan2(-matrix[0][2], cy)),
+      0,
+    ];
+    second = [...first];
+  }
+  const manhattan = (value: Vec3) => f(f(Math.abs(value[0]) + Math.abs(value[1])) + Math.abs(value[2]));
+  return manhattan(first) > manhattan(second) ? second : first;
+}
+
 function instanceMatrix(position: Vec3, rotation: Vec3, scale: Vec3): Matrix4Rows {
   const f = Math.fround;
   const quaternion = taggedRotationQuaternion(rotation);
@@ -127,18 +184,23 @@ function translationMatrix(translation: Vec3): Matrix4Rows {
 
 function axisAngleMatrix(axisValue: Vec3, angleValue: number): Matrix4Rows {
   const f = Math.fround;
-  const length = Math.hypot(axisValue[0], axisValue[1], axisValue[2]) || 1;
-  const x = f(axisValue[0] / length);
-  const y = f(axisValue[1] / length);
-  const z = f(axisValue[2] / length);
+  let lengthSquared = f(f(f(axisValue[0]) * f(axisValue[0])) + f(f(axisValue[1]) * f(axisValue[1])));
+  lengthSquared = f(lengthSquared + f(f(axisValue[2]) * f(axisValue[2])));
+  const length = lengthSquared > 1e-35 ? f(Math.sqrt(lengthSquared)) : 1;
+  const x = f(f(axisValue[0]) / length);
+  const y = f(f(axisValue[1]) / length);
+  const z = f(f(axisValue[2]) / length);
   const angle = f(angleValue);
   const c = f(Math.cos(angle));
   const s = f(Math.sin(angle));
   const t = f(1 - c);
+  const sx = f(x * s), sy = f(y * s), sz = f(z * s);
+  const xx = f(f(x * x) * t), yy = f(f(y * y) * t), zz = f(f(z * z) * t);
+  const xy = f(f(x * y) * t), xz = f(f(x * z) * t), yz = f(f(y * z) * t);
   return [
-    [f(f(t * x) * x + c), f(f(t * x) * y - f(s * z)), f(f(t * x) * z + f(s * y)), 0],
-    [f(f(t * x) * y + f(s * z)), f(f(t * y) * y + c), f(f(t * y) * z - f(s * x)), 0],
-    [f(f(t * x) * z - f(s * y)), f(f(t * y) * z + f(s * x)), f(f(t * z) * z + c), 0],
+    [f(xx + c), f(xy - sz), f(xz + sy), 0],
+    [f(xy + sz), f(yy + c), f(yz - sx), 0],
+    [f(xz - sy), f(yz + sx), f(zz + c), 0],
     [0, 0, 0, 1],
   ];
 }
@@ -154,10 +216,13 @@ function rotateInstanceMatrix(
   let rotationMatrix: Matrix4Rows;
   let usedPivot: Vec3;
   if (local) {
+    const euler = taggedRotationQuaternion(rotation)
+      ? quaternionToEulerXYZBlender(taggedRotationQuaternion(rotation)!)
+      : rotation;
     const axis = (column: number): Vec3 => [base[0][column], base[1][column], base[2][column]];
-    const x = axisAngleMatrix(axis(0), rotation[0]);
-    const y = axisAngleMatrix(axis(1), rotation[1]);
-    const z = axisAngleMatrix(axis(2), rotation[2]);
+    const x = axisAngleMatrix(axis(0), euler[0]);
+    const y = axisAngleMatrix(axis(1), euler[1]);
+    const z = axisAngleMatrix(axis(2), euler[2]);
     rotationMatrix = multiplyInstanceMatrices(multiplyInstanceMatrices(z, y), x);
     usedPivot = transformPointMatrixFloat32(pivot, base);
   }
@@ -570,9 +635,8 @@ reg("GeometryNodeSetMaterial", (api) => {
 
 // ---- instancing -----------------------------------------------------------
 reg("GeometryNodeInstanceOnPoints", (api) => {
-  const points = api.geo("Points");
+  const pointGeometry = api.geo("Points");
   const instance = api.geo("Instance");
-  const out = new Geometry();
   // Some supplied products use Blender's version-specific stochastic point
   // distribution as an authored layout rather than as an exposed control.
   // The extraction pipeline can preserve those evaluated transforms directly
@@ -581,6 +645,7 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
   const bakedInstances = api.node.baked_instances
     ?? api.prop<{ position: Vec3; rotation?: Vec3; scale: Vec3 }[]>("baked_instances", []);
   if (bakedInstances.length) {
+    const out = new Geometry();
     for (const baked of bakedInstances) out.instances.push({
       geometry: instance,
       position: [...baked.position] as Vec3,
@@ -589,82 +654,103 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
     });
     return { Instances: out };
   }
-  // Points come from either a mesh (vertex positions) or a curve (control points).
-  const pts: Vec3[] = points.mesh
-    ? points.mesh.positions
-    : points.curves.flatMap((s) => s.points);
-  if (!pts.length) return { Instances: out };
-  const ctx = makeFieldCtx(points, "POINT");
-  const sel = api.field("Selection").array(ctx);
-  const rot = api.field("Rotation").array(ctx);
-  const scl = api.field("Scale").array(ctx);
-  const instanceIndices = api.field("Instance Index").array(ctx);
-  if (FIELD_PROBE.node === api.node.name) {
-    const requested = FIELD_PROBE.socket ?? "Rotation";
-    FIELD_PROBE.batches.push({
-      domain: "POINT",
-      positions: pts.map((point) => [...point] as Vec3),
-      values: requested === "Scale"
-        ? scl
-        : requested === "Selection"
-          ? sel
-          : requested === "Instance Index"
-            ? instanceIndices
-            : rot,
-    });
-  }
-  const pickInstance = api.bool("Pick Instance");
-  const instanceIndexLinked = api.node.inputs.find((socket) => socket.identifier === "Instance Index")?.linked;
-  const scaleLinked = api.node.inputs.find((s) => s.identifier === "Scale")?.linked;
-  const scaleConst = api.vec("Scale");
-  // per-point attributes to carry onto each instance (anonymous-attribute propagation)
-  const pointAttrs = points.mesh
-    ? [...points.mesh.attributes].filter(([, a]) => a.domain === "POINT")
-    : [...points.curveAttributes];
-  for (let i = 0; i < pts.length; i++) {
-    if (!asNum(sel[i] ?? 1)) continue;
-    const s = scaleLinked ? asVec3(scl[i] ?? [1, 1, 1]) : (scaleConst[0] || scaleConst[1] || scaleConst[2] ? scaleConst : [1, 1, 1] as Vec3);
-    let attributes: Map<string, any> | undefined;
-    if (pointAttrs.length) {
-      attributes = new Map();
-      for (const [name, a] of pointAttrs) attributes.set(name, a.data[i]);
+  const processed = new WeakMap<Geometry, Geometry>();
+  const processPoints = (points: Geometry): Geometry => {
+    const cached = processed.get(points);
+    if (cached) return cached;
+    const out = new Geometry();
+    processed.set(points, out);
+    // Blender's foreach_real_geometry() processes point components inside every
+    // referenced geometry while retaining the surrounding instance hierarchy.
+    // Keeping that boundary is essential for per-point rotations to compose
+    // with an authored collection object's transform (Modern Pipe end caps).
+    out.instances.push(...points.instances.map((outer) => ({
+      ...outer,
+      geometry: processPoints(outer.geometry),
+      position: [...outer.position] as Vec3,
+      rotation: [...outer.rotation] as Vec3,
+      scale: [...outer.scale] as Vec3,
+      transformMatrix: outer.transformMatrix?.map((row) => [...row]),
+      attributes: outer.attributes ? new Map(outer.attributes) : undefined,
+    })));
+    // Points come from either a mesh (vertex positions) or a curve (control points).
+    const pts: Vec3[] = points.mesh
+      ? points.mesh.positions
+      : points.curves.flatMap((s) => s.points);
+    if (!pts.length) return out;
+    const ctx = makeFieldCtx(points, "POINT");
+    const sel = api.field("Selection").array(ctx);
+    const rot = api.field("Rotation").array(ctx);
+    const scl = api.field("Scale").array(ctx);
+    const instanceIndices = api.field("Instance Index").array(ctx);
+    if (FIELD_PROBE.node === api.node.name) {
+      const requested = FIELD_PROBE.socket ?? "Rotation";
+      FIELD_PROBE.batches.push({
+        domain: "POINT",
+        positions: pts.map((point) => [...point] as Vec3),
+        values: requested === "Scale"
+          ? scl
+          : requested === "Selection"
+            ? sel
+            : requested === "Instance Index"
+              ? instanceIndices
+              : rot,
+      });
     }
-    // Blender's unlinked Instance Index follows the point index for a list
-    // produced by Geometry to Instance, despite the socket displaying 0, and
-    // wraps beyond the source count. Text Soup exposes this when a short edited
-    // string is repeated over its fixed 14-point guide.
-    // A field linked directly to the integer Instance Index socket truncates
-    // toward zero. Group-interface Int sockets use Blender's separate rounded
-    // coercion; conflating the two made Bit Stand select its larger cutters
-    // four points too early.
-    const requestedIndex = instanceIndexLinked ? Math.trunc(asNum(instanceIndices[i] ?? 0)) : i;
-    const picked = pickInstance && instance.instances.length
-      ? instance.instances[((requestedIndex % instance.instances.length) + instance.instances.length) % instance.instances.length]
-      : null;
-    const outerRotation = asVec3(rot[i] ?? [0, 0, 0]);
-    const nativeRotation = taggedRotationQuaternion(outerRotation);
-    const outerMatrix = nativeRotation ? instanceMatrix(pts[i], outerRotation, s) : undefined;
-    const pickedMatrix = picked
-      ? picked.transformMatrix ?? instanceMatrix(picked.position, picked.rotation, picked.scale)
-      : undefined;
-    const transformMatrix = outerMatrix
-      ? pickedMatrix ? multiplyInstanceMatrices(outerMatrix, pickedMatrix) : outerMatrix
-      : undefined;
-    const composedPosition = transformMatrix
-      ? [transformMatrix[0][3], transformMatrix[1][3], transformMatrix[2][3]] as Vec3
-      : picked ? transformPoint(picked.position, pts[i], outerRotation, s) : pts[i];
-    out.instances.push({
-      geometry: picked?.geometry ?? instance,
-      // A picked child keeps its own transform. Compose its origin through the
-      // point transform before placing it in the parent geometry.
-      position: composedPosition,
-      rotation: picked ? vadd(outerRotation, picked.rotation) : outerRotation,
-      scale: picked ? [s[0] * picked.scale[0], s[1] * picked.scale[1], s[2] * picked.scale[2]] : s,
-      transformMatrix,
-      attributes,
-    } as InstanceRef);
-  }
-  return { Instances: out };
+    const pickInstance = api.bool("Pick Instance");
+    const instanceIndexLinked = api.node.inputs.find((socket) => socket.identifier === "Instance Index")?.linked;
+    const scaleLinked = api.node.inputs.find((s) => s.identifier === "Scale")?.linked;
+    const scaleConst = api.vec("Scale");
+    // per-point attributes to carry onto each instance (anonymous-attribute propagation)
+    const pointAttrs = points.mesh
+      ? [...points.mesh.attributes].filter(([, a]) => a.domain === "POINT")
+      : [...points.curveAttributes];
+    for (let i = 0; i < pts.length; i++) {
+      if (!asNum(sel[i] ?? 1)) continue;
+      const s = scaleLinked ? asVec3(scl[i] ?? [1, 1, 1]) : (scaleConst[0] || scaleConst[1] || scaleConst[2] ? scaleConst : [1, 1, 1] as Vec3);
+      let attributes: Map<string, any> | undefined;
+      if (pointAttrs.length) {
+        attributes = new Map();
+        for (const [name, a] of pointAttrs) attributes.set(name, a.data[i]);
+      }
+      // Blender's unlinked Instance Index follows the point index for a list
+      // produced by Geometry to Instance, despite the socket displaying 0, and
+      // wraps beyond the source count. Text Soup exposes this when a short edited
+      // string is repeated over its fixed 14-point guide.
+      // A field linked directly to the integer Instance Index socket truncates
+      // toward zero. Group-interface Int sockets use Blender's separate rounded
+      // coercion; conflating the two made Bit Stand select its larger cutters
+      // four points too early.
+      const requestedIndex = instanceIndexLinked ? Math.trunc(asNum(instanceIndices[i] ?? 0)) : i;
+      const picked = pickInstance && instance.instances.length
+        ? instance.instances[((requestedIndex % instance.instances.length) + instance.instances.length) % instance.instances.length]
+        : null;
+      const outerRotation = asVec3(rot[i] ?? [0, 0, 0]);
+      const nativeRotation = taggedRotationQuaternion(outerRotation);
+      const outerMatrix = nativeRotation ? instanceMatrix(pts[i], outerRotation, s) : undefined;
+      const pickedMatrix = picked
+        ? picked.transformMatrix ?? instanceMatrix(picked.position, picked.rotation, picked.scale)
+        : undefined;
+      const transformMatrix = outerMatrix
+        ? pickedMatrix ? multiplyInstanceMatrices(outerMatrix, pickedMatrix) : outerMatrix
+        : undefined;
+      const composedPosition = transformMatrix
+        ? [transformMatrix[0][3], transformMatrix[1][3], transformMatrix[2][3]] as Vec3
+        : picked ? transformPoint(picked.position, pts[i], outerRotation, s) : pts[i];
+      out.instances.push({
+        geometry: picked?.geometry ?? instance,
+        // A picked child keeps its own transform. Compose its origin through the
+        // point transform before placing it in the parent geometry.
+        position: composedPosition,
+        rotation: picked ? vadd(outerRotation, picked.rotation) : outerRotation,
+        scale: picked ? [s[0] * picked.scale[0], s[1] * picked.scale[1], s[2] * picked.scale[2]] : s,
+        transformMatrix,
+        attributes,
+      } as InstanceRef);
+    }
+    return out;
+  };
+  return { Instances: processPoints(pointGeometry) };
 });
 
 reg("GeometryNodeInstancesToPoints", (api) => {

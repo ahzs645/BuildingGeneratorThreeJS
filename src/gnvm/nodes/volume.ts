@@ -501,5 +501,5 @@ reg("GeometryNodeVolumeToMesh", (api) => {
 });
 
 reg("GeometryNodeInputInstanceRotation", () => ({
-  Rotation: Field.perElem((index, context) => context.attr?.("__instance_rotation", index) ?? [0, 0, 0]),
+  Rotation: Field.perElem((index, context) => context.instanceRotation?.(index) ?? [0, 0, 0]),
 }));

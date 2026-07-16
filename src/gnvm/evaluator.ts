@@ -52,6 +52,70 @@ export const VALUE_PROBE: { group: string | null; node: string | null; socket: s
   values: [],
 };
 
+const ROTATION_QUATERNION = Symbol.for("gnvm.rotationQuaternion");
+type NativeQuaternion = [number, number, number, number];
+
+/**
+ * Match Blender's mat3_normalized_to_quat_fast() for an extracted row-major
+ * instance matrix. Rotation sockets carry this quaternion internally; using
+ * only their displayed Euler value changes quarter-turn transforms by ULPs.
+ */
+function tagInstanceMatrixQuaternion(rotationValue: Vec3, matrix: number[][]): Vec3 {
+  const f = Math.fround;
+  const rowMajor = [0, 1, 2].map((row) => [0, 1, 2].map((column) => f(matrix[row]?.[column] ?? (row === column ? 1 : 0))));
+  for (let column = 0; column < 3; column++) {
+    const length = Math.hypot(rowMajor[0][column], rowMajor[1][column], rowMajor[2][column]) || 1;
+    for (let row = 0; row < 3; row++) rowMajor[row][column] = f(rowMajor[row][column] / length);
+  }
+  // Blender matrices are indexed [column][row].
+  const m = [0, 1, 2].map((column) => [0, 1, 2].map((row) => rowMajor[row][column]));
+  const q = [0, 0, 0, 0]; // Blender order: W, X, Y, Z.
+  if (m[2][2] < 0) {
+    if (m[0][0] > m[1][1]) {
+      const trace = f(f(f(1 + m[0][0]) - m[1][1]) - m[2][2]);
+      let s = f(2 * f(Math.sqrt(trace)));
+      if (m[1][2] < m[2][1]) s = f(-s);
+      q[1] = f(0.25 * s);
+      s = f(1 / s);
+      q[0] = f(f(m[1][2] - m[2][1]) * s);
+      q[2] = f(f(m[0][1] + m[1][0]) * s);
+      q[3] = f(f(m[2][0] + m[0][2]) * s);
+    } else {
+      const trace = f(f(f(1 - m[0][0]) + m[1][1]) - m[2][2]);
+      let s = f(2 * f(Math.sqrt(trace)));
+      if (m[2][0] < m[0][2]) s = f(-s);
+      q[2] = f(0.25 * s);
+      s = f(1 / s);
+      q[0] = f(f(m[2][0] - m[0][2]) * s);
+      q[1] = f(f(m[0][1] + m[1][0]) * s);
+      q[3] = f(f(m[1][2] + m[2][1]) * s);
+    }
+  } else if (m[0][0] < -m[1][1]) {
+    const trace = f(f(f(1 - m[0][0]) - m[1][1]) + m[2][2]);
+    let s = f(2 * f(Math.sqrt(trace)));
+    if (m[0][1] < m[1][0]) s = f(-s);
+    q[3] = f(0.25 * s);
+    s = f(1 / s);
+    q[0] = f(f(m[0][1] - m[1][0]) * s);
+    q[1] = f(f(m[2][0] + m[0][2]) * s);
+    q[2] = f(f(m[1][2] + m[2][1]) * s);
+  } else {
+    const trace = f(f(f(1 + m[0][0]) + m[1][1]) + m[2][2]);
+    let s = f(2 * f(Math.sqrt(trace)));
+    q[0] = f(0.25 * s);
+    s = f(1 / s);
+    q[1] = f(f(m[1][2] - m[2][1]) * s);
+    q[2] = f(f(m[2][0] - m[0][2]) * s);
+    q[3] = f(f(m[0][1] - m[1][0]) * s);
+  }
+  const rotation = [...rotationValue] as Vec3 & { [ROTATION_QUATERNION]?: NativeQuaternion };
+  Object.defineProperty(rotation, ROTATION_QUATERNION, {
+    value: [q[1], q[2], q[3], q[0]] as NativeQuaternion,
+    enumerable: false,
+  });
+  return rotation;
+}
+
 function bboxOf(g: Geometry): string {
   const realized = g.instances.length ? realizeInstances(g) : g;
   const pts: Vec3[] = [...(realized.mesh?.positions ?? []), ...realized.curves.flatMap((s) => s.points)];
@@ -429,6 +493,13 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
         return pts.length ? pts.reduce((sum, p) => vadd(sum, p), [0, 0, 0] as Vec3).map((v) => v / pts.length) as Vec3 : [0, 0, 0];
       }
       return curvePts[i] ?? [0, 0, 0];
+    },
+    instanceRotation: (i) => {
+      const instance = geo.instances[i];
+      if (!instance) return [0, 0, 0];
+      return instance.transformMatrix
+        ? tagInstanceMatrixQuaternion(instance.rotation, instance.transformMatrix)
+        : instance.rotation;
     },
     normal: (i) => {
       if (!mesh) {
@@ -871,21 +942,19 @@ class Invocation {
       const element = new Geometry();
       const sourceInstance = domain === "INSTANCE" ? source.instances[index] : undefined;
       if (sourceInstance) {
-        // Blender evaluates an INSTANCE-domain element in the instance's local
-        // identity frame. The source transform is applied to each Generation
-        // result when the zone aggregates its iterations. Feeding the authored
-        // transform into the body and emitting at identity is not equivalent
-        // when a body node changes rotation (Modern Pipe aligns its end rings).
+        // Blender's extract_instances() carries the complete source instance
+        // into the zone body. Geometry nodes inside the body therefore see the
+        // authored position/rotation/scale before Generation geometry is
+        // joined. Modern Pipe realizes, rotates and sweeps this transformed
+        // rail inside the body, so evaluating at identity and reapplying the
+        // matrix afterward changes float32 curve frames.
         element.instances.push({
           ...sourceInstance,
-          position: [0, 0, 0],
-          rotation: [0, 0, 0],
-          scale: [1, 1, 1],
-          transformMatrix: undefined,
-          attributes: new Map([
-            ...(sourceInstance.attributes?.entries() ?? []),
-            ["__instance_rotation", [0, 0, 0] as Vec3],
-          ]),
+          position: [...sourceInstance.position] as Vec3,
+          rotation: [...sourceInstance.rotation] as Vec3,
+          scale: [...sourceInstance.scale] as Vec3,
+          transformMatrix: sourceInstance.transformMatrix?.map((row) => [...row]),
+          attributes: sourceInstance.attributes ? new Map(sourceInstance.attributes) : undefined,
         });
       }
       for (const name of zone) this.memo.delete(name);
@@ -894,19 +963,7 @@ class Invocation {
       for (const [identifier, parts] of generated) {
         const value = this.pull(outNode, identifier);
         if (!(value instanceof Geometry)) continue;
-        if (!sourceInstance) {
-          parts.push(value);
-          continue;
-        }
-        const transformed = new Geometry();
-        transformed.instances.push({
-          geometry: value.clone(),
-          position: [...sourceInstance.position] as Vec3,
-          rotation: [...sourceInstance.rotation] as Vec3,
-          scale: [...sourceInstance.scale] as Vec3,
-          transformMatrix: sourceInstance.transformMatrix?.map((row) => [...row]),
-        });
-        parts.push(transformed);
+        parts.push(value.clone());
       }
     }
     this.foreachState.delete(inNode.name);
@@ -916,28 +973,30 @@ class Invocation {
     const outputs: Record<string, SockVal> = { Geometry: source.clone() };
     for (const [identifier, parts] of generated) {
       const joined = new Geometry();
+      joined.mesh = new Mesh();
       for (const part of parts) {
-        if (!part.mesh && !part.curves.length) {
-          joined.instances.push(...part.instances.map((instance) => ({
-            ...instance,
-            position: [...instance.position] as Vec3,
-            rotation: [...instance.rotation] as Vec3,
-            scale: [...instance.scale] as Vec3,
-            attributes: instance.attributes ? new Map(instance.attributes) : undefined,
-          })));
-        } else {
-          // Generation geometry is emitted once per iteration. Preserve that
-          // boundary as an instance, matching Blender's zone aggregation and
-          // allowing downstream Instance Count / Realize Instances nodes to
-          // distinguish the generated pipe sleeves.
-          joined.instances.push({
-            geometry: part.clone(),
-            position: [0, 0, 0],
-            rotation: [0, 0, 0],
-            scale: [1, 1, 1],
-          });
-        }
+        // The zone output calls join_geometries() on every generated result;
+        // it does not add an identity instance boundary per iteration.
+        if (part.mesh) mergeMeshInto(joined.mesh, part.mesh);
+        joined.curves.push(...part.curves.map((spline) => ({
+          cyclic: spline.cyclic,
+          resolution: spline.resolution,
+          splineType: spline.splineType,
+          points: spline.points.map((point) => [...point] as Vec3),
+          controlPoints: spline.controlPoints?.map((point) => [...point] as Vec3),
+          bezierLeft: spline.bezierLeft?.map((point) => [...point] as Vec3),
+          bezierRight: spline.bezierRight?.map((point) => [...point] as Vec3),
+        })));
+        joined.instances.push(...part.instances.map((instance) => ({
+          ...instance,
+          position: [...instance.position] as Vec3,
+          rotation: [...instance.rotation] as Vec3,
+          scale: [...instance.scale] as Vec3,
+          transformMatrix: instance.transformMatrix?.map((row) => [...row]),
+          attributes: instance.attributes ? new Map(instance.attributes) : undefined,
+        })));
       }
+      if (!joined.mesh.positions.length && !joined.mesh.faces.length && !joined.mesh.edges.length) joined.mesh = undefined;
       outputs[identifier] = joined;
     }
     return outputs;

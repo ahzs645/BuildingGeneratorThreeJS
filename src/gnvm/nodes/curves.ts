@@ -619,9 +619,11 @@ reg("GeometryNodeReverseCurve", (api) => {
 reg("GeometryNodeCurveToMesh", (api) => {
   const railInput = api.geo("Curve");
   const profileInput = api.geo("Profile Curve");
-  // Blender evaluates curve components carried by instances here. The New
-  // Joint sleeve builder rotates a one-curve instance per pipe before sweep.
-  const rail = railInput.instances.length ? realizeInstances(railInput) : railInput;
+  // Profile geometry is a single sweep template. Rail instances, in contrast,
+  // are real output components and must survive the conversion: Blender maps
+  // Curve to Mesh through each instance reference without realizing its
+  // transform. Modern Pipe counts those generated sleeve instances after its
+  // For Each zone and deliberately selects a fallback when none survive.
   const prof = profileInput.instances.length ? realizeInstances(profileInput) : profileInput;
   const caps = api.bool("Fill Caps");
   // Blender 5 "Scale": per-rail-point profile scale (the curve radius mechanism).
@@ -629,23 +631,38 @@ reg("GeometryNodeCurveToMesh", (api) => {
   // uniformly. Requires NamedAttribute.Exists to be real — the handle drives this
   // with Switch(Exists("radius") ? radius : 1).
   const scaleLinked = api.node.inputs.find((s) => s.identifier === "Scale")?.linked ?? false;
-  let scaleArr: number[] | null = null;
-  if (scaleLinked) {
-    const ctx = makeFieldCtx(rail, "POINT");
-    scaleArr = api.field("Scale").array(ctx).map((v) => asNum(v ?? 1));
-  } else {
-    const u = api.num("Scale");
-    if (u && u !== 1) scaleArr = rail.curves.flatMap((s) => s.points.map(() => u));
-  }
-  const out = new Geometry();
-  const mesh = new Mesh();
-  mesh.materialSlots = [null];
-  const profiles = prof.curves;
-  const tangentAttribute = rail.curveAttributes.get("__curve_tangent")?.data;
-  const normalAttribute = rail.curveAttributes.get("__curve_normal")?.data;
-  const importedTangentAttribute = rail.curveAttributes.has("__curve_imported_tangent");
-  const railWasInstanced = railInput.instances.length > 0;
-  const planarFromMesh = rail.curveAttributes.has("__gnvm_planar_mesh_curve");
+  const scaleField = api.field("Scale");
+  const uniformScale = api.num("Scale");
+  const converted = new WeakMap<Geometry, Geometry>();
+  const convertRail = (rail: Geometry): Geometry => {
+    const cached = converted.get(rail);
+    if (cached) return cached;
+    const out = new Geometry();
+    converted.set(rail, out);
+    out.instances = rail.instances.map((instance) => ({
+      ...instance,
+      position: [...instance.position] as Vec3,
+      rotation: [...instance.rotation] as Vec3,
+      scale: [...instance.scale] as Vec3,
+      transformMatrix: instance.transformMatrix?.map((row) => [...row]),
+      attributes: instance.attributes ? new Map(instance.attributes) : undefined,
+      geometry: convertRail(instance.geometry),
+    }));
+
+    let scaleArr: number[] | null = null;
+    if (scaleLinked) {
+      const ctx = makeFieldCtx(rail, "POINT");
+      scaleArr = scaleField.array(ctx).map((v) => asNum(v ?? 1));
+    } else if (uniformScale && uniformScale !== 1) {
+      scaleArr = rail.curves.flatMap((s) => s.points.map(() => uniformScale));
+    }
+    const mesh = new Mesh();
+    mesh.materialSlots = [null];
+    const profiles = prof.curves;
+    const tangentAttribute = rail.curveAttributes.get("__curve_tangent")?.data;
+    const normalAttribute = rail.curveAttributes.get("__curve_normal")?.data;
+    const importedTangentAttribute = rail.curveAttributes.has("__curve_imported_tangent");
+    const planarFromMesh = rail.curveAttributes.has("__gnvm_planar_mesh_curve");
   // Curve radius drives the sweep scale but is a built-in curve property, not
   // a named mesh attribute on Curve to Mesh's output.
   const railPointAttributes = [...rail.curveAttributes].filter(([name, attribute]) => attribute.domain === "POINT" && name !== "radius");
@@ -658,9 +675,7 @@ reg("GeometryNodeCurveToMesh", (api) => {
     // Realize Instances currently transforms curve positions but not vector
     // attributes. Do not reuse a payload-space normal after an instance-space
     // rotation; the tangent branch below already reconstructs those frames.
-    const normalOverrides = railWasInstanced
-      ? undefined
-      : normalAttribute?.slice(flatBase, flatBase + r.points.length).map(asVec3);
+    const normalOverrides = normalAttribute?.slice(flatBase, flatBase + r.points.length).map(asVec3);
     const tangentOverrides = importedTangentAttribute
       ? r.points.map((point, index, points) => {
           if (points.length < 2) return [0, 0, 1] as Vec3;
@@ -681,14 +696,7 @@ reg("GeometryNodeCurveToMesh", (api) => {
           const bisector = vadd(vnorm(vsub(point, previous)), vnorm(vsub(next, point)));
           return vlen(bisector) > 1e-9 ? vnorm(bisector) : vnorm(vsub(next, previous));
         })
-      : tangentAttribute?.slice(flatBase, flatBase + r.points.length).map(asVec3)
-        // Realize Instances currently bakes the curve positions but does not
-        // retain anonymous curve-domain frame attributes from its payloads.
-        // An instanced rail still has an evaluated Blender frame, however, and
-        // Curve to Mesh must not fall back to the unrelated generic open-curve
-        // half-turn. Reconstruct its tangent side of the frame from the baked
-        // polyline; this is exact for Modern Pipe's rotated Curve Line rails.
-        ?? (railWasInstanced ? splineFrames(r.points, r.cyclic).map((frame) => frame.tangent) : undefined);
+      : tangentAttribute?.slice(flatBase, flatBase + r.points.length).map(asVec3);
     flatBase += r.points.length;
     if (!profiles.length) {
       // no profile: emit the rail as an edge-only wire
@@ -786,8 +794,10 @@ reg("GeometryNodeCurveToMesh", (api) => {
       profileBase += profilePointCount;
     }
   }
-  out.mesh = mesh;
-  return { Mesh: out };
+    if (mesh.positions.length || mesh.edges.length || mesh.faces.length) out.mesh = mesh;
+    return out;
+  };
+  return { Mesh: convertRail(railInput) };
 });
 
 reg("GeometryNodeFillCurve", (api) => {

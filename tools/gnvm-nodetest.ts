@@ -2568,10 +2568,11 @@ function meshSignedAreaXY(m: Mesh): number {
   DUMP_CONTEXT.activeObject = savedActiveObject;
 }
 
-// INSTANCE-domain For Each evaluates its body in element-local space and
-// reapplies the source transform to generated geometry at the zone boundary.
-// A body that converts an element to points exposes the difference: carrying
-// the source transform into the body loses its rotation on the new instance.
+// INSTANCE-domain For Each passes each extracted source instance into the body
+// with its transform intact, then joins generated geometry directly. A body
+// that converts the element to points makes the boundary semantics explicit:
+// the new instance keeps the transformed point position but not the source
+// instance's rotation.
 {
   const node = (name: string, type: string, inputs: any[], outputs: any[], extra: Record<string, unknown> = {}) => ({
     name, type, label: null, inputs, outputs, ...extra,
@@ -2624,7 +2625,7 @@ function meshSignedAreaXY(m: Mesh): number {
   source.instances.push({ geometry: new Geometry(), position: [4, 5, 6], rotation: [Math.PI / 2, 0, Math.PI / 2], scale: [1, 1, 1] });
   const generated = new Evaluator(foreachProgram).evalGroup("foreach_instance_test", { Geometry: source }).Output as Geometry;
   const generatedPoint = realizeInstances(generated).mesh?.positions[0];
-  check("For Each generation reapplies source instance transform", approx(generatedPoint ?? [], [5, 5, 6]), JSON.stringify(generatedPoint));
+  check("For Each generation evaluates inside the source instance transform", approx(generatedPoint ?? [], [4, 5, 7]), JSON.stringify(generatedPoint));
 }
 
 // (AE) Curve Tilt and Radius are point fields, and an unlinked Instance Index

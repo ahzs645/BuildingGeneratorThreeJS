@@ -43,7 +43,14 @@ nested.links.new(source_output, nested_geometry_input)
 
 instance = root.nodes[instance_name]
 assert instance.node_tree == nested, f"{instance_name} does not instance {nested_name}"
-instance_output = geometry_socket(instance.outputs)
+# Group instance sockets use the nested interface identifier. Selecting the
+# first geometry output is ambiguous for groups such as Modern Pipe's sleeve
+# generator, which exposes five separate geometry results.
+instance_output = next(
+    (socket for socket in instance.outputs if socket.identifier == nested_geometry_input.identifier),
+    None,
+)
+assert instance_output is not None, f"group instance is missing {nested_geometry_input.identifier}"
 root_output = active_output(root)
 root_geometry_input = geometry_socket(root_output.inputs)
 assert root_geometry_input is not None, "root group has no geometry output"
@@ -54,6 +61,15 @@ root.links.new(instance_output, root_geometry_input)
 obj = bpy.data.objects[object_name]
 modifier = next((m for m in obj.modifiers if m.type == "NODES" and m.node_group == root), None)
 assert modifier is not None, f"no Geometry Nodes modifier using {root_name}"
+# Asset-library objects are commonly outside the authored view layer. Evaluate
+# the target in an isolated scene so Blender returns the routed node result
+# instead of the object's 42-vertex seed/fallback mesh.
+probe_scene = bpy.data.scenes.new("__NODE_DOJO_NESTED_GEOMETRY_PROBE_SCENE")
+probe_scene.collection.objects.link(obj)
+bpy.context.window.scene = probe_scene
+obj.hide_viewport = False
+obj.hide_render = False
+obj.hide_set(False)
 overrides = json.load(open(overrides_path)) if overrides_path else {}
 inputs = {
     item.name: item.identifier
@@ -63,12 +79,24 @@ inputs = {
 for name, value in overrides.items():
     modifier[inputs.get(name, name)] = value
 
+realize_group = bpy.data.node_groups.new("__NESTED_PROBE_REALIZE_INSTANCES", "GeometryNodeTree")
+realize_group.interface.new_socket(name="Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")
+realize_group.interface.new_socket(name="Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
+realize_input = realize_group.nodes.new("NodeGroupInput")
+realize = realize_group.nodes.new("GeometryNodeRealizeInstances")
+realize_output = realize_group.nodes.new("NodeGroupOutput")
+realize_group.links.new(realize_input.outputs["Geometry"], realize.inputs["Geometry"])
+realize_group.links.new(realize.outputs["Geometry"], realize_output.inputs["Geometry"])
+realize_modifier = obj.modifiers.new(name="__NESTED_PROBE_REALIZE_INSTANCES", type="NODES")
+realize_modifier.node_group = realize_group
+
 obj.update_tag()
 bpy.context.view_layer.update()
 depsgraph = bpy.context.evaluated_depsgraph_get()
+depsgraph.update()
 evaluated = obj.evaluated_get(depsgraph)
 mesh = evaluated.to_mesh()
-positions = [[round(v.co.x, 7), round(v.co.y, 7), round(v.co.z, 7)] for v in mesh.vertices]
+positions = [[v.co.x, v.co.y, v.co.z] for v in mesh.vertices]
 faces = [list(p.vertices) for p in mesh.polygons]
 with open(out_path, "w") as handle:
     json.dump({

@@ -62,6 +62,9 @@ export interface FieldCtx {
   position?: (i: number) => Vec3;
   normal?: (i: number) => Vec3;
   index?: (i: number) => number;
+  // Native rotation of an instance-domain element. Keep this separate from
+  // named attributes: Instance Rotation is an intrinsic of the transform.
+  instanceRotation?: (i: number) => Vec3;
   // Named/anonymous attribute lookup on the current domain.
   attr?: (name: string, i: number) => Elem | undefined;
   // Mesh-topology queries (populated when the geometry is a mesh).
