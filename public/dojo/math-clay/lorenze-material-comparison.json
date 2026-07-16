@@ -1,0 +1,45 @@
+{
+  "captures": {
+    "blender": "lorenze-authored.png",
+    "webgl": "lorenze-authored-webgl.png",
+    "resolution": [
+      768,
+      768
+    ],
+    "alignment": "same square orthographic camera direction and 1.45 framing scale"
+  },
+  "blender": {
+    "surface_pixels": 290573,
+    "black_pixels": 176238,
+    "white_pixels": 0,
+    "gray_pixels": 114335,
+    "black_fraction": 0.6065188438017297,
+    "white_fraction": 0.0,
+    "gray_fraction": 0.3934811561982703,
+    "mean_luminance": 0.0820986524809646
+  },
+  "webgl": {
+    "surface_pixels": 292841,
+    "black_pixels": 85386,
+    "white_pixels": 0,
+    "gray_pixels": 207455,
+    "black_fraction": 0.29157802356910406,
+    "white_fraction": 0.0,
+    "gray_fraction": 0.708421976430896,
+    "mean_luminance": 0.13480617936304884
+  },
+  "comparison": {
+    "surface_mask_iou": 0.9922551828466643,
+    "intersection_pixels": 290573,
+    "pixel_luminance_mae": 0.062065192215567236,
+    "pixel_luminance_correlation": 0.7175651728138158,
+    "binary_mask_disagreement_fraction": 0.0,
+    "macro_block_size": 32,
+    "macro_block_count": 327,
+    "macro_luminance_mae": 0.056864019854415526,
+    "macro_luminance_correlation": 0.8225228174150121,
+    "black_fraction_delta": -0.31494082023262565,
+    "mean_luminance_delta": 0.052707526882084244
+  },
+  "interpretation": "The aligned silhouette validates the capture context, but luminance occupancy, correlation, and pixel disagreement determine whether the authored WebGL material is visually equivalent. Renderer lighting, environment, tone mapping, texture filtering, and procedural implementations may remain as residuals."
+}

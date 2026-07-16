@@ -44,32 +44,35 @@
     "back": "Geometry Backfacing selects the extracted dark-HSV emission color and its Screen/Window diagonal Wave mask; only the narrow thresholded bands become black.",
     "removedApproximation": "The former generated-Z sine approximation has been replaced by the extracted White Noise, distorted Wave, color-to-float, Bump, roughness, coat, and backface branches."
   },
-  "remaining": "The Bevel For Eevee group's ambient-occlusion-assisted base normal remains separate from the implemented derivative Bump, and Three.js still uses its renderer-defined clearcoat Fresnel instead of Blender's extracted coat IOR 1.59000015. Final renderer-energy calibration and a quantitative stage-one image comparison remain pending.",
+  "remaining": "The Bevel For Eevee group's ambient-occlusion-assisted base normal remains separate from the implemented derivative Bump, and Three.js still uses its renderer-defined clearcoat Fresnel instead of Blender's extracted coat IOR 1.59000015. The stage-one image comparison is now durable; renderer-energy calibration and those two shader semantics remain pending.",
   "webglComparison": {
-    "phase": "baseline-before-stage-one-procedural-material",
-    "status": "captured before the extracted procedural shader contract was implemented",
+    "phase": "current-stage-one-procedural-material",
+    "status": "durable current implementation capture compared against the authored Blender reference",
     "browserRoute": "/chrome-assets?asset=math-clay-lorenze&capture=authored",
-    "capture": "/private/tmp/math-clay-lorenze-browser-before.png",
-    "surfaceMaskIou": 0.9922145240103396,
+    "capture": "../references/math-clay/lorenze-authored-webgl.png",
+    "comparisonReport": "lorenze-material-comparison.json",
+    "surfaceMaskIou": 0.9922551828466643,
     "intersectionPixels": 290573,
-    "pixelLuminanceMae": 0.06681107434904528,
-    "pixelLuminanceCorrelation": 0.8153217951676137,
+    "pixelLuminanceMae": 0.062065192215567236,
+    "pixelLuminanceCorrelation": 0.7175651728138158,
     "binaryMaskDisagreementFraction": 0.0,
-    "macroLuminanceMae": 0.06276196228894165,
-    "macroLuminanceCorrelation": 0.8429957732804999,
-    "blackFractionDelta": -0.29944328029375816,
-    "meanLuminanceDelta": 0.06320027028815364
+    "macroLuminanceMae": 0.056864019854415526,
+    "macroLuminanceCorrelation": 0.8225228174150121,
+    "blackFractionDelta": -0.31494082023262565,
+    "meanLuminanceDelta": 0.052707526882084244
   },
   "stageOneCapture": {
     "browserRoute": "/chrome-assets?asset=math-clay-lorenze&capture=authored",
-    "capture": "/private/tmp/math-clay-lorenze-browser-stage1-768.png",
+    "capture": "../references/math-clay/lorenze-authored-webgl.png",
     "resolution": [
       768,
       768
     ],
+    "devicePixelRatio": 1,
     "verts": 30644,
     "faces": 30642,
-    "status": "The WebGL material compiled without warnings or errors and visibly restores the dense layer-line relief; quantitative image metrics are deferred until the remaining Bevel/coat-IOR renderer residual is isolated."
+    "liveRouteReverificationSeconds": 1.36,
+    "status": "The WebGL material visibly restores the dense layer-line relief. The committed capture now has quantitative evidence: 0.9923 silhouette IoU, 0.0569 macro luminance MAE, 0.823 macro correlation, and 0.0621 pixel luminance MAE."
   },
-  "interpretation": "The baseline 0.9922 silhouette IoU confirms camera and exact geometry alignment. Stage one now reproduces the authored Generated-coordinate White Noise/Wave field, derivative relief, dynamic roughness and coat fields, and patterned dark backface emission. The remaining visual residual is localized to the Bevel For Eevee base normal, exact coat Fresnel/IOR, and renderer-energy calibration."
+  "interpretation": "The 0.9923 silhouette IoU confirms camera and exact geometry alignment. Stage one reproduces the authored Generated-coordinate White Noise/Wave field, derivative relief, dynamic roughness and coat fields, and patterned dark backface emission. Relative to the superseded pre-stage-one capture, pixel luminance MAE improves from 0.0668 to 0.0621 and macro MAE from 0.0628 to 0.0569, while the procedural phase/renderer differences reduce pixel correlation from 0.815 to 0.718. The remaining visual residual is localized to the Bevel For Eevee base normal, exact coat Fresnel/IOR, renderer-energy calibration, and high-frequency procedural phase/filtering."
 }
