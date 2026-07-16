@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { Geometry, Mesh, triangulateFaceIndices } from "./geometry";
 import { makeFieldCtx } from "./evaluator";
-import { closestTrianglePointFloat32, nearestEdgePointFloat32 } from "./nodes/geometry";
+import { closestTrianglePointFloat32, nearestEdgePointFloat32, nearestPointBvhLeafFloat32 } from "./nodes/geometry";
 import { blenderMergeTargets } from "./nodes/meshops";
 import { meshGrid, meshIcoSphere } from "./primitives";
 
@@ -38,6 +38,19 @@ test("Geometry Proximity uses Blender float32 closest-edge arithmetic", () => {
     d: 5.726995944976807,
     q: [72.19184112548828, 21.81319236755371, 2.023311138153076],
   });
+});
+
+test("point proximity returns Blender's FLT_EPSILON-inflated BVH leaf", () => {
+  const result = nearestPointBvhLeafFloat32(
+    [-42.24137496948242, 0.9817886352539062, -5.71881628036499],
+    [-47.22046661376953, -1.1766977310180664, -10.936535835266113],
+  );
+
+  assert.deepEqual(result, {
+    dSquared: 56.67501449584961,
+    q: [-47.22046661376953, -1.1766976118087769, -10.936535835266113],
+  });
+  assert.equal(Math.fround(Math.sqrt(result.dSquared)), 7.528281211853027);
 });
 
 test("face proximity follows Blender float32 triangle projection", () => {

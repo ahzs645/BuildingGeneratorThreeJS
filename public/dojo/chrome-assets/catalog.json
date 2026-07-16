@@ -451,7 +451,7 @@
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/geometry-nodes-001.png",
     "blenderStats": { "verts": 61812, "faces": 53892 },
-    "note": "The complete 1,007-node root runs in-browser with exact face topology. Full float32 source geometry, Blender's cached Resample Curve endpoint factor, exact ray directions, and the authored all-triangle Gradient Direction fan advance the default to 61,799 / 53,892 versus Blender's 61,812 / 53,892, with only 0.0018 units maximum bounds difference. Thickness 6 is within 12 vertices, four faces, and 0.0204 bounds units; the 60 by 45 wrapper has exact faces and 0.0002 bounds difference. The final 13 default vertices are localized to proximity-distance ULPs perturbing near-flat sharpen gradients before Auto Smooth, not to Split Edges or its angle rule.",
+    "note": "The complete 1,007-node root runs in-browser with exact face topology. Full float32 source geometry, Blender's cached Resample Curve endpoint factor, exact ray directions, the authored all-triangle Gradient Direction fan, and FLT_EPSILON-inflated point-proximity BVH leaves make all 52,555 proximity distances bit-exact. The default remains 61,799 / 53,892 versus Blender's 61,812 / 53,892 with only 0.0018 units maximum bounds difference. Thickness 6 improves to 42,027 / 33,436 versus 42,031 / 33,434; the 60 by 45 wrapper has exact faces and 0.0002 bounds difference. The final 13 default vertices are now localized downstream of proximity inside the marching-squares/sharpen chain, while Split Edges and its angle rule remain ruled out.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

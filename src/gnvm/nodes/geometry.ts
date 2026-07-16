@@ -1035,6 +1035,34 @@ export function nearestEdgePointFloat32(point: Vec3, segments: [Vec3, Vec3][]): 
   return { d: Number.isFinite(bestSq) ? f(Math.sqrt(bestSq)) : 0, q: best };
 }
 
+const BLENDER_BVH_POINT_EPSILON = Math.fround(1.1920928955078125e-7);
+
+export function nearestPointBvhLeafFloat32(point: Vec3, target: Vec3): { dSquared: number; q: Vec3 } {
+  // Blender's mesh-vertex BVH silently promotes an explicit zero epsilon to
+  // FLT_EPSILON. With no nearest callback, BLI_bvhtree_find_nearest returns
+  // the point clamped to that inflated leaf AABB rather than copying the
+  // authored vertex coordinate. This is observable when a small coordinate's
+  // ULP is finer than FLT_EPSILON (Chrome Crayon's Y coordinate is shifted by
+  // exactly one ULP while its larger X/Z coordinates remain unchanged).
+  const f = Math.fround;
+  const p: Vec3 = [f(point[0]), f(point[1]), f(point[2])];
+  const q: Vec3 = [f(target[0]), f(target[1]), f(target[2])];
+  const nearest: Vec3 = [0, 0, 0];
+  for (let axis = 0; axis < 3; axis++) {
+    const min = f(q[axis] - BLENDER_BVH_POINT_EPSILON);
+    const max = f(q[axis] + BLENDER_BVH_POINT_EPSILON);
+    nearest[axis] = Math.min(max, Math.max(min, p[axis]));
+  }
+  const delta: Vec3 = [
+    f(nearest[0] - p[0]),
+    f(nearest[1] - p[1]),
+    f(nearest[2] - p[2]),
+  ];
+  let dSquared = f(f(delta[0] * delta[0]) + f(delta[1] * delta[1]));
+  dSquared = f(dSquared + f(delta[2] * delta[2]));
+  return { dSquared, q: nearest };
+}
+
 reg("GeometryNodeProximity", (api) => {
   let target = api.geo("Target");
   if (target.instances.length) target = realizeInstances(target);
@@ -1070,28 +1098,24 @@ reg("GeometryNodeProximity", (api) => {
     // squares edge-interpolation divide.
     const f = Math.fround;
     const sample: Vec3 = [f(p[0]), f(p[1]), f(p[2])];
-    const point = (value: Vec3): Vec3 => [f(value[0]), f(value[1]), f(value[2])];
-    const distanceSquared = (a: Vec3, b: Vec3) => {
-      const dx = f(a[0] - b[0]), dy = f(a[1] - b[1]), dz = f(a[2] - b[2]);
-      let result = f(f(dx * dx) + f(dy * dy));
-      result = f(result + f(dz * dz));
-      return result;
-    };
     let bestSq = Infinity;
-    let bestIndex = 0;
+    let best: Vec3 = [0, 0, 0];
     const visit = (node: KdNode | null) => {
       if (!node) return;
-      const q = point(pts[node.index]);
-      const dSq = distanceSquared(sample, q);
-      if (dSq < bestSq) { bestSq = dSq; bestIndex = node.index; }
+      const candidate = nearestPointBvhLeafFloat32(sample, pts[node.index]);
+      if (candidate.dSquared < bestSq) { bestSq = candidate.dSquared; best = candidate.q; }
+      const q = pts[node.index];
       const delta = f(sample[node.axis] - q[node.axis]);
       const near = delta <= 0 ? node.left : node.right;
       const far = delta <= 0 ? node.right : node.left;
       visit(near);
-      if (f(delta * delta) < bestSq) visit(far);
+      // Every leaf crosses its raw split coordinate by FLT_EPSILON. Keep the
+      // far branch whenever its inflated plane can still beat the best leaf.
+      const outside = f(Math.max(0, Math.abs(delta) - BLENDER_BVH_POINT_EPSILON));
+      if (f(outside * outside) < bestSq) visit(far);
     };
     visit(kdRoot);
-    return { d: f(Math.sqrt(bestSq)), q: point(pts[bestIndex]) };
+    return { d: f(Math.sqrt(bestSq)), q: best };
   };
   const sample = (ctx: import("../core").FieldCtx, i: number, arr: import("../core").Elem[] | null): Vec3 =>
     arr ? asVec3(arr[i] ?? [0, 0, 0]) : ctx.position?.(i) ?? [0, 0, 0];
