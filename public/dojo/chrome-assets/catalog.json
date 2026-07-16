@@ -703,7 +703,7 @@
     "blenderStats": { "verts": 16751, "faces": 9065 },
     "flatShading": true,
     "localSpace": true,
-    "note": "Exact Geometry Nodes parity at 16,751 vertices / 9,065 faces with identical local bounds, including the non-manifold edge tubes and tetrahedral diagnostic markers. The supplied Blender object adds a separate Bevel modifier afterward (25,719 / 18,182 full-stack); the reference disables that non-GN step for a fair GN-VM comparison.",
+    "note": "Exact Geometry Nodes parity at 16,751 vertices / 9,065 faces with identical local bounds, including the non-manifold edge tubes and tetrahedral diagnostic markers. The supplied Blender object adds a separate Bevel modifier afterward (25,719 / 18,182 full-stack); the reference disables that non-GN step for a fair GN-VM comparison. Its committed authored-material capture reaches 0.932 macro luminance correlation with Blender; the subpixel filament lines remain renderer/filter sensitive and are not claimed exact.",
     "controls": []
   },
   {

@@ -2,9 +2,12 @@
   "capture": {
     "resolution": [768, 768],
     "blenderReference": "../../references/n03d/print-test-mesh-shader.png",
+    "browserReference": "../../references/n03d/print-test-mesh-shader-webgl.png",
+    "comparisonReport": "material-comparison.json",
     "browserRoute": "/chrome-assets?asset=n03d-print-test-mesh&capture=authored",
     "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
-    "geometry": "Geometry Nodes only; the post-GN Bevel modifier is disabled in Blender"
+    "geometry": "Geometry Nodes only; the post-GN Bevel modifier is disabled in Blender",
+    "browserCapture": "Codex in-app Chromium, 768 x 768 CSS pixels, devicePixelRatio 1"
   },
   "materialGroups": [
     { "material": "flat.w", "triangles": 17920, "browser": "literal Background material" },
@@ -41,16 +44,16 @@
     "meanLuminanceDelta": 0.027288621982416453
   },
   "authoredAreaWaveBump": {
-    "surfaceMaskIou": 0.9978688812725196,
-    "intersectionPixels": 272514,
-    "pixelLuminanceMae": 0.07413296188046477,
-    "pixelLuminanceCorrelation": 0.5468408290783874,
-    "binaryMaskDisagreementFraction": 0.0036365104178133966,
-    "macroLuminanceMae": 0.04703801369226936,
-    "macroLuminanceCorrelation": 0.9394658852821984,
-    "blackFractionDelta": -0.07807049438618424,
-    "meanLuminanceDelta": 0.008302996785018293,
-    "capture": "/private/tmp/n03d-print-test-authored-bump.png"
+    "surfaceMaskIou": 0.9940327904728904,
+    "intersectionPixels": 272529,
+    "pixelLuminanceMae": 0.06963046474530193,
+    "pixelLuminanceCorrelation": 0.5564746359108178,
+    "binaryMaskDisagreementFraction": 0.0035409075731390053,
+    "macroLuminanceMae": 0.049427334090711164,
+    "macroLuminanceCorrelation": 0.9324921900679674,
+    "blackFractionDelta": -0.0783257233411414,
+    "meanLuminanceDelta": 0.011752816571057603,
+    "capture": "../../references/n03d/print-test-mesh-shader-webgl.png"
   },
-  "interpretation": "Camera and geometry align. The filament front is the exact col attribute and its back is Blender's achromatic max-RGB value branch. The browser now derives Generated coordinates from the filament material group's bounds, evaluates a clean-room lookup3/Perlin fBm Z wave, and applies forward-derivative bump normals. Relative to exact colors without bump, macro luminance MAE improves from 0.0628 to 0.0470, macro correlation from 0.808 to 0.939, and mean luminance delta from +0.0273 to +0.0083. Pixel MAE rises from 0.0644 to 0.0741 because the subpixel line pattern remains phase and raster-filter sensitive; high-frequency shader parity is not yet exact. The generic flat.w Background contract is implemented."
+  "interpretation": "Camera and geometry align. The filament front is the exact col attribute and its back is Blender's achromatic max-RGB value branch. The browser derives Generated coordinates from the filament material-group bounds, evaluates a clean-room lookup3/Perlin fBm Z wave, and applies forward-derivative bump normals. The durable current-browser capture measures 0.0494 macro luminance MAE, 0.932 macro correlation, +0.0118 mean luminance delta, and 0.0696 pixel MAE. The subpixel layer-line pattern remains phase and raster-filter sensitive, so high-frequency shader parity is improved but not exact. The generic flat.w Background contract is implemented."
 }
