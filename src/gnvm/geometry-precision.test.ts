@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { Mesh, triangulateFaceIndices } from "./geometry";
+import { Geometry, Mesh, triangulateFaceIndices } from "./geometry";
+import { makeFieldCtx } from "./evaluator";
 import { closestTrianglePointFloat32, nearestEdgePointFloat32 } from "./nodes/geometry";
 import { blenderMergeTargets } from "./nodes/meshops";
 import { meshGrid, meshIcoSphere } from "./primitives";
@@ -79,6 +80,31 @@ test("n-gon tessellation preserves Blender's non-planar concave ears", () => {
   assert.deepEqual(triangulateFaceIndices(mesh, [0, 1, 2, 3, 4]), [
     [4, 0, 1], [2, 3, 4], [1, 2, 4],
   ]);
+});
+
+test("Edge Angle uses Blender's quad-specialized face normal", () => {
+  const geometry = new Geometry();
+  const mesh = geometry.mesh = new Mesh();
+  mesh.positions = [
+    [16.507436752319336, -17.976547241210938, 14.626008987426758],
+    [16.62053680419922, -17.890953063964844, 14.597086906433105],
+    [16.6934757232666, -17.824338912963867, 14.586451530456543],
+    [16.553251266479492, -17.928491592407227, 14.621424674987793],
+    [16.66985511779785, -17.849557876586914, 14.58786678314209],
+    [16.820987701416016, -17.72283172607422, 14.563400268554688],
+    [16.83702278137207, -17.71034812927246, 14.556960105895996],
+  ];
+  mesh.faces = [[0, 1, 2, 3], [4, 5, 6, 2, 1]];
+
+  const context = makeFieldCtx(geometry, "EDGE");
+  const sharedEdge = Array.from({ length: context.size }, (_, index) => index)
+    .find((index) => {
+      const vertices = context.edgeVerts?.(index);
+      return vertices?.includes(1) && vertices.includes(2);
+    });
+  assert.notEqual(sharedEdge, undefined);
+  assert.equal(context.edgeAngle?.(sharedEdge!), 0.523707389831543);
+  assert.ok(context.edgeAngle!(sharedEdge!) > Math.fround(Math.PI / 6));
 });
 
 test("Ico Sphere uses Blender's BMesh seed and projected grid", () => {

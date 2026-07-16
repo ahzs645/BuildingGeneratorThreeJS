@@ -60,6 +60,13 @@ export class Mesh {
     return faceNormalBlenderFloat(this, f);
   }
 
+  /** Blender's standalone `bke::mesh::face_normal_calc`, used by Edge Angle. */
+  faceNormalCalc(fi: number): Vec3 {
+    const face = this.faces[fi];
+    if (!face || face.length < 3) return [0, 0, 1];
+    return faceNormalCalcBlenderFloat(this, face);
+  }
+
   faceArea(fi: number): number {
     const face = this.faces[fi];
     if (!face || face.length < 3) return 0;
@@ -418,6 +425,36 @@ function faceNormalBlenderFloat(mesh: Mesh, face: number[]): Vec3 {
   return normalized[0] === 0 && normalized[1] === 0 && normalized[2] === 0
     ? [0, 0, 1]
     : normalized;
+}
+
+function faceNormalCalcBlenderFloat(mesh: Mesh, face: number[]): Vec3 {
+  const sub = (a: Vec3, b: Vec3): Vec3 => [
+    f32(a[0] - b[0]), f32(a[1] - b[1]), f32(a[2] - b[2]),
+  ];
+  const cross = (a: Vec3, b: Vec3): Vec3 => [
+    f32(f32(a[1] * b[2]) - f32(a[2] * b[1])),
+    f32(f32(a[2] * b[0]) - f32(a[0] * b[2])),
+    f32(f32(a[0] * b[1]) - f32(a[1] * b[0])),
+  ];
+  let normal: Vec3;
+  if (face.length === 3) {
+    // `cross_tri(v1, v2, v3)`: cross(v1 - v2, v2 - v3).
+    normal = normalizeBlenderFloatLegacy(cross(
+      sub(mesh.positions[face[0]], mesh.positions[face[1]]),
+      sub(mesh.positions[face[1]], mesh.positions[face[2]]),
+    ));
+  } else if (face.length === 4) {
+    // `normal_quad_v3`: cross the two polygon diagonals.
+    normal = normalizeBlenderFloatLegacy(cross(
+      sub(mesh.positions[face[0]], mesh.positions[face[2]]),
+      sub(mesh.positions[face[1]], mesh.positions[face[3]]),
+    ));
+  } else {
+    normal = faceNormalBlenderFloat(mesh, face);
+  }
+  return normal[0] === 0 && normal[1] === 0 && normal[2] === 0
+    ? [0, 0, 1]
+    : normal;
 }
 
 /** Blender's float-only `safe_acos_approx`, used for mesh corner weights. */

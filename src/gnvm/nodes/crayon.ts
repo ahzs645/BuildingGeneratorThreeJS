@@ -1,7 +1,7 @@
 // Geometry-node handlers first required by the Node Dojo Chrome Crayon graph.
 // They are general VM operations, kept in one module so the compatibility
 // milestone remains easy to audit against its Blender source.
-import { Field, FieldCtx, Vec3, Elem, Domain, asNum, asVec3, vadd, vsub, vscale, vdot, vcross, vlen, vnorm } from "../core";
+import { Field, FieldCtx, Vec3, Elem, Domain, asNum, asVec3, vadd, vsub, vscale, vdot, vcross, vlen, vnorm, vnormBlenderFloat } from "../core";
 import { Geometry, Mesh, buildTopology, invalidateMeshCaches, orientClosedSurface, realizeInstances, triangulateFaceIndices } from "../geometry";
 import { resampleSpline, splineFrames, splineLength } from "../curves";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
@@ -482,17 +482,8 @@ type TriangleBvh = {
   triangle?: Triangle;
 };
 
-/** Blender's float3 normalize path stores the dot, sqrt and divisions as float32. */
-export function normalizeBlenderFloat3(value: Vec3): Vec3 {
-  const f = Math.fround;
-  const vector = value.map(f) as Vec3;
-  let lengthSquared = f(vector[0] * vector[0]);
-  lengthSquared = f(lengthSquared + f(vector[1] * vector[1]));
-  lengthSquared = f(lengthSquared + f(vector[2] * vector[2]));
-  if (!(lengthSquared > 1e-35)) return [0, 0, 0];
-  const length = f(Math.sqrt(lengthSquared));
-  return [f(vector[0] / length), f(vector[1] / length), f(vector[2] / length)];
-}
+/** Public compatibility alias retained for focused raycast regression tests. */
+export const normalizeBlenderFloat3 = vnormBlenderFloat;
 
 function blenderTriangleNormal(a: Vec3, b: Vec3, c: Vec3): Vec3 {
   const f = Math.fround;

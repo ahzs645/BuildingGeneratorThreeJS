@@ -9,6 +9,7 @@ portable graph after dump_blend.py's coordinate precision improves.
 """
 
 import json
+import struct
 import sys
 
 
@@ -25,6 +26,21 @@ target_objects = {item["name"]: item for item in target.get("objects", [])}
 fresh_objects = {item["name"]: item for item in fresh.get("objects", [])}
 precision_keys = ("matrix_world", "relative_matrices", "mesh", "curves", "evaluated_mesh")
 
+
+def shortest_float32(value):
+    """Keep every Blender float bit while avoiding Python's long double spelling."""
+    if isinstance(value, float):
+        packed = struct.pack("!f", value)
+        rounded = struct.unpack("!f", packed)[0]
+        compact = float(format(rounded, ".9g"))
+        assert struct.pack("!f", compact) == packed
+        return compact
+    if isinstance(value, list):
+        return [shortest_float32(item) for item in value]
+    if isinstance(value, dict):
+        return {key: shortest_float32(item) for key, item in value.items()}
+    return value
+
 for name in object_names:
     if name not in target_objects or name not in fresh_objects:
         raise KeyError(f"object missing from one dump: {name}")
@@ -32,7 +48,20 @@ for name in object_names:
     new = fresh_objects[name]
     for key in precision_keys:
         if key in new:
-            old[key] = new[key]
+            # Blender stores these geometry and transform payloads as float32.
+            # Nine significant decimal digits are sufficient for exact binary32
+            # round-tripping while keeping browser dumps reasonably small.
+            if key == "evaluated_mesh" and isinstance(old.get(key), dict):
+                # Precision refreshes must not silently expand a portable dump
+                # with optional attributes or hundreds of thousands of cached
+                # edges that its existing dependency closure did not retain.
+                old[key] = {
+                    child: shortest_float32(new[key][child])
+                    for child in old[key]
+                    if child in new[key]
+                }
+            else:
+                old[key] = shortest_float32(new[key])
         else:
             old.pop(key, None)
 

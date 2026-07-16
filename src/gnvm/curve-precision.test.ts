@@ -54,6 +54,24 @@ test("curve resampling preserves Blender float32 length parameterization", () =>
   ]);
 });
 
+test("open curve resampling preserves Blender's cached final-segment factor", () => {
+  const result = resampleSpline({
+    cyclic: false,
+    points: [
+      [1.8138039112091064, 6.738673210144043, -5.298481464385986],
+      [9.61691951751709, 7.217741966247559, -3.4624898433685303],
+      [3.65205454826355, 0.6291822791099548, -5.681159973144531],
+      [-7.909315586090088, -8.58909797668457, -3.6223859786987305],
+    ],
+  }, 4);
+
+  // `sample_at_length` checks its cached segment before the explicit final
+  // point path. The cached multiplication rounds to a factor one ULP below 1.
+  assert.deepEqual(result.points[3], [
+    -7.90931510925293, -8.589097023010254, -3.6223859786987305,
+  ]);
+});
+
 test("Curve Circle follows Blender float32 sincos sampling", () => {
   const handler = REGISTRY.get("GeometryNodeCurvePrimitiveCircle");
   assert.ok(handler);

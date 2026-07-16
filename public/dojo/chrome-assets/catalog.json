@@ -451,7 +451,7 @@
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/geometry-nodes-001.png",
     "blenderStats": { "verts": 61812, "faces": 53892 },
-    "note": "The full 1,007-node root executes Blender's authored three-pass sharpen group, including face-domain Gradient Direction normalization before point interpolation. Authored output is 61,697 / 53,892 versus Blender's 61,812 / 53,892, with bounds within 0.0303 units. A source-exact float32 RELATIVE Object Info matrix makes all 387,348 target coordinates and the raycast/BDSF path bit-exact; the first remaining residual is the wrapper's final Normal-driven Set Position at 0.0000038147 maximum. Matrix correction alone changes final topology to 61,667 / 53,894, so the tracked dump remains on the stronger face-exact checkpoint pending downstream Normal accumulation-order reconciliation.",
+    "note": "The complete 1,007-node root runs in-browser with exact face topology. Full float32 source geometry, Blender's cached Resample Curve endpoint factor, exact ray directions, and the authored all-triangle Gradient Direction fan advance the default to 61,799 / 53,892 versus Blender's 61,812 / 53,892, with only 0.0018 units maximum bounds difference. Thickness 6 is within 12 vertices, four faces, and 0.0204 bounds units; the 60 by 45 wrapper has exact faces and 0.0002 bounds difference. The final 13 default vertices are localized to proximity-distance ULPs perturbing near-flat sharpen gradients before Auto Smooth, not to Split Edges or its angle rule.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

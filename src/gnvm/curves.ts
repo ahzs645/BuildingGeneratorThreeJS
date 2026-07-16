@@ -44,23 +44,41 @@ export function resampleSpline(s: Spline, count: number): Spline {
   const out: Vec3[] = [];
   const n = s.cyclic ? count : count - 1;
   const step = Math.fround(total / n);
+  // Blender's `sample_uniform` evaluates ranges of 512 samples with a shared
+  // `SampleSegmentHint`. The hint fast-path runs before the explicit
+  // end-of-curve case, so the last open sample can retain a factor one ULP
+  // below 1 instead of being replaced with the raw endpoint.
+  let hintSegment = -1;
+  let hintStart = 0;
+  let hintInverseLength = 0;
   for (let i = 0; i < count; i++) {
+    if (i % 512 === 0) hintSegment = -1;
     const distance = Math.min(total, Math.fround(i * step));
-    let si = 0;
-    if (distance >= total) {
+    let si: number;
+    let t: number;
+    const hintedFactor = hintSegment >= 0
+      ? Math.fround(Math.fround(distance - hintStart) * hintInverseLength)
+      : -1;
+    if (hintedFactor >= 0 && hintedFactor < 1) {
+      si = hintSegment;
+      t = hintedFactor;
+    } else if (distance >= total) {
       si = segs.length - 1;
+      t = 1;
     } else {
       // Blender uses upper_bound, so a sample exactly on a boundary belongs
       // to the following segment with factor zero.
+      si = 0;
       while (si < segs.length - 1 && distance >= cumulative[si]) si++;
+      const previous = si === 0 ? 0 : cumulative[si - 1];
+      const segmentLength = Math.fround(cumulative[si] - previous);
+      const inverseLength = segmentLength > 1e-9 ? Math.fround(1 / segmentLength) : 0;
+      t = Math.fround(Math.fround(distance - previous) * inverseLength);
+      hintSegment = si;
+      hintStart = previous;
+      hintInverseLength = inverseLength;
     }
     const [a, b] = segs[si];
-    const previous = si === 0 ? 0 : cumulative[si - 1];
-    const segmentLength = Math.fround(cumulative[si] - previous);
-    const inverseLength = segmentLength > 1e-9 ? Math.fround(1 / segmentLength) : 0;
-    const t = distance >= total
-      ? 1
-      : Math.fround(Math.fround(distance - previous) * inverseLength);
     const inverse = Math.fround(1 - t);
     out.push([
       Math.fround(Math.fround(Math.fround(pts[a][0]) * inverse) + Math.fround(Math.fround(pts[b][0]) * t)),

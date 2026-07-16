@@ -32,6 +32,17 @@ export const vnorm = (a: Vec3): Vec3 => {
   const l = vlen(a);
   return l > 1e-12 ? vscale(a, 1 / l) : [0, 0, 0];
 };
+/** Blender's `math::normalize(float3)` evaluation order and float32 storage. */
+export const vnormBlenderFloat = (a: Vec3): Vec3 => {
+  const f = Math.fround;
+  const vector = a.map(f) as Vec3;
+  let lengthSquared = f(vector[0] * vector[0]);
+  lengthSquared = f(lengthSquared + f(vector[1] * vector[1]));
+  lengthSquared = f(lengthSquared + f(vector[2] * vector[2]));
+  if (!(lengthSquared > 1e-35)) return [0, 0, 0];
+  const length = f(Math.sqrt(lengthSquared));
+  return [f(vector[0] / length), f(vector[1] / length), f(vector[2] / length)];
+};
 export const asVec3 = (e: Elem): Vec3 => (isVec3(e) ? e : [e, e, e]);
 export const asNum = (e: Elem): number => (isVec3(e) ? e[0] : e);
 

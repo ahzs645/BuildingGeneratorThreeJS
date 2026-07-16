@@ -2092,8 +2092,9 @@ function meshSignedAreaXY(m: Mesh): number {
     JSON.stringify(wireNormals));
 }
 
-// Node Dojo's Gradient Direction group derives a point direction from the
-// first triangle of each face and rotates it back into the scalar gradient.
+// Node Dojo's Gradient Direction group derives a point direction from every
+// triangle in each face's corner-order fan and rotates it back into the scalar
+// gradient.
 {
   const plane = new Geometry();
   plane.mesh = new Mesh();
@@ -2102,6 +2103,12 @@ function meshSignedAreaXY(m: Mesh): number {
   const xGradient = Field.perElem((i, ctx) => ctx.position?.(i)[0] ?? 0);
   const directions = gradientDirectionField(xGradient, false).array(makeFieldCtx(plane, "POINT")) as Vec3[];
   check("Gradient Direction reconstructs a planar +X scalar gradient", directions.every((value) => approx(value, [1, 0, 0])), JSON.stringify(directions));
+
+  const fanGradient = Field.make((ctx) => [0, 1, 1, 1].slice(0, ctx.size));
+  const fanDirections = gradientDirectionField(fanGradient, false).array(makeFieldCtx(plane, "POINT")) as Vec3[];
+  check("Gradient Direction combines every polygon fan triangle",
+    fanDirections.every((value) => approx(value, [Math.SQRT1_2, Math.SQRT1_2, 0])),
+    JSON.stringify(fanDirections));
 
   // The group normalizes on FACE before its output is adapted to POINT. A
   // shared triangle/quad vertex must therefore average one unit direction from

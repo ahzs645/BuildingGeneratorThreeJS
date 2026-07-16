@@ -8,7 +8,7 @@
 //    recorded in MISSING and fall back to passing the first geometry input through,
 //    so evaluation never crashes and we get a coverage report + partial mesh.
 
-import { Field, Vec3, Domain, FieldCtx, asNum, asVec3, fieldMap, vadd, vcross, vdot, vnorm, vscale, vsub } from "./core";
+import { Field, Vec3, Domain, FieldCtx, asNum, asVec3, fieldMap, vadd, vcross, vdot, vnorm, vnormBlenderFloat, vscale, vsub } from "./core";
 import { Geometry, Mesh, mergeMeshInto, realizeInstances, topologyOf, Topology } from "./geometry";
 import { splineFrames, splineLength } from "./curves";
 import { EvalAPI, RawNode, REGISTRY, MISSING, SockVal, DataRef } from "./registry";
@@ -37,6 +37,11 @@ export const GEOMETRY_PROBE: { group: string | null; node: string | null; socket
   socket: null,
   geometry: null,
 };
+
+export const GEOMETRY_PROBES: {
+  targets: { group: string; node: string; socket: string }[];
+  geometries: Map<string, Geometry[]>;
+} = { targets: [], geometries: new Map() };
 
 // Const-value counterpart to GEOMETRY_PROBE, used to compare integer/float
 // control flow inside deeply nested asset groups without modifying the graph.
@@ -305,8 +310,8 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
       // Blender defines Edge Angle only for manifold edges with exactly two
       // adjacent faces. Boundary and 3+ face non-manifold edges return zero.
       if (!edge || edge.faces.length !== 2) return 0;
-      const first = mesh.faceNormal(edge.faces[0]);
-      const second = mesh.faceNormal(edge.faces[1]);
+      const first = mesh.faceNormalCalc(edge.faces[0]);
+      const second = mesh.faceNormalCalc(edge.faces[1]);
       // Blender's angle_normalized_v3v3 deliberately avoids acos(dot): it
       // measures the (possibly negated) normal delta and calls float asinf.
       // The more accurate formulation is observable at Auto Smooth cutoffs,
@@ -468,7 +473,7 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
       // object origin. Ordinary point clouds keep their own +Z default, so the
       // conversion marks only curve-derived wires for this intrinsic behavior.
       if (!mesh.faces.length && domain === "POINT" && mesh.attributes.has("__curve_wire"))
-        return vnorm(mesh.positions[i] ?? [0, 0, 0]);
+        return vnormBlenderFloat(mesh.positions[i] ?? [0, 0, 0]);
       if (!normals) normals = mesh.vertexNormals();
       return normals[i] ?? [0, 0, 1];
     },
@@ -499,11 +504,12 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
 }
 
 // Contract of Node Dojo's reusable "Gradient Direction" group. The authored
-// graph samples the first three corners of every face, derives a finite-
-// difference direction, leaves the final two corners at zero, averages that
-// face field onto points, and normalizes. Evaluating the legacy nested field
-// graph generically loses its locked CORNER/FACE contexts in several Blender
-// versions, so preserve the group contract explicitly.
+// graph evaluates one finite-difference direction for every triangle in the
+// polygon's corner-order fan (0, 1, 2), (0, 2, 3), ... . The final two corner
+// slots are zero, so CORNER -> FACE interpolation averages the n-2 fan values
+// with those two zeros before normalizing. Evaluating the legacy nested field
+// graph generically loses its locked CORNER/FACE contexts, so preserve the
+// group contract explicitly.
 export function gradientDirectionField(gradient: Field, solenoidal: boolean): Field {
   return Field.make((ctx) => {
     const faceCtx = ctx.domain === "FACE" ? ctx : ctx.fork?.("FACE");
@@ -520,16 +526,20 @@ export function gradientDirectionField(gradient: Field, solenoidal: boolean): Fi
         continue;
       }
       const p0 = cornerCtx.position(cornerStart);
-      const p1 = cornerCtx.position(cornerStart + 1);
-      const p2 = cornerCtx.position(cornerStart + 2);
       const s0 = asNum(scalar[cornerStart] ?? 0);
-      const s1 = asNum(scalar[cornerStart + 1] ?? 0);
-      const s2 = asNum(scalar[cornerStart + 2] ?? 0);
-      const raw = vadd(vscale(vsub(p2, p1), s0 - s2), vscale(vsub(p0, p2), s1 - s2));
-      const gradientDirection = vnorm(raw);
+      let fanDirection: Vec3 = [0, 0, 0];
+      for (let triangle = 0; triangle < count - 2; triangle++) {
+        const p1 = cornerCtx.position(cornerStart + triangle + 1);
+        const p2 = cornerCtx.position(cornerStart + triangle + 2);
+        const s1 = asNum(scalar[cornerStart + triangle + 1] ?? 0);
+        const s2 = asNum(scalar[cornerStart + triangle + 2] ?? 0);
+        const raw = vadd(vscale(vsub(p2, p1), s0 - s2), vscale(vsub(p0, p2), s1 - s2));
+        fanDirection = vadd(fanDirection, vnorm(raw));
+      }
+      const gradientDirection = vnorm(fanDirection);
       const direction = solenoidal ? gradientDirection : vcross(faceCtx.normal?.(face) ?? [0, 0, 0], gradientDirection);
-      // The graph writes the vector to the first n-2 corners and zero to the
-      // final two, then averages CORNER -> FACE.
+      // Dividing by n for the two zero corner slots is immaterial after the
+      // authored Normalize node, but keeping the factor documents that step.
       faceDirections[face] = vscale(direction, (count - 2) / count);
       cornerStart += count;
     }
@@ -644,6 +654,17 @@ class Invocation {
     if (node && (!GEOMETRY_PROBE.group || GEOMETRY_PROBE.group === this.group.name) && GEOMETRY_PROBE.node === node.name) {
       const value = GEOMETRY_PROBE.socket ? outs[GEOMETRY_PROBE.socket] : Object.values(outs).find((output) => output instanceof Geometry);
       if (value instanceof Geometry) GEOMETRY_PROBE.geometry = value.clone();
+    }
+    if (node && GEOMETRY_PROBES.targets.length) {
+      for (const target of GEOMETRY_PROBES.targets) {
+        if (target.group !== this.group.name || target.node !== node.name) continue;
+        const value = outs[target.socket];
+        if (!(value instanceof Geometry)) continue;
+        const key = `${target.group}\u0000${target.node}\u0000${target.socket}`;
+        const values = GEOMETRY_PROBES.geometries.get(key) ?? [];
+        values.push(value.clone());
+        GEOMETRY_PROBES.geometries.set(key, values);
+      }
     }
     if (node && (!VALUE_PROBE.group || VALUE_PROBE.group === this.group.name) && VALUE_PROBE.node === node.name) {
       const value = VALUE_PROBE.socket ? outs[VALUE_PROBE.socket] : undefined;
