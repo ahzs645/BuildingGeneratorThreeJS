@@ -173,7 +173,12 @@ function wrapConst(socketType: string, value: any): SockVal {
 // in-group angle division kept the fraction, leaving a visible open seam.
 function coerceSocketValue(value: SockVal, socketType: string): SockVal {
   if (!(value instanceof Field)) return value;
-  const average = (v: import("./core").Elem) => Array.isArray(v) ? (v[0] + v[1] + v[2]) / 3 : v;
+  const average = (v: import("./core").Elem) => {
+    if (!Array.isArray(v)) return v;
+    const f = Math.fround;
+    const sum = f(f(f(v[0]) + f(v[1])) + f(v[2]));
+    return f(sum / 3);
+  };
   if (socketType.includes("Bool")) {
     return fieldMap([value], (v) => average(v) > 0 ? 1 : 0);
   }
@@ -200,14 +205,28 @@ function avgElems(vals: (import("./core").Elem | undefined)[] | undefined): impo
   if (!vals || !vals.length) return undefined;
   const first = vals[0];
   if (Array.isArray(first)) {
+    const f = Math.fround;
     const acc: Vec3 = [0, 0, 0];
     let n = 0;
-    for (const v of vals) { if (Array.isArray(v)) { acc[0] += v[0]; acc[1] += v[1]; acc[2] += v[2]; n++; } }
-    return n ? [acc[0] / n, acc[1] / n, acc[2] / n] : [0, 0, 0];
+    for (const v of vals) {
+      if (!Array.isArray(v)) continue;
+      acc[0] = f(acc[0] + f(v[0]));
+      acc[1] = f(acc[1] + f(v[1]));
+      acc[2] = f(acc[2] + f(v[2]));
+      n++;
+    }
+    if (!n) return [0, 0, 0];
+    const reciprocal = f(1 / n);
+    return [f(acc[0] * reciprocal), f(acc[1] * reciprocal), f(acc[2] * reciprocal)];
   }
+  const f = Math.fround;
   let s = 0, n = 0;
-  for (const v of vals) { if (typeof v === "number") { s += v; n++; } }
-  return n ? s / n : 0;
+  for (const v of vals) {
+    if (typeof v !== "number") continue;
+    s = f(s + f(v));
+    n++;
+  }
+  return n ? f(s * f(1 / n)) : 0;
 }
 
 export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
@@ -587,6 +606,29 @@ export function gradientDirectionField(gradient: Field, solenoidal: boolean): Fi
     const cornerCtx = ctx.domain === "CORNER" ? ctx : ctx.fork?.("CORNER");
     if (!faceCtx || !cornerCtx || !faceCtx.faceVertCount || !cornerCtx.position) return Array.from({ length: ctx.size }, () => [0, 0, 0] as Vec3);
     const scalar = gradient.array(cornerCtx);
+    const f = Math.fround;
+    const addFloat = (a: Vec3, b: Vec3): Vec3 => [
+      f(f(a[0]) + f(b[0])),
+      f(f(a[1]) + f(b[1])),
+      f(f(a[2]) + f(b[2])),
+    ];
+    const subFloat = (a: Vec3, b: Vec3): Vec3 => [
+      f(f(a[0]) - f(b[0])),
+      f(f(a[1]) - f(b[1])),
+      f(f(a[2]) - f(b[2])),
+    ];
+    const scaleFloat = (a: Vec3, scale: number): Vec3 => [
+      f(f(a[0]) * f(scale)),
+      f(f(a[1]) * f(scale)),
+      f(f(a[2]) * f(scale)),
+    ];
+    const crossFloat = (a: Vec3, b: Vec3): Vec3 => [
+      // float3 cross is compiled as a fused product difference. Products of
+      // float32 inputs are exact in JavaScript double, so round only once.
+      f(f(a[1]) * f(b[2]) - f(a[2]) * f(b[1])),
+      f(f(a[2]) * f(b[0]) - f(a[0]) * f(b[2])),
+      f(f(a[0]) * f(b[1]) - f(a[1]) * f(b[0])),
+    ];
     const faceDirections: Vec3[] = new Array(faceCtx.size);
     let cornerStart = 0;
     for (let face = 0; face < faceCtx.size; face++) {
@@ -604,25 +646,29 @@ export function gradientDirectionField(gradient: Field, solenoidal: boolean): Fi
         const p2 = cornerCtx.position(cornerStart + triangle + 2);
         const s1 = asNum(scalar[cornerStart + triangle + 1] ?? 0);
         const s2 = asNum(scalar[cornerStart + triangle + 2] ?? 0);
-        const raw = vadd(vscale(vsub(p2, p1), s0 - s2), vscale(vsub(p0, p2), s1 - s2));
-        fanDirection = vadd(fanDirection, vnorm(raw));
+        const raw = addFloat(
+          scaleFloat(subFloat(p2, p1), f(s0 - s2)),
+          scaleFloat(subFloat(p0, p2), f(s1 - s2)),
+        );
+        fanDirection = addFloat(fanDirection, vnormBlenderFloat(raw));
       }
-      const gradientDirection = vnorm(fanDirection);
-      const direction = solenoidal ? gradientDirection : vcross(faceCtx.normal?.(face) ?? [0, 0, 0], gradientDirection);
-      // Dividing by n for the two zero corner slots is immaterial after the
-      // authored Normalize node, but keeping the factor documents that step.
-      faceDirections[face] = vscale(direction, (count - 2) / count);
+      const cornerAverage = scaleFloat(fanDirection, f(1 / count));
+      const gradientDirection = vnormBlenderFloat(cornerAverage);
+      const direction = solenoidal ? gradientDirection : crossFloat(faceCtx.normal?.(face) ?? [0, 0, 0], gradientDirection);
+      // Interpolate Domain normalizes the averaged CORNER gradient before the
+      // cross product, so the two zero corner slots do not scale this value.
+      // Do not normalize the cross here: its magnitude measures how tangential
+      // the scalar gradient is and Blender preserves that weight through the
+      // subsequent FACE -> POINT interpolation.
+      faceDirections[face] = direction;
       cornerStart += count;
     }
-    // The authored group evaluates this corner field on the FACE domain and
-    // normalizes it there before Blender adapts the result to the consuming
-    // point domain. Normalize every face first: carrying the corner-average
-    // magnitude into FACE -> POINT interpolation incorrectly weights triangles
-    // by 1/3 and quads by 1/2.
-    const normalizedFaceDirections = faceDirections.map(vnorm);
-    if (ctx.domain === "FACE") return normalizedFaceDirections;
+    // The final Normalize node runs in the consumer's domain. A FACE consumer
+    // normalizes each face independently; a POINT consumer first averages the
+    // unnormalized face vectors and only then normalizes the result.
+    if (ctx.domain === "FACE") return faceDirections.map(vnormBlenderFloat);
     if (!ctx.toDomain) return Array.from({ length: ctx.size }, () => [0, 0, 0] as Vec3);
-    return Array.from({ length: ctx.size }, (_, i) => vnorm(asVec3(ctx.toDomain!("FACE", normalizedFaceDirections, i) ?? [0, 0, 0])));
+    return Array.from({ length: ctx.size }, (_, i) => vnormBlenderFloat(asVec3(ctx.toDomain!("FACE", faceDirections, i) ?? [0, 0, 0])));
   });
 }
 

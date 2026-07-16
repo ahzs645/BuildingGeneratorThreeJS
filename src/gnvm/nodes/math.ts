@@ -1,5 +1,5 @@
 // Scalar / vector / boolean field-math handlers.
-import { Field, fieldMap, Vec3, Elem, asNum, asVec3, vadd, vsub, vmul, vscale, vdot, vcross, vlen, vnorm } from "../core";
+import { Field, fieldMap, Vec3, Elem, asNum, asVec3, vadd, vsub, vmul, vscale, vdot, vcross, vnorm } from "../core";
 import { reg, EvalAPI, MISSING } from "../registry";
 
 const num = (e: Elem) => asNum(e);
@@ -12,6 +12,74 @@ function smoothMin(a: number, b: number, k: number): number {
 }
 function smoothMax(a: number, b: number, k: number): number {
   return -smoothMin(-a, -b, k);
+}
+
+// Blender's CPU Math node calls safe_acosf(). The supplied references were
+// evaluated on Apple silicon, whose libsystem acosf uses these two double
+// polynomials around a float-rounded tail reduction. Rounding Math.acos from
+// JavaScript double precision misses thousands of Chrome Crayon curvatures by
+// one float ULP and that error compounds through the sharpen repeat zone.
+const ACOSF_TAIL = [
+  0.00188666274546902125,
+  0.00210575839197436193,
+  0.00805353840807645181,
+  0.0264965904007407674,
+  0.117852018003075959,
+  1.41421355597815812,
+] as const;
+const ACOSF_CENTER = [
+  0.0339210709855912174,
+  0.0170057922595088264,
+  0.0311319184596674306,
+  0.0445966252181882045,
+  0.0750010315830287183,
+  0.166666662947953431,
+] as const;
+
+function acosfPolynomial(z: number, coefficients: readonly number[]): number {
+  const a = z * coefficients[0] + coefficients[1];
+  let b = z * coefficients[2] + coefficients[3];
+  let c = z * coefficients[4] + coefficients[5];
+  const z2 = z * z;
+  b = z2 * a + b;
+  c = z2 * b + c;
+  return c;
+}
+
+function blenderAcosFloat(value: number): number {
+  const f = Math.fround;
+  const x = f(Math.max(-1, Math.min(1, value)));
+  const absolute = Math.abs(x);
+  if (absolute === 1) return x > 0 ? 0 : f(3.14159253239631653);
+  if (absolute <= 0.5) {
+    if (absolute < 1 / 512) return f(Math.PI / 2 - x);
+    const squared = x * x;
+    return f(Math.PI / 2 - (x + x * squared * acosfPolynomial(squared, ACOSF_CENTER)));
+  }
+  const reduced = f(1 - absolute);
+  const tail = Math.sqrt(reduced) * acosfPolynomial(reduced, ACOSF_TAIL);
+  return f(x > 0 ? tail : Math.PI - tail);
+}
+
+function blenderVectorLengthFloat(vector: Vec3): number {
+  const f = Math.fround;
+  const x = f(vector[0]);
+  const y = f(vector[1]);
+  const z = f(vector[2]);
+  const squaredX = f(x * x);
+  const squaredY = f(y * y);
+  const squaredZ = f(z * z);
+  const squaredLength = f(f(squaredX + squaredY) + squaredZ);
+  return f(Math.sqrt(squaredLength));
+}
+
+function blenderVectorDistanceFloat(a: Vec3, b: Vec3): number {
+  const f = Math.fround;
+  return blenderVectorLengthFloat([
+    f(f(a[0]) - f(b[0])),
+    f(f(a[1]) - f(b[1])),
+    f(f(a[2]) - f(b[2])),
+  ]);
 }
 
 // ---- Math (scalar) --------------------------------------------------------
@@ -53,7 +121,7 @@ const MATH: Record<string, (a: number, b: number, c: number) => number> = {
   COSINE: (a) => Math.cos(a),
   TANGENT: (a) => Math.tan(a),
   ARCSINE: (a) => Math.asin(Math.max(-1, Math.min(1, a))),
-  ARCCOSINE: (a) => Math.acos(Math.max(-1, Math.min(1, a))),
+  ARCCOSINE: (a) => blenderAcosFloat(a),
   ARCTANGENT: (a) => Math.atan(a),
   ARCTAN2: (a, b) => Math.atan2(a, b),
   RADIANS: (a) => (a * Math.PI) / 180,
@@ -180,9 +248,12 @@ reg("ShaderNodeVectorMath", (api) => {
     }); break;
     case "CROSS_PRODUCT": vecOut = fieldMap([a, b], (x, y) => vcross(va(x), va(y))); break;
     case "NORMALIZE": vecOut = fieldMap([a], (x) => vnorm(va(x))); break;
-    case "DOT_PRODUCT": valOut = fieldMap([a, b], (x, y) => vdot(va(x), va(y))); break;
-    case "LENGTH": valOut = fieldMap([a], (x) => vlen(va(x))); break;
-    case "DISTANCE": valOut = fieldMap([a, b], (x, y) => vlen(vsub(va(x), va(y)))); break;
+    case "DOT_PRODUCT": valOut = fieldMap([a, b], (x, y) => {
+      const u = va(x), v = va(y), f = Math.fround;
+      return f(f(f(f(u[0]) * f(v[0])) + f(f(u[1]) * f(v[1]))) + f(f(u[2]) * f(v[2])));
+    }); break;
+    case "LENGTH": valOut = fieldMap([a], (x) => blenderVectorLengthFloat(va(x))); break;
+    case "DISTANCE": valOut = fieldMap([a, b], (x, y) => blenderVectorDistanceFloat(va(x), va(y))); break;
     case "ABSOLUTE": vecOut = fieldMap([a], (x) => { const u = va(x); return [Math.abs(u[0]), Math.abs(u[1]), Math.abs(u[2])] as Vec3; }); break;
     case "MINIMUM": vecOut = fieldMap([a, b], (x, y) => { const u = va(x), v = va(y); return [Math.min(u[0], v[0]), Math.min(u[1], v[1]), Math.min(u[2], v[2])] as Vec3; }); break;
     case "MAXIMUM": vecOut = fieldMap([a, b], (x, y) => { const u = va(x), v = va(y); return [Math.max(u[0], v[0]), Math.max(u[1], v[1]), Math.max(u[2], v[2])] as Vec3; }); break;
@@ -299,6 +370,16 @@ reg("ShaderNodeMapRange", (api) => {
     return divisor === 0 ? 0 : Math.fround(Math.fround(numerator) / divisor);
   };
   const mapFactor = (x: number, fromMin: number, fromMax: number, steps = 4) => {
+    if (interp === "LINEAR") {
+      // Geometry Nodes executes the scalar mapping multi-function in float
+      // precision. Rounding only the final mapped value is not equivalent:
+      // Chrome Crayon's distance texture differs by one ULP before its
+      // marching-square interpolation when the divide remains a JS double.
+      return safeDivideF32(
+        Math.fround(Math.fround(x) - Math.fround(fromMin)),
+        Math.fround(Math.fround(fromMax) - Math.fround(fromMin)),
+      );
+    }
     if (interp === "STEPPED") {
       // Blender evaluates Map Range sockets as floats, including each
       // intermediate in floor(factor * (steps + 1)) / steps. Keeping that
@@ -318,7 +399,7 @@ reg("ShaderNodeMapRange", (api) => {
   };
   const mapComponent = (x: number, fromMin: number, fromMax: number, toMin: number, toMax: number, steps = 4) => {
     const factor = mapFactor(x, fromMin, fromMax, steps);
-    let result = interp === "STEPPED"
+    let result = interp === "STEPPED" || interp === "LINEAR"
       ? Math.fround(Math.fround(toMin) + Math.fround(factor * Math.fround(Math.fround(toMax) - Math.fround(toMin))))
       : toMin + factor * (toMax - toMin);
     if (clamp) result = toMax >= toMin ? Math.max(toMin, Math.min(toMax, result)) : Math.max(toMax, Math.min(toMin, result));

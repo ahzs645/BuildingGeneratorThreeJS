@@ -21,11 +21,9 @@ if font_override:
 args = sys.argv[sys.argv.index("--") + 1 :]
 object_name, out_path, group_name, geometry_spec, field_spec, domain = args
 obj = bpy.data.objects[object_name]
-world_matrix = obj.matrix_world.copy()
 tree = bpy.data.node_groups[group_name]
 probe_scene = bpy.data.scenes.new("__NODE_DOJO_FIELD_PROBE_SCENE")
 probe_scene.collection.objects.link(obj)
-obj.matrix_world = world_matrix
 bpy.context.window.scene = probe_scene
 obj.hide_viewport = False
 obj.hide_render = False
@@ -49,6 +47,21 @@ if probe_overrides:
         if identifier is None:
             raise KeyError(f"modifier input not found: {name}")
         modifier[identifier] = value
+
+# Match the graph-override contract used by the geometry and GN-VM probes so
+# nested fields can be compared under reduced repeat counts or isolated group
+# inputs without modifying the source .blend on disk.
+graph_overrides = json.loads(os.environ.get("NODE_DOJO_PROBE_GRAPH_OVERRIDES", "[]"))
+for override in graph_overrides:
+    override_group = bpy.data.node_groups.get(override["group"])
+    override_node = override_group.nodes.get(override["node"]) if override_group else None
+    if override_node is None:
+        raise RuntimeError(f"missing graph override node: {override!r}")
+    for name, value in override.get("inputs", {}).items():
+        socket = override_node.inputs.get(name)
+        if socket is None:
+            raise KeyError(f"graph override input not found: {override_node.name}.{name}")
+        socket.default_value = value
 
 # A deeply nested field can be surfaced through an existing group output before
 # the parent group stores it. This keeps all of the original group inputs and

@@ -1,0 +1,7 @@
+[
+  { "id": "repeat-capture", "group": "sharpen mesh", "node": "Capture Attribute", "socket": "Geometry" },
+  { "id": "gradient-capture", "group": "sharpen mesh", "node": "Capture Attribute.001", "socket": "Geometry" },
+  { "id": "repeat-position", "group": "sharpen mesh", "node": "Set Position", "socket": "Geometry" },
+  { "id": "repeat-output", "group": "sharpen mesh", "node": "Repeat Output", "socket": "Item_0" },
+  { "id": "final-blur-position", "group": "sharpen mesh", "node": "Set Position.001", "socket": "Geometry" }
+]

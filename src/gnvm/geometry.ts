@@ -593,7 +593,11 @@ function computeTopology(mesh: Mesh): Topology {
   const addFaceEdge = (a: number, b: number, fi: number) => {
     const k = ekey(a, b);
     let e = emap.get(k);
-    if (!e) { e = { verts: [Math.min(a, b), Math.max(a, b)], faces: [] }; emap.set(k, e); }
+    // The key is undirected, but Blender preserves the first stored edge's
+    // endpoint order. Sorting the endpoints changes float32 projection by a
+    // few ULPs in Geometry Proximity (EDGES), even though the segment is
+    // geometrically identical. Explicit mesh.edges are seeded first below.
+    if (!e) { e = { verts: [a, b], faces: [] }; emap.set(k, e); }
     if (fi >= 0) e.faces.push(fi);
   };
   // Blender's Edge Index follows the mesh's stored edge order. Generated

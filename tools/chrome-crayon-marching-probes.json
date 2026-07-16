@@ -1,0 +1,6 @@
+[
+  { "id": "realized", "group": "marching squares", "node": "Realize Instances.001", "socket": "Geometry" },
+  { "id": "interpolated", "group": "marching squares", "node": "Set Position.001", "socket": "Geometry" },
+  { "id": "joined", "group": "marching squares", "node": "Join Geometry", "socket": "Geometry" },
+  { "id": "merged", "group": "marching squares", "node": "Merge by Distance", "socket": "Geometry" }
+]

@@ -703,7 +703,7 @@ reg("GeometryNodeInstanceOnPoints", (api) => {
     const scaleConst = api.vec("Scale");
     // per-point attributes to carry onto each instance (anonymous-attribute propagation)
     const pointAttrs = points.mesh
-      ? [...points.mesh.attributes].filter(([, a]) => a.domain === "POINT")
+      ? [...points.mesh.attributes].filter(([name, a]) => a.domain === "POINT" && name !== "__gnvm_point_cloud")
       : [...points.curveAttributes];
     for (let i = 0; i < pts.length; i++) {
       if (!asNum(sel[i] ?? 1)) continue;

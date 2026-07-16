@@ -77,9 +77,13 @@ test("extracts and renders the authored Send Nodes Hat stitch material", async (
   assert.equal(material?.roughness, config?.roughness);
   assert.equal(material?.ior, config?.ior);
   assert.equal(material?.transmission, config?.transmission);
+  // This is a deterministic Generated-coordinate normalization snapshot, not
+  // a coordinate-parity claim. The supplied Hat dump rounded its curve points
+  // to six decimals, so GN-VM rebuilds the authored Bezier samples before the
+  // topology-exact embroidery graph runs.
   assert.deepEqual(material?.userData.hatStitchBounds, {
-    min: [-0.04472097381949425, -0.009398020803928375, -0.029892880469560623],
-    max: [0.04209489747881889, 0.005676466040313244, -0.017833180725574493],
+    min: [-0.04472097381949425, -0.009398020803928375, -0.029892871156334877],
+    max: [0.04209489747881889, 0.0056764534674584866, -0.01783364824950695],
   });
 
   const shader = {

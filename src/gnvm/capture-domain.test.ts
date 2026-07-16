@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { asNum, Field, fieldMap } from "./core";
-import { Geometry, Mesh } from "./geometry";
+import { Geometry, Mesh, buildTopology } from "./geometry";
 import { REGISTRY } from "./registry";
 import "./index";
 
@@ -48,4 +48,32 @@ test("direct boolean captures retain point-to-face AND conversion", () => {
     .tagged("POINT", "BOOLEAN");
 
   assert.deepEqual(captureFaceBoolean(geometry, mask), [0]);
+});
+
+test("Flip Faces preserves EDGE attributes by edge identity", () => {
+  const geometry = quadWithPointAttribute("point value", [0, 0, 0, 0]);
+  geometry.mesh!.faces = [[0, 1, 2], [0, 2, 3]];
+  const before = buildTopology(geometry.mesh!).edges;
+  geometry.mesh!.attributes.set("edge mask", {
+    domain: "EDGE",
+    data: before.map((_, index) => index + 10),
+  });
+  const expected = new Map(before.map((edge, index) => [
+    [...edge.verts].sort((a, b) => a - b).join("_"),
+    index + 10,
+  ]));
+
+  const handler = REGISTRY.get("GeometryNodeFlipFaces");
+  assert.ok(handler);
+  const result = handler({
+    geo: () => geometry,
+    field: () => Field.of(1),
+    node: { name: "Flip Faces", inputs: [] },
+  } as never).Mesh as Geometry;
+  const after = buildTopology(result.mesh!).edges;
+  const values = result.mesh!.attributes.get("edge mask")?.data.map(asNum);
+
+  assert.deepEqual(values, after.map((edge) =>
+    expected.get([...edge.verts].sort((a, b) => a - b).join("_"))),
+  );
 });

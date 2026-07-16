@@ -1,0 +1,4 @@
+[
+  { "id": "target", "group": "Geometry Nodes.001", "node": "Group.007", "socket": "Output_1" },
+  { "id": "source", "group": "Geometry Nodes.001", "node": "Group.008", "socket": "Socket_10" }
+]

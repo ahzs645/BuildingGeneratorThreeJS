@@ -934,8 +934,10 @@ reg("GeometryNodeDualMesh", (api) => {
   dual.materialSlots = [...mesh.materialSlots];
   dual.positions = mesh.faces.map((_, fi) => mesh.faceCenter(fi));
   const edgeFaces = new Map<string, number[]>();
-  for (const edge of topo.edges)
-    edgeFaces.set(`${edge.verts[0]},${edge.verts[1]}`, edge.faces);
+  for (const edge of topo.edges) {
+    const [a, b] = edge.verts;
+    edgeFaces.set(a < b ? `${a},${b}` : `${b},${a}`, edge.faces);
+  }
   const across = (vertex: number, neighbor: number, face: number): number | undefined => {
     const key = vertex < neighbor ? `${vertex},${neighbor}` : `${neighbor},${vertex}`;
     return edgeFaces.get(key)?.find((candidate) => candidate !== face);

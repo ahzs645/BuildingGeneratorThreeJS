@@ -1,0 +1,6 @@
+[
+  { "id": "input", "group": "shrink", "node": "Capture Attribute.001", "socket": "Geometry" },
+  { "id": "projected", "group": "shrink", "node": "Set Position", "socket": "Geometry" },
+  { "id": "offset", "group": "shrink", "node": "Set Position.001", "socket": "Geometry" },
+  { "id": "mixed", "group": "shrink", "node": "Set Position.002", "socket": "Geometry" }
+]

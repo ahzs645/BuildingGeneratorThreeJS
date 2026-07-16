@@ -366,13 +366,62 @@ reg("GeometryNodeFlipFaces", (api) => {
   if (g.mesh) {
     const ctx = makeFieldCtx(g, "FACE");
     const sel = api.field("Selection").array(ctx);
+    // EDGE attributes are stored in buildTopology's canonical enumeration.
+    // Reversing polygon loops can change that enumeration even though the
+    // undirected edge set is unchanged, so retain values by endpoint identity
+    // and rebuild their arrays after the topology mutation.
+    const oldEdges = buildTopology(g.mesh).edges;
+    const edgeAttributes = [...g.mesh.attributes.entries()]
+      .filter(([, attribute]) => attribute.domain === "EDGE")
+      .map(([name, attribute]) => ({
+        name,
+        values: new Map(oldEdges.map((edge, index) => [
+          ekey(edge.verts[0], edge.verts[1]),
+          attribute.data[index] ?? 0,
+        ])),
+      }));
+    const cornerAttributes = [...g.mesh.attributes.values()].filter((attribute) => attribute.domain === "CORNER");
+    const cornerStarts: number[] = [];
+    let cornerCursor = 0;
+    for (const face of g.mesh.faces) {
+      cornerStarts.push(cornerCursor);
+      cornerCursor += face.length;
+    }
     let flipped = false;
     for (let fi = 0; fi < g.mesh.faces.length; fi++) {
       if (!asNum(sel[fi] ?? 1)) continue;
-      g.mesh.faces[fi].reverse();
+      const face = g.mesh.faces[fi];
+      // Blender reverses the loop winding while preserving the polygon's
+      // first corner. Reversing the entire JS array cyclically shifts that
+      // corner, which is geometrically equivalent but changes float32 Newell
+      // accumulation and downstream Normal/Raycast fields on n-gons.
+      if (face.length > 2) {
+        g.mesh.faces[fi] = [face[0], ...face.slice(1).reverse()];
+        // Corner-domain data follows the reordered loops. Blender keeps the
+        // first loop fixed and reverses the remaining custom-data records;
+        // leaving captured corner fields in their old order changes later
+        // face/point interpolation even when the polygon is geometrically the
+        // same (the N03D clevis weld is sensitive to this).
+        const start = cornerStarts[fi];
+        for (const attribute of cornerAttributes) {
+          const original = attribute.data.slice(start, start + face.length);
+          attribute.data.splice(start, face.length, original[0], ...original.slice(1).reverse());
+        }
+      }
       flipped = true;
     }
-    if (flipped) invalidateMeshCaches(g.mesh);
+    if (flipped) {
+      invalidateMeshCaches(g.mesh);
+      if (edgeAttributes.length) {
+        const newEdges = buildTopology(g.mesh).edges;
+        for (const attribute of edgeAttributes) {
+          g.mesh.attributes.set(attribute.name, {
+            domain: "EDGE",
+            data: newEdges.map((edge) => attribute.values.get(ekey(edge.verts[0], edge.verts[1])) ?? 0),
+          });
+        }
+      }
+    }
   }
   return { Mesh: g };
 });
@@ -473,6 +522,7 @@ export function blenderMergeTargets(positions: Vec3[], selection: boolean[], dis
 
 // ---- Merge by Distance ----------------------------------------------------
 reg("GeometryNodeMergeByDistance", (api) => {
+  const f = Math.fround;
   const g = api.geo("Geometry").clone();
   if (!g.mesh) return { Geometry: g };
   const mesh = g.mesh;
@@ -482,7 +532,7 @@ reg("GeometryNodeMergeByDistance", (api) => {
   }
   const hasDistance = api.node.inputs.some((s) => s.identifier === "Distance" || s.name === "Distance");
   const rawDist = hasDistance ? api.num("Distance") : 0.001;
-  const dist = Math.fround(Number.isFinite(rawDist) ? Math.max(0, rawDist) : 0.001);
+  const dist = f(Number.isFinite(rawDist) ? Math.max(0, rawDist) : 0.001);
   const selectedCtx = makeFieldCtx(g, "POINT");
   const selected = api.field("Selection").array(selectedCtx);
   if (FIELD_PROBE.node === api.node.name) {
@@ -495,7 +545,7 @@ reg("GeometryNodeMergeByDistance", (api) => {
   // Blender mesh coordinates are float32 at node boundaries. Preserve that
   // precision for threshold comparisons; double-precision fillet coordinates
   // can differ by ~1e-8 and choose the opposite side of an exact 0.001 weld.
-  const weldPositions: Vec3[] = mesh.positions.map((p) => [Math.fround(p[0]), Math.fround(p[1]), Math.fround(p[2])]);
+  const weldPositions: Vec3[] = mesh.positions.map((p) => [f(p[0]), f(p[1]), f(p[2])]);
   const selectedMask = weldPositions.map((_, index) => asNum(selected[index] ?? 1) > 0);
   const mergeTargets = blenderMergeTargets(weldPositions, selectedMask, dist);
   const representative = mergeTargets.map((target, index) => target >= 0 ? target : index);
@@ -517,12 +567,21 @@ reg("GeometryNodeMergeByDistance", (api) => {
     const dense = representativeToDense.get(representative[i]);
     if (dense === undefined) throw new Error(`Merge by Distance target ${representative[i]} is missing`);
     remap[i] = dense;
-    sums[dense] = vadd(sums[dense], p);
+    // Blender accumulates merge-cluster coordinates as floats and multiplies
+    // by a float reciprocal. Even three bit-identical large coordinates can
+    // therefore move by one ULP; double accumulation followed by `/ count`
+    // incorrectly leaves them unchanged and perturbs marching-square seams.
+    const sum = sums[dense];
+    sums[dense] = [
+      f(f(sum[0]) + f(p[0])),
+      f(f(sum[1]) + f(p[1])),
+      f(f(sum[2]) + f(p[2])),
+    ];
     counts[dense]++;
   }
   const pos = sums.map((sum, i) => {
-    const averaged = vscale(sum, 1 / counts[i]);
-    return [Math.fround(averaged[0]), Math.fround(averaged[1]), Math.fround(averaged[2])] as Vec3;
+    const inverse = f(1 / counts[i]);
+    return [f(sum[0] * inverse), f(sum[1] * inverse), f(sum[2] * inverse)] as Vec3;
   });
   const m = new Mesh();
   m.positions = pos;
@@ -542,6 +601,53 @@ reg("GeometryNodeMergeByDistance", (api) => {
   let cornerCursor = 0;
   for (const f of mesh.faces) { cornerStart.push(cornerCursor); cornerCursor += f.length; }
   const keptCorners: number[][] = [];
+  type WeldFacePart = { vertices: number[]; corners: number[] };
+  const splitPinchedFace = (part: WeldFacePart): { primary: WeldFacePart | null; extras: WeldFacePart[] } => {
+    const { vertices, corners } = part;
+    for (let first = 0; first < vertices.length; first++) {
+      for (let second = first + 1; second < vertices.length; second++) {
+        if (vertices[first] !== vertices[second]) continue;
+        // Blender's weld code cuts a self-touching polygon at the repeated
+        // destination vertex. A two-corner lobe collapses, while two valid
+        // lobes become the original polygon plus a new polygon appended after
+        // all source faces. Removing the whole pinched polygon loses Chrome
+        // Crayon's [a,b,a,c,d] -> [a,c,d] triangle at Thiccness=6.
+        const firstPart: WeldFacePart = {
+          vertices: vertices.slice(first, second),
+          corners: corners.slice(first, second),
+        };
+        const secondPart: WeldFacePart = {
+          vertices: [...vertices.slice(second), ...vertices.slice(0, first)],
+          corners: [...corners.slice(second), ...corners.slice(0, first)],
+        };
+        const a = firstPart.vertices.length >= 3
+          ? splitPinchedFace(firstPart)
+          : { primary: null, extras: [] as WeldFacePart[] };
+        const b = secondPart.vertices.length >= 3
+          ? splitPinchedFace(secondPart)
+          : { primary: null, extras: [] as WeldFacePart[] };
+        if (!a.primary && !b.primary) return { primary: null, extras: [...a.extras, ...b.extras] };
+        if (!a.primary) return b;
+        if (!b.primary) return a;
+        return {
+          primary: b.primary,
+          extras: [a.primary, ...a.extras, ...b.extras],
+        };
+      }
+    }
+    return { primary: part, extras: [] };
+  };
+  const extraFaces: { sourceFace: number; part: WeldFacePart }[] = [];
+  const appendFace = (sourceFace: number, part: WeldFacePart) => {
+    if (part.vertices.length < 3) return;
+    const faceKey = [...part.vertices].sort((a, b) => a - b).join("_");
+    if (seenFaces.has(faceKey)) return;
+    seenFaces.add(faceKey);
+    m.faces.push(part.vertices);
+    m.faceMaterial.push(mesh.faceMaterial[sourceFace] ?? 0);
+    keptFace.push(sourceFace);
+    keptCorners.push(part.corners);
+  };
   for (let fi = 0; fi < mesh.faces.length; fi++) {
     const nf: number[] = [];
     const nc: number[] = [];
@@ -559,24 +665,13 @@ reg("GeometryNodeMergeByDistance", (api) => {
       nf.pop();
       nc.pop();
     }
-    // A repeated non-adjacent vertex makes a pinched/self-touching polygon.
-    // Blender's Merge by Distance removes that face instead of silently
-    // selecting one lobe. The assembly bracket's healed screw contains two
-    // such quads; retaining them was the final +2-face topology delta.
-    if (new Set(nf).size !== nf.length) continue;
-    if (nf.length >= 3) {
-      // Blender removes coincident duplicate polygons after their vertices
-      // weld even when the source sweeps contributed opposite winding. The
-      // room's intersecting vertical/horizontal beams create 134 such pairs.
-      const faceKey = [...nf].sort((a, b) => a - b).join("_");
-      if (seenFaces.has(faceKey)) continue;
-      seenFaces.add(faceKey);
-      m.faces.push(nf);
-      m.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
-      keptFace.push(fi);
-      keptCorners.push(nc);
-    }
+    const split = splitPinchedFace({ vertices: nf, corners: nc });
+    if (split.primary) appendFace(fi, split.primary);
+    for (const part of split.extras) extraFaces.push({ sourceFace: fi, part });
   }
+  // Blender writes faces split from a source polygon after the complete block
+  // of surviving source faces, preserving the original face's attributes.
+  for (const { sourceFace, part } of extraFaces) appendFace(sourceFace, part);
   for (const [name, a] of mesh.attributes) {
     if (a.domain === "POINT") m.attributes.set(name, { domain: "POINT", data: srcVert.map((vi) => a.data[vi]) });
     else if (a.domain === "FACE") m.attributes.set(name, { domain: "FACE", data: keptFace.map((fi) => a.data[fi]) });
@@ -1108,45 +1203,106 @@ function splitEdges(api: EvalAPI): Record<string, Geometry> {
     const split = new Mesh();
     split.materialSlots = [...m.materialSlots];
     const splitPointAttributes = [...m.attributes].filter(([, attribute]) => attribute.domain === "POINT");
-    const splitPointData = new Map(splitPointAttributes.map(([name]) => [name, [] as Elem[]]));
-    const incidentCorners = m.positions.map(() => [] as { face: number; corner: number }[]);
-    for (let face = 0; face < m.faces.length; face++) for (let corner = 0; corner < m.faces[face].length; corner++) incidentCorners[m.faces[face][corner]].push({ face, corner });
-    const incidentEdges = m.positions.map(() => [] as number[]);
-    topology.edges.forEach((edge, edgeIndex) => {
-      incidentEdges[edge.verts[0]].push(edgeIndex);
-      incidentEdges[edge.verts[1]].push(edgeIndex);
-    });
-    const cornerVertex = new Map<string, number>();
-    for (let vertex = 0; vertex < m.positions.length; vertex++) {
-      const corners = incidentCorners[vertex];
-      if (!corners.length) continue;
-      const parent = corners.map((_, index) => index);
-      const find = (index: number): number => { while (parent[index] !== index) { parent[index] = parent[parent[index]]; index = parent[index]; } return index; };
-      const unite = (a: number, b: number) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[rb] = ra; };
-      const cornerByFace = new Map(corners.map((corner, index) => [corner.face, index]));
-      for (const edgeIndex of incidentEdges[vertex]) {
-        const edge = topology.edges[edgeIndex];
-        if (asNum(selArr[edgeIndex] ?? 0) > 0) continue;
-        const connected = edge.faces.map((face) => cornerByFace.get(face)).filter((index): index is number => index !== undefined);
-        for (let i = 1; i < connected.length; i++) unite(connected[0], connected[i]);
-      }
-      const copies = new Map<number, number>();
-      for (let index = 0; index < corners.length; index++) {
-        const root = find(index);
-        let outputVertex = copies.get(root);
-        if (outputVertex === undefined) {
-          outputVertex = split.positions.length;
-          copies.set(root, outputVertex);
-          split.positions.push([...m.positions[vertex]] as Vec3);
-          for (const [name, attribute] of splitPointAttributes) splitPointData.get(name)!.push(attribute.data[vertex] ?? 0);
-        }
-        cornerVertex.set(`${corners[index].face}:${corners[index].corner}`, outputVertex);
+    split.positions = m.positions.map((position) => [...position] as Vec3);
+    const splitPointData = new Map(splitPointAttributes.map(([name, attribute]) => [name, [...attribute.data] as Elem[]]));
+
+    // Blender's geometry::split_edges keeps every original vertex in place,
+    // including loose/unreferenced points, and appends only the extra corner
+    // fan copies. For each affected vertex it walks the exact corner/edge
+    // radial graph and reuses the original vertex for the *last* group. A
+    // union of edge.faces is not equivalent on non-manifold/degenerate input:
+    // Chrome Crayon has one eight-face vertex where it creates a spurious
+    // second fan even though every selected-edge bit is already exact.
+    const edgeKey = (a: number, b: number) => a < b ? `${a},${b}` : `${b},${a}`;
+    const edgeIndexByKey = new Map<string, number>();
+    topology.edges.forEach((edge, index) => edgeIndexByKey.set(edgeKey(edge.verts[0], edge.verts[1]), index));
+    const cornerVerts: number[] = [];
+    const cornerEdges: number[] = [];
+    const cornerFaces: number[] = [];
+    const faceStarts: number[] = [];
+    const vertCorners = m.positions.map(() => [] as number[]);
+    const edgeCorners = topology.edges.map(() => [] as number[]);
+    for (let face = 0; face < m.faces.length; face++) {
+      faceStarts.push(cornerVerts.length);
+      const vertices = m.faces[face];
+      for (let corner = 0; corner < vertices.length; corner++) {
+        const globalCorner = cornerVerts.length;
+        const vertex = vertices[corner];
+        const next = vertices[(corner + 1) % vertices.length];
+        const edge = edgeIndexByKey.get(edgeKey(vertex, next));
+        if (edge === undefined) throw new Error(`Split Edges missing face edge ${vertex},${next}`);
+        cornerVerts.push(vertex);
+        cornerEdges.push(edge);
+        cornerFaces.push(face);
+        vertCorners[vertex].push(globalCorner);
+        edgeCorners[edge].push(globalCorner);
       }
     }
-    split.faces = m.faces.map((face, faceIndex) => face.map((_vertex, corner) => cornerVertex.get(`${faceIndex}:${corner}`)!));
+    const nextCorner = (corner: number) => {
+      const face = cornerFaces[corner];
+      const start = faceStarts[face];
+      const size = m.faces[face].length;
+      return start + ((corner - start + 1) % size);
+    };
+    const previousCorner = (corner: number) => {
+      const face = cornerFaces[corner];
+      const start = faceStarts[face];
+      const size = m.faces[face].length;
+      return start + ((corner - start - 1 + size) % size);
+    };
+    const affected = new Set<number>();
+    topology.edges.forEach((edge, index) => {
+      if (asNum(selArr[index] ?? 0) <= 0) return;
+      affected.add(edge.verts[0]);
+      affected.add(edge.verts[1]);
+    });
+    for (const vertex of [...affected].sort((a, b) => a - b)) {
+      const connected = vertCorners[vertex];
+      const connectedIndex = new Map(connected.map((corner, index) => [corner, index]));
+      const used = connected.map(() => false);
+      const groups: number[][] = [];
+      for (const startCorner of connected) {
+        const group: number[] = [];
+        const stack = [startCorner];
+        while (stack.length) {
+          const corner = stack.pop()!;
+          const local = connectedIndex.get(corner);
+          if (local === undefined || used[local]) continue;
+          used[local] = true;
+          group.push(corner);
+          const face = cornerFaces[corner];
+          for (const edge of [cornerEdges[corner], cornerEdges[previousCorner(corner)]]) {
+            if (asNum(selArr[edge] ?? 0) > 0) continue;
+            for (const otherCorner of edgeCorners[edge]) {
+              if (cornerFaces[otherCorner] === face) continue;
+              const neighbor = cornerVerts[otherCorner] === vertex ? otherCorner : nextCorner(otherCorner);
+              if (cornerVerts[neighbor] === vertex) stack.push(neighbor);
+            }
+          }
+        }
+        if (group.length) groups.push(group);
+      }
+      for (const group of groups.slice(0, -1)) {
+        const outputVertex = split.positions.length;
+        split.positions.push([...m.positions[vertex]] as Vec3);
+        for (const [name, attribute] of splitPointAttributes) splitPointData.get(name)!.push(attribute.data[vertex] ?? 0);
+        for (const corner of group) cornerVerts[corner] = outputVertex;
+      }
+    }
+    split.faces = m.faces.map((face, faceIndex) => {
+      const start = faceStarts[faceIndex];
+      return face.map((_vertex, corner) => cornerVerts[start + corner]);
+    });
     split.faceMaterial = [...m.faceMaterial];
     for (const [name, data] of splitPointData) split.attributes.set(name, { domain: "POINT", data });
     for (const [name, attribute] of m.attributes) if (attribute.domain === "FACE" || attribute.domain === "CORNER") split.attributes.set(name, { domain: attribute.domain, data: [...attribute.data] });
+    // Preserve the complete split edge component for later Mesh-to-Curve and
+    // edge-domain consumers. The face corner remap makes the generated edge
+    // count/topology identical even when the stored edge ordering is rebuilt.
+    split.edges = buildTopology(split).edges.map((edge) => [...edge.verts] as [number, number]);
+    // EDGE attributes are intentionally left for a future stored-edge-order
+    // pass; face rendering and all current downstream consumers use the exact
+    // remapped positions/faces above.
     g.mesh = split;
     return { Mesh: g };
   }

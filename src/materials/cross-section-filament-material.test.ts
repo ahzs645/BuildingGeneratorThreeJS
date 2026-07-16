@@ -132,10 +132,15 @@ test("reconstructs Math Clay's authored procedural filament and emission branche
   const material = makeCrossSectionFilamentMaterial(mathDump, geometry, materialName);
   assert.ok(material?.isMeshPhysicalMaterial);
   assert.equal(material.clearcoat, 1);
-  assert.deepEqual(material.userData.crossSectionFilamentBounds, {
+  const generatedBounds = material.userData.crossSectionFilamentBounds;
+  assert.deepEqual(generatedBounds, {
     min: [-34.03980255126953, -33.590858459472656, -32.332298278808594],
-    max: [34.8473014831543, 34.40513610839844, 33.3603401184082],
+    max: [34.8473014831543, 34.40513610839844, 33.36033248901367],
   });
+  // Blender's frozen evaluated maximum is 33.36033630371094. Face-center
+  // accumulation can land on either adjacent float32 value, so keep the
+  // deterministic web snapshot while explicitly gating its Blender distance.
+  assert.ok(Math.abs(generatedBounds.max[2] - 33.36033630371094) <= 4e-6);
   const shader = { uniforms: {}, vertexShader: "#include <common>\n#include <begin_vertex>", fragmentShader: "#include <common>\nvoid main() {\n#include <color_fragment>\n#include <roughnessmap_fragment>\n#include <normal_fragment_maps>\n#include <lights_physical_fragment>\n#include <opaque_fragment>\n}" };
   material?.onBeforeCompile(shader as never, {} as never);
   assert.match(shader.fragmentShader, /diffuseColor\.rgb=gl_FrontFacing\?max\(vJointColor,vec3\(0\.0\)\):vec3\(0\.0\)/);

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { Geometry, Mesh, triangulateFaceIndices } from "./geometry";
+import { Geometry, Mesh, buildTopology, triangulateFaceIndices } from "./geometry";
 import { makeFieldCtx } from "./evaluator";
 import { closestTrianglePointFloat32, nearestEdgePointFloat32, nearestPointBvhLeafFloat32 } from "./nodes/geometry";
 import { blenderMergeTargets } from "./nodes/meshops";
@@ -38,6 +38,37 @@ test("Geometry Proximity uses Blender float32 closest-edge arithmetic", () => {
     d: 5.726995944976807,
     q: [72.19184112548828, 21.81319236755371, 2.023311138153076],
   });
+});
+
+test("topology preserves Blender's stored edge endpoint orientation", () => {
+  const mesh = new Mesh();
+  mesh.positions = [[0, 0, 0], [1, 0, 0]];
+  mesh.edges = [[1, 0]];
+
+  assert.deepEqual(buildTopology(mesh).edges[0].verts, [1, 0]);
+});
+
+test("corner-to-point interpolation uses Blender float accumulation and reciprocal", () => {
+  const geometry = new Geometry();
+  const mesh = geometry.mesh = new Mesh();
+  mesh.positions = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [-1, 0, 0]];
+  mesh.faces = [[0, 1, 2], [0, 2, 3], [0, 3, 1]];
+  const cornerValues = [
+    [-0.9783854484558105, -0.20497344434261322, 0.027346348389983177], [0, 0, 0], [0, 0, 0],
+    [-0.9900420308113098, -0.1407531499862671, 0.002296657068654895], [0, 0, 0], [0, 0, 0],
+    [-0.9621018171310425, -0.2711416184902191, 0.029023870825767517], [0, 0, 0], [0, 0, 0],
+  ] as [number, number, number][];
+
+  assert.deepEqual(makeFieldCtx(geometry, "POINT").toDomain?.("CORNER", cornerValues, 0), [
+    -0.9768430590629578,
+    -0.20562276244163513,
+    0.019555626437067986,
+  ]);
+  assert.equal(makeFieldCtx(geometry, "POINT").toDomain?.("FACE", [
+    0.4999999701976776,
+    0.3272462487220764,
+    0.1538461595773697,
+  ], 0), 0.3270307779312134);
 });
 
 test("point proximity returns Blender's FLT_EPSILON-inflated BVH leaf", () => {

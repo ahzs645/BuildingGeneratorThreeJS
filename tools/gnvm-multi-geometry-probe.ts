@@ -10,6 +10,7 @@ if (!dumpPath || !objectName || !specsPath || !outPath) {
 }
 
 const dump = JSON.parse(readFileSync(dumpPath, "utf8")) as Dump;
+const overrides = JSON.parse(process.env.GNVM_PROBE_OVERRIDES ?? "{}") as Record<string, unknown>;
 const targets = JSON.parse(readFileSync(specsPath, "utf8")) as {
   id: string;
   group: string;
@@ -18,7 +19,7 @@ const targets = JSON.parse(readFileSync(specsPath, "utf8")) as {
 }[];
 GEOMETRY_PROBES.targets = targets;
 GEOMETRY_PROBES.geometries = new Map();
-await runGenerator(dump, { object: objectName });
+await runGenerator(dump, { object: objectName, overrides });
 
 const output = Object.fromEntries(targets.map((target) => {
   const key = `${target.group}\u0000${target.node}\u0000${target.socket}`;

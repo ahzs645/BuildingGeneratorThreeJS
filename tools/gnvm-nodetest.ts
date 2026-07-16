@@ -467,6 +467,13 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Map Range Stepped uses Blender float32 bucket arithmetic",
     Number(stepped.value) === Math.fround(4 / Math.fround(3.5335693359375)), `got ${stepped.value}`);
 
+  const linear = runNode("ShaderNodeMapRange", {
+    Value: 4.483554840087891, "From Min": 0, "From Max": 9.579200744628906,
+    "To Min": 1, "To Max": 0, Steps: 4,
+  }, { interpolation_type: "LINEAR", clamp: true }).Result as Field;
+  check("Map Range Linear matches Blender float32 divide and mix order",
+    Number(linear.value) === 0.5319489240646362, `got ${linear.value}`);
+
   const mappedVector = runNode("ShaderNodeMapRange", {
     Vector: [0.5, 0.25, 0.75],
     From_Min_FLOAT3: [0, 0, 0], From_Max_FLOAT3: [1, 1, 1],
@@ -1337,6 +1344,20 @@ function meshSignedAreaXY(m: Mesh): number {
 // (L) MergeByDistance welds duplicated quad seams and carries attrs/materials
 {
   const m = new Mesh();
+  m.positions = [[0, 0, 0], [1, 0, 0], [2, 1, 0], [1, 2, 0], [0, 1, 0]];
+  m.faces = [[0, 1, 2, 3, 4]];
+  m.attributes.set("cid", { domain: "CORNER", data: [10, 11, 12, 13, 14] });
+  const g = new Geometry();
+  g.mesh = m;
+  const flipped = runNode("GeometryNodeFlipFaces", { Mesh: g, Selection: true }).Mesh as Geometry;
+  check("Flip Faces preserves Blender's first polygon corner",
+    JSON.stringify(flipped.mesh?.faces) === JSON.stringify([[0, 4, 3, 2, 1]])
+      && JSON.stringify(flipped.mesh?.attributes.get("cid")?.data) === JSON.stringify([10, 14, 13, 12, 11]),
+    JSON.stringify({ faces: flipped.mesh?.faces, corners: flipped.mesh?.attributes.get("cid")?.data }));
+}
+
+{
+  const m = new Mesh();
   m.positions = [
     [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
     [1, 0, 0], [2, 0, 0], [2, 1, 0], [1, 1, 0],
@@ -1358,6 +1379,19 @@ function meshSignedAreaXY(m: Mesh): number {
   check("MergeByDistance carries FACE attrs/materials", approx(om.attributes.get("fid")!.data as number[], [100, 200]) && approx(om.faceMaterial, [1, 2]));
   check("MergeByDistance carries CORNER attrs and remaps edges", approx(om.attributes.get("cid")!.data as number[], [10, 11, 12, 13, 20, 21, 22, 23]) && edgeKeys.join(",") === "1_2,4_5");
   check("MergeByDistance preserves material slots", JSON.stringify(om.materialSlots) === JSON.stringify([null, "left", "right"]));
+}
+
+{
+  const m = new Mesh();
+  m.positions = Array.from({ length: 3 }, () => [-39.9841194152832, 0, 0] as Vec3);
+  const g = new Geometry();
+  g.mesh = m;
+  const out = runNode("GeometryNodeMergeByDistance", {
+    Geometry: g, Selection: true, Distance: 1e-5, Mode: "All",
+  }).Geometry as Geometry;
+  check("MergeByDistance averages clusters with Blender float accumulation",
+    JSON.stringify(out.mesh?.positions) === JSON.stringify([[-39.98412322998047, 0, 0]]),
+    JSON.stringify(out.mesh?.positions));
 }
 
 // Coincident joined meshes weld to one polygon in Blender; keeping both face
@@ -1393,9 +1427,8 @@ function meshSignedAreaXY(m: Mesh): number {
   check("MergeByDistance removes opposite-winding duplicate faces", out.mesh?.positions.length === 4 && out.mesh.faces.length === 1);
 }
 
-// Welding non-adjacent corners pinches a polygon into two lobes. Blender
-// removes that face, while an adjacent corner collapse remains a valid smaller
-// polygon. Heal Mesh relies on this distinction for dense screw surfaces.
+// Welding non-adjacent corners can pinch a polygon into two collapsed lobes.
+// Blender removes the face only when neither lobe still has three corners.
 {
   const m = new Mesh();
   m.positions = [[0, 0, 0], [1, 0, 0], [0.00001, 0, 0], [0, 1, 0]];
@@ -1405,6 +1438,22 @@ function meshSignedAreaXY(m: Mesh): number {
   const out = runNode("GeometryNodeMergeByDistance", { Geometry: g, Selection: true, Distance: 1e-3, Mode: "All" }).Geometry as Geometry;
   check("MergeByDistance removes non-adjacent pinched faces", out.mesh?.positions.length === 3 && out.mesh.faces.length === 0,
     `got ${out.mesh?.positions.length}v/${out.mesh?.faces.length}f`);
+}
+
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [1, 0, 0], [0.00001, 0, 0], [1, 1, 0], [0, 1, 0]];
+  m.faces = [[0, 1, 2, 3, 4]];
+  m.attributes.set("cid", { domain: "CORNER", data: [10, 11, 12, 13, 14] });
+  const g = new Geometry();
+  g.mesh = m;
+  const out = runNode("GeometryNodeMergeByDistance", {
+    Geometry: g, Selection: true, Distance: 1e-3, Mode: "All",
+  }).Geometry as Geometry;
+  check("MergeByDistance keeps the valid lobe of a pinched polygon",
+    JSON.stringify(out.mesh?.faces) === JSON.stringify([[0, 2, 3]])
+      && JSON.stringify(out.mesh?.attributes.get("cid")?.data) === JSON.stringify([12, 13, 14]),
+    JSON.stringify({ faces: out.mesh?.faces, corners: out.mesh?.attributes.get("cid")?.data }));
 }
 
 // A collapsed long quad still carries a valid center-to-rim triangle after
@@ -1437,6 +1486,23 @@ function meshSignedAreaXY(m: Mesh): number {
   const surfacedGeometry = new Geometry();
   surfacedGeometry.mesh = surfaced;
   check("toTriSoup retains point-cloud positions after meshing", toTriSoup(surfacedGeometry).stats.verts === 3);
+
+  const payload = new Geometry();
+  payload.mesh = new Mesh();
+  payload.mesh.positions = [[0, 0, 0], [1, 0, 0], [0, 1, 0]];
+  payload.mesh.faces = [[0, 1, 2]];
+  const instanced = runNode("GeometryNodeInstanceOnPoints", {
+    Points: looseGeometry,
+    Instance: payload,
+    Selection: true,
+    Rotation: [0, 0, 0],
+    Scale: [1, 1, 1],
+    "Pick Instance": false,
+    "Instance Index": 0,
+  }).Instances as Geometry;
+  const realized = realizeInstances(instanced);
+  check("Instance on Points does not propagate the internal point-cloud component marker",
+    !realized.mesh?.attributes.has("__gnvm_point_cloud"), JSON.stringify([...realized.mesh!.attributes.keys()]));
 }
 
 // (M) MergeByDistance selection=false vertices do not participate in welding
@@ -1463,6 +1529,25 @@ function meshSignedAreaXY(m: Mesh): number {
   g.mesh = m;
   const out = runNode("GeometryNodeSplitEdges", { Mesh: g, Selection: true }).Mesh as Geometry;
   check("Split Edges rebuilds selected face edges without quadratic duplicates", out.mesh?.positions.length === 8 && out.mesh.faces.length === 2 && out.mesh.edges.length === 7, `got ${out.mesh?.positions.length}v/${out.mesh?.edges.length}e`);
+}
+
+// Partial splitting preserves Blender's original vertex block (including an
+// unreferenced point), appends one copy for every corner fan except the last,
+// and assigns the first fan to the appended copy.
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [2, 0, 0], [2, 1, 0], [9, 9, 9]];
+  m.faces = [[0, 1, 2, 3], [1, 4, 5, 2]];
+  m.faceMaterial = [0, 0];
+  m.edges = [[0, 1], [1, 2], [2, 3], [3, 0], [1, 4], [4, 5], [5, 2]];
+  const g = new Geometry();
+  g.mesh = m;
+  const shared = Field.perElem((i) => i === 1 ? 1 : 0).tagged("EDGE");
+  const out = runNode("GeometryNodeSplitEdges", { Mesh: g, Selection: shared }).Mesh as Geometry;
+  check("Split Edges preserves original vertices and appends earlier corner fans",
+    JSON.stringify(out.mesh?.positions.slice(0, 7)) === JSON.stringify(m.positions)
+      && JSON.stringify(out.mesh?.faces) === JSON.stringify([[0, 7, 8, 3], [1, 4, 5, 2]]),
+    JSON.stringify({ positions: out.mesh?.positions, faces: out.mesh?.faces }));
 }
 
 // Split Edges operates on mesh components nested inside instances without
@@ -2110,29 +2195,21 @@ function meshSignedAreaXY(m: Mesh): number {
     fanDirections.every((value) => approx(value, [Math.SQRT1_2, Math.SQRT1_2, 0])),
     JSON.stringify(fanDirections));
 
-  // The group normalizes on FACE before its output is adapted to POINT. A
-  // shared triangle/quad vertex must therefore average one unit direction from
-  // each face, rather than weighting them by their 1/3 and 1/2 corner means.
+  // The final Normalize runs after FACE values are adapted to the consuming
+  // POINT domain. Cross-product magnitude therefore remains a deliberate face
+  // weight until the shared point direction is normalized.
   const mixed = new Geometry();
   mixed.mesh = new Mesh();
   mixed.mesh.positions = [
-    [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
-    [0, 1, 0], [0, 0, 1],
+    [0, 0, 0], [0.3, -0.3, 0.5], [1, 0.05, -1.2], [0.47, 0.17, 0.7],
+    [-0.94, -0.94, -0.61], [0, 1, 0], [0, 0, 1],
   ];
-  mixed.mesh.faces = [[0, 1, 2, 3], [0, 4, 5]];
-  const xzGradient = Field.perElem((i, ctx) => {
-    const position = ctx.position?.(i) ?? [0, 0, 0];
-    return position[0] + position[2];
-  });
-  const mixedDirections = gradientDirectionField(xzGradient, false).array(makeFieldCtx(mixed, "POINT")) as Vec3[];
-  const equalFaceAverage: Vec3 = [
-    mixedDirections[1][0] + mixedDirections[4][0],
-    mixedDirections[1][1] + mixedDirections[4][1],
-    mixedDirections[1][2] + mixedDirections[4][2],
-  ];
-  const equalLength = Math.hypot(...equalFaceAverage);
-  const expectedShared = equalFaceAverage.map((component) => component / equalLength) as Vec3;
-  check("Gradient Direction normalizes faces before point interpolation", approx(mixedDirections[0], expectedShared), `${JSON.stringify(mixedDirections[0])} vs ${JSON.stringify(expectedShared)}`);
+  mixed.mesh.faces = [[0, 1, 2, 3, 4], [0, 5, 6]];
+  const mixedGradient = Field.perElem((i) => [-0.8, -0.88, 0.92, 0.82, -0.67, 0.99, 0.9][i]);
+  const mixedDirections = gradientDirectionField(mixedGradient, false).array(makeFieldCtx(mixed, "POINT")) as Vec3[];
+  check("Gradient Direction preserves face cross magnitude through point interpolation",
+    approx(mixedDirections[0], [-0.18680248, -0.14392826, -0.97179705]),
+    JSON.stringify(mixedDirections[0]));
 }
 
 // (S) MeshCone frustum
@@ -2246,6 +2323,13 @@ function meshSignedAreaXY(m: Mesh): number {
   }, { operation: "DIVIDE" }).Value as Field;
   check("Math Divide stores Blender float32 output",
     Object.is(divide.value, 0.2080218493938446), `value=${divide.value}`);
+  const arccosine = runNode("ShaderNodeMath", {
+    Value: 0.37568199634552,
+    Value_001: 0,
+    Value_002: 0,
+  }, { operation: "ARCCOSINE" }).Value as Field;
+  check("Math Arccosine matches Blender's float libm path",
+    Object.is(arccosine.value, 1.1856637001037598), `value=${arccosine.value}`);
   const multiply = runNode("ShaderNodeVectorMath", {
     Vector: [-0.32352685928344727, -0.1122373640537262, 0.9395387768745422],
     Vector_001: [0.2080218493938446, 0.2080218493938446, 0.2080218493938446],
@@ -2254,6 +2338,18 @@ function meshSignedAreaXY(m: Mesh): number {
   const blenderMultiply = [-0.06730065494775772, -0.023347824811935425, 0.19544459879398346];
   check("Vector Multiply stores Blender float32 components",
     multiplied.every((value, i) => Object.is(value, blenderMultiply[i])), JSON.stringify(multiplied));
+  const dot = runNode("ShaderNodeVectorMath", {
+    Vector: [0.23370400071144104, -0.8273482322692871, 0.510761559009552],
+    Vector_001: [0.23367846012115479, -0.8271363973617554, 0.5110481381416321],
+  }, { operation: "DOT_PRODUCT" }).Value as Field;
+  check("Vector Dot Product uses Blender sequential float arithmetic",
+    Object.is(dot.value, 0.9999650716781616), `value=${dot.value}`);
+  const distance = runNode("ShaderNodeVectorMath", {
+    Vector: [7.030129432678223, 11.107409477233887, 20.97956657409668],
+    Vector_001: [7.089422702789307, 9.024285316467285, 20.00442123413086],
+  }, { operation: "DISTANCE" }).Value as Field;
+  check("Vector Distance uses Blender float square and sum order",
+    Object.is(distance.value, 2.300832748413086), `value=${distance.value}`);
   const unk = runNode("ShaderNodeVectorMath", { Vector: [1, 2, 3], Vector_001: [10, 20, 30] }, { operation: "NOT_A_REAL_OP" }).Vector as Field;
   const got = unk.value as number[];
   check("unknown VectorMath does not ADD", !approx(got, [11, 22, 33]) && approx(got, [1, 2, 3]), JSON.stringify(got));
@@ -2290,6 +2386,27 @@ function meshSignedAreaXY(m: Mesh): number {
   };
   const result = new Evaluator(program).evalGroup("outer", { Density: Field.of(349.78) }).Result as Field;
   check("Group input coerces linked float to Int", result.value === 349, `got ${result.value}`);
+
+  const scalarProgram: any = {
+    vector_to_float: {
+      name: "vector_to_float", type: "GeometryNodeTree",
+      interface: [
+        socket("Vector", "Vector", "INPUT", "NodeSocketVector"),
+        socket("Result", "Result", "OUTPUT", "NodeSocketFloat"),
+      ],
+      nodes: [
+        { name: "Group Input", type: "NodeGroupInput", label: null, inputs: [], outputs: [{ name: "Vector", identifier: "Vector" }], props: {} },
+        { name: "Group Output", type: "NodeGroupOutput", label: null, inputs: [{ name: "Result", identifier: "Result", type: "NodeSocketFloat", linked: true, value: null }], outputs: [], props: {} },
+      ],
+      links: [{ from_node: "Group Input", from_socket: "Vector", to_node: "Group Output", to_socket: "Result" }],
+    },
+  };
+  const component = 0.9648994207382202;
+  const scalar = new Evaluator(scalarProgram).evalGroup("vector_to_float", {
+    Vector: Field.of([component, component, component]),
+  }).Result as Field;
+  check("Vector to Float uses Blender float32 component averaging",
+    scalar.value === 0.9648993611335754, `got ${scalar.value}`);
 }
 
 // Mesh nodes operate on mesh components inside instances. String to Curves

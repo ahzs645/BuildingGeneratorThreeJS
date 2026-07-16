@@ -181,21 +181,26 @@ function baseGeometryOf(dump: Dump, objectName: string): Geometry | null {
       const controlPoints = copy(s.control_points);
       const bezierLeft = copy(s.bezier_left);
       const bezierRight = copy(s.bezier_right);
+      const evaluatedPoints = copy(s.points) ?? [];
       const authoredBezier = Boolean(
         controlPoints?.length
           && bezierLeft?.length === controlPoints.length
           && bezierRight?.length === controlPoints.length,
       );
+      const evaluatedPointsAreFloat32 = evaluatedPoints.length > 0 && evaluatedPoints.every((point) =>
+        point.every((component) => Object.is(component, Math.fround(component))));
       return {
         cyclic: Boolean(s.cyclic),
         resolution: s.resolution,
-        // Extracted evaluated points pass through Python doubles. Blender
-        // rebuilds authored Bezier splines from float controls and handles;
-        // doing the same here prevents those stale doubles from shifting every
-        // downstream arc-length sample and marching-square intersection.
-        points: authoredBezier
+        // Full-precision dumps already contain Blender's authoritative
+        // evaluated float coordinates and may encode handle behavior that the
+        // portable evaluator cannot infer. Older dumps rounded those values to
+        // six/eight decimal places; rebuild only that lossy representation from
+        // its controls. This keeps Blunt Metal Marker's extracted curve exact
+        // while recovering Chrome Crayon and Hat sampling precision.
+        points: authoredBezier && !evaluatedPointsAreFloat32
           ? evaluateBezierSpline(controlPoints!, Boolean(s.cyclic), bezierLeft!, bezierRight!, s.resolution)
-          : (copy(s.points) ?? []),
+          : evaluatedPoints,
         controlPoints,
         bezierLeft,
         bezierRight,

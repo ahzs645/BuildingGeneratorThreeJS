@@ -85,6 +85,77 @@ for override in graph_overrides:
         if socket is None:
             raise KeyError(f"graph override input not found: {override_node.name}.{name}")
         socket.default_value = value
+
+# Surface an internal field through an existing nested-group output while
+# preserving the caller's evaluation domain. This is useful for diagnosing
+# Evaluate on Domain chains whose result changes when sampled on FACE vs POINT.
+for remap in json.loads(os.environ.get("NODE_DOJO_PROBE_INNER_OUTPUTS", "[]")):
+    inner_group = bpy.data.node_groups.get(remap["group"])
+    inner_node = inner_group.nodes.get(remap["node"]) if inner_group else None
+    inner_output = next(
+        (
+            candidate
+            for candidate in inner_group.nodes
+            if candidate.bl_idname == "NodeGroupOutput" and candidate.is_active_output
+        ),
+        None,
+    ) if inner_group else None
+    source = inner_node.outputs.get(remap["socket"]) if inner_node else None
+    target = inner_output.inputs.get(remap["output"]) if inner_output else None
+    if source is None or target is None:
+        raise RuntimeError(f"missing inner output remap: {remap!r}")
+    for link in list(target.links):
+        inner_group.links.remove(link)
+    inner_group.links.new(source, target)
+
+# Persist otherwise-anonymous fields through a simulation/repeat zone by
+# inserting Store Named Attribute on an existing geometry link inside the
+# zone. The final routed geometry then exposes the values through to_mesh().
+stored_fields = []
+for spec in json.loads(os.environ.get("NODE_DOJO_PROBE_STORE_FIELDS", "[]")):
+    store_group = bpy.data.node_groups.get(spec["group"])
+    consumer_node = store_group.nodes.get(spec["consumer_node"]) if store_group else None
+    field_node = store_group.nodes.get(spec["field_node"]) if store_group else None
+    geometry_node = store_group.nodes.get(spec["geometry_node"]) if store_group and spec.get("geometry_node") else None
+    if consumer_node is None or field_node is None:
+        raise RuntimeError(f"missing stored-field node: {spec!r}")
+    consumer_input = consumer_node.inputs.get(spec.get("consumer_socket", "Geometry"))
+    field_source = field_node.outputs.get(spec["field_socket"])
+    geometry_source = (
+        geometry_node.outputs.get(spec["geometry_socket"])
+        if geometry_node is not None
+        else consumer_input.links[0].from_socket if consumer_input and consumer_input.is_linked else None
+    )
+    if geometry_source is None or consumer_input is None or field_source is None:
+        raise RuntimeError(f"missing stored-field socket: {spec!r}")
+    store = store_group.nodes.new("GeometryNodeStoreNamedAttribute")
+    store.data_type = spec.get("data_type", "FLOAT")
+    store.domain = spec.get("domain", "POINT")
+    store.inputs["Name"].default_value = spec["name"]
+    for link in list(consumer_input.links):
+        store_group.links.remove(link)
+    store_group.links.new(geometry_source, store.inputs["Geometry"])
+    store_group.links.new(field_source, store.inputs["Value"])
+    store_group.links.new(store.outputs["Geometry"], consumer_input)
+    if spec.get("route_stored_geometry"):
+        store_output = next(
+            (
+                candidate
+                for candidate in store_group.nodes
+                if candidate.bl_idname == "NodeGroupOutput" and candidate.is_active_output
+            ),
+            None,
+        )
+        store_target = next(
+            (socket for socket in store_output.inputs if socket.type == "GEOMETRY"),
+            None,
+        ) if store_output else None
+        if store_target is None:
+            raise RuntimeError(f"missing stored-field route output: {spec!r}")
+        for link in list(store_target.links):
+            store_group.links.remove(link)
+        store_group.links.new(store.outputs["Geometry"], store_target)
+    stored_fields.append((spec["name"], store.data_type))
 source = node.outputs.get(socket_name)
 target = next((socket for socket in group_output.inputs if socket.type == "GEOMETRY"), None)
 if source is None or target is None:
@@ -170,6 +241,17 @@ if os.environ.get("NODE_DOJO_PROBE_GEOMETRY") == "1":
     if mesh:
         mesh.calc_loop_triangles()
         payload["loop_triangles"] = [list(triangle.vertices) for triangle in mesh.loop_triangles]
+        payload["attributes"] = {}
+        for name, data_type in stored_fields:
+            attribute = mesh.attributes.get(name)
+            if attribute is None:
+                payload["attributes"][name] = []
+            elif data_type == "FLOAT_VECTOR":
+                payload["attributes"][name] = [list(item.vector) for item in attribute.data]
+            elif data_type in {"FLOAT_COLOR", "BYTE_COLOR"}:
+                payload["attributes"][name] = [list(item.color) for item in attribute.data]
+            else:
+                payload["attributes"][name] = [item.value for item in attribute.data]
 with open(out_path, "w", encoding="utf-8") as handle:
     json.dump(payload, handle, indent=2)
 if mesh:

@@ -1,0 +1,14 @@
+[
+  { "id": "marching", "group": "Geometry Nodes.001", "node": "Group", "socket": "Output_0" },
+  { "id": "marching-positioned", "group": "Geometry Nodes.001", "node": "Set Position.001", "socket": "Geometry" },
+  { "id": "shrink", "group": "Geometry Nodes.001", "node": "Group.010", "socket": "Output_1" },
+  { "id": "surface-positioned", "group": "Geometry Nodes.001", "node": "Set Position", "socket": "Geometry" },
+  { "id": "joined", "group": "Geometry Nodes.001", "node": "Join Geometry", "socket": "Geometry" },
+  { "id": "merged", "group": "Geometry Nodes.001", "node": "Merge by Distance", "socket": "Geometry" },
+  { "id": "sharpened", "group": "Geometry Nodes.001", "node": "Group.006", "socket": "Socket_0" },
+  { "id": "flipped", "group": "Geometry Nodes.001", "node": "Flip Faces", "socket": "Mesh" },
+  { "id": "material", "group": "Geometry Nodes.001", "node": "Set Material", "socket": "Geometry" },
+  { "id": "final-position", "group": "Geometry Nodes.001", "node": "Set Position.003", "socket": "Geometry" },
+  { "id": "auto-smooth", "group": "Geometry Nodes.001", "node": "Group.004", "socket": "Output_0" },
+  { "id": "switch", "group": "Geometry Nodes.001", "node": "Switch", "socket": "Output" }
+]
