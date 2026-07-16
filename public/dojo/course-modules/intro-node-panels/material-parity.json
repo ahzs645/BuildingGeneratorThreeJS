@@ -30,9 +30,12 @@
   },
   "browserVerification": {
     "route": "/chrome-assets?asset=course-intro-node-panels",
-    "capture": "/private/tmp/course-intro-node-panels-attribute-emission.png",
-    "runtimeSeconds": 40.59,
-    "status": "The browser reported Topology counts match Blender at 104,454 vertices / 44,423 faces and emitted no WebGL warning/error logs. The Attribute Viewer ranges render black instead of diagnostic green."
+    "capture": "../../references/course-modules/intro-node-panels-webgl.png",
+    "resolution": [1280, 720],
+    "devicePixelRatio": 1,
+    "runtimeSeconds": 8.28,
+    "warningErrorLogs": 0,
+    "status": "The committed side-by-side browser capture reports Topology counts match Blender at 104,454 vertices / 44,423 faces and emitted no WebGL warning/error logs. The Attribute Viewer ranges render black instead of diagnostic green."
   },
-  "remaining": "This checkpoint corrects the Attribute Viewer range only. Other node-panel material groups keep their existing constant or dedicated authored-material routes; renderer-level comparison of the complete multi-material diagram remains separate."
+  "remaining": "This checkpoint corrects the Attribute Viewer range only. The committed side-by-side capture makes the remaining material gap explicit: Blender's complete diagram is neutral gray, while the browser still renders green headers, black panel bodies, and white labels through its existing constant or dedicated authored-material routes. Full multi-material renderer parity is not claimed."
 }
