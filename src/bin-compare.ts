@@ -74,9 +74,8 @@ let runId = 0;
 let worker: Worker | null = null;
 let dump: Dump;
 let variants: Variant[] = [];
-// Full 0..11 sweep: both point-to-surface directions are exact to the
-// diagnostic's displayed precision. Triangle counts still differ because the
-// same surfaces are tessellated differently.
+// Full recovered-font 0..11 sweep: both point-to-surface directions, total
+// triangle counts, and highlighted-material triangle counts match Blender.
 const measuredSurfaceP99: Record<number, number> = {
   0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0,
   6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0,
@@ -457,7 +456,9 @@ async function updateComparison(overrides = readOverrides()): Promise<void> {
     deltaTrisEl.textContent = `${vmTris - truthTris >= 0 ? "+" : ""}${(vmTris - truthTris).toLocaleString()} triangles${surfaceP99 !== undefined ? ` · p99 ${surfaceP99.toFixed(3)}` : ""}`;
     const redDelta = vmRed - truthRed;
     findingEl.textContent = surfaceP99 !== undefined
-      ? `The default-parameter sweep matches at p99/max ${surfaceP99.toFixed(3)}. GN-VM has ${Math.abs(redDelta).toLocaleString()} ${redDelta >= 0 ? "more" : "fewer"} red triangles from alternate tessellation, but the highlighted surface is the same.`
+      ? truthTris === vmTris && redDelta === 0
+        ? `The recovered-font Blender and GN-VM results match at p99/max ${surfaceP99.toFixed(3)}, with identical total and highlighted-material triangle counts.`
+        : `The default-parameter sweep matches at p99/max ${surfaceP99.toFixed(3)}. GN-VM has ${Math.abs(redDelta).toLocaleString()} ${redDelta >= 0 ? "more" : "fewer"} red triangles from alternate tessellation, but the highlighted surface is the same.`
       : `This live setting has an envelope delta of ${envelope.toFixed(4)} and ${Math.abs(redDelta).toLocaleString()} ${redDelta >= 0 ? "more" : "fewer"} highlighted triangles. Use Overlay for shape parity and Side by side for material inspection.`;
     syncView(true);
     truthSourceEl.textContent = blender.source === "live" ? "live Blender" : "baked fallback";

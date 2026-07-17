@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-15",
+  "updated": "2026-07-17",
   "target": {
     "route": "/bin",
     "materials": ["3D", "3D.004"],
@@ -79,7 +79,7 @@
     "result": "Both authored materials compiled and rendered in Shared WebGL preview with no shader error or warning.",
     "repeatUpdateCheck": "Three consecutive same-input evaluations completed with no console error after explicit geometry, material, texture, and program disposal was added.",
     "expectedRuntimeWarning": "The local Blender bake bridge was unavailable, so the page correctly used its baked Blender fallback.",
-    "materialIdentity": "Source names 3D and 3D.004 remain intact; selection 5 reports 212 Blender and 220 GN-VM highlighted triangles, an eight-triangle tessellation delta."
+    "materialIdentity": "Source names 3D and 3D.004 remain intact. Across Bin Select 0 through 11, Blender and GN-VM now have identical total and highlighted-material triangle counts; selection 5 is 110,286 total / 212 highlighted in both engines."
   },
   "rendererApproximation": {
     "status": "material-semantic reconstruction, not pixel-identical Blender rendering",

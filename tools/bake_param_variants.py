@@ -33,7 +33,30 @@ VARIANTS = []
 for sel in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]:
     VARIANTS.append({"id": f"sel{sel}", "label": f"Bin Select {sel}", "params": {"Bin Select": sel}})
 
-manifest = {"object": obj_name, "axis": "Bin Select", "variants": []}
+referenced_fonts = {}
+for group in bpy.data.node_groups:
+    for node in group.nodes:
+        if node.bl_idname != "GeometryNodeStringToCurves":
+            continue
+        socket = node.inputs.get("Font")
+        font = getattr(socket, "default_value", None) if socket else None
+        if isinstance(font, bpy.types.VectorFont):
+            path = bpy.path.abspath(font.filepath)
+            referenced_fonts[font.name] = os.path.basename(path) if path else "<builtin>"
+
+manifest = {
+    "object": obj_name,
+    "axis": "Bin Select",
+    "generator": {
+        "blender_version": bpy.app.version_string,
+        "fonts": [
+            {"name": name, "source": source}
+            for name, source in sorted(referenced_fonts.items())
+        ],
+        "font_binaries_in_glb": False,
+    },
+    "variants": [],
+}
 for v in VARIANTS:
     for n, val in defaults.items():
         setp(n, val)
