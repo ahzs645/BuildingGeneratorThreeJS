@@ -515,10 +515,10 @@ function sockToString(v: unknown): string {
 reg("FunctionNodeValueToString", (api) => {
   const decimals = Math.max(0, Math.round(api.num("Decimals")));
   const value = api.num("Value");
-  let s: string;
-  if (decimals <= 0) s = String(Math.trunc(value));
-  else s = value.toFixed(decimals);
-  return { String: s };
+  // Blender formats to the requested precision; zero decimals still rounds
+  // rather than casting to an integer. Recursive Bin exposes this with its
+  // float32 dimensions: 0.70799994 * 1000 is displayed as "708", not "707".
+  return { String: value.toFixed(decimals) };
 });
 
 reg("GeometryNodeStringJoin", (api) => {

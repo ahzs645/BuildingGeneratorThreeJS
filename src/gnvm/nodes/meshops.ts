@@ -868,9 +868,15 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
       } else if (profileBoundary) [a, b] = [b, a];
       const na = dupOf(a), nb = dupOf(b);
       sideFaceIdx.push(out.faces.length);
-      out.faces.push([a, b, nb, na]);
+      const side = [a, b, nb, na];
+      // Polygon winding follows the adjacent face, but Blender keeps the
+      // stored source edge's first endpoint as the side polygon's first loop.
+      // Cyclically equivalent quads produce the same surface yet accumulate
+      // Newell normals in a different float32 order downstream.
+      const firstCorner = side.indexOf(ca);
+      out.faces.push(firstCorner > 0 ? [...side.slice(firstCorner), ...side.slice(0, firstCorner)] : side);
       out.faceMaterial.push(inEdges[ei].faces.length ? out.faceMaterial[inEdges[ei].faces[0]] ?? 0 : 0);
-      newEdgePairs.push([na, nb]);
+      newEdgePairs.push([dupOf(ca), dupOf(cb)]);
     }
     // Preserve Blender's generated edge order: inherited/source edges first,
     // then one connecting edge per duplicated vertex, then the duplicated Top
@@ -1050,7 +1056,22 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
       boundaryVerts.add(e.b);
     }
     const newIdx = new Map<number, number>();
-    let vertexOrder = [...vertSet];
+    // Region extrusion allocates boundary copies by the mesh's stored edge
+    // table. This is distinct from polygon order: Fill Curve's CDT edge table
+    // is retained through an earlier edge extrusion, and Blender follows it
+    // when thickening the resulting walls. Append vertices that do not occur
+    // in an explicit edge afterward so interior selected points still move.
+    let vertexOrder: number[] = [];
+    const orderedVertices = new Set<number>();
+    for (const edge of mesh.edges) {
+      if (edgeCount.get(ekey(edge[0], edge[1]))?.n !== 1) continue;
+      for (const vertex of edge) {
+        if (!vertSet.has(vertex) || orderedVertices.has(vertex)) continue;
+        orderedVertices.add(vertex);
+        vertexOrder.push(vertex);
+      }
+    }
+    for (const vertex of vertSet) if (!orderedVertices.has(vertex)) vertexOrder.push(vertex);
     // Blender's N-gon Fill Curve keeps a triangulator-generated boundary-edge
     // table even though the final face is a single polygon. That edge order is
     // not present in the portable dump, but region extrusion allocates its

@@ -978,6 +978,42 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Fill Curve welds corners shared by separate loops", welded.mesh?.positions.length === 7 && welded.mesh.faces.length === 2, `${welded.mesh?.positions.length}/${welded.mesh?.faces.length}`);
 }
 
+// Portable dumps may carry Blender's evaluated CDT ordering. The cached
+// topology is only accepted when its faces describe the same vertex partition;
+// downstream edge extrusion and representative-sensitive welds can then use
+// Blender's hidden boundary-edge order without storing evaluated coordinates.
+{
+  const disjoint = curves([
+    { points: [[0, 0, 0], [1, 0, 0], [0, 1, 0]], cyclic: true },
+    { points: [[2, 0, 0], [3, 0, 0], [2, 1, 0]], cyclic: true },
+  ]);
+  const cachedEdges: [number, number][] = [[3, 5], [5, 4], [4, 3], [0, 2], [2, 1], [1, 0]];
+  const cachedFaces = [[3, 5, 4], [0, 2, 1]];
+  const filled = runNode("GeometryNodeFillCurve", { Curve: disjoint }, {
+    mode: "NGONS",
+    evaluated_topology: { position_count: 6, edges: cachedEdges, faces: cachedFaces },
+  }).Mesh as Geometry;
+  check("Fill Curve restores extracted Blender topology ordering",
+    JSON.stringify(filled.mesh?.edges) === JSON.stringify(cachedEdges)
+      && JSON.stringify(filled.mesh?.faces) === JSON.stringify(cachedFaces),
+    JSON.stringify({ edges: filled.mesh?.edges, faces: filled.mesh?.faces }));
+
+  const square = curves([{
+    points: [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]],
+    cyclic: true,
+  }]);
+  const crossedFace = [[0, 2, 1, 3]];
+  const crossedEdges: [number, number][] = [[0, 2], [2, 1], [1, 3], [3, 0]];
+  const rejected = runNode("GeometryNodeFillCurve", { Curve: square }, {
+    mode: "NGONS",
+    evaluated_topology: { position_count: 4, edges: crossedEdges, faces: crossedFace },
+  }).Mesh as Geometry;
+  check("Fill Curve rejects cached topology with changed boundary adjacency",
+    JSON.stringify(rejected.mesh?.faces) !== JSON.stringify(crossedFace)
+      && JSON.stringify(rejected.mesh?.edges) !== JSON.stringify(crossedEdges),
+    JSON.stringify({ edges: rejected.mesh?.edges, faces: rejected.mesh?.faces }));
+}
+
 // Blender splits crossing cyclic outlines before its even-odd triangle fill.
 // Two overlapping 2x2 squares therefore retain their eight authored corners,
 // add two boundary intersections, and omit the doubly covered unit square.
@@ -2030,7 +2066,7 @@ function meshSignedAreaXY(m: Mesh): number {
 // (Q) Critical-path: ValueToString / StringJoin / StringToCurves
 {
   const s = runNode("FunctionNodeValueToString", { Value: 12.6, Decimals: 0 }).String as string;
-  check("ValueToString decimals=0 truncates", s === "12", `got ${s}`);
+  check("ValueToString decimals=0 rounds", s === "13", `got ${s}`);
   const s2 = runNode("FunctionNodeValueToString", { Value: Math.PI, Decimals: 2 }).String as string;
   check("ValueToString decimals=2", s2 === "3.14", `got ${s2}`);
   // Multi-input join via direct REGISTRY harness: inputs() returns one value per key;
@@ -2460,6 +2496,25 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 {
+  const ordered = new Geometry();
+  ordered.mesh = new Mesh();
+  ordered.mesh.positions = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]];
+  ordered.mesh.faces = [[0, 1, 2, 3]];
+  ordered.mesh.edges = [[2, 3], [3, 0], [0, 1], [1, 2]];
+  const out = runNode(
+    "GeometryNodeExtrudeMesh",
+    { Mesh: ordered, Selection: true, Offset: [0, 0, 1], "Offset Scale": 1, Individual: false },
+    { mode: "FACES" },
+    ["Offset"],
+  ).Mesh as Geometry;
+  check("FACE region extrude allocates boundary copies in explicit edge order",
+    JSON.stringify(out.mesh?.positions.slice(4).map((position) => position.slice(0, 2)))
+      === JSON.stringify([[1, 1], [0, 1], [0, 0], [1, 0]])
+      && JSON.stringify(out.mesh?.faces.at(-1)) === JSON.stringify([6, 7, 4, 5]),
+    JSON.stringify({ positions: out.mesh?.positions.slice(4), top: out.mesh?.faces.at(-1) }));
+}
+
+{
   const payload = curve([[1, 0, 0], [2, 0, 0]], false);
   const instanced = new Geometry();
   instanced.instances = [{ geometry: payload, position: [1, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }];
@@ -2489,6 +2544,28 @@ function meshSignedAreaXY(m: Mesh): number {
     JSON.stringify(edgeExtrude.mesh!.edges) === JSON.stringify([[0, 1], [0, 2], [1, 3], [2, 3]])
       && JSON.stringify(topologyOf(edgeExtrude.mesh!).edges.map((edge) => edge.verts)) === JSON.stringify([[0, 1], [0, 2], [1, 3], [2, 3]]),
     JSON.stringify(edgeExtrude.mesh!.edges));
+
+  const reversed = new Geometry();
+  reversed.mesh = new Mesh();
+  reversed.mesh.positions = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]];
+  reversed.mesh.faces = [[0, 1, 2, 3]];
+  reversed.mesh.edges = [[1, 0], [1, 2], [2, 3], [3, 0]];
+  const reversedOut = runNode(
+    "GeometryNodeExtrudeMesh",
+    {
+      Mesh: reversed,
+      Selection: Field.perElem((index) => index === 0 ? 1 : 0),
+      Offset: [0, 0, 1],
+      "Offset Scale": 1,
+      Individual: true,
+    },
+    { mode: "EDGES" },
+    ["Offset"],
+  ).Mesh as Geometry;
+  check("EDGE extrude preserves stored edge direction in side loop and Top edge",
+    JSON.stringify(reversedOut.mesh?.faces.at(-1)) === JSON.stringify([1, 0, 4, 5])
+      && JSON.stringify(reversedOut.mesh?.edges.at(-1)) === JSON.stringify([5, 4]),
+    JSON.stringify({ side: reversedOut.mesh?.faces.at(-1), top: reversedOut.mesh?.edges.at(-1) }));
 
   const m = new Mesh();
   // At -X, a top-to-bottom profile extruded around +Z produces outward faces.
@@ -2602,9 +2679,33 @@ function meshSignedAreaXY(m: Mesh): number {
   const source = curve([[0, 0, 0], [4.9, 0, 0]], false);
   const sampled = runNode("GeometryNodeResampleCurve", { Curve: source, Mode: "Length" as any, Count: 12, Length: 2 }).Curve as Geometry;
   check("Resample Curve length mode floors fitted segments", sampled.curvePointCount() === 3, `points=${sampled.curvePointCount()}`);
+  const shortDropped = runNode("GeometryNodeResampleCurve", {
+    Curve: curve([[0, 0, 0], [0.5, 0, 0]], false), Mode: "Length" as any, Count: 12, Length: 1,
+  }, { keep_last_segment: false }).Curve as Geometry;
+  check("Resample Curve can drop a short final segment", shortDropped.curvePointCount() === 1
+    && JSON.stringify(shortDropped.curves[0].points[0]) === JSON.stringify([0, 0, 0]),
+  `points=${JSON.stringify(shortDropped.curves[0]?.points)}`);
+  const shortKept = runNode("GeometryNodeResampleCurve", {
+    Curve: curve([[0, 0, 0], [0.5, 0, 0]], false), Mode: "Length" as any, Count: 12, Length: 1,
+  }, { keep_last_segment: true }).Curve as Geometry;
+  check("Resample Curve keeps short-curve endpoints by default", shortKept.curvePointCount() === 2,
+    `points=${shortKept.curvePointCount()}`);
+  const redistributed = runNode("GeometryNodeResampleCurve", {
+    Curve: curve([[0, 0, 0], [2.1, 0, 0]], false), Mode: "Length" as any, Count: 12, Length: 1,
+  }, { keep_last_segment: false }).Curve as Geometry;
+  check("Resample Curve redistributes fitted Length samples over the whole spline",
+    approx(redistributed.curves[0].points.flat(), [0, 0, 0, 1.05, 0, 0, 2.1, 0, 0], 1e-6),
+    JSON.stringify(redistributed.curves[0].points));
   const cyclic = curve([[0, 0, 0], [2, 0, 0], [2, 2, 0], [0, 2, 0]], true);
   const cyclicSampled = runNode("GeometryNodeResampleCurve", { Curve: cyclic, Mode: "Length" as any, Count: 12, Length: 2 }).Curve as Geometry;
   check("Resample Curve cyclic length mode adds a redistributed sample", cyclicSampled.curvePointCount() === 5, `points=${cyclicSampled.curvePointCount()}`);
+  const cyclicDropped = runNode("GeometryNodeResampleCurve", {
+    Curve: curve([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], true),
+    Mode: "Length" as any, Count: 12, Length: 5,
+  }, { keep_last_segment: false }).Curve as Geometry;
+  check("Resample Curve cyclic Length can collapse to one point",
+    cyclicDropped.curvePointCount() === 1 && approx(cyclicDropped.curves[0].points[0], [0, 0, 0]),
+    JSON.stringify(cyclicDropped.curves[0]?.points));
   const degenerate = new Geometry();
   degenerate.curves = [{ points: [], cyclic: false }, { points: [[2, 3, 4]], cyclic: false }];
   const degenerateSampled = runNode("GeometryNodeResampleCurve", { Curve: degenerate, Mode: "Count" as any, Count: 8, Length: 1 }).Curve as Geometry;

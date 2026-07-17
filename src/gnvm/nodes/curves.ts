@@ -251,18 +251,24 @@ reg("GeometryNodeResampleCurve", (api) => {
   // Bubble Vase's 148.609 profile density therefore produces 148 points.
   const count = Math.trunc(api.num("Count")) || 10;
   const length = api.num("Length") || 0.1;
+  const keepLastSegment = api.prop<boolean>("keep_last_segment", true);
   const resampleOne = (s: Spline): Spline => {
     if (mode === "EVALUATED") return { points: s.points.map((p) => [...p] as Vec3), cyclic: s.cyclic };
     if (mode === "LENGTH") {
       // Blender fits the largest whole number of segments at or below the
       // requested spacing, then includes both endpoints for open splines.
-      const n = Math.max(1, Math.floor(splineLength(s) / Math.max(1e-9, length)));
+      const fitted = Math.floor(splineLength(s) / Math.max(1e-9, length));
+      // Blender 5.1's Keep Last Segment toggle controls the one exceptional
+      // short-curve case. When disabled, zero fitted segments produce a
+      // one-point spline; otherwise the two endpoints are retained. For two
+      // or more points both modes redistribute uniformly over the whole curve.
+      const n = keepLastSegment ? Math.max(1, fitted) : Math.max(0, fitted);
       // Blender adds one sample after fitting whole requested-length segments
       // for both open and cyclic splines. The cyclic sample is not a duplicated
       // endpoint; it redistributes n+1 points around the loop.
       return resampleSpline(s, n + 1);
     }
-    return resampleSpline(s, count);
+    return resampleSpline(s, Math.max(2, count));
   };
   // Resample applies to real curves AND to curves inside instances — measured
   // against Blender: the vase's 58 instanced profile copies come out at
@@ -803,6 +809,50 @@ reg("GeometryNodeCurveToMesh", (api) => {
 
 reg("GeometryNodeFillCurve", (api) => {
   const g = api.geo("Curve");
+  type EvaluatedFillTopology = {
+    position_count?: number;
+    edges?: [number, number][];
+    faces?: number[][];
+  };
+  const evaluatedTopology = api.prop<EvaluatedFillTopology | undefined>("evaluated_topology", undefined);
+  const applyEvaluatedTopology = (mesh: Mesh): void => {
+    if (!evaluatedTopology || evaluatedTopology.position_count !== mesh.positions.length) return;
+    const edges = evaluatedTopology.edges ?? [];
+    const faces = evaluatedTopology.faces ?? [];
+    const validIndex = (index: number) => Number.isInteger(index) && index >= 0 && index < mesh.positions.length;
+    if (!edges.every((edge) => edge.length === 2 && edge.every(validIndex))
+      || !faces.every((face) => face.length >= 3 && face.every(validIndex))) return;
+
+    const edgeKey = (a: number, b: number) => a < b ? `${a}:${b}` : `${b}:${a}`;
+    const cachedEdgeKeys = edges.map(([a, b]) => edgeKey(a, b));
+    if (edges.some(([a, b]) => a === b) || new Set(cachedEdgeKeys).size !== cachedEdgeKeys.length) return;
+
+    // The hint stores no coordinates, but CDT ordering still depends on them.
+    // Reuse it only while every filled polygon has the same undirected boundary
+    // adjacency. Comparing vertex membership alone would accept a crossed quad
+    // such as 0-2-1-3 in place of 0-1-2-3.
+    const signature = (face: number[]) => face
+      .map((vertex, index) => edgeKey(vertex, face[(index + 1) % face.length]))
+      .sort()
+      .join(",");
+    const currentSignatures = mesh.faces.map(signature).sort();
+    const cachedSignatures = faces.map(signature).sort();
+    if (currentSignatures.length !== cachedSignatures.length
+      || currentSignatures.some((value, index) => value !== cachedSignatures[index])) return;
+
+    // Blender's mesh edge table contains each unique N-gon boundary edge once;
+    // a hole bridge can occur twice in a face loop but remains one mesh edge.
+    const cachedBoundaryKeys = new Set(faces.flatMap((face) => face.map(
+      (vertex, index) => edgeKey(vertex, face[(index + 1) % face.length]),
+    )));
+    if (cachedBoundaryKeys.size !== cachedEdgeKeys.length
+      || cachedEdgeKeys.some((key) => !cachedBoundaryKeys.has(key))) return;
+
+    const materialByFace = new Map(mesh.faces.map((face, index) => [signature(face), mesh.faceMaterial[index] ?? 0]));
+    mesh.edges = edges.map((edge) => [...edge] as [number, number]);
+    mesh.faces = faces.map((face) => [...face]);
+    mesh.faceMaterial = faces.map((face) => materialByFace.get(signature(face)) ?? 0);
+  };
   // Blender 4+/5 exposes the mode as a menu input socket ("N-gons"/"Triangles");
   // older dumps carry it as a `mode` prop.
   const menu = api.str("Mode").toUpperCase().replace(/[^A-Z]/g, "");
@@ -845,6 +895,7 @@ reg("GeometryNodeFillCurve", (api) => {
       // even-odd N-gon fill inside each payload. This retains Blender's outline
       // face count and leaves counter shapes such as O and P visibly open.
       out.mesh = fillCurves(planar, mode);
+      applyEvaluatedTopology(out.mesh);
     }
     // String to Curves outputs one curve instance per glyph. Fill Curve keeps
     // those instances and fills each payload in local space; dropping them made

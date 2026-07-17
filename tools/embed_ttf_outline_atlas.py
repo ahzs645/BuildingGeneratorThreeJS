@@ -3,9 +3,11 @@
 Run with Blender so its vector-font converter produces the same kind of curve
 atlas as ``dump_blend.py``:
 
-    blender --background --python tools/embed_ttf_outline_atlas.py -- FONT.ttf dump.json
+    blender --background --python tools/embed_ttf_outline_atlas.py -- \
+        FONT.ttf dump.json ["Missing Font Name" ...]
 """
 import bpy
+import hashlib
 import json
 import os
 import sys
@@ -13,11 +15,16 @@ import sys
 
 args = sys.argv[sys.argv.index("--") + 1 :]
 font_path, dump_path = args[:2]
-target_names = {
-    name.strip()
-    for name in os.environ.get("NODE_DOJO_FONT_NAMES", "").split(",")
-    if name.strip()
-}
+target_names = set(args[2:])
+if not target_names:
+    target_names = {
+        name.strip()
+        for name in os.environ.get("NODE_DOJO_FONT_NAMES", "").split(",")
+        if name.strip()
+    }
+
+with open(font_path, "rb") as source_font:
+    source_sha256 = hashlib.sha256(source_font.read()).hexdigest()
 
 
 def dump_font_glyph(font, character, align_y="TOP_BASELINE"):
@@ -156,6 +163,8 @@ def dump_font_atlas(font):
     return {
         "name": font.name,
         "source": os.path.basename(font_path),
+        "source_sha256": source_sha256,
+        "embedding": "glyph-outline-json-only",
         "sample_stride": sample_stride,
         "align_offsets": align_offsets,
         "glyphs": glyphs,
@@ -167,6 +176,7 @@ with open(dump_path, "r", encoding="utf-8") as source:
     dump = json.load(source)
 
 replaced = set()
+replacement_count = 0
 for group in dump.get("node_groups", {}).values():
     for node in group.get("nodes", []):
         if node.get("type") != "GeometryNodeStringToCurves":
@@ -179,8 +189,12 @@ for group in dump.get("node_groups", {}).values():
                 if target_names and value["name"] not in target_names:
                     continue
                 replaced.add(value["name"])
+                replacement_count += 1
             socket["value"] = {"datablock": "VectorFont", "name": font.name}
 
+missing_names = sorted(target_names - replaced)
+if missing_names:
+    raise RuntimeError(f"font target matched no String to Curves reference: {missing_names}")
 for old_name in replaced:
     dump.setdefault("fonts", {}).pop(old_name, None)
 dump.setdefault("fonts", {})[font.name] = dump_font_atlas(font)
@@ -189,4 +203,4 @@ temporary = dump_path + ".tmp"
 with open(temporary, "w", encoding="utf-8") as destination:
     json.dump(dump, destination, indent=1)
 os.replace(temporary, dump_path)
-print(f"TTF_ATLAS_OK {font.name} -> {dump_path} ({len(replaced)} font reference(s) replaced)")
+print(f"TTF_ATLAS_OK {font.name} -> {dump_path} ({replacement_count} font reference(s) replaced)")

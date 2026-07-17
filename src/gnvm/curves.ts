@@ -36,12 +36,16 @@ export interface ResampledSpline {
 // back onto the input curve can select a neighboring segment or move the
 // factor by several ULPs.
 export function resampleSplineWithSamples(s: Spline, count: number): ResampledSpline {
-  count = Math.max(2, Math.floor(count));
+  count = Math.max(1, Math.floor(count));
   // `points` is Blender's evaluated curve domain. Authored Bezier controls are
   // retained separately for nodes that explicitly operate on handles; curve
   // resampling must consume the already-evaluated (and possibly transformed)
   // points instead of re-evaluating stale controls.
   const pts = s.points;
+  if (count === 1 && pts.length) return {
+    spline: { points: [[...pts[0]] as Vec3], cyclic: s.cyclic },
+    samples: [{ a: 0, b: 0, factor: 0 }],
+  };
   if (pts.length < 2) return {
     spline: { points: pts.map((p) => [...p] as Vec3), cyclic: s.cyclic },
     samples: pts.map((_, index) => ({ a: index, b: index, factor: 0 })),
