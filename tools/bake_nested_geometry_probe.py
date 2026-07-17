@@ -97,6 +97,7 @@ depsgraph.update()
 evaluated = obj.evaluated_get(depsgraph)
 mesh = evaluated.to_mesh()
 positions = [[v.co.x, v.co.y, v.co.z] for v in mesh.vertices]
+edges = [[edge.vertices[0], edge.vertices[1]] for edge in mesh.edges]
 faces = [list(p.vertices) for p in mesh.polygons]
 with open(out_path, "w") as handle:
     json.dump({
@@ -104,6 +105,7 @@ with open(out_path, "w") as handle:
         "node": source_name,
         "socket": socket_name,
         "positions": positions,
+        "edges": edges,
         "faces": faces,
     }, handle)
 evaluated.to_mesh_clear()

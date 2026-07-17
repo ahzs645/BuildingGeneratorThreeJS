@@ -1531,6 +1531,23 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Split Edges rebuilds selected face edges without quadratic duplicates", out.mesh?.positions.length === 8 && out.mesh.faces.length === 2 && out.mesh.edges.length === 7, `got ${out.mesh?.positions.length}v/${out.mesh?.edges.length}e`);
 }
 
+// Boundary-only edges have no adjacent face fan to disconnect. Blender keeps
+// the exact stored quad order, which Recursive Bin uses for its first X/Y split.
+{
+  const m = new Mesh();
+  m.positions = [[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0]];
+  m.edges = [[0, 1], [2, 3], [0, 2], [1, 3]];
+  m.faces = [[0, 2, 3, 1]];
+  const g = new Geometry();
+  g.mesh = m;
+  const out = runNode("GeometryNodeSplitEdges", { Mesh: g, Selection: true }).Mesh as Geometry;
+  check("Split Edges keeps an all-selected boundary quad unchanged",
+    JSON.stringify(out.mesh?.positions) === JSON.stringify(m.positions)
+      && JSON.stringify(out.mesh?.edges) === JSON.stringify(m.edges)
+      && JSON.stringify(out.mesh?.faces) === JSON.stringify(m.faces),
+    JSON.stringify(out.mesh));
+}
+
 // Partial splitting preserves Blender's original vertex block (including an
 // unreferenced point), appends one copy for every corner fan except the last,
 // and assigns the first fan to the appended copy.

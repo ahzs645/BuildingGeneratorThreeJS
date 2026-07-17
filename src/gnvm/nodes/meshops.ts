@@ -801,6 +801,19 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
       }
       return nv;
     };
+    // Blender allocates the duplicated point block from the selected-vertex
+    // mask, which iterates in ascending mesh-index order. The selected edge
+    // order only controls the new side faces and Top edges. Allocating points
+    // lazily while walking edges makes the result depend on Fill Curve's
+    // hidden CDT edge order; Recursive Bin then chooses different weld
+    // representatives even though every coordinate is otherwise identical.
+    const selectedVertices = new Set<number>();
+    for (const edgeIndex of selEdges) {
+      const edge = inEdges[edgeIndex];
+      selectedVertices.add(edge.verts[0]);
+      selectedVertices.add(edge.verts[1]);
+    }
+    for (const vertex of [...selectedVertices].sort((a, b) => a - b)) dupOf(vertex);
     // Orient each side quad by the adjacent face's traversal direction (like
     // Blender) — canonical sorted order gives inconsistent winding, which
     // half-cancels the smoothed vertex normals downstream.
@@ -1197,9 +1210,17 @@ function splitEdges(api: EvalAPI): Record<string, Geometry> {
   // reconstruction, this retains the mesh's authored edge order for a later
   // Mesh to Curve conversion.
   if (selArr.length > 0 && selArr.every((selection) => asNum(selection ?? 0) <= 0)) return { Mesh: g };
+  const topology = buildTopology(m);
+  // A selected boundary edge has no second face fan to disconnect. Blender
+  // therefore leaves a boundary-only mesh byte-for-byte unchanged, including
+  // its stored vertex/edge order. Recursive Bin begins from one such quad; the
+  // old all-selected rebuild reordered it and swapped every later X/Y split.
+  const hasFaceFanToSplit = topology.edges.some((edge, index) =>
+    asNum(selArr[index] ?? 1) > 0 && edge.faces.length > 1
+  );
+  if (!hasFaceFanToSplit) return { Mesh: g };
   const allSelected = selArr.length === 0 || selArr.every((s) => asNum(s ?? 1));
   if (!allSelected) {
-    const topology = buildTopology(m);
     const split = new Mesh();
     split.materialSlots = [...m.materialSlots];
     const splitPointAttributes = [...m.attributes].filter(([, attribute]) => attribute.domain === "POINT");
