@@ -4,7 +4,7 @@ import { evaluateBezierSpline } from "./bezier";
 import { Field, Vec3 } from "./core";
 import { resampleSpline, resampleSplineWithSamples, sweep } from "./curves";
 import { makeFieldCtx } from "./evaluator";
-import { Geometry } from "./geometry";
+import { Geometry, Mesh } from "./geometry";
 import "./nodes/crayon";
 import "./nodes/curves";
 import "./nodes/geometry";
@@ -131,7 +131,7 @@ test("Bounding Box does not pad Mesh to Curve wires by implicit radius", () => {
   assert.deepEqual((outputs.Max as Field).value, [5, 7, 11]);
 });
 
-test("Bounding Box does not pad String to Curves outlines by implicit radius", () => {
+test("Bounding Box pads pure String to Curves outlines by implicit radius", () => {
   const geometry = new Geometry();
   geometry.curves = [{ cyclic: true, points: [[2, 3, 4], [5, 7, 11]] }];
   geometry.curveAttributes.set("__gnvm_planar_font_curve", { domain: "CURVE", data: [1] });
@@ -139,8 +139,22 @@ test("Bounding Box does not pad String to Curves outlines by implicit radius", (
   assert.ok(handler);
   const outputs = handler({ geo: () => geometry } as EvalAPI);
 
+  assert.deepEqual((outputs.Min as Field).value, [1, 2, 3]);
+  assert.deepEqual((outputs.Max as Field).value, [6, 8, 12]);
+});
+
+test("Bounding Box uses positions for font curves beside a mesh component", () => {
+  const geometry = new Geometry();
+  geometry.mesh = new Mesh();
+  geometry.mesh.positions = [[10, 10, 10]];
+  geometry.curves = [{ cyclic: true, points: [[2, 3, 4], [5, 7, 11]] }];
+  geometry.curveAttributes.set("__gnvm_planar_font_curve", { domain: "CURVE", data: [1] });
+  const handler = REGISTRY.get("GeometryNodeBoundBox");
+  assert.ok(handler);
+  const outputs = handler({ geo: () => geometry } as EvalAPI);
+
   assert.deepEqual((outputs.Min as Field).value, [2, 3, 4]);
-  assert.deepEqual((outputs.Max as Field).value, [5, 7, 11]);
+  assert.deepEqual((outputs.Max as Field).value, [10, 10, 11]);
 });
 
 test("Curve to Points rebuilds stale imported tangents after Poly conversion", () => {

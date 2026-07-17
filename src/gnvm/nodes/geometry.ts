@@ -1251,9 +1251,12 @@ reg("GeometryNodeBoundBox", (api) => {
   // Mesh to Curve produces an evaluated wire whose Bounding Box is based on
   // its positions only. Blender does not pad those wires by the generic
   // Curves radius; doing so enlarged UI Window's two sampling grids by almost
-  // exactly one unit per side. Native/font Curves still use their radius.
+  // exactly one unit per side. Pure native/font Curves still use their radius.
+  // Procedural Box is the mixed-component exception: its pin mesh and font
+  // diagnostic are combined before Bounding Box, and Blender uses the font's
+  // positional outline there without expanding it by the generic radius.
   const radius = g.curveAttributes.has("__gnvm_planar_mesh_curve")
-    || g.curveAttributes.has("__gnvm_planar_font_curve")
+    || (Boolean(g.mesh?.positions.length) && g.curveAttributes.has("__gnvm_planar_font_curve"))
     ? null
     : g.curveAttributes.get("radius");
   let pointIndex = 0;
