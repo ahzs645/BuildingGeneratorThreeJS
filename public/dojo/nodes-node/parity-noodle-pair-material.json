@@ -54,12 +54,19 @@
   },
   "browser": {
     "implementation": "strict graph recognizer plus MeshPhysicalMaterial shader injection",
-    "exact": ["graph topology", "extracted constants", "material assignment", "Generated bounds"],
-    "approximation": "independently expressed 3D Worley cell jitter and exponential smooth minimum; Three.js derivative bump and PBR lighting",
-    "blenderScalarParity": false,
+    "exact": ["graph topology", "extracted constants", "material assignment", "Generated bounds", "Blender 5.1 PCG3D cell jitter", "3D Smooth F1 kernel"],
+    "approximation": "Three.js derivative bump and PBR lighting replace Blender's Bump closure and Eevee raster pipeline",
+    "blenderScalarParity": true,
+    "scalarProbe": {
+      "generatedPoints": [[0.125, 0.5, 0.125], [0.5, 0.5, 0.5], [0.875, 0.5, 0.875]],
+      "blenderAov": [0.5335708260536194, 0.19630947709083557, 0.2399575561285019],
+      "browserCpuOracle": [0.5335707664489746, 0.19630944728851318, 0.23995673656463623],
+      "maximumAbsoluteError": 8.195638656616211e-7,
+      "tool": "tools/blender_voronoi_shader_probe.py"
+    },
     "webglCompile": "pass; no browser console warnings or errors",
     "reference": "dojo/references/nodes-node/point-001-authored.png"
   },
-  "result": "exact topology and authored material constants; Blender-aligned curve geometry within 3.34e-6 and explicit Smooth-F1/renderer approximation",
-  "note": "The browser implementation intentionally does not copy Blender renderer source or claim exact Blender Voronoi scalar parity."
+  "result": "exact topology and authored material constants; Blender-aligned curve geometry within 3.34e-6; Smooth F1 scalar probes within 8.2e-7",
+  "note": "The procedural field now follows Blender 5.1's PCG3D and Smooth F1 semantics. Three.js bump derivatives, lighting, and rasterization remain renderer approximations."
 }

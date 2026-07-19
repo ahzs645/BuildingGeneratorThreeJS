@@ -1200,7 +1200,7 @@
     "blenderStats": { "verts": 4736, "faces": 4672 },
     "localSpace": true,
     "workbenchColor": [0.8, 0.8, 0.8],
-    "note": "Topology is exact at 4,736 vertices and 4,672 faces. Rebuilding the evaluated curve frame after Hook and Set Curve Handle Positions deformation reduces the maximum world-bounds delta to 0.000454. Authored mode preserves node color.geometry's exact Principled constants and reconstructs its seven-node vtext normal branch with an independently expressed Smooth-F1 approximation. Blender's exact Voronoi scalar field and renderer remain parity targets.",
+    "note": "Topology is exact at 4,736 vertices and 4,672 faces. Rebuilding the evaluated curve frame after Hook and Set Curve Handle Positions deformation reduces the maximum world-bounds delta to 0.000000477. Authored mode preserves node color.geometry's exact Principled constants and matches Blender 5.1's PCG3D / 3D Smooth F1 scalar field within 0.00000082 across the committed AOV probes. Three.js bump derivatives, lighting, and rasterization remain renderer approximations.",
     "controls": []
   },
   {

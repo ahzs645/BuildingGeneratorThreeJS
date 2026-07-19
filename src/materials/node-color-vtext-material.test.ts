@@ -7,6 +7,7 @@ import { runGenerator, type Dump } from "../gnvm";
 import {
   extractNodeColorVtextMaterialConfig,
   makeNodeColorVtextMaterial,
+  nodeColorPcg3d,
   nodeColorVtextHeightAtGenerated,
   nodeColorVtextSmoothF1AtGenerated,
 } from "../node-color-vtext-material";
@@ -64,20 +65,21 @@ test("strictly recognizes node color.geometry and its seven-node vtext group", (
   assert.equal(extractNodeColorVtextMaterialConfig(changedLink, "node color.geometry"), null);
 });
 
-test("keeps the independently expressed Smooth F1 approximation deterministic", () => {
+test("matches Blender 5.1.2 PCG3D and Smooth F1 scalar probes", () => {
+  assert.deepEqual(nodeColorPcg3d([1, -2, 3]), [
+    0.4232812821865082,
+    0.21325811743736267,
+    0.3690025806427002,
+  ]);
   const probes = [
     [0.125, 0.5, 0.125],
     [0.5, 0.5, 0.5],
     [0.875, 0.5, 0.875],
   ];
-  assert.deepEqual(probes.map((point) => ({
-    distance: nodeColorVtextSmoothF1AtGenerated(point),
-    height: nodeColorVtextHeightAtGenerated(point),
-  })), [
-    { distance: 0.4811434690431601, height: 0 },
-    { distance: 0.20304124016574882, height: 0 },
-    { distance: 0.6322339715802819, height: 1 },
-  ]);
+  const blenderAov = [0.5335708260536194, 0.19630947709083557, 0.2399575561285019];
+  const browser = probes.map((point) => nodeColorVtextSmoothF1AtGenerated(point));
+  browser.forEach((value, index) => assert.ok(Math.abs(value - blenderAov[index]) < 1e-6));
+  assert.deepEqual(probes.map((point) => nodeColorVtextHeightAtGenerated(point)), [1, 0, 0]);
 });
 
 test("builds the Noodle Pair physical material without changing its geometry", async () => {
@@ -94,7 +96,7 @@ test("builds the Noodle Pair physical material without changing its geometry", a
   assert.ok(material);
   assert.equal(material.name, "node color.geometry · authored Nodes Node vtext reconstruction");
   assert.equal(material.roughness, expectedConfig.roughness);
-  assert.equal(material.userData.nodeColorVtextRenderer.status, "independently expressed renderer approximation");
+  assert.equal(material.userData.nodeColorVtextRenderer.status, "Blender 5.1 Smooth F1 scalar semantics with renderer approximation");
   assert.deepEqual(material.userData.nodeColorVtextBounds, {
     min: [-1.1101469993591309, -1.6273714303970337, -1.05240797996521],
     max: [7.757761478424072, 0.040000032633543015, 8.64538860321045],
@@ -107,7 +109,8 @@ test("builds the Noodle Pair physical material without changing its geometry", a
   material.onBeforeCompile(shader as never, {} as never);
   assert.match(shader.vertexShader, /vNodeColorGenerated = \(position - vec3/);
   assert.match(shader.fragmentShader, /float nodeColorSmoothF1/);
-  assert.match(shader.fragmentShader, /for \(int z = -1; z <= 1; z\+\+\)/);
+  assert.match(shader.fragmentShader, /ivec3 nodeColorPcg3d/);
+  assert.match(shader.fragmentShader, /for \(int z = -2; z <= 2; z\+\+\)/);
   assert.match(shader.fragmentShader, /distanceValue > 0\.5/);
   assert.match(shader.fragmentShader, /dFdx\(vNodeColorGenerated\)/);
   assert.equal(geometry.getAttribute("position").count, 4736);

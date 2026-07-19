@@ -174,63 +174,85 @@ function glslVector(value: readonly number[]): string {
   return `vec3(${value.map(glsl).join(", ")})`;
 }
 
-function fraction(value: number): number {
-  return value - Math.floor(value);
-}
+const f32 = Math.fround;
+const PCG_MULTIPLIER = 1664525;
+const PCG_INCREMENT = 1013904223;
+const INT31_INVERSE = f32(1 / 0x7fffffff);
 
-/** Independently authored deterministic cell jitter; not Blender's PCG hash. */
-function hashCell(cell: readonly number[]): [number, number, number] {
-  const directions = [
-    [19.19, 73.17, 41.73],
-    [53.11, 11.97, 89.43],
-    [97.13, 37.61, 7.79],
-  ];
-  return directions.map((direction, axis) => fraction(Math.sin(
-    cell.reduce((sum, value, component) => sum + value * direction[component], 0) + axis * 0.61803398875,
-  ) * 104729.123)) as [number, number, number];
+/** Blender 5.1's signed-integer PCG3D cell hash, expressed with JS int32 operations. */
+export function nodeColorPcg3d(cell: readonly number[]): [number, number, number] {
+  let x = (Math.imul(cell[0] | 0, PCG_MULTIPLIER) + PCG_INCREMENT) | 0;
+  let y = (Math.imul(cell[1] | 0, PCG_MULTIPLIER) + PCG_INCREMENT) | 0;
+  let z = (Math.imul(cell[2] | 0, PCG_MULTIPLIER) + PCG_INCREMENT) | 0;
+  x = (x + Math.imul(y, z)) | 0;
+  y = (y + Math.imul(z, x)) | 0;
+  z = (z + Math.imul(x, y)) | 0;
+  x = (x ^ (x >> 16)) | 0;
+  y = (y ^ (y >> 16)) | 0;
+  z = (z ^ (z >> 16)) | 0;
+  x = (x + Math.imul(y, z)) | 0;
+  y = (y + Math.imul(z, x)) | 0;
+  z = (z + Math.imul(x, y)) | 0;
+  return [x, y, z].map((value) => f32(f32(value & 0x7fffffff) * INT31_INVERSE)) as [number, number, number];
 }
 
 function rotateXYZ(point: readonly number[], rotation: readonly number[]): [number, number, number] {
-  const cosine = rotation.map(Math.cos), sine = rotation.map(Math.sin);
-  const x = point[0];
-  const y = cosine[0] * point[1] - sine[0] * point[2];
-  const z = sine[0] * point[1] + cosine[0] * point[2];
-  const x2 = cosine[1] * x + sine[1] * z;
-  const z2 = -sine[1] * x + cosine[1] * z;
-  return [cosine[2] * x2 - sine[2] * y, sine[2] * x2 + cosine[2] * y, z2];
+  const cosine = rotation.map((value) => f32(Math.cos(f32(value))));
+  const sine = rotation.map((value) => f32(Math.sin(f32(value))));
+  const x = f32(point[0]);
+  const y = f32(f32(cosine[0] * f32(point[1])) - f32(sine[0] * f32(point[2])));
+  const z = f32(f32(sine[0] * f32(point[1])) + f32(cosine[0] * f32(point[2])));
+  const x2 = f32(f32(cosine[1] * x) + f32(sine[1] * z));
+  const z2 = f32(f32(-sine[1] * x) + f32(cosine[1] * z));
+  return [
+    f32(f32(cosine[2] * x2) - f32(sine[2] * y)),
+    f32(f32(sine[2] * x2) + f32(cosine[2] * y)),
+    z2,
+  ];
 }
 
-/**
- * Independently expressed Smooth-F1 approximation using the standard exponential smooth
- * minimum over a jittered 3D Worley neighborhood. It follows the extracted
- * node's mathematical intent without copying Blender's hash or loop.
- */
+function smoothstep01(value: number): number {
+  const clamped = f32(Math.max(0, Math.min(1, value)));
+  return f32(f32(clamped * clamped) * f32(3 - f32(2 * clamped)));
+}
+
+/** Blender 5.1's 3D Euclidean Smooth F1 kernel, including its effective half-smoothness. */
+export function nodeColorSmoothF1AtCoordinate(
+  coordinate: readonly number[],
+  randomness = CONTRACT.voronoiRandomness,
+  smoothness = CONTRACT.voronoiSmoothness,
+): number {
+  const cell = coordinate.map(Math.floor);
+  const local = coordinate.map((value, axis) => f32(value - cell[axis]));
+  const effectiveSmoothness = f32(Math.max(0, Math.min(0.5, smoothness / 2)));
+  let smoothDistance = f32(0);
+  let first = true;
+  for (let z = -2; z <= 2; z++) for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) {
+    const offset = [x, y, z];
+    const hashed = nodeColorPcg3d(cell.map((value, axis) => value + offset[axis]));
+    const point = offset.map((value, axis) => f32(value + f32(hashed[axis] * randomness)));
+    const delta = point.map((value, axis) => f32(value - local[axis]));
+    const distance = f32(Math.sqrt(f32(
+      f32(delta[0] * delta[0]) + f32(delta[1] * delta[1]) + f32(delta[2] * delta[2]),
+    )));
+    const h = first ? f32(1) : smoothstep01(f32(
+      0.5 + f32(0.5 * f32((smoothDistance - distance) / effectiveSmoothness)),
+    ));
+    const correction = f32(effectiveSmoothness * f32(h * f32(1 - h)));
+    smoothDistance = f32(f32(smoothDistance * f32(1 - h)) + f32(distance * h) - correction);
+    first = false;
+  }
+  return smoothDistance;
+}
+
 export function nodeColorVtextSmoothF1AtGenerated(
   generated: readonly number[],
   config: NodeColorVtextMaterialConfig = CONTRACT,
 ): number {
-  const scaled = generated.map((value, axis) => value * config.mappingScale[axis]);
+  const scaled = generated.map((value, axis) => f32(value * config.mappingScale[axis]));
   const rotated = rotateXYZ(scaled, config.mappingRotation)
-    .map((value, axis) => (value + config.mappingLocation[axis]) * config.voronoiScale);
-  const cell = rotated.map(Math.floor);
-  const local = rotated.map((value, axis) => value - cell[axis]);
-  let smoothDistance = Infinity;
-  const sharpness = 8 / Math.max(config.voronoiSmoothness, 1e-4);
-  for (let z = -1; z <= 1; z++) for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) {
-    const offset = [x, y, z];
-    const hashed = hashCell(cell.map((value, axis) => value + offset[axis]));
-    const point = offset.map((value, axis) => value + hashed[axis] * config.voronoiRandomness);
-    const distance = Math.hypot(...point.map((value, axis) => value - local[axis]));
-    if (!Number.isFinite(smoothDistance)) smoothDistance = distance;
-    else {
-      const minimum = Math.min(smoothDistance, distance);
-      smoothDistance = minimum - Math.log(
-        Math.exp(-sharpness * (smoothDistance - minimum))
-        + Math.exp(-sharpness * (distance - minimum)),
-      ) / sharpness;
-    }
-  }
-  return smoothDistance;
+    .map((value, axis) => f32(f32(value + config.mappingLocation[axis]) * config.voronoiScale));
+  return nodeColorSmoothF1AtCoordinate(rotated, config.voronoiRandomness, config.voronoiSmoothness);
 }
 
 export function nodeColorVtextHeightAtGenerated(
@@ -242,12 +264,19 @@ export function nodeColorVtextHeightAtGenerated(
 }
 
 function shaderFunctions(config: NodeColorVtextMaterialConfig): string {
-  return `vec3 nodeColorHashCell(vec3 cell) {
-  return fract(sin(vec3(
-    dot(cell, vec3(19.19, 73.17, 41.73)),
-    dot(cell, vec3(53.11, 11.97, 89.43)) + 0.61803398875,
-    dot(cell, vec3(97.13, 37.61, 7.79)) + 1.2360679775
-  )) * 104729.123);
+  return `ivec3 nodeColorPcg3d(ivec3 value) {
+  value = value * 1664525 + 1013904223;
+  value.x += value.y * value.z;
+  value.y += value.z * value.x;
+  value.z += value.x * value.y;
+  value ^= value >> 16;
+  value.x += value.y * value.z;
+  value.y += value.z * value.x;
+  value.z += value.x * value.y;
+  return value & ivec3(0x7fffffff);
+}
+vec3 nodeColorHashCell(ivec3 cell) {
+  return vec3(nodeColorPcg3d(cell)) * (1.0 / 2147483647.0);
 }
 vec3 nodeColorRotateXYZ(vec3 point, vec3 rotation) {
   vec3 cosine = cos(rotation), sine = sin(rotation);
@@ -261,21 +290,20 @@ vec3 nodeColorRotateXYZ(vec3 point, vec3 rotation) {
 float nodeColorSmoothF1(vec3 coordinate) {
   vec3 cellPositionF = floor(coordinate);
   vec3 localPosition = coordinate - cellPositionF;
-  float smoothDistance = 1e20;
-  float sharpness = 8.0 / max(${glsl(config.voronoiSmoothness)}, 0.0001);
-  for (int z = -1; z <= 1; z++) {
-    for (int y = -1; y <= 1; y++) {
-      for (int x = -1; x <= 1; x++) {
-        vec3 offset = vec3(float(x), float(y), float(z));
-        vec3 pointPosition = offset + nodeColorHashCell(cellPositionF + offset) * ${glsl(config.voronoiRandomness)};
+  ivec3 cellPosition = ivec3(cellPositionF);
+  float smoothDistance = 0.0;
+  float h = -1.0;
+  float smoothness = clamp(${glsl(config.voronoiSmoothness)} / 2.0, 0.0, 0.5);
+  for (int z = -2; z <= 2; z++) {
+    for (int y = -2; y <= 2; y++) {
+      for (int x = -2; x <= 2; x++) {
+        ivec3 cellOffset = ivec3(x, y, z);
+        vec3 pointPosition = vec3(cellOffset) + nodeColorHashCell(cellPosition + cellOffset) * ${glsl(config.voronoiRandomness)};
         float distanceToPoint = distance(pointPosition, localPosition);
-        if (smoothDistance > 1e19) smoothDistance = distanceToPoint;
-        else {
-          float minimum = min(smoothDistance, distanceToPoint);
-          smoothDistance = minimum - log(
-            exp(-sharpness * (smoothDistance - minimum))
-            + exp(-sharpness * (distanceToPoint - minimum))) / sharpness;
-        }
+        h = h < 0.0 ? 1.0 : smoothstep(
+          0.0, 1.0, 0.5 + 0.5 * (smoothDistance - distanceToPoint) / smoothness);
+        float correction = smoothness * h * (1.0 - h);
+        smoothDistance = mix(smoothDistance, distanceToPoint, h) - correction;
       }
     }
   }
@@ -313,9 +341,9 @@ export function makeNodeColorVtextMaterial(
   material.userData.nodeColorVtextContract = config;
   material.userData.nodeColorVtextBounds = bounds satisfies FilamentBounds;
   material.userData.nodeColorVtextRenderer = {
-    status: "independently expressed renderer approximation",
-    exact: ["strict graph contract", "Principled constants", "Generated bounds"],
-    approximation: "An independently authored sine-jitter Worley field and exponential smooth-min approximate Blender Smooth F1; Three.js screen derivatives and lighting replace Blender's Bump closure and raster pipeline.",
+    status: "Blender 5.1 Smooth F1 scalar semantics with renderer approximation",
+    exact: ["strict graph contract", "Principled constants", "Generated bounds", "PCG3D cell jitter", "3D Smooth F1 kernel"],
+    approximation: "Three.js screen derivatives and lighting replace Blender's Bump closure and Eevee raster pipeline.",
   };
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
@@ -335,6 +363,6 @@ ${filamentBumpGlsl({
   })}`);
   };
   material.customProgramCacheKey = () =>
-    `nodes-node-color-vtext-${bounds.min.join(",")}-${bounds.max.join(",")}-v1`;
+    `nodes-node-color-vtext-${bounds.min.join(",")}-${bounds.max.join(",")}-v2`;
   return material;
 }
