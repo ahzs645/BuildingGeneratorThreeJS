@@ -2,6 +2,11 @@
 
 Usage: blender --background FILE.blend --python tools/bake_nested_field_probe.py -- \
   OBJECT ROOT_GROUP INSTANCE_NODE NESTED_GROUP SRC_NODE SRC_SOCKET CONSUMER OUT.json [DOMAIN] [overrides.json]
+
+Synthetic SRC_NODE values ``__Curve Tangent`` and ``__Curve Normal`` probe the
+corresponding intrinsic fields. Optional environment flags preserve native
+rotation quaternions (``NODE_DOJO_PROBE_ROTATION_QUATERNION=1``) and expose a
+curve's evaluated point domain (``NODE_DOJO_PROBE_EVALUATED_CURVE=1``).
 """
 import bpy
 import json
@@ -17,7 +22,12 @@ overrides_index = 9 if len(args) > 8 and args[8].upper() in domains else 8
 overrides_path = args[overrides_index] if len(args) > overrides_index else None
 root = bpy.data.node_groups[root_name]
 nested = bpy.data.node_groups[nested_name]
-source = nested.nodes[source_name]
+if source_name == "__Curve Tangent":
+    source = nested.nodes.new("GeometryNodeInputTangent")
+elif source_name == "__Curve Normal":
+    source = nested.nodes.new("GeometryNodeInputNormal")
+else:
+    source = nested.nodes[source_name]
 consumer = nested.nodes[consumer_name]
 
 field = next((s for s in source.outputs if s.identifier == socket_name or s.name == socket_name), None)
@@ -29,7 +39,19 @@ geometry_source = geometry_input.links[0].from_socket
 # Named attributes cannot store Blender's Rotation socket directly. Convert it
 # to Euler XYZ so rotation-valued fields can use the same probe path as vectors.
 stored_field = field
-if field.bl_idname == "NodeSocketRotation":
+quaternion_w = None
+quaternion_probe = field.bl_idname == "NodeSocketRotation" and os.environ.get(
+    "NODE_DOJO_PROBE_ROTATION_QUATERNION"
+) == "1"
+if quaternion_probe:
+    rotation_to_quaternion = nested.nodes.new("FunctionNodeRotationToQuaternion")
+    nested.links.new(field, rotation_to_quaternion.inputs["Rotation"])
+    combine = nested.nodes.new("ShaderNodeCombineXYZ")
+    for component in ("X", "Y", "Z"):
+        nested.links.new(rotation_to_quaternion.outputs[component], combine.inputs[component])
+    stored_field = combine.outputs["Vector"]
+    quaternion_w = rotation_to_quaternion.outputs["W"]
+elif field.bl_idname == "NodeSocketRotation":
     rotation_to_euler = nested.nodes.new("FunctionNodeRotationToEuler")
     nested.links.new(field, rotation_to_euler.inputs["Rotation"])
     stored_field = rotation_to_euler.outputs["Euler"]
@@ -47,22 +69,38 @@ store.data_type = data_types.get(field.bl_idname, "FLOAT")
 store.inputs["Name"].default_value = "__nested_probe"
 nested.links.new(geometry_source, store.inputs["Geometry"])
 nested.links.new(stored_field, store.inputs["Value"])
+stored_geometry = store.outputs["Geometry"]
+if quaternion_w is not None:
+    store_w = nested.nodes.new("GeometryNodeStoreNamedAttribute")
+    store_w.domain = domain
+    store_w.data_type = "FLOAT"
+    store_w.inputs["Name"].default_value = "__nested_probe_w"
+    nested.links.new(stored_geometry, store_w.inputs["Geometry"])
+    nested.links.new(quaternion_w, store_w.inputs["Value"])
+    stored_geometry = store_w.outputs["Geometry"]
+if os.environ.get("NODE_DOJO_PROBE_EVALUATED_CURVE") == "1":
+    evaluated_points = nested.nodes.new("GeometryNodeCurveToPoints")
+    evaluated_points.mode = "EVALUATED"
+    points_to_vertices = nested.nodes.new("GeometryNodePointsToVertices")
+    nested.links.new(stored_geometry, evaluated_points.inputs["Curve"])
+    nested.links.new(evaluated_points.outputs["Points"], points_to_vertices.inputs["Points"])
+    stored_geometry = points_to_vertices.outputs["Mesh"]
 
 nested_output = next(n for n in nested.nodes if n.bl_idname == "NodeGroupOutput" and n.is_active_output)
 nested_geometry = next(s for s in nested_output.inputs if s.bl_idname == "NodeSocketGeometry")
 if os.environ.get("NODE_DOJO_PROBE_IN_PLACE") == "1":
     for link in list(geometry_input.links):
         nested.links.remove(link)
-    nested.links.new(store.outputs["Geometry"], geometry_input)
+    nested.links.new(stored_geometry, geometry_input)
 else:
     for link in list(nested_geometry.links):
         nested.links.remove(link)
     if os.environ.get("NODE_DOJO_PROBE_POINTS_TO_VERTICES") == "1":
         points_to_vertices = nested.nodes.new("GeometryNodePointsToVertices")
-        nested.links.new(store.outputs["Geometry"], points_to_vertices.inputs["Points"])
+        nested.links.new(stored_geometry, points_to_vertices.inputs["Points"])
         nested.links.new(points_to_vertices.outputs["Mesh"], nested_geometry)
     else:
-        nested.links.new(store.outputs["Geometry"], nested_geometry)
+        nested.links.new(stored_geometry, nested_geometry)
 
 instance = root.nodes[instance_name]
 for name, value in json.loads(os.environ.get("NODE_DOJO_NESTED_INSTANCE_OVERRIDES", "{}")).items():
@@ -104,6 +142,12 @@ mesh = evaluated.to_mesh()
 attribute = mesh.attributes.get("__nested_probe")
 if not attribute:
     values = []
+elif quaternion_probe:
+    attribute_w = mesh.attributes.get("__nested_probe_w")
+    values = [
+        [*item.vector, attribute_w.data[index].value]
+        for index, item in enumerate(attribute.data)
+    ] if attribute_w else []
 elif store.data_type == "FLOAT_VECTOR":
     values = [list(item.vector) for item in attribute.data]
 else:
