@@ -25,5 +25,19 @@
     "macroLuminanceCorrelation": -0.2582182889691793,
     "meanLuminanceDelta": -0.1840202694474612
   },
-  "interpretation": "The material graph's roughness semantics are exact and the invented spatial grain is removed. The deterministic capture-only RectArea rig lowers luminance MAE from 0.5178 to 0.2069, close to the 0.2035 measured with Blender's exact studio.exr. Its negative correlation shows that the original studio reflection pattern is still missing; lighting magnitude is much closer, but environment-map parity remains pending."
+  "blenderStudioEnvironment": {
+    "asset": "dojo/blender-studio.exr.b64",
+    "decodedSha256": "c36c7fd390b2cdf8693360cf3662cb1d710c95fa799d9f822f42997167839b56",
+    "license": "CC0-1.0",
+    "environmentIntensity": 0.8,
+    "environmentRotationY": 3.141592653589793,
+    "surfaceMaskIou": 0.9368686279541796,
+    "pixelLuminanceMae": 0.19852259315693,
+    "pixelLuminanceCorrelation": 0.24236666255502257,
+    "binaryMaskDisagreementFraction": 0.14846726598102447,
+    "macroLuminanceMae": 0.10664312358854687,
+    "macroLuminanceCorrelation": 0.22958338907052045,
+    "meanLuminanceDelta": -0.014594410559189669
+  },
+  "interpretation": "The material graph's roughness semantics are exact and the invented spatial grain is removed. Adding the exact CC0 studio.exr used by the Blender fixture makes both pixel and macro luminance correlation positive, reduces macro MAE from 0.1823 to 0.1066, reduces pixel MAE from 0.2069 to 0.1985, and brings the mean luminance delta from -0.1840 to -0.0146. The luminance improvement trades against silhouette-edge sensitivity: mask IoU changes from 0.9406 to 0.9369 and binary disagreement from 0.0897 to 0.1485. Eevee versus Three.js BRDF, area-light units, tone mapping, and rasterization remain renderer residuals."
 }

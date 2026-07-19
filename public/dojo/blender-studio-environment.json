@@ -1,0 +1,11 @@
+{
+  "source": "Blender 5.1 bundled datafiles/studiolights/world/studio.exr",
+  "encoding": "base64 text decoded to the original EXR bytes in the browser",
+  "asset": "dojo/blender-studio.exr.b64",
+  "decodedBytes": 98015,
+  "sha256": "c36c7fd390b2cdf8693360cf3662cb1d710c95fa799d9f822f42997167839b56",
+  "license": "dojo/LICENSE-blender-studio.txt",
+  "licenseId": "CC0-1.0",
+  "threeRotationY": 3.141592653589793,
+  "blenderWorldStrength": 0.8
+}

@@ -7,7 +7,7 @@
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/chain-and-mace-shader.png",
     "blenderStats": { "verts": 120727, "faces": 214718 },
-    "note": "All five Blender/browser sweeps have exact topology and local bounds within 0.0001 units. Blender's realized surface assigns chrome.002 to every face; authored mode restores the ball's rough=2 shader input and the chain's polished rough=0 metal, while diagnostic mode retains normalized green.",
+    "note": "All five Blender/browser sweeps have exact topology and local bounds within 0.0001 units. Blender's realized surface assigns chrome.002 to every face; authored mode restores the ball's rough=2 shader input and the chain's polished rough=0 metal. The authored comparison capture also uses the exact CC0 studio.exr fixture: pixel/macro luminance correlations are now positive, while Eevee versus Three.js rendering remains approximate.",
     "material": "chain-mace",
     "controls": [
       { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored chrome.002", "value": "authored" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },

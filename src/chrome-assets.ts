@@ -23,6 +23,7 @@ import { makeAttributeColorEmissionMaterial } from "./attribute-color-emission-m
 import { makeWorkbenchApproximationMaterial, shouldUseWorkbenchApproximation } from "./workbench-approx-material";
 import { makeNodeBaseMaterial } from "./node-base-material";
 import { makeNodeColorVtextMaterial } from "./node-color-vtext-material";
+import { loadBlenderStudioEnvironment } from "./blender-studio-environment";
 
 type RangeControl = { type?: "range"; name: string; label: string; min: number; max: number; step: number; value: number };
 type CheckboxControl = { type: "checkbox"; name: string; label: string; value: boolean };
@@ -183,12 +184,31 @@ async function prepareFont(asset: Asset): Promise<void> {
   fontStatus.style.fontFamily=loaded?`"${font.family}", ui-monospace, monospace`:"";
   fontStatus.textContent=loaded?`${font.family} TTF loaded · GN geometry uses its extracted outlines.`:`${font.family} TTF unavailable · ${font.fallback}`;
 }
+async function prepareAuthoredEnvironment(asset: Asset): Promise<void> {
+  if (!authoredCapture) return;
+  // This rotation/intensity pair was measured against the committed Chain &
+  // Mace Eevee reference. Other authored previews keep their existing rig
+  // until they have an equivalently controlled Blender reference.
+  const reflective = asset.material === "chain-mace";
+  if (!reflective) {
+    scene.environment = null;
+    scene.environmentIntensity = 1;
+    scene.environmentRotation.set(0, 0, 0);
+    return;
+  }
+  const environment = await loadBlenderStudioEnvironment();
+  if (current !== asset) return;
+  scene.environment = environment;
+  scene.environmentIntensity = 0.8;
+  // Blender and Three use different equirectangular zero-longitude conventions.
+  scene.environmentRotation.set(0, Math.PI, 0);
+}
 async function evaluate(): Promise<void> { const id=++requestId; status.classList.remove("ready");status.textContent="Evaluating extracted graph…";const started=performance.now();const worker=new Worker(new URL("./blend-import-worker.ts",import.meta.url),{type:"module",name:"chrome-assets"});const result=await new Promise<Reply>((resolve,reject)=>{worker.onmessage=(event:MessageEvent<Reply>)=>resolve(event.data);worker.onerror=(event)=>reject(new Error(event.message));worker.postMessage({id,dump,object:current.object,overrides:overrides()});});worker.terminate();if(!result.ok)throw new Error(result.error);if(result.id<appliedId)return;appliedId=result.id;for(const child of [...model.children])disposeObject(child);model.clear();model.add(makeMesh(result.soup));frame();const lineStats=result.soup.lines?.stats;vmCount.textContent=`${result.soup.stats.verts.toLocaleString()} verts · ${result.soup.stats.faces.toLocaleString()} faces${lineStats?` · ${lineStats.controlPoints.toLocaleString()} curve points · ${lineStats.segments.toLocaleString()} wire segments`:""}`;runtime.textContent=`${((performance.now()-started)/1000).toFixed(2)}s · ${current.object}`;const curveExact=Boolean(current.curveStats&&lineStats&&result.soup.stats.verts===0&&result.soup.stats.faces===current.blenderStats.faces&&lineStats.controlPoints===current.curveStats.controlPoints&&(current.curveStats.evaluatedPoints===undefined||lineStats.evaluatedPoints===current.curveStats.evaluatedPoints)&&(current.curveStats.segments===undefined||lineStats.segments===current.curveStats.segments));const exact=current.curveStats?curveExact:result.soup.stats.verts===current.blenderStats.verts&&result.soup.stats.faces===current.blenderStats.faces;status.classList.toggle("ready",exact);status.textContent=exact?(current.curveStats?"Curve control points match Blender":"Topology counts match Blender"):current.note??"Geometry differs from Blender reference"; }
 function queue(): void { clearTimeout(timer);timer=window.setTimeout(()=>void evaluate().catch((error)=>status.textContent=String(error)),100); }
 async function choose(): Promise<void> {
   current=catalog.find((item)=>item.id===select.value)??catalog[0];const asset=current;
   window.dispatchEvent(new CustomEvent("chrome-assets-selection-change",{detail:{id:current.id,title:current.title,object:current.object,dumpUrl:current.dump}}));reference.src=publicUrl(current.reference);blenderCount.textContent=`${current.blenderStats.verts.toLocaleString()} verts · ${current.blenderStats.faces.toLocaleString()} faces`;note.textContent=current.note??"";note.hidden=!current.note;renderControls();
-  await prepareFont(asset);if(current!==asset)return;
+  await Promise.all([prepareFont(asset), prepareAuthoredEnvironment(asset)]);if(current!==asset)return;
   const [geometryDump,shaderMetadata]=await Promise.all([
     fetch(publicUrl(asset.dump),{cache:"no-store"}).then((response)=>response.json()),
     asset.shaderMetadata?fetch(publicUrl(asset.shaderMetadata),{cache:"no-store"}).then((response)=>response.json()):Promise.resolve(null),
@@ -196,7 +216,7 @@ async function choose(): Promise<void> {
   if(current!==asset)return;
   dump=Object.assign(geometryDump,shaderMetadata??{});await evaluate();
 }
-select.addEventListener("change",()=>{const url=new URL(location.href);url.searchParams.set("asset",select.value);history.replaceState(null,"",url);void choose();});reset.addEventListener("click",()=>{renderControls();queue();});addEventListener("resize",resize);renderer.setAnimationLoop(()=>{orbit.update();renderer.render(scene,camera);});
+select.addEventListener("change",()=>{const url=new URL(location.href);url.searchParams.set("asset",select.value);history.replaceState(null,"",url);void choose().catch((error)=>status.textContent=String(error));});reset.addEventListener("click",()=>{renderControls();queue();});addEventListener("resize",resize);renderer.setAnimationLoop(()=>{orbit.update();renderer.render(scene,camera);});
 fetch(publicUrl("dojo/chrome-assets/catalog.json"),{cache:"no-store"}).then((response)=>response.json()).then((items:Asset[])=>{catalog=items;for(const item of catalog){const option=document.createElement("option");option.value=item.id;option.textContent=item.title;select.append(option);}const requested=new URLSearchParams(location.search).get("asset");if(requested&&catalog.some((item)=>item.id===requested))select.value=requested;resize();return choose();}).catch((error)=>status.textContent=String(error));
 
 window.addEventListener("type-pixel-brush-graph-change", (event) => {

@@ -8,7 +8,7 @@
   "coverage": "All five authored input sweeps execute with exact vertex and face counts and local bounds within 0.0001 units of Blender.",
   "validation": "Split Edges processes mesh components inside instances, matching Blender autosmooth topology. Curve Tangent now consumes Resample Curve's evaluated normalized-segment-bisector frame instead of rebuilding a length-weighted chord; the 39 pre-twist instance transforms match Blender within 0.000086 units.",
   "materialParity": {
-    "status": "material-semantics-exact-lighting-pending",
+    "status": "material-semantics-exact-studio-reflections-restored",
     "groups": [
       { "material": "chrome.002", "triangles": 225148, "surface": "roughness 2/15 mace ball and zero-roughness polished chain" }
     ],
@@ -17,6 +17,6 @@
       "blenderEvaluated": { "1": { "domain": "POINT", "value": 1, "count": 120727 }, "rough": { "domain": "FACE", "zeroFaces": 205408, "value2Faces": 9310 } },
       "restoredForShader": { "rough": { "mace": 2, "chainMissingValue": 0 } }
     },
-    "evidence": "The exact soup contains an 18,620-triangle chrome.002 range and a 206,528-triangle null range. Blender's realized mesh has slots [chrome.002, null], assigns all 214,718 faces to slot zero, and carries rough=2 on the 9,310 mace faces while the joined chain resolves it to zero. The authored Mapping output drives Noise Scale while Noise Vector stays zero, so Blender produces a constant mapped value of 1/15 rather than spatial grain; the browser reproduces roughness 2/15 on the mace and zero on the chain. A deterministic capture-only RectArea rig lowers aligned luminance MAE from 0.5178 to 0.2069 and binary disagreement from 80.6% to 9.0%. The missing Blender studio reflection pattern still prevents shader parity: correlation remains negative even though lighting magnitude is much closer."
+    "evidence": "The exact soup contains an 18,620-triangle chrome.002 range and a 206,528-triangle null range. Blender's realized mesh has slots [chrome.002, null], assigns all 214,718 faces to slot zero, and carries rough=2 on the 9,310 mace faces while the joined chain resolves it to zero. The authored Mapping output drives Noise Scale while Noise Vector stays zero, so Blender produces a constant mapped value of 1/15 rather than spatial grain; the browser reproduces roughness 2/15 on the mace and zero on the chain. The authored capture decodes Blender's exact CC0 studio.exr (SHA-256 c36c7fd390b2cdf8693360cf3662cb1d710c95fa799d9f822f42997167839b56), uses 0.8 environment strength and a measured PI longitude correction, and retains the deterministic RectArea rig. Pixel correlation improves from -0.0670 to 0.2424, macro correlation from -0.2582 to 0.2296, pixel MAE from 0.2069 to 0.1985, macro MAE from 0.1823 to 0.1066, and mean luminance delta from -0.1840 to -0.0146. This luminance gain trades against mask IoU (0.9406 to 0.9369) and binary disagreement (0.0897 to 0.1485), which remain sensitive to Eevee versus Three.js rasterization."
   }
 }
