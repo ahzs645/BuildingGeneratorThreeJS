@@ -193,6 +193,207 @@ function rotateAboutAxis(v: Vec3, axis: Vec3, ang: number): Vec3 {
   return vadd(vadd(vscale(v, c), vscale(vcross(axis, v), s)), vscale(axis, vdot(axis, v) * (1 - c)));
 }
 
+/** Blender's float32 `curves::poly::calculate_tangents` implementation. */
+export function polySplineTangentsBlender(positions: Vec3[], cyclic: boolean): Vec3[] {
+  const f = Math.fround;
+  if (!positions.length) return [];
+  if (positions.length === 1) return [[0, 0, 1]];
+  const subtract = (a: Vec3, b: Vec3): Vec3 => [
+    f(f(a[0]) - f(b[0])),
+    f(f(a[1]) - f(b[1])),
+    f(f(a[2]) - f(b[2])),
+  ];
+  const add = (a: Vec3, b: Vec3): Vec3 => [
+    f(f(a[0]) + f(b[0])),
+    f(f(a[1]) + f(b[1])),
+    f(f(a[2]) + f(b[2])),
+  ];
+  const cross = (a: Vec3, b: Vec3): Vec3 => [
+    f(f(f(a[1]) * f(b[2])) - f(f(a[2]) * f(b[1]))),
+    f(f(f(a[2]) * f(b[0])) - f(f(a[0]) * f(b[2]))),
+    f(f(f(a[0]) * f(b[1])) - f(f(a[1]) * f(b[0]))),
+  ];
+  const length = (value: Vec3): number => {
+    let squared = f(f(value[0]) * f(value[0]));
+    squared = f(squared + f(f(value[1]) * f(value[1])));
+    squared = f(squared + f(f(value[2]) * f(value[2])));
+    return f(Math.sqrt(squared));
+  };
+  const divide = (value: Vec3, divisor: number): Vec3 => [
+    f(f(value[0]) / divisor),
+    f(f(value[1]) / divisor),
+    f(f(value[2]) / divisor),
+  ];
+  const deltaDirection = (from: Vec3, to: Vec3): Vec3 | null => {
+    const delta = subtract(to, from);
+    const norm = length(delta);
+    return norm < 1e-9 ? null : divide(delta, norm);
+  };
+  const tangents: Vec3[] = new Array(positions.length);
+  let firstValid = -1;
+  for (let index = 0; index < positions.length - 1; index++) {
+    const direction = deltaDirection(positions[index], positions[index + 1]);
+    if (!direction) continue;
+    tangents[index] = direction;
+    firstValid = index;
+    break;
+  }
+  if (firstValid < 0) return positions.map(() => [0, 0, 1]);
+  for (let index = 0; index < firstValid; index++) tangents[index] = [...tangents[firstValid]] as Vec3;
+  let previousDirection = tangents[firstValid];
+  let previousEqual = false;
+  const bisect = (position: Vec3, next: Vec3): Vec3 => {
+    const previousWasEqual = previousEqual;
+    const delta = subtract(next, position);
+    const norm = length(delta);
+    previousEqual = norm < 1e-9;
+    if (previousEqual) return previousDirection;
+    const previous = previousDirection;
+    previousDirection = divide(delta, norm);
+    if (previousWasEqual) return previousDirection;
+    const tangent = add(previous, previousDirection);
+    const tangentLength = length(tangent);
+    if (tangentLength < 0.6627619) {
+      if (tangentLength < 2e-7) return previousDirection;
+      const binormal = cross(previousDirection, previous);
+      const normal = subtract(previousDirection, previous);
+      const stable = cross(binormal, normal);
+      const stableLength = length(stable);
+      return stableLength < 1e-35 ? [0, 0, 0] : divide(stable, stableLength);
+    }
+    return divide(tangent, tangentLength);
+  };
+  for (let index = firstValid + 1; index < positions.length - 1; index++)
+    tangents[index] = bisect(positions[index], positions[index + 1]);
+  if (cyclic) {
+    tangents[positions.length - 1] = bisect(positions[positions.length - 1], positions[0]);
+    tangents[0] = bisect(positions[0], positions[1]);
+  } else {
+    tangents[positions.length - 1] = deltaDirection(positions[positions.length - 2], positions[positions.length - 1])
+      ?? previousDirection;
+  }
+  return tangents;
+}
+
+/**
+ * Blender's float32 minimum-twist normals for an evaluated Poly spline.
+ *
+ * This follows `curves::poly::calculate_normals_minimum`, including its more
+ * accurate asin-based angle and the post-frame tilt rotation. Keeping every
+ * vector operation in float32 is observable after Curve to Points rotations
+ * are propagated through instances, proximity fields, and a 1e-5 weld.
+ */
+export function polySplineNormalsBlender(
+  tangents: Vec3[],
+  cyclic: boolean,
+  tilts?: number[],
+): Vec3[] {
+  const f = Math.fround;
+  if (!tangents.length) return [];
+  const add = (a: Vec3, b: Vec3): Vec3 => [
+    f(f(a[0]) + f(b[0])),
+    f(f(a[1]) + f(b[1])),
+    f(f(a[2]) + f(b[2])),
+  ];
+  const subtract = (a: Vec3, b: Vec3): Vec3 => [
+    f(f(a[0]) - f(b[0])),
+    f(f(a[1]) - f(b[1])),
+    f(f(a[2]) - f(b[2])),
+  ];
+  const scale = (value: Vec3, factor: number): Vec3 => [
+    f(f(value[0]) * f(factor)),
+    f(f(value[1]) * f(factor)),
+    f(f(value[2]) * f(factor)),
+  ];
+  const dot = (a: Vec3, b: Vec3): number => {
+    let value = f(f(a[0]) * f(b[0]));
+    value = f(value + f(f(a[1]) * f(b[1])));
+    return f(value + f(f(a[2]) * f(b[2])));
+  };
+  const cross = (a: Vec3, b: Vec3): Vec3 => [
+    f(f(f(a[1]) * f(b[2])) - f(f(a[2]) * f(b[1]))),
+    f(f(f(a[2]) * f(b[0])) - f(f(a[0]) * f(b[2]))),
+    f(f(f(a[0]) * f(b[1])) - f(f(a[1]) * f(b[0]))),
+  ];
+  const length = (value: Vec3): number => f(Math.sqrt(dot(value, value)));
+  const normalize = (value: Vec3): Vec3 => {
+    const norm = length(value);
+    return norm === 0 ? [0, 0, 0] : [
+      f(f(value[0]) / norm),
+      f(f(value[1]) / norm),
+      f(f(value[2]) / norm),
+    ];
+  };
+  const angleNormalized = (a: Vec3, b: Vec3): number => {
+    const halfDistanceAngle = (other: Vec3): number => {
+      const halfDistance = f(length(subtract(a, other)) / f(2));
+      return f(f(2) * f(Math.asin(Math.max(-1, Math.min(1, halfDistance)))));
+    };
+    return dot(a, b) >= 0
+      ? halfDistanceAngle(b)
+      : f(f(Math.PI) - halfDistanceAngle(scale(b, -1)));
+  };
+  const rotateDirection = (direction: Vec3, axis: Vec3, angle: number): Vec3 => {
+    angle = f(angle);
+    if (angle === 0 || length(direction) <= Number.EPSILON) return [...direction] as Vec3;
+    const axisScaled = scale(axis, dot(direction, axis));
+    const difference = subtract(direction, axisScaled);
+    const perpendicular = cross(axis, difference);
+    return add(
+      add(axisScaled, scale(difference, f(Math.cos(angle)))),
+      scale(perpendicular, f(Math.sin(angle))),
+    );
+  };
+  const nextNormal = (lastNormal: Vec3, lastTangent: Vec3, currentTangent: Vec3): Vec3 => {
+    if (length(lastTangent) === 0 || length(currentTangent) === 0) return [...lastNormal] as Vec3;
+    const angle = angleNormalized(lastTangent, currentTangent);
+    if (angle === 0) return [...lastNormal] as Vec3;
+    const axis = normalize(cross(lastTangent, currentTangent));
+    return length(axis) === 0 ? [...lastNormal] as Vec3 : normalize(rotateDirection(lastNormal, axis, angle));
+  };
+
+  const firstTangent = tangents[0].map(f) as Vec3;
+  const normals: Vec3[] = new Array(tangents.length);
+  normals[0] = Math.abs(firstTangent[0]) + Math.abs(firstTangent[1]) < 1e-4
+    ? [1, 0, 0]
+    : normalize([firstTangent[1], f(-firstTangent[0]), 0]);
+  for (let index = 1; index < tangents.length; index++) {
+    normals[index] = nextNormal(
+      normals[index - 1],
+      tangents[index - 1].map(f) as Vec3,
+      tangents[index].map(f) as Vec3,
+    );
+  }
+
+  if (cyclic && tangents.length > 1) {
+    const lastForwarded = nextNormal(
+      normals[normals.length - 1],
+      tangents[tangents.length - 1].map(f) as Vec3,
+      firstTangent,
+    );
+    const projectedFirst = normalize(subtract(normals[0], scale(firstTangent, dot(normals[0], firstTangent))));
+    const projectedLast = normalize(subtract(lastForwarded, scale(firstTangent, dot(lastForwarded, firstTangent))));
+    let correction = angleNormalized(projectedFirst, projectedLast);
+    if (dot(firstTangent, cross(projectedFirst, projectedLast)) < 0) correction = f(-correction);
+    if (correction > Math.PI) correction = f(correction - f(2 * Math.PI));
+    const step = f(correction / tangents.length);
+    for (let index = 0; index < normals.length; index++) {
+      normals[index] = rotateDirection(normals[index], tangents[index].map(f) as Vec3, f(step * index));
+    }
+  }
+
+  if (tilts?.length) {
+    for (let index = 0; index < normals.length; index++) {
+      normals[index] = rotateDirection(
+        normals[index],
+        tangents[index].map(f) as Vec3,
+        f(tilts[index] ?? 0),
+      );
+    }
+  }
+  return normals;
+}
+
 // Rotation-minimizing frames along a spline (double reflection method).
 export function splineFrames(pts: Vec3[], cyclic: boolean, tangentOverrides?: Vec3[]): { tangent: Vec3; normal: Vec3; binormal: Vec3 }[] {
   const n = pts.length;
@@ -206,26 +407,12 @@ export function splineFrames(pts: Vec3[], cyclic: boolean, tangentOverrides?: Ve
       : vnorm(vsub([0, 1, 0], vscale(tangent, tangent[1])));
     return [{ tangent, normal, binormal: vnorm(vcross(tangent, normal)) }];
   }
-  const tangents: Vec3[] = [];
-  for (let i = 0; i < n; i++) {
-    if (tangentOverrides?.[i] && vlen(tangentOverrides[i]) > 1e-9) { tangents.push(vnorm(tangentOverrides[i])); continue; }
-    const prev = pts[(i - 1 + n) % n];
-    const next = pts[(i + 1) % n];
-    let t: Vec3;
-    if (!cyclic && i === 0) t = vsub(pts[1], pts[0]);
-    else if (!cyclic && i === n - 1) t = vsub(pts[n - 1], pts[n - 2]);
-    else {
-      // Blender bisects the normalized incident segment directions. Using a
-      // raw next-minus-previous chord weights the tangent toward the longer
-      // evaluated segment and can move a polygonal Curve-to-Mesh boundary.
-      const incoming = vnorm(vsub(pts[i], prev));
-      const outgoing = vnorm(vsub(next, pts[i]));
-      const bisector = vadd(incoming, outgoing);
-      t = vlen(bisector) > 1e-9 ? bisector : vsub(next, prev);
-    }
-    const normalized = vnorm(t);
-    tangents.push(vlen(normalized) < 1e-9 ? [0, 0, 1] : normalized);
-  }
+  const polyTangents = polySplineTangentsBlender(pts, cyclic);
+  const tangents: Vec3[] = tangentOverrides
+    ? tangentOverrides.map((override, index) => override && vlen(override) > 1e-9
+      ? vnorm(override)
+      : polyTangents[index])
+    : polyTangents;
   // initial normal: any vector perpendicular to tangent[0]
   let normal: Vec3;
   if (tangentOverrides?.length) {

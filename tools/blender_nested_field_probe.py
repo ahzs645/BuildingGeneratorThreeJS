@@ -101,6 +101,12 @@ synthetic_field = None
 if field_node == "__POSITION__":
     synthetic_field = tree.nodes.new("GeometryNodeInputPosition")
     field_output = synthetic_field.outputs[field_socket]
+elif field_node == "__CURVE_TANGENT__":
+    synthetic_field = tree.nodes.new("GeometryNodeInputTangent")
+    field_output = synthetic_field.outputs[field_socket]
+elif field_node == "__NORMAL__":
+    synthetic_field = tree.nodes.new("GeometryNodeInputNormal")
+    field_output = synthetic_field.outputs[field_socket]
 elif field_node == "__INSTANCE_SCALE__":
     synthetic_field = tree.nodes.new("GeometryNodeInputInstanceScale")
     field_output = synthetic_field.outputs[field_socket]
@@ -137,6 +143,7 @@ for link in list(geometry_output.links):
     tree.links.remove(link)
 realize = None
 to_vertices = None
+curve_to_mesh = None
 if domain.upper() == "INSTANCE":
     # Object evaluation realizes output instances, but attributes stored only
     # on the instance domain are otherwise omitted from the resulting mesh
@@ -152,6 +159,10 @@ elif os.environ.get("NODE_DOJO_PROBE_POINTS_TO_VERTICES") == "1":
     to_vertices = tree.nodes.new("GeometryNodePointsToVertices")
     tree.links.new(store.outputs["Geometry"], to_vertices.inputs["Points"])
     tree.links.new(to_vertices.outputs["Mesh"], geometry_output)
+elif os.environ.get("NODE_DOJO_PROBE_CURVES_TO_MESH") == "1":
+    curve_to_mesh = tree.nodes.new("GeometryNodeCurveToMesh")
+    tree.links.new(store.outputs["Geometry"], curve_to_mesh.inputs["Curve"])
+    tree.links.new(curve_to_mesh.outputs["Mesh"], geometry_output)
 else:
     tree.links.new(store.outputs["Geometry"], geometry_output)
 
@@ -224,6 +235,8 @@ finally:
         tree.nodes.remove(realize)
     if to_vertices is not None:
         tree.nodes.remove(to_vertices)
+    if curve_to_mesh is not None:
+        tree.nodes.remove(curve_to_mesh)
     if synthetic_field is not None:
         tree.nodes.remove(synthetic_field)
     if rotation_converter is not None:

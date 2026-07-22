@@ -3,7 +3,7 @@
 // milestone remains easy to audit against its Blender source.
 import { Field, FieldCtx, Vec3, Elem, Domain, asNum, asVec3, vadd, vsub, vscale, vdot, vcross, vlen, vnorm, vnormBlenderFloat } from "../core";
 import { Geometry, Mesh, buildTopology, invalidateMeshCaches, orientClosedSurface, realizeInstances, triangulateFaceIndices } from "../geometry";
-import { resampleSplineWithSamples, SplineSample, splineFrames, splineLength } from "../curves";
+import { polySplineNormalsBlender, resampleSplineWithSamples, SplineSample, splineFrames, splineLength } from "../curves";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 import { reg, EvalAPI } from "../registry";
 
@@ -219,6 +219,7 @@ reg("GeometryNodeCurveToPoints", (api) => {
     let inputOffset = 0;
     const sourceTangents = input.curveAttributes.get("__curve_tangent")?.data;
     const sourceNormals = input.curveAttributes.get("__curve_normal")?.data;
+    const sourceTilts = input.curveAttributes.get("tilt")?.data;
     const importedTangents = input.curveAttributes.get("__curve_imported_tangent");
     const sampledTangents: Vec3[][] = [];
     const sampledNormals: Vec3[][] = [];
@@ -251,12 +252,18 @@ reg("GeometryNodeCurveToPoints", (api) => {
       // frame from the coarser output points creates an alternating rotation
       // error whenever the source/output counts are not multiples (32 -> 24 on
       // the Intro emblem's spike ring).
-      const values = convertedImportedPoly
+      const values: Vec3[] = convertedImportedPoly
         ? sourceFrames.map((frame) => frame.tangent)
-        : sourceTangents?.slice(inputOffset, inputOffset + s.points.length)
+        : sourceTangents?.slice(inputOffset, inputOffset + s.points.length).map(asVec3)
           ?? sourceFrames.map((frame) => frame.tangent);
-      const normalValues = sourceNormals?.slice(inputOffset, inputOffset + s.points.length)
-        ?? sourceFrames.map((frame) => frame.normal);
+      const normalValues: Vec3[] = convertedImportedPoly
+        ? polySplineNormalsBlender(
+          values,
+          s.cyclic,
+          sourceTilts?.slice(inputOffset, inputOffset + s.points.length).map(asNum),
+        )
+        : sourceNormals?.slice(inputOffset, inputOffset + s.points.length).map(asVec3)
+          ?? sourceFrames.map((frame) => frame.normal);
       inputOffset += s.points.length;
       let result: { points: Vec3[]; cyclic: boolean };
       let samples: SplineSample[];
@@ -293,7 +300,7 @@ reg("GeometryNodeCurveToPoints", (api) => {
       sampledTangents.push(convertedImportedPoly || sourceTangents || !keepsPointCount
         ? sampleVectors(samples, values)
         : []);
-      sampledNormals.push(sourceNormals || !keepsPointCount
+      sampledNormals.push(convertedImportedPoly || sourceNormals || !keepsPointCount
         ? sampleVectors(samples, normalValues)
         : []);
       return result;
@@ -415,19 +422,20 @@ reg("GeometryNodeCurveToPoints", (api) => {
     };
     for (let splineIndex = 0; splineIndex < sampled.length; splineIndex++) {
       const s = sampled[splineIndex];
-      let frames = transportedFrames(s.points, sampledTangents[splineIndex] ?? [], s.cyclic);
+      const frames = transportedFrames(s.points, sampledTangents[splineIndex] ?? [], s.cyclic);
       const retainedNormals = sampledNormals[splineIndex] ?? [];
-      if (retainedNormals.length === frames.length) {
-        frames = frames.map((frame, i) => {
-          const normal = vnorm(vsub(retainedNormals[i], vscale(frame.tangent, vdot(retainedNormals[i], frame.tangent))));
-          return { tangent: frame.tangent, normal, binormal: vnorm(vcross(frame.tangent, normal)) };
-        });
-      }
       for (let i = 0; i < s.points.length; i++) {
+        // Resample Curves interpolates and normalizes Tangent and Normal as two
+        // independent output attributes. They need not remain perpendicular.
+        // Curve to Points exposes that raw normal, then orthogonalizes only the
+        // temporary basis used to build Rotation in `fill_rotation_attribute`.
+        const outputNormal = retainedNormals.length === frames.length
+          ? retainedNormals[i]
+          : frames[i]?.normal ?? [0, 0, 1] as Vec3;
         mesh.positions.push([...s.points[i]] as Vec3);
         tangents.push(frames[i]?.tangent ?? [1, 0, 0]);
-        normals.push(frames[i]?.normal ?? [0, 0, 1]);
-        rotations.push(frameRotation(frames[i]?.normal ?? [1, 0, 0], frames[i]?.binormal ?? [0, 1, 0], frames[i]?.tangent ?? [0, 0, 1]));
+        normals.push(outputNormal);
+        rotations.push(frameRotation(outputNormal, frames[i]?.binormal ?? [0, 1, 0], frames[i]?.tangent ?? [0, 0, 1]));
       }
     }
     mesh.attributes.set("__curve_tangent", { domain: "POINT", data: tangents });

@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { evaluateBezierSpline } from "./bezier";
 import { Field, Vec3 } from "./core";
-import { resampleSpline, resampleSplineWithSamples, sweep } from "./curves";
+import {
+  polySplineNormalsBlender,
+  polySplineTangentsBlender,
+  resampleSpline,
+  resampleSplineWithSamples,
+  sweep,
+} from "./curves";
 import { makeFieldCtx } from "./evaluator";
 import { Geometry, Mesh } from "./geometry";
 import "./nodes/crayon";
@@ -88,6 +94,33 @@ test("curve resampling exposes the exact segment factors used for positions", ()
     cyclic: false,
     points: [[0.1, 0.2, 0.3], [2.4, 0.3, -0.2], [2.9, 3.1, 0.7]],
   }, 4));
+});
+
+test("Poly tangents and minimum-twist normals preserve Blender float32 sharp turns", () => {
+  const points: Vec3[] = [
+    [-45.144691467285156, 52.26039123535156, -14.58215618133545],
+    [-16.855819702148438, 48.51123046875, -14.58215618133545],
+    [19.333629608154297, 34.855125427246094, -14.58215618133545],
+    [58.52538299560547, 34.855125427246094, -14.58215618133545],
+    [92.96728515625, 34.855125427246094, -14.58215618133545],
+    [-36.211570739746094, 10.224287033081055, -14.58215618133545],
+  ];
+  const tangents = polySplineTangentsBlender(points, false);
+  const normals = polySplineNormalsBlender(
+    tangents,
+    false,
+    [0, 0, 0, 0, -3.2314400672912598, -3.188948154449463],
+  );
+
+  // Blender switches to a cross-product formulation near opposing segments;
+  // the normalized sum suffers catastrophic cancellation at this corner.
+  assert.deepEqual(tangents[4], [0.09406611323356628, -0.9955659508705139, 0]);
+  assert.deepEqual(normals[2], [-0.17943772673606873, -0.9837693572044373, 0]);
+  assert.deepEqual(normals[4], [
+    0.9915502667427063,
+    0.09368663281202316,
+    -0.08972658216953278,
+  ]);
 });
 
 test("Curve Circle follows Blender float32 sincos sampling", () => {
