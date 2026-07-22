@@ -1,0 +1,38 @@
+{
+  "asset": "n03d-bolt-watertight",
+  "blenderVersion": "5.1.2",
+  "repeat1": {
+    "blenderObserved": [
+      { "verts": 21636, "faces": 21810 },
+      { "verts": 21642, "faces": 21818 }
+    ],
+    "gnvm": { "verts": 21642, "faces": 21818 },
+    "gnvmSurfaceNetsBeforeDual": { "verts": 21818, "faces": 21642 },
+    "gnvmDiagnostics": {
+      "activeCells": 21744,
+      "activeCellComponents": { "1": 21671, "2": 72, "3": 1 },
+      "crossedGridEdges": 21642,
+      "ambiguousFaces": 88
+    },
+    "boundsComparison": {
+      "blenderMin": [-7.965978145599365, -7.9738898277282715, 0],
+      "blenderMax": [7.97899055480957, 7.971832275390625, 27.216270446777344],
+      "gnvmMin": [-7.965978145599365, -7.973888874053955, 0],
+      "gnvmMax": [7.97899055480957, 7.971832275390625, 27.216270446777344]
+    },
+    "interpretation": "The deterministic browser topology is exactly one topology emitted by Blender for the same one-pass graph. A separate Blender run differed by 6 vertices and 8 faces, demonstrating native OpenVDB scheduling variability before downstream repeats."
+  },
+  "repeat2": {
+    "blenderObserved": [
+      { "runs": 1, "verts": 15572, "faces": 15678 },
+      { "runs": 5, "verts": 15470, "faces": 15560 }
+    ],
+    "gnvm": { "verts": 15324, "faces": 15434 },
+    "gnvmSecondVolumeGrid": {
+      "resolution": [43, 43, 71],
+      "valueCount": 131279,
+      "fnv1a64": "7ee383c444e9f58c"
+    },
+    "interpretation": "The second remesh amplifies small schedule-dependent differences in the first surface. The residual is therefore a repeat-chain/OpenVDB determinism boundary; the one-pass surface-net topology table itself is not independently disproven."
+  }
+}

@@ -33,6 +33,25 @@ def apply_font_override():
 apply_font_override()
 
 
+def apply_graph_overrides():
+    for override in json.loads(os.environ.get("NODE_DOJO_PROBE_GRAPH_OVERRIDES", "[]")):
+        group = bpy.data.node_groups.get(override["group"])
+        node = group.nodes.get(override["node"]) if group else None
+        if node is None:
+            raise RuntimeError(f"missing graph override node: {override!r}")
+        for name, value in override.get("inputs", {}).items():
+            socket = node.inputs.get(name) or next(
+                (candidate for candidate in node.inputs if candidate.identifier == name),
+                None,
+            )
+            if socket is None:
+                raise KeyError(f"graph override input not found: {node.name}.{name}")
+            socket.default_value = value
+
+
+apply_graph_overrides()
+
+
 TIMEOUT_SECONDS = 180
 
 CASES = [

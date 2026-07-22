@@ -532,7 +532,7 @@
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/bolt-watertight.png",
     "blenderStats": { "verts": 16570, "faces": 16572 },
-    "note": "Visual near-parity for the distinct 13-pass watertighten root. The deterministic browser result is 16,222 / 16,224 versus the stored Blender 16,570 / 16,572 reference, while ten native OpenVDB runs varied from 16,526 to 16,598 vertices. Controlled pass-one SDF signs match 131,278 of 131,279 samples (99.9992%); the remaining 2.10% topology gap is localized to surface-net/OpenVDB mesher representation. Full validation takes about 153 seconds.",
+    "note": "Visual near-parity for the distinct 13-pass watertighten root. The deterministic browser result is 16,222 / 16,224 versus the stored Blender 16,570 / 16,572 reference, while ten native OpenVDB runs varied from 16,526 to 16,598 vertices. Controlled pass-one SDF signs match 131,278 of 131,279 samples (99.9992%), and the browser's 21,642 / 21,818 one-pass topology exactly matches one observed Blender schedule. The remaining full-chain gap is compounded OpenVDB scheduling variability across 13 remeshes. Full validation takes about 153 seconds.",
     "controls": [
       { "name": "length", "label": "Bolt length", "min": 8, "max": 60, "step": 0.1, "value": 24.632158279418945 },
       { "name": "thread dia", "label": "Thread diameter", "min": 5, "max": 40, "step": 0.1, "value": 14.95798110961914 },
