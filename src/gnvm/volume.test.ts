@@ -86,3 +86,21 @@ test("volume resampling uses OpenVDB's sparse lower guard and ceil-rounded exten
   }
   assert.ok([...edgeUses.values()].every((uses) => uses === 2), "boundary-touching surface must close manifoldly");
 });
+
+test("volume resampling preserves the numeric background of inactive OpenVDB regions", () => {
+  const volume = {
+    kind: "GNVM_VOLUME_GRID" as const,
+    background: 1,
+    min: [0, 0, 0] as Vec3,
+    max: [7, 7, 7] as Vec3,
+    resolution: [8, 8, 8] as Vec3,
+    origin: [0, 0, 0] as Vec3,
+    voxelSize: [1, 1, 1] as Vec3,
+    values: new Float32Array(8 * 8 * 8).fill(1),
+  };
+  const resampled = resampleVolumeGridForTest(volume, 0.75);
+  assert.ok(
+    resampled.values.every((value) => value === 1),
+    "GridTransformer keeps the source tree's numeric background even when every voxel is inactive",
+  );
+});

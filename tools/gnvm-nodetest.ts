@@ -1091,6 +1091,22 @@ function meshSignedAreaXY(m: Mesh): number {
   }).Mesh as Geometry;
   check("Volume to Mesh Size mode resamples the stored grid", (refinedSurface.mesh?.faces.length ?? 0) > (surface.mesh?.faces.length ?? 0),
     `grid=${surface.mesh?.faces.length} size=${refinedSurface.mesh?.faces.length}`);
+
+  const nearZeroValues = new Float32Array(4 * 4 * 4).fill(1);
+  nearZeroValues[1 + 4 + 16] = -5e-7;
+  const nearZeroVolume = {
+    kind: "GNVM_VOLUME_GRID",
+    background: 1,
+    min: [0, 0, 0], max: [3, 3, 3], resolution: [4, 4, 4],
+    origin: [0, 0, 0], voxelSize: [1, 1, 1], values: nearZeroValues,
+  };
+  const nearZeroSurface = runNode("GeometryNodeVolumeToMesh", {
+    Volume: nearZeroVolume as any, "Resolution Mode": "Grid" as any,
+    "Voxel Size": 1, Threshold: 0,
+  }).Mesh as Geometry;
+  check("Volume to Mesh passes the exact threshold to OpenVDB topology",
+    (nearZeroSurface.mesh?.faces.length ?? 0) > 0,
+    `${nearZeroSurface.mesh?.positions.length ?? 0} verts / ${nearZeroSurface.mesh?.faces.length ?? 0} faces`);
 }
 
 // Blender Volume Cube samples inclusive endpoints, and OpenVDB Size-mode

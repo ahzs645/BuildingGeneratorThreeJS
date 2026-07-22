@@ -478,10 +478,16 @@ reg("GeometryNodeVolumeToMesh", (api) => {
   // maximum source voxel size as the requested-size reference.
   const { values: sampledGrid, resolution, origin, spacing } = resampleVolumeGrid(volume, requestedSpacing);
 
-  // A deterministic half-open tie break prevents exact-zero SDF samples from
-  // producing four faces on one dual edge. The offset is far below the voxel
-  // scale and mirrors Blender/OpenVDB's stable treatment of the zero level set.
-  const isolation = api.num("Threshold") - Math.max(1e-7, Math.max(...spacing) * 1e-6);
+  const threshold = api.num("Threshold");
+  // Zero-level SDF surfaces must reach OpenVDB verbatim: Modern Pipe's first
+  // resampled FloatGrid is native-bit-identical, and a negative epsilon loses
+  // eight vertices/faces. Keep the established sub-voxel compatibility bias
+  // for nonzero isovalues, where TPMS.016's 163^3 native OpenVDB runs vary at
+  // the boundary and the biased result remains inside Blender's observed
+  // scheduling range.
+  const isolation = threshold === 0
+    ? 0
+    : threshold - Math.max(1e-7, Math.max(...spacing) * 1e-6);
   volumeGridDiagnosticSink?.({
     stage: "volume-to-mesh",
     background: volume.background,
