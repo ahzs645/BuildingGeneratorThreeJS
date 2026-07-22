@@ -1227,6 +1227,20 @@ function meshSignedAreaXY(m: Mesh): number {
     && (reverse.value as Vec3)[0] === 131.6702423095703);
 }
 
+// Vector Mix exposes a separate vector-valued factor in Non-Uniform mode.
+// Disabled scalar sockets remain present in Blender dumps, so the handler must
+// select the active typed factor and apply its components independently.
+{
+  const mixed = runNode("ShaderNodeMix", {
+    Factor_Float: 0,
+    Factor_Vector: [0, 0.5, 1],
+    A_Vector: [2, 4, 6],
+    B_Vector: [12, 14, 16],
+  }, { data_type: "VECTOR", factor_mode: "NON_UNIFORM", clamp_factor: true }, ["Factor_Vector"]).Result_Vector as Field;
+  check("Vector Mix Non-Uniform uses Factor_Vector component-wise",
+    approx(mixed.value as number[], [2, 9, 16]), `got ${mixed.value}`);
+}
+
 // (I2) MenuSwitch: string menu selects the matching enum item
 {
   const out = runNode(

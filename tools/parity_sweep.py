@@ -20,12 +20,13 @@ def apply_font_override():
         return
     replacement = bpy.data.fonts.load(path, check_existing=True)
     basename = os.path.basename(path).lower()
+    replace_all = os.environ.get("NODE_DOJO_FONT_OVERRIDE_ALL") == "1"
     for group in bpy.data.node_groups:
         for node in group.nodes:
             for socket in node.inputs:
                 current = getattr(socket, "default_value", None)
                 if getattr(socket, "type", "") == "FONT" and current is not None:
-                    if os.path.basename(bpy.path.abspath(current.filepath)).lower() == basename:
+                    if replace_all or os.path.basename(bpy.path.abspath(current.filepath)).lower() == basename:
                         socket.default_value = replacement
     print(f"NODE_DOJO_FONT_OVERRIDE_OK {replacement.name} <- {path}")
 
@@ -50,6 +51,38 @@ def apply_graph_overrides():
 
 
 apply_graph_overrides()
+
+
+def apply_graph_routes():
+    for route in json.loads(os.environ.get("NODE_DOJO_PROBE_GRAPH_ROUTES", "[]")):
+        group = bpy.data.node_groups.get(route["group"])
+        source_node = group.nodes.get(route["node"]) if group else None
+        output = next(
+            (node for node in group.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output),
+            None,
+        ) if group else None
+        source = source_node.outputs.get(route["socket"]) if source_node else None
+        target = next(
+            (
+                socket
+                for socket in output.inputs
+                if socket.type == "GEOMETRY"
+                and (
+                    not route.get("output")
+                    or socket.name == route["output"]
+                    or socket.identifier == route["output"]
+                )
+            ),
+            None,
+        ) if output else None
+        if group is None or source is None or target is None:
+            raise RuntimeError(f"invalid graph route: {route!r}")
+        for link in list(target.links):
+            group.links.remove(link)
+        group.links.new(source, target)
+
+
+apply_graph_routes()
 
 
 TIMEOUT_SECONDS = 180
@@ -216,11 +249,20 @@ def clear_evaluated_mesh(ev, _mesh, temporary_realize):
         bpy.data.node_groups.remove(realize_group)
 
 
-def evaluate_case(obj, mod, name_to_identifier, saved_values, case):
+def evaluate_case(obj, mod, name_to_identifier, saved_values, case, raw_mesh_path=None):
     started = time.time()
     set_modifier_inputs(mod, name_to_identifier, saved_values, case["overrides"])
     ev, mesh, owned = evaluated_mesh(obj)
     try:
+        if raw_mesh_path:
+            with open(raw_mesh_path, "w", encoding="utf-8") as handle:
+                json.dump(
+                    {
+                        "positions": [list(vertex.co) for vertex in mesh.vertices],
+                        "faces": [list(face.vertices) for face in mesh.polygons],
+                    },
+                    handle,
+                )
         return {
             "combo": case,
             "status": "ok",
@@ -323,8 +365,21 @@ def main():
             print("SWEEP", case["name"], flush=True)
             signal.alarm(TIMEOUT_SECONDS)
             try:
-                result = evaluate_case(obj, mod, name_to_identifier, saved_values, case)
-                if export_dir:
+                raw_mesh_export = export_dir and os.environ.get("NODE_DOJO_RAW_MESH_EXPORT") == "1"
+                if raw_mesh_export:
+                    filename = case_filename(case_index, case["name"], "json")
+                    result = evaluate_case(
+                        obj,
+                        mod,
+                        name_to_identifier,
+                        saved_values,
+                        case,
+                        os.path.join(export_dir, filename),
+                    )
+                    result["export"] = filename
+                else:
+                    result = evaluate_case(obj, mod, name_to_identifier, saved_values, case)
+                if export_dir and not raw_mesh_export:
                     filename = case_filename(case_index, case["name"], "glb")
                     export_case_glb(obj, os.path.join(export_dir, filename))
                     result["export"] = filename

@@ -189,6 +189,37 @@ const [, , dumpPath, vmOutPath, blenderPath, exportDir, objectArg, casesPath] = 
 if (!dumpPath || !vmOutPath) usage();
 
 const dump = JSON.parse(readFileSync(dumpPath, "utf8")) as Dump;
+const graphOverrides = JSON.parse(process.env.NODE_DOJO_PROBE_GRAPH_OVERRIDES ?? "[]") as Array<{
+  group: string;
+  node: string;
+  inputs: Record<string, unknown>;
+}>;
+for (const override of graphOverrides) {
+  const node = dump.node_groups?.[override.group]?.nodes.find((candidate) => candidate.name === override.node);
+  if (!node) throw new Error(`invalid graph override: ${JSON.stringify(override)}`);
+  for (const [name, value] of Object.entries(override.inputs)) {
+    const socket = node.inputs.find((candidate) => candidate.name === name || candidate.identifier === name);
+    if (!socket) throw new Error(`invalid graph override input: ${override.group}.${override.node}.${name}`);
+    socket.value = value as never;
+  }
+}
+const graphRoutes = JSON.parse(process.env.NODE_DOJO_PROBE_GRAPH_ROUTES ?? "[]") as Array<{
+  group: string;
+  node: string;
+  socket: string;
+  output?: string;
+}>;
+for (const route of graphRoutes) {
+  const group = dump.node_groups?.[route.group];
+  const output = group?.nodes.find((node) => node.type === "NodeGroupOutput");
+  const target = output?.inputs.find((socket) => socket.type === "NodeSocketGeometry"
+    && (!route.output || socket.name === route.output || socket.identifier === route.output));
+  const sourceNode = group?.nodes.find((node) => node.name === route.node);
+  const source = sourceNode?.outputs.find((socket) => socket.name === route.socket || socket.identifier === route.socket);
+  if (!group || !output || !target || !source) throw new Error(`invalid graph route: ${JSON.stringify(route)}`);
+  group.links = group.links.filter((link) => link.to_node !== output.name || link.to_socket !== target.identifier);
+  group.links.push({ from_node: sourceNode.name, from_socket: source.identifier, to_node: output.name, to_socket: target.identifier });
+}
 const objectName = objectArg || "Procedural Drawer";
 const cases = casesPath ? JSON.parse(readFileSync(casesPath, "utf8")) as Combo[] : defaultCases;
 const vmPayload: SweepPayload = {
