@@ -323,7 +323,7 @@
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/text-soup.png",
     "blenderStats": { "verts": 11971, "faces": 11199 },
-    "note": "The authored Pixels comparison is exact at 11,971 / 11,199 in Blender and the browser. All five cases have exact face counts; edited text is +6 vertices, line thickness is +2, and subdivide 12 is -5, with a maximum rounded bounds residual of 0.1327 units. The edited NODE DOJO mesh is exact before welding at 18,068 / 12,432, and Blender's active non-uniform vector factor now reduces upper-surface placement RMS error from 0.0473912 to 0.00000304 units. Only proximity-interpolation pairs straddling the downstream 1e-5 weld remain. The original 1CamBam Stick fonts are missing from the pack, so both Blender and the browser use the supplied Pixels Medium TTF.",
+    "note": "All five supplied Pixels Medium comparisons now match Blender exactly in vertices, faces, and rounded bounds, including the authored 11,971 / 11,199 result, edited NODE DOJO at 13,242 / 12,432, peak height, line thickness, and subdivision controls. Blender-exact Poly frames and left-associated quaternion multiplication preserve the guide rotations, while full-precision atlas extraction preserves every realized proximity-target coordinate without changing the touching-cell contour topology. The original nine 1CamBam Stick fonts are missing from the pack, so both Blender and the browser use the supplied Pixels Medium TTF.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

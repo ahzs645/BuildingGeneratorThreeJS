@@ -151,7 +151,12 @@ if domain.upper() == "INSTANCE":
     # every point of each payload and can be inspected below.
     realize = tree.nodes.new("GeometryNodeRealizeInstances")
     tree.links.new(store.outputs["Geometry"], realize.inputs["Geometry"])
-    tree.links.new(realize.outputs["Geometry"], geometry_output)
+    if os.environ.get("NODE_DOJO_PROBE_CURVES_TO_MESH") == "1":
+        curve_to_mesh = tree.nodes.new("GeometryNodeCurveToMesh")
+        tree.links.new(realize.outputs["Geometry"], curve_to_mesh.inputs["Curve"])
+        tree.links.new(curve_to_mesh.outputs["Mesh"], geometry_output)
+    else:
+        tree.links.new(realize.outputs["Geometry"], geometry_output)
 elif os.environ.get("NODE_DOJO_PROBE_POINTS_TO_VERTICES") == "1":
     # Point-cloud components are not exposed by Object.to_mesh(). Convert them
     # to loose mesh vertices so POINT-domain texture/field probes remain

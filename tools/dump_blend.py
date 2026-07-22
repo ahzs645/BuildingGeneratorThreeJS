@@ -270,7 +270,7 @@ def dump_font_glyph(font, character, align_y="TOP_BASELINE"):
     unused = set(boundary)
     splines = []
     while unused:
-        first = next(iter(unused))
+        first = min(unused)
         edge = first
         indices = []
         cyclic = False
@@ -292,7 +292,7 @@ def dump_font_glyph(font, character, align_y="TOP_BASELINE"):
             splines.append({
                 "cyclic": cyclic,
                 "points": [
-                    [round(value, 7) for value in mesh.vertices[index].co]
+                    [float(value) for value in mesh.vertices[index].co]
                     for index in indices
                 ],
             })
@@ -319,7 +319,7 @@ def dump_font_atlas(font):
         combined = dump_font_glyph(font, character + marker)
         combined_max = max((point[0] for spline in combined for point in spline["points"]), default=marker_max)
         glyphs[character] = {
-            "advance": round(max(0.0, combined_max - marker_max), 7),
+            "advance": float(max(0.0, combined_max - marker_max)),
             "curves": splines,
         }
     baseline_points = [point for spline in dump_font_glyph(font, "A", "TOP_BASELINE") for point in spline["points"]]
@@ -334,7 +334,9 @@ def dump_font_atlas(font):
     align_offsets = {}
     for blender_value, socket_value in alignments.items():
         points = [point for spline in dump_font_glyph(font, "A", blender_value) for point in spline["points"]]
-        align_offsets[socket_value] = round(min((point[1] for point in points), default=baseline_min_y) - baseline_min_y, 7)
+        align_offsets[socket_value] = float(
+            min((point[1] for point in points), default=baseline_min_y) - baseline_min_y
+        )
     segments = 0
     axis_aligned_segments = 0
     for glyph in glyphs.values():

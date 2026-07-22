@@ -1,9 +1,9 @@
 {
   "object": "TEXT SOUP",
   "root": "CHROME text.001",
-  "status": "near-exact",
+  "status": "exact",
   "fontSubstitution": "The source references nine missing 1CamBam Stick fonts. Validation replaces them with the supplied Pixels Medium TTF in both Blender and GN-VM, with embedded outlines as the browser fallback.",
   "blender": { "verts": 11971, "faces": 11199 },
-  "gnvm": { "verts": 11973, "faces": 11199 },
-  "validation": "All five Blender sweep cases retain exact face counts. The guide now follows Blender 5.1's float32 Poly tangent calculation (including the near-opposed-segment cross-product fallback), minimum-twist normal transport, full-precision authored tilt, independent normal resampling, and Curve to Points quaternion construction. The 14-point source and sampled guide fields are bit-exact for every tangent and normal component, and all 56 sampled Curve to Points quaternion components match Blender. The edited NODE DOJO case remains topology-exact before Merge by Distance at 18,068 / 12,432. The wider welded sweep is near-exact: authored and peak-height are +2 vertices, edited text and subdivide 12 are -1, and line thickness is +3, with exact faces; maximum rounded bounds error is 0.0573 units. The remaining count residuals are localized downstream of the exact guide frame to the lower marching branch's proximity interpolation and three-or-fewer pairs straddling the final 1e-5 weld, not the curve graph, weld algorithm, or face topology."
+  "gnvm": { "verts": 11971, "faces": 11199 },
+  "validation": "All five Blender sweep cases now match exactly in vertices, faces, and four-decimal bounds: authored 11,971 / 11,199, NODE DOJO 13,242 / 12,432, peak height 11,971 / 11,199, line thickness 9,591 / 8,855, and subdivide 12 at 3,971 / 3,548. The guide follows Blender 5.1's float32 Poly tangent calculation, minimum-twist normal transport, full-precision tilt, independent normal resampling, and left-associated quaternion multiplication. All 56 aligned guide-quaternion components are bit-exact. Re-extracting the supplied Pixels Medium TTF without seven-decimal atlas rounding makes all 792 centered-glyph and realized proximity-target coordinate components bit-exact while retaining the established touching-cell contour topology."
 }

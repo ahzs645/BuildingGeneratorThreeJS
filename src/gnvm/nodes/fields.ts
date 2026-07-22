@@ -142,8 +142,8 @@ const quatMultiplyFloat32 = (a: Quat, b: Quat): Quat => {
   const sub = (x: number, y: number) => f(f(x) - f(y));
   return [
     sub(add(add(mul(a[3], b[0]), mul(a[0], b[3])), mul(a[1], b[2])), mul(a[2], b[1])),
-    add(sub(add(mul(a[3], b[1]), mul(a[1], b[3])), mul(a[0], b[2])), mul(a[2], b[0])),
-    add(sub(add(mul(a[3], b[2]), mul(a[2], b[3])), mul(a[1], b[0])), mul(a[0], b[1])),
+    sub(add(add(mul(a[3], b[1]), mul(a[1], b[3])), mul(a[2], b[0])), mul(a[0], b[2])),
+    sub(add(add(mul(a[3], b[2]), mul(a[2], b[3])), mul(a[0], b[1])), mul(a[1], b[0])),
     sub(sub(sub(mul(a[3], b[3]), mul(a[0], b[0])), mul(a[1], b[1])), mul(a[2], b[2])),
   ];
 };

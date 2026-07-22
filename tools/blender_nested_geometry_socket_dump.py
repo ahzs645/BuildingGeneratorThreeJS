@@ -87,11 +87,16 @@ for link in list(root_geometry.links):
     root.links.remove(link)
 container_output = root_source
 temporaries = []
-if mode == "realize":
+if mode in {"realize", "realize_curve"}:
     realize = root.nodes.new("GeometryNodeRealizeInstances")
     temporaries.append(realize)
     root.links.new(container_output, realize.inputs["Geometry"])
     container_output = realize.outputs["Geometry"]
+    if mode == "realize_curve":
+        curve_to_mesh = root.nodes.new("GeometryNodeCurveToMesh")
+        temporaries.append(curve_to_mesh)
+        root.links.new(container_output, curve_to_mesh.inputs["Curve"])
+        container_output = curve_to_mesh.outputs["Mesh"]
 elif mode in {"points", "instance_points"}:
     # Object.to_mesh() cannot serialize a point-cloud component. Instance a
     # one-vertex mesh on every point and realize it without changing positions.

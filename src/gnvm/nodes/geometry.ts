@@ -141,10 +141,28 @@ function instanceMatrix(position: Vec3, rotation: Vec3, scale: Vec3): Matrix4Row
   let axes: Vec3[];
   if (quaternion) {
     const [x, y, z, w] = quaternion.map(f) as Quaternion;
+    // `math::from_rotation(Quaternion)` deliberately promotes a float
+    // quaternion to double and uses sqrt(2)-scaled products before casting
+    // each completed matrix element back to float. The algebraically
+    // equivalent `2 * (x * y ...)` form differs by a few ULPs and is visible
+    // after instance realization feeds Geometry Proximity.
+    const q0 = Math.SQRT2 * w;
+    const q1 = Math.SQRT2 * x;
+    const q2 = Math.SQRT2 * y;
+    const q3 = Math.SQRT2 * z;
+    const qda = q0 * q1;
+    const qdb = q0 * q2;
+    const qdc = q0 * q3;
+    const qaa = q1 * q1;
+    const qab = q1 * q2;
+    const qac = q1 * q3;
+    const qbb = q2 * q2;
+    const qbc = q2 * q3;
+    const qcc = q3 * q3;
     const rows = [
-      [f(1 - 2 * (y * y + z * z)), f(2 * (x * y - w * z)), f(2 * (x * z + w * y))],
-      [f(2 * (x * y + w * z)), f(1 - 2 * (x * x + z * z)), f(2 * (y * z - w * x))],
-      [f(2 * (x * z - w * y)), f(2 * (y * z + w * x)), f(1 - 2 * (x * x + y * y))],
+      [f(1 - qbb - qcc), f(-qdc + qab), f(qdb + qac)],
+      [f(qdc + qab), f(1 - qaa - qcc), f(-qda + qbc)],
+      [f(-qdb + qac), f(qda + qbc), f(1 - qaa - qbb)],
     ];
     axes = [0, 1, 2].map((column) => [
       f(rows[0][column] * f(scale[column])),

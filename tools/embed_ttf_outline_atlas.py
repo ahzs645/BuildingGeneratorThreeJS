@@ -78,7 +78,7 @@ def dump_font_glyph(font, character, align_y="TOP_BASELINE"):
     unused = set(boundary)
     splines = []
     while unused:
-        first = next(iter(unused))
+        first = min(unused)
         edge = first
         indices = []
         cyclic = False
@@ -100,7 +100,7 @@ def dump_font_glyph(font, character, align_y="TOP_BASELINE"):
             splines.append({
                 "cyclic": cyclic,
                 "points": [
-                    [round(value, 7) for value in mesh.vertices[index].co]
+                    [float(value) for value in mesh.vertices[index].co]
                     for index in indices
                 ],
             })
@@ -127,7 +127,7 @@ def dump_font_atlas(font):
         combined = dump_font_glyph(font, character + marker)
         combined_max = max((point[0] for spline in combined for point in spline["points"]), default=marker_max)
         glyphs[character] = {
-            "advance": round(max(0.0, combined_max - marker_max), 7),
+            "advance": float(max(0.0, combined_max - marker_max)),
             "curves": splines,
         }
 
@@ -143,9 +143,8 @@ def dump_font_atlas(font):
     align_offsets = {}
     for blender_value, socket_value in alignments.items():
         points = [point for spline in dump_font_glyph(font, "A", blender_value) for point in spline["points"]]
-        align_offsets[socket_value] = round(
-            min((point[1] for point in points), default=baseline_min_y) - baseline_min_y,
-            7,
+        align_offsets[socket_value] = float(
+            min((point[1] for point in points), default=baseline_min_y) - baseline_min_y
         )
     segments = 0
     axis_aligned_segments = 0
@@ -169,6 +168,90 @@ def dump_font_atlas(font):
         "align_offsets": align_offsets,
         "glyphs": glyphs,
     }
+
+
+def align_atlas_to_existing(atlas, existing):
+    """Keep an existing atlas' contour order while replacing rounded points."""
+
+    if "sample_stride" in existing:
+        atlas["sample_stride"] = existing["sample_stride"]
+    else:
+        atlas.pop("sample_stride", None)
+
+    def aligned_points(old_curve, new_curve):
+        old_points = old_curve["points"]
+        new_points = new_curve["points"]
+        if len(old_points) != len(new_points):
+            return None
+        count = len(old_points)
+        if count == 0:
+            return (0.0, [])
+        directions = (1, -1)
+        shifts = range(count) if old_curve.get("cyclic") else (0,)
+        best = None
+        for direction in directions:
+            for shift in shifts:
+                ordered = [new_points[(shift + direction * index) % count] for index in range(count)]
+                score = sum(
+                    (float(old[axis]) - float(new[axis])) ** 2
+                    for old, new in zip(old_points, ordered)
+                    for axis in range(3)
+                )
+                if best is None or score < best[0]:
+                    best = (score, ordered)
+        return best
+
+    for character, old_glyph in existing.get("glyphs", {}).items():
+        new_glyph = atlas.get("glyphs", {}).get(character)
+        if not new_glyph:
+            continue
+        remaining = list(enumerate(new_glyph.get("curves", [])))
+        ordered_curves = []
+        for old_curve in old_glyph.get("curves", []):
+            matches = []
+            for index, new_curve in remaining:
+                if bool(old_curve.get("cyclic")) != bool(new_curve.get("cyclic")):
+                    continue
+                aligned = aligned_points(old_curve, new_curve)
+                if aligned is not None:
+                    matches.append((aligned[0], index, new_curve, aligned[1]))
+            if not matches:
+                ordered_curves = []
+                break
+            _score, matched_index, matched_curve, points = min(matches, key=lambda item: item[0])
+            ordered_curves.append({**matched_curve, "points": points})
+            remaining = [item for item in remaining if item[0] != matched_index]
+        if ordered_curves and not remaining:
+            new_glyph["curves"] = ordered_curves
+        else:
+            # Touching pixel-font cells can be traced as one contour or as
+            # several contours depending on which boundary half-edge is
+            # visited first. Preserve the established topology and replace
+            # each rounded coordinate with the nearest freshly extracted
+            # float coordinate instead.
+            fresh_points = [
+                point
+                for curve in new_glyph.get("curves", [])
+                for point in curve.get("points", [])
+            ]
+            if fresh_points:
+                new_glyph["curves"] = [
+                    {
+                        **old_curve,
+                        "points": [
+                            list(min(
+                                fresh_points,
+                                key=lambda fresh: sum(
+                                    (float(old[axis]) - float(fresh[axis])) ** 2
+                                    for axis in range(3)
+                                ),
+                            ))
+                            for old in old_curve.get("points", [])
+                        ],
+                    }
+                    for old_curve in old_glyph.get("curves", [])
+                ]
+    return atlas
 
 
 font = bpy.data.fonts.load(font_path, check_existing=True)
@@ -195,9 +278,16 @@ for group in dump.get("node_groups", {}).values():
 missing_names = sorted(target_names - replaced)
 if missing_names:
     raise RuntimeError(f"font target matched no String to Curves reference: {missing_names}")
+existing_atlas = next(
+    (dump.get("fonts", {}).get(old_name) for old_name in replaced if dump.get("fonts", {}).get(old_name)),
+    None,
+)
 for old_name in replaced:
     dump.setdefault("fonts", {}).pop(old_name, None)
-dump.setdefault("fonts", {})[font.name] = dump_font_atlas(font)
+atlas = dump_font_atlas(font)
+if existing_atlas:
+    atlas = align_atlas_to_existing(atlas, existing_atlas)
+dump.setdefault("fonts", {})[font.name] = atlas
 
 temporary = dump_path + ".tmp"
 with open(temporary, "w", encoding="utf-8") as destination:

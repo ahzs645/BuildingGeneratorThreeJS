@@ -360,3 +360,27 @@ test("Align Rotation AUTO pivot matches Blender's float32 near-half-turn path", 
     -0.044068753719329834,
   ]);
 });
+
+test("Align Rotation keeps Blender's left-associated quaternion product", () => {
+  const rotation = [0, 0, 0] as Vec3 & { [key: symbol]: number[] };
+  Object.defineProperty(rotation, Symbol.for("gnvm.rotationQuaternion"), {
+    value: [-0.0769425630569458, 0.7557306885719299, -0.06587272882461548, 0.6470020413398743],
+    enumerable: false,
+  });
+  const handler = REGISTRY.get("FunctionNodeAlignRotationToVector");
+  assert.ok(handler);
+  const output = handler({
+    field: (name: string) => Field.of(name === "Rotation" ? rotation : name === "Vector" ? [0, 0, 1] : 1),
+    prop: (name: string, fallback: unknown) => name === "axis" ? "Z" : name === "pivot_axis" ? "AUTO" : fallback,
+  } as unknown as EvalAPI).Rotation as Field;
+  const geometry = new Geometry();
+  geometry.curves = [{ cyclic: false, points: [[0, 0, 0]] }];
+  const result = output.array(makeFieldCtx(geometry, "POINT"))[0] as Vec3 & { [key: symbol]: number[] };
+
+  assert.deepEqual(result[Symbol.for("gnvm.rotationQuaternion")], [
+    0,
+    -4.527954899913311e-9,
+    -0.10128861665725708,
+    0.9948570728302002,
+  ]);
+});
