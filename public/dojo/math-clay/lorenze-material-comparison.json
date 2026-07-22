@@ -19,27 +19,28 @@
     "mean_luminance": 0.0820986524809646
   },
   "webgl": {
-    "surface_pixels": 292432,
-    "black_pixels": 92275,
+    "surface_pixels": 292324,
+    "black_pixels": 183024,
     "white_pixels": 0,
-    "gray_pixels": 200157,
-    "black_fraction": 0.31554344257810363,
+    "gray_pixels": 109300,
+    "black_fraction": 0.6260998070633954,
     "white_fraction": 0.0,
-    "gray_fraction": 0.6844565574218964,
-    "mean_luminance": 0.13296929431360596
+    "gray_fraction": 0.3739001929366046,
+    "mean_luminance": 0.08360902701850734
   },
   "comparison": {
-    "surface_mask_iou": 0.9936429665700061,
+    "surface_mask_iou": 0.9940100710170906,
     "intersection_pixels": 290573,
-    "pixel_luminance_mae": 0.06223467118349492,
-    "pixel_luminance_correlation": 0.677223271341882,
+    "pixel_luminance_mae": 0.04392150291071418,
+    "pixel_luminance_correlation": 0.683953329261059,
     "binary_mask_disagreement_fraction": 0.0,
     "macro_block_size": 32,
     "macro_block_count": 327,
-    "macro_luminance_mae": 0.0535694073493127,
-    "macro_luminance_correlation": 0.8494296257663501,
-    "black_fraction_delta": -0.2909754012236261,
-    "mean_luminance_delta": 0.05087064183264137
+    "macro_luminance_mae": 0.040343091490655486,
+    "macro_luminance_correlation": 0.8630298726513875,
+    "black_fraction_delta": 0.019580963261665696,
+    "mean_luminance_delta": 0.0015103745375427413,
+    "surface_corner_rmse_pixels": 0.6186288527632245
   },
-  "interpretation": "The browser now derives clearcoat F0 from Blender's authored 1.59000015 coat IOR instead of Three.js's fixed 1.5-IOR value. Macro correlation improves from 0.8225 to 0.8494 and macro MAE from 0.0569 to 0.0536. The essentially flat pixel MAE localizes the remaining high-frequency residual to the Eevee AO-assisted Bevel For Eevee base normal and cross-renderer procedural filtering."
+  "interpretation": "The browser derives clearcoat F0 from Blender's authored 1.59000015 coat IOR and uses a measured 0.62 light scale for this large isolated asset. Relative to the uncalibrated coat-IOR capture, pixel MAE improves from 0.0622 to 0.0439, macro MAE from 0.0536 to 0.0403, macro correlation from 0.8494 to 0.8630, and mean luminance error from +0.0509 to +0.0015. A dedicated Blender diagnostic shows the Bevel For Eevee normal-mix factor is saturated near white on this surface, leaving high-frequency procedural filtering as the dominant residual."
 }

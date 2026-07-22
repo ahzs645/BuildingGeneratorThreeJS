@@ -44,22 +44,38 @@
     "back": "Geometry Backfacing selects the extracted dark-HSV emission color and its Screen/Window diagonal Wave mask; only the narrow thresholded bands become black.",
     "removedApproximation": "The former generated-Z sine approximation has been replaced by the extracted White Noise, distorted Wave, color-to-float, Bump, roughness, coat, and backface branches."
   },
-  "remaining": "The Bevel For Eevee group's ambient-occlusion-assisted base normal remains separate from the implemented derivative Bump. The coat IOR/Fresnel contract is now exact; renderer-energy calibration, AO-assisted bevel normals, and cross-renderer procedural filtering remain pending.",
+  "bevelFactorDiagnostic": {
+    "image": "dojo/references/math-clay/lorenze-bevel-factor.png",
+    "browserEquivalent": "current interpolated surface normal",
+    "opaquePixels": 290573,
+    "storedSrgbMin": 0.9686274509803922,
+    "storedSrgbMean": 0.9996427208093165,
+    "samplesBelow0_95": 0,
+    "interpretation": "The two AO queries and 0.5-to-0.75 ramp saturate the Bevel For Eevee mix overwhelmingly toward Blender's tangent-space default normal on this exact surface. The browser's current base normal is therefore the measured dominant branch, not the source of the remaining luminance offset."
+  },
+  "lightingCalibration": {
+    "browserRectAreaScale": 0.62,
+    "sweptScales": [0.25, 0.4, 0.55, 0.62, 0.66, 0.7, 0.74, 0.85, 1.0],
+    "selectionReason": "Lowest balanced pixel MAE with near-zero mean luminance and black-occupancy deltas against the fixed Blender reference.",
+    "meanLuminanceDelta": 0.0015103745375427413,
+    "blackFractionDelta": 0.019580963261665696
+  },
+  "remaining": "The coat IOR/Fresnel contract and object-scale lighting calibration are now measured, while the Bevel For Eevee diagnostic shows its AO normal mix is already near the browser's current surface normal for this target. Cross-renderer high-frequency procedural filtering remains pending.",
   "webglComparison": {
-    "phase": "authored-coat-ior-fresnel",
+    "phase": "authored-coat-ior-and-light-calibration",
     "status": "durable current implementation capture compared against the authored Blender reference",
     "browserRoute": "/chrome-assets?asset=math-clay-lorenze&capture=authored",
     "capture": "../references/math-clay/lorenze-authored-webgl.png",
     "comparisonReport": "lorenze-material-comparison.json",
-    "surfaceMaskIou": 0.9936429665700061,
+    "surfaceMaskIou": 0.9940100710170906,
     "intersectionPixels": 290573,
-    "pixelLuminanceMae": 0.06223467118349492,
-    "pixelLuminanceCorrelation": 0.677223271341882,
+    "pixelLuminanceMae": 0.04392150291071418,
+    "pixelLuminanceCorrelation": 0.683953329261059,
     "binaryMaskDisagreementFraction": 0.0,
-    "macroLuminanceMae": 0.0535694073493127,
-    "macroLuminanceCorrelation": 0.8494296257663501,
-    "blackFractionDelta": -0.2909754012236261,
-    "meanLuminanceDelta": 0.05087064183264137
+    "macroLuminanceMae": 0.040343091490655486,
+    "macroLuminanceCorrelation": 0.8630298726513875,
+    "blackFractionDelta": 0.019580963261665696,
+    "meanLuminanceDelta": 0.0015103745375427413
   },
   "stageOneCapture": {
     "browserRoute": "/chrome-assets?asset=math-clay-lorenze&capture=authored",
@@ -72,7 +88,7 @@
     "verts": 30644,
     "faces": 30642,
     "liveRouteReverificationSeconds": 1.36,
-    "status": "The WebGL material visibly restores the dense layer-line relief and now derives clearcoat Fresnel from the authored 1.59000015 IOR. The committed capture measures 0.9936 silhouette IoU, 0.0536 macro luminance MAE, 0.849 macro correlation, and 0.0622 pixel luminance MAE."
+    "status": "The WebGL material restores the dense layer-line relief, derives clearcoat Fresnel from the authored 1.59000015 IOR, and uses the measured 0.62 RectArea light scale. The committed capture measures 0.9940 silhouette IoU, 0.0403 macro luminance MAE, 0.863 macro correlation, and 0.0439 pixel luminance MAE."
   },
-  "interpretation": "The 0.9936 silhouette IoU confirms camera and exact geometry alignment. The browser reproduces the authored Generated-coordinate White Noise/Wave field, derivative relief, dynamic roughness and coat fields, patterned dark backface emission, and exact coat IOR/Fresnel. Relative to stage one, macro correlation improves from 0.8225 to 0.8494 and macro MAE from 0.0569 to 0.0536. Pixel MAE remains essentially flat because the remaining visual residual is localized to the Bevel For Eevee AO-assisted base normal, renderer-energy calibration, and high-frequency procedural phase/filtering."
+  "interpretation": "The 0.9940 silhouette IoU confirms camera and exact geometry alignment. The browser reproduces the authored Generated-coordinate White Noise/Wave field, derivative relief, dynamic roughness and coat fields, patterned dark backface emission, exact coat IOR/Fresnel, and measured asset-scale lighting. Relative to the uncalibrated coat-IOR capture, pixel MAE improves from 0.0622 to 0.0439, macro MAE from 0.0536 to 0.0403, and mean luminance error from +0.0509 to +0.0015. The Blender bevel-factor diagnostic rules out the near-saturated AO normal mix as the dominant residual; high-frequency procedural filtering now leads the remaining pixel difference."
 }

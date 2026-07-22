@@ -33,7 +33,7 @@ type VectorControl = { type: "vector"; name: string; label: string; value: [numb
 type SelectControl = { type: "select"; name: string; label: string; value: number | string; options: { label: string; value: number | string }[] };
 type Control = RangeControl | CheckboxControl | TextControl | VectorControl | SelectControl;
 type AssetFont = { url: string; family: string; requiredFor: string; fallback: string };
-type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; blenderStats: { verts: number; faces: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; controls: Control[] };
+type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; blenderStats: { verts: number; faces: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; authoredLightScale?: number; controls: Control[] };
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
@@ -45,6 +45,8 @@ const stipplerCapture = requestedAsset === "img-pixel-stippler"
 const authoredCapture = captureMode === "authored" || stipplerCapture;
 const stipplerCaptureSamples = query.get("samples") === "1" ? 1 : 64;
 const stipplerDebugMode = ({ generated: 1, threshold: 2, distance: 3 } as Record<string, number>)[query.get("debug") ?? ""] ?? 0;
+const requestedLightScale = Number(query.get("lightScale"));
+const captureLightScale = Number.isFinite(requestedLightScale) && requestedLightScale > 0 ? requestedLightScale : null;
 const select = document.querySelector<HTMLSelectElement>("#assets-select")!;
 const controlsHost = document.querySelector<HTMLElement>("#assets-controls")!;
 const reference = document.querySelector<HTMLImageElement>("#assets-reference")!;
@@ -195,6 +197,9 @@ async function prepareFont(asset: Asset): Promise<void> {
 }
 async function prepareAuthoredEnvironment(asset: Asset): Promise<void> {
   if (!authoredCapture) return;
+  const lightScale = captureLightScale ?? asset.authoredLightScale ?? 1;
+  if (authoredKey) authoredKey.intensity = 0.5 * lightScale;
+  if (authoredFill) authoredFill.intensity = 0.25 * lightScale;
   // This rotation/intensity pair was measured against the committed Chain &
   // Mace Eevee reference. Other authored previews keep their existing rig
   // until they have an equivalently controlled Blender reference.

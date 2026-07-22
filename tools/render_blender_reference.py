@@ -80,6 +80,38 @@ if override_payload:
     bpy.context.view_layer.update()
     print(f"NODE_DOJO_OVERRIDES_OK {json.dumps(overrides, sort_keys=True)}")
 
+debug_material_output = os.environ.get("NODE_DOJO_DEBUG_MATERIAL_OUTPUT", "")
+if debug_material_output == "MATH_BEVEL_FACTOR":
+    material = bpy.data.materials.get("Filament and Cross Section 1OCT2024")
+    if material is None or material.node_tree is None:
+        raise RuntimeError("Math Clay filament material not found")
+    material_nodes = material.node_tree.nodes
+    material_links = material.node_tree.links
+    bump = next((node for node in material_nodes if node.bl_idname == "ShaderNodeBump"), None)
+    bevel_link = next((link for link in material_links if link.to_node == bump and link.to_socket.name == "Normal"), None)
+    bevel_node = bevel_link.from_node if bevel_link else None
+    bevel_tree = bevel_node.node_tree if bevel_node and bevel_node.bl_idname == "ShaderNodeGroup" else None
+    if bevel_tree is None:
+        raise RuntimeError("Math Clay Bevel For Eevee group not found")
+    bevel_output = next((node for node in bevel_tree.nodes if node.bl_idname == "NodeGroupOutput"), None)
+    bevel_ramp = next((node for node in bevel_tree.nodes if node.bl_idname == "ShaderNodeValToRGB"), None)
+    if bevel_output is None or bevel_ramp is None:
+        raise RuntimeError("Math Clay Bevel For Eevee factor nodes not found")
+    for link in list(bevel_tree.links):
+        if link.to_node == bevel_output and link.to_socket.name == "Normal":
+            bevel_tree.links.remove(link)
+    bevel_tree.links.new(bevel_ramp.outputs["Color"], bevel_output.inputs["Normal"])
+    output_node = next((node for node in material_nodes if node.bl_idname == "ShaderNodeOutputMaterial" and node.is_active_output), None)
+    if output_node is None:
+        raise RuntimeError("Math Clay active Material Output not found")
+    emission = material_nodes.new("ShaderNodeEmission")
+    emission.inputs["Strength"].default_value = 1.0
+    material_links.new(bevel_node.outputs["Normal"], emission.inputs["Color"])
+    material_links.new(emission.outputs["Emission"], output_node.inputs["Surface"])
+    print("NODE_DOJO_DEBUG_MATERIAL_OUTPUT_OK MATH_BEVEL_FACTOR")
+elif debug_material_output:
+    raise RuntimeError(f"unsupported NODE_DOJO_DEBUG_MATERIAL_OUTPUT: {debug_material_output}")
+
 if local_space:
     obj.location = (0, 0, 0)
     obj.rotation_euler = (0, 0, 0)
@@ -163,7 +195,7 @@ authored_material = os.environ.get("NODE_DOJO_AUTHORED_MATERIAL") == "1"
 if authored_material:
     scene.render.engine = "BLENDER_EEVEE"
     scene.view_settings.view_transform = "Standard"
-    scene.view_settings.look = "Medium High Contrast"
+    scene.view_settings.look = "None" if debug_material_output else "Medium High Contrast"
     authored_light_scale = float(os.environ.get("NODE_DOJO_AUTHORED_LIGHT_SCALE", "1"))
     key_data = bpy.data.lights.new("__NODE_DOJO_REFERENCE_KEY", "AREA")
     key_data.energy = 1000.0 * authored_light_scale
@@ -212,6 +244,7 @@ if meta_path:
         "authored_material": authored_material,
         "geometry_nodes_only": gn_only,
         "authored_light_scale": authored_light_scale if authored_material else None,
+        "debug_material_output": debug_material_output or None,
     }
     with open(meta_path, "w", encoding="utf-8") as handle:
         json.dump(stats, handle, indent=2)

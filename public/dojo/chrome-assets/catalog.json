@@ -960,7 +960,8 @@
     "reference": "dojo/references/math-clay/lorenze.png",
     "blenderStats": { "verts": 30644, "faces": 30642 },
     "localSpace": true,
-    "note": "Exact 16-group, 224-node surface topology after OpenVDB transform-preserving resampling: 30,644 vertices / 30,642 faces in both engines, with bounds within 0.0001 units. The authored procedural material now includes Blender's 1.59000015 coat IOR/Fresnel and is captured durably at 0.9936 silhouette IoU and 0.849 macro luminance correlation; Bevel For Eevee, renderer energy, and high-frequency phase remain visible residuals.",
+    "authoredLightScale": 0.62,
+    "note": "Exact 16-group, 224-node surface topology after OpenVDB transform-preserving resampling: 30,644 vertices / 30,642 faces in both engines, with bounds within 0.0001 units. The authored procedural material includes Blender's 1.59000015 coat IOR/Fresnel and an asset-calibrated light scale. Its durable comparison reaches 0.9940 silhouette IoU, 0.0439 pixel luminance MAE, 0.863 macro correlation, and only +0.0015 mean-luminance error. A Blender factor render shows Bevel For Eevee is saturated near the current surface normal on this object; high-frequency procedural phase remains the visible residual.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 4, "step": 0.01, "value": 3 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.5, "max": 2, "step": 0.05, "value": 1 },
