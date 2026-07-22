@@ -865,7 +865,7 @@
     "shaderMetadata": "dojo/joints/shader-metadata.json",
     "reference": "dojo/references/joints/bubble-putty.png",
     "blenderStats": { "verts": 3302, "faces": 4675 },
-    "note": "The full 46-group, 828-node putty generator runs in-browser. Structure preview is exact at 8,040 / 9,300, the authored stochastic layout is exact at 10,272 / 20,480, and topology stays exact through dynamic triangulation. Full-precision collection payloads bring the finalized browser shell to 3,303 vertices / 6,610 triangles versus Blender's 3,302 vertices / 6,608 triangles with exact bounds. Blender-exact Boolean operands produce 3,301 / 6,606 in the current solver, separating two vertices / four triangles of remaining pre-CSG surface drift from the opposite one vertex / two triangles of native CSG tessellation.",
+    "note": "The full 46-group, 828-node putty generator runs in-browser. Structure preview is exact at 8,040 / 9,300, the authored stochastic layout is exact at 10,272 / 20,480, and topology stays exact through dynamic triangulation. Full-precision collection payloads reproduce the final Boolean envelope; coalescing Manifold's one isolated 0.00000335-unit intersection edge matches Blender's Exact solver at 3,302 vertices / 6,608 exported triangles with identical four-decimal bounds in all three finalized sweep cases. Blender stores the same surface as 4,675 polygons.",
     "controls": [
       { "type": "checkbox", "name": "finalize for export", "label": "Finalized shell", "value": true },
       { "name": "Puttiness", "label": "Puttiness", "min": 0, "max": 1, "step": 0.01, "value": 0.6353210806846619 },

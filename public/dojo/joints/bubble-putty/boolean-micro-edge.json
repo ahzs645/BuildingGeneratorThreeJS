@@ -1,0 +1,43 @@
+{
+  "source": "GN-VM authored-finalize Boolean topology probe",
+  "object": "PUTTY.002",
+  "root": "Bubble Putty Generator_9OCT2024_01",
+  "node": "Group.005",
+  "socket": "Output",
+  "before": {
+    "verts": 3303,
+    "triangles": 6610,
+    "shortest_edge": {
+      "vertices": [3288, 3289],
+      "length": 0.0000033548467825580335,
+      "positions": [
+        [2.441678524017334, 2.284982204437256, 0.609263002872467],
+        [2.441678047180176, 2.284985303878784, 0.6092641949653625]
+      ],
+      "incident_faces": [2743, 4864],
+      "endpoint_face_valence": [4, 4],
+      "common_link_vertices": 2
+    },
+    "next_shortest_edge_length": 0.00003855826267227861,
+    "length_separation_ratio": 11.493298917461322
+  },
+  "correction": "Collapse the isolated edge to its midpoint after verifying the closed-triangle link condition, an edge length below 5e-7 of the mesh diagonal, and at least 8x separation from the next eligible edge.",
+  "after": {
+    "verts": 3302,
+    "triangles": 6608,
+    "bbox": {
+      "min": [-1.5862, -2.1273, -3.4024],
+      "max": [3.5734, 3.5198, 3.4078]
+    }
+  },
+  "blender": {
+    "verts": 3302,
+    "polygons": 4675,
+    "triangles": 6608,
+    "bbox": {
+      "min": [-1.5862, -2.1273, -3.4024],
+      "max": [3.5734, 3.5198, 3.4078]
+    }
+  },
+  "classification": "Exact exported vertex/triangle counts and four-decimal bounds; Blender retains an equivalent 4,675-polygon partition before triangulation."
+}

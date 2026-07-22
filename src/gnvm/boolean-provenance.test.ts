@@ -8,7 +8,11 @@ import {
   meshToManifoldGL,
 } from "./boolean";
 import { Mesh, mergeMeshInto } from "./geometry";
-import { dissolveCoplanarFacesForTest, splitDisconnectedBooleanMeshForTest } from "./nodes/extra";
+import {
+  collapseIsolatedBooleanMicroEdgeForTest,
+  dissolveCoplanarFacesForTest,
+  splitDisconnectedBooleanMeshForTest,
+} from "./nodes/extra";
 
 function box(
   min: [number, number, number],
@@ -114,4 +118,31 @@ test("disconnected Boolean cutters split into attribute-preserving solids", () =
     Math.min(...part.positions.map((point) => point[0])),
     Math.max(...part.positions.map((point) => point[0])),
   ]), [[-2, -1], [1, 2]]);
+});
+
+test("isolated Boolean micro-edge collapse preserves a closed triangle surface", () => {
+  const mesh = new Mesh();
+  mesh.positions = [
+    [1, 0, 0], [1, 1e-8, 0], [-1, 0, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1],
+  ];
+  mesh.faces = [
+    [0, 1, 4], [1, 2, 4], [2, 3, 4], [3, 0, 4],
+    [1, 0, 5], [2, 1, 5], [3, 2, 5], [0, 3, 5],
+  ];
+  mesh.faceMaterial = mesh.faces.map((_, face) => face);
+  mesh.attributes.set("face", { domain: "FACE", data: mesh.faces.map((_, face) => face + 10) });
+
+  const collapsed = collapseIsolatedBooleanMicroEdgeForTest(mesh);
+  assert.equal(collapsed.positions.length, 5);
+  assert.equal(collapsed.faces.length, 6);
+  assert.equal(collapsed.faceMaterial.length, 6);
+  assert.equal(collapsed.attributes.get("face")?.data.length, 6);
+  assert.ok(collapsed.faces.every((face) => new Set(face).size === 3));
+  const edgeUses = new Map<string, number>();
+  for (const face of collapsed.faces) for (let corner = 0; corner < face.length; corner++) {
+    const a = face[corner], b = face[(corner + 1) % face.length];
+    const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+    edgeUses.set(key, (edgeUses.get(key) ?? 0) + 1);
+  }
+  assert.ok([...edgeUses.values()].every((uses) => uses === 2));
 });

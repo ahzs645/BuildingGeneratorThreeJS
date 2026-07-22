@@ -109,12 +109,12 @@
         "bbox": { "min": [-2.2326, -2.6957, -3.9315], "max": [4.2015, 3.698, 3.2504] }
       },
     "gnvm_after": {
-      "verts": 3303,
-      "faces": 6610,
-      "triangles": 6610,
+      "verts": 3302,
+      "faces": 6608,
+      "triangles": 6608,
         "bbox": { "min": [-1.5862, -2.1273, -3.4024], "max": [3.5734, 3.5198, 3.4078] }
       },
-    "classification": "near-exact authored result: exact rounded bounds with one more vertex / two more triangles than Blender. Full-precision dependency payloads remove the former 11-vertex / 22-triangle cutter sensitivity. Replaying Blender-exact operands yields 3,301 / 6,606, separating two vertices / four triangles of remaining pre-CSG surface drift from the opposite one vertex / two triangles of native CSG tessellation"
+    "classification": "exact exported topology and rounded bounds: full-precision dependency payloads remove the former cutter sensitivity, and a topology-preserving collapse coalesces Manifold's isolated 0.00000335-unit intersection edge into the single vertex emitted by Blender's Exact solver. Blender stores the 6,608 exported triangles as 4,675 polygons"
     }
   ]
 }

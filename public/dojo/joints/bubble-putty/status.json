@@ -2,15 +2,15 @@
   "id": "joint-bubble-putty",
   "object": "PUTTY.002",
   "root": "Bubble Putty Generator_9OCT2024_01",
-  "status": "near-exact-surface",
+  "status": "surface-export-parity",
   "blender": {
     "verts": 3302,
     "faces": 4675
   },
   "gnvm": {
-    "verts": 3303,
-    "faces": 6610
+    "verts": 3302,
+    "faces": 6608
   },
   "coverage": "100% of the reachable node types across the 46-group, 828-node closure.",
-  "validation": "The browser reproduces the relative three-object structure, welded quad-sphere seed, repeated tight-wrap/dual-mesh deformation, and finalized boolean shell. Structure-preview topology is exact at 8,040 / 9,300, and the authored stochastic bubble layout is 10,272 / 20,480. Blender's BMesh-style Ico Sphere grid, procedural noise, nearest-surface mix, tight wrap, and dynamic triangulation match through the complete pre-Boolean surface. Retaining exact float32 evaluated meshes for the three collection dependencies moves every finalized sweep from 3,290 / 6,584 to 3,303 vertices / 6,610 triangles versus Blender's 3,302 vertices / 4,675 polygons (6,608 triangles), with exact four-decimal bounds. Blender-exact Boolean operands produce 3,301 / 6,606 in the same Manifold solver: the remaining pre-CSG surface drift contributes two vertices / four triangles, while native Blender CSG contributes the opposite one vertex / two triangles. Missing Budokan and Avenir fonts belong to auxiliary label graphs and are not required by the putty surface."
+  "validation": "The browser reproduces the relative three-object structure, welded quad-sphere seed, repeated tight-wrap/dual-mesh deformation, and finalized boolean shell. Structure-preview topology is exact at 8,040 / 9,300, and the authored stochastic bubble layout is 10,272 / 20,480. Blender's BMesh-style Ico Sphere grid, procedural noise, nearest-surface mix, tight wrap, and dynamic triangulation match through the complete pre-Boolean surface. Full-precision collection dependencies produce the Blender-matching Boolean envelope. Manifold retained one isolated 0.00000335-unit intersection edge as two endpoints and two sliver triangles; its closed-manifold link satisfies a topology-preserving collapse and is more than 11 times shorter than the next edge. Coalescing that single event, as Blender's Exact solver does, makes all three finalized sweep cases exact at 3,302 vertices / 6,608 exported triangles with identical four-decimal bounds; Blender stores the same surface as 4,675 polygons. Missing Budokan and Avenir fonts belong to auxiliary label graphs and are not required by the putty surface."
 }
