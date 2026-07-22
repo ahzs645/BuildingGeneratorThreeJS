@@ -346,10 +346,11 @@ ${filamentBumpGlsl({
         })}`)
         .replace("#include <lights_physical_fragment>", THREE.ShaderChunk.lights_physical_fragment
           .replace("material.clearcoat = clearcoat;", `material.clearcoat = clamp(mix(${glsl(math.coatWeight.min)},${glsl(math.coatWeight.max)},mathFilamentField(vMathFilamentGenerated)),0.0,1.0);`)
-          .replace("material.clearcoatRoughness = clearcoatRoughness;", `material.clearcoatRoughness = clamp(mix(${glsl(math.coatRoughness.min)},${glsl(math.coatRoughness.max)},mathFilamentField(vMathFilamentGenerated)),0.0,1.0);`))
+          .replace("material.clearcoatRoughness = clearcoatRoughness;", `material.clearcoatRoughness = clamp(mix(${glsl(math.coatRoughness.min)},${glsl(math.coatRoughness.max)},mathFilamentField(vMathFilamentGenerated)),0.0,1.0);`)
+          .replace("material.clearcoatF0 = vec3( 0.04 );", `material.clearcoatF0 = vec3( pow2( (${glsl(math.coatIor)} - 1.0) / (${glsl(math.coatIor)} + 1.0) ) );`))
         .replace("if(!gl_FrontFacing)outgoingLight=vec3(0.0);", "if(!gl_FrontFacing)outgoingLight=mathFilamentBackColor(vJointColor);");
     }
   };
-  material.customProgramCacheKey = () => `joint-filament-${materialName}-${config.mathClay ? "math-v1" : "v2"}`;
+  material.customProgramCacheKey = () => `joint-filament-${materialName}-${config.mathClay ? "math-v2" : "v2"}`;
   return material;
 }

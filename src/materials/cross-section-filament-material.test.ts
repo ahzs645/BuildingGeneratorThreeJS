@@ -151,6 +151,7 @@ test("reconstructs Math Clay's authored procedural filament and emission branche
   assert.match(shader.fragmentShader, /dFdx\(vMathFilamentGenerated\)/);
   assert.match(shader.fragmentShader, /roughnessFactor=clamp\(mix\(1\.0,0\.50048828125,mathFilamentField/);
   assert.match(shader.fragmentShader, /material\.clearcoat = clamp\(mix\(-2\.08837890625,1\.2119140625/);
+  assert.match(shader.fragmentShader, /material\.clearcoatF0 = vec3\( pow2\( \(1\.5900001525878906 - 1\.0\) \/ \(1\.5900001525878906 \+ 1\.0\) \) \)/);
   assert.match(shader.fragmentShader, /outgoingLight=mathFilamentBackColor\(vJointColor\)/);
   assert.match(shader.fragmentShader, /gl_FragCoord\.xy\/max\(mathFilamentViewport/);
   assert.doesNotMatch(shader.fragmentShader, /jointBand|if\(!gl_FrontFacing\)outgoingLight=vec3\(0\.0\)/);
