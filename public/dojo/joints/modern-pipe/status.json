@@ -2,7 +2,7 @@
   "id": "joint-modern-pipe",
   "object": "PIPE GEN 4.3_OCT2024_00",
   "root": "neupipe.001",
-  "status": "near-exact-surface",
+  "status": "near-exact-openvdb-boundary",
   "blender": {
     "verts": 11162,
     "faces": 8064
@@ -12,5 +12,5 @@
     "faces": 8118
   },
   "coverage": "100% of reachable node types across the 296-group, 2,413-node closure, including its six-object pipe structure collection.",
-  "validation": "The authored six-way pipe layout, generated sleeves, SDF joint shell, dual-mesh smoothing, and structure toggle run in-browser. Collection Info and the instance-domain For Each zone preserve Blender's full affine transforms and direct component-join semantics. Curve to Mesh, Curve to Points, and Instance on Points recursively process referenced geometry without flattening its surrounding instance hierarchy. The imported six-object structure is exact at 4,968 / 4,758. Generation_0 is exact at 10,578 / 10,326 with all 10,578 realized positions bit-identical to Blender. Generation_1 retains Blender's three outer rail instances and six inner cap instances and is exact at 18,060 / 18,060, with all 18,060 realized positions bit-identical by index. The complete 28,638 / 28,386 procedural hull input is therefore position- and topology-exact. The authored result is 11,227 / 8,118 versus Blender's 11,162 / 8,064 (0.58% vertex delta with exact bounds); joint size 18 is within 0.31%, bone preview is topology-exact at 31,447 / 28,386, and hidden-structure/bone bounds differ by at most 0.0586 Blender units. The remaining 65-vertex / 54-face authored residual first appears downstream in .remesh.002's Mesh To SDF / ETK Marching Cubes / Volume to Mesh branch, not in collection extraction, generated instances, or convex-hull input."
+  "validation": "The authored six-way pipe layout, generated sleeves, SDF joint shell, dual-mesh smoothing, and structure toggle run in-browser. Collection Info and the instance-domain For Each zone preserve Blender's full affine transforms and direct component-join semantics. The imported six-object structure is exact at 4,968 / 4,758. Generation_0 is exact at 10,578 / 10,326 and Generation_1 is exact at 18,060 / 18,060, with all 28,638 realized hull positions bit-identical to Blender by index. A full Blender probe now also proves all 15,600 samples in the first Mesh To SDF / Volume Cube FloatGrid are bit-identical. The first residual is exclusively OpenVDB GridTransformer / Volume to Mesh resampling: Blender's first surface is 3,496 / 3,494 versus 3,470 / 3,468 in GN-VM. Its downstream second remesh is 3,308 / 3,306 versus 3,362 / 3,360, producing the final 11,162 / 8,064 versus 11,227 / 8,118 authored result. A threshold-only compensation was tested and rejected because it makes the first count exact while worsening the downstream shell. The remaining work is exact sparse FloatGrid resampling, not collection extraction, SDF evaluation, generated instances, or convex-hull construction."
 }

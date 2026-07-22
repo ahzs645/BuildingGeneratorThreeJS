@@ -1,0 +1,55 @@
+{
+  "source": "NEW JOINT GENERATORS 42 to 43_16DEC2024_01.blend",
+  "object": "PIPE GEN 4.3_OCT2024_00",
+  "root": "neupipe.001",
+  "branch": "tight wrap.simulated.002 / .remesh.002 / ETK_Marching Cubes",
+  "firstVolumeCube": {
+    "resolution": [26, 25, 24],
+    "sampleCount": 15600,
+    "gnvmFnv1a64": "7bbd12b88688c407",
+    "comparison": {
+      "differentSamples": 0,
+      "maximumAbsoluteError": 0,
+      "meanAbsoluteError": 0,
+      "signDifferences": 0
+    },
+    "interpretation": "Blender's Mesh To SDF field and the GN-VM field are bit-identical at every Volume Cube voxel center. The exact 28,638 / 28,386 convex-hull input and first cached scalar grid are therefore outside the remaining parity boundary."
+  },
+  "firstVolumeToMesh": {
+    "blender": { "verts": 3496, "faces": 3494 },
+    "gnvm": { "verts": 3470, "faces": 3468 },
+    "delta": { "verts": -26, "faces": -26 },
+    "interpretation": "The first measurable topology difference appears while the identical cached FloatGrid is resampled and polygonized by OpenVDB Volume to Mesh."
+  },
+  "secondVolumeCube": {
+    "resolution": [25, 24, 24],
+    "sampleCount": 14400,
+    "comparison": {
+      "differentSamples": 14399,
+      "maximumAbsoluteError": 0.42024947702884674,
+      "meanAbsoluteError": 0.01976398015756786,
+      "signDifferences": 53
+    },
+    "interpretation": "These differences are downstream propagation from the first remesh through two Dual Mesh / Set Position smoothing iterations, rather than an independent Mesh To SDF implementation error."
+  },
+  "secondVolumeToMesh": {
+    "blender": { "verts": 3308, "faces": 3306 },
+    "gnvm": { "verts": 3362, "faces": 3360 },
+    "delta": { "verts": 54, "faces": 54 }
+  },
+  "finalComposition": {
+    "exactStructure": { "verts": 4968, "faces": 4758 },
+    "blenderShell": { "verts": 6194, "faces": 3306 },
+    "gnvmShell": { "verts": 6259, "faces": 3360 },
+    "blenderAuthored": { "verts": 11162, "faces": 8064 },
+    "gnvmAuthored": { "verts": 11227, "faces": 8118 }
+  },
+  "rejectedThresholdCompensation": {
+    "isolation": 0.00014268163068307507,
+    "firstVolumeToMesh": { "verts": 3496, "faces": 3494 },
+    "secondVolumeToMesh": { "verts": 3368, "faces": 3366 },
+    "finalShell": { "verts": 6273, "faces": 3366 },
+    "reason": "The offset makes only the first topology count exact while increasing downstream error. It does not reproduce Blender's resampled scalar values or surface positions and is not a valid parity fix."
+  },
+  "nextTarget": "Reproduce OpenVDB GridTransformer FloatGrid resampling coordinates and sparse active-value behavior exactly; keep the signed-distance evaluator and procedural hull unchanged."
+}
