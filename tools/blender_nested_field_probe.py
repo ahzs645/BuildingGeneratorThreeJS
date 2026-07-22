@@ -63,6 +63,19 @@ for override in graph_overrides:
             raise KeyError(f"graph override input not found: {override_node.name}.{name}")
         socket.default_value = value
 
+# Node modes such as Curve to Points' COUNT/EVALUATED selector are RNA
+# properties rather than sockets. Allow precision probes to change those
+# properties without editing the source .blend file.
+for override in json.loads(os.environ.get("NODE_DOJO_PROBE_NODE_PROPERTIES", "[]")):
+    override_group = bpy.data.node_groups.get(override["group"])
+    override_node = override_group.nodes.get(override["node"]) if override_group else None
+    if override_node is None:
+        raise RuntimeError(f"missing property override node: {override!r}")
+    for name, value in override.get("properties", {}).items():
+        if not hasattr(override_node, name):
+            raise AttributeError(f"node property not found: {override_node.name}.{name}")
+        setattr(override_node, name, value)
+
 # A deeply nested field can be surfaced through an existing group output before
 # the parent group stores it. This keeps all of the original group inputs and
 # evaluation contexts intact, which is important for field-at-index diagnostics.
@@ -92,7 +105,10 @@ elif field_node == "__INSTANCE_SCALE__":
     synthetic_field = tree.nodes.new("GeometryNodeInputInstanceScale")
     field_output = synthetic_field.outputs[field_socket]
 else:
-    field_output = tree.nodes[field_node].outputs[field_socket]
+    field_outputs = tree.nodes[field_node].outputs
+    field_output = field_outputs.get(field_socket) or next(
+        socket for socket in field_outputs if socket.identifier == field_socket
+    )
 rotation_converter = None
 if field_output.bl_idname == "NodeSocketRotation":
     quaternion_component = os.environ.get("NODE_DOJO_ROTATION_COMPONENT", "").upper()
@@ -111,7 +127,11 @@ store.data_type = "FLOAT_VECTOR" if field_output.bl_idname.startswith("NodeSocke
 }.get(field_output.bl_idname, "FLOAT")
 store.domain = domain.upper()
 store.inputs["Name"].default_value = "__nested_probe"
-tree.links.new(tree.nodes[geometry_node].outputs[geometry_socket], store.inputs["Geometry"])
+geometry_outputs = tree.nodes[geometry_node].outputs
+geometry_source = geometry_outputs.get(geometry_socket) or next(
+    socket for socket in geometry_outputs if socket.identifier == geometry_socket
+)
+tree.links.new(geometry_source, store.inputs["Geometry"])
 tree.links.new(field_output, store.inputs["Value"])
 for link in list(geometry_output.links):
     tree.links.remove(link)

@@ -177,8 +177,10 @@ test("Curve to Points rebuilds stale imported tangents after Poly conversion", (
   const points = outputs.Points as Geometry;
   const tangents = (outputs.Tangent as Field).array(makeFieldCtx(points, "POINT"));
 
-  assert.ok(Math.abs((tangents[1] as number[])[0] - Math.SQRT1_2) < 1e-12);
-  assert.ok(Math.abs((tangents[1] as number[])[1] - Math.SQRT1_2) < 1e-12);
+  // The sampled float32 tangent is already normalized. Preserve its stored
+  // value instead of perturbing it with another normalization pass.
+  assert.equal((tangents[1] as number[])[0], 0.7071068286895752);
+  assert.equal((tangents[1] as number[])[1], 0.7071068286895752);
 });
 
 test("Curve Tangent prefers the evaluated Resample Curve frame", () => {

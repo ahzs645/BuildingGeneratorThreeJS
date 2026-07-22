@@ -24,6 +24,16 @@ for (const override of graphOverrides) {
     socket.value = value as never;
   }
 }
+const propertyOverrides = JSON.parse(process.env.GNVM_PROBE_NODE_PROPERTIES ?? "[]") as Array<{
+  group: string;
+  node: string;
+  properties: Record<string, unknown>;
+}>;
+for (const override of propertyOverrides) {
+  const node = dump.node_groups?.[override.group]?.nodes.find((candidate) => candidate.name === override.node);
+  if (!node) throw new Error(`invalid node property override: ${JSON.stringify(override)}`);
+  node.props = { ...node.props, ...override.properties };
+}
 const rawOverrides = overridesPath ? JSON.parse(readFileSync(overridesPath, "utf8")) : {};
 const overrides = Array.isArray(rawOverrides) ? rawOverrides[0]?.overrides ?? {} : rawOverrides;
 FIELD_PROBE.node = nodeName;

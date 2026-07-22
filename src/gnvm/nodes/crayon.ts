@@ -389,7 +389,11 @@ reg("GeometryNodeCurveToPoints", (api) => {
     };
     const transportedFrames = (points: Vec3[], supplied: Vec3[], cyclic: boolean) => {
       if (!supplied.length) return splineFrames(points, cyclic);
-      const ts = supplied.map((t) => vnorm(t));
+      // `sampleVectors` already follows Blender's float32 normalize path. A
+      // second double-precision normalization here perturbs the tangent by a
+      // few ULPs; those errors grow through instance rotation, proximity, and
+      // the marching-square interpolation used by Text Soup.
+      const ts = supplied.map((t) => t.map(Math.fround) as Vec3);
       const rotate = (v: Vec3, axis: Vec3, angle: number): Vec3 => {
         const c = Math.cos(angle), sn = Math.sin(angle);
         return vadd(vadd(vscale(v, c), vscale(vcross(axis, v), sn)), vscale(axis, vdot(axis, v) * (1 - c)));
