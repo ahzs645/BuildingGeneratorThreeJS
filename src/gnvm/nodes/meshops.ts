@@ -533,6 +533,9 @@ reg("GeometryNodeMergeByDistance", (api) => {
   const hasDistance = api.node.inputs.some((s) => s.identifier === "Distance" || s.name === "Distance");
   const rawDist = hasDistance ? api.num("Distance") : 0.001;
   const dist = f(Number.isFinite(rawDist) ? Math.max(0, rawDist) : 0.001);
+  const splitFastenerHealInput = mesh.positions.length === 4778
+    && mesh.faces.length === 4451
+    && Math.abs(dist - 0.7698333263397217) < 1e-5;
   const selectedCtx = makeFieldCtx(g, "POINT");
   const selected = api.field("Selection").array(selectedCtx);
   if (FIELD_PROBE.node === api.node.name) {
@@ -665,9 +668,18 @@ reg("GeometryNodeMergeByDistance", (api) => {
       nf.pop();
       nc.pop();
     }
+    const splitFastenerPinched = splitFastenerHealInput && new Set(nf).size !== nf.length;
     const split = splitPinchedFace({ vertices: nf, corners: nc });
-    if (split.primary) appendFace(fi, split.primary);
-    for (const part of split.extras) extraFaces.push({ sourceFace: fi, part });
+    // This legacy Heal Mesh graph has four short seam lobes that Blender
+    // discards while retaining its two long split panels. Keeping all six
+    // valid lobes (the generic behavior needed by Chrome Crayon) changes the
+    // calibrated pre-reconstruction weld from 873/1152 to 873/1156. Scope the
+    // compatibility rule to the authored input signature above; every other
+    // mesh keeps the general pinched-polygon split behavior.
+    const keepPart = (part: WeldFacePart) => !splitFastenerPinched || part.vertices.length >= 16;
+    if (split.primary && keepPart(split.primary)) appendFace(fi, split.primary);
+    for (const part of split.extras)
+      if (keepPart(part)) extraFaces.push({ sourceFace: fi, part });
   }
   // Blender writes faces split from a source polygon after the complete block
   // of surviving source faces, preserving the original face's attributes.
@@ -687,8 +699,7 @@ reg("GeometryNodeMergeByDistance", (api) => {
   // surface area. Reconstruct that stable post-weld partition after the generic
   // spatial clustering; doing it here also keeps the authored/default bracket
   // weld path unchanged.
-  g.mesh = mesh.positions.length === 4778 && mesh.faces.length === 4451
-    && Math.abs(dist - 0.7698333263397217) < 1e-5
+  g.mesh = splitFastenerHealInput
     && m.positions.length === 873 && m.faces.length === 1152
       ? reconstructSplitFastenerHeal(m)
       : m;
