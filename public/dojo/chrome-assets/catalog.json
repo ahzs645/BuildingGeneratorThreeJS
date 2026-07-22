@@ -184,7 +184,7 @@
     "reference": "dojo/references/chrome-assets/img-pixel-stippler-shader.png",
     "blenderStats": { "verts": 72094, "faces": 71550 },
     "material": "image-pixel-stippler",
-    "note": "Exact Blender geometry and four-decimal bounds across fifteen cases. The WebGL shader now follows Blender's planar Generated coordinate, signed PCG3D, and exact Greater Than semantics, then filters only the final output with a 4x4 footprint. Aligned 768px evidence improves to 0.303 binary-mask disagreement and 0.174 pixel correlation, but full renderer parity is not claimed.",
+    "note": "Exact Blender geometry and four-decimal bounds across fifteen cases. Image Texture now adapts Grid UV from POINT to FACE before sampling, the legacy HSV group and color storage match Blender, and the browser accumulates 64 full jittered frames with Blender's legacy Eevee sequence. Aligned 768px evidence reaches 0.0395 binary-mask disagreement and 0.9683 pixel correlation; the remaining cross-renderer antialiasing residual prevents an exact shader claim.",
     "controls": [
       { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored WebGL reconstruction", "value": "authored" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },
       { "name": "pixelate", "label": "Pixelate", "min": 0, "max": 1, "step": 0.000001, "value": 0.5988134145736694 },

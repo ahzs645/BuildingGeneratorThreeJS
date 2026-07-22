@@ -68,6 +68,26 @@ def correlation(left, right):
     return numerator / denominator if denominator else None
 
 
+def silhouette_corners(mask, width, height):
+    coordinates = [(index % width, index // width) for index, enabled in enumerate(mask) if enabled]
+    if not coordinates:
+        return None
+
+    def average(points):
+        return [sum(point[0] for point in points) / len(points), sum(point[1] for point in points) / len(points)]
+
+    min_x = min(point[0] for point in coordinates)
+    max_x = max(point[0] for point in coordinates)
+    min_y = min(point[1] for point in coordinates)
+    max_y = max(point[1] for point in coordinates)
+    return {
+        "left": average([point for point in coordinates if point[0] <= min_x + 1]),
+        "right": average([point for point in coordinates if point[0] >= max_x - 1]),
+        "bottom": average([point for point in coordinates if point[1] <= min_y + 1]),
+        "top": average([point for point in coordinates if point[1] >= max_y - 1]),
+    }
+
+
 width, height, blender_pixels = load(blender_path)
 webgl_width, webgl_height, webgl_pixels = load(webgl_path)
 if (width, height) != (webgl_width, webgl_height):
@@ -81,6 +101,13 @@ intersection = [left and right for left, right in zip(blender_mask, webgl_mask)]
 union = [left or right for left, right in zip(blender_mask, webgl_mask)]
 intersection_count = sum(intersection)
 union_count = sum(union)
+blender_corners = silhouette_corners(blender_mask, width, height)
+webgl_corners = silhouette_corners(webgl_mask, width, height)
+corner_deltas = {
+    name: [webgl_corners[name][axis] - blender_corners[name][axis] for axis in range(2)]
+    for name in blender_corners
+} if blender_corners and webgl_corners else None
+corner_rmse = math.sqrt(sum(component * component for delta in corner_deltas.values() for component in delta) / 8) if corner_deltas else None
 
 blender_joint = [value for value, enabled in zip(blender_luminance, intersection) if enabled]
 webgl_joint = [value for value, enabled in zip(webgl_luminance, intersection) if enabled]
@@ -114,6 +141,9 @@ comparison = {
     "webgl": mask_stats(webgl_mask, webgl_luminance),
     "comparison": {
         "surface_mask_iou": fraction(intersection_count, union_count),
+        "surface_corners": {"blender": blender_corners, "webgl": webgl_corners},
+        "surface_corner_deltas_webgl_minus_blender": corner_deltas,
+        "surface_corner_rmse_pixels": corner_rmse,
         "intersection_pixels": intersection_count,
         "pixel_luminance_mae": sum(absolute_error) / len(absolute_error) if absolute_error else None,
         "pixel_luminance_correlation": correlation(blender_joint, webgl_joint),

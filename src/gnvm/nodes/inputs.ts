@@ -84,14 +84,18 @@ reg("GeometryNodeImageTexture", (api) => {
       alpha: blend(blend(p00.alpha, p10.alpha, tx), blend(p01.alpha, p11.alpha, tx), ty),
     };
   };
-  const color = Field.make((ctx) => vector.array(ctx).map((value) => sample(value).color));
-  const alpha = Field.make((ctx) => vector.array(ctx).map((value) => sample(value).alpha));
-  if (vector.srcDomain) {
-    color.srcDomain = vector.srcDomain;
-    alpha.srcDomain = vector.srcDomain;
-    color.srcDomainValueType = vector.srcDomainValueType;
-    alpha.srcDomainValueType = vector.srcDomainValueType;
-  }
+  const vectorsOnConsumerDomain = (ctx: import("../core").FieldCtx): import("../core").Elem[] => {
+    if (!vector.srcDomain || vector.srcDomain === ctx.domain || !ctx.fork || !ctx.toDomain) return vector.array(ctx);
+    const source = vector.srcDomain;
+    const sourceValues = vector.array(ctx.fork(source));
+    return Array.from({ length: ctx.size }, (_, index) => ctx.toDomain!(source, sourceValues, index) ?? [0, 0, 0]);
+  };
+  // Image lookup is nonlinear. Blender first interpolates the Vector field to
+  // the consumer domain, then samples the texture. Propagating the Grid UV
+  // POINT tag through the output instead sampled at grid vertices (including
+  // CLIP's transparent border) and averaged the resulting colors per face.
+  const color = Field.make((ctx) => vectorsOnConsumerDomain(ctx).map((value) => sample(value).color));
+  const alpha = Field.make((ctx) => vectorsOnConsumerDomain(ctx).map((value) => sample(value).alpha));
   return { Color: color, Alpha: alpha };
 });
 

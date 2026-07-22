@@ -672,6 +672,55 @@ export function gradientDirectionField(gradient: Field, solenoidal: boolean): Fi
   });
 }
 
+function hueSaturationValueField(
+  color: Field,
+  hue: Field,
+  saturation: Field,
+  value: Field,
+  factor: Field,
+): Field {
+  return fieldMap([color, hue, saturation, value, factor], (colorValue, hueValue, saturationValue, valueValue, factorValue) => {
+    const rgb = asVec3(colorValue);
+    const maximum = Math.max(rgb[0], rgb[1], rgb[2]);
+    const minimum = Math.min(rgb[0], rgb[1], rgb[2]);
+    const range = maximum - minimum;
+    let sourceHue = 0;
+    const sourceSaturation = maximum === 0 ? 0 : range / maximum;
+    if (range !== 0) {
+      // The legacy N++ node group resolves exact maximum-channel ties through
+      // its ordered comparison masks: blue wins over green, which wins over
+      // red, and the selected primary hue is used for the tie.
+      if (rgb[2] === maximum && (rgb[2] === rgb[0] || rgb[2] === rgb[1])) sourceHue = 2 / 3;
+      else if (rgb[1] === maximum && rgb[1] === rgb[0]) sourceHue = 1 / 3;
+      else {
+        if (maximum === rgb[0]) sourceHue = (rgb[1] - rgb[2]) / range;
+        else if (maximum === rgb[1]) sourceHue = 2 + (rgb[2] - rgb[0]) / range;
+        else sourceHue = 4 + (rgb[0] - rgb[1]) / range;
+        sourceHue = ((sourceHue / 6) % 1 + 1) % 1;
+      }
+    }
+    const adjustedHue = ((sourceHue + asNum(hueValue) - 0.5) % 1 + 1) % 1;
+    const adjustedSaturation = Math.max(0, Math.min(1, sourceSaturation * asNum(saturationValue)));
+    const adjustedValue = Math.max(0, Math.min(1, maximum * asNum(valueValue)));
+    const sector = adjustedHue * 6;
+    const index = Math.floor(sector);
+    const fraction = sector - index;
+    const p = adjustedValue * (1 - adjustedSaturation);
+    const q = adjustedValue * (1 - adjustedSaturation * fraction);
+    const t = adjustedValue * (1 - adjustedSaturation * (1 - fraction));
+    const adjusted: Vec3 = ([
+      [adjustedValue, t, p], [q, adjustedValue, p], [p, adjustedValue, t],
+      [p, q, adjustedValue], [t, p, adjustedValue], [adjustedValue, p, q],
+    ][index % 6] ?? [adjustedValue, p, q]) as Vec3;
+    const mix = Math.max(0, Math.min(1, asNum(factorValue)));
+    return [
+      rgb[0] + (adjusted[0] - rgb[0]) * mix,
+      rgb[1] + (adjusted[1] - rgb[1]) * mix,
+      rgb[2] + (adjusted[2] - rgb[2]) * mix,
+    ] as Vec3;
+  });
+}
+
 class Invocation {
   private byName = new Map<string, RawNode>();
   private incoming = new Map<string, { from_node: string; from_socket: string; multi_input_sort_id?: number | null }[]>();
@@ -817,6 +866,21 @@ class Invocation {
           const gradient = input instanceof Field ? input : Field.of(0);
           const solenoidal = mode instanceof Field && mode.isConst ? asNum(mode.value) > 0 : false;
           return { Output_0: gradientDirectionField(gradient, solenoidal) };
+        }
+        if (node.group === "Hue Saturation Value N++") {
+          const inputField = (identifier: string, fallback: import("./core").Elem): Field => {
+            const input = this.pull(node, identifier);
+            return input instanceof Field ? input : Field.of(fallback);
+          };
+          return {
+            Output_1: hueSaturationValueField(
+              inputField("Input_0", [0, 0, 0]),
+              inputField("Input_2", 0.5),
+              inputField("Input_3", 1),
+              inputField("Input_4", 1),
+              inputField("Input_5", 1),
+            ),
+          };
         }
         // This Blender 3.4-era utility pack implements large socket selectors
         // as nested math/switch node groups. Evaluating the legacy boolean

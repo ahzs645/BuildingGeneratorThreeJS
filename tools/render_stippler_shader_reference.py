@@ -22,12 +22,16 @@ CAMERA_DIRECTION = Vector((1.0, -1.25, 0.85)).normalized()
 FRAME_SCALE = 1.45
 RESOLUTION = 768
 SOURCE_PROJECT = "Node Dojo 2/Blender Tutorial/Utilities/All_N03D_Tools_Asset_Libraries/NO3D Chrome Asset Library.blend"
+RENDER_SAMPLES = int(os.environ.get("NODE_DOJO_EEVEE_SAMPLES", "64"))
+FILTER_SIZE = float(os.environ.get("NODE_DOJO_FILTER_SIZE", "1.5"))
+DEBUG_OUTPUT = os.environ.get("NODE_DOJO_STIPPLER_DEBUG", "")
 
 
 args = sys.argv[sys.argv.index("--") + 1:]
 if len(args) < 2:
     raise RuntimeError("expected OUT.png OUT.json")
 out_path, meta_path = map(os.path.abspath, args[:2])
+linear_output = os.path.splitext(out_path)[1].lower() == ".exr"
 
 obj = bpy.data.objects.get(OBJECT_NAME)
 material = bpy.data.materials.get(MATERIAL_NAME)
@@ -72,18 +76,40 @@ scene.render.engine = "BLENDER_EEVEE"
 scene.render.resolution_x = RESOLUTION
 scene.render.resolution_y = RESOLUTION
 scene.render.resolution_percentage = 100
-scene.render.image_settings.file_format = "PNG"
+scene.render.image_settings.file_format = "OPEN_EXR" if linear_output else "PNG"
 scene.render.image_settings.color_mode = "RGBA"
 scene.render.film_transparent = True
 scene.render.filepath = out_path
-scene.render.image_settings.color_depth = "8"
+scene.render.image_settings.color_depth = "32" if linear_output else "8"
+if linear_output:
+    scene.render.image_settings.exr_codec = "ZIP"
+scene.eevee.taa_render_samples = RENDER_SAMPLES
+scene.render.filter_size = FILTER_SIZE
 scene.view_settings.view_transform = "Standard"
-scene.view_settings.look = "Medium High Contrast"
+scene.view_settings.look = "None" if DEBUG_OUTPUT else "Medium High Contrast"
 scene.view_settings.exposure = 0.0
 scene.view_settings.gamma = 1.0
+
+if DEBUG_OUTPUT:
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    sources = {
+        "generated": nodes["Texture Coordinate"].outputs["Generated"],
+        "threshold": nodes["Map Range.001"].outputs["Result"],
+        "distance": nodes["Voronoi Texture"].outputs["Distance"],
+    }
+    source = sources.get(DEBUG_OUTPUT)
+    if source is None:
+        raise RuntimeError(f"unsupported NODE_DOJO_STIPPLER_DEBUG: {DEBUG_OUTPUT}")
+    output = nodes.get("Material Output")
+    emission = nodes.new("ShaderNodeEmission")
+    emission.inputs["Strength"].default_value = 1.0
+    links.new(source, emission.inputs["Color"])
+    links.new(emission.outputs["Emission"], output.inputs["Surface"])
+
 bpy.ops.render.render(write_still=True)
 
-# Reload the written PNG so statistics describe the color-managed deliverable.
+# Reload the written image so statistics describe the actual deliverable.
 # Blender's background Render Result can expose an empty view layer here even
 # though the compositor has written a valid image.
 render = bpy.data.images.load(out_path, check_existing=False)
@@ -118,6 +144,10 @@ metadata = {
     "object": OBJECT_NAME,
     "material": MATERIAL_NAME,
     "engine": scene.render.engine,
+    "render_samples": RENDER_SAMPLES,
+    "filter_size": FILTER_SIZE,
+    "debug_output": DEBUG_OUTPUT or None,
+    "file_format": scene.render.image_settings.file_format,
     "resolution": [RESOLUTION, RESOLUTION],
     "camera": {
         "type": camera_data.type,

@@ -24,6 +24,7 @@ import { makeWorkbenchApproximationMaterial, shouldUseWorkbenchApproximation } f
 import { makeNodeBaseMaterial } from "./node-base-material";
 import { makeNodeColorVtextMaterial } from "./node-color-vtext-material";
 import { loadBlenderStudioEnvironment } from "./blender-studio-environment";
+import { EeveeTemporalCapture } from "./eevee-temporal-capture";
 
 type RangeControl = { type?: "range"; name: string; label: string; min: number; max: number; step: number; value: number };
 type CheckboxControl = { type: "checkbox"; name: string; label: string; value: boolean };
@@ -36,7 +37,14 @@ type Asset = { id: string; title: string; object: string; dump: string; shaderMe
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
-const authoredCapture = new URLSearchParams(location.search).get("capture") === "authored";
+const query = new URLSearchParams(location.search);
+const requestedAsset = query.get("asset");
+const captureMode = query.get("capture");
+const stipplerCapture = requestedAsset === "img-pixel-stippler"
+  && (captureMode === "authored" || captureMode === "stippler-shader");
+const authoredCapture = captureMode === "authored" || stipplerCapture;
+const stipplerCaptureSamples = query.get("samples") === "1" ? 1 : 64;
+const stipplerDebugMode = ({ generated: 1, threshold: 2, distance: 3 } as Record<string, number>)[query.get("debug") ?? ""] ?? 0;
 const select = document.querySelector<HTMLSelectElement>("#assets-select")!;
 const controlsHost = document.querySelector<HTMLElement>("#assets-controls")!;
 const reference = document.querySelector<HTMLImageElement>("#assets-reference")!;
@@ -49,7 +57,7 @@ const fontStatus = document.querySelector<HTMLElement>("#assets-font-status")!;
 const note = document.querySelector<HTMLElement>("#assets-note")!;
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.setPixelRatio(stipplerCapture ? 1 : Math.min(devicePixelRatio, 2)); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
 const scene = new THREE.Scene();
 let authoredKey: THREE.RectAreaLight | null = null;
 let authoredFill: THREE.RectAreaLight | null = null;
@@ -68,11 +76,12 @@ if (authoredCapture) {
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, .01, 5000);
 const orbit = new OrbitControls(camera, canvas); orbit.enableDamping = true;
 const model = new THREE.Group(); scene.add(model);
+const temporalCapture = stipplerCapture ? new EeveeTemporalCapture(renderer, scene, camera, canvas, stipplerCaptureSamples) : null;
 const material = new THREE.MeshPhysicalMaterial({ color: 0xc8e99b, roughness: .35, metalness: .06, side: THREE.DoubleSide });
 let catalog: Asset[] = [], current: Asset, dump: Dump, requestId = 0, appliedId = 0, timer = 0;
 const loadedFonts = new Map<string, Promise<boolean>>();
 
-function resize(): void { const box = canvas.getBoundingClientRect(); renderer.setSize(box.width, box.height, false); if(model.children.length)frame();else camera.updateProjectionMatrix(); }
+function resize(): void { const box = canvas.getBoundingClientRect(); renderer.setSize(box.width, box.height, false);if(temporalCapture){const drawing=renderer.getDrawingBufferSize(new THREE.Vector2());temporalCapture.resize(drawing.x,drawing.y);} if(model.children.length)frame();else camera.updateProjectionMatrix(); }
 function frame(): void { const bounds = new THREE.Box3().setFromObject(model); if (bounds.isEmpty()) return; const viewport=canvas.getBoundingClientRect();const aspect=viewport.width/Math.max(viewport.height,1);const center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),radius=Math.max(size.length()*.5,1);const halfWidth=Math.max(size.x,size.y,size.z,1)*.725;camera.left=-halfWidth;camera.right=halfWidth;camera.top=halfWidth/Math.max(aspect,1e-6);camera.bottom=-camera.top;const direction=new THREE.Vector3(1,-1.25,.85).normalize();camera.position.copy(center).addScaledVector(direction,radius*3);camera.up.set(0,0,1);camera.lookAt(center);camera.near=radius/300;camera.far=radius*100;camera.updateProjectionMatrix();if(authoredKey&&authoredFill){authoredKey.width=authoredKey.height=radius*1.5;authoredKey.position.copy(center).addScaledVector(new THREE.Vector3(-1.8,-2.1,2.8).normalize(),radius*2.4);authoredKey.lookAt(center);authoredFill.width=authoredFill.height=radius*2;authoredFill.position.copy(center).addScaledVector(new THREE.Vector3(2,1,1).normalize(),radius*2);authoredFill.lookAt(center);}orbit.target.copy(center);orbit.update(); }
 function overrides(): Record<string, number | boolean | string | number[]> { const values: Record<string, number | boolean | string | number[]> = {}; for (const control of current.controls) { if(control.name.startsWith("__"))continue;const input=document.querySelector<HTMLInputElement|HTMLSelectElement>(`[data-control="${control.name}"]`); values[control.name]=control.type==="checkbox"?((input as HTMLInputElement|null)?.checked??control.value):control.type==="text"?(input?.value??control.value):control.type==="select"?(typeof control.value==="number"?Number(input?.value??control.value):(input?.value??control.value)):control.type==="vector"?Array.from(document.querySelectorAll<HTMLInputElement>(`[data-control="${control.name}"]`)).sort((a,b)=>Number(a.dataset.axis)-Number(b.dataset.axis)).map((item,index)=>Number(item.value??control.value[index])):rangeOverrideValue(control.value,input?.value,input?.dataset.dirty==="true"); } return values; }
 function visibleControls(): Control[] { return current.controls.some((control)=>control.name==="__materialPreview") ? current.controls : [{type:"select",name:"__materialPreview",label:"Shader preview",value:"authored",options:[{label:"Authored Blender material",value:"authored"},{label:"Normalized geometry diagnostic",value:"diagnostic"}]},...current.controls]; }
@@ -119,7 +128,7 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
       const authored=shouldUseWorkbenchApproximation(current.workbenchColor,sourceMaterials,materialName)
         ? makeWorkbenchApproximationMaterial(current.workbenchColor)
         : current.material==="image-pixel-stippler"
-        ? makeImagePixelStipplerMaterial(dump,geometry,group.material??"")
+        ? makeImagePixelStipplerMaterial(dump,geometry,group.material??"",stipplerDebugMode)
         : current.material==="chain-mace"
           ? makeChainMaceMaterial(dump,geometry,materialName)
         : current.material==="chrome-crayon"
@@ -203,7 +212,7 @@ async function prepareAuthoredEnvironment(asset: Asset): Promise<void> {
   // Blender and Three use different equirectangular zero-longitude conventions.
   scene.environmentRotation.set(0, Math.PI, 0);
 }
-async function evaluate(): Promise<void> { const id=++requestId; status.classList.remove("ready");status.textContent="Evaluating extracted graph…";const started=performance.now();const worker=new Worker(new URL("./blend-import-worker.ts",import.meta.url),{type:"module",name:"chrome-assets"});const result=await new Promise<Reply>((resolve,reject)=>{worker.onmessage=(event:MessageEvent<Reply>)=>resolve(event.data);worker.onerror=(event)=>reject(new Error(event.message));worker.postMessage({id,dump,object:current.object,overrides:overrides()});});worker.terminate();if(!result.ok)throw new Error(result.error);if(result.id<appliedId)return;appliedId=result.id;for(const child of [...model.children])disposeObject(child);model.clear();model.add(makeMesh(result.soup));frame();const lineStats=result.soup.lines?.stats;vmCount.textContent=`${result.soup.stats.verts.toLocaleString()} verts · ${result.soup.stats.faces.toLocaleString()} faces${lineStats?` · ${lineStats.controlPoints.toLocaleString()} curve points · ${lineStats.segments.toLocaleString()} wire segments`:""}`;runtime.textContent=`${((performance.now()-started)/1000).toFixed(2)}s · ${current.object}`;const curveExact=Boolean(current.curveStats&&lineStats&&result.soup.stats.verts===0&&result.soup.stats.faces===current.blenderStats.faces&&lineStats.controlPoints===current.curveStats.controlPoints&&(current.curveStats.evaluatedPoints===undefined||lineStats.evaluatedPoints===current.curveStats.evaluatedPoints)&&(current.curveStats.segments===undefined||lineStats.segments===current.curveStats.segments));const exact=current.curveStats?curveExact:result.soup.stats.verts===current.blenderStats.verts&&result.soup.stats.faces===current.blenderStats.faces;status.classList.toggle("ready",exact);status.textContent=exact?(current.curveStats?"Curve control points match Blender":"Topology counts match Blender"):current.note??"Geometry differs from Blender reference"; }
+async function evaluate(): Promise<void> { const id=++requestId; status.classList.remove("ready");status.textContent="Evaluating extracted graph…";const started=performance.now();const worker=new Worker(new URL("./blend-import-worker.ts",import.meta.url),{type:"module",name:"chrome-assets"});const result=await new Promise<Reply>((resolve,reject)=>{worker.onmessage=(event:MessageEvent<Reply>)=>resolve(event.data);worker.onerror=(event)=>reject(new Error(event.message));worker.postMessage({id,dump,object:current.object,overrides:overrides()});});worker.terminate();if(!result.ok)throw new Error(result.error);if(result.id<appliedId)return;appliedId=result.id;for(const child of [...model.children])disposeObject(child);model.clear();model.add(makeMesh(result.soup));frame();temporalCapture?.reset();const lineStats=result.soup.lines?.stats;vmCount.textContent=`${result.soup.stats.verts.toLocaleString()} verts · ${result.soup.stats.faces.toLocaleString()} faces${lineStats?` · ${lineStats.controlPoints.toLocaleString()} curve points · ${lineStats.segments.toLocaleString()} wire segments`:""}`;runtime.textContent=`${((performance.now()-started)/1000).toFixed(2)}s · ${current.object}`;const curveExact=Boolean(current.curveStats&&lineStats&&result.soup.stats.verts===0&&result.soup.stats.faces===current.blenderStats.faces&&lineStats.controlPoints===current.curveStats.controlPoints&&(current.curveStats.evaluatedPoints===undefined||lineStats.evaluatedPoints===current.curveStats.evaluatedPoints)&&(current.curveStats.segments===undefined||lineStats.segments===current.curveStats.segments));const exact=current.curveStats?curveExact:result.soup.stats.verts===current.blenderStats.verts&&result.soup.stats.faces===current.blenderStats.faces;status.classList.toggle("ready",exact);status.textContent=exact?(current.curveStats?"Curve control points match Blender":"Topology counts match Blender"):current.note??"Geometry differs from Blender reference"; }
 function queue(): void { clearTimeout(timer);timer=window.setTimeout(()=>void evaluate().catch((error)=>status.textContent=String(error)),100); }
 async function choose(): Promise<void> {
   current=catalog.find((item)=>item.id===select.value)??catalog[0];const asset=current;
@@ -216,7 +225,7 @@ async function choose(): Promise<void> {
   if(current!==asset)return;
   dump=Object.assign(geometryDump,shaderMetadata??{});await evaluate();
 }
-select.addEventListener("change",()=>{const url=new URL(location.href);url.searchParams.set("asset",select.value);history.replaceState(null,"",url);void choose().catch((error)=>status.textContent=String(error));});reset.addEventListener("click",()=>{renderControls();queue();});addEventListener("resize",resize);renderer.setAnimationLoop(()=>{orbit.update();renderer.render(scene,camera);});
+select.addEventListener("change",()=>{const url=new URL(location.href);url.searchParams.set("asset",select.value);history.replaceState(null,"",url);void choose().catch((error)=>status.textContent=String(error));});reset.addEventListener("click",()=>{renderControls();queue();});addEventListener("resize",resize);renderer.setAnimationLoop(()=>{orbit.update();if(temporalCapture&&current?.id==="img-pixel-stippler"&&model.children.length)temporalCapture.render();else renderer.render(scene,camera);});
 fetch(publicUrl("dojo/chrome-assets/catalog.json"),{cache:"no-store"}).then((response)=>response.json()).then((items:Asset[])=>{catalog=items;for(const item of catalog){const option=document.createElement("option");option.value=item.id;option.textContent=item.title;select.append(option);}const requested=new URLSearchParams(location.search).get("asset");if(requested&&catalog.some((item)=>item.id===requested))select.value=requested;resize();return choose();}).catch((error)=>status.textContent=String(error));
 
 window.addEventListener("type-pixel-brush-graph-change", (event) => {

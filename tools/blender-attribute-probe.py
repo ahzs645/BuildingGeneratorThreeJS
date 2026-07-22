@@ -5,6 +5,7 @@ Usage:
     OBJECT OUT.json ATTRIBUTE [ATTRIBUTE ...]
 """
 import json
+import os
 import sys
 
 import bpy
@@ -55,12 +56,16 @@ try:
             "average": average,
             "sample": values[:8],
         }
+        if os.environ.get("NODE_DOJO_PROBE_FULL") == "1":
+            summaries[name]["values"] = values
     payload = {
         "object": obj.name,
         "verts": len(mesh.vertices),
         "faces": len(mesh.polygons),
         "attributes": summaries,
     }
+    if os.environ.get("NODE_DOJO_PROBE_FULL") == "1":
+        payload["face_centers"] = [list(polygon.center) for polygon in mesh.polygons]
 finally:
     evaluated.to_mesh_clear()
 

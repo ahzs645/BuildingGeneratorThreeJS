@@ -6,6 +6,7 @@
       768,
       768
     ],
+    "samples": 64,
     "alignment": "same square orthographic camera direction and 1.45 framing scale"
   },
   "blender": {
@@ -19,27 +20,45 @@
     "mean_luminance": 0.28205559248235784
   },
   "webgl": {
-    "surface_pixels": 93500,
-    "black_pixels": 66738,
-    "white_pixels": 8557,
-    "gray_pixels": 18205,
-    "black_fraction": 0.7137754010695188,
-    "white_fraction": 0.09151871657754011,
-    "gray_fraction": 0.19470588235294117,
-    "mean_luminance": 0.18119380483758488
+    "surface_pixels": 94484,
+    "black_pixels": 52259,
+    "white_pixels": 8755,
+    "gray_pixels": 33470,
+    "black_fraction": 0.5530989373862242,
+    "white_fraction": 0.09266119131281486,
+    "gray_fraction": 0.354239871300961,
+    "mean_luminance": 0.26194124483574804
   },
   "comparison": {
-    "surface_mask_iou": 0.9956577540106952,
+    "surface_mask_iou": 0.9852885144574742,
     "intersection_pixels": 93094,
-    "pixel_luminance_mae": 0.2985265090592236,
-    "pixel_luminance_correlation": 0.17417068942928143,
-    "binary_mask_disagreement_fraction": 0.30276924398994565,
+    "pixel_luminance_mae": 0.057251350337606574,
+    "pixel_luminance_correlation": 0.9682573730019832,
+    "binary_mask_disagreement_fraction": 0.039519195651706876,
     "macro_block_size": 32,
     "macro_block_count": 114,
-    "macro_luminance_mae": 0.1759472373019263,
-    "macro_luminance_correlation": 0.4312385735994042,
-    "black_fraction_delta": 0.1549638772333961,
-    "mean_luminance_delta": -0.10086178764477297
+    "macro_luminance_mae": 0.032240191704692875,
+    "macro_luminance_correlation": 0.9824284308091844,
+    "black_fraction_delta": -0.005712586449898471,
+    "mean_luminance_delta": -0.020114347646609798,
+    "surface_corner_rmse_pixels": 0.4358780007738972
   },
-  "interpretation": "The aligned silhouette and visible image structure validate the capture context. Generated coordinates, signed PCG3D hashing, and both authored Greater Than nodes now follow Blender source semantics; a deterministic 4x4 footprint filters the final binary result instead of smoothing internal node values. Pixel disagreement and correlation improve, but the remaining renderer-sampling and precision residual does not establish shader parity."
+  "single_sample_diagnostic": {
+    "surface_mask_iou": 0.9931718766670223,
+    "pixel_luminance_mae": 0.029058519466564334,
+    "pixel_luminance_correlation": 0.9327258199992696,
+    "binary_mask_disagreement_fraction": 0.02088301643570738,
+    "macro_luminance_correlation": 0.9896959678160736,
+    "black_fraction_delta": 0.009864070747525266,
+    "surface_corner_rmse_pixels": 0.2704683933350871
+  },
+  "field_diagnostics": {
+    "image_texture_correlation": 0.999991569,
+    "image_texture_mae": 0.000680833,
+    "stored_img_attribute_correlation": 0.999943394,
+    "stored_img_attribute_mae": 0.000686939,
+    "voronoi_distance_correlation": 0.999971147,
+    "voronoi_distance_mae": 0.00087044
+  },
+  "interpretation": "Image Texture now adapts the Grid UV field from POINT to FACE before nonlinear sampling, the extracted legacy HSV group follows Blender's channel and clamped color-storage semantics, and the authored Greater Than mask is evaluated once per raster sample. The browser then accumulates 64 complete jittered half-float frames with Blender's legacy Eevee Blackman-Harris sequence. The 64-sample pixel correlation rises from 0.1742 to 0.9683 and binary disagreement falls from 0.3028 to 0.0395. The residual is concentrated in cross-renderer raster coverage and antialiasing, so exact shader parity is not claimed."
 }

@@ -3022,7 +3022,7 @@ function meshSignedAreaXY(m: Mesh): number {
   }, { extension: "CLIP", interpolation: "Linear" }, ["Vector"]);
   const midpoint = (linear.Color as Field).array(makeFieldCtx(curve([[0, 0, 0]], false), "POINT"))[0];
   check("Image Texture linearly interpolates adjacent pixels", approx(midpoint as number[], [.5, .5, 0]));
-  check("Image Texture preserves the UV source domain", (linear.Color as Field).srcDomain === "POINT");
+  check("Image Texture samples on the consumer domain", (linear.Color as Field).srcDomain === undefined);
   DUMP_CONTEXT.images = savedImages;
 }
 

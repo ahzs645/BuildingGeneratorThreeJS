@@ -102,6 +102,7 @@ const stippleFragmentShader = /* glsl */`
   uniform float thresholdMin;
   uniform float thresholdMax;
   uniform float clampThreshold;
+  uniform float debugMode;
   varying vec3 vGenerated;
   varying vec3 vImage;
   varying float vDensity;
@@ -163,23 +164,24 @@ const stippleFragmentShader = /* glsl */`
     float imageValue = dot(vImage, vec3(0.2126, 0.7152, 0.0722));
     float source = clampThreshold > 0.5 ? clamp(imageValue, 0.0, 1.0) : imageValue;
     float threshold = mix(thresholdMin, thresholdMax, source);
-    // Preserve both authored Greater Than nodes at every sample. Eevee filters
-    // the rendered result through jittered samples; a deterministic 4x4 pixel
-    // footprint supplies the browser equivalent without smoothing node values.
-    vec3 pixelX = dFdx(mapped);
-    vec3 pixelY = dFdy(mapped);
-    float mask = 0.0;
-    for (int sampleY = 0; sampleY < 4; sampleY++) {
-      for (int sampleX = 0; sampleX < 4; sampleX++) {
-        float offsetX = (float(sampleX) + 0.5) * 0.25 - 0.5;
-        float offsetY = (float(sampleY) + 0.5) * 0.25 - 0.5;
-        mask += authoredMask(mapped + pixelX * offsetX + pixelY * offsetY,
-                             vDensity,
-                             vRandomness,
-                             threshold);
-      }
+    if (debugMode > 0.5 && debugMode < 1.5) {
+      fragColor = vec4(vGenerated, 1.0);
+      return;
     }
-    mask *= 0.0625;
+    if (debugMode > 1.5 && debugMode < 2.5) {
+      fragColor = vec4(vec3(threshold), 1.0);
+      return;
+    }
+    if (debugMode > 2.5) {
+      float distanceToFeature = voronoiF1(mapped * max(vDensity, 0.0), vRandomness);
+      fragColor = vec4(vec3(distanceToFeature), 1.0);
+      return;
+    }
+    // Evaluate the authored binary node graph once at this raster sample.
+    // Blender's Eevee renderer filters complete jittered frames, so the
+    // controlled comparison route performs that full-frame accumulation
+    // outside this shader instead of smoothing the procedural node inputs.
+    float mask = authoredMask(mapped, vDensity, vRandomness, threshold);
     fragColor = vec4(vec3(mask), 1.0);
   }
 `;
@@ -224,6 +226,7 @@ export function makeImagePixelStipplerMaterial(
   dump: Dump,
   geometry: THREE.BufferGeometry,
   materialName: string,
+  debugMode = 0,
 ): THREE.ShaderMaterial | null {
   if (!["img", "dens", "grid"].every((name) => geometry.hasAttribute(name))) return null;
   geometry.computeBoundingBox();
@@ -256,6 +259,7 @@ export function makeImagePixelStipplerMaterial(
       thresholdMin: { value: config.thresholdMin },
       thresholdMax: { value: config.thresholdMax },
       clampThreshold: { value: config.clampThreshold ? 1 : 0 },
+      debugMode: { value: debugMode },
     },
     side: THREE.DoubleSide,
     toneMapped: false,

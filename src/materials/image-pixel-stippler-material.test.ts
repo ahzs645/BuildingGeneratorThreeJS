@@ -43,6 +43,14 @@ test("exports and wires img, dens, and grid attributes on the exact authored mes
   assert.ok(result.soup.attributes.img.data.some((value) => value > 0.99));
   assert.equal(result.soup.attributes.img.domain, "FACE");
   assert.equal(result.soup.attributes.img.domainData?.length, result.soup.stats.faces * 3);
+  const blenderFaceColors = [
+    [0.5769006013870239, 0.03682343661785126, 0],
+    [0.6218644380569458, 0.03140728920698166, 0],
+  ].flat();
+  const faceColors = result.soup.attributes.img.domainData!;
+  for (let index = 0; index < blenderFaceColors.length; index++) {
+    assert.ok(Math.abs(faceColors[index] - blenderFaceColors[index]) < 2e-6, `img face sample ${index}`);
+  }
   assert.equal(result.soup.triangleFaces?.length, result.soup.stats.tris);
 
   let geometry = new THREE.BufferGeometry();
@@ -72,10 +80,15 @@ test("exports and wires img, dens, and grid attributes on the exact authored mes
   assert.match(material?.fragmentShader ?? "", /v = v \^ \(v >> 16\)/);
   assert.match(material?.fragmentShader ?? "", /cell \+ hash3\(base \+ cell\) \* clamp\(randomness/);
   assert.match(material?.fragmentShader ?? "", /distanceToFeature > threshold \? 1\.0 : 0\.0/);
-  assert.match(material?.fragmentShader ?? "", /sampleY < 4/);
+  assert.match(material?.fragmentShader ?? "", /float mask = authoredMask\(mapped, vDensity, vRandomness, threshold\)/);
+  assert.doesNotMatch(material?.fragmentShader ?? "", /dFdx|sampleY < 4/);
   assert.doesNotMatch(material?.fragmentShader ?? "", /smoothstep/);
   assert.match(material?.vertexShader ?? "", /generatedSize\.z < 1e-8\) vGenerated\.z = 0\.5/);
   assert.deepEqual(material?.uniforms.mappingScale.value.toArray(), [1, 1.414306640625, 1]);
+  assert.equal(material?.uniforms.debugMode.value, 0);
+  const distanceDebug = makeImagePixelStipplerMaterial(dump, geometry, "img stippler shader.001", 3);
+  assert.equal(distanceDebug?.uniforms.debugMode.value, 3);
+  distanceDebug?.dispose();
   geometry.dispose();
   material?.dispose();
 });

@@ -1286,11 +1286,22 @@ reg("GeometryNodeSetID", passGeometry);
 reg("GeometryNodeStoreNamedAttribute", (api) => {
   const name = api.str("Name");
   const domain = (api.prop<string>("domain", "POINT") as any);
+  const dataType = api.prop<string>("data_type", "FLOAT");
   const value = api.field("Value");
   const g = mapInstancePayloadMeshes(api.geo("Geometry"), (geometry) => {
     if (!geometry.mesh || !name) return;
     const ctx = makeFieldCtx(geometry, domain);
-    geometry.mesh.attributes.set(name, { domain, data: value.array(ctx) });
+    let data = value.array(ctx);
+    // Blender's color attributes are bounded storage types even when the
+    // upstream field math produces negative or over-range channels. The Image
+    // Pixel Stippler intentionally relies on this after its legacy HSV group.
+    if (dataType === "FLOAT_COLOR" || dataType === "BYTE_COLOR") {
+      data = data.map((item) => {
+        const color = asVec3(item);
+        return color.map((channel) => Math.max(0, Math.min(1, channel))) as Vec3;
+      });
+    }
+    geometry.mesh.attributes.set(name, { domain, data });
   });
   return { Geometry: g };
 });
