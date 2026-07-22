@@ -1121,6 +1121,16 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Volume Cube uses inclusive endpoint spacing",
     approx(volume.origin, [-1, -1, -1], 1e-9)
     && approx(volume.voxelSize, [0.5, 0.5, 0.5], 1e-9));
+  const fractionalResolution = runNode("GeometryNodeVolumeCube", {
+    Density: halfSpace, Background: -100,
+    Min: [-1, -1, -1], Max: [1, 1, 1],
+    "Resolution X": 25.546781539916992,
+    "Resolution Y": 24.78427505493164,
+    "Resolution Z": 23.945634841918945,
+  }).Volume as any;
+  check("Volume Cube truncates fields linked to integer resolution sockets",
+    approx(fractionalResolution.resolution, [25, 24, 23], 1e-9),
+    JSON.stringify(fractionalResolution.resolution));
   const surface = runNode("GeometryNodeVolumeToMesh", {
     Volume: volume, "Resolution Mode": "Size", "Voxel Size": 0.5, Threshold: 0,
   }).Mesh as Geometry;

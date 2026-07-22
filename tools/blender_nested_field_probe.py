@@ -22,9 +22,15 @@ args = sys.argv[sys.argv.index("--") + 1 :]
 object_name, out_path, group_name, geometry_spec, field_spec, domain = args
 obj = bpy.data.objects[object_name]
 tree = bpy.data.node_groups[group_name]
-probe_scene = bpy.data.scenes.new("__NODE_DOJO_FIELD_PROBE_SCENE")
-probe_scene.collection.objects.link(obj)
-bpy.context.window.scene = probe_scene
+if os.environ.get("NODE_DOJO_PROBE_CURRENT_SCENE") == "1":
+    if obj.name not in bpy.context.view_layer.objects and bpy.context.scene.collection.objects.get(obj.name) is None:
+        world_matrix = obj.matrix_world.copy()
+        bpy.context.scene.collection.objects.link(obj)
+        obj.matrix_world = world_matrix
+else:
+    probe_scene = bpy.data.scenes.new("__NODE_DOJO_FIELD_PROBE_SCENE")
+    probe_scene.collection.objects.link(obj)
+    bpy.context.window.scene = probe_scene
 obj.hide_viewport = False
 obj.hide_render = False
 obj.hide_set(False)
@@ -133,10 +139,16 @@ store.data_type = "FLOAT_VECTOR" if field_output.bl_idname.startswith("NodeSocke
 }.get(field_output.bl_idname, "FLOAT")
 store.domain = domain.upper()
 store.inputs["Name"].default_value = "__nested_probe"
-geometry_outputs = tree.nodes[geometry_node].outputs
-geometry_source = geometry_outputs.get(geometry_socket) or next(
-    socket for socket in geometry_outputs if socket.identifier == geometry_socket
-)
+synthetic_geometry = None
+if geometry_node == "__POINT__":
+    synthetic_geometry = tree.nodes.new("GeometryNodeMeshLine")
+    synthetic_geometry.inputs["Count"].default_value = 1
+    geometry_source = synthetic_geometry.outputs["Mesh"]
+else:
+    geometry_outputs = tree.nodes[geometry_node].outputs
+    geometry_source = geometry_outputs.get(geometry_socket) or next(
+        socket for socket in geometry_outputs if socket.identifier == geometry_socket
+    )
 tree.links.new(geometry_source, store.inputs["Geometry"])
 tree.links.new(field_output, store.inputs["Value"])
 for link in list(geometry_output.links):
@@ -244,6 +256,8 @@ finally:
         tree.nodes.remove(curve_to_mesh)
     if synthetic_field is not None:
         tree.nodes.remove(synthetic_field)
+    if synthetic_geometry is not None:
+        tree.nodes.remove(synthetic_geometry)
     if rotation_converter is not None:
         tree.nodes.remove(rotation_converter)
     tree.nodes.remove(store)

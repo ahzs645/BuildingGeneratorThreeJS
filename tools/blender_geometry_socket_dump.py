@@ -1,5 +1,6 @@
 """Route one root-group geometry socket to output and dump its evaluated mesh."""
 import json
+import os
 import sys
 
 import bpy
@@ -14,8 +15,26 @@ obj = bpy.data.objects[object_name]
 # dependency graph otherwise returns only the seed mesh, hiding the probed
 # Geometry Nodes result.
 if obj.name not in bpy.context.view_layer.objects and bpy.context.scene.collection.objects.get(obj.name) is None:
+    # Linking an asset-library object into the active scene can recompute its
+    # world matrix from local transform state. Preserve the authored matrix so
+    # Relative Object/Collection Info continues to evaluate in the same active
+    # modifier-object space as the source file.
+    world_matrix = obj.matrix_world.copy()
     bpy.context.scene.collection.objects.link(obj)
+    obj.matrix_world = world_matrix
 mod = next(modifier for modifier in obj.modifiers if modifier.type == "NODES" and modifier.node_group)
+probe_overrides = json.loads(os.environ.get("NODE_DOJO_PROBE_OVERRIDES", "{}"))
+if probe_overrides:
+    identifiers = {
+        item.name: item.identifier
+        for item in mod.node_group.interface.items_tree
+        if item.item_type == "SOCKET" and item.in_out == "INPUT"
+    }
+    for name, value in probe_overrides.items():
+        identifier = identifiers.get(name)
+        if identifier is None:
+            raise KeyError(f"modifier input not found: {name}")
+        mod[identifier] = value
 tree = mod.node_group
 output = next(node for node in tree.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output)
 geometry_socket = next(socket for socket in output.inputs if socket.type == "GEOMETRY")

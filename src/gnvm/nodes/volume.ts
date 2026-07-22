@@ -284,9 +284,9 @@ reg("GeometryNodeVolumeCube", (api) => {
   const min = api.vec("Min");
   const max = api.vec("Max");
   const resolution: Vec3 = [
-    Math.max(4, Math.round(api.num("Resolution X"))),
-    Math.max(4, Math.round(api.num("Resolution Y"))),
-    Math.max(4, Math.round(api.num("Resolution Z"))),
+    Math.max(2, Math.trunc(api.num("Resolution X"))),
+    Math.max(2, Math.trunc(api.num("Resolution Y"))),
+    Math.max(2, Math.trunc(api.num("Resolution Z"))),
   ];
   const voxelSize: Vec3 = [
     Math.max(1e-9, (max[0] - min[0]) / Math.max(1, resolution[0] - 1)),

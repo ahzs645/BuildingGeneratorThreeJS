@@ -2,62 +2,36 @@
   "source": "NEW JOINT GENERATORS 42 to 43_16DEC2024_01.blend",
   "object": "PIPE GEN 4.3_OCT2024_00",
   "root": "neupipe.001",
-  "branch": "tight wrap.simulated.002 / .remesh.002 / ETK_Marching Cubes",
-  "firstVolumeCube": {
-    "resolution": [26, 25, 24],
-    "sampleCount": 15600,
-    "gnvmFnv1a64": "7bbd12b88688c407",
-    "comparison": {
-      "differentSamples": 0,
-      "maximumAbsoluteError": 0,
-      "meanAbsoluteError": 0,
-      "signDifferences": 0
-    },
-    "interpretation": "Blender's Mesh To SDF field and the GN-VM field are bit-identical at every Volume Cube voxel center. The exact 28,638 / 28,386 convex-hull input and first cached scalar grid are therefore outside the remaining parity boundary."
+  "branch": "tight wrap.simulated.002 / .remesh.002 and .remesh.003",
+  "resolutionCoercion": {
+    "connectedFields": [25.54388427734375, 24.784273147583008, 23.945636749267578],
+    "blenderGridResolution": [25, 24, 23],
+    "rule": "Float fields linked to Volume Cube integer resolution sockets truncate toward zero; they are not rounded.",
+    "activeVoxels": 13800,
+    "probe": "tools/blender_nested_volume_grid_probe.py"
   },
   "firstVolumeToMesh": {
     "blender": { "verts": 3496, "faces": 3494 },
-    "gnvm": { "verts": 3478, "faces": 3476 },
-    "delta": { "verts": -18, "faces": -18 },
-    "nativeOpenVdb13": {
-      "sourceActiveVoxels": 15600,
-      "resampledActiveVoxels": 21112,
-      "sampleResolution": [33, 31, 30],
-      "resampledFnv1a64": "b538f595de36d9d6",
-      "verts": 3478,
-      "faces": 3476
-    },
-    "interpretation": "The captured dense field resamples bit-identically in GN-VM and Blender's bundled OpenVDB 13. At the authored threshold zero, both independently produce 3,478 / 3,476. Blender's nested graph still emits 3,496 / 3,494, leaving an 18-face sparse-tree construction/context boundary rather than a scalar BoxSampler or browser surface-net difference."
-  },
-  "secondVolumeCube": {
-    "resolution": [25, 24, 24],
-    "sampleCount": 14400,
-    "comparison": {
-      "differentSamples": 14399,
-      "maximumAbsoluteError": 0.42024947702884674,
-      "meanAbsoluteError": 0.01976398015756786,
-      "signDifferences": 53
-    },
-    "interpretation": "These differences are downstream propagation from the first remesh through two Dual Mesh / Set Position smoothing iterations, rather than an independent Mesh To SDF implementation error."
+    "gnvm": { "verts": 3522, "faces": 3520 },
+    "delta": { "verts": 26, "faces": 26 },
+    "interpretation": "The corrected grid dimensions remove the former false dense-grid comparison. Small scalar differences remain between Blender's transient world-context FloatGrid and the portable local-space field, so the first zero surface is not yet topologically exact."
   },
   "secondVolumeToMesh": {
     "blender": { "verts": 3308, "faces": 3306 },
-    "gnvm": { "verts": 3362, "faces": 3360 },
-    "delta": { "verts": 54, "faces": 54 }
+    "gnvm": { "verts": 3308, "faces": 3306 },
+    "delta": { "verts": 0, "faces": 0 },
+    "interpretation": "After the authored dual-mesh and proximity smoothing loop, the second remesh converges to exact topology counts. Both surfaces are closed genus-zero meshes with 6,612 edges."
   },
   "finalComposition": {
     "exactStructure": { "verts": 4968, "faces": 4758 },
-    "blenderShell": { "verts": 6194, "faces": 3306 },
-    "gnvmShell": { "verts": 6258, "faces": 3360 },
+    "blenderPreAutosmoothShell": { "verts": 3308, "faces": 3306 },
+    "gnvmPreAutosmoothShell": { "verts": 3308, "faces": 3306 },
     "blenderAuthored": { "verts": 11162, "faces": 8064 },
-    "gnvmAuthored": { "verts": 11226, "faces": 8118 }
+    "gnvmAuthored": { "verts": 11163, "faces": 8064 }
   },
-  "rejectedThresholdCompensation": {
-    "isolation": 0.00014268163068307507,
-    "firstVolumeToMesh": { "verts": 3496, "faces": 3494 },
-    "secondVolumeToMesh": { "verts": 3368, "faces": 3366 },
-    "finalShell": { "verts": 6273, "faces": 3366 },
-    "reason": "The offset makes only the first topology count exact while increasing downstream error. It does not reproduce Blender's resampled scalar values or surface positions and is not a valid parity fix."
-  },
-  "nextTarget": "Capture or reproduce Blender's transient in-graph FloatGrid tree topology before the first Volume to Mesh call; the standalone dense values, GridTransformer resample, zero-level polygonizer, signed-distance evaluator, and procedural hull are already independently exact."
+  "remaining": {
+    "authoredDefault": "One final presentation-branch vertex has no face or edge reference in the VM result; all faces and rounded bounds are exact.",
+    "jointSize18": "The pre-autosmooth mesh is count exact. Two edge angles straddle the 30-degree Split Edges cutoff because the first remesh positions are not bit-identical.",
+    "nextTarget": "Match the transient first-grid scalar values in the modifier object's evaluation context, then recheck edge-angle classifications and presentation-component cleanup."
+  }
 }

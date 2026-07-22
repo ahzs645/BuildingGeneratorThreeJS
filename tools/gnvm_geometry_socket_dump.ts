@@ -57,7 +57,9 @@ if (mode === "realize") {
   fromNode = name; fromSocket = "Geometry";
 }
 group.links.push({ from_node: fromNode, from_socket: fromSocket, to_node: outputNode.name, to_socket: outputSocket.identifier });
-const overrides = overridesPath
+const overrides = process.env.GNVM_PROBE_OVERRIDES
+  ? JSON.parse(process.env.GNVM_PROBE_OVERRIDES)
+  : overridesPath
   ? JSON.parse(readFileSync(overridesPath, "utf8"))[0]?.overrides ?? {}
   : undefined;
 const result = await runGenerator(dump, { object: objectName, overrides });

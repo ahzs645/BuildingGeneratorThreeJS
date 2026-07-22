@@ -2,15 +2,15 @@
   "id": "joint-modern-pipe",
   "object": "PIPE GEN 4.3_OCT2024_00",
   "root": "neupipe.001",
-  "status": "near-exact-openvdb-boundary",
+  "status": "face-exact-near-parity",
   "blender": {
     "verts": 11162,
     "faces": 8064
   },
   "gnvm": {
-    "verts": 11226,
-    "faces": 8118
+    "verts": 11163,
+    "faces": 8064
   },
   "coverage": "100% of reachable node types across the 296-group, 2,413-node closure, including its six-object pipe structure collection.",
-  "validation": "The authored six-way pipe layout, generated sleeves, SDF joint shell, dual-mesh smoothing, and structure toggle run in-browser. Collection Info and the instance-domain For Each zone preserve Blender's full affine transforms and direct component-join semantics. The imported six-object structure is exact at 4,968 / 4,758. Generation_0 is exact at 10,578 / 10,326 and Generation_1 is exact at 18,060 / 18,060, with all 28,638 realized hull positions bit-identical to Blender by index. All 15,600 samples in the first Mesh To SDF / Volume Cube FloatGrid are bit-identical to Blender. A native OpenVDB 13 probe of that captured grid proves GN-VM's resampled FloatGrid is also bit-identical (FNV-1a b538f595de36d9d6). Passing the authored zero threshold verbatim makes both native OpenVDB and GN-VM emit 3,478 / 3,476 for the first surface, advancing the former 3,470 / 3,468 browser result; the in-graph Blender surface remains 3,496 / 3,494. The downstream second remesh is still 3,362 / 3,360 versus Blender 3,308 / 3,306, producing 11,226 / 8,118 versus 11,162 / 8,064 with exact authored bounds. The remaining work is the 18-face difference between Blender's in-graph sparse tree and the independently reconstructed bit-identical dense field, followed by the second repeat—not collection extraction, SDF evaluation, generated instances, or convex-hull construction."
+  "validation": "The authored six-way pipe layout, generated sleeves, SDF joint shell, dual-mesh smoothing, and structure toggle run in-browser. Collection Info and the instance-domain For Each zone preserve Blender's full affine transforms. Blender's transient first Volume Cube is 25 x 24 x 23: float fields linked to its integer resolution sockets truncate toward zero. Matching that coercion advances the authored result from 11,226 / 8,118 to 11,163 / 8,064 versus Blender's 11,162 / 8,064, with identical four-decimal bounds. The second Volume to Mesh is now topology-count exact at 3,308 / 3,306, the complete pre-autosmooth shell is exact at 3,308 / 3,306, and bone preview is exact at 31,447 / 28,386. The remaining authored-default residual is one presentation-branch vertex with no face or edge reference. At joint size 18, the pre-autosmooth surface is count exact at 2,888 / 2,886; two near-threshold edge-angle classifications leave 3,082 versus Blender's 3,080 vertices after Split Edges, while all 2,886 faces remain exact."
 }
