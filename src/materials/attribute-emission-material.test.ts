@@ -52,12 +52,18 @@ test("wires Outline Sticker color and power attributes into its browser material
   for (const [name, attribute] of Object.entries(result.soup.attributes)) {
     geometry.setAttribute(name, new THREE.BufferAttribute(attribute.data, attribute.itemSize));
   }
-  const material = makeAttributeEmissionMaterial(dump, geometry, "flat.nodes");
+  const colorRemaps: { from: [number, number, number]; to: [number, number, number] }[] = [{
+    from: [0.16093085706233978, 0.45761311054229736, 0.04210049286484718],
+    to: [0.042311410620809675, 0.4286904966139066, 0.45641102318040466],
+  }];
+  const material = makeAttributeEmissionMaterial(dump, geometry, "flat.nodes", colorRemaps);
   assert.ok(material?.isShaderMaterial);
   assert.equal(material?.name, "flat.nodes · attribute emission reconstruction");
   assert.equal(material?.toneMapped, true);
   assert.match((material as THREE.ShaderMaterial).vertexShader, /attribute vec3 col/);
   assert.match((material as THREE.ShaderMaterial).vertexShader, /attribute float power/);
+  assert.match((material as THREE.ShaderMaterial).fragmentShader, /abs\(emissionColor - vec3\(0\.16093085706233978/);
+  assert.deepEqual(material?.userData.colorRemaps, colorRemaps);
   assert.match((material as THREE.ShaderMaterial).fragmentShader, /tonemapping_fragment/);
   geometry.dispose();
   material?.dispose();

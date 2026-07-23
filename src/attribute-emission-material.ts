@@ -10,6 +10,11 @@ export type AttributeEmissionConfig = {
   strengthAttribute: string;
 };
 
+export type AttributeEmissionColorRemap = {
+  from: [number, number, number];
+  to: [number, number, number];
+};
+
 /**
  * Recognize the small Blender material used by the flat sticker tools:
  * a named color attribute drives Emission Color and a named scalar attribute
@@ -45,6 +50,7 @@ export function makeAttributeEmissionMaterial(
   dump: Dump,
   geometry: THREE.BufferGeometry,
   materialName: string,
+  colorRemaps: AttributeEmissionColorRemap[] = [],
 ): THREE.ShaderMaterial | THREE.MeshBasicMaterial | null {
   const config = extractAttributeEmissionConfig(dump, materialName);
   if (!config) return null;
@@ -62,6 +68,10 @@ export function makeAttributeEmissionMaterial(
   }
   if (color.itemSize !== 3 || strength.itemSize !== 1) return null;
 
+  const remapShader = colorRemaps.map(({ from, to }) => `
+        if (all(lessThan(abs(emissionColor - vec3(${from.map((value) => value.toPrecision(17)).join(", ")})), vec3(1e-6)))) {
+          emissionColor = vec3(${to.map((value) => value.toPrecision(17)).join(", ")});
+        }`).join("");
   const material = new THREE.ShaderMaterial({
     name: `${materialName} · attribute emission reconstruction`,
     vertexShader: /* glsl */`
@@ -79,7 +89,9 @@ export function makeAttributeEmissionMaterial(
       varying vec3 vEmissionColor;
       varying float vEmissionStrength;
       void main() {
-        gl_FragColor = vec4(max(vEmissionColor, vec3(0.0)) * max(vEmissionStrength, 0.0), 1.0);
+        vec3 emissionColor = vEmissionColor;
+        ${remapShader}
+        gl_FragColor = vec4(max(emissionColor, vec3(0.0)) * max(vEmissionStrength, 0.0), 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }
@@ -89,5 +101,6 @@ export function makeAttributeEmissionMaterial(
   });
   material.userData.attributeEmissionContract = config;
   material.userData.attributeResolution = { color: "geometry-color", strength: "geometry-vector" };
+  material.userData.colorRemaps = colorRemaps;
   return material;
 }

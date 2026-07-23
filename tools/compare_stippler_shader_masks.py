@@ -111,8 +111,22 @@ corner_rmse = math.sqrt(sum(component * component for delta in corner_deltas.val
 
 blender_joint = [value for value, enabled in zip(blender_luminance, intersection) if enabled]
 webgl_joint = [value for value, enabled in zip(webgl_luminance, intersection) if enabled]
+blender_rgb_joint = [pixel[:3] for pixel, enabled in zip(blender_pixels, intersection) if enabled]
+webgl_rgb_joint = [pixel[:3] for pixel, enabled in zip(webgl_pixels, intersection) if enabled]
 binary_disagreement = sum((left >= 0.5) != (right >= 0.5) for left, right in zip(blender_joint, webgl_joint))
 absolute_error = [abs(left - right) for left, right in zip(blender_joint, webgl_joint)]
+rgb_absolute_error = [
+    abs(left[channel] - right[channel])
+    for left, right in zip(blender_rgb_joint, webgl_rgb_joint)
+    for channel in range(3)
+]
+mean_rgb_delta = [
+    (
+        sum(pixel[channel] for pixel in webgl_rgb_joint)
+        - sum(pixel[channel] for pixel in blender_rgb_joint)
+    ) / len(blender_rgb_joint)
+    for channel in range(3)
+] if blender_rgb_joint else None
 
 block_size = 32
 block_blender = []
@@ -145,6 +159,8 @@ comparison = {
         "surface_corner_deltas_webgl_minus_blender": corner_deltas,
         "surface_corner_rmse_pixels": corner_rmse,
         "intersection_pixels": intersection_count,
+        "pixel_rgb_mae": sum(rgb_absolute_error) / len(rgb_absolute_error) if rgb_absolute_error else None,
+        "mean_rgb_delta": mean_rgb_delta,
         "pixel_luminance_mae": sum(absolute_error) / len(absolute_error) if absolute_error else None,
         "pixel_luminance_correlation": correlation(blender_joint, webgl_joint),
         "binary_mask_disagreement_fraction": fraction(binary_disagreement, len(blender_joint)),

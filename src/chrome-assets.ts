@@ -34,7 +34,7 @@ type VectorControl = { type: "vector"; name: string; label: string; value: [numb
 type SelectControl = { type: "select"; name: string; label: string; value: number | string; options: { label: string; value: number | string }[] };
 type Control = RangeControl | CheckboxControl | TextControl | VectorControl | SelectControl;
 type AssetFont = { url: string; family: string; requiredFor: string; fallback: string };
-type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; authoredLightScale?: number; authoredEnvironmentIntensity?: number; authoredToneMapping?: "none"; controls: Control[] };
+type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; attributeEmissionColorRemaps?: { from: [number, number, number]; to: [number, number, number] }[]; authoredLightScale?: number; authoredEnvironmentIntensity?: number; authoredToneMapping?: "none"; controls: Control[] };
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
@@ -157,7 +157,7 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
         : current.material==="chrome-crayon"
           ? makeChromeCrayonMaterial(dump,geometry,group.material??"")
         : current.material==="attribute-emission"
-          ? makeAttributeEmissionMaterial(dump,geometry,group.material??"")
+          ? makeAttributeEmissionMaterial(dump,geometry,group.material??"",current.attributeEmissionColorRemaps)
           : makeAttributeEmissionMaterial(dump,geometry,group.material??"")
             ?? makeAttributeColorEmissionMaterial(dump,geometry,group.material??"")
             ?? makeAttributePrincipledMaterial(dump,geometry,group.material??"")

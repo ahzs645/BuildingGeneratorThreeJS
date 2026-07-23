@@ -13,6 +13,10 @@ import math
 import sys
 
 import bpy
+try:
+    import PyOpenColorIO as ocio
+except ImportError:
+    ocio = None
 
 
 args = sys.argv[sys.argv.index("--") + 1:]
@@ -52,8 +56,24 @@ def attribute_summary(attributes):
             "count": len(values),
             "sample": values[:12],
         }
+        if attribute.data_type in {"BYTE_COLOR", "FLOAT_COLOR"}:
+            serialized["sample_srgb"] = [
+                [float(component) for component in item.color_srgb]
+                for item in attribute.data[:12]
+            ]
         if numeric:
             serialized["range"] = [min(numeric), max(numeric)]
+        palette = {}
+        for value in values:
+            key = json.dumps(value, separators=(",", ":"))
+            palette[key] = palette.get(key, 0) + 1
+            if len(palette) > 64:
+                break
+        if len(palette) <= 64:
+            serialized["palette"] = [
+                {"value": json.loads(key), "count": count}
+                for key, count in palette.items()
+            ]
         result[attribute.name] = serialized
     return result
 
@@ -80,6 +100,17 @@ try:
         "object": object_name,
         "source_type": obj.type,
         "realized": realize,
+        "color_management": {
+            "display_device": bpy.context.scene.display_settings.display_device,
+            "view_transform": bpy.context.scene.view_settings.view_transform,
+            "look": bpy.context.scene.view_settings.look,
+            "working_space": getattr(bpy.context.scene.view_settings, "working_space", None),
+            "scene_linear_role": (
+                ocio.GetCurrentConfig().getColorSpace(ocio.ROLE_SCENE_LINEAR).getName()
+                if ocio is not None
+                else None
+            ),
+        },
         "source_attributes": source_attributes,
         "evaluated": {
             "verts": len(mesh.vertices),

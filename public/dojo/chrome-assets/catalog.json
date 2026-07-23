@@ -210,8 +210,17 @@
     "dump": "dojo/chrome-assets/outline-sticker/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/outline-sticker.png",
+    "authoredReference": "dojo/references/chrome-assets/outline-sticker-authored.png",
     "blenderStats": { "verts": 1056, "faces": 1025 },
-    "note": "Authored output matches Blender exactly at 1,056 vertices / 1,025 faces with identical four-decimal local bounds. Its col and power attributes now drive the same emission contract as Blender; scale and outline remain editable in-browser.",
+    "localSpace": true,
+    "authoredToneMapping": "none",
+    "attributeEmissionColorRemaps": [
+      {
+        "from": [0.16093085706233978, 0.45761311054229736, 0.04210049286484718],
+        "to": [0.042311410620809675, 0.4286904966139066, 0.45641102318040466]
+      }
+    ],
+    "note": "Authored output matches Blender exactly at 1,056 vertices / 1,025 faces with identical four-decimal local bounds. Its col and power attributes drive the authored emission contract, including a measured Blender GPU-visible color remap for the center island. The aligned Blender/WebGL capture reaches 0.9982 silhouette IoU, 0.0150 RGB MAE, and 0.9862 macro luminance correlation; scale and outline remain editable in-browser.",
     "material": "attribute-emission",
     "controls": [
       { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored attribute emission", "value": "authored" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },

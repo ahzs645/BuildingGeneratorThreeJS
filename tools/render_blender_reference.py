@@ -250,7 +250,11 @@ studio_environment_strength = (
 if authored_material:
     scene.render.engine = "BLENDER_EEVEE"
     scene.view_settings.view_transform = "Standard"
-    scene.view_settings.look = "None" if debug_material_output else "Medium High Contrast"
+    authored_look = os.environ.get(
+        "NODE_DOJO_AUTHORED_LOOK",
+        "None" if debug_material_output else "Medium High Contrast",
+    )
+    scene.view_settings.look = authored_look
     if studio_environment:
         world = bpy.data.worlds.new("__NODE_DOJO_REFERENCE_WORLD")
         world.use_nodes = True
@@ -318,6 +322,7 @@ if meta_path:
         "geometry_nodes_only": gn_only,
         "overrides": overrides,
         "authored_light_scale": authored_light_scale if authored_material else None,
+        "authored_look": authored_look if authored_material else None,
         "studio_environment": studio_environment,
         "studio_environment_strength": studio_environment_strength,
         "workbench_shadows": workbench_shadows if not authored_material else None,

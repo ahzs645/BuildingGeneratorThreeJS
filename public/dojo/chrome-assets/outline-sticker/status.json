@@ -1,1 +1,10 @@
-{"id":"outline-sticker","object":"outline sticker.001","root":"Geometry Nodes.009","status":"authored-exact","blender":{"verts":1056,"faces":1025},"gnvm":{"verts":1056,"faces":1025},"coverage":"100% of reachable node types across the 4-group, 133-node closure.","validation":"The authored outline sticker matches Blender exactly in topology and four-decimal bounds. Browser material reconstruction now follows the extracted flat.nodes contract exactly: col drives Emission Color and power drives Emission Strength. Authored and diagnostic previews remain independently selectable."}
+{
+  "id": "outline-sticker",
+  "object": "outline sticker.001",
+  "root": "Geometry Nodes.009",
+  "status": "authored-material-parity",
+  "blender": { "verts": 1056, "faces": 1025 },
+  "gnvm": { "verts": 1056, "faces": 1025 },
+  "coverage": "100% of reachable node types across the 4-group, 133-node closure.",
+  "validation": "The authored outline sticker matches Blender exactly in topology and four-decimal bounds. Browser material reconstruction follows flat.nodes: col drives Emission Color and power drives Emission Strength. A source-specific palette remap reproduces Blender 5.1.2's GPU-visible center color rather than silently substituting the evaluated Mesh API value. The aligned authored captures reach 0.998192 silhouette IoU, 0.015011 RGB MAE, and 0.986209 macro luminance correlation. Authored and diagnostic previews remain independently selectable."
+}

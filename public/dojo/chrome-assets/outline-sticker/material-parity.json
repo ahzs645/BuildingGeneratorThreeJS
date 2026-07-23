@@ -1,0 +1,81 @@
+{
+  "updated": "2026-07-23",
+  "target": {
+    "id": "outline-sticker",
+    "project": "NO3D Chrome Asset Library.blend",
+    "object": "outline sticker.001",
+    "root": "Geometry Nodes.009",
+    "material": "flat.nodes"
+  },
+  "geometryContract": {
+    "verts": 1056,
+    "faces": 1025,
+    "tris": 2078,
+    "group": {
+      "start": 0,
+      "count": 6234,
+      "material": "flat.nodes"
+    },
+    "bounds": {
+      "min": [-12.052, -12.052, 0.0],
+      "max": [12.052, 12.052, 0.0]
+    }
+  },
+  "authoredShaderContract": {
+    "nodes": 4,
+    "links": 3,
+    "colorPath": "Geometry Attribute col Color → Emission Color",
+    "strengthPath": "Geometry Attribute power Vector → Emission Strength",
+    "evaluatedAttributes": {
+      "col": {
+        "domain": "POINT",
+        "itemSize": 3,
+        "palette": [
+          {
+            "value": [0.16093085706233978, 0.45761311054229736, 0.04210049286484718],
+            "vertices": 32
+          },
+          {
+            "value": [1.0, 0.8666939735412598, 0.9424127340316772],
+            "vertices": 1024
+          }
+        ]
+      },
+      "power": {
+        "domain": "POINT",
+        "itemSize": 1,
+        "value": 1.0
+      }
+    }
+  },
+  "blenderGpuColorResolution": {
+    "finding": "Blender 5.1.2's evaluated Mesh API and GN-VM agree on the two col values, but the unmodified source renders the 32-vertex center island with a different GPU-visible color. Assigning the same API color back to those vertices changes Blender's render to the API value, proving that a plain linear-RGB pass-through does not reproduce the saved file's appearance.",
+    "sourceLinearRgb": [0.16093085706233978, 0.45761311054229736, 0.04210049286484718],
+    "browserLinearRgb": [0.042311410620809675, 0.4286904966139066, 0.45641102318040466],
+    "measuredDisplayRgb8": [58, 175, 180],
+    "scope": "The remap is asset metadata passed only to Outline Sticker's attribute-emission material. Geometry attributes and exported topology remain unchanged."
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../../references/chrome-assets/outline-sticker-authored.png",
+    "blenderMetadata": "../../references/chrome-assets/outline-sticker-authored.json",
+    "browserReference": "../../references/chrome-assets/outline-sticker-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=outline-sticker&capture=authored",
+    "colorManagement": "Blender uses Standard with Look=None; WebGL uses NoToneMapping and sRGB output so the comparison isolates the authored emission values."
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9981920684292379,
+    "surfaceCornerRmsePixels": 1.0050749563358248,
+    "intersectionPixels": 102694,
+    "pixelRgbMae": 0.015011193476346333,
+    "meanRgbDelta": [-0.013299938941007929, -0.00577768425092954, -0.003478830444858511],
+    "pixelLuminanceMae": 0.013716080349942374,
+    "pixelLuminanceCorrelation": 0.9099778228426356,
+    "macroLuminanceMae": 0.011784566069796568,
+    "macroLuminanceCorrelation": 0.9862094306330471
+  },
+  "interpretation": "The browser now reproduces both the cyan center and pale outline visible in Blender while retaining exact geometry. Residual error is concentrated at antialiased silhouette pixels and the two rasterizers' slightly different n-gon triangulation coverage; it is not a missing material branch."
+}
