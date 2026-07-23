@@ -12,5 +12,5 @@
     "faces": 3032
   },
   "coverage": "100% of reachable node types across the 1-group, 14-node closure.",
-  "validation": "The authored hard-case preview has exact topology and local bounds. Its named layer-height attributes drive the face offsets. The asset library uses per-face comparison shading because the triangle soup does not yet carry Blender's split normals, and it normalizes the filament-visualizer shader."
+  "validation": "The authored hard-case preview has exact topology and local bounds. Its named layer-height attributes drive the face offsets. Blender marks every source polygon flat, so the asset library's per-face shading is authored parity rather than a split-normal fallback. The filament-visualizer shader is still normalized."
 }

@@ -744,7 +744,7 @@
     "blenderStats": { "verts": 4512, "faces": 3032 },
     "flatShading": true,
     "localSpace": true,
-    "note": "Exact authored geometry and local bounds at 4,512 vertices / 3,032 faces. This 14-node tutorial graph offsets the supplied hard-case mesh from its named layer-height attributes. The browser uses per-face comparison shading because the triangle soup does not yet carry Blender's split normals, and it normalizes the filament-visualizer shader.",
+    "note": "Exact authored geometry and local bounds at 4,512 vertices / 3,032 faces. This 14-node tutorial graph offsets the supplied hard-case mesh from its named layer-height attributes. Blender marks all 1,516 source polygons flat, so the browser's per-face shading is the authored normal contract rather than a split-normal fallback. The filament-visualizer shader is still normalized.",
     "controls": []
   },
   {
@@ -884,7 +884,7 @@
     "reference": "dojo/references/joints/pipe-icon.png",
     "blenderStats": { "verts": 73062, "faces": 72486 },
     "localSpace": true,
-    "note": "Exact Blender topology and bit-for-bit matching local bounds for the fixed 2-group, 24-node five-way pipe icon. The web comparison preserves all generated faces and material assignments; its normalized reference renderer does not carry Blender's split smooth normals.",
+    "note": "Exact Blender topology and bit-for-bit matching local bounds for the fixed 2-group, 24-node five-way pipe icon. Blender marks all 24,162 source faces smooth with no sharp edges or split points, so the GN-VM point normals preserve its authored normal contract. The web comparison preserves all generated faces and material assignments.",
     "controls": []
   },
   {

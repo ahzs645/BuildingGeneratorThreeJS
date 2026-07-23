@@ -1,0 +1,15 @@
+{
+  "object": "pipe icon",
+  "blenderVersion": "5.1.2",
+  "source": {
+    "vertices": 24354,
+    "faces": 24162,
+    "corners": 97020,
+    "smoothFaces": 24162,
+    "flatFaces": 0,
+    "sharpEdges": 0,
+    "splitPoints": 0,
+    "maxNormalsPerPoint": 1
+  },
+  "interpretation": "All authored source polygons are smooth, no edge is sharp, and each point has exactly one corner-normal value. The GN-VM point-normal representation therefore preserves the source shading contract; this asset does not require discontinuous split normals."
+}

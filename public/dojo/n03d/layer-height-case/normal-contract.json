@@ -1,0 +1,13 @@
+{
+  "object": "tutorial",
+  "blenderVersion": "5.1.2",
+  "source": {
+    "vertices": 2256,
+    "faces": 1516,
+    "corners": 7490,
+    "smoothFaces": 0,
+    "flatFaces": 1516,
+    "sharpEdges": 0
+  },
+  "interpretation": "Every authored source polygon is flat shaded. The Geometry Nodes graph duplicates and offsets this surface without introducing a smooth-shading operation, so Three.js flatShading is the Blender-equivalent display contract; no missing custom split-normal payload is required."
+}
