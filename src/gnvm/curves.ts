@@ -542,7 +542,11 @@ export function sweep(
     // Evaluated curve normals carry Blender's minimum-twist transport and its
     // small float32 cyclic correction. Rebuilding them only from the tangent
     // loses that roll and changes coordinate-sensitive hull membership.
-    const evaluatedNormal = normalOverrides?.[i] && vlen(normalOverrides[i]) > 1e-9
+    // Set Spline Type -> NURBS rebuilds the evaluated spline frame. Reusing the
+    // poly normal captured by an earlier Resample Curve rotates the Spikey
+    // Chain Link away from Blender's NURBS frame. For ordinary poly rails the
+    // evaluated normal remains authoritative, including planar float32 roll.
+    const evaluatedNormal = rail.splineType !== "NURBS" && normalOverrides?.[i] && vlen(normalOverrides[i]) > 1e-9
       ? normalOverrides[i]
       : null;
     const normal = evaluatedNormal

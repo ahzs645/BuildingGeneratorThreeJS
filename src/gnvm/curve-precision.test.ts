@@ -300,6 +300,25 @@ test("Resample Curve preserves Blender float32 minimum-twist frames through swee
   assert.deepEqual(mesh.positions[34 * 2], [-11.957764625549316, 9.23585033416748, -0.14126437902450562]);
 });
 
+test("Curve to Mesh rebuilds NURBS normals after Set Spline Type", () => {
+  const rail = {
+    cyclic: true,
+    splineType: "NURBS" as const,
+    points: [[1, 0, 0], [0, 1, 0], [-1, 0, 0], [0, -1, 0]] as Vec3[],
+  };
+  const profile = {
+    cyclic: true,
+    points: [[0.2, 0, 0], [0, 0.1, 0], [-0.2, 0, 0], [0, -0.1, 0]] as Vec3[],
+  };
+  const tangents: Vec3[] = [[0, 1, 0], [-1, 0, 0], [0, -1, 0], [1, 0, 0]];
+  const stalePolyNormals: Vec3[] = [[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]];
+
+  const rebuilt = sweep(rail, profile, false, undefined, tangents, stalePolyNormals);
+  const expected = sweep(rail, profile, false, undefined, tangents);
+
+  assert.deepEqual(rebuilt.positions, expected.positions);
+});
+
 test("Align Rotation preserves native Curve to Points quaternion at 180 degrees", () => {
   const curve = new Geometry();
   curve.curves = [{ cyclic: false, points: [[0, 0, 1], [0, 0, -1]] }];
