@@ -488,7 +488,7 @@
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/dowel.png",
     "blenderStats": { "verts": 333, "faces": 224 },
-    "note": "Exact Blender topology across all six validation cases. Diameter, midpoint placement, cutter mode, round/square profile, and cutter offset all evaluate live in the browser; bounds remain within 0.0039 units.",
+    "note": "Exact Blender topology and four-decimal bounds across all six validation cases. Diameter, midpoint placement, cutter mode, round/square profile, and cutter offset all evaluate live in the browser.",
     "controls": [
       { "name": "dia/width", "label": "Diameter / width", "min": 2, "max": 40, "step": 0.1, "value": 22 },
       { "type": "checkbox", "name": "from mid", "label": "Build from midpoint", "value": true },

@@ -13,18 +13,17 @@
       "faces": 224,
       "bbox": {
         "min": [
-          -10.9989,
           -10.9956,
+          -10.9989,
           -50.0024
         ],
         "max": [
-          10.9989,
           11,
+          10.9989,
           50.0024
         ]
       },
-      "elapsed_ms": 26,
-      "export": "00-authored-default.json"
+      "elapsed_ms": 28
     },
     {
       "combo": {
@@ -38,18 +37,17 @@
       "faces": 224,
       "bbox": {
         "min": [
-          -5.9994,
           -5.9976,
+          -5.9994,
           -50.0024
         ],
         "max": [
-          5.9994,
           6,
+          5.9994,
           50.0024
         ]
       },
-      "elapsed_ms": 1,
-      "export": "01-diameter-12.json"
+      "elapsed_ms": 4
     },
     {
       "combo": {
@@ -63,18 +61,17 @@
       "faces": 557,
       "bbox": {
         "min": [
-          -10.9989,
           -10.9956,
+          -10.9989,
           0
         ],
         "max": [
-          10.9989,
           11,
+          10.9989,
           50.0024
         ]
       },
-      "elapsed_ms": 3,
-      "export": "02-from-end.json"
+      "elapsed_ms": 7
     },
     {
       "combo": {
@@ -88,18 +85,17 @@
       "faces": 224,
       "bbox": {
         "min": [
-          -11.3989,
           -11.3954,
+          -11.3989,
           -50.0024
         ],
         "max": [
-          11.3989,
           11.4,
+          11.3989,
           50.0024
         ]
       },
-      "elapsed_ms": 1,
-      "export": "03-cutter.json"
+      "elapsed_ms": 6
     },
     {
       "combo": {
@@ -123,8 +119,7 @@
           50.0024
         ]
       },
-      "elapsed_ms": 1,
-      "export": "04-round-square.json"
+      "elapsed_ms": 2
     },
     {
       "combo": {
@@ -139,18 +134,17 @@
       "faces": 224,
       "bbox": {
         "min": [
-          -12.9987,
           -12.9948,
+          -12.9987,
           -50.0024
         ],
         "max": [
-          12.9987,
           13,
+          12.9987,
           50.0024
         ]
       },
-      "elapsed_ms": 1,
-      "export": "05-cutter-offset-2.json"
+      "elapsed_ms": 3
     }
   ]
 }

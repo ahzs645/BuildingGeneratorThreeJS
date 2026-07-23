@@ -2,9 +2,9 @@
   "id": "n03d-dowel",
   "object": "Plane.004",
   "root": "dowel",
-  "status": "exact-topology",
+  "status": "exact",
   "blender": { "verts": 333, "faces": 224 },
   "gnvm": { "verts": 333, "faces": 224 },
   "coverage": "100% of reachable node types across the 42-node root closure.",
-  "validation": "Six Blender/VM cases cover authored diameter, alternate diameter, endpoint placement, cutter mode, round-square profile, and cutter offset. Every case has exact vertex and face counts; the maximum local-bounds difference is 0.0039 units."
+  "validation": "Six Blender/VM cases cover authored diameter, alternate diameter, endpoint placement, cutter mode, round-square profile, and cutter offset. Every case has exact vertex and face counts plus matching four-decimal local bounds."
 }
