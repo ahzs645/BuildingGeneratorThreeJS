@@ -2,9 +2,9 @@
   "id": "type-pixel-brush",
   "object": "Type Pixel Brush Chrome",
   "root": "soft pixel marker.001",
-  "status": "exact-sweep",
+  "status": "exact-sweep-and-authored-material-near-parity",
   "fontSubstitution": "The source references a missing BudokanRoundedBold-WyyeO.ttf. Validation substitutes the supplied Pixels Medium TTF in Blender and GN-VM, with embedded outlines as the browser fallback.",
   "blender": { "verts": 17860, "faces": 11296 },
   "gnvm": { "verts": 17860, "faces": 11296 },
-  "validation": "Exact Blender topology across all six validation cases, including the overlapping-contour Character Spacing 0.7 case. Four-decimal local bounds differ by at most 0.0001 units."
+  "validation": "Exact Blender topology across all six validation cases, including the overlapping-contour Character Spacing 0.7 case. Four-decimal local bounds differ by at most 0.0001 units. Authored mode preserves chrome.002 and its all-zero FACE-domain rough field across all 11,296 faces. The matched-font, local-space studio comparison measures 0.9867 silhouette IoU, 0.0486 macro luminance MAE, and +0.0113 mean luminance error; the residual is Eevee/Three.js reflection filtering and highlight placement."
 }

@@ -18,6 +18,10 @@ const softPixelDump = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/chrome-assets/soft-pixel-marker/dump.json",
   import.meta.url,
 )), "utf8")) as Dump;
+const typePixelDump = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/chrome-assets/type-pixel-brush/dump.json",
+  import.meta.url,
+)), "utf8")) as Dump;
 
 test("extracts the authored chrome.003 Principled/noise contract", () => {
   assert.deepEqual(extractChromeCrayonMaterialConfig(dump, "chrome.003"), {
@@ -137,6 +141,26 @@ test("preserves Soft Pixel Marker's authored polished chrome branch", async () =
   geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));
   geometry.setAttribute("rough", new THREE.BufferAttribute(result.soup.attributes.rough.data, 1));
   const material = makeChromeCrayonMaterial(softPixelDump, geometry, "chrome.002");
+  assert.equal(material?.name, "chrome.002 · authored Chrome Crayon reconstruction");
+  assert.equal(material?.metalness, 1);
+  assert.equal(material?.roughness, 0);
+  assert.equal(material?.userData.chromeCrayonAttributeResolution, "geometry-color");
+  material?.dispose();
+  geometry.dispose();
+});
+
+test("preserves Type Pixel Brush's authored polished chrome branch", async () => {
+  const result = await runGenerator(typePixelDump, { object: "Type Pixel Brush Chrome", overrides: {} });
+  assert.deepEqual(result.soup.stats, { verts: 17860, faces: 11296, tris: 22592 });
+  assert.deepEqual(result.soup.groups, [{ start: 0, count: 67776, material: "chrome.002" }]);
+  assert.equal(result.soup.attributes.rough.itemSize, 1);
+  assert.equal(result.soup.attributes.rough.domain, "FACE");
+  assert.ok(result.soup.attributes.rough.data.every((value) => value === 0));
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));
+  geometry.setAttribute("rough", new THREE.BufferAttribute(result.soup.attributes.rough.data, 1));
+  const material = makeChromeCrayonMaterial(typePixelDump, geometry, "chrome.002");
   assert.equal(material?.name, "chrome.002 · authored Chrome Crayon reconstruction");
   assert.equal(material?.metalness, 1);
   assert.equal(material?.roughness, 0);

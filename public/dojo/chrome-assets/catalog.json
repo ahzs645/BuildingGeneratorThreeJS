@@ -415,8 +415,12 @@
     "dump": "dojo/chrome-assets/type-pixel-brush/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/type-pixel-brush.png",
+    "authoredReference": "dojo/references/chrome-assets/type-pixel-brush-authored.png",
+    "localSpace": true,
+    "surfaceBounds": true,
+    "authoredEnvironmentIntensity": 0.8,
     "blenderStats": { "verts": 17860, "faces": 11296 },
-    "note": "Exact Blender topology across all six validation cases, with local bounds within 0.0001 units. The supplied file's Budokan font is missing, so both Blender and the browser use the supplied Pixels Medium TTF; Blender-compatible global N-gon filling preserves its self-touching and overlapping pixel outlines.",
+    "note": "Exact Blender topology across all six validation cases, with local bounds within 0.0001 units. Authored mode preserves chrome.002, its zero rough field, and the fully metallic polished surface. The aligned studio comparison reaches 0.9867 silhouette IoU and 0.0486 macro luminance MAE; the remaining highlight-placement difference comes from Eevee and Three.js environment filtering. The supplied file's Budokan font is missing, so both Blender and the browser use the supplied Pixels Medium TTF; Blender-compatible global N-gon filling preserves its self-touching and overlapping pixel outlines.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",
