@@ -255,11 +255,13 @@ def evaluate_case(obj, mod, name_to_identifier, saved_values, case, raw_mesh_pat
     ev, mesh, owned = evaluated_mesh(obj)
     try:
         if raw_mesh_path:
+            mesh.calc_loop_triangles()
             with open(raw_mesh_path, "w", encoding="utf-8") as handle:
                 json.dump(
                     {
                         "positions": [list(vertex.co) for vertex in mesh.vertices],
                         "faces": [list(face.vertices) for face in mesh.polygons],
+                        "triangles": [list(triangle.vertices) for triangle in mesh.loop_triangles],
                     },
                     handle,
                 )

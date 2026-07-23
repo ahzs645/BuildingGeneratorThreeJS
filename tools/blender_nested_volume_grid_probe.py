@@ -12,6 +12,7 @@ copy of its density field.
 
 import bpy
 import json
+import os
 import sys
 
 
@@ -24,6 +25,11 @@ if obj.name not in bpy.context.view_layer.objects and bpy.context.scene.collecti
     world_matrix = obj.matrix_world.copy()
     bpy.context.scene.collection.objects.link(obj)
     obj.matrix_world = world_matrix
+if os.environ.get("NODE_DOJO_LOCAL_SPACE") == "1":
+    obj.location = (0, 0, 0)
+    obj.rotation_euler = (0, 0, 0)
+    obj.scale = (1, 1, 1)
+bpy.context.view_layer.update()
 
 modifier = next(item for item in obj.modifiers if item.type == "NODES" and item.node_group)
 root = modifier.node_group
@@ -62,7 +68,8 @@ nested_geometry = next(
 for link in list(nested_geometry.links):
     nested.links.remove(link)
 
-volume_outputs = nested.nodes[volume_node_name].outputs
+volume_node = nested.nodes[volume_node_name]
+volume_outputs = volume_node.outputs
 volume_source = volume_outputs.get(volume_socket_name) or next(
     socket for socket in volume_outputs if socket.identifier == volume_socket_name
 )
@@ -85,6 +92,10 @@ attribute_specs = [
     ("__grid_is_tile", "BOOLEAN", to_points.outputs["Is Tile"]),
     ("__grid_extent", "INT", to_points.outputs["Extent"]),
 ]
+for name in ("Min", "Max"):
+    socket = volume_node.inputs.get(name)
+    if socket is not None and socket.links:
+        attribute_specs.append((f"__grid_input_{name.lower()}", "FLOAT_VECTOR", socket.links[0].from_socket))
 for name, data_type, value in attribute_specs:
     store = nested.nodes.new("GeometryNodeStoreNamedAttribute")
     store.domain = "POINT"
@@ -110,7 +121,12 @@ try:
         attribute = mesh.attributes[name]
         return [item.value for item in attribute.data]
 
+    def first_vector(name):
+        attribute = mesh.attributes.get(name)
+        return list(attribute.data[0].vector) if attribute is not None and len(attribute.data) else None
+
     payload = {
+        "object_matrix_world": [list(row) for row in obj.matrix_world],
         "positions": [list(vertex.co) for vertex in mesh.vertices],
         "values": values("__grid_value"),
         "x": values("__grid_x"),
@@ -118,6 +134,8 @@ try:
         "z": values("__grid_z"),
         "is_tile": values("__grid_is_tile"),
         "extent": values("__grid_extent"),
+        "input_min": first_vector("__grid_input_min"),
+        "input_max": first_vector("__grid_input_max"),
     }
 finally:
     evaluated.to_mesh_clear()

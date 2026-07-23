@@ -16,6 +16,24 @@
     "delta": { "verts": 26, "faces": 26 },
     "interpretation": "The corrected grid dimensions remove the former false dense-grid comparison. Small scalar differences remain between Blender's transient world-context FloatGrid and the portable local-space field, so the first zero surface is not yet topologically exact."
   },
+  "firstGridCoordinateContext": {
+    "sourceBranch": { "verts": 18060, "faces": 18060, "coordinates": "bit-exact" },
+    "convexHull": { "verts": 1518, "faces": 2653, "loopTriangles": 3032, "coordinates": "bit-exact", "triangulation": "exact" },
+    "directProximityProbe": {
+      "query": [10.462605476379395, 11.40564250946045, 6.8246283531188965],
+      "nearest": [10.4529447555542, 11.405342102050781, 6.823454856872559],
+      "distance": 0.009736367501318455,
+      "result": "bit-exact in Blender and GN-VM"
+    },
+    "storedGrid": {
+      "values": 13800,
+      "differentValues": 13248,
+      "maximumAbsoluteDifference": 0.0049467915669083595,
+      "meanAbsoluteDifference": 0.0009761103164604253,
+      "signDifferences": 42
+    },
+    "interpretation": "The source geometry, hull vertices, hull loop triangles, and Geometry Proximity arithmetic are exact when evaluated at the same point. The divergence begins only when Blender evaluates the density field through the nested Volume Cube coordinate context: its linked Min/Max position fields are represented in the transient global FloatGrid transform, while the portable VM keeps them in modifier-local space. The remaining work is coordinate-context emulation, not hull, triangulation, proximity, or transform repair."
+  },
   "secondVolumeToMesh": {
     "blender": { "verts": 3308, "faces": 3306 },
     "gnvm": { "verts": 3308, "faces": 3306 },
@@ -48,6 +66,6 @@
   "remaining": {
     "authoredDefault": "One extra 30-degree auto-smooth edge selection creates one additional referenced corner-fan vertex; all faces and rounded bounds are exact.",
     "jointSize18": "One extra 30-degree auto-smooth edge selection creates two additional referenced corner-fan vertices; all faces remain exact.",
-    "nextTarget": "Match the transient first-grid scalar values in the modifier object's evaluation context, then recheck edge-angle classifications and presentation-component cleanup."
+    "nextTarget": "Emulate Blender's nested Volume Cube global-grid position context while returning the generated mesh to modifier-local space, then recheck the 42 first-grid sign differences and the final edge-angle classifications."
   }
 }
