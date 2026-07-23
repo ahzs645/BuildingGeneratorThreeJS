@@ -34,7 +34,7 @@ type VectorControl = { type: "vector"; name: string; label: string; value: [numb
 type SelectControl = { type: "select"; name: string; label: string; value: number | string; options: { label: string; value: number | string }[] };
 type Control = RangeControl | CheckboxControl | TextControl | VectorControl | SelectControl;
 type AssetFont = { url: string; family: string; requiredFor: string; fallback: string };
-type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; authoredLightScale?: number; controls: Control[] };
+type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; authoredLightScale?: number; authoredEnvironmentIntensity?: number; controls: Control[] };
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
@@ -240,15 +240,18 @@ async function prepareFont(asset: Asset): Promise<void> {
   fontStatus.textContent=loaded?`${font.family} TTF loaded · GN geometry uses its extracted outlines.`:`${font.family} TTF unavailable · ${font.fallback}`;
 }
 async function prepareAuthoredEnvironment(asset: Asset): Promise<void> {
+  scene.background = asset.id === "send-nodes-hat-embroidery" && !authoredCapture ? new THREE.Color(0x080a09) : null;
   if (!authoredCapture) return;
   const lightScale = captureLightScale ?? asset.authoredLightScale ?? 1;
   if (authoredKey) authoredKey.intensity = 0.5 * lightScale;
   if (authoredFill) authoredFill.intensity = 0.25 * lightScale;
-  // This rotation/intensity pair was measured against the committed Chain &
-  // Mace Eevee reference. Other authored previews keep their existing rig
-  // until they have an equivalently controlled Blender reference.
-  const reflective = asset.material === "chain-mace";
-  if (!reflective) {
+  // This rotation/intensity pair was measured against the bundled Blender
+  // studio.exr. Chain & Mace needs it for reflection, while the Hat stitches'
+  // authored full-transmission material needs it for a defined refraction
+  // target. Other authored previews keep their existing rig until they have an
+  // equivalently controlled Blender reference.
+  const usesStudioEnvironment = asset.material === "chain-mace" || asset.authoredEnvironmentIntensity !== undefined;
+  if (!usesStudioEnvironment) {
     scene.environment = null;
     scene.environmentIntensity = 1;
     scene.environmentRotation.set(0, 0, 0);
@@ -257,7 +260,7 @@ async function prepareAuthoredEnvironment(asset: Asset): Promise<void> {
   const environment = await loadBlenderStudioEnvironment();
   if (current !== asset) return;
   scene.environment = environment;
-  scene.environmentIntensity = 0.8;
+  scene.environmentIntensity = asset.authoredEnvironmentIntensity ?? 0.8;
   // Blender and Three use different equirectangular zero-longitude conventions.
   scene.environmentRotation.set(0, Math.PI, 0);
 }

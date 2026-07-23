@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-15",
+  "updated": "2026-07-23",
   "target": {
     "id": "send-nodes-hat-embroidery",
     "object": "embroidery crv",
@@ -68,13 +68,51 @@
     }
   },
   "browserVerification": {
-    "route": "/chrome-assets?asset=send-nodes-hat-embroidery",
-    "capture": "../references/send-nodes-hat/embroidery-webgl.png",
-    "resolution": [1280, 720],
+    "route": "/chrome-assets?asset=send-nodes-hat-embroidery&capture=authored&preview=authored",
+    "blenderReference": "../references/send-nodes-hat/embroidery-authored.png",
+    "blenderMetadata": "../references/send-nodes-hat/embroidery-authored.json",
+    "browserReference": "../references/send-nodes-hat/embroidery-authored-webgl.png",
+    "comparisonReport": "embroidery-material-comparison.json",
+    "resolution": [768, 768],
     "devicePixelRatio": 1,
-    "runtimeSeconds": 1.81,
     "warningErrorLogs": 0,
-    "status": "The committed side-by-side browser capture reports Topology counts match Blender at 188,934 vertices / 188,160 faces, and the authored stitch material compiled without WebGL warning/error messages."
+    "status": "The durable authored capture reports Topology counts match Blender at 188,934 vertices / 188,160 faces, and the authored stitch material compiled without WebGL warning/error messages."
   },
-  "remaining": "The committed side-by-side capture makes the presentation gap explicit: the generic Chrome Assets camera keeps a one-unit minimum frame size, so this 0.0868-unit local-space embroidery appears much smaller than the isolated Blender reference. A matched camera and defined transmission backdrop are still required before quantitative image metrics are meaningful. Those presentation issues are separate from the implemented sitch.001 shader graph and exact geometry."
+  "captureEnvironment": {
+    "source": "Blender 5.1's bundled CC0 studio.exr on both renderers",
+    "blender": {
+      "worldStrength": 0.8,
+      "filmTransparent": true
+    },
+    "webgl": {
+      "environmentIntensity": 32,
+      "background": "transparent magenta segmentation key"
+    },
+    "calibration": "The browser intensity compensates for Eevee Standard/Medium High Contrast versus Three ACES exposure and transmission-energy differences. It changes capture illumination only; the authored material constants and evaluated geometry remain unchanged."
+  },
+  "quantitativeComparison": {
+    "surfaceMaskIoU": 0.909226826142674,
+    "surfaceCornerRmsePixels": 4.437032562015288,
+    "pixelLuminanceMae": 0.03651181176884201,
+    "macroLuminanceMae": 0.03945036318926532,
+    "meanLuminanceDelta": -0.04632218457019255,
+    "macroLuminanceCorrelation": 0.052259833212314845,
+    "interpretation": "The matched local camera and environment replace the former undefined black transmission render. Blender's surface is 99.93% white pixels, so correlation against that nearly constant signal is ill-conditioned; MAE and mean luminance are the meaningful appearance measures. The remaining 0.9092 silhouette IoU records sub-pixel stitch/fuzz placement and raster differences rather than a topology-count mismatch."
+  },
+  "dependencyStabilization": "The supplied scene contains an intentional dependency cycle: hat front reads embroidery while embroidery shrinkwrap reads hat front. The Blender reference pipeline freezes the exact evaluated 60,105 / 59,680 front shell before evaluating embroidery, then evaluates the source object with authored transforms intact and detaches a local-space snapshot only for presentation.",
+  "missingAuthoredTextureBinaries": {
+    "new dad": [
+      "cap_AmbientOcclusion.jpg",
+      "cap_Height.PNG",
+      "cap_Metallic.PNG",
+      "nrm_send nudes hat texture.png",
+      "rough_send nudes hat texture.png",
+      "send nudes hate texture.png"
+    ],
+    "send nodes text": [
+      "send nodes text.psd"
+    ],
+    "result": "These external files are not packed in send nodes hat_download.blend and were not present in the supplied Node Dojo pack or Downloads search. The bill/front exact textured appearance therefore remains source-data blocked; their geometry roots are exact and retain their Workbench references."
+  },
+  "remaining": "Embroidery now has a reproducible Blender-authored reference, shared studio environment, exact procedural topology, and quantified WebGL appearance. Hat bill/front geometry is exact, but exact fabric/logo shading cannot be completed without the seven external image binaries listed above."
 }

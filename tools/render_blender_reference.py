@@ -9,6 +9,10 @@ and ``NODE_DOJO_GN_ONLY=1`` to disable source modifiers after the first active
 Geometry Nodes modifier before adding the temporary realization pass.
 ``NODE_DOJO_AUTHORED_LIGHT_SCALE`` optionally multiplies the authored Area
 light powers for large or small assets while preserving the shared rig layout.
+``NODE_DOJO_STUDIO_ENVIRONMENT=1`` adds Blender's bundled CC0 ``studio.exr``
+world at ``NODE_DOJO_STUDIO_ENVIRONMENT_STRENGTH`` (default 0.8). This keeps
+transparent capture film while giving reflective/transmissive materials a
+defined environment.
 For Workbench diagnostics, ``NODE_DOJO_WORKBENCH_SHADOWS=0`` and
 ``NODE_DOJO_WORKBENCH_CAVITY=0`` isolate the bundled studio-light response.
 """
@@ -38,6 +42,11 @@ def apply_font_override():
 
 
 apply_font_override()
+
+if os.environ.get("NODE_DOJO_FREEZE_HAT_FRONT") == "1":
+    helper_path = os.path.join(os.path.dirname(__file__), "freeze_hat_front_dependency.py")
+    with open(helper_path, "rb") as helper_file:
+        exec(compile(helper_file.read(), helper_path, "exec"))
 
 
 args = sys.argv[sys.argv.index("--") + 1:]
@@ -136,11 +145,6 @@ elif debug_material_output == "FILAMENT_BACKFACING":
 elif debug_material_output:
     raise RuntimeError(f"unsupported NODE_DOJO_DEBUG_MATERIAL_OUTPUT: {debug_material_output}")
 
-if local_space:
-    obj.location = (0, 0, 0)
-    obj.rotation_euler = (0, 0, 0)
-    obj.scale = (1, 1, 1)
-
 # Some supplied scenes retain an old movie-only output setting that rejects PNG
 # under Blender 5. A clean reference scene also prevents unrelated presentation
 # objects, cameras, and lights from affecting the isolated generator render.
@@ -183,11 +187,27 @@ if mesh:
         name = evaluated_materials[polygon.material_index] if polygon.material_index < len(evaluated_materials) else None
         key = name or "<none>"
         evaluated_material_faces[key] = evaluated_material_faces.get(key, 0) + 1
+if local_space and mesh:
+    # Evaluate with the authored object/parent transforms intact: Object Info,
+    # dependency cycles, and relative transform sockets can observe them.
+    # Render a detached copy afterward so LOCAL affects only presentation.
+    snapshot_mesh = mesh.copy()
+    snapshot_object = bpy.data.objects.new("__NODE_DOJO_LOCAL_SNAPSHOT", snapshot_mesh)
+    scene.collection.objects.link(snapshot_object)
+    obj.hide_render = True
 if mesh and os.environ.get("NODE_DOJO_SURFACE_BOUNDS") == "1" and mesh.polygons:
     surface_indices = {index for polygon in mesh.polygons for index in polygon.vertices}
-    corners = [evaluated.matrix_world @ mesh.vertices[index].co for index in surface_indices]
+    corners = [
+        mesh.vertices[index].co.copy()
+        if local_space
+        else evaluated.matrix_world @ mesh.vertices[index].co
+        for index in surface_indices
+    ]
 else:
-    corners = [evaluated.matrix_world @ vertex.co for vertex in mesh.vertices] if mesh else []
+    corners = [
+        vertex.co.copy() if local_space else evaluated.matrix_world @ vertex.co
+        for vertex in mesh.vertices
+    ] if mesh else []
 # Evaluated Curve objects can retain their pre-modifier/invalid bound_box even
 # when Geometry Nodes produces a large mesh. Prefer realized mesh vertices and
 # use the object bounds only as a fallback for non-mesh outputs.
@@ -220,10 +240,32 @@ bpy.context.scene.camera = camera
 scene = bpy.context.scene
 scene.render.image_settings.file_format = "PNG"
 authored_material = os.environ.get("NODE_DOJO_AUTHORED_MATERIAL") == "1"
+studio_environment = authored_material and os.environ.get("NODE_DOJO_STUDIO_ENVIRONMENT") == "1"
+studio_environment_strength = (
+    float(os.environ.get("NODE_DOJO_STUDIO_ENVIRONMENT_STRENGTH", "0.8"))
+    if studio_environment
+    else None
+)
 if authored_material:
     scene.render.engine = "BLENDER_EEVEE"
     scene.view_settings.view_transform = "Standard"
     scene.view_settings.look = "None" if debug_material_output else "Medium High Contrast"
+    if studio_environment:
+        world = bpy.data.worlds.new("__NODE_DOJO_REFERENCE_WORLD")
+        world.use_nodes = True
+        environment = world.node_tree.nodes.new("ShaderNodeTexEnvironment")
+        studio_path = os.path.join(
+            bpy.utils.resource_path("LOCAL"),
+            "datafiles",
+            "studiolights",
+            "world",
+            "studio.exr",
+        )
+        environment.image = bpy.data.images.load(studio_path, check_existing=True)
+        background = world.node_tree.nodes["Background"]
+        background.inputs["Strength"].default_value = studio_environment_strength
+        world.node_tree.links.new(environment.outputs["Color"], background.inputs["Color"])
+        scene.world = world
     authored_light_scale = float(os.environ.get("NODE_DOJO_AUTHORED_LIGHT_SCALE", "1"))
     key_data = bpy.data.lights.new("__NODE_DOJO_REFERENCE_KEY", "AREA")
     key_data.energy = 1000.0 * authored_light_scale
@@ -274,6 +316,8 @@ if meta_path:
         "authored_material": authored_material,
         "geometry_nodes_only": gn_only,
         "authored_light_scale": authored_light_scale if authored_material else None,
+        "studio_environment": studio_environment,
+        "studio_environment_strength": studio_environment_strength,
         "workbench_shadows": workbench_shadows if not authored_material else None,
         "workbench_cavity": workbench_cavity if not authored_material else None,
         "debug_material_output": debug_material_output or None,

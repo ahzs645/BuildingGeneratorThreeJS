@@ -1,0 +1,36 @@
+{
+  "object": "embroidery crv",
+  "type": "CURVE",
+  "bbox": {
+    "min": [
+      -0.0489068441092968,
+      -0.007304731756448746,
+      -0.033942870795726776
+    ],
+    "max": [
+      0.040281377732753754,
+      0.00747652817517519,
+      -0.014105714857578278
+    ]
+  },
+  "verts": 188934,
+  "faces": 188160,
+  "materials": [
+    "sitch.001"
+  ],
+  "evaluated_materials": [
+    "sitch.001"
+  ],
+  "evaluated_material_faces": {
+    "sitch.001": 188160
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "authored_light_scale": 1.0,
+  "studio_environment": true,
+  "studio_environment_strength": 0.8,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}
