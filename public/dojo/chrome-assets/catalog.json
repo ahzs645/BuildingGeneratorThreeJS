@@ -1073,7 +1073,7 @@
     "reference": "dojo/references/math-clay/tpms-016.png",
     "blenderStats": { "verts": 87099, "faces": 85390 },
     "localSpace": true,
-    "note": "The deterministic browser result is 87,095 / 85,386 versus the stored Blender 87,099 / 85,390 reference, with bounds within 0.0013 units. The full Volume Cube field is value-exact, and repeated native OpenVDB 12 runs span both pre-Boolean outcomes—including the stored reference—so the four-count snapshot difference is classified as parallel intersection-tree scheduling variance rather than a field or browser-topology defect.",
+    "note": "The deterministic browser result is 87,095 / 85,386 versus the stored Blender 87,099 / 85,390 reference, with bounds within 0.0013 units. The full Volume Cube field is value-exact. Blender 5.1.2 confirms native scheduling variance: ten identical full evaluations ranged from 87,095 / 85,386 to 87,101 / 85,392, six matched GN-VM exactly, and a separate cold run reached 87,105 / 85,396. This is OpenVDB's parallel intersection-tree race, not a browser topology defect.",
     "controls": [
       { "name": "Gyroid scale", "label": "Field scale", "min": 0.5, "max": 3, "step": 0.01, "value": 1.0638302564620972 },
       { "name": "Voxel Size", "label": "Voxel size", "min": 0.4, "max": 1.5, "step": 0.02, "value": 0.4216800034046173 },
