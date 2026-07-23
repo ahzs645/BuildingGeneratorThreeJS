@@ -1,1 +1,18 @@
-{"id":"flat-stickie-pack","object":"Flat Stickie Pack.001","root":"stickie pack1","status":"authored-exact","blender":{"verts":28,"faces":7},"gnvm":{"verts":28,"faces":7},"coverage":"100% of reachable node types across the single-group, 15-node graph.","validation":"The seven transformed sticker instances match Blender exactly in topology and four-decimal bounds."}
+{
+  "id": "flat-stickie-pack",
+  "object": "Flat Stickie Pack.001",
+  "root": "stickie pack1",
+  "status": "authored-material-near-parity-source-missing",
+  "blender": {
+    "verts": 28,
+    "faces": 7,
+    "tris": 14
+  },
+  "gnvm": {
+    "verts": 28,
+    "faces": 7,
+    "tris": 14
+  },
+  "coverage": "100% of reachable node types across the root and the two dependency node groups; no unsupported nodes remain.",
+  "validation": "The seven transformed sticker instances match Blender in topology, material order, and four-decimal local bounds. Dependency extraction now includes gn.sticker control, preserving the soft-star and spoke col attributes through Object Info. Browser authored mode restores all five packed image/alpha materials and explicitly matches Blender's magenta diagnostic for tree sticky.png and ryu electrify1.png, which are absent from the supplied blend and the complete supplied Node Dojo directory. The aligned full-pack capture reaches 0.935604 pixel luminance correlation and 0.959246 macro luminance correlation; the remaining silhouette/alpha residual is dominated by Blender's renderer-specific semi-transparent GPU error treatment for those two missing images."
+}

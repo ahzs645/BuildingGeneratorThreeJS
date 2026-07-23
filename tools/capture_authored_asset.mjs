@@ -8,10 +8,11 @@ const output = process.argv[4];
 const lightScale = process.argv[5];
 const previewMode = process.argv[6];
 const overridesPayload = process.argv[7];
+const backgroundHex = process.env.NODE_DOJO_CAPTURE_BACKGROUND_HEX ?? process.argv[8];
 
 if (!asset || !output) {
   throw new Error(
-    "usage: node tools/capture_authored_asset.mjs BASE_URL ASSET_ID OUTPUT.png [LIGHT_SCALE] [PREVIEW_MODE] [OVERRIDES_JSON]",
+    "usage: node tools/capture_authored_asset.mjs BASE_URL ASSET_ID OUTPUT.png [LIGHT_SCALE] [PREVIEW_MODE] [OVERRIDES_JSON] [BACKGROUND_HEX]",
   );
 }
 if (lightScale !== undefined && (!Number.isFinite(Number(lightScale)) || Number(lightScale) <= 0)) {
@@ -23,6 +24,9 @@ if (previewMode !== undefined && !["authored", "diagnostic", "workbench", "mater
 const overrides = overridesPayload === undefined ? null : JSON.parse(overridesPayload);
 if (overrides !== null && (typeof overrides !== "object" || Array.isArray(overrides))) {
   throw new Error("OVERRIDES_JSON must be an object keyed by exposed control name");
+}
+if (backgroundHex !== undefined && !/^[0-9a-f]{6}$/i.test(backgroundHex)) {
+  throw new Error("BACKGROUND_HEX must contain exactly six hexadecimal digits");
 }
 
 const executablePath = [
@@ -65,6 +69,14 @@ try {
     () => document.documentElement.dataset.chromeAssetsReady !== undefined,
     { timeout: 240_000 },
   );
+  if (backgroundHex !== undefined) {
+    await page.evaluate((color) => {
+      const value = `#${color}`;
+      for (const element of document.querySelectorAll(".assets-shell, .assets-compare, .assets-pane")) {
+        if (element instanceof HTMLElement) element.style.background = value;
+      }
+    }, backgroundHex);
+  }
   if (overrides && Object.keys(overrides).length) {
     await page.evaluate((values) => {
       delete document.documentElement.dataset.chromeAssetsReady;
@@ -111,6 +123,7 @@ try {
     output: resolvedOutput,
     lightScale: lightScale === undefined ? null : Number(lightScale),
     previewMode: previewMode ?? "authored",
+    backgroundHex: backgroundHex ?? "ff00ff",
     overrides,
     ...result,
   })}`);

@@ -1,0 +1,48 @@
+{
+  "object": "Flat Stickie Pack.001",
+  "type": "CURVE",
+  "bbox": {
+    "min": [
+      -42.261138916015625,
+      -41.97479248046875,
+      0.4779090881347656
+    ],
+    "max": [
+      31.776288986206055,
+      53.057899475097656,
+      3.3320369720458984
+    ]
+  },
+  "verts": 28,
+  "faces": 7,
+  "materials": [],
+  "evaluated_materials": [
+    "tree sticky",
+    "foolish bb spooky sticker",
+    "8pt soft star stickie",
+    "ryu electrify",
+    "fuck around find out",
+    "10pt spoke stickie",
+    "ryu electrify1"
+  ],
+  "evaluated_material_faces": {
+    "tree sticky": 1,
+    "foolish bb spooky sticker": 1,
+    "8pt soft star stickie": 1,
+    "ryu electrify": 1,
+    "fuck around find out": 1,
+    "10pt spoke stickie": 1,
+    "ryu electrify1": 1
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 1.0,
+  "authored_look": "None",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

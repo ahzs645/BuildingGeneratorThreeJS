@@ -351,8 +351,11 @@
     "dump": "dojo/chrome-assets/flat-stickie-pack/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/flat-stickie-pack.png",
+    "authoredReference": "dojo/references/chrome-assets/flat-stickie-pack-authored.png",
     "blenderStats": { "verts": 28, "faces": 7 },
-    "note": "All seven transformed sticker instances match Blender exactly in topology and four-decimal local bounds.",
+    "localSpace": true,
+    "authoredToneMapping": "none",
+    "note": "All seven transformed sticker instances match Blender exactly in topology and four-decimal local bounds. Five packed images, alpha, and the soft-star/spoke col controls are reconstructed in authored mode. The supplied blend is missing tree sticky.png and ryu electrify1.png, so both Blender and the browser show those two faces with the magenta missing-image diagnostic.",
     "controls": []
   },
   {

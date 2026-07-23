@@ -20,21 +20,41 @@ const packedTextureUrls: Record<string, string> = {
   "ryu electrify.png": "dojo/chrome-assets/textures/ryu-electrify.png",
 };
 
-export type PackedStickerMaterialConfig = {
+type AvailablePackedStickerMaterialConfig = {
   imageName: string;
   url: string;
   shader: "image" | "spoke-control" | "soft-star-wear";
   secondaryImageName?: string;
   secondaryUrl?: string;
   secondaryTextureCount: number;
+  sourceMissing?: false;
 };
+
+type MissingPackedStickerMaterialConfig = {
+  imageName: string;
+  shader: "missing-image";
+  secondaryTextureCount: number;
+  sourceMissing: true;
+};
+
+export type PackedStickerMaterialConfig =
+  | AvailablePackedStickerMaterialConfig
+  | MissingPackedStickerMaterialConfig;
 
 export function extractPackedStickerMaterialConfig(dump: Dump, materialName: string): PackedStickerMaterialConfig | null {
   const tree = dump.materials?.[materialName] as RawMaterial | undefined;
   const images = (tree?.nodes ?? []).filter((node) => node.type === "ShaderNodeTexImage");
   const primary = images[0]?.props?.image?.name;
   const url = packedTextureUrls[String(primary ?? "")];
-  if (!url) return null;
+  if (!primary) return null;
+  if (!url) {
+    return {
+      imageName: primary,
+      shader: "missing-image",
+      secondaryTextureCount: Math.max(0, images.length - 1),
+      sourceMissing: true,
+    };
+  }
   const secondaryImageName = images[1]?.props?.image?.name as string | undefined;
   const secondaryUrl = secondaryImageName ? packedTextureUrls[secondaryImageName] : undefined;
   const shader = materialName === "10pt spoke stickie"
@@ -216,7 +236,19 @@ export function makePackedStickerMaterial(
   materialName: string,
 ): THREE.MeshBasicMaterial | null {
   const config = extractPackedStickerMaterialConfig(dump, materialName);
-  if (!config || !ensureStickerQuadUv(geometry, group)) return null;
+  if (!config) return null;
+  if (config.sourceMissing) {
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xff00ff,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    });
+    material.name = `${materialName} · Blender missing image ${config.imageName}`;
+    material.userData.packedStickerContract = config;
+    material.userData.sourceDiagnostic = "The supplied Blender file cannot load this image and renders the material magenta.";
+    return material;
+  }
+  if (!ensureStickerQuadUv(geometry, group)) return null;
   const texture = loadPackedTexture(config.url);
   const material = new THREE.MeshBasicMaterial({
     map: texture,

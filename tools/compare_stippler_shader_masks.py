@@ -2,12 +2,13 @@
 
 Usage:
   blender --background --python tools/compare_stippler_shader_masks.py -- \
-    BLENDER.png WEBGL.png OUT.json
+    BLENDER.png WEBGL.png OUT.json [WEBGL_BACKGROUND_HEX]
 
 The Blender capture must have a transparent background. The opt-in WebGL
 ``capture=authored`` and legacy ``capture=stippler-shader`` routes use #ff00ff
-as a segmentation background. The script name is retained for compatibility
-with the existing Stippler evidence pipeline.
+as a segmentation background by default. Pass a different six-digit key when
+the authored material itself legitimately contains magenta. The script name is
+retained for compatibility with the existing Stippler evidence pipeline.
 """
 import json
 import math
@@ -21,6 +22,13 @@ args = sys.argv[sys.argv.index("--") + 1:]
 if len(args) < 3:
     raise RuntimeError("expected BLENDER.png WEBGL.png OUT.json")
 blender_path, webgl_path, out_path = map(os.path.abspath, args[:3])
+webgl_background_hex = args[3] if len(args) > 3 else "ff00ff"
+if len(webgl_background_hex) != 6:
+    raise RuntimeError("WEBGL_BACKGROUND_HEX must contain exactly six hexadecimal digits")
+try:
+    webgl_background = tuple(int(webgl_background_hex[offset:offset + 2], 16) / 255 for offset in (0, 2, 4))
+except ValueError as error:
+    raise RuntimeError("WEBGL_BACKGROUND_HEX must contain exactly six hexadecimal digits") from error
 
 
 def load(path):
@@ -94,7 +102,11 @@ if (width, height) != (webgl_width, webgl_height):
     raise RuntimeError(f"capture sizes differ: {(width, height)} != {(webgl_width, webgl_height)}")
 
 blender_mask = [pixel[3] > 0.5 for pixel in blender_pixels]
-webgl_mask = [not (pixel[0] > 0.8 and pixel[1] < 0.3 and pixel[2] > 0.8) for pixel in webgl_pixels]
+webgl_key_tolerance = 0.08
+webgl_mask = [
+    max(abs(pixel[channel] - webgl_background[channel]) for channel in range(3)) > webgl_key_tolerance
+    for pixel in webgl_pixels
+]
 blender_luminance = [luminance(pixel) for pixel in blender_pixels]
 webgl_luminance = [luminance(pixel) for pixel in webgl_pixels]
 intersection = [left and right for left, right in zip(blender_mask, webgl_mask)]
@@ -150,6 +162,7 @@ comparison = {
         "webgl": os.path.basename(webgl_path),
         "resolution": [width, height],
         "alignment": "same square orthographic camera direction and 1.45 framing scale",
+        "webgl_background_key": f"#{webgl_background_hex.lower()}",
     },
     "blender": mask_stats(blender_mask, blender_luminance),
     "webgl": mask_stats(webgl_mask, webgl_luminance),

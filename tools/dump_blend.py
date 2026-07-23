@@ -407,6 +407,18 @@ dependency_object_names.update({
 # the real asset (for example Chrome's spikey chain link). Traverse nested
 # groups and referenced object/collection modifiers to a fixed point.
 pending_dependency_trees = list(trees_to_dump.values())
+# Objects supplied through the target modifier's interface are dependencies
+# even though the corresponding Object Info sockets are linked and therefore
+# have no node-level default_value to discover below. Include their own node
+# groups before traversing the graph so modifier-authored attributes survive
+# nested Object Info evaluation (Flat Stickie Pack's `col` attributes).
+for dependency_object_name in sorted(dependency_object_names):
+    dependency_object = bpy.data.objects.get(dependency_object_name)
+    if dependency_object is None:
+        continue
+    for modifier in dependency_object.modifiers:
+        if modifier.type == "NODES" and modifier.node_group:
+            pending_dependency_trees.append(modifier.node_group)
 scanned_dependency_trees = set()
 while pending_dependency_trees:
     tree = pending_dependency_trees.pop()

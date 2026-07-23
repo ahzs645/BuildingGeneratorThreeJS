@@ -93,7 +93,8 @@
   "packedStickerTextures": {
     "restored": 6,
     "missingFromBlend": ["tree sticky.png", "ryu electrify1.png"],
-    "secondaryTextureApproximation": "8pt soft star restores its packed primary image and alpha; its separate wear texture is recorded but not yet composed in WebGL."
+    "missingSourceBehavior": "The browser explicitly reproduces Blender's magenta missing-image diagnostic for the two unavailable source files.",
+    "secondaryTextureReconstruction": "8pt soft star composes its packed primary image with the separate rotated wear texture, col tint, threshold, HSV, and alpha branches."
   },
   "limitations": [
     "Linked procedural inputs currently use their constant fallback and are labeled as approximations on the Three.js material contract.",

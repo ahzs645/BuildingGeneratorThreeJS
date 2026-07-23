@@ -11,15 +11,25 @@ const dump = JSON.parse(await readFile(fileURLToPath(new URL(
   import.meta.url,
 )), "utf8")) as Dump;
 
-test("maps only images actually packed in the supplied Chrome Asset blend", () => {
+test("maps packed images and records Blender's missing image state", () => {
   assert.deepEqual(extractPackedStickerMaterialConfig(dump, "10pt spoke stickie"), {
     imageName: "sticky1@2x.png",
     url: "dojo/chrome-assets/textures/sticky1-2x.png",
     shader: "spoke-control",
     secondaryTextureCount: 0,
   });
-  assert.equal(extractPackedStickerMaterialConfig(dump, "tree sticky"), null);
-  assert.equal(extractPackedStickerMaterialConfig(dump, "ryu electrify1"), null);
+  assert.deepEqual(extractPackedStickerMaterialConfig(dump, "tree sticky"), {
+    imageName: "tree sticky.png",
+    shader: "missing-image",
+    secondaryTextureCount: 0,
+    sourceMissing: true,
+  });
+  assert.deepEqual(extractPackedStickerMaterialConfig(dump, "ryu electrify1"), {
+    imageName: "ryu electrify1.png",
+    shader: "missing-image",
+    secondaryTextureCount: 0,
+    sourceMissing: true,
+  });
   assert.deepEqual(extractPackedStickerMaterialConfig(dump, "8pt soft star stickie"), {
     imageName: "stickie2.png",
     url: "dojo/chrome-assets/textures/stickie2.png",
@@ -28,6 +38,23 @@ test("maps only images actually packed in the supplied Chrome Asset blend", () =
     secondaryUrl: "dojo/chrome-assets/textures/sticker-texture.png",
     secondaryTextureCount: 1,
   });
+});
+
+test("matches Blender's magenta diagnostic for images missing from the supplied blend", () => {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute([
+    0,0,0, 2,0,0, 0,3,0, 2,3,0,
+  ], 3));
+  geometry.setIndex([0,1,3, 0,3,2]);
+
+  const material = makePackedStickerMaterial(dump, geometry, { start: 0, count: 6 }, "tree sticky");
+  assert.ok(material);
+  assert.equal(material.color.getHex(), 0xff00ff);
+  assert.equal(material.toneMapped, false);
+  assert.equal(material.userData.packedStickerContract.sourceMissing, true);
+  assert.match(material.userData.sourceDiagnostic, /supplied Blender file/);
+  material.dispose();
+  geometry.dispose();
 });
 
 test("restores Blender quad UV corner order from two soup triangles", () => {

@@ -1,7 +1,7 @@
 // Public entry point for the geometry-nodes VM.
 import { Evaluator, Program } from "./evaluator";
 import { Geometry, Mesh, toTriSoup, TriSoup } from "./geometry";
-import { DUMP_CONTEXT, MISSING, REGISTRY } from "./registry";
+import { DUMP_CONTEXT, MISSING, REGISTRY, type DumpObject } from "./registry";
 import { ensureManifold } from "./boolean";
 import { ensureBulletHull } from "./bullet-hull";
 import { evaluateBezierSpline } from "./bezier";
@@ -241,6 +241,32 @@ function isGeometryPassthroughGroup(group: any): boolean {
       && link.to_node === output.name && link.to_socket === geometryInput.identifier));
 }
 
+function runtimeMeshMatchesEvaluatedSnapshot(
+  geometry: Geometry,
+  snapshot: NonNullable<DumpObject["evaluated_mesh"]>,
+): boolean {
+  const mesh = geometry.mesh;
+  if (!mesh || mesh.positions.length !== snapshot.verts.length || mesh.faces.length !== snapshot.faces.length) return false;
+  for (let vertex = 0; vertex < mesh.positions.length; vertex++) {
+    const runtime = mesh.positions[vertex];
+    const extracted = snapshot.verts[vertex];
+    if (!extracted || runtime.length !== extracted.length) return false;
+    for (let axis = 0; axis < runtime.length; axis++)
+      if (Math.fround(runtime[axis]) !== Math.fround(extracted[axis])) return false;
+  }
+  for (let face = 0; face < mesh.faces.length; face++) {
+    const runtime = mesh.faces[face];
+    const extracted = snapshot.faces[face];
+    if (!extracted || runtime.length !== extracted.length || runtime.some((vertex, corner) => vertex !== extracted[corner]))
+      return false;
+  }
+  return true;
+}
+
+function hasPortableRuntimeMeshAttributes(geometry: Geometry): boolean {
+  return Boolean(geometry.mesh && [...geometry.mesh.attributes.keys()].some((name) => !name.startsWith("__")));
+}
+
 export async function runGenerator(dump: Dump, opts: { object?: string; overrides?: Record<string, any> } = {}): Promise<RunResult> {
   // Mesh boolean and Blender-compatible convex hull need WASM; load both once.
   await Promise.all([ensureManifold(), ensureBulletHull()]);
@@ -299,10 +325,16 @@ export async function runGenerator(dump: Dump, opts: { object?: string; override
       if (object.type === "CURVE" && isGeometryPassthroughGroup(dependencyGroup))
         matchLegacyCurvePassthrough(dependencyGeometry);
       // Pure-mesh dependencies already have Blender's exact evaluated mesh in the
-      // portable dump. Keep that authoritative snapshot for Object Info; evaluate
-      // at runtime only when a dependency carries curves/instances that the mesh
-      // snapshot cannot represent, or when no snapshot was extracted.
-      if (dependencyGeometry.curves.length || dependencyGeometry.instances.length || !object.evaluated_mesh)
+      // portable dump. Keep that authoritative snapshot for Object Info unless
+      // runtime evaluation reproduces the snapshot exactly and adds portable
+      // attributes that evaluated.to_mesh() omitted (Flat Stickie Pack needs the
+      // modifier-created `col` field used by its authored materials).
+      const exactRuntimeAttributes = Boolean(
+        object.evaluated_mesh
+        && hasPortableRuntimeMeshAttributes(dependencyGeometry)
+        && runtimeMeshMatchesEvaluatedSnapshot(dependencyGeometry, object.evaluated_mesh),
+      );
+      if (dependencyGeometry.curves.length || dependencyGeometry.instances.length || !object.evaluated_mesh || exactRuntimeAttributes)
         DUMP_CONTEXT.evaluatedObjects.set(object.name, dependencyGeometry);
     }
     DUMP_CONTEXT.activeObject = DUMP_CONTEXT.objects.find((object) => object.name === found.objectName);
