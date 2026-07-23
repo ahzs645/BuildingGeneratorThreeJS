@@ -1,0 +1,69 @@
+{
+  "asset": "n03d-clevis-pin",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "CLEVIS PIN",
+    "root": "CLEVIS PIN 31MAY2024_v1",
+    "material": "Filament PLA .02 mm layer height"
+  },
+  "scope": "Viewport surface reconstruction only. The Wave/Bump layer appearance does not alter geometry and is not a slicer or G-code toolpath.",
+  "geometry": {
+    "blender": { "verts": 36390, "faces": 34198 },
+    "gnvm": { "verts": 36390, "faces": 34198 },
+    "materialFaces": 34198,
+    "validationCases": 6,
+    "browserHelperWire": {
+      "controlPoints": 40,
+      "segments": 40,
+      "role": "Editable curve guide retained by the GN-VM viewport; excluded from mesh topology counts."
+    }
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "world",
+    "blenderReference": "../../references/n03d/clevis-pin-authored.png",
+    "blenderMetadata": "../../references/n03d/clevis-pin-authored.json",
+    "browserReference": "../../references/n03d/clevis-pin-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-clevis-pin&capture=authored",
+    "blenderAuthoredLightScale": 30,
+    "browserAuthoredLightScale": 30,
+    "browserToneMapping": "none",
+    "lightScaleInterpretation": "Blender Area energy and Three.js RectAreaLight intensity are renderer-specific units. The browser uses direct Standard-like output for this high-chroma filament instead of ACES desaturation."
+  },
+  "recoveredGraph": {
+    "color": "POINT-domain col attribute written from the Filament Color modifier input",
+    "frontColor": "Blender Mix Color COLOR branch; both HSV inputs share hue and saturation, so the authored front color remains col",
+    "backColor": "Geometry Backfacing selects the achromatic secondary branch",
+    "roughness": 0.7732919454574585,
+    "generatedCoordinates": "current filament material-group bounding box",
+    "wave": {
+      "type": "BANDS",
+      "direction": "Z",
+      "scale": -56.31793212890625,
+      "distortion": 0.8557739853858948,
+      "detail": 2,
+      "detailScale": 1,
+      "detailRoughness": 0.5
+    },
+    "bump": {
+      "strength": 0.7392045855522156,
+      "distance": 0.9663976430892944,
+      "filterWidth": 1,
+      "invert": false
+    }
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9940826834003698,
+    "surfaceCornerRmsePixels": 0.6378776896489077,
+    "pixelRgbMae": 0.16432196269196428,
+    "pixelLuminanceMae": 0.16349727697055033,
+    "macroLuminanceMae": 0.1055484502718129,
+    "macroLuminanceCorrelation": 0.8194623267280169,
+    "blenderMeanLuminance": 0.773745124273714,
+    "browserMeanLuminance": 0.6832690067003816,
+    "meanLuminanceDelta": -0.0904761175733324
+  },
+  "interpretation": "The shared portable filament implementation renders the complete topology-exact Clevis Pin without asset-specific shader code. Silhouette alignment is near-identical and large-scale luminance structure correlates strongly. Blender's Medium High Contrast look clips the yellow-green surface more aggressively, while derivative bump filtering and the retained browser guide wire remain raster residuals; pixel identity is not claimed."
+}

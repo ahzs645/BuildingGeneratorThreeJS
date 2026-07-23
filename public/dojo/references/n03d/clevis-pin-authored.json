@@ -1,0 +1,39 @@
+{
+  "object": "CLEVIS PIN",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      110.0147476196289,
+      123.95562744140625,
+      -4.005818843841553
+    ],
+    "max": [
+      126.29387664794922,
+      140.23956298828125,
+      18.36003875732422
+    ]
+  },
+  "verts": 36390,
+  "faces": 34198,
+  "materials": [
+    "Filament PLA .02 mm layer height"
+  ],
+  "evaluated_materials": [
+    null,
+    "Filament PLA .02 mm layer height"
+  ],
+  "evaluated_material_faces": {
+    "Filament PLA .02 mm layer height": 34198
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 30.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

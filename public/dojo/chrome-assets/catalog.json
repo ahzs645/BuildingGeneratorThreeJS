@@ -651,8 +651,11 @@
     "dump": "dojo/n03d/clevis-pin/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/clevis-pin.png",
+    "authoredReference": "dojo/references/n03d/clevis-pin-authored.png",
+    "authoredLightScale": 30,
+    "authoredToneMapping": "none",
     "blenderStats": { "verts": 36390, "faces": 34198 },
-    "note": "Exact Blender geometry across all six validation cases: authored output is 36,390 / 34,198 and Split to Print is 34,548 / 32,094, with identical four-decimal bounds. Correct profile winding restores the Solidify head, retained NURBS controls reproduce the 2,916 / 974 retaining clip, and generated Edge Extrude ordering restores the exact printable shaft split.",
+    "note": "Exact Blender geometry across all six validation cases: authored output is 36,390 / 34,198 and Split to Print is 34,548 / 32,094, with identical four-decimal bounds. Correct profile winding restores the Solidify head, retained NURBS controls reproduce the 2,916 / 974 retaining clip, and generated Edge Extrude ordering restores the exact printable shaft split. Authored mode now verifies the shared Filament PLA col, Generated Z-band Wave, derivative Bump, roughness, and backface branch on this complete 10-group asset; the aligned comparison records the remaining Eevee/WebGL filtering residual.",
     "controls": [
       { "name": "head height", "label": "Head height", "min": 2, "max": 10, "step": 0.1, "value": 4 },
       { "name": "shaft diameter", "label": "Shaft diameter", "min": 3, "max": 16, "step": 0.1, "value": 7.108998775482178 },
