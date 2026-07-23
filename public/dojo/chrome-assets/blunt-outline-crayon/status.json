@@ -6,5 +6,5 @@
   "blender": { "verts": 24719, "faces": 22853 },
   "gnvm": { "verts": 24719, "faces": 22853 },
   "coverage": "100% of reachable node types; the portable input retains Blender's post-conversion profile-less NURBS wire while real profile sweeps retain evaluated samples.",
-  "validation": "All five Blender/browser cases are topology-exact, including the authored 24,719 / 22,853 result and resolution-160 at 17,428 / 15,886. Boolean POINT-to-FACE adaptation uses Blender's all-corners rule. Authored and outline-thickness bounds agree within 0.0001 units; the largest remaining bounds delta is 0.0420 units in the 665-pass stroke-thickness case."
+  "validation": "All five Blender/browser cases are topology- and rounded-bounds-exact, including the authored 24,719 / 22,853 result, stroke-thickness at 23,303 / 21,233, and resolution-160 at 17,428 / 15,886. Boolean POINT-to-FACE adaptation uses Blender's all-corners rule, and closed Mesh-to-Curve loops use Blender's lowest-source-point and stored-edge-order canonicalization before resampling."
 }

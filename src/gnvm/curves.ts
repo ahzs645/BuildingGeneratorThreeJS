@@ -1613,13 +1613,37 @@ function meshEdgesToCurvesInternal(mesh: Mesh, selected?: (vi: number) => boolea
     }
   }
   // remaining unvisited edges belong to valence-2 cycles
+  const cycles: { spline: Spline; verts: number[] }[] = [];
   for (const [start] of adj) {
     for (const nb of adj.get(start)!) {
       if (visitedEdge.has(ek(start, nb))) continue;
       const chain = walk(start, nb);
-      emit(chain, chain.length > 2);
+      if (chain.length <= 2) {
+        emit(chain, false);
+        continue;
+      }
+      // Blender canonicalizes a pure Mesh-to-Curve cycle at its lowest source
+      // point index, then follows the first incident edge in the mesh's stored
+      // edge order. The discovery edge can begin anywhere else on the cycle;
+      // preserving that arbitrary start shifts Length-mode resampling and made
+      // Blunt Outline Crayon's otherwise-identical sweep miss its extrema.
+      const canonicalStart = Math.min(...chain);
+      const startIndex = chain.indexOf(canonicalStart);
+      const members = new Set(chain);
+      const preferredNext = [...(adj.get(canonicalStart) ?? [])].find((vertex) => members.has(vertex));
+      const direction = chain[(startIndex + 1) % chain.length] === preferredNext ? 1 : -1;
+      const canonical = Array.from({ length: chain.length }, (_, index) =>
+        chain[(startIndex + direction * index + chain.length) % chain.length]);
+      cycles.push({
+        spline: { points: canonical.map((vi) => [...mesh.positions[vi]] as Vec3), cyclic: true },
+        verts: canonical,
+      });
     }
   }
+  // Curve order follows the first point index for pure cycles. Open pole chains
+  // above retain their stored-edge discovery order.
+  cycles.sort((a, b) => a.verts[0] - b.verts[0]);
+  out.push(...cycles);
   return out;
 }
 
