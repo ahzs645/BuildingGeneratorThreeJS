@@ -24,5 +24,40 @@
       "max": [5.475000381469727, 7.974661827087402, 4.335870742797852]
     }
   },
-  "validation": "Exact topology, triangles, local bounds, and visible control-box composition. The rounded enclosure, inset lid, raised plus control, triangular button, and three curved face marks all match Blender. Convex Hull now removes the face-interior support point left unreferenced after coplanar dissolve."
+  "validation": "Exact topology, triangles, local bounds, and visible control-box composition. The rounded enclosure, inset lid, raised plus control, triangular button, and three curved face marks all match Blender. Convex Hull now removes the face-interior support point left unreferenced after coplanar dissolve.",
+  "workbenchRender": {
+    "status": "measured-workbench-renderer-residual",
+    "valid": true,
+    "blenderReference": "public/dojo/references/course-modules/module3-control-box.png",
+    "browserReference": "public/dojo/references/course-modules/module3-control-box-workbench-webgl.png",
+    "comparisonReport": "public/dojo/course-modules/module3-control-box/workbench-comparison.json",
+    "capture": {
+      "resolution": [
+        768,
+        768
+      ],
+      "previewMode": "workbench",
+      "lightScale": 1,
+      "temporalSamples": null,
+      "backgroundHex": "ff00ff",
+      "browserReadiness": "exact",
+      "browserCount": "1,860 verts · 1,609 faces",
+      "blenderAlphaSurfacePixels": 220195
+    },
+    "comparison": {
+      "surfaceMaskIoU": 0.9985737958762326,
+      "surfaceMaskIoUDilated1px": 0.9985787685051514,
+      "surfaceCornerRmsePixels": 0.49008992724104833,
+      "blenderSurfaceCoveredWithin1px": 1,
+      "browserSurfaceCoveredWithin1px": 1,
+      "pixelRgbMae": 0.14321760014644816,
+      "pixelLuminanceMae": 0.14185545923682782,
+      "pixelLuminanceCorrelation": 0.5691333511566086,
+      "binaryMaskDisagreementFraction": 0.3338547546825904,
+      "macroLuminanceMae": 0.13266447403591114,
+      "macroLuminanceCorrelation": 0.5810324473130708,
+      "meanLuminanceDelta": 0.0598958787838863
+    },
+    "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
+  }
 }

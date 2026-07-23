@@ -23,5 +23,40 @@
       "max": [0.565, 0.565, 0.22]
     }
   },
-  "validation": "The visible cross-shaped output of this 288-node instructional closure matches Blender exactly in topology and four-decimal local bounds."
+  "validation": "The visible cross-shaped output of this 288-node instructional closure matches Blender exactly in topology and four-decimal local bounds.",
+  "workbenchRender": {
+    "status": "measured-workbench-renderer-residual",
+    "valid": true,
+    "blenderReference": "public/dojo/references/course-modules/intro-cross-exercise.png",
+    "browserReference": "public/dojo/references/course-modules/intro-cross-exercise-workbench-webgl.png",
+    "comparisonReport": "public/dojo/course-modules/intro-cross-exercise/workbench-comparison.json",
+    "capture": {
+      "resolution": [
+        768,
+        768
+      ],
+      "previewMode": "workbench",
+      "lightScale": 1,
+      "temporalSamples": null,
+      "backgroundHex": "ff00ff",
+      "browserReadiness": "exact",
+      "browserCount": "48 verts · 38 faces",
+      "blenderAlphaSurfacePixels": 110843
+    },
+    "comparison": {
+      "surfaceMaskIoU": 0.9978180972735158,
+      "surfaceMaskIoUDilated1px": 0.9978738172009946,
+      "surfaceCornerRmsePixels": 0.2780997045927955,
+      "blenderSurfaceCoveredWithin1px": 1,
+      "browserSurfaceCoveredWithin1px": 1,
+      "pixelRgbMae": 0.09570429233314134,
+      "pixelLuminanceMae": 0.09431002617387449,
+      "pixelLuminanceCorrelation": 0.7686456133523385,
+      "binaryMaskDisagreementFraction": 0.3152574270735314,
+      "macroLuminanceMae": 0.0815301047250937,
+      "macroLuminanceCorrelation": 0.7874691500928928,
+      "meanLuminanceDelta": 0.055460615357544596
+    },
+    "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
+  }
 }

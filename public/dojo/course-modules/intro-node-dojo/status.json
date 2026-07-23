@@ -30,5 +30,40 @@
       "max": [7.133110046386719, 10.613457679748535, 1.670235514640808]
     }
   },
-  "validation": "Exact topology and matching Node Dojo emblem composition, with maximum local-bounds difference 0.00007450580596923828 units. Blender's Invert Arc keeps the start point and uses the opposite signed sweep; reproducing that contract restores the yin-yang's inner S curve instead of its former mirror. The complete raw point clouds are then within 0.00007920952720588948 units symmetrically, with a mean nearest-point distance of 0.0000005521627707045178. Set Curve Tilt and Sample Curve reproduce the arced title, while extracted pixel-font contours, explicit line-break instances, half-em character spacing, and shared-corner Fill Curve welding reproduce the WELCOME/to the lettering."
+  "validation": "Exact topology and matching Node Dojo emblem composition, with maximum local-bounds difference 0.00007450580596923828 units. Blender's Invert Arc keeps the start point and uses the opposite signed sweep; reproducing that contract restores the yin-yang's inner S curve instead of its former mirror. The complete raw point clouds are then within 0.00007920952720588948 units symmetrically, with a mean nearest-point distance of 0.0000005521627707045178. Set Curve Tilt and Sample Curve reproduce the arced title, while extracted pixel-font contours, explicit line-break instances, half-em character spacing, and shared-corner Fill Curve welding reproduce the WELCOME/to the lettering.",
+  "workbenchRender": {
+    "status": "measured-workbench-renderer-residual",
+    "valid": true,
+    "blenderReference": "public/dojo/references/course-modules/intro-node-dojo.png",
+    "browserReference": "public/dojo/references/course-modules/intro-node-dojo-workbench-webgl.png",
+    "comparisonReport": "public/dojo/course-modules/intro-node-dojo/workbench-comparison.json",
+    "capture": {
+      "resolution": [
+        768,
+        768
+      ],
+      "previewMode": "workbench",
+      "lightScale": 1,
+      "temporalSamples": null,
+      "backgroundHex": "ff00ff",
+      "browserReadiness": "exact",
+      "browserCount": "5,546 verts · 2,667 faces",
+      "blenderAlphaSurfacePixels": 47742
+    },
+    "comparison": {
+      "surfaceMaskIoU": 0.9796007288283293,
+      "surfaceMaskIoUDilated1px": 0.9824076356848519,
+      "surfaceCornerRmsePixels": 1.9378669005526845,
+      "blenderSurfaceCoveredWithin1px": 1,
+      "browserSurfaceCoveredWithin1px": 1,
+      "pixelRgbMae": 0.10445792673657907,
+      "pixelLuminanceMae": 0.10293563910754339,
+      "pixelLuminanceCorrelation": 0.44355981022191504,
+      "binaryMaskDisagreementFraction": 0.2804981602037928,
+      "macroLuminanceMae": 0.07731344383282303,
+      "macroLuminanceCorrelation": 0.5220565761514941,
+      "meanLuminanceDelta": -0.009067408363019003
+    },
+    "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
+  }
 }

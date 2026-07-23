@@ -23,5 +23,40 @@
       "max": [35.5565, 35.5565, 18.3242]
     }
   },
-  "validation": "This visible earlier Room-family lesson stage is exact in topology and four-decimal local bounds. It retains the framed walls, floor, entrance, and the FIRST NODETREES header visible in the supplied Intro scene."
+  "validation": "This visible earlier Room-family lesson stage is exact in topology and four-decimal local bounds. It retains the framed walls, floor, entrance, and the FIRST NODETREES header visible in the supplied Intro scene.",
+  "workbenchRender": {
+    "status": "measured-workbench-renderer-residual",
+    "valid": true,
+    "blenderReference": "public/dojo/references/course-modules/intro-room-stage-a.png",
+    "browserReference": "public/dojo/references/course-modules/intro-room-stage-a-workbench-webgl.png",
+    "comparisonReport": "public/dojo/course-modules/intro-room-stage-a/workbench-comparison.json",
+    "capture": {
+      "resolution": [
+        768,
+        768
+      ],
+      "previewMode": "workbench",
+      "lightScale": 1,
+      "temporalSamples": null,
+      "backgroundHex": "ff00ff",
+      "browserReadiness": "exact",
+      "browserCount": "4,080 verts · 2,479 faces · 20 curve points · 20 wire segments",
+      "blenderAlphaSurfacePixels": 210969
+    },
+    "comparison": {
+      "surfaceMaskIoU": 0.9971222005039682,
+      "surfaceMaskIoUDilated1px": 0.9973188604459892,
+      "surfaceCornerRmsePixels": 3.0321704148220947,
+      "blenderSurfaceCoveredWithin1px": 1,
+      "browserSurfaceCoveredWithin1px": 1,
+      "pixelRgbMae": 0.09305183027396667,
+      "pixelLuminanceMae": 0.09078666489124611,
+      "pixelLuminanceCorrelation": 0.7742706801026955,
+      "binaryMaskDisagreementFraction": 0.23400597060046102,
+      "macroLuminanceMae": 0.088621995858645,
+      "macroLuminanceCorrelation": 0.8224805918244544,
+      "meanLuminanceDelta": 0.08259300373659567
+    },
+    "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
+  }
 }

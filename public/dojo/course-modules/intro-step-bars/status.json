@@ -23,5 +23,40 @@
       "max": [0.745, 0.68, 0.065]
     }
   },
-  "validation": "The visible two-step bar output of this 291-node instructional closure matches Blender exactly in topology and four-decimal local bounds."
+  "validation": "The visible two-step bar output of this 291-node instructional closure matches Blender exactly in topology and four-decimal local bounds.",
+  "workbenchRender": {
+    "status": "measured-workbench-renderer-residual",
+    "valid": true,
+    "blenderReference": "public/dojo/references/course-modules/intro-step-bars.png",
+    "browserReference": "public/dojo/references/course-modules/intro-step-bars-workbench-webgl.png",
+    "comparisonReport": "public/dojo/course-modules/intro-step-bars/workbench-comparison.json",
+    "capture": {
+      "resolution": [
+        768,
+        768
+      ],
+      "previewMode": "workbench",
+      "lightScale": 1,
+      "temporalSamples": null,
+      "backgroundHex": "ff00ff",
+      "browserReadiness": "exact",
+      "browserCount": "48 verts · 12 faces",
+      "blenderAlphaSurfacePixels": 98258
+    },
+    "comparison": {
+      "surfaceMaskIoU": 0.9979388109768419,
+      "surfaceMaskIoUDilated1px": 0.9979970650061476,
+      "surfaceCornerRmsePixels": 0.2389815744613713,
+      "blenderSurfaceCoveredWithin1px": 1,
+      "browserSurfaceCoveredWithin1px": 1,
+      "pixelRgbMae": 0.07950523688632126,
+      "pixelLuminanceMae": 0.07922844748587733,
+      "pixelLuminanceCorrelation": 0.4680659709387649,
+      "binaryMaskDisagreementFraction": 0.4143346023003402,
+      "macroLuminanceMae": 0.06397956291694834,
+      "macroLuminanceCorrelation": 0.6393302507444922,
+      "meanLuminanceDelta": 0.03441157439679143
+    },
+    "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
+  }
 }

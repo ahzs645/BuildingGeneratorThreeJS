@@ -24,5 +24,40 @@
       "max": [1.5830001831054688, 0.14404188096523285, 2.150773286819458]
     }
   },
-  "validation": "Exact topology, face-corner count, face-size distribution, and local bounds. Muted-link extraction removes four inactive building-lesson branches, recursive Subdivide Mesh restores both banner fabrics, and poly-to-Bezier conversion retains Blender's medallion outline density. Small procedural wind-displacement and Workbench shading differences remain."
+  "validation": "Exact topology, face-corner count, face-size distribution, and local bounds. Muted-link extraction removes four inactive building-lesson branches, recursive Subdivide Mesh restores both banner fabrics, and poly-to-Bezier conversion retains Blender's medallion outline density. Small procedural wind-displacement and Workbench shading differences remain.",
+  "workbenchRender": {
+    "status": "measured-workbench-renderer-residual",
+    "valid": true,
+    "blenderReference": "public/dojo/references/course-modules/dojo-finale.png",
+    "browserReference": "public/dojo/references/course-modules/dojo-finale-workbench-webgl.png",
+    "comparisonReport": "public/dojo/course-modules/dojo-finale/workbench-comparison.json",
+    "capture": {
+      "resolution": [
+        768,
+        768
+      ],
+      "previewMode": "workbench",
+      "lightScale": 1,
+      "temporalSamples": null,
+      "backgroundHex": "ff00ff",
+      "browserReadiness": "exact",
+      "browserCount": "47,435 verts · 46,490 faces",
+      "blenderAlphaSurfacePixels": 52874
+    },
+    "comparison": {
+      "surfaceMaskIoU": 0.9179924175318003,
+      "surfaceMaskIoUDilated1px": 0.9251262583466088,
+      "surfaceCornerRmsePixels": 4.033121947183761,
+      "blenderSurfaceCoveredWithin1px": 0.9699054011691162,
+      "browserSurfaceCoveredWithin1px": 0.9724617833216124,
+      "pixelRgbMae": 0.14355400431442222,
+      "pixelLuminanceMae": 0.14197361911894524,
+      "pixelLuminanceCorrelation": 0.45091374868435036,
+      "binaryMaskDisagreementFraction": 0.3642433950247988,
+      "macroLuminanceMae": 0.11524500665254699,
+      "macroLuminanceCorrelation": 0.027640910914469227,
+      "meanLuminanceDelta": 0.1194637239215095
+    },
+    "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
+  }
 }

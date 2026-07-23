@@ -23,5 +23,40 @@
       "max": [8.234509468078613, 7.759399890899658, 0.2376922369003296]
     }
   },
-  "validation": "Exact topology and four-decimal bounds for the chalkboard, raised pixel-font lettering, inset face, and swept perimeter frame. Authored Mesh to Curve cycles retain the first stored edge but start at its lower endpoint, while the converted curve carries Blender's float32 minimum-twist normal into Curve to Mesh. The 64 / 64 frame stage is within 0.0000009537907246235167 units symmetrically; the complete 2,226 / 290 point clouds are within 0.0000017192608239479013, with mean nearest-point distance 0.000000600447135076847. Five bound components are bit-exact and max Z differs by only 0.000000014901161193847656."
+  "validation": "Exact topology and four-decimal bounds for the chalkboard, raised pixel-font lettering, inset face, and swept perimeter frame. Authored Mesh to Curve cycles retain the first stored edge but start at its lower endpoint, while the converted curve carries Blender's float32 minimum-twist normal into Curve to Mesh. The 64 / 64 frame stage is within 0.0000009537907246235167 units symmetrically; the complete 2,226 / 290 point clouds are within 0.0000017192608239479013, with mean nearest-point distance 0.000000600447135076847. Five bound components are bit-exact and max Z differs by only 0.000000014901161193847656.",
+  "workbenchRender": {
+    "status": "measured-workbench-renderer-residual",
+    "valid": true,
+    "blenderReference": "public/dojo/references/course-modules/intro-chalkboard.png",
+    "browserReference": "public/dojo/references/course-modules/intro-chalkboard-workbench-webgl.png",
+    "comparisonReport": "public/dojo/course-modules/intro-chalkboard/workbench-comparison.json",
+    "capture": {
+      "resolution": [
+        768,
+        768
+      ],
+      "previewMode": "workbench",
+      "lightScale": 1,
+      "temporalSamples": null,
+      "backgroundHex": "ff00ff",
+      "browserReadiness": "exact",
+      "browserCount": "2,226 verts · 290 faces",
+      "blenderAlphaSurfacePixels": 131623
+    },
+    "comparison": {
+      "surfaceMaskIoU": 0.9971842256243018,
+      "surfaceMaskIoUDilated1px": 0.9972293613417913,
+      "surfaceCornerRmsePixels": 0.2939970074045135,
+      "blenderSurfaceCoveredWithin1px": 1,
+      "browserSurfaceCoveredWithin1px": 1,
+      "pixelRgbMae": 0.03223111144013515,
+      "pixelLuminanceMae": 0.03232085617385887,
+      "pixelLuminanceCorrelation": 0.5235275152943767,
+      "binaryMaskDisagreementFraction": 0.24313562209016237,
+      "macroLuminanceMae": 0.01923647244834515,
+      "macroLuminanceCorrelation": 0.8014508200272972,
+      "meanLuminanceDelta": -0.0022762223505625734
+    },
+    "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
+  }
 }

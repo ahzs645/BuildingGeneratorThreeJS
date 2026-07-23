@@ -24,5 +24,40 @@
     }
   },
   "bboxMaxDiff": 0.0017,
-  "validation": "This asymmetrical Room-family lesson stage has exact Blender topology. The 0.0017-unit bound residual comes from legacy curve-frame sampling on a roughly 71-unit composition and does not alter its visible wall, floor, or opening layout."
+  "validation": "This asymmetrical Room-family lesson stage has exact Blender topology. The 0.0017-unit bound residual comes from legacy curve-frame sampling on a roughly 71-unit composition and does not alter its visible wall, floor, or opening layout.",
+  "workbenchRender": {
+    "status": "measured-workbench-renderer-residual",
+    "valid": true,
+    "blenderReference": "public/dojo/references/course-modules/intro-room-stage-b.png",
+    "browserReference": "public/dojo/references/course-modules/intro-room-stage-b-workbench-webgl.png",
+    "comparisonReport": "public/dojo/course-modules/intro-room-stage-b/workbench-comparison.json",
+    "capture": {
+      "resolution": [
+        768,
+        768
+      ],
+      "previewMode": "workbench",
+      "lightScale": 1,
+      "temporalSamples": null,
+      "backgroundHex": "ff00ff",
+      "browserReadiness": "exact",
+      "browserCount": "2,860 verts · 2,398 faces · 20 curve points · 20 wire segments",
+      "blenderAlphaSurfacePixels": 183200
+    },
+    "comparison": {
+      "surfaceMaskIoU": 0.9978597541433313,
+      "surfaceMaskIoUDilated1px": 0.9978753313088173,
+      "surfaceCornerRmsePixels": 2.8758116392299464,
+      "blenderSurfaceCoveredWithin1px": 1,
+      "browserSurfaceCoveredWithin1px": 1,
+      "pixelRgbMae": 0.09510945890846918,
+      "pixelLuminanceMae": 0.09289326070827945,
+      "pixelLuminanceCorrelation": 0.7667937490518348,
+      "binaryMaskDisagreementFraction": 0.24317762402216694,
+      "macroLuminanceMae": 0.08892706069432638,
+      "macroLuminanceCorrelation": 0.8186153008199099,
+      "meanLuminanceDelta": 0.08440597588418458
+    },
+    "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
+  }
 }

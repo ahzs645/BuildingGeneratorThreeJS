@@ -1846,6 +1846,7 @@
   "blenderStats": { "verts": 2331, "faces": 16 },
   "localSpace": true,
   "workbenchColor": [0.8, 0.8, 0.8],
+  "authoredHideLines": true,
   "note": "The complete 1,181-node Blurmed title-and-arrow study matches Blender's visible cached frame-1 result exactly at 2,331 vertices and 16 faces, with local bounds within 0.000003 units. Sampled straight font segments and all ten 4D-noise bounce offsets now match.",
   "controls": []
 },
@@ -1885,6 +1886,7 @@
   "blenderStats": { "verts": 2411, "faces": 81 },
   "localSpace": true,
   "workbenchColor": [0.8, 0.8, 0.8],
+  "authoredHideLines": true,
   "note": "The 64-node arrow-and-NodeTubes tab study matches Blender's visible cached frame-1 result exactly at 2,411 vertices and 81 faces, with bounds within 0.000001 units. All nine per-glyph bounce offsets run in-browser.",
   "controls": []
 },

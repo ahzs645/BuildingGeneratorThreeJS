@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "capture": {
+    "resolution": [768, 768],
+    "previewMode": "workbench",
+    "lightScale": 1,
+    "temporalSamples": null,
+    "backgroundHex": "ff00ff",
+    "minimumValidSurfaceMaskIoU": 0.5
+  },
+  "assets": [
+    {
+      "id": "course-dojo-finale",
+      "sourceProject": "module-4"
+    },
+    {
+      "id": "course-intro-node-panels",
+      "sourceProject": "intro-module"
+    },
+    {
+      "id": "course-intro-challenge",
+      "sourceProject": "intro-module"
+    },
+    {
+      "id": "course-intro-node-dojo",
+      "sourceProject": "intro-module"
+    },
+    {
+      "id": "course-intro-chalkboard",
+      "sourceProject": "intro-module"
+    },
+    {
+      "id": "course-intro-node-tabs",
+      "sourceProject": "intro-module"
+    },
+    {
+      "id": "course-intro-room",
+      "sourceProject": "intro-module"
+    },
+    {
+      "id": "course-intro-room-stage-a",
+      "sourceProject": "intro-module"
+    },
+    {
+      "id": "course-intro-room-stage-b",
+      "sourceProject": "intro-module"
+    },
+    {
+      "id": "course-intro-room-material-stage",
+      "sourceProject": "intro-module"
+    },
+    {
+      "id": "course-intro-cross-exercise",
+      "sourceProject": "intro-module"
+    },
+    {
+      "id": "course-intro-step-bars",
+      "sourceProject": "intro-module"
+    },
+    {
+      "id": "course-module3-control-box",
+      "sourceProject": "module-3"
+    }
+  ]
+}

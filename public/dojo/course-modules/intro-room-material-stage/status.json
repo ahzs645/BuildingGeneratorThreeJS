@@ -24,5 +24,40 @@
       "max": [6.7142, 6.7142, 37.4291]
     }
   },
-  "validation": "Forcing the supplied scene to its saved frame 1405 produces exact topology and four-decimal local bounds in Blender and GN-VM. Blender's unopened dependency cache still displays the older frame-1 transform until the timeline is evaluated. The MAT helper's Font socket is explicitly unassigned, so both engines correctly omit its glyph branch while retaining the arrow and complete Room/material lesson geometry."
+  "validation": "Forcing the supplied scene to its saved frame 1405 produces exact topology and four-decimal local bounds in Blender and GN-VM. Blender's unopened dependency cache still displays the older frame-1 transform until the timeline is evaluated. The MAT helper's Font socket is explicitly unassigned, so both engines correctly omit its glyph branch while retaining the arrow and complete Room/material lesson geometry.",
+  "workbenchRender": {
+    "status": "measured-workbench-renderer-residual",
+    "valid": true,
+    "blenderReference": "public/dojo/references/course-modules/intro-room-material-stage.png",
+    "browserReference": "public/dojo/references/course-modules/intro-room-material-stage-workbench-webgl.png",
+    "comparisonReport": "public/dojo/course-modules/intro-room-material-stage/workbench-comparison.json",
+    "capture": {
+      "resolution": [
+        768,
+        768
+      ],
+      "previewMode": "workbench",
+      "lightScale": 1,
+      "temporalSamples": null,
+      "backgroundHex": "ff00ff",
+      "browserReadiness": "exact",
+      "browserCount": "3,808 verts · 3,160 faces · 26 curve points · 26 wire segments",
+      "blenderAlphaSurfacePixels": 160541
+    },
+    "comparison": {
+      "surfaceMaskIoU": 0.7743500611440736,
+      "surfaceMaskIoUDilated1px": 0.7725344881467923,
+      "surfaceCornerRmsePixels": 134.2010242403547,
+      "blenderSurfaceCoveredWithin1px": 0.8542363416374523,
+      "browserSurfaceCoveredWithin1px": 0.9032133051326178,
+      "pixelRgbMae": 0.12914737069273707,
+      "pixelLuminanceMae": 0.12808435354687248,
+      "pixelLuminanceCorrelation": -0.06418112282038002,
+      "binaryMaskDisagreementFraction": 0.6660793273624566,
+      "macroLuminanceMae": 0.10532363982180104,
+      "macroLuminanceCorrelation": -0.05474402154733468,
+      "meanLuminanceDelta": 0.09827495074282988
+    },
+    "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
+  }
 }

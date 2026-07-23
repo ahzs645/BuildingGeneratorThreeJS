@@ -24,5 +24,40 @@
       "max": [4.5276875495910645, 0.14779964089393616, 0.4884030520915985]
     }
   },
-  "validation": "Exact authored topology and exact local bounds for the complete two-panel composition. Blender 5.1.2 parent-group references prove both The Nodes Node groups and their socket materials are coordinate-exact before the root transform. Transform Geometry now left-multiplies complete instance matrices, preserving the socket branch's Y rotation under the root X rotation instead of adding non-commuting Euler components."
+  "validation": "Exact authored topology and exact local bounds for the complete two-panel composition. Blender 5.1.2 parent-group references prove both The Nodes Node groups and their socket materials are coordinate-exact before the root transform. Transform Geometry now left-multiplies complete instance matrices, preserving the socket branch's Y rotation under the root X rotation instead of adding non-commuting Euler components.",
+  "workbenchRender": {
+    "status": "measured-workbench-renderer-residual",
+    "valid": true,
+    "blenderReference": "public/dojo/references/course-modules/intro-node-panels.png",
+    "browserReference": "public/dojo/references/course-modules/intro-node-panels-workbench-webgl.png",
+    "comparisonReport": "public/dojo/course-modules/intro-node-panels/workbench-comparison.json",
+    "capture": {
+      "resolution": [
+        768,
+        768
+      ],
+      "previewMode": "workbench",
+      "lightScale": 1,
+      "temporalSamples": null,
+      "backgroundHex": "ff00ff",
+      "browserReadiness": "exact",
+      "browserCount": "104,454 verts · 44,423 faces",
+      "blenderAlphaSurfacePixels": 127560
+    },
+    "comparison": {
+      "surfaceMaskIoU": 0.9894054641415709,
+      "surfaceMaskIoUDilated1px": 0.988836698590862,
+      "surfaceCornerRmsePixels": 9.050202757626016,
+      "blenderSurfaceCoveredWithin1px": 0.9949274911308894,
+      "browserSurfaceCoveredWithin1px": 0.9981921912051276,
+      "pixelRgbMae": 0.15364620037447185,
+      "pixelLuminanceMae": 0.1522731647201304,
+      "pixelLuminanceCorrelation": 0.24869009370053435,
+      "binaryMaskDisagreementFraction": 0.04053343792900569,
+      "macroLuminanceMae": 0.14047932510669708,
+      "macroLuminanceCorrelation": 0.4221214722091694,
+      "meanLuminanceDelta": 0.14835971418459293
+    },
+    "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
+  }
 }

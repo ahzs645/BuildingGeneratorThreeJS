@@ -24,5 +24,40 @@
       "max": [15.083569526672363, 15.083569526672363, 18.32422637939453]
     }
   },
-  "validation": "Exact topology and matching complete-room composition, including the floor, open entrance, four posts, lower and upper framed wall-panel grids, header plaque, and procedural text. Local bounds are within 0.000002 units. Subdivide Mesh now preserves and splits loose wire edges, and Merge by Distance removes opposite-winding coincident faces created where the cross-beam sweeps intersect."
+  "validation": "Exact topology and matching complete-room composition, including the floor, open entrance, four posts, lower and upper framed wall-panel grids, header plaque, and procedural text. Local bounds are within 0.000002 units. Subdivide Mesh now preserves and splits loose wire edges, and Merge by Distance removes opposite-winding coincident faces created where the cross-beam sweeps intersect.",
+  "workbenchRender": {
+    "status": "measured-workbench-renderer-residual",
+    "valid": true,
+    "blenderReference": "public/dojo/references/course-modules/intro-room.png",
+    "browserReference": "public/dojo/references/course-modules/intro-room-workbench-webgl.png",
+    "comparisonReport": "public/dojo/course-modules/intro-room/workbench-comparison.json",
+    "capture": {
+      "resolution": [
+        768,
+        768
+      ],
+      "previewMode": "workbench",
+      "lightScale": 1,
+      "temporalSamples": null,
+      "backgroundHex": "ff00ff",
+      "browserReadiness": "exact",
+      "browserCount": "3,788 verts · 2,542 faces · 20 curve points · 20 wire segments",
+      "blenderAlphaSurfacePixels": 319019
+    },
+    "comparison": {
+      "surfaceMaskIoU": 0.9985418553095825,
+      "surfaceMaskIoUDilated1px": 0.99859657799966,
+      "surfaceCornerRmsePixels": 2.1630120294792476,
+      "blenderSurfaceCoveredWithin1px": 1,
+      "browserSurfaceCoveredWithin1px": 1,
+      "pixelRgbMae": 0.13230402405168604,
+      "pixelLuminanceMae": 0.12907804640141363,
+      "pixelLuminanceCorrelation": 0.8214233332831393,
+      "binaryMaskDisagreementFraction": 0.16441371719464795,
+      "macroLuminanceMae": 0.12088203721649562,
+      "macroLuminanceCorrelation": 0.8596702296629308,
+      "meanLuminanceDelta": 0.11996447580550246
+    },
+    "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
+  }
 }

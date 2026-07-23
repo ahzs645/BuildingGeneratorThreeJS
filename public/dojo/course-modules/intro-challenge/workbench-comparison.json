@@ -1,0 +1,124 @@
+{
+  "target": {
+    "id": "course-intro-challenge",
+    "object": "Plane.023"
+  },
+  "geometryContract": {
+    "verts": 2331,
+    "faces": 16
+  },
+  "captures": {
+    "blender": "intro-challenge.png",
+    "webgl": "intro-challenge-workbench-webgl.png",
+    "resolution": [
+      768,
+      768
+    ],
+    "alignment": "same square orthographic camera direction and 1.45 framing scale",
+    "webgl_background_key": "#ff00ff",
+    "comparison_composite": "Blender straight-alpha capture composited over the WebGL key in scene-linear space",
+    "key_tolerance": 0.08,
+    "blender_alpha_gt_0_5_surface_pixels": 11258,
+    "webgl_temporal_samples": null
+  },
+  "blender": {
+    "surface_pixels": 12279,
+    "black_pixels": 0,
+    "white_pixels": 0,
+    "gray_pixels": 12279,
+    "black_fraction": 0,
+    "white_fraction": 0,
+    "gray_fraction": 1,
+    "mean_luminance": 0.5240974405146925
+  },
+  "webgl": {
+    "surface_pixels": 12054,
+    "black_pixels": 0,
+    "white_pixels": 0,
+    "gray_pixels": 12054,
+    "black_fraction": 0,
+    "white_fraction": 0,
+    "gray_fraction": 1,
+    "mean_luminance": 0.48735246695204015
+  },
+  "comparison": {
+    "surface_mask_iou": 0.21464583437328408,
+    "surface_mask_iou_dilated_1px": 0.27344776435685525,
+    "blender_surface_covered_within_1px_fraction": 0.4234872546624318,
+    "webgl_surface_covered_within_1px_fraction": 0.44756927161108345,
+    "surface_corners": {
+      "blender": {
+        "left": [
+          209.64285714285714,
+          455
+        ],
+        "right": [
+          655.4285714285714,
+          311.7142857142857
+        ],
+        "bottom": [
+          606.5,
+          284.6
+        ],
+        "top": [
+          347.8918918918919,
+          482.4054054054054
+        ]
+      },
+      "webgl": {
+        "left": [
+          189.66666666666666,
+          440.3333333333333
+        ],
+        "right": [
+          635.3333333333334,
+          297.5
+        ],
+        "bottom": [
+          586.1764705882352,
+          269.6470588235294
+        ],
+        "top": [
+          328.575,
+          467.425
+        ]
+      }
+    },
+    "surface_corner_deltas_webgl_minus_blender": {
+      "left": [
+        -19.97619047619048,
+        -14.666666666666686
+      ],
+      "right": [
+        -20.095238095238074,
+        -14.214285714285722
+      ],
+      "bottom": [
+        -20.323529411764753,
+        -14.952941176470631
+      ],
+      "top": [
+        -19.316891891891885,
+        -14.980405405405406
+      ]
+    },
+    "surface_corner_rmse_pixels": 17.515046979579463,
+    "intersection_pixels": 4300,
+    "pixel_rgb_mae": 0.10989943650930743,
+    "mean_rgb_delta": [
+      -0.06123212103350503,
+      -0.02634111853341226,
+      -0.06667925547334139
+    ],
+    "pixel_luminance_mae": 0.07340809413221028,
+    "pixel_luminance_correlation": -0.012595889694232787,
+    "binary_mask_disagreement_fraction": 0.48023255813953486,
+    "macro_block_size": 32,
+    "macro_block_count": 25,
+    "macro_luminance_mae": 0.04050514324284103,
+    "macro_luminance_correlation": 0.2596278192622792,
+    "black_fraction_delta": 0,
+    "mean_luminance_delta": -0.03674497356265238
+  },
+  "interpretation": "The transparent Blender capture is composited over the same segmentation key as WebGL before applying one shared key-distance threshold. This compares equivalent antialiased coverage instead of an alpha>0.5 Blender mask against a looser WebGL color-key mask. The aligned silhouette validates the capture context, but luminance occupancy, correlation, and pixel disagreement determine whether the authored WebGL material is visually equivalent. Renderer lighting, environment, tone mapping, texture filtering, and procedural implementations may remain as residuals."
+}

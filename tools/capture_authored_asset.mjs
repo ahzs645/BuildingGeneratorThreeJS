@@ -95,6 +95,31 @@ try {
     () => document.documentElement.dataset.chromeAssetsReady !== undefined,
     { timeout: 240_000 },
   );
+  if (previewMode === "workbench") {
+    const switched = await page.evaluate(() => {
+      const menu = document.querySelector('[data-control="__materialPreview"]');
+      if (!(menu instanceof HTMLSelectElement)) {
+        throw new Error("workbench capture requires the material preview control");
+      }
+      if (![...menu.options].some((option) => option.value === "workbench")) {
+        const option = document.createElement("option");
+        option.value = "workbench";
+        option.textContent = "Blender Workbench approximation";
+        menu.append(option);
+      }
+      if (menu.value === "workbench") return false;
+      delete document.documentElement.dataset.chromeAssetsReady;
+      menu.value = "workbench";
+      menu.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    });
+    if (switched) {
+      await page.waitForFunction(
+        () => document.documentElement.dataset.chromeAssetsReady !== undefined,
+        { timeout: 240_000 },
+      );
+    }
+  }
   if (backgroundHex !== undefined) {
     await page.evaluate((color) => {
       const value = `#${color}`;
