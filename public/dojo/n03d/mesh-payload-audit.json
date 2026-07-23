@@ -1,0 +1,181 @@
+{
+  "blenderVersion": "5.1.2",
+  "records": [
+    {
+      "id": "n03d-hollow-magnet-foot",
+      "object": "feet hollow magnet.001",
+      "vertices": 1268,
+      "faces": 1158,
+      "materialSlots": [
+        null
+      ],
+      "materialIndices": [
+        0
+      ],
+      "colorAttributes": []
+    },
+    {
+      "id": "n03d-glue-grid",
+      "object": "GLUE GRID",
+      "vertices": 74,
+      "faces": 64,
+      "materialSlots": [],
+      "materialIndices": [
+        0
+      ],
+      "colorAttributes": []
+    },
+    {
+      "id": "n03d-bit-stand",
+      "object": "Plane.005",
+      "vertices": 4,
+      "faces": 1,
+      "materialSlots": [],
+      "materialIndices": [
+        0
+      ],
+      "colorAttributes": []
+    },
+    {
+      "id": "n03d-print-test-sphere",
+      "object": "Cube",
+      "vertices": 1538,
+      "faces": 1536,
+      "materialSlots": [],
+      "materialIndices": [
+        0
+      ],
+      "colorAttributes": []
+    },
+    {
+      "id": "n03d-print-test-mesh",
+      "object": "print test mesh",
+      "vertices": 111,
+      "faces": 105,
+      "materialSlots": [],
+      "materialIndices": [
+        0
+      ],
+      "colorAttributes": []
+    },
+    {
+      "id": "n03d-benchy-material-preview",
+      "object": "Benchy",
+      "vertices": 112569,
+      "faces": 225154,
+      "materialSlots": [
+        "Filament PLA .02 mm layer height"
+      ],
+      "materialIndices": [
+        0
+      ],
+      "colorAttributes": [
+        {
+          "name": "col",
+          "domain": "POINT",
+          "dataType": "FLOAT_COLOR",
+          "count": 112569,
+          "uniqueValues": [
+            [
+              0.80025882,
+              0.7684015,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n03d-simple-conveyor",
+      "object": "Cube.005",
+      "vertices": 16,
+      "faces": 13,
+      "materialSlots": [],
+      "materialIndices": [
+        0
+      ],
+      "colorAttributes": []
+    },
+    {
+      "id": "n03d-layer-height-case",
+      "object": "tutorial",
+      "vertices": 2256,
+      "faces": 1516,
+      "materialSlots": [
+        null,
+        "filament visualizer .02 mm layer height.001"
+      ],
+      "materialIndices": [
+        0,
+        1
+      ],
+      "colorAttributes": [
+        {
+          "name": "col",
+          "domain": "POINT",
+          "dataType": "FLOAT_COLOR",
+          "count": 2256,
+          "uniqueValues": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.03946902,
+              0.80037785,
+              1.0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n03d-vice-profile",
+      "object": "Cube.010",
+      "vertices": 12,
+      "faces": 10,
+      "materialSlots": [],
+      "materialIndices": [
+        0
+      ],
+      "colorAttributes": []
+    },
+    {
+      "id": "n03d-conveyor-mechanic",
+      "object": "Cube.011",
+      "vertices": 16,
+      "faces": 13,
+      "materialSlots": [],
+      "materialIndices": [
+        0
+      ],
+      "colorAttributes": []
+    },
+    {
+      "id": "n03d-assembly-bracket",
+      "object": "Cube.035",
+      "vertices": 8,
+      "faces": 6,
+      "materialSlots": [],
+      "materialIndices": [
+        0
+      ],
+      "colorAttributes": []
+    },
+    {
+      "id": "n03d-procedural-box",
+      "object": "PROC.BOX WIP",
+      "vertices": 8,
+      "faces": 6,
+      "materialSlots": [],
+      "materialIndices": [
+        0
+      ],
+      "colorAttributes": []
+    }
+  ]
+}
