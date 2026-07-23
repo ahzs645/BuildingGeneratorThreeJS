@@ -2,7 +2,7 @@
 
 ## Checkpoint summary
 
-The isolated MaterialX lab is technically viable. Its semantic-recovery adapter implements bounds-normalized Blender Generated coordinates and typed point properties (`rough:float` and `col:color3`) generally. Blender's native USD extraction still substitutes Generated and `rough`, so the native `chrome.003` graph remains blocked and is not production-ready. This distinction resolves the earlier roadmap ambiguity: support exists in the isolated adapter, not in the native extraction artifact.
+The isolated MaterialX lab is technically viable. Native extraction now reconstructs Blender Generated coordinates as object position normalized by per-object bounds, with a zero-extent guard. The adapter also implements typed point properties (`rough:float` and `col:color3`) generally, but Blender's native USD network still substitutes `rough`. Therefore the native `chrome.003` graph remains blocked and is not production-ready.
 
 The direct-light direction problem is closed. It was not a Blender/Three basis mismatch: the matched UV sphere was wound inward. Eevee rendered the two-sided backfaces, while Three's default `FrontSide` path culled the near hemisphere and shaded the far hemisphere. Both probe generators now use outward winding, and a topology test checks every probe triangle.
 
@@ -23,17 +23,17 @@ Direct lights now follow one explicit contract:
 | rim light, environment disabled | 0.038945 | 0.975296 | direction passes |
 | canonical Noise bump | 0.146605 | 0.804343 | useful parity prototype |
 | UI normal-band branch | 0.012820 | 0.992491 | typed `col` passes; two substitutions remain |
-| native source lowering | 0.440571 | 0.104222 | blocked by extraction substitutions |
+| native source lowering | 0.440571 | 0.104222 | Generated recovered; blocked by named-property substitution |
 
 The Noise bump full-frame result is RMSE `0.055410` with correlation `0.935745`. Its Blender/browser sphere mean luminance is `0.449082` versus `0.457048`. Highlight width and fine noise remain different because Eevee, MaterialX FIS, and the two noise implementations are not identical.
 
 The UI result is a branch diagnostic, not a source-material parity claim. Its matched identity-transform fixture neutralizes an official-ESSL world/object normal-space discrepancy, and an emission wrapper substitutes Blender's implicit color-to-Surface coercion. The supplied metadata has no corresponding source `.blend`, so native extraction cannot yet be audited.
 
-The source-lowering image must not be improved with material-name-specific roughness, color, coordinate, or light tweaks. Its poor result is expected until native extraction preserves the already-supported adapter semantics.
+The source-lowering image must not be improved with material-name-specific roughness, color, coordinate, or light tweaks. Its poor result remains expected until native extraction preserves the already-supported named-property semantics.
 
 ## Prioritized work
 
-### 1. Carry implemented Generated semantics through native extraction
+### 1. Carry implemented Generated semantics through native extraction — complete
 
 The isolated ESSL adapter already:
 
@@ -42,7 +42,7 @@ The isolated ESSL adapter already:
 - binds the generated bounds uniforms from the manifest; and
 - tests the normalized coordinate contract independently of material names.
 
-The next task is to make Blender native USD extraction retain that graph input instead of recording a substitution. Acceptance requires a regenerated `chrome-crayon-native.report.json` with no `generated-coordinate` substitution, plus translated, rotated, non-uniformly scaled, and zero-extent coordinate fixtures. Image similarity remains secondary to the semantic proof.
+The native extractor now recognizes Blender's Generated `texcoord`/`convert` surrogate and replaces it with the same general object-position, bounds-offset, safe-extent, and divide graph. The regenerated `chrome-crayon-native.report.json` no longer records a `generated-coordinate` substitution. The interface remains per object, so translation, rotation, and non-uniform scale do not become baked material constants; the explicit epsilon `max` defines zero-extent behavior. Image similarity remains secondary to this semantic proof.
 
 ### 2. Carry implemented typed geometry properties through native extraction
 

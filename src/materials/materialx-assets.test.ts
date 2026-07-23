@@ -22,8 +22,13 @@ test("committed native extraction is validated and records exact source graph fa
   assert.equal(report.sourceNodeTypes.includes("ShaderNodeBump"), false);
   assert.equal(report.capability.parityReady, false);
   assert.deepEqual(report.capability.substitutedSemantics.map((item: { kind: string }) => item.kind), [
-    "generated-coordinate", "named-geometry-property",
+    "named-geometry-property",
   ]);
+  const native = asset("chrome-crayon-native.mtlx");
+  assert.match(native, /<position name="bnode__Texture_Coordinate_Generated_generated_position" type="vector3" space="object"/);
+  assert.match(native, /<max name="bnode__Texture_Coordinate_Generated_generated_safe_extent"[\s\S]*?value="0\.000001, 0\.000001, 0\.000001"/);
+  assert.match(native, /<divide name="bnode__Texture_Coordinate_Generated" type="vector3"/);
+  assert.doesNotMatch(native, /<texcoord name="bnode__Texture_Coordinate_Generated"/);
 });
 
 test("committed MaterialX documents pass Three loader capability preflight", () => {

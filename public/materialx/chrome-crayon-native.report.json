@@ -61,11 +61,6 @@
     ],
     "substitutedSemantics": [
       {
-        "kind": "generated-coordinate",
-        "node": "Texture Coordinate",
-        "reason": "Blender native USD lowering does not preserve object-bounds-normalized Generated coordinates"
-      },
-      {
         "kind": "named-geometry-property",
         "node": "Attribute",
         "name": "rough",

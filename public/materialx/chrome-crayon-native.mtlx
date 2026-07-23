@@ -1,12 +1,27 @@
 <?xml version='1.0' encoding='utf-8'?>
 <materialx version="1.39" colorspace="lin_rec709">
   <nodegraph name="NG_blender_native">
-    <texcoord name="bnode__Texture_Coordinate_Generated" type="vector2" />
-    <convert name="node" type="vector3">
-      <input name="in" type="vector2" nodename="bnode__Texture_Coordinate_Generated" />
-    </convert>
+    <input name="bnode__Texture_Coordinate_Generated_generated_bounds_min" type="vector3" value="0, 0, 0" />
+    <input name="bnode__Texture_Coordinate_Generated_generated_bounds_max" type="vector3" value="1, 1, 1" />
+    <position name="bnode__Texture_Coordinate_Generated_generated_position" type="vector3" space="object" />
+    <subtract name="bnode__Texture_Coordinate_Generated_generated_offset" type="vector3">
+      <input name="in1" type="vector3" nodename="bnode__Texture_Coordinate_Generated_generated_position" />
+      <input name="in2" type="vector3" interfacename="bnode__Texture_Coordinate_Generated_generated_bounds_min" />
+    </subtract>
+    <subtract name="bnode__Texture_Coordinate_Generated_generated_extent" type="vector3">
+      <input name="in1" type="vector3" interfacename="bnode__Texture_Coordinate_Generated_generated_bounds_max" />
+      <input name="in2" type="vector3" interfacename="bnode__Texture_Coordinate_Generated_generated_bounds_min" />
+    </subtract>
+    <max name="bnode__Texture_Coordinate_Generated_generated_safe_extent" type="vector3">
+      <input name="in1" type="vector3" nodename="bnode__Texture_Coordinate_Generated_generated_extent" />
+      <input name="in2" type="vector3" value="0.000001, 0.000001, 0.000001" />
+    </max>
+    <divide name="bnode__Texture_Coordinate_Generated" type="vector3">
+      <input name="in1" type="vector3" nodename="bnode__Texture_Coordinate_Generated_generated_offset" />
+      <input name="in2" type="vector3" nodename="bnode__Texture_Coordinate_Generated_generated_safe_extent" />
+    </divide>
     <multiply name="node_001" type="vector3">
-      <input name="in1" type="vector3" nodename="node" />
+      <input name="in1" type="vector3" nodename="bnode__Texture_Coordinate_Generated" />
       <input name="in2" type="vector3" value="131.270004, 131.270004, 1875.46997" />
     </multiply>
     <rotate3d name="node_002" type="vector3">

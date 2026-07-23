@@ -4,7 +4,7 @@
 
 The prototype adds an isolated `/materialx` route and a material backend contract without changing any production material dispatch or renderer. Its default reference implementation is offline-generated official MaterialX 1.39.4 ESSL running in a route-owned `WebGLRenderer`/`RawShaderMaterial`; `?implementation=tsl` retains the Three `MaterialXLoader`/`WebGPURenderer` experiment. Existing `WebGLRenderer`, `ShaderMaterial`, `EffectComposer`, and post-processing pages remain untouched.
 
-The supplied `chrome.003` material can be extracted reproducibly through Blender 5.1's native USD MaterialX network into standalone `.mtlx`. The isolated official-ESSL probe now implements Blender Generated coordinates from exported object-space bounds and binds typed named geometry properties (`rough:float`, then `col:color3`) through a generated interface manifest. Three 0.185.1's TSL loader still lacks `geompropvalue`, and Blender's native export still substitutes both source semantics. Therefore `chrome.003` is not claimed as parity-ready: its extraction capability report remains the promotion gate.
+The supplied `chrome.003` material can be extracted reproducibly through Blender 5.1's native USD MaterialX network into standalone `.mtlx`. Native extraction now reconstructs Blender Generated coordinates from exported object-space bounds, and the isolated official-ESSL path binds typed named geometry properties (`rough:float`, then `col:color3`) through a generated interface manifest. Three 0.185.1's TSL loader still lacks `geompropvalue`, and Blender's native export still substitutes the source `rough` property. Therefore `chrome.003` is not claimed as parity-ready: its extraction capability report remains the promotion gate.
 
 The requested Noise/Wave bump description does not match the supplied graph. `chrome.003` contains Noise, but no Wave and no Bump node. The lab therefore exposes two clearly separate views plus an explicit baked fallback:
 
@@ -113,7 +113,7 @@ Source node types from Blender 5.1.2:
 | Mapping | `multiply`, `rotate3d`, `add` | supported |
 | Math, multiply | `multiply` | supported |
 | Combine XYZ / Value | typed constants | supported |
-| Texture Coordinate, Generated | `(object position - exported bounds min) / max(bounds extent, epsilon)` | supported by isolated official ESSL probe; native export remains substituted |
+| Texture Coordinate, Generated | `(object position - exported bounds min) / max(bounds extent, epsilon)` | recovered by native extractor and supported by official ESSL path |
 | Attribute, named `rough` | `geompropvalue` + typed `a_geomprop_rough` point buffer | supported by isolated official ESSL probe; native export remains substituted and Three TSL rejects it |
 | Attribute, named `col` diagnostic | `geompropvalue` + typed `a_geomprop_col` color3 point buffer | supported by the same manifest-driven binding; not a `chrome.003` source node |
 | Material Output | `surfacematerial` | supported |
@@ -205,7 +205,7 @@ The isolated lab now exercises the UI normal-band branch selected by graph topol
 
 Blender Mapping's XYZ angles require a general sign-convention lowering when passed to the official ESSL `rotate3d` implementation. With that node-semantic correction, the matched diagnostic reaches full-frame RMSE `0.008603` and luminance correlation `0.999426`; the normalized sphere region reaches RMSE `0.012820` and correlation `0.992491`.
 
-This is not source parity. The capability report records two substituted semantics:
+This is not source parity. The UI branch capability report still records two substituted semantics:
 
 - Blender native USD declares Texture Coordinate Normal in world space, while the standalone official ESSL graph resolves this input as object space. The matched diagnostic uses an identity-transformed probe so the spaces are equivalent, but transformed-asset parity remains gated.
 - Blender's implicit `Color -> Material Output Surface` coercion is represented by an explicit `standard_surface` emission wrapper.
@@ -262,7 +262,7 @@ Committed evidence:
 
 | Pair | RGB MAE | RGB RMSE | luminance correlation | Interpretation |
 | --- | ---: | ---: | ---: | --- |
-| source semantic-recovery probe | 0.058130 | 0.165673 | 0.663904 | bounds/`rough` binding runs, but native extraction still records substituted semantics |
+| source semantic-recovery probe | 0.058130 | 0.165673 | 0.663904 | Generated recovery is native; `rough` still remains a substituted source semantic |
 | Noise bump probe, canonical topology | 0.019253 | 0.055410 | 0.935745 | shiny response and normal structure align closely; renderer filtering still differs |
 | UI normal-band branch diagnostic | 0.004005 | 0.008603 | 0.999426 | typed `col` and band topology align; normal-space and surface substitutions remain |
 

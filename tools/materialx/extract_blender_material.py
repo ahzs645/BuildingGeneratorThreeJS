@@ -249,6 +249,75 @@ def add_nodegraph(root: ET.Element, graph_prim) -> tuple[ET.Element, dict[str, s
     return graph, categories
 
 
+def recover_generated_coordinates(graph: ET.Element, categories: dict[str, str]) -> int:
+    """Replace Blender's vector2 texcoord surrogate with Generated semantics.
+
+    Blender lowers Texture Coordinate / Generated to a UV texcoord followed by
+    a vector3 convert in its native USD network. Generated is instead the
+    object-space position normalized by the evaluated object's local bounds.
+    Keep those bounds as graph-interface inputs so the renderer can bind them
+    per object; do not bake probe-specific bounds into the material.
+    """
+    recovered = 0
+    for native_name, category in categories.items():
+        if category != "texcoord" or not native_name.endswith("_Generated"):
+            continue
+        target = sanitize(native_name)
+        texcoord = next((child for child in graph if child.get("name") == target), None)
+        if texcoord is None:
+            continue
+
+        consumers = [
+            child for child in graph
+            if child.tag == "convert"
+            and child.get("type") == "vector3"
+            and any(input_.get("nodename") == target for input_ in child.findall("input"))
+        ]
+        direct_references = [
+            input_ for child in graph for input_ in child.findall("input")
+            if input_.get("nodename") == target
+        ]
+        if len(consumers) != 1 or len(direct_references) != 1:
+            continue
+        convert = consumers[0]
+        convert_name = convert.get("name")
+        if not convert_name:
+            continue
+
+        for child in graph:
+            for input_ in child.findall("input"):
+                if input_.get("nodename") == convert_name:
+                    input_.set("nodename", target)
+
+        index = list(graph).index(texcoord)
+        graph.remove(texcoord)
+        graph.remove(convert)
+        prefix = f"{target}_generated"
+        bounds_min = f"{prefix}_bounds_min"
+        bounds_max = f"{prefix}_bounds_max"
+        nodes = [
+            ET.Element("input", name=bounds_min, type="vector3", value="0, 0, 0"),
+            ET.Element("input", name=bounds_max, type="vector3", value="1, 1, 1"),
+            ET.Element("position", name=f"{prefix}_position", type="vector3", space="object"),
+            ET.Element("subtract", name=f"{prefix}_offset", type="vector3"),
+            ET.Element("subtract", name=f"{prefix}_extent", type="vector3"),
+            ET.Element("max", name=f"{prefix}_safe_extent", type="vector3"),
+            ET.Element("divide", name=target, type="vector3"),
+        ]
+        ET.SubElement(nodes[3], "input", name="in1", type="vector3", nodename=f"{prefix}_position")
+        ET.SubElement(nodes[3], "input", name="in2", type="vector3", interfacename=bounds_min)
+        ET.SubElement(nodes[4], "input", name="in1", type="vector3", interfacename=bounds_max)
+        ET.SubElement(nodes[4], "input", name="in2", type="vector3", interfacename=bounds_min)
+        ET.SubElement(nodes[5], "input", name="in1", type="vector3", nodename=f"{prefix}_extent")
+        ET.SubElement(nodes[5], "input", name="in2", type="vector3", value="0.000001, 0.000001, 0.000001")
+        ET.SubElement(nodes[6], "input", name="in1", type="vector3", nodename=f"{prefix}_offset")
+        ET.SubElement(nodes[6], "input", name="in2", type="vector3", nodename=f"{prefix}_safe_extent")
+        for offset, node in enumerate(nodes):
+            graph.insert(index + offset, node)
+        recovered += 1
+    return recovered
+
+
 def add_standard_surface(root: ET.Element, graph: ET.Element, surface_prim, material_name: str) -> None:
     surface = ET.SubElement(root, "standard_surface", name="SS_blender_native", type="surfaceshader")
     output_names = set()
@@ -277,7 +346,7 @@ def add_standard_surface(root: ET.Element, graph: ET.Element, surface_prim, mate
     ET.SubElement(material, "input", name="surfaceshader", type="surfaceshader", nodename=surface.get("name"))
 
 
-def convert(native_usd: Path, material_name: str, output: Path) -> tuple[bool, str, dict[str, str]]:
+def convert(native_usd: Path, material_name: str, output: Path) -> tuple[bool, str, dict[str, str], int]:
     stage = Usd.Stage.Open(str(native_usd))
     mtl_prim = material_prim(stage, material_name)
     graph_prim = next((child for child in mtl_prim.GetChildren() if child.GetTypeName() == "NodeGraph"), None)
@@ -287,6 +356,7 @@ def convert(native_usd: Path, material_name: str, output: Path) -> tuple[bool, s
 
     root = ET.Element("materialx", version="1.39", colorspace="lin_rec709")
     graph, categories = add_nodegraph(root, graph_prim)
+    recovered_generated = recover_generated_coordinates(graph, categories)
     add_standard_surface(root, graph, surface_prim, material_name)
     ET.indent(root, space="  ")
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -295,7 +365,7 @@ def convert(native_usd: Path, material_name: str, output: Path) -> tuple[bool, s
     document = mx.createDocument()
     mx.readFromXmlFile(document, str(output))
     valid, message = document.validate()
-    return valid, message, categories
+    return valid, message, categories, recovered_generated
 
 
 def main() -> None:
@@ -317,7 +387,7 @@ def main() -> None:
     try:
         export_native_usd(material, native_path)
         textures = copy_texture_dependencies(native_path, output, material.name)
-        valid, validation_message, categories = convert(native_path, material.name, output)
+        valid, validation_message, categories, recovered_generated = convert(native_path, material.name, output)
     finally:
         if temporary_directory is not None:
             temporary_directory.cleanup()
@@ -331,11 +401,14 @@ def main() -> None:
             generated = node.outputs.get("Generated")
             if generated and generated.is_linked:
                 generated_uses.append({"node": node.name, "type": "vector3", "space": "object-bounds-normalized"})
-                substituted_semantics.append({
-                    "kind": "generated-coordinate",
-                    "node": node.name,
-                    "reason": "Blender native USD lowering does not preserve object-bounds-normalized Generated coordinates",
-                })
+                if recovered_generated <= 0:
+                    substituted_semantics.append({
+                        "kind": "generated-coordinate",
+                        "node": node.name,
+                        "reason": "Native Generated-coordinate recovery did not match Blender's USD texcoord surrogate",
+                    })
+                else:
+                    recovered_generated -= 1
         if node.bl_idname == "ShaderNodeAttribute" and node.attribute_name:
             linked_types = {
                 link.to_socket.type
