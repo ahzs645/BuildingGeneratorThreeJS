@@ -7,6 +7,10 @@ Usage:
 Set ``NODE_DOJO_AUTHORED_MATERIAL=1`` for an isolated Eevee material render,
 and ``NODE_DOJO_GN_ONLY=1`` to disable source modifiers after the first active
 Geometry Nodes modifier before adding the temporary realization pass.
+``NODE_DOJO_SKIP_REALIZE=1`` skips that pass for dependency-sensitive graphs
+whose authored output is already a realized mesh.
+``NODE_DOJO_EVALUATE_LOCAL_SPACE=1`` evaluates the generator at an identity
+transform so Relative Object Info matches the browser's local-space preview.
 ``NODE_DOJO_AUTHORED_LIGHT_SCALE`` optionally multiplies the authored Area
 light powers for large or small assets while preserving the shared rig layout.
 ``NODE_DOJO_STUDIO_ENVIRONMENT=1`` adds Blender's bundled CC0 ``studio.exr``
@@ -57,6 +61,16 @@ local_space = len(args) > 3 and args[3].upper() == "LOCAL"
 obj = bpy.data.objects.get(object_name)
 if obj is None:
     raise RuntimeError(f'object not found: "{object_name}"')
+
+if os.environ.get("NODE_DOJO_EVALUATE_LOCAL_SPACE") == "1":
+    # Relative Object Info is evaluated against the modifier object's
+    # transform. Match parity_sweep.py and the browser gallery by evaluating
+    # the source generator at identity, while leaving LOCAL as a presentation-
+    # only option for assets that need their authored transform during GN.
+    obj.location = (0, 0, 0)
+    obj.rotation_euler = (0, 0, 0)
+    obj.scale = (1, 1, 1)
+    print("NODE_DOJO_EVALUATE_LOCAL_SPACE_OK")
 
 gn_only = os.environ.get("NODE_DOJO_GN_ONLY") == "1"
 if gn_only:
@@ -164,16 +178,17 @@ obj.hide_set(False)
 # Nodes result contains only instances (or omit instances beside a mesh
 # component). Append a temporary realization pass so the reference image and
 # topology report represent what Blender actually renders.
-realize_group = bpy.data.node_groups.new("__REFERENCE_REALIZE_INSTANCES", "GeometryNodeTree")
-realize_group.interface.new_socket(name="Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")
-realize_group.interface.new_socket(name="Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
-realize_input = realize_group.nodes.new("NodeGroupInput")
-realize = realize_group.nodes.new("GeometryNodeRealizeInstances")
-realize_output = realize_group.nodes.new("NodeGroupOutput")
-realize_group.links.new(realize_input.outputs["Geometry"], realize.inputs["Geometry"])
-realize_group.links.new(realize.outputs["Geometry"], realize_output.inputs["Geometry"])
-realize_modifier = obj.modifiers.new(name="__REFERENCE_REALIZE_INSTANCES", type="NODES")
-realize_modifier.node_group = realize_group
+if os.environ.get("NODE_DOJO_SKIP_REALIZE") != "1":
+    realize_group = bpy.data.node_groups.new("__REFERENCE_REALIZE_INSTANCES", "GeometryNodeTree")
+    realize_group.interface.new_socket(name="Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")
+    realize_group.interface.new_socket(name="Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
+    realize_input = realize_group.nodes.new("NodeGroupInput")
+    realize = realize_group.nodes.new("GeometryNodeRealizeInstances")
+    realize_output = realize_group.nodes.new("NodeGroupOutput")
+    realize_group.links.new(realize_input.outputs["Geometry"], realize.inputs["Geometry"])
+    realize_group.links.new(realize.outputs["Geometry"], realize_output.inputs["Geometry"])
+    realize_modifier = obj.modifiers.new(name="__REFERENCE_REALIZE_INSTANCES", type="NODES")
+    realize_modifier.node_group = realize_group
 
 depsgraph = bpy.context.evaluated_depsgraph_get()
 depsgraph.update()

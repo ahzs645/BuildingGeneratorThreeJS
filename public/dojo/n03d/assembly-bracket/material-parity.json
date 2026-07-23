@@ -1,0 +1,77 @@
+{
+  "asset": "n03d-assembly-bracket",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "Cube.035",
+    "root": "asmbly_bracket.001",
+    "material": "filament .02 mm.004"
+  },
+  "scope": "Authored Blender viewport material parity on the exact Geometry Nodes mesh. The procedural filament surface does not slice the bracket and is not a G-code toolpath.",
+  "geometry": {
+    "blender": { "verts": 1743, "faces": 1816 },
+    "gnvm": { "verts": 1743, "faces": 1816 },
+    "materialFaces": 1816,
+    "browserTriangles": 3579,
+    "localBounds": {
+      "min": [-193.9592, -17.0, -17.0],
+      "max": [20.8494, 87.1023, 180.8749]
+    },
+    "evaluationContext": "The source generator is evaluated at an identity transform so Relative Object Info matches parity_sweep.py and the browser local-space preview. Appending a Realize Instances modifier changes this dependency-sensitive graph and is intentionally skipped."
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../../references/n03d/assembly-bracket-shader.png",
+    "blenderMetadata": "../../references/n03d/assembly-bracket-shader.json",
+    "browserReference": "../../references/n03d/assembly-bracket-shader-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-assembly-bracket&capture=authored",
+    "blenderAuthoredLightScale": 500,
+    "browserAuthoredLightScale": 2.8,
+    "lightScaleInterpretation": "Blender Area energy and Three.js RectAreaLight intensity use renderer-specific units. The recorded scales align mean surface exposure under the shared normalized rig; they do not claim equal physical power."
+  },
+  "recoveredGraph": {
+    "color": "POINT-domain col attribute written from the authored filament color input",
+    "frontColor": "the authored Mix Color branch resolves to col for the default equal-hue inputs",
+    "backColor": "Geometry Backfacing selects the authored darker branch",
+    "roughness": 0.5,
+    "generatedCoordinates": "material-group bounding box",
+    "wave": {
+      "type": "BANDS",
+      "direction": "Z",
+      "scale": -82.73394775390625,
+      "distortion": 0.8557739853858948,
+      "detail": 2,
+      "detailScale": 1,
+      "detailRoughness": 0.5
+    },
+    "bump": {
+      "strength": 0.7392045855522156,
+      "distance": 0.5083978176116943,
+      "filterWidth": 1,
+      "invert": false
+    },
+    "branchValues": {
+      "dark": 0.16399909555912018,
+      "bright": 0.8679997324943542
+    }
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9904418140388377,
+    "surfaceMaskIouDilated1px": 0.9906111534032129,
+    "blenderSurfaceCoveredWithin1px": 1.0,
+    "webglSurfaceCoveredWithin1px": 1.0,
+    "surfaceCornerRmsePixels": 0.5975604521831013,
+    "intersectionPixels": 49117,
+    "pixelRgbMae": 0.10285791297715564,
+    "pixelLuminanceMae": 0.10176798131322248,
+    "pixelLuminanceCorrelation": 0.6110275196303504,
+    "macroLuminanceMae": 0.053634833181083495,
+    "macroLuminanceCorrelation": 0.8275712039819202,
+    "blackFractionDelta": 0.1798116788008689,
+    "meanLuminanceDelta": -0.001371022883029982,
+    "meanRgbDelta": [0.0006046373023138012, -0.002285061578183291, 0.0006034396818177282]
+  },
+  "interpretation": "The authoritative long bracket, detached fastener, complete material assignment, POINT col branch, Generated-coordinate layer bands, distorted Wave texture, Backfacing branch, and Bump parameters are represented in the browser. Exact geometry and subpixel-aligned silhouettes prove that both captures use the same dependency-relative local-space result. Exposure is aligned to a 0.0014 mean-luminance delta. Remaining pixel and black-occupancy error is concentrated in the high-frequency Wave/Bump response, where Eevee and WebGL sample, filter, and light the bands differently."
+}

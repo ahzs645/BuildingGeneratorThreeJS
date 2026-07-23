@@ -2,7 +2,7 @@
   "id": "n03d-assembly-bracket",
   "object": "Cube.035",
   "root": "asmbly_bracket.001",
-  "status": "exact-sweep",
+  "status": "exact-sweep-and-authored-material-parity",
   "blender": {
     "verts": 1743,
     "faces": 1816
@@ -12,5 +12,15 @@
     "faces": 1816
   },
   "coverage": "100% of reachable node types across the 54-group, 1,662-node closure.",
-  "validation": "All five authored parameter cases now match Blender exactly in vertices, faces, and four-decimal local bounds. Split-for-print reproduces both Exact Boolean halves at 2,172 / 2,057 and 2,210 / 2,095, the joined fastener at 4,382 / 4,152, the healed screw at 893 / 1,192, and the final result at 1,805 / 1,819. Compact diameters reproduces the hull at 373 / 497, the first cut at 648 / 622, the second cut at 976 / 784, and the final result at 1,807 / 1,973. The authored high-resolution hull remains exact at 168 / 86, the shared Heal Mesh output at 831 / 1,189, and the bracket shell at 912 / 627."
+  "validation": "All five authored parameter cases match Blender exactly in vertices, faces, and four-decimal local bounds. Split-for-print reproduces both Exact Boolean halves at 2,172 / 2,057 and 2,210 / 2,095, the joined fastener at 4,382 / 4,152, the healed screw at 893 / 1,192, and the final result at 1,805 / 1,819. Compact diameters reproduces the hull at 373 / 497, the first cut at 648 / 622, the second cut at 976 / 784, and the final result at 1,807 / 1,973. The authored high-resolution hull remains exact at 168 / 86, the shared Heal Mesh output at 831 / 1,189, and the bracket shell at 912 / 627. The local-space Blender reference now evaluates Relative Object Info at the same identity generator transform as the browser, yielding the authoritative 1,743 / 1,816 output. Its filament .02 mm.004 surface reaches 0.9904 silhouette IoU and a -0.0014 browser-minus-Blender mean-luminance delta.",
+  "material": {
+    "name": "filament .02 mm.004",
+    "contract": "POINT col attribute + Generated-coordinate Z Wave + derivative Bump + Backfacing color branch",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.9904418140388377,
+    "macroLuminanceCorrelation": 0.8275712039819202,
+    "macroLuminanceMae": 0.053634833181083495,
+    "meanLuminanceDelta": -0.001371022883029982,
+    "residual": "Eevee and WebGL differ in high-frequency Wave/Bump filtering and grazing-light response; renderer identity is not claimed."
+  }
 }

@@ -1061,9 +1061,11 @@
     "dump": "dojo/n03d/assembly-bracket/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/assembly-bracket.png",
+    "authoredReference": "dojo/references/n03d/assembly-bracket-shader.png",
     "blenderStats": { "verts": 1743, "faces": 1816 },
     "localSpace": true,
-    "note": "Exact Blender topology and four-decimal local bounds across all five validation cases for the complete 54-group, 1,662-node bracket. The browser reproduces the dense two-cylinder hull, both Exact Boolean cuts, Heal Mesh output, screw assembly, compact-diameter case, and split-for-print branches.",
+    "authoredLightScale": 2.8,
+    "note": "Exact Blender topology and four-decimal local bounds across all five validation cases for the complete 54-group, 1,662-node bracket. The browser reproduces the dense two-cylinder hull, both Exact Boolean cuts, Heal Mesh output, screw assembly, compact-diameter case, and split-for-print branches. Authored mode also reconstructs filament .02 mm.004 from the POINT col attribute, Generated-coordinate Z bands, distorted Wave texture, front/back color split, and derivative Bump. The aligned 768 px comparison reaches 0.9904 silhouette IoU and a 0.0014 mean-luminance delta; Eevee and WebGL retain different high-frequency band filtering. This is a material preview, not sliced G-code.",
     "controls": [
       { "name": "outer dia.", "label": "Outer diameter", "min": 20, "max": 50, "step": 0.1, "value": 34 },
       { "name": "cutout dia", "label": "Cutout diameter", "min": 5, "max": 32, "step": 0.1, "value": 22.5 },
