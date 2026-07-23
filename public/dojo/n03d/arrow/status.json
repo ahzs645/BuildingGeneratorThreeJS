@@ -6,7 +6,7 @@
   "blender": { "verts": 1155, "faces": 1153 },
   "gnvm": { "verts": 1155, "faces": 1153 },
   "coverage": "100% of reachable node types across the 4-group, 58-node closure.",
-  "validation": "Five tail-length and tail-width cases match Blender topology exactly, with local bounds within 0.0007 units. The authored edge-domain tail masks are preserved so both deformation controls remain live in-browser.",
+  "validation": "Five tail-length and tail-width cases match Blender topology exactly with identical four-decimal local bounds. Restoring the seven-point seed mesh at source float32 precision removes the former 0.0007-unit tail drift while preserving the recovered edge-domain tail masks, so both deformation controls remain live in-browser. The authored evaluated point sets are mutually within 0.0000358 units; the residual is curve-frame arithmetic rather than topology or envelope.",
   "materialParity": {
     "status": "literal-background-routing-supported",
     "groups": [
