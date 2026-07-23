@@ -11,6 +11,20 @@ const dump = JSON.parse(await readFile(fileURLToPath(new URL(
   import.meta.url,
 )), "utf8")) as Dump;
 const materialName = "Filament PLA .02 mm layer height";
+const catalog = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/chrome-assets/catalog.json",
+  import.meta.url,
+)), "utf8")) as Array<Record<string, unknown>>;
+const holePunchParity = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/n03d/hole-punch/material-parity.json",
+  import.meta.url,
+)), "utf8")) as {
+  comparison: {
+    pixelRgbMae: number;
+    pixelLuminanceMae: number;
+    binaryMaskDisagreementFraction: number;
+  };
+};
 
 test("extracts and renders the shared N03D filament shader contract", async () => {
   assert.deepEqual(extractFilamentMaterialConfig(dump, materialName), {
@@ -91,4 +105,13 @@ test("uses the current material group's bounds and matches stable Blender wave p
   assert.deepEqual(material.userData.filamentBounds, filamentGroupBounds(geometry, group));
   material.dispose();
   geometry.dispose();
+});
+
+test("Hole Punch capture preserves the filament graph while matching Blender's exposure ceiling", () => {
+  const asset = catalog.find((candidate) => candidate.id === "n03d-hole-punch");
+  assert.equal(asset?.authoredLightScale, 720);
+  assert.equal(asset?.authoredAmbientIntensity, 4);
+  assert.ok(holePunchParity.comparison.pixelRgbMae < 0.001);
+  assert.ok(holePunchParity.comparison.pixelLuminanceMae < 0.002);
+  assert.equal(holePunchParity.comparison.binaryMaskDisagreementFraction, 0);
 });

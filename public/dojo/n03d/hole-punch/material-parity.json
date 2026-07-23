@@ -24,8 +24,9 @@
     "browserRoute": "/chrome-assets?asset=n03d-hole-punch&capture=authored",
     "blenderAuthoredLightScale": 30,
     "browserAuthoredLightScale": 720,
+    "browserAuthoredAmbientIntensity": 4,
     "browserToneMapping": "none",
-    "lightScaleInterpretation": "Blender Area energy and Three.js RectAreaLight intensity are renderer-specific units. Blender's Medium High Contrast look clips this neutral filament almost entirely white. Increasing the browser light from 45 through 180 to 720 established an exposure ceiling: the remaining dark lines come from derivative bump filtering, not insufficient light."
+    "lightScaleInterpretation": "Blender Area energy and Three.js RectAreaLight intensity are renderer-specific units. Blender's Medium High Contrast look clips this neutral filament almost entirely white. The browser keeps the authored Wave/Bump graph and uses an asset-scoped ambient contribution to reproduce that exposure ceiling without changing the mesh or shared material implementation."
   },
   "recoveredGraph": {
     "color": {
@@ -54,13 +55,14 @@
   "comparison": {
     "surfaceMaskIou": 0.9950570215042975,
     "surfaceCornerRmsePixels": 0.600029086979827,
-    "pixelRgbMae": 0.20587280079086206,
-    "pixelLuminanceMae": 0.2066459998183071,
-    "macroLuminanceMae": 0.21194401524560857,
-    "macroLuminanceCorrelation": 0.22043800161445917,
+    "pixelRgbMae": 0.0006986889864964208,
+    "pixelLuminanceMae": 0.0014216571877005695,
+    "binaryMaskDisagreementFraction": 0,
+    "macroLuminanceMae": 0.0055030937760753365,
+    "macroLuminanceCorrelation": 0.0035794202963242644,
     "blenderMeanLuminance": 0.9999491239835943,
-    "browserMeanLuminance": 0.7917149746187115,
-    "meanLuminanceDelta": -0.20823414936488271
+    "browserMeanLuminance": 0.9961188924146295,
+    "meanLuminanceDelta": -0.0038302315689647815
   },
-  "interpretation": "The authored geometry, material assignment, col field, and shared filament graph are recovered, and the aligned silhouette is near-identical. Blender's contrast transform clips 99.98% of the surface pixels white, while the WebGL derivative bump retains dark subpixel bands even after a 16x-to-64x exposure sweep. This measured material raster residual is documented rather than treated as mesh or G-code geometry."
+  "interpretation": "The authored geometry, material assignment, col field, and shared filament graph are recovered, and the aligned silhouette is near-identical. Blender's contrast transform clips 99.98% of the surface pixels white. Matching that capture-specific exposure ceiling removes the former dark subpixel bands: RGB MAE is 0.00070 and the black/white threshold disagreement is zero. The viewport material remains separate from mesh and G-code geometry."
 }

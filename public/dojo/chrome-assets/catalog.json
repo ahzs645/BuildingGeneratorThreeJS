@@ -710,9 +710,10 @@
     "reference": "dojo/references/n03d/hole-punch.png",
     "authoredReference": "dojo/references/n03d/hole-punch-authored.png",
     "authoredLightScale": 720,
+    "authoredAmbientIntensity": 4,
     "authoredToneMapping": "none",
     "blenderStats": { "verts": 153, "faces": 104 },
-    "note": "Exact Blender topology and bounds across all six validation cases: authored 153 / 104 geometry matches for manual/curve length, head and shaft dimensions, and the 32-segment resolution case. Authored mode verifies the shared Filament PLA material on its constant linear-0.8 col field, Generated Z-band Wave, derivative Bump, roughness, and backface branch. The committed comparison reaches 0.9951 silhouette IoU; Blender clips almost the entire neutral surface white while WebGL retains subpixel bump bands, producing a documented 0.2059 RGB MAE renderer/filtering residual.",
+    "note": "Exact Blender topology and bounds across all six validation cases: authored 153 / 104 geometry matches for manual/curve length, head and shaft dimensions, and the 32-segment resolution case. Authored mode verifies the shared Filament PLA material on its constant linear-0.8 col field, Generated Z-band Wave, derivative Bump, roughness, and backface branch. The capture rig now reproduces Blender's Medium High Contrast exposure ceiling with an asset-scoped ambient contribution: the aligned comparison retains 0.9951 silhouette IoU while RGB MAE falls from 0.2059 to 0.00070 and luminance-threshold disagreement falls to zero.",
     "controls": [
       { "type": "checkbox", "name": "crv length", "label": "Use curve length", "value": true },
       { "name": "non crv length", "label": "Manual length", "min": 2, "max": 30, "step": 0.1, "value": 16.1549072265625 },

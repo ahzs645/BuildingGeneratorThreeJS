@@ -12,7 +12,8 @@
     "contract": "constant POINT col + Generated Z-band Wave + derivative Bump + Backfacing branch",
     "comparison": "material-parity.json",
     "surfaceMaskIou": 0.9950570215042975,
-    "pixelRgbMae": 0.20587280079086206,
-    "residual": "Blender's Medium High Contrast capture clips nearly the full neutral surface white; Three.js retains dark subpixel bump bands even at the measured exposure ceiling."
+    "pixelRgbMae": 0.0006986889864964208,
+    "binaryMaskDisagreementFraction": 0,
+    "residual": "The aligned silhouettes differ by subpixel raster coverage; the capture-specific Blender exposure ceiling now matches at 0.00070 RGB MAE."
   }
 }
