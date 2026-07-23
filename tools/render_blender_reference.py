@@ -20,12 +20,17 @@ light powers for large or small assets while preserving the shared rig layout.
 world at ``NODE_DOJO_STUDIO_ENVIRONMENT_STRENGTH`` (default 0.8). This keeps
 transparent capture film while giving reflective/transmissive materials a
 defined environment.
+``NODE_DOJO_FONT_OVERRIDE`` loads a comparison font. By default it replaces
+font sockets whose referenced filename matches the override. Set
+``NODE_DOJO_FONT_OVERRIDE_MODE=missing`` to replace only unavailable external
+fonts, or ``NODE_DOJO_FONT_OVERRIDE_ALL=1`` to replace every font socket.
 ``NODE_DOJO_DEBUG_MATERIAL_NAME`` selects the source material used by a
 ``NODE_DOJO_DEBUG_MATERIAL_OUTPUT`` probe when the asset does not use the
 probe's historical default material name.
 For Workbench diagnostics, ``NODE_DOJO_WORKBENCH_SHADOWS=0`` and
 ``NODE_DOJO_WORKBENCH_CAVITY=0`` isolate the bundled studio-light response.
 """
+import hashlib
 import json
 import math
 import os
@@ -35,23 +40,68 @@ import bpy
 from mathutils import Vector
 
 
+def file_fingerprint(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return {
+        "basename": os.path.basename(path),
+        "sha256": digest.hexdigest(),
+    }
+
+
 def apply_font_override():
     path = os.environ.get("NODE_DOJO_FONT_OVERRIDE")
     if not path:
-        return
+        return None
+    path = os.path.abspath(path)
     replacement = bpy.data.fonts.load(path, check_existing=True)
     basename = os.path.basename(path).lower()
+    mode = os.environ.get("NODE_DOJO_FONT_OVERRIDE_MODE", "matching").lower()
+    if os.environ.get("NODE_DOJO_FONT_OVERRIDE_ALL") == "1":
+        mode = "all"
+    if mode not in {"matching", "missing", "all"}:
+        raise RuntimeError(
+            "NODE_DOJO_FONT_OVERRIDE_MODE must be matching, missing, or all"
+        )
+    replaced = []
     for group in bpy.data.node_groups:
         for node in group.nodes:
             for socket in node.inputs:
                 current = getattr(socket, "default_value", None)
                 if getattr(socket, "type", "") == "FONT" and current is not None:
-                    if os.path.basename(bpy.path.abspath(current.filepath)).lower() == basename:
+                    current_path = bpy.path.abspath(current.filepath)
+                    matches = os.path.basename(current_path).lower() == basename
+                    missing = not current_path or not os.path.exists(current_path)
+                    should_replace = (
+                        mode == "all"
+                        or (mode == "missing" and missing)
+                        or (mode == "matching" and matches)
+                    )
+                    if should_replace:
+                        replaced.append(
+                            {
+                                "group": group.name,
+                                "node": node.name,
+                                "font": current.name,
+                            }
+                        )
                         socket.default_value = replacement
-    print(f"NODE_DOJO_FONT_OVERRIDE_OK {replacement.name} <- {path}")
+    provenance = {
+        **file_fingerprint(path),
+        "mode": mode,
+        "replacement_count": len(replaced),
+        "replaced_fonts": sorted({item["font"] for item in replaced}),
+    }
+    print(
+        "NODE_DOJO_FONT_OVERRIDE_OK "
+        f"{replacement.name} <- {path} ({mode}, {len(replaced)} sockets)"
+    )
+    return provenance
 
 
-apply_font_override()
+font_override = apply_font_override()
 
 if os.environ.get("NODE_DOJO_FREEZE_HAT_FRONT") == "1":
     helper_path = os.path.join(os.path.dirname(__file__), "freeze_hat_front_dependency.py")
@@ -474,6 +524,11 @@ if meta_path:
         "workbench_shadows": workbench_shadows if not authored_material else None,
         "workbench_cavity": workbench_cavity if not authored_material else None,
         "debug_material_output": debug_material_output or None,
+        "source_blend": file_fingerprint(bpy.data.filepath),
+        "blender_version": bpy.app.version_string,
+        "local_presentation": local_space,
+        "evaluate_local_space": os.environ.get("NODE_DOJO_EVALUATE_LOCAL_SPACE") == "1",
+        "font_override": font_override,
     }
     with open(meta_path, "w", encoding="utf-8") as handle:
         json.dump(stats, handle, indent=2)

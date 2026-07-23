@@ -29,6 +29,7 @@
   "engine": "BLENDER_EEVEE",
   "authored_material": true,
   "geometry_nodes_only": true,
+  "frozen_evaluated_mesh": false,
   "overrides": {},
   "authored_light_scale": 1.0,
   "authored_look": "None",
@@ -36,5 +37,37 @@
   "studio_environment_strength": null,
   "workbench_shadows": null,
   "workbench_cavity": null,
-  "debug_material_output": null
+  "debug_material_output": null,
+  "source_blend": {
+    "basename": "NO3D Chrome Asset Library.blend",
+    "sha256": "5e310d5c14a27abe3e9d5b2890031596308cbbc6a88c6c47768ebc6b9d411738"
+  },
+  "blender_version": "5.1.2",
+  "local_presentation": true,
+  "evaluate_local_space": false,
+  "font_override": {
+    "basename": "pixels.ttf",
+    "sha256": "d46a8579e023c0880e2ecd2a6eb1171f2ad7b9b97d9992a63a0eecae6d15fb4e",
+    "mode": "missing",
+    "replacement_count": 20,
+    "replaced_fonts": [
+      "1CamBam_Stick_1 Regular",
+      "1CamBam_Stick_2 Regular",
+      "1CamBam_Stick_3 Regular",
+      "1CamBam_Stick_4 Regular",
+      "1CamBam_Stick_5 Regular",
+      "1CamBam_Stick_6 Regular",
+      "1CamBam_Stick_7 Regular",
+      "1CamBam_Stick_8 Regular",
+      "1CamBam_Stick_9 Regular",
+      "Alkhemikal Medium",
+      "Archivo SemiBold.001",
+      "Archivo SemiBold.002",
+      "Budokan Rounded Bold",
+      "Pixels Medium.002",
+      "SF Intermosaic B Bold",
+      "SF Intermosaic Regular",
+      "SF Intermosaic Regular.002"
+    ]
+  }
 }

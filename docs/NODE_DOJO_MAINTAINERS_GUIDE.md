@@ -395,6 +395,13 @@ node tools/materialx/run_node_dojo_blender.mjs <project-id> \
   public/dojo/references/<family>/<asset>-authored.json LOCAL
 ```
 
+For font-dependent graphs, set `NODE_DOJO_FONT_OVERRIDE` and choose the
+replacement policy explicitly. `NODE_DOJO_FONT_OVERRIDE_MODE=missing` replaces
+only unavailable external fonts, `matching` preserves the legacy basename
+match, and `NODE_DOJO_FONT_OVERRIDE_ALL=1` replaces every font socket. The
+reference sidecar records the source `.blend` and font fingerprints, Blender
+version, replacement mode/count, and local-space policy.
+
 Build, serve, and capture the matching browser view:
 
 ```sh
