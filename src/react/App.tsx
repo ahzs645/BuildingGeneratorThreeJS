@@ -16,6 +16,7 @@ const TypewriterPage = lazy(() => import("./pages/TypewriterPage"));
 const PeriodicBrushPage = lazy(() => import("./pages/PeriodicBrushPage"));
 const ChromeAssetsPage = lazy(() => import("./pages/ChromeAssetsPage"));
 const SurfaceDrawPage = lazy(() => import("./pages/SurfaceDrawPage"));
+const MaterialXLabPage = lazy(() => import("./pages/MaterialXLabPage"));
 
 function LegacyRedirect({ to }: { to: string }): React.JSX.Element {
   const { search } = useLocation();
@@ -45,6 +46,7 @@ export default function App(): React.JSX.Element {
           <Route path="/periodic-brush" element={<PeriodicBrushPage />} />
           <Route path="/chrome-assets" element={<ChromeAssetsPage />} />
           <Route path="/surface-draw" element={<SurfaceDrawPage />} />
+          <Route path="/materialx" element={<MaterialXLabPage />} />
 
           <Route path="/blend-import.html" element={<LegacyRedirect to="/blendbridge" />} />
           <Route path="/building.html" element={<LegacyRedirect to="/building" />} />
