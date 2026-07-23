@@ -475,8 +475,12 @@
     "dump": "dojo/chrome-assets/blunt-metal-marker/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/blunt-metal-marker.png",
+    "authoredReference": "dojo/references/chrome-assets/blunt-metal-marker-authored.png",
+    "localSpace": true,
+    "surfaceBounds": true,
+    "authoredEnvironmentIntensity": 0.8,
     "blenderStats": { "verts": 97691, "faces": 97669 },
-    "note": "Exact Blender geometry across all six parameter-sweep cases, including the 189,335-vertex FLATTEN-off branch. Region Extrude Mesh now preserves Blender's unnormalized FACE-to-POINT average normal, bringing every case to matching topology and bounds within 0.0001 units.",
+    "note": "Exact Blender geometry across all six parameter-sweep cases, including the 189,335-vertex FLATTEN-off branch. Region Extrude Mesh now preserves Blender's unnormalized FACE-to-POINT average normal, bringing every case to matching topology and bounds within 0.0001 units. Authored mode preserves the fully metallic chrome.002 graph and Blender's missing rough attribute as a polished zero-roughness surface. Its aligned studio comparison reaches 0.9906 silhouette IoU and 0.6604 macro luminance correlation; remaining differences are Eevee/Three.js reflection filtering and the browser's retained 288-segment guide wire.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

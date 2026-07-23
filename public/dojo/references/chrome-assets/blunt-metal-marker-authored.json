@@ -1,0 +1,41 @@
+{
+  "object": "Chrome Marker Extruded",
+  "type": "CURVE",
+  "bbox": {
+    "min": [
+      -47.231014251708984,
+      -52.85157012939453,
+      -47.1296501159668
+    ],
+    "max": [
+      145.04611206054688,
+      83.0537109375,
+      -31.184066772460938
+    ]
+  },
+  "verts": 97691,
+  "faces": 97669,
+  "materials": [
+    "flat crayon.002",
+    "flat crayon.002"
+  ],
+  "evaluated_materials": [
+    null,
+    "flat.nodes",
+    "chrome.002"
+  ],
+  "evaluated_material_faces": {
+    "chrome.002": 97669
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 1.0,
+  "authored_look": "None",
+  "studio_environment": true,
+  "studio_environment_strength": 0.8,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}
