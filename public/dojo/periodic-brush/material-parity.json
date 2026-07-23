@@ -1,8 +1,10 @@
 {
-  "updated": "2026-07-15",
+  "updated": "2026-07-23",
   "target": {
     "id": "periodic-brush",
+    "project": "NO3D Chrome Asset Library.blend",
     "object": "PERIODIC BRUSH",
+    "root": "dot periodic brush.002",
     "material": "flat.nodes"
   },
   "geometryContract": {
@@ -20,17 +22,44 @@
     "links": 3,
     "colorPath": "Geometry Attribute col Color → Emission Color",
     "strengthPath": "Geometry Attribute power Vector → Emission Strength",
-    "evaluatedAttributes": [],
-    "blenderResolution": {
-      "col": "missing → zero color",
-      "power": "missing → zero vector/scalar",
-      "surface": "black emission"
+    "evaluatedAttributes": {
+      "domain": "POINT",
+      "power": 1.0,
+      "collectionChildren": {
+        "1": [0.0, 0.0, 0.0],
+        "1.001": [0.013796394690871239, 0.0, 0.02550373412668705],
+        "2": [0.1058368980884552, 0.0, 0.056901805102825165],
+        "3": [0.3586804270744324, 0.08141867071390152, 0.023261388763785362],
+        "4": [0.6156654953956604, 0.5280506014823914, 0.018772436305880547],
+        "5": [0.7196669578552246, 0.7196669578552246, 0.7196669578552246],
+        "6": [0.15079794824123383, 0.532523512840271, 0.726936399936676],
+        "7": [0.0, 0.12474649399518967, 0.7568728923797607],
+        "7.001": [0.0, 0.02234806679189205, 0.11821123957633972]
+      }
     },
-    "browserResolution": "Each missing input is tracked independently and resolves to zero. If either multiplicative Emission input is absent, the exact rendered result is black; assets carrying both attributes continue through the existing shader path."
+    "browserResolution": "The portable dump retains col and power on all nine evaluated Period Pack children. Collection Info, instancing, realization, and curve-to-mesh propagation carry those fields into one emitted flat.nodes draw group."
   },
-  "browserVerification": {
-    "route": "/chrome-assets?asset=periodic-brush",
-    "status": "Pending visual capture: the local in-app browser backend was unavailable during this checkpoint. The production WebGL bundle compiles, and the exact 7,840 / 280 geometry/material contract is covered by the focused runtime test."
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../references/chrome-assets/periodic-brush-authored.png",
+    "blenderMetadata": "../references/chrome-assets/periodic-brush-authored.json",
+    "browserReference": "../references/chrome-assets/periodic-brush-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=periodic-brush&capture=authored",
+    "toneMapping": "NoToneMapping preserves the extracted linear emission palette in the authored evidence capture. This reduces the WebGL-minus-Blender black occupancy delta from +0.0995 under ACES to +0.0103; it does not claim identical Eevee and WebGL color management."
   },
-  "remaining": "The isolated gallery reference is a normalized geometry render rather than authored flat.nodes shader truth. This checkpoint records the exact extracted material semantics without claiming a quantitative comparison to that diagnostic reference."
+  "comparison": {
+    "surfaceMaskIou": 0.9951022221183181,
+    "surfaceCornerRmsePixels": 0.9340731086243934,
+    "intersectionPixels": 85130,
+    "pixelLuminanceMae": 0.17547166781728338,
+    "pixelLuminanceCorrelation": 0.7681465976530528,
+    "macroLuminanceMae": 0.07544567657120815,
+    "macroLuminanceCorrelation": 0.8255752995267921,
+    "blackFractionDelta": 0.010341331624148686,
+    "meanLuminanceDelta": -0.016297631959077685
+  },
+  "interpretation": "The previous black result was an extraction defect: the old portable dump omitted evaluated collection-object attributes even though Blender retained them. Restoring the exact col/power fields recovers the authored multicolor stripe pattern while preserving exact geometry. Residual per-pixel differences come from Eevee/WebGL rasterization and emission/color-management behavior, so renderer identity is not claimed."
 }

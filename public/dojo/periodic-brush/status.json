@@ -2,10 +2,19 @@
   "id": "periodic-brush",
   "object": "PERIODIC BRUSH",
   "root": "dot periodic brush.002",
-  "status": "exact-sweep",
+  "status": "exact-sweep-and-authored-material-parity",
   "blender": { "verts": 7840, "faces": 280 },
   "gnvm": { "verts": 7840, "faces": 280 },
   "coverage": "100% of reachable node types across the single-group, 13-node graph.",
-  "materialParity": "The complete 21,840-index result uses the strict flat.nodes Attribute/Emission graph. Its evaluated soup contains neither col nor power, so Blender resolves both missing Geometry Attribute outputs independently to zero; Emission Color and Strength therefore produce black. The authored browser route now preserves that result instead of substituting diagnostic green, while flat.nodes assets carrying both fields retain their existing attribute-driven emission shader.",
-  "validation": "Exact Blender topology and four-decimal bounds across five cases covering the authored result, two dot distances, and two dot sizes. Collection Info reproduces the evaluated period-pack collection children and their authored transforms."
+  "materialParity": {
+    "name": "flat.nodes",
+    "contract": "POINT-domain col + power attributes from all nine evaluated Period Pack collection children drive Emission Color and Strength",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.9951022221183181,
+    "macroLuminanceCorrelation": 0.8255752995267921,
+    "macroLuminanceMae": 0.07544567657120815,
+    "meanLuminanceDelta": -0.016297631959077685,
+    "residual": "Eevee and WebGL retain different rasterization and emission/color-management behavior; renderer identity is not claimed."
+  },
+  "validation": "Exact Blender topology and four-decimal bounds across five cases covering the authored result, two dot distances, and two dot sizes. Collection Info reproduces the evaluated period-pack collection children, authored transforms, and exact nine-color col/power attribute payload."
 }

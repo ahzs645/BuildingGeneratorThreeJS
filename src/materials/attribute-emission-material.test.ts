@@ -55,7 +55,7 @@ test("wires Outline Sticker color and power attributes into its browser material
   material?.dispose();
 });
 
-test("resolves Periodic Brush's missing flat.nodes attributes independently to zero", async () => {
+test("preserves Periodic Brush's evaluated collection color and emission attributes", async () => {
   assert.deepEqual(extractAttributeEmissionConfig(periodicDump, "flat.nodes"), {
     colorAttribute: "col",
     strengthAttribute: "power",
@@ -63,30 +63,62 @@ test("resolves Periodic Brush's missing flat.nodes attributes independently to z
   const result = await runGenerator(periodicDump, { object: "PERIODIC BRUSH", overrides: {} });
   assert.deepEqual(result.soup.stats, { verts: 7840, faces: 280, tris: 7280 });
   assert.deepEqual(result.soup.groups, [{ start: 0, count: 21840, material: "flat.nodes" }]);
-  assert.deepEqual(Object.keys(result.soup.attributes), []);
+  assert.equal(result.soup.attributes.col.itemSize, 3);
+  assert.equal(result.soup.attributes.power.itemSize, 1);
+  assert.ok(result.soup.attributes.power.data.every((value) => value === 1));
+  const palette = new Map<string, number>();
+  const colors = result.soup.attributes.col.data;
+  for (let offset = 0; offset < colors.length; offset += 3) {
+    const key = [colors[offset], colors[offset + 1], colors[offset + 2]].join(",");
+    palette.set(key, (palette.get(key) ?? 0) + 1);
+  }
+  assert.deepEqual([...palette.entries()], [
+    ["0,0,0", 896],
+    ["0.1058368980884552,0,0.056901805102825165", 868],
+    ["0.3586804270744324,0.08141867071390152,0.023261388763785362", 868],
+    ["0.6156654953956604,0.5280506014823914,0.018772436305880547", 868],
+    ["0.7196669578552246,0.7196669578552246,0.7196669578552246", 868],
+    ["0.15079794824123383,0.532523512840271,0.726936399936676", 868],
+    ["0,0.12474649399518967,0.7568728923797607", 868],
+    ["0,0.02234806679189205,0.11821123957633972", 868],
+    ["0.013796394690871239,0,0.02550373412668705", 868],
+  ]);
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));
-  const bothMissing = makeAttributeEmissionMaterial(periodicDump, geometry, "flat.nodes");
+  geometry.setAttribute("col", new THREE.BufferAttribute(result.soup.attributes.col.data, 3));
+  geometry.setAttribute("power", new THREE.BufferAttribute(result.soup.attributes.power.data, 1));
+  const material = makeAttributeEmissionMaterial(periodicDump, geometry, "flat.nodes");
+  assert.ok(material?.isShaderMaterial);
+  assert.deepEqual(material?.userData.attributeResolution, {
+    color: "geometry-color",
+    strength: "geometry-vector",
+  });
+
+  const missingGeometry = new THREE.BufferGeometry();
+  missingGeometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));
+  const bothMissing = makeAttributeEmissionMaterial(periodicDump, missingGeometry, "flat.nodes");
   assert.ok(bothMissing?.isMeshBasicMaterial);
   assert.equal((bothMissing as THREE.MeshBasicMaterial).color.getHex(), 0x000000);
   assert.deepEqual(bothMissing?.userData.attributeResolution, { color: "missing-zero", strength: "missing-zero" });
 
-  geometry.setAttribute("col", new THREE.Float32BufferAttribute(new Array(result.soup.stats.verts * 3).fill(1), 3));
-  const missingStrength = makeAttributeEmissionMaterial(periodicDump, geometry, "flat.nodes");
+  missingGeometry.setAttribute("col", new THREE.Float32BufferAttribute(new Array(result.soup.stats.verts * 3).fill(1), 3));
+  const missingStrength = makeAttributeEmissionMaterial(periodicDump, missingGeometry, "flat.nodes");
   assert.ok(missingStrength?.isMeshBasicMaterial);
   assert.deepEqual(missingStrength?.userData.attributeResolution, { color: "geometry-color", strength: "missing-zero" });
 
-  geometry.deleteAttribute("col");
-  geometry.setAttribute("power", new THREE.Float32BufferAttribute(new Array(result.soup.stats.verts).fill(1), 1));
-  const missingColor = makeAttributeEmissionMaterial(periodicDump, geometry, "flat.nodes");
+  missingGeometry.deleteAttribute("col");
+  missingGeometry.setAttribute("power", new THREE.Float32BufferAttribute(new Array(result.soup.stats.verts).fill(1), 1));
+  const missingColor = makeAttributeEmissionMaterial(periodicDump, missingGeometry, "flat.nodes");
   assert.ok(missingColor?.isMeshBasicMaterial);
   assert.deepEqual(missingColor?.userData.attributeResolution, { color: "missing-zero", strength: "geometry-vector" });
 
+  material?.dispose();
   bothMissing?.dispose();
   missingStrength?.dispose();
   missingColor?.dispose();
   geometry.dispose();
+  missingGeometry.dispose();
 });
 
 test("reconstructs String to Text's independently extracted emission material", async () => {

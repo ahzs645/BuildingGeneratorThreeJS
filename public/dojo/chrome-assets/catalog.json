@@ -168,8 +168,10 @@
     "dump": "dojo/periodic-brush/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/periodic-brush.png",
+    "authoredReference": "dojo/references/chrome-assets/periodic-brush-authored.png",
+    "authoredToneMapping": "none",
     "blenderStats": { "verts": 7840, "faces": 280 },
-    "note": "Exact Blender topology and four-decimal local bounds across five validation cases. The browser reproduces the evaluated Period Pack collection children, authored transforms, curve resampling, dot distance, and dot-size controls.",
+    "note": "Exact Blender topology and four-decimal local bounds across five validation cases. The browser reproduces the evaluated Period Pack collection children, authored transforms, curve resampling, dot distance, and dot-size controls. Authored mode now preserves every child's evaluated POINT-domain col and power fields, restoring the nine-color emitted stripe palette; its aligned comparison reaches 0.9951 silhouette IoU, 0.8256 macro luminance correlation, and 0.0754 macro MAE.",
     "controls": [
       { "name": "Dot Distance", "label": "Dot distance", "min": 0.75, "max": 5, "step": 0.000001, "value": 2.151417 },
       { "name": "dot size", "label": "Dot size", "min": 0.15, "max": 2, "step": 0.000001, "value": 1 }

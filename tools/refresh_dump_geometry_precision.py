@@ -2,7 +2,8 @@
 
 Usage:
   python tools/refresh_dump_geometry_precision.py TARGET.json FRESH.json [--keys=KEY,...]
-    [--mesh-fields=FIELD,...] [--curve-fields=FIELD,...] OBJECT [OBJECT ...]
+    [--mesh-fields=FIELD,...] [--curve-fields=FIELD,...]
+    [--evaluated-mesh-fields=FIELD,...] OBJECT [OBJECT ...]
 
 This deliberately leaves the target dump's graph, dependency closure, fonts,
 and extraction metadata unchanged. It is useful when re-extracting an older
@@ -18,6 +19,7 @@ target_path, fresh_path, *arguments = sys.argv[1:]
 precision_keys = ("matrix_world", "relative_matrices", "mesh", "curves", "evaluated_mesh")
 mesh_fields = None
 curve_fields = None
+evaluated_mesh_fields = None
 if arguments and arguments[0].startswith("--keys="):
     selected = tuple(key for key in arguments.pop(0).removeprefix("--keys=").split(",") if key)
     unknown = sorted(set(selected) - set(precision_keys))
@@ -32,10 +34,17 @@ if arguments and arguments[0].startswith("--curve-fields="):
     curve_fields = tuple(
         field for field in arguments.pop(0).removeprefix("--curve-fields=").split(",") if field
     )
+if arguments and arguments[0].startswith("--evaluated-mesh-fields="):
+    evaluated_mesh_fields = tuple(
+        field
+        for field in arguments.pop(0).removeprefix("--evaluated-mesh-fields=").split(",")
+        if field
+    )
 object_names = arguments
 if not object_names:
     raise SystemExit(
-        "usage: TARGET.json FRESH.json [--keys=KEY,...] [--mesh-fields=FIELD,...] [--curve-fields=FIELD,...] OBJECT [OBJECT ...]"
+        "usage: TARGET.json FRESH.json [--keys=KEY,...] [--mesh-fields=FIELD,...] "
+        "[--curve-fields=FIELD,...] [--evaluated-mesh-fields=FIELD,...] OBJECT [OBJECT ...]"
     )
 
 with open(target_path, encoding="utf-8") as handle:
@@ -84,6 +93,16 @@ for name in object_names:
                             old_spline[field] = shortest_float32(new_spline[field])
                         else:
                             old_spline.pop(field, None)
+            elif (
+                key == "evaluated_mesh"
+                and evaluated_mesh_fields is not None
+                and isinstance(old.get(key), dict)
+            ):
+                for field in evaluated_mesh_fields:
+                    if field in new[key]:
+                        old[key][field] = shortest_float32(new[key][field])
+                    else:
+                        old[key].pop(field, None)
             elif key == "evaluated_mesh" and isinstance(old.get(key), dict):
                 # Precision refreshes must not silently expand a portable dump
                 # with optional attributes or hundreds of thousands of cached

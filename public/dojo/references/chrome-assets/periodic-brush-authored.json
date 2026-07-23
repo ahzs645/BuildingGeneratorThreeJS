@@ -1,0 +1,37 @@
+{
+  "object": "PERIODIC BRUSH",
+  "type": "CURVE",
+  "bbox": {
+    "min": [
+      -41.30548858642578,
+      -57.56846618652344,
+      0.0
+    ],
+    "max": [
+      90.13656616210938,
+      63.941646575927734,
+      2.7899999618530273
+    ]
+  },
+  "verts": 7840,
+  "faces": 280,
+  "materials": [
+    "flat crayon.002",
+    "flat crayon.002"
+  ],
+  "evaluated_materials": [
+    "flat.nodes"
+  ],
+  "evaluated_material_faces": {
+    "flat.nodes": 280
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "authored_light_scale": 1.0,
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}
