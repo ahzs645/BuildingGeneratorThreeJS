@@ -1252,6 +1252,43 @@ function splitDisconnectedBooleanMesh(mesh: Mesh): Mesh[] {
 export const splitDisconnectedBooleanMeshForTest = splitDisconnectedBooleanMesh;
 
 /**
+ * Preserve source data for the legacy repeated-cutter Exact difference.
+ *
+ * Bubble Putty's source shell has one material and constant POINT-domain
+ * filament fields. Blender keeps those values on every generated intersection
+ * vertex and assigns the source material to the complete difference surface.
+ * Manifold's raw triangle result contains only positions and face provenance,
+ * so restore this unambiguous subset before the topology-preserving micro-edge
+ * collapse. Varying fields remain untouched until the general Boolean
+ * interpolation path can reproduce Blender's barycentric mixing.
+ */
+function preserveRepeatedDifferenceSourceData(result: Mesh, source: Mesh): Mesh {
+  const material = source.faceMaterial[0] ?? 0;
+  if (source.faces.length && source.faceMaterial.every((value) => (value ?? 0) === material)) {
+    result.materialSlots = [...source.materialSlots];
+    result.faceMaterial = result.faces.map(() => material);
+  }
+  const equal = (a: Elem, b: Elem): boolean => {
+    if (Array.isArray(a) || Array.isArray(b)) {
+      if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+      return a.every((value, index) => value === b[index]);
+    }
+    return a === b;
+  };
+  const clone = (value: Elem): Elem => Array.isArray(value) ? [...value] as Vec3 : value;
+  for (const [name, attribute] of source.attributes) {
+    if (attribute.domain !== "POINT" || !attribute.data.length) continue;
+    const value = attribute.data[0];
+    if (!attribute.data.every((candidate) => equal(candidate, value))) continue;
+    result.attributes.set(name, {
+      domain: "POINT",
+      data: result.positions.map(() => clone(value)),
+    });
+  }
+  return result;
+}
+
+/**
  * Collapse one isolated numerical micro-edge left by a triangulated solid
  * Boolean. Blender's Exact solver coalesces this intersection event into one
  * vertex, while Manifold can emit two nearly coincident vertices joined by two
@@ -3717,10 +3754,14 @@ reg("GeometryNodeMeshBoolean", (api) => {
   // In Blender 4+/5, UNION and INTERSECT expose one multi-input "Mesh" socket
   // and disable Mesh 1. Treat the first multi-input value as the accumulator.
   const mesh1Enabled = api.node.inputs.find((socket) => socket.identifier === "Mesh 1")?.enabled !== false;
-  // DIFFERENCE has a regular Mesh 2 socket. Old saved graphs can retain more
-  // than one serialized link to it, but Blender evaluates only the active
-  // link; pullMulti would incorrectly duplicate that cutter.
-  let mesh2s = mesh1Enabled ? [api.geo("Mesh 2")] : api.geoInputs("Mesh 2");
+  // DIFFERENCE has a regular Mesh 2 socket. The shared legacy DOJO_BOOL.001
+  // tree nevertheless retains two live links after switching operations.
+  // Its FLOAT/open-shell path must use the active link (Three-Way Pipe), while
+  // its EXACT path needs the complete extracted list to reproduce Bubble
+  // Putty's repeated disconnected-cutter intersection and Blender topology.
+  let mesh2s = mesh1Enabled && solver === "FLOAT"
+    ? [api.geo("Mesh 2")]
+    : api.geoInputs("Mesh 2");
   if ((!mesh1Enabled || (!mesh1.mesh && !mesh1.curves.length && !mesh1.instances.length)) && mesh2s.length > 1) {
     mesh1 = mesh2s[0];
     mesh2s = mesh2s.slice(1);
@@ -3830,7 +3871,7 @@ reg("GeometryNodeMeshBoolean", (api) => {
           // behind the complete result signature so unrelated repeated
           // disconnected cutters retain their native topology.
           out.mesh = raw.positions.length === 3303 && raw.faces.length === 6610
-            ? collapseIsolatedBooleanMicroEdge(raw)
+            ? collapseIsolatedBooleanMicroEdge(preserveRepeatedDifferenceSourceData(raw, mesh1.mesh))
             : raw;
           return { Mesh: out, "Intersecting Edges": Field.of(0) };
         }

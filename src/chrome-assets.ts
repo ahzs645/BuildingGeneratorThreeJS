@@ -38,7 +38,7 @@ type VectorControl = { type: "vector"; name: string; label: string; value: [numb
 type SelectControl = { type: "select"; name: string; label: string; value: number | string; options: { label: string; value: number | string }[] };
 type Control = RangeControl | CheckboxControl | TextControl | VectorControl | SelectControl;
 type AssetFont = { url: string; family: string; requiredFor: string; fallback: string };
-type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; rotationOrder?: THREE.EulerOrder; surfaceBounds?: boolean; authoredHideLines?: boolean; authoredPreviewLabel?: string; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; attributeEmissionColorRemaps?: { from: [number, number, number]; to: [number, number, number] }[]; authoredLightScale?: number; authoredFillIntensityScale?: number; authoredEnvironmentIntensity?: number; authoredEnvironmentRotation?: number; authoredToneMapping?: "none"; controls: Control[] };
+type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number; triangles?: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; rotationOrder?: THREE.EulerOrder; surfaceBounds?: boolean; authoredHideLines?: boolean; authoredPreviewLabel?: string; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; attributeEmissionColorRemaps?: { from: [number, number, number]; to: [number, number, number] }[]; authoredLightScale?: number; authoredFillIntensityScale?: number; authoredEnvironmentIntensity?: number; authoredEnvironmentRotation?: number; authoredToneMapping?: "none"; controls: Control[] };
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
@@ -345,7 +345,8 @@ async function evaluate(): Promise<void> {
     && (current.curveStats.segments === undefined || lineStats.segments === current.curveStats.segments));
   const exact = current.curveStats
     ? curveExact
-    : result.soup.stats.verts === current.blenderStats.verts && result.soup.stats.faces === current.blenderStats.faces;
+    : result.soup.stats.verts === current.blenderStats.verts
+      && result.soup.stats.faces === (current.blenderStats.triangles ?? current.blenderStats.faces);
   status.classList.toggle("ready", exact);
   status.textContent = exact
     ? previewMode === "materialx-native"
@@ -373,7 +374,7 @@ function stepAsset(direction: -1 | 1): void {
 }
 async function choose(): Promise<void> {
   current=matchingAsset(select.value)??catalog.find((item)=>item.id===select.dataset.assetId)??catalog[0];setSelectedAsset(current);const asset=current;
-  window.dispatchEvent(new CustomEvent("chrome-assets-selection-change",{detail:{id:current.id,title:current.title,object:current.object,dumpUrl:current.dump}}));reference.src=publicUrl(current.reference);blenderCount.textContent=`${current.blenderStats.verts.toLocaleString()} verts · ${current.blenderStats.faces.toLocaleString()} faces`;note.textContent=current.note??"";note.hidden=!current.note;renderControls();
+  window.dispatchEvent(new CustomEvent("chrome-assets-selection-change",{detail:{id:current.id,title:current.title,object:current.object,dumpUrl:current.dump}}));reference.src=publicUrl(current.reference);blenderCount.textContent=current.blenderStats.triangles===undefined?`${current.blenderStats.verts.toLocaleString()} verts · ${current.blenderStats.faces.toLocaleString()} faces`:`${current.blenderStats.verts.toLocaleString()} verts · ${current.blenderStats.faces.toLocaleString()} polygons · ${current.blenderStats.triangles.toLocaleString()} triangles`;note.textContent=current.note??"";note.hidden=!current.note;renderControls();
   await Promise.all([prepareFont(asset), prepareAuthoredEnvironment(asset)]);if(current!==asset)return;
   const [geometryDump,shaderMetadata]=await Promise.all([
     fetch(publicUrl(asset.dump),{cache:"no-store"}).then((response)=>response.json()),

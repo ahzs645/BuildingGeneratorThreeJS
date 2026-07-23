@@ -1,0 +1,63 @@
+{
+  "updated": "2026-07-23",
+  "asset": "joint-bubble-putty",
+  "object": "PUTTY.002",
+  "root": "Bubble Putty Generator_9OCT2024_01",
+  "scope": "Blender Eevee versus the browser reconstruction of the supplied Filament and Cross Section material on the same finalized evaluated surface.",
+  "capture": {
+    "resolution": [
+      768,
+      768
+    ],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometry": "Authored world transform; Blender evaluated mesh frozen before render because the source dependency cycle changes on a second render-time evaluation.",
+    "overrides": {
+      "finalize for export": true
+    },
+    "studioEnvironmentStrength": 1,
+    "browserEnvironmentIntensity": 1,
+    "browserEnvironmentRotation": 3.141592653589793,
+    "blenderReference": "../../references/joints/bubble-putty-authored.png",
+    "browserReference": "../../references/joints/bubble-putty-authored-webgl.png",
+    "comparisonReport": "material-comparison.json"
+  },
+  "geometry": {
+    "blender": {
+      "verts": 3302,
+      "polygons": 4675,
+      "triangles": 6608
+    },
+    "browser": {
+      "verts": 3302,
+      "triangles": 6608
+    },
+    "bidirectionalSurfaceError": 0,
+    "surfaceMaskIoU": 0.9954326296999765,
+    "blenderSurfaceCoveredWithin1px": 1,
+    "browserSurfaceCoveredWithin1px": 0.9999936476073713
+  },
+  "material": {
+    "name": "Filament and Cross Section 1OCT2024",
+    "blenderFaceAssignments": {
+      "Filament and Cross Section 1OCT2024": 4675
+    },
+    "pointAttributes": {
+      "col": [
+        0.0008284280193038285,
+        0.8002511262893677,
+        0
+      ],
+      "layer": 1.5015965700149536,
+      "rough": 0.48828125
+    },
+    "browserReadiness": "exact",
+    "browserCount": "3,302 verts · 6,608 faces · 24 curve points · 12 wire segments",
+    "appearance": {
+      "macroLuminanceCorrelation": 0.44302317969542315,
+      "macroLuminanceMae": 0.14362771789987522,
+      "pixelLuminanceMae": 0.18555635384136887,
+      "meanLuminanceDelta": 0.047098084411743346
+    }
+  },
+  "interpretation": "The generated mesh is the design surface. The layer-line look is the authored procedural viewport material on that unchanged mesh, not a slicer result, toolpath, or source G-code. Eevee and Three.js retain renderer-specific high-frequency bump and reflection differences."
+}

@@ -11,6 +11,9 @@ Geometry Nodes modifier before adding the temporary realization pass.
 whose authored output is already a realized mesh.
 ``NODE_DOJO_EVALUATE_LOCAL_SPACE=1`` evaluates the generator at an identity
 transform so Relative Object Info matches the browser's local-space preview.
+``NODE_DOJO_FREEZE_EVALUATED_MESH=1`` renders a detached copy of the evaluated
+mesh with the authored world transform. This prevents dependency-sensitive
+graphs from changing between the topology probe and the render.
 ``NODE_DOJO_AUTHORED_LIGHT_SCALE`` optionally multiplies the authored Area
 light powers for large or small assets while preserving the shared rig layout.
 ``NODE_DOJO_STUDIO_ENVIRONMENT=1`` adds Blender's bundled CC0 ``studio.exr``
@@ -61,6 +64,7 @@ object_name = args[0]
 out_path = args[1]
 meta_path = args[2] if len(args) > 2 else None
 local_space = len(args) > 3 and args[3].upper() == "LOCAL"
+freeze_evaluated_mesh = os.environ.get("NODE_DOJO_FREEZE_EVALUATED_MESH") == "1"
 obj = bpy.data.objects.get(object_name)
 if obj is None:
     raise RuntimeError(f'object not found: "{object_name}"')
@@ -244,13 +248,17 @@ if mesh:
         name = evaluated_materials[polygon.material_index] if polygon.material_index < len(evaluated_materials) else None
         key = name or "<none>"
         evaluated_material_faces[key] = evaluated_material_faces.get(key, 0) + 1
-if local_space and mesh:
+if (local_space or freeze_evaluated_mesh) and mesh:
     # Evaluate with the authored object/parent transforms intact: Object Info,
-    # dependency cycles, and relative transform sockets can observe them.
-    # Render a detached copy afterward so LOCAL affects only presentation.
+    # dependency cycles, and relative transform sockets can observe them. Render
+    # a detached copy afterward so LOCAL affects only presentation, or so a
+    # dependency-sensitive graph cannot change after the topology probe.
     snapshot_mesh = mesh.copy()
-    snapshot_object = bpy.data.objects.new("__NODE_DOJO_LOCAL_SNAPSHOT", snapshot_mesh)
+    snapshot_name = "__NODE_DOJO_LOCAL_SNAPSHOT" if local_space else "__NODE_DOJO_EVALUATED_SNAPSHOT"
+    snapshot_object = bpy.data.objects.new(snapshot_name, snapshot_mesh)
     scene.collection.objects.link(snapshot_object)
+    if freeze_evaluated_mesh and not local_space:
+        snapshot_object.matrix_world = evaluated.matrix_world.copy()
     obj.hide_render = True
 if mesh and os.environ.get("NODE_DOJO_SURFACE_BOUNDS") == "1" and mesh.polygons:
     surface_indices = {index for polygon in mesh.polygons for index in polygon.vertices}
@@ -376,6 +384,7 @@ if meta_path:
         "engine": scene.render.engine,
         "authored_material": authored_material,
         "geometry_nodes_only": gn_only,
+        "frozen_evaluated_mesh": freeze_evaluated_mesh,
         "overrides": overrides,
         "authored_light_scale": authored_light_scale if authored_material else None,
         "authored_look": authored_look if authored_material else None,

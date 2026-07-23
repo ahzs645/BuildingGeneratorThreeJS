@@ -1,0 +1,40 @@
+{
+  "object": "PUTTY.002",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -31.05135726928711,
+      -61.19306564331055,
+      24.83453941345215
+    ],
+    "max": [
+      28.321760177612305,
+      7.542690277099609,
+      95.3365478515625
+    ]
+  },
+  "verts": 3302,
+  "faces": 4675,
+  "materials": [],
+  "evaluated_materials": [
+    "Filament and Cross Section 1OCT2024",
+    "proc_ mahogany.001"
+  ],
+  "evaluated_material_faces": {
+    "Filament and Cross Section 1OCT2024": 4675
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": false,
+  "frozen_evaluated_mesh": true,
+  "overrides": {
+    "finalize for export": true
+  },
+  "authored_light_scale": 0.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": true,
+  "studio_environment_strength": 1.0,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

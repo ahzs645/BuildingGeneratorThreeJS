@@ -11,6 +11,27 @@
     "verts": 3302,
     "faces": 6608
   },
+  "authored_material": {
+    "name": "Filament and Cross Section 1OCT2024",
+    "blender_face_assignments": 4675,
+    "point_attributes": {
+      "col": [
+        0.0008284280193038285,
+        0.8002511262893677,
+        0
+      ],
+      "layer": 1.5015965700149536,
+      "rough": 0.48828125
+    },
+    "surface_mask_iou": 0.9954326296999765,
+    "blender_surface_covered_within_1px": 1,
+    "browser_surface_covered_within_1px": 0.9999936476073713,
+    "macro_luminance_correlation": 0.44302317969542315,
+    "macro_luminance_mae": 0.14362771789987522,
+    "reference": "../../references/joints/bubble-putty-authored.png",
+    "browser_reference": "../../references/joints/bubble-putty-authored-webgl.png",
+    "report": "material-parity.json"
+  },
   "coverage": "100% of the reachable node types across the 46-group, 828-node closure.",
-  "validation": "The browser reproduces the relative three-object structure, welded quad-sphere seed, repeated tight-wrap/dual-mesh deformation, and finalized boolean shell. Structure-preview topology is exact at 8,040 / 9,300, and the authored stochastic bubble layout is 10,272 / 20,480. Blender's BMesh-style Ico Sphere grid, procedural noise, nearest-surface mix, tight wrap, and dynamic triangulation match through the complete pre-Boolean surface. Full-precision collection dependencies produce the Blender-matching Boolean envelope. Manifold retained one isolated 0.00000335-unit intersection edge as two endpoints and two sliver triangles; its closed-manifold link satisfies a topology-preserving collapse and is more than 11 times shorter than the next edge. Coalescing that single event, as Blender's Exact solver does, makes all three finalized sweep cases exact at 3,302 vertices / 6,608 exported triangles with identical four-decimal bounds; Blender stores the same surface as 4,675 polygons. Missing Budokan and Avenir fonts belong to auxiliary label graphs and are not required by the putty surface."
+  "validation": "The browser reproduces the relative three-object structure, welded quad-sphere seed, repeated tight-wrap/dual-mesh deformation, and finalized boolean shell. Structure-preview topology is exact at 8,040 / 9,300, and the authored stochastic bubble layout is 10,272 / 20,480. Blender's BMesh-style Ico Sphere grid, procedural noise, nearest-surface mix, tight wrap, and dynamic triangulation match through the complete pre-Boolean surface. Full-precision collection dependencies produce the Blender-matching Boolean envelope. Manifold retained one isolated 0.00000335-unit intersection edge as two endpoints and two sliver triangles; its closed-manifold link satisfies a topology-preserving collapse and is more than 11 times shorter than the next edge. Coalescing that single event, as Blender's Exact solver does, makes all three finalized sweep cases exact at 3,302 vertices / 6,608 exported triangles with identical evaluated surface positions; Blender stores the same surface as 4,675 polygons. The source dependency cycle changes on a second render-time evaluation, so the authored Blender evidence freezes the probed evaluated mesh before Eevee rendering. That controlled comparison reaches 0.9954 silhouette IoU with complete mutual one-pixel coverage and preserves the exact col, layer, rough, and material ownership used by the Filament and Cross Section shader. Its layer-line appearance is a viewport material on the unchanged design mesh, not sliced geometry or G-code. Missing Budokan and Avenir fonts belong to auxiliary label graphs and are not required by the putty surface."
 }

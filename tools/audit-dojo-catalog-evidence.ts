@@ -26,7 +26,7 @@ type CatalogAsset = {
   dump: string;
   reference: string;
   shaderMetadata?: string;
-  blenderStats: { verts: number; faces: number };
+  blenderStats: { verts: number; faces: number; triangles?: number };
 };
 
 const evidenceName = /(?:parity|comparison|evidence|material).*\.json$/i;
@@ -67,6 +67,7 @@ function compareCounts(
   const blenderFaces = numberAt(blender, "faces");
   const gnvmVerts = numberAt(gnvm, "verts");
   const gnvmFaces = numberAt(gnvm, "faces");
+  const expectedGnvmFaces = expected.triangles ?? expected.faces;
   const label = String(record.status ?? "");
   const add = (severity: AuditFinding["severity"], code: string, message: string): void => {
     findings.push({ severity, code, asset: asset.id, file: statusPath, message });
@@ -78,7 +79,7 @@ function compareCounts(
     add("error", "CATALOG_BLENDER_FACES_MISMATCH", `catalog=${expected.faces}, status Blender=${blenderFaces}`);
 
   const countMismatch = (blenderVerts !== null && gnvmVerts !== null && blenderVerts !== gnvmVerts)
-    || (blenderFaces !== null && gnvmFaces !== null && blenderFaces !== gnvmFaces);
+    || (gnvmFaces !== null && gnvmFaces !== expectedGnvmFaces);
   if (countMismatch && exactWithoutQualifier(label))
     add("error", "EXACT_COUNT_CONTRADICTION", `status '${label}' records Blender ${blenderVerts}/${blenderFaces} but GNVM ${gnvmVerts}/${gnvmFaces}`);
   else if (countMismatch)
@@ -86,8 +87,8 @@ function compareCounts(
 
   if (gnvmVerts !== null && gnvmVerts !== expected.verts)
     add("info", "GNVM_DIFFERS_FROM_CATALOG_TRUTH", `catalog Blender verts=${expected.verts}, status GNVM verts=${gnvmVerts}`);
-  if (gnvmFaces !== null && gnvmFaces !== expected.faces)
-    add("info", "GNVM_DIFFERS_FROM_CATALOG_TRUTH", `catalog Blender faces=${expected.faces}, status GNVM faces=${gnvmFaces}`);
+  if (gnvmFaces !== null && gnvmFaces !== expectedGnvmFaces)
+    add("info", "GNVM_DIFFERS_FROM_CATALOG_TRUTH", `catalog expected GNVM faces=${expectedGnvmFaces}, status GNVM faces=${gnvmFaces}`);
 
   if (label.toLowerCase() === "exact") {
     for (const [key, value] of Object.entries(record)) {
