@@ -124,7 +124,7 @@
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/text-006.png",
     "blenderStats": { "verts": 1373, "faces": 1135 },
-    "note": "Authored raised-text topology and bounds match realized Blender output exactly. Twelve of thirteen validation cases are exact; extreme character expansion remains within 0.76% vertices.",
+    "note": "The supplied SF Intermosaic outlines, raised instance extrusion, background plate, and all thirteen text/layout/transform cases have exact Blender topology. Four-decimal bounds differ by at most 0.0001 units, including Character Spacing 1.5.",
     "controls": [
       { "type": "text", "name": "String", "label": "Text", "value": "CHROME TOOLS" },
       { "name": "Size", "label": "Size", "min": 5, "max": 60, "step": 0.000001, "value": 30.688175201416016 },

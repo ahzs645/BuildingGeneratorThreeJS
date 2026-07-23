@@ -1,9 +1,9 @@
 {
   "root": "_TEXT.006",
   "objects": ["text", "txt"],
-  "status": "exact-authored",
+  "status": "exact-topology",
   "blender": { "object": "text", "verts": 1373, "faces": 1135 },
   "gnvmEmbeddedFont": { "verts": 1373, "faces": 1135 },
   "coverage": { "missingNodeTypes": 0 },
-  "validation": "The supplied SF Intermosaic glyph atlas, raised glyph extrusion, background plate, and authored bounds match realized Blender output exactly. Twelve of thirteen text/layout/transform cases are topology- and bounds-exact; Character Spacing 1.5 differs by 0.76% vertices and 0.8525 bounds units."
+  "validation": "The supplied SF Intermosaic glyph atlas, raised glyph extrusion, background plate, and authored bounds match realized Blender output exactly. All thirteen text, layout, transform, background, and extreme character-spacing cases have exact vertex and face counts. Four-decimal bounds differ by at most 0.0001 units."
 }
