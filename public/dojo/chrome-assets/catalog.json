@@ -818,10 +818,12 @@
     "dump": "dojo/n03d/print-test-mesh/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/print-test-mesh.png",
+    "authoredReference": "dojo/references/n03d/print-test-mesh-shader.png",
     "blenderStats": { "verts": 16751, "faces": 9065 },
     "flatShading": true,
     "localSpace": true,
-    "note": "Exact Geometry Nodes parity at 16,751 vertices / 9,065 faces with identical local bounds, including the non-manifold edge tubes and tetrahedral diagnostic markers. The supplied Blender object adds a separate Bevel modifier afterward (25,719 / 18,182 full-stack); the reference disables that non-GN step for a fair GN-VM comparison. Its committed authored-material capture reaches 0.932 macro luminance correlation with Blender; the subpixel filament lines remain renderer/filter sensitive and are not claimed exact.",
+    "authoredLightScale": 1,
+    "note": "Exact Geometry Nodes parity at 16,751 vertices / 9,065 faces with identical local bounds, including the non-manifold edge tubes and tetrahedral diagnostic markers. The supplied Blender object adds a separate Bevel modifier afterward (25,719 / 18,182 full-stack); the authored reference disables that non-GN step for a fair GN-VM comparison. The browser reconstructs the literal flat.w Background surface and filament .02 mm.002 Generated-coordinate Wave/Bump material. Its current 768 px comparison reaches 0.9979 silhouette IoU and 0.9380 macro luminance correlation with Blender; subpixel filament lines remain renderer/filter sensitive. This is a viewport material preview, not sliced G-code.",
     "controls": []
   },
   {

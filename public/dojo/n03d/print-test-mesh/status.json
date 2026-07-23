@@ -2,7 +2,7 @@
   "id": "n03d-print-test-mesh",
   "object": "print test mesh",
   "root": "Geometry Nodes.013",
-  "status": "exact-geometry-nodes-parity",
+  "status": "exact-geometry-and-authored-material-parity",
   "blender": {
     "verts": 16751,
     "faces": 9065
@@ -21,6 +21,6 @@
     "status": "literal-background-and-filament-supported",
     "flat.w": { "triangles": 17920, "shader": "unlit linear RGB 0.8000000119, strength 1" },
     "filament .02 mm.002": { "triangles": 200, "shader": "portable N03D filament reconstruction" },
-    "validation": "The browser recognizes the authored two-node Background to Material Output contract generically, routes the exact 53,760-index flat.w group through MeshBasicMaterial, and rejects linked Background inputs instead of claiming unsupported procedural parity. The filament front and back color branches reproduce Blender, Generated coordinates use the exact filament material-group bounds, and a clean-room lookup3/Perlin fBm reconstruction drives Blender-style forward-derivative bump normals. The committed 768 x 768 current-browser capture measures silhouette IoU 0.9940, macro luminance MAE 0.0494, macro correlation 0.932, mean luminance delta +0.0118, and pixel MAE 0.0696. The high-frequency layer lines remain phase/filter sensitive, so procedural raster parity is improved but not exact."
+    "validation": "The browser recognizes the authored two-node Background to Material Output contract generically, routes the exact 53,760-index flat.w group through MeshBasicMaterial, and rejects linked Background inputs instead of claiming unsupported procedural parity. The filament front and back color branches reproduce Blender, Generated coordinates use the exact filament material-group bounds, and a clean-room lookup3/Perlin fBm reconstruction drives Blender-style forward-derivative bump normals. The refreshed 768 x 768 current-browser capture measures silhouette IoU 0.9979, macro luminance MAE 0.0478, macro correlation 0.9380, mean luminance delta +0.0064, and pixel MAE 0.0736. The high-frequency layer lines remain phase/filter sensitive, so procedural raster parity is improved but not exact."
   }
 }

@@ -2,12 +2,14 @@
   "capture": {
     "resolution": [768, 768],
     "blenderReference": "../../references/n03d/print-test-mesh-shader.png",
+    "blenderMetadata": "../../references/n03d/print-test-mesh-shader.json",
     "browserReference": "../../references/n03d/print-test-mesh-shader-webgl.png",
     "comparisonReport": "material-comparison.json",
     "browserRoute": "/chrome-assets?asset=n03d-print-test-mesh&capture=authored",
     "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
     "geometry": "Geometry Nodes only; the post-GN Bevel modifier is disabled in Blender",
-    "browserCapture": "Codex in-app Chromium, 768 x 768 CSS pixels, devicePixelRatio 1"
+    "browserCapture": "Codex in-app Chromium, 768 x 768 CSS pixels, devicePixelRatio 1",
+    "browserAuthoredLightScale": 1
   },
   "materialGroups": [
     { "material": "flat.w", "triangles": 17920, "browser": "literal Background material" },
@@ -44,16 +46,22 @@
     "meanLuminanceDelta": 0.027288621982416453
   },
   "authoredAreaWaveBump": {
-    "surfaceMaskIou": 0.9940327904728904,
-    "intersectionPixels": 272529,
-    "pixelLuminanceMae": 0.06963046474530193,
-    "pixelLuminanceCorrelation": 0.5564746359108178,
-    "binaryMaskDisagreementFraction": 0.0035409075731390053,
-    "macroLuminanceMae": 0.049427334090711164,
-    "macroLuminanceCorrelation": 0.9324921900679674,
-    "blackFractionDelta": -0.0783257233411414,
-    "meanLuminanceDelta": 0.011752816571057603,
+    "surfaceMaskIou": 0.9978688812725196,
+    "surfaceMaskIouDilated1px": 0.9983013708552906,
+    "blenderSurfaceCoveredWithin1px": 1.0,
+    "webglSurfaceCoveredWithin1px": 1.0,
+    "surfaceCornerRmsePixels": 0.9619261664002281,
+    "intersectionPixels": 272514,
+    "pixelRgbMae": 0.054577040007592635,
+    "pixelLuminanceMae": 0.07359771025269563,
+    "pixelLuminanceCorrelation": 0.5391637186619248,
+    "binaryMaskDisagreementFraction": 0.0036365104178133966,
+    "macroLuminanceMae": 0.047816995770535324,
+    "macroLuminanceCorrelation": 0.9379952845677485,
+    "blackFractionDelta": -0.07804119776152163,
+    "meanLuminanceDelta": 0.00643761895083321,
+    "meanRgbDelta": [0.006387757592151554, 0.007438353217752626, -0.0072117040365372205],
     "capture": "../../references/n03d/print-test-mesh-shader-webgl.png"
   },
-  "interpretation": "Camera and geometry align. The filament front is the exact col attribute and its back is Blender's achromatic max-RGB value branch. The browser derives Generated coordinates from the filament material-group bounds, evaluates a clean-room lookup3/Perlin fBm Z wave, and applies forward-derivative bump normals. The durable current-browser capture measures 0.0494 macro luminance MAE, 0.932 macro correlation, +0.0118 mean luminance delta, and 0.0696 pixel MAE. The subpixel layer-line pattern remains phase and raster-filter sensitive, so high-frequency shader parity is improved but not exact. The generic flat.w Background contract is implemented."
+  "interpretation": "Camera and geometry align. The filament front is the exact col attribute and its back is Blender's achromatic max-RGB value branch. The browser derives Generated coordinates from the filament material-group bounds, evaluates a clean-room lookup3/Perlin fBm Z wave, and applies forward-derivative bump normals. The refreshed current-browser capture measures 0.0478 macro luminance MAE, 0.9380 macro correlation, +0.0064 mean luminance delta, and 0.0736 pixel luminance MAE. The subpixel layer-line pattern remains phase and raster-filter sensitive, so high-frequency shader parity is improved but not exact. The generic flat.w Background contract is implemented."
 }
