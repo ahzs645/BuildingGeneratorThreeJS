@@ -1,0 +1,38 @@
+{
+  "object": "text",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -13.0716552734375,
+      -25.00594711303711,
+      0.0
+    ],
+    "max": [
+      251.7574462890625,
+      18.186351776123047,
+      1.0
+    ]
+  },
+  "verts": 1373,
+  "faces": 1135,
+  "materials": [],
+  "evaluated_materials": [
+    null,
+    "flat.nodes",
+    "emit"
+  ],
+  "evaluated_material_faces": {
+    "flat.nodes": 1135
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 1.0,
+  "authored_look": "None",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}
