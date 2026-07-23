@@ -100,11 +100,26 @@ function readGlb(path: string, filter?: string | null): TriMesh {
   return out;
 }
 
+function readProbeJson(path: string): TriMesh {
+  const payload = JSON.parse(readFileSync(path, "utf8"));
+  const positions = payload.positions as Vec3[];
+  if (!Array.isArray(positions) || (positions.length > 0 && !Array.isArray(positions[0])))
+    throw new Error("probe JSON must contain nested positions");
+  const source = (payload.loop_triangles ?? payload.faces ?? []) as number[][];
+  const triangles: [number, number, number][] = [];
+  for (const face of source) {
+    if (face.length === 3) triangles.push(face as [number, number, number]);
+    else for (let i = 1; i + 1 < face.length; i++) triangles.push([face[0], face[i], face[i + 1]]);
+  }
+  return { positions, triangles };
+}
+
 function readVm(path: string, filter?: string | null): TriMesh {
   const vm = JSON.parse(readFileSync(path, "utf8"));
-  const loc = vm.object?.location ?? [275.16204833984375, 0, 0];
-  const rot = vm.object?.rotation ?? [0, 0, 0];
-  const scale = vm.object?.scale ?? [1, 1, 1];
+  const local = process.argv.includes("--local");
+  const loc = local ? [0, 0, 0] : vm.object?.location ?? [275.16204833984375, 0, 0];
+  const rot = local ? [0, 0, 0] : vm.object?.rotation ?? [0, 0, 0];
+  const scale = local ? [1, 1, 1] : vm.object?.scale ?? [1, 1, 1];
   const positions: Vec3[] = [];
   for (let i = 0; i < vm.positions.length; i += 3) {
     let x = vm.positions[i] * scale[0], y = vm.positions[i + 1] * scale[1], z = vm.positions[i + 2] * scale[2];
@@ -333,7 +348,10 @@ function reportHeightBands(label: string, mesh: TriMesh, target: TriMesh, bvh: B
   }
 }
 
-const truth = readGlb(truthPath, normalizedMaterialFilter), vm = readVm(vmPath, normalizedMaterialFilter);
+const truth = truthPath.toLowerCase().endsWith(".json")
+  ? readProbeJson(truthPath)
+  : readGlb(truthPath, normalizedMaterialFilter);
+const vm = readVm(vmPath, normalizedMaterialFilter);
 console.log(`truth ${truth.positions.length}v ${truth.triangles.length}t ${JSON.stringify(boundsOf(truth.positions))}`);
 console.log(`vm ${vm.positions.length}v ${vm.triangles.length}t ${JSON.stringify(boundsOf(vm.positions))}`);
 areaSummary("truth", truth);
@@ -346,8 +364,10 @@ console.log("building triangle BVHs...");
 const truthBvh = buildBvh(truth), vmBvh = buildBvh(vm);
 report("truth points -> VM surface", truth.positions, vm, vmBvh);
 report("VM points -> truth surface", vm.positions, truth, truthBvh);
-if (process.argv.includes("--centroids"))
+if (process.argv.includes("--centroids")) {
   reportTriangleCentroids("truth -> VM surface", truth, truth.triangles.map((_, i) => i), vm, vmBvh);
+  reportTriangleCentroids("VM -> truth surface", vm, vm.triangles.map((_, i) => i), truth, truthBvh);
+}
 if (process.argv.includes("--regions")) {
   reportHeightBands("truth -> VM", truth, vm, vmBvh);
   reportHeightBands("VM -> truth", vm, truth, truthBvh);

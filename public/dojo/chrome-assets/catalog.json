@@ -827,7 +827,7 @@
     "reference": "dojo/references/joints/three-way-pipe.png",
     "blenderStats": { "verts": 48708, "faces": 48318 },
     "localSpace": true,
-    "note": "The 20-group, 319-node pipe-joint generator combines three supplied dowels into a printable three-way connector. Authored output and five non-cutter variants match Blender topology and bounds exactly; cutter mode preserves exact bounds while the browser boolean simplifies internal topology.",
+    "note": "The 20-group, 319-node pipe-joint generator combines three supplied dowels into a printable three-way connector. Authored output and five non-cutter variants match Blender topology and bounds exactly. Cutter mode uses an open-surface browser Boolean: it reproduces every sampled Blender surface point and exact bounds while retaining one small extra inner patch.",
     "controls": [
       { "name": "diameter", "label": "Pipe diameter", "min": 8, "max": 50, "step": 0.1, "value": 25 },
       { "name": "size", "label": "Joint size", "min": 10, "max": 80, "step": 0.1, "value": 32.36322021484375 },

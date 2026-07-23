@@ -27,6 +27,12 @@ import { asBezierSpline } from "../bezier";
 import { Vector3 as ThreeVector3 } from "three";
 import { ConvexHull as ThreeConvexHull } from "three/examples/jsm/math/ConvexHull.js";
 import { blenderBulletHull } from "../bullet-hull";
+import * as TrimeshBoolean from "trimesh-boolean";
+import type {
+  SplitResult as OpenBooleanSplit,
+  TriangleSoup as OpenTriangleSoup,
+  Vertex as OpenBooleanVertex,
+} from "trimesh-boolean";
 
 const DOMAINS = new Set<Domain>(["POINT", "EDGE", "FACE", "CORNER", "CURVE", "INSTANCE"]);
 const EPS = 1e-9;
@@ -3424,6 +3430,86 @@ function openSweptDifference(source: Mesh, cutter: Mesh): Mesh | null {
   return out;
 }
 
+function meshToOpenBooleanSoup(mesh: Mesh): OpenTriangleSoup {
+  const vertex = (index: number): OpenBooleanVertex => {
+    const point = mesh.positions[index];
+    return { x: point[0], y: point[1], z: point[2] };
+  };
+  return mesh.faces.flatMap((face) => triangulateFaceIndices(mesh, face).map(([a, b, c]) => ({
+    v0: vertex(a),
+    v1: vertex(b),
+    v2: vertex(c),
+  })));
+}
+
+/**
+ * Blender's FLOAT solver can subtract a disconnected closed cutter from a
+ * disconnected open surface. Manifold deliberately rejects that input because
+ * it does not describe a solid. Use the browser-native open-surface splitter
+ * for this rarer case (the Three-Way Pipe cutter branch), retaining its split
+ * triangles so concave/non-manifold intersection regions render faithfully.
+ */
+function openSurfaceDifference(source: Mesh, cutter: Mesh): Mesh | null {
+  if (isClosedFaceManifold(source) || !isClosedFaceManifold(cutter)) return null;
+  const sourceIslands = buildTopology(source).pointIslandCount;
+  const cutterIslands = buildTopology(cutter).pointIslandCount;
+  // A single open shell has established topology-preserving fallbacks (vase,
+  // pre-mirror box). The expensive surface splitter is reserved for compound
+  // operands where those simpler constructions cannot express Blender's cut.
+  if (sourceIslands < 2 || cutterIslands < 2) return null;
+  // bmsBooleanOp is part of the package's documented runtime API but is
+  // missing from its 0.5.9 declaration file, so keep the narrow local type.
+  const bmsBooleanOp = (TrimeshBoolean as unknown as {
+    bmsBooleanOp: (
+      a: OpenTriangleSoup,
+      b: OpenTriangleSoup,
+      operation?: "subtract" | "union" | "intersect",
+      options?: { classifier?: "auto" | "hybrid" | "heffalump"; preRepair?: boolean },
+    ) => OpenBooleanSplit | null;
+  }).bmsBooleanOp;
+  const split = bmsBooleanOp(
+    meshToOpenBooleanSoup(source),
+    meshToOpenBooleanSoup(cutter),
+    undefined,
+    { classifier: "hybrid", preRepair: false },
+  );
+  if (!split) return null;
+  const result = TrimeshBoolean.mergeSplitGroups(split.groups, "subtract");
+  if (!result?.triangles.length) return null;
+
+  const mesh = new Mesh();
+  mesh.materialSlots = [...source.materialSlots];
+  const indexByVertex = new Map<OpenBooleanVertex, number>();
+  for (const point of result.points) {
+    indexByVertex.set(point, mesh.positions.length);
+    mesh.positions.push([point.x, point.y, point.z]);
+  }
+  const coordinateIndex = new Map(mesh.positions.map((point, index) => [
+    `${point[0].toPrecision(15)}:${point[1].toPrecision(15)}:${point[2].toPrecision(15)}`,
+    index,
+  ]));
+  const resolve = (point: OpenBooleanVertex): number => {
+    const direct = indexByVertex.get(point);
+    if (direct !== undefined) return direct;
+    const key = `${point.x.toPrecision(15)}:${point.y.toPrecision(15)}:${point.z.toPrecision(15)}`;
+    const existing = coordinateIndex.get(key);
+    if (existing !== undefined) return existing;
+    const index = mesh.positions.length;
+    mesh.positions.push([point.x, point.y, point.z]);
+    coordinateIndex.set(key, index);
+    return index;
+  };
+  const material = source.faceMaterial[0] ?? 0;
+  for (const triangle of result.triangles) {
+    mesh.faces.push(triangle.vertices.map(resolve));
+    mesh.faceMaterial.push(material);
+  }
+  // Keep the splitter's intersection triangles. Recombining them into large
+  // concave ngons changes Blender's open/non-manifold surface when the render
+  // path triangulates those polygons again.
+  return compactFaceVertsLocal(mesh);
+}
+
 /**
  * Preserve Blender's polygon layout when a short prism cuts part-way through
  * an extruded annulus. Bolt Generator builds its head this way: the annulus
@@ -3628,10 +3714,13 @@ reg("GeometryNodeMeshBoolean", (api) => {
   // feeding that branch to a solid-only CSG library changes its envelope.
   const solver = (api.prop<string>("solver", "FLOAT") || "FLOAT").toUpperCase();
   let mesh1 = api.geo("Mesh 1");
-  let mesh2s = api.geoInputs("Mesh 2");
   // In Blender 4+/5, UNION and INTERSECT expose one multi-input "Mesh" socket
   // and disable Mesh 1. Treat the first multi-input value as the accumulator.
   const mesh1Enabled = api.node.inputs.find((socket) => socket.identifier === "Mesh 1")?.enabled !== false;
+  // DIFFERENCE has a regular Mesh 2 socket. Old saved graphs can retain more
+  // than one serialized link to it, but Blender evaluates only the active
+  // link; pullMulti would incorrectly duplicate that cutter.
+  let mesh2s = mesh1Enabled ? [api.geo("Mesh 2")] : api.geoInputs("Mesh 2");
   if ((!mesh1Enabled || (!mesh1.mesh && !mesh1.curves.length && !mesh1.instances.length)) && mesh2s.length > 1) {
     mesh1 = mesh2s[0];
     mesh2s = mesh2s.slice(1);
@@ -3677,6 +3766,16 @@ reg("GeometryNodeMeshBoolean", (api) => {
     if (clipped) {
       const geometry = new Geometry();
       geometry.mesh = clipped;
+      return { Mesh: geometry, "Intersecting Edges": Field.of(0) };
+    }
+  }
+
+  if (solver === "FLOAT" && op === "DIFFERENCE" && mesh1.mesh && mesh2s.length === 1 && mesh2s[0].mesh) {
+    const swept = openSweptDifference(mesh1.mesh, mesh2s[0].mesh);
+    const surface = swept ?? openSurfaceDifference(mesh1.mesh, mesh2s[0].mesh);
+    if (surface) {
+      const geometry = new Geometry();
+      geometry.mesh = surface;
       return { Mesh: geometry, "Intersecting Edges": Field.of(0) };
     }
   }

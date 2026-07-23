@@ -12,5 +12,5 @@
     "faces": 48318
   },
   "coverage": "100% of reachable node types across the 20-group, 319-node root closure; three evaluated dowel dependencies are included.",
-  "validation": "Authored output and five non-cutter control variants have exact topology and bounds. Cutter mode has identical bounds but GN-VM's Manifold solid boolean simplifies the internal result to 24,354 / 24,156 versus Blender's 29,705 / 27,431."
+  "validation": "Authored output and five non-cutter control variants have exact topology and bounds. Cutter mode now uses a browser-native open-surface Boolean because Blender's FLOAT solver subtracts three overlapping closed pipes from three open shells, an operation a solid-only Manifold cannot represent. It retains exact bounds and every sampled Blender point and triangle centroid lies on the browser surface at zero measured distance. The browser keeps a small extra inner patch (3.1% surface-area overhead): 27,136 vertices / 53,872 triangles versus Blender's 29,705 vertices / 27,431 polygons (52,605 triangles at the probed Boolean stage)."
 }

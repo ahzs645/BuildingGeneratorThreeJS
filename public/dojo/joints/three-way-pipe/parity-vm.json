@@ -1,6 +1,6 @@
 {
   "source": "gnvm",
-  "dump": "/tmp/joint-old-pipe-dump.json",
+  "dump": "public/dojo/joints/three-way-pipe/dump.json",
   "object": "old pipe",
   "results": [
     {
@@ -23,7 +23,7 @@
           74.392
         ]
       },
-      "elapsed_ms": 227
+      "elapsed_ms": 467
     },
     {
       "combo": {
@@ -47,7 +47,7 @@
           74.392
         ]
       },
-      "elapsed_ms": 147
+      "elapsed_ms": 373
     },
     {
       "combo": {
@@ -71,7 +71,7 @@
           85.2688
         ]
       },
-      "elapsed_ms": 134
+      "elapsed_ms": 353
     },
     {
       "combo": {
@@ -81,8 +81,8 @@
         }
       },
       "status": "ok",
-      "verts": 24354,
-      "faces": 24156,
+      "verts": 27136,
+      "faces": 53872,
       "bbox": {
         "min": [
           -66.8282,
@@ -95,7 +95,7 @@
           72.632
         ]
       },
-      "elapsed_ms": 104
+      "elapsed_ms": 12674
     },
     {
       "combo": {
@@ -119,7 +119,7 @@
           74.392
         ]
       },
-      "elapsed_ms": 91
+      "elapsed_ms": 248
     },
     {
       "combo": {
@@ -143,7 +143,7 @@
           74.392
         ]
       },
-      "elapsed_ms": 130
+      "elapsed_ms": 337
     },
     {
       "combo": {
@@ -167,7 +167,7 @@
           74.392
         ]
       },
-      "elapsed_ms": 139
+      "elapsed_ms": 350
     }
   ]
 }
