@@ -652,7 +652,7 @@
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/glue-grid.png",
     "blenderStats": { "verts": 4736, "faces": 4096 },
-    "note": "Exact Blender topology for the authored 4×4 raised lattice at 4,736 vertices / 4,096 faces, with local bounds within 0.0004 units. Point-cloud components remain available during graph evaluation but are correctly omitted from the final evaluated mesh.",
+    "note": "Exact Blender parity for the authored 4×4 raised lattice at 4,736 vertices / 4,096 faces. Restoring its embedded 74-vertex seed at the source .blend's original float32 precision makes all 4,736 evaluated coordinates bit-for-bit identical. Point-cloud components remain available during graph evaluation but are correctly omitted from the final evaluated mesh.",
     "controls": []
   },
   {

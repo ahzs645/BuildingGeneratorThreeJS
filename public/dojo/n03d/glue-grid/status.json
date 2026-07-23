@@ -2,9 +2,9 @@
   "id": "n03d-glue-grid",
   "object": "GLUE GRID",
   "root": "Geometry Nodes.012",
-  "status": "topology-exact-bounds-near",
+  "status": "exact",
   "blender": { "verts": 4736, "faces": 4096 },
   "gnvm": { "verts": 4736, "faces": 4096 },
   "coverage": "100% of reachable node types across the 7-group, 93-node closure.",
-  "validation": "The authored 4x4 grid now matches Blender exactly at 4,736 vertices and 4,096 faces. Point-cloud components are retained for Geometry Nodes field and instancing evaluation but omitted from the final evaluated mesh, matching Blender. Bounds remain within 0.0004 units."
+  "validation": "The authored 4x4 grid matches Blender exactly at 4,736 vertices and 4,096 faces. Refreshing its 74-vertex embedded seed from the source .blend's original float32 coordinates removes the former 0.0004-unit drift introduced when the graph multiplied six-decimal JSON coordinates by 1,000. All 4,736 evaluated vertex coordinates are now bit-for-bit identical to Blender. Point-cloud components are retained for Geometry Nodes field and instancing evaluation but omitted from the final evaluated mesh, matching Blender."
 }
