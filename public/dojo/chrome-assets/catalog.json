@@ -248,14 +248,19 @@
     "dump": "dojo/chrome-assets/sticker-noodle-star/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/sticker-noodle-star.png",
+    "authoredReference": "dojo/references/chrome-assets/sticker-noodle-star-authored.png",
     "blenderStats": { "verts": 716079, "faces": 715520 },
-    "note": "Exact Blender topology across six validation cases covering distance, scale, star radii, and point count, with local bounds within 0.0001 units—including the million-vertex seven-point result.",
+    "localSpace": true,
+    "authoredToneMapping": "none",
+    "material": "attribute-emission",
+    "note": "Exact Blender topology across six validation cases covering distance, scale, star radii, and point count, with local bounds within 0.0001 units—including the million-vertex seven-point result. Blender's saved outer/inner radii are both zero, so the authored default is collapsed and invisible. The authored reference documents a usable preview (outer 1, inner 0.45, color 0.8 gray) with 0.984 silhouette IoU while preserving the evaluated col/power emission fields.",
     "controls": [
       { "name": "Dot Distance", "label": "Dot distance", "min": 0.25, "max": 2, "step": 0.000001, "value": 0.5356634855270386 },
       { "name": "dot size", "label": "Dot size", "min": 0.2, "max": 2.5, "step": 0.000001, "value": 1.8435211181640625 },
       { "name": "outer", "label": "Outer radius", "min": 0, "max": 2, "step": 0.000001, "value": 0 },
       { "name": "inner", "label": "Inner inset", "min": 0, "max": 1.5, "step": 0.000001, "value": 0 },
-      { "name": "Points", "label": "Star points", "min": 3, "max": 12, "step": 1, "value": 5 }
+      { "name": "Points", "label": "Star points", "min": 3, "max": 12, "step": 1, "value": 5 },
+      { "type": "vector", "name": "color", "label": "Emission color RGB", "value": [0, 0, 0], "step": 0.01 }
     ]
   },
   {

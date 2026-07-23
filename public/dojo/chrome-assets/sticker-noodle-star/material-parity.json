@@ -1,0 +1,82 @@
+{
+  "updated": "2026-07-23",
+  "target": {
+    "id": "sticker-noodle-star",
+    "project": "NO3D Chrome Asset Library.blend",
+    "object": "Sticker Noodle Brush",
+    "root": "dot periodic brush.003",
+    "material": "flat.nodes"
+  },
+  "savedDefaultContract": {
+    "inputs": {
+      "outer": 0.0,
+      "inner": 0.0,
+      "Points": 5,
+      "color": [0.0, 0.0, 0.0, 1.0]
+    },
+    "verts": 716079,
+    "faces": 715520,
+    "visibility": "The saved outer and inner radii collapse the generated star cross-sections to zero area. Blender and GN-VM retain the exact topology, but the authored default has no useful visible surface."
+  },
+  "visiblePreviewContract": {
+    "overrides": {
+      "outer": 1.0,
+      "inner": 0.45,
+      "color": [0.8, 0.8, 0.8]
+    },
+    "verts": 737880,
+    "faces": 736762,
+    "tris": 1452282,
+    "group": {
+      "start": 0,
+      "count": 4356846,
+      "material": "flat.nodes"
+    },
+    "attributes": {
+      "col": {
+        "domain": "POINT",
+        "itemSize": 3,
+        "value": [0.800000011920929, 0.800000011920929, 0.800000011920929]
+      },
+      "power": {
+        "domain": "POINT",
+        "itemSize": 1,
+        "value": 1.0
+      }
+    }
+  },
+  "authoredShaderContract": {
+    "colorPath": "Geometry Attribute col Color → Emission Color",
+    "strengthPath": "Geometry Attribute power Vector → Emission Strength",
+    "browserResolution": "GN-VM preserves both evaluated attributes through the star curve, sweep, instancing, and realization path. The attribute-emission material consumes them from the single flat.nodes draw group."
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "previewOverrides": {
+      "outer": 1.0,
+      "inner": 0.45,
+      "color": [0.8, 0.8, 0.8]
+    },
+    "blenderReference": "../../references/chrome-assets/sticker-noodle-star-authored.png",
+    "blenderMetadata": "../../references/chrome-assets/sticker-noodle-star-authored.json",
+    "browserReference": "../../references/chrome-assets/sticker-noodle-star-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=sticker-noodle-star&capture=authored",
+    "toneMapping": "NoToneMapping preserves the extracted linear emission field in the authored evidence capture; it does not claim identical Eevee and WebGL color management."
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9836360868682769,
+    "surfaceCornerRmsePixels": 0.7715166735515623,
+    "intersectionPixels": 38771,
+    "pixelLuminanceMae": 0.08314336097059359,
+    "pixelLuminanceCorrelation": -0.015122808404464201,
+    "binaryMaskDisagreementFraction": 0.0,
+    "macroLuminanceMae": 0.08583566292807232,
+    "macroLuminanceCorrelation": 0.33417160082654673,
+    "blackFractionDelta": 0.0,
+    "meanLuminanceDelta": -0.08803925227209008
+  },
+  "interpretation": "The non-degenerate preview validates geometry and emission-field transport: the WebGL and Blender surfaces align at 0.984 IoU with sub-pixel corner agreement. Because the preview uses one nearly uniform emissive value and the PNGs use different transparent-background mattes, luminance correlation is not a useful shader-structure metric here. The remaining mean-luminance difference is renderer color-management parity, not a geometry or attribute loss."
+}

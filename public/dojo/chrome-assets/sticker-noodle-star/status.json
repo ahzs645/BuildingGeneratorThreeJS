@@ -2,9 +2,9 @@
   "id": "sticker-noodle-star",
   "object": "Sticker Noodle Brush",
   "root": "dot periodic brush.003",
-  "status": "exact-sweep",
+  "status": "exact-sweep-and-authored-material-parity",
   "blender": { "verts": 716079, "faces": 715520 },
   "gnvm": { "verts": 716079, "faces": 715520 },
   "coverage": "100% of reachable node types across the 2-group, 46-node closure.",
-  "validation": "Exact Blender topology across six cases covering distance, dot size, outer and inner star radii, and point count—including the 1,002,287-vertex seven-point result. Four-decimal bounds differ by at most 0.0001 units."
+  "validation": "Exact Blender topology across six cases covering distance, dot size, outer and inner star radii, and point count—including the 1,002,287-vertex seven-point result. Four-decimal bounds differ by at most 0.0001 units. The saved Blender default has outer=0 and inner=0, so its 715,520 faces have collapsed area and are not visibly useful. A documented preview using outer=1, inner=0.45, and color=[0.8,0.8,0.8] is exact at 737,880 vertices / 736,762 faces / 1,452,282 triangles and retains flat.nodes col/power emission attributes. Its aligned authored-material captures reach 0.983636 silhouette IoU and 0.772 px corner RMSE."
 }

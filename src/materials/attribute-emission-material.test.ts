@@ -22,6 +22,10 @@ const noodleBrushDump = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/chrome-assets/sticker-noodle-brush/dump.json",
   import.meta.url,
 )), "utf8")) as Dump;
+const noodleStarDump = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/chrome-assets/sticker-noodle-star/dump.json",
+  import.meta.url,
+)), "utf8")) as Dump;
 
 test("extracts the authored flat sticker emission contract", () => {
   assert.deepEqual(extractAttributeEmissionConfig(dump, "flat.nodes"), {
@@ -149,6 +153,40 @@ test("preserves Sticker Noodle Brush's evaluated black-and-white emission field"
   geometry.setAttribute("col", new THREE.BufferAttribute(result.soup.attributes.col.data, 3));
   geometry.setAttribute("power", new THREE.BufferAttribute(result.soup.attributes.power.data, 1));
   const material = makeAttributeEmissionMaterial(noodleBrushDump, geometry, "flat.nodes");
+  assert.ok(material?.isShaderMaterial);
+  assert.deepEqual(material?.userData.attributeResolution, {
+    color: "geometry-color",
+    strength: "geometry-vector",
+  });
+  geometry.dispose();
+  material?.dispose();
+});
+
+test("preserves Sticker Noodle Star's emission fields in a non-degenerate authored preview", async () => {
+  assert.deepEqual(extractAttributeEmissionConfig(noodleStarDump, "flat.nodes"), {
+    colorAttribute: "col",
+    strengthAttribute: "power",
+  });
+  const result = await runGenerator(noodleStarDump, {
+    object: "Sticker Noodle Brush",
+    overrides: {
+      outer: 1,
+      inner: 0.45,
+      color: [0.8, 0.8, 0.8],
+    },
+  });
+  assert.deepEqual(result.soup.stats, { verts: 737880, faces: 736762, tris: 1452282 });
+  assert.deepEqual(result.soup.groups, [{ start: 0, count: 4356846, material: "flat.nodes" }]);
+  assert.equal(result.soup.attributes.col.itemSize, 3);
+  assert.equal(result.soup.attributes.power.itemSize, 1);
+  assert.ok(result.soup.attributes.col.data.every((value) => value === 0.800000011920929));
+  assert.ok(result.soup.attributes.power.data.every((value) => value === 1));
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));
+  geometry.setAttribute("col", new THREE.BufferAttribute(result.soup.attributes.col.data, 3));
+  geometry.setAttribute("power", new THREE.BufferAttribute(result.soup.attributes.power.data, 1));
+  const material = makeAttributeEmissionMaterial(noodleStarDump, geometry, "flat.nodes");
   assert.ok(material?.isShaderMaterial);
   assert.deepEqual(material?.userData.attributeResolution, {
     color: "geometry-color",

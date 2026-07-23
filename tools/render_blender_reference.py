@@ -72,6 +72,7 @@ if gn_only:
         raise RuntimeError(f'Geometry Nodes modifier not found: "{object_name}"')
 
 override_payload = os.environ.get("NODE_DOJO_OVERRIDES")
+overrides = {}
 if override_payload:
     overrides = json.loads(override_payload)
     modifier = next((candidate for candidate in obj.modifiers if candidate.type == "NODES" and candidate.node_group), None)
@@ -315,6 +316,7 @@ if meta_path:
         "engine": scene.render.engine,
         "authored_material": authored_material,
         "geometry_nodes_only": gn_only,
+        "overrides": overrides,
         "authored_light_scale": authored_light_scale if authored_material else None,
         "studio_environment": studio_environment,
         "studio_environment_strength": studio_environment_strength,

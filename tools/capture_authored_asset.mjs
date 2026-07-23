@@ -7,10 +7,11 @@ const asset = process.argv[3];
 const output = process.argv[4];
 const lightScale = process.argv[5];
 const previewMode = process.argv[6];
+const overridesPayload = process.argv[7];
 
 if (!asset || !output) {
   throw new Error(
-    "usage: node tools/capture_authored_asset.mjs BASE_URL ASSET_ID OUTPUT.png [LIGHT_SCALE] [PREVIEW_MODE]",
+    "usage: node tools/capture_authored_asset.mjs BASE_URL ASSET_ID OUTPUT.png [LIGHT_SCALE] [PREVIEW_MODE] [OVERRIDES_JSON]",
   );
 }
 if (lightScale !== undefined && (!Number.isFinite(Number(lightScale)) || Number(lightScale) <= 0)) {
@@ -18,6 +19,10 @@ if (lightScale !== undefined && (!Number.isFinite(Number(lightScale)) || Number(
 }
 if (previewMode !== undefined && !["authored", "diagnostic", "workbench", "materialx-native"].includes(previewMode)) {
   throw new Error(`invalid preview mode: ${previewMode}`);
+}
+const overrides = overridesPayload === undefined ? null : JSON.parse(overridesPayload);
+if (overrides !== null && (typeof overrides !== "object" || Array.isArray(overrides))) {
+  throw new Error("OVERRIDES_JSON must be an object keyed by exposed control name");
 }
 
 const executablePath = [
@@ -60,6 +65,34 @@ try {
     () => document.documentElement.dataset.chromeAssetsReady !== undefined,
     { timeout: 240_000 },
   );
+  if (overrides && Object.keys(overrides).length) {
+    await page.evaluate((values) => {
+      delete document.documentElement.dataset.chromeAssetsReady;
+      for (const [name, value] of Object.entries(values)) {
+        const inputs = [...document.querySelectorAll(`[data-control="${CSS.escape(name)}"]`)];
+        if (!inputs.length) throw new Error(`capture override control missing: ${name}`);
+        for (const input of inputs) {
+          if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement)) continue;
+          if (input instanceof HTMLInputElement && input.type === "checkbox") {
+            input.checked = Boolean(value);
+          } else if (Array.isArray(value) && input instanceof HTMLInputElement) {
+            const axis = Number(input.dataset.axis);
+            input.value = String(value[axis]);
+          } else {
+            input.value = String(value);
+          }
+          input.dataset.dirty = "true";
+          input.dispatchEvent(new Event(input instanceof HTMLInputElement && input.type === "range" ? "input" : "change", {
+            bubbles: true,
+          }));
+        }
+      }
+    }, overrides);
+    await page.waitForFunction(
+      () => document.documentElement.dataset.chromeAssetsReady !== undefined,
+      { timeout: 240_000 },
+    );
+  }
   await page.evaluate(() => new Promise((resolve) => (
     requestAnimationFrame(() => requestAnimationFrame(resolve))
   )));
@@ -78,6 +111,7 @@ try {
     output: resolvedOutput,
     lightScale: lightScale === undefined ? null : Number(lightScale),
     previewMode: previewMode ?? "authored",
+    overrides,
     ...result,
   })}`);
 } finally {

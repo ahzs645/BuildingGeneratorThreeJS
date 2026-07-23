@@ -1,0 +1,47 @@
+{
+  "object": "Sticker Noodle Brush",
+  "type": "CURVE",
+  "bbox": {
+    "min": [
+      66.25684356689453,
+      96.60122680664062,
+      0.3116375207901001
+    ],
+    "max": [
+      155.91116333007812,
+      174.90721130371094,
+      8.38747787475586
+    ]
+  },
+  "verts": 737880,
+  "faces": 736762,
+  "materials": [
+    "flat crayon.002",
+    "flat crayon.002"
+  ],
+  "evaluated_materials": [
+    "flat.nodes"
+  ],
+  "evaluated_material_faces": {
+    "flat.nodes": 736762
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {
+    "outer": 1,
+    "inner": 0.45,
+    "color": [
+      0.8,
+      0.8,
+      0.8,
+      1
+    ]
+  },
+  "authored_light_scale": 1.0,
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}
