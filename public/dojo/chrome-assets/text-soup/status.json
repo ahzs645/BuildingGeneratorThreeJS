@@ -1,9 +1,23 @@
 {
   "object": "TEXT SOUP",
   "root": "CHROME text.001",
-  "status": "exact",
+  "status": "exact-sweep-and-authored-material-near-parity",
   "fontSubstitution": "The source references nine missing 1CamBam Stick fonts. Validation replaces them with the supplied Pixels Medium TTF in both Blender and GN-VM, with embedded outlines as the browser fallback.",
   "blender": { "verts": 11971, "faces": 11199 },
   "gnvm": { "verts": 11971, "faces": 11199 },
-  "validation": "All five Blender sweep cases now match exactly in vertices, faces, and four-decimal bounds: authored 11,971 / 11,199, NODE DOJO 13,242 / 12,432, peak height 11,971 / 11,199, line thickness 9,591 / 8,855, and subdivide 12 at 3,971 / 3,548. The guide follows Blender 5.1's float32 Poly tangent calculation, minimum-twist normal transport, full-precision tilt, independent normal resampling, and left-associated quaternion multiplication. All 56 aligned guide-quaternion components are bit-exact. Re-extracting the supplied Pixels Medium TTF without seven-decimal atlas rounding makes all 792 centered-glyph and realized proximity-target coordinate components bit-exact while retaining the established touching-cell contour topology."
+  "validation": "All five Blender sweep cases match exactly in vertices, faces, and four-decimal bounds: authored 11,971 / 11,199, NODE DOJO 13,242 / 12,432, peak height 11,971 / 11,199, line thickness 9,591 / 8,855, and subdivide 12 at 3,971 / 3,548. The guide follows Blender 5.1's float32 Poly tangent calculation, minimum-twist normal transport, full-precision tilt, independent normal resampling, and left-associated quaternion multiplication. All 56 aligned guide-quaternion components are bit-exact. Re-extracting the supplied Pixels Medium TTF without seven-decimal atlas rounding makes all 792 centered-glyph and realized proximity-target coordinate components bit-exact while retaining the established touching-cell contour topology. The matched-font authored capture restores chrome.002 against Blender's bundled studio.exr and uses surface-only camera bounds. Its full viewport comparison reaches 0.841792 silhouette IoU; the residual is dominated by the browser's intentional 156-segment guide-wire overlay, absent from Blender's isolated render, plus Eevee-versus-Three reflection and raster differences.",
+  "materialParity": {
+    "status": "material-semantics-exact-renderer-near-parity",
+    "material": "chrome.002",
+    "roughAttribute": "missing values resolve to zero, producing the authored polished metal",
+    "environment": "Blender bundled CC0 studio.exr at 0.8 strength",
+    "evidence": {
+      "blenderReference": "public/dojo/references/chrome-assets/text-soup-authored.png",
+      "webglCapture": "public/dojo/references/chrome-assets/text-soup-authored-webgl.png",
+      "comparison": "public/dojo/references/chrome-assets/text-soup-authored-comparison.json",
+      "surfaceMaskIou": 0.8417919965988202,
+      "pixelLuminanceMae": 0.11314007838355486,
+      "macroLuminanceMae": 0.09136046106475332
+    }
+  }
 }

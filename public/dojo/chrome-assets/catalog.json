@@ -378,8 +378,12 @@
     "dump": "dojo/chrome-assets/text-soup/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/text-soup.png",
+    "authoredReference": "dojo/references/chrome-assets/text-soup-authored.png",
     "blenderStats": { "verts": 11971, "faces": 11199 },
-    "note": "All five supplied Pixels Medium comparisons now match Blender exactly in vertices, faces, and rounded bounds, including the authored 11,971 / 11,199 result, edited NODE DOJO at 13,242 / 12,432, peak height, line thickness, and subdivision controls. Blender-exact Poly frames and left-associated quaternion multiplication preserve the guide rotations, while full-precision atlas extraction preserves every realized proximity-target coordinate without changing the touching-cell contour topology. The original nine 1CamBam Stick fonts are missing from the pack, so both Blender and the browser use the supplied Pixels Medium TTF.",
+    "localSpace": true,
+    "surfaceBounds": true,
+    "authoredEnvironmentIntensity": 0.8,
+    "note": "All five supplied Pixels Medium comparisons match Blender exactly in vertices, faces, and rounded bounds, including the authored 11,971 / 11,199 result, edited NODE DOJO at 13,242 / 12,432, peak height, line thickness, and subdivision controls. Authored mode restores the polished chrome.002 graph with Blender's bundled studio environment and frames only the exact mesh surface. The browser also displays the retained 156-segment guide curve as a viewport aid; Blender's isolated material render omits that un-beveled wire. The original nine 1CamBam Stick fonts are missing from the pack, so both Blender and the browser use the supplied Pixels Medium TTF.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",
