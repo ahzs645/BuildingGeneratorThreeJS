@@ -729,8 +729,11 @@
     "dump": "dojo/n03d/hollow-magnet-foot/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/hollow-magnet-foot.png",
+    "authoredReference": "dojo/references/n03d/hollow-magnet-foot-authored.png",
+    "authoredLightScale": 720,
+    "authoredToneMapping": "none",
     "blenderStats": { "verts": 1268, "faces": 1158 },
-    "note": "Exact 1,268 / 1,158 topology with local bounds within 0.0001 units. The saved Selection input does not alter Blender's output, so this asset is shown without a non-functional control. Its 20 mm-scale reference is rendered in local space for a useful comparison.",
+    "note": "Exact 1,268 / 1,158 topology with local bounds within 0.0001 units. The saved Selection input does not alter Blender's output, so this asset is shown without a non-functional control. Blender assigns no material to any of the 1,158 faces: authored mode therefore reconstructs Blender's neutral linear-0.8, roughness-0.5 fallback rather than a filament or G-code surface. The committed aligned comparison reaches 0.9966 silhouette IoU and 0.0138 pixel RGB MAE.",
     "controls": []
   },
   {

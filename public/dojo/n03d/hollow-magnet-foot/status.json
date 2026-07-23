@@ -2,9 +2,17 @@
   "id": "n03d-hollow-magnet-foot",
   "object": "feet hollow magnet.001",
   "root": "feet hollow",
-  "status": "exact-topology-parity",
+  "status": "exact-geometry-and-authored-unassigned-surface-verified",
   "blender": { "verts": 1268, "faces": 1158 },
   "gnvm": { "verts": 1268, "faces": 1158 },
   "coverage": "100% of reachable node types across the 2-group, 18-node closure.",
-  "validation": "Authored and Selection-enabled Blender/VM cases have exact topology and local bounds within 0.0001 units. The supplied Selection socket does not change Blender's evaluated result, so the library entry intentionally exposes no misleading control."
+  "validation": "Authored and Selection-enabled Blender/VM cases have exact topology and local bounds within 0.0001 units. The supplied Selection socket does not change Blender's evaluated result, so the library entry intentionally exposes no misleading control.",
+  "material": {
+    "name": null,
+    "contract": "Blender unassigned neutral surface: linear 0.8 base color, metalness 0, roughness 0.5",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.996550760897288,
+    "pixelRgbMae": 0.013801353672686197,
+    "residual": "Blender clips the neutral object essentially pure white; Three.js retains a small dark edge/backface rim."
+  }
 }

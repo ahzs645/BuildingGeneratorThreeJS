@@ -1,0 +1,38 @@
+{
+  "object": "feet hollow magnet.001",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      113.1090087890625,
+      -308.81793212890625,
+      -72.0267333984375
+    ],
+    "max": [
+      113.12872314453125,
+      -308.7982177734375,
+      -72.02178955078125
+    ]
+  },
+  "verts": 1268,
+  "faces": 1158,
+  "materials": [
+    null
+  ],
+  "evaluated_materials": [
+    null
+  ],
+  "evaluated_material_faces": {
+    "<none>": 1158
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 30.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}
