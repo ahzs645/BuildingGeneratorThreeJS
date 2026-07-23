@@ -1,0 +1,39 @@
+{
+  "object": "Pill Hole_counter sunk",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      106.7178955078125,
+      210.52590942382812,
+      -1.0000019073486328
+    ],
+    "max": [
+      114.7178955078125,
+      232.34567260742188,
+      3.000001907348633
+    ]
+  },
+  "verts": 336,
+  "faces": 362,
+  "materials": [
+    "filament.yellow"
+  ],
+  "evaluated_materials": [
+    null,
+    "Filament PLA .02 mm layer height"
+  ],
+  "evaluated_material_faces": {
+    "Filament PLA .02 mm layer height": 362
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 30.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

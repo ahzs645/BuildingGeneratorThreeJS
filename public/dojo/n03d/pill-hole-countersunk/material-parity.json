@@ -1,0 +1,66 @@
+{
+  "asset": "n03d-pill-hole-countersunk",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "Pill Hole_counter sunk",
+    "root": "pill hole countersunk",
+    "material": "Filament PLA .02 mm layer height"
+  },
+  "scope": "Viewport surface reconstruction only. The Wave/Bump layer appearance does not alter geometry and is not a slicer or G-code toolpath.",
+  "geometry": {
+    "blender": { "verts": 336, "faces": 362 },
+    "gnvm": { "verts": 336, "faces": 362 },
+    "materialFaces": 362,
+    "validationCases": 6
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "world",
+    "blenderReference": "../../references/n03d/pill-hole-countersunk-authored.png",
+    "blenderMetadata": "../../references/n03d/pill-hole-countersunk-authored.json",
+    "browserReference": "../../references/n03d/pill-hole-countersunk-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-pill-hole-countersunk&capture=authored",
+    "blenderAuthoredLightScale": 30,
+    "browserAuthoredLightScale": 45,
+    "browserToneMapping": "none",
+    "lightScaleInterpretation": "Blender Area energy and Three.js RectAreaLight intensity are renderer-specific units. Direct Standard-like browser output preserves the authored neutral filament instead of applying ACES."
+  },
+  "recoveredGraph": {
+    "color": {
+      "domain": "POINT",
+      "attribute": "col",
+      "uniqueLinearValue": [0.800000011920929, 0.800000011920929, 0.800000011920929]
+    },
+    "roughness": 0.7732919454574585,
+    "generatedCoordinates": "current filament material-group bounding box",
+    "wave": {
+      "type": "BANDS",
+      "direction": "Z",
+      "scale": -56.31793212890625,
+      "distortion": 0.8557739853858948,
+      "detail": 2,
+      "detailScale": 1,
+      "detailRoughness": 0.5
+    },
+    "bump": {
+      "strength": 0.7392045855522156,
+      "distance": 0.9663976430892944,
+      "filterWidth": 1,
+      "invert": false
+    }
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9943862337792141,
+    "surfaceCornerRmsePixels": 0.3447002223315325,
+    "pixelRgbMae": 0.058389919847420146,
+    "pixelLuminanceMae": 0.05917206680352357,
+    "macroLuminanceMae": 0.07042580555150797,
+    "macroLuminanceCorrelation": 0.6111251856180796,
+    "blenderMeanLuminance": 0.986291401054039,
+    "browserMeanLuminance": 0.9381726844379963,
+    "meanLuminanceDelta": -0.04811871661604272
+  },
+  "interpretation": "The shared filament implementation renders the exact tapered countersunk cutter with its authored neutral col field and layer-height bump. Silhouette alignment is near-identical and the browser avoids the previous generic fallback. Blender's contrast look clips the bright surface closer to white, while Three.js retains more authored bump detail; the measured residual is renderer-side rather than a geometry or material-assignment mismatch."
+}

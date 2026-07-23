@@ -2,9 +2,17 @@
   "id": "n03d-pill-hole-countersunk",
   "object": "Pill Hole_counter sunk",
   "root": "pill hole countersunk",
-  "status": "exact-parity",
+  "status": "exact-geometry-and-authored-filament-verified",
   "blender": { "verts": 336, "faces": 362 },
   "gnvm": { "verts": 336, "faces": 362 },
   "coverage": "100% of reachable node types across the 3-group, 45-node closure.",
-  "validation": "Six Blender/VM cases cover both diameters, head height, shaft depth, and hull resolution. Every case has exact Blender topology and local bounds. A strict double-precision tapered hull retains the tiny authored Z offsets and Blender's cap/triangle/quad grouping."
+  "validation": "Six Blender/VM cases cover both diameters, head height, shaft depth, and hull resolution. Every case has exact Blender topology and local bounds. A strict double-precision tapered hull retains the tiny authored Z offsets and Blender's cap/triangle/quad grouping.",
+  "material": {
+    "name": "Filament PLA .02 mm layer height",
+    "contract": "constant POINT col + Generated Z-band Wave + derivative Bump + Backfacing branch",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.9943862337792141,
+    "pixelRgbMae": 0.058389919847420146,
+    "residual": "Blender's contrast look clips the bright surface closer to white; Three.js retains more bump detail."
+  }
 }
