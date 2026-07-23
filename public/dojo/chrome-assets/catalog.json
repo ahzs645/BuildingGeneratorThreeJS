@@ -509,11 +509,11 @@
     "reference": "dojo/references/chrome-assets/3d-chrome-crayon-generator.png",
     "authoredReference": "dojo/references/chrome-assets/3d-chrome-crayon-generator-authored.png",
     "localSpace": true,
-    "surfaceBounds": false,
+    "boundsMode": "mesh",
     "authoredHideLines": true,
     "authoredToneMapping": "none",
     "blenderStats": { "verts": 161722, "faces": 88994 },
-    "note": "Exact Blender geometry across all six recovered-Pixels.ttf reference cases: both engines produce 161,722 vertices / 88,994 faces with matching rounded local bounds. Object Info preserves the As Instance branch, Mesh to Curve retains attached-loop closing edges by repeating their branch pole, and VM-private font sampling metadata no longer crosses Realize Instances to trigger a second glyph dissolve. Authored mode preserves flat.nodes, the exact 158,950 black / 2,772 gray col values, and the unit power field on all 105,172 surface vertices without tone mapping. Surface comparison now hides the 2,797 non-rendering guide segments but preserves their evaluated bounds for Blender-equivalent framing, raising mask IoU from 0.0289 to 0.207180 and reducing corner RMSE from 151.9 to 8.89 pixels. The guide remains available through the interactive control; the remaining low overlap is a genuine flat.nodes renderer and vertical-frame residual.",
+    "note": "Exact Blender geometry across all six recovered-Pixels.ttf reference cases: both engines produce 161,722 vertices / 88,994 faces with matching rounded local bounds. Object Info preserves the As Instance branch, Mesh to Curve retains attached-loop closing edges by repeating their branch pole, and VM-private font sampling metadata no longer crosses Realize Instances to trigger a second glyph dissolve. Authored mode preserves flat.nodes, the exact 158,950 black / 2,772 gray col values, and the unit power field on all 105,172 surface vertices without tone mapping. Surface comparison hides the 2,797 non-rendering guide segments while mesh-bounds framing retains Blender's unreferenced evaluated mesh vertices and excludes the separate Z=55 guide. The refreshed capture reaches 0.920131 mask IoU, 0.0937-pixel corner RMSE, and 0.991061 macro luminance correlation. The guide remains available through the interactive control; the remaining difference is flat.nodes color interpolation/output and raster coverage.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

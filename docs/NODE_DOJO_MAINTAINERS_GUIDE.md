@@ -650,6 +650,12 @@ bit-identical or every source dependency exists.
   0.386-pixel corner RMSE. Its exact 156-segment guide remains available through
   the viewport control; remaining differences are reflection/raster filtering,
   and the original nine fonts are missing.
+- 3D Chrome Crayon Generator geometry is exact across all six recovered-font
+  cases. Its `mesh` framing mode retains Blender's unreferenced evaluated mesh
+  vertices while excluding the separate loose guide, reaching 0.920131
+  silhouette IoU, 0.0937-pixel corner RMSE, and 0.991061 macro luminance
+  correlation. The remaining residual is `flat.nodes` color interpolation and
+  raster coverage.
 - Nodes Node UI assets retain small glyph-position and Workbench
   lighting/cavity differences despite topology-and-bounds closure.
 - Hat bill/front exact material parity is blocked by seven missing external

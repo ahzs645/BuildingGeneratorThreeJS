@@ -32,6 +32,9 @@ test("frames rotated geometry from transformed vertices instead of inflated AABB
   assert.ok(conservative.getSize(new THREE.Vector3()).length() > precise.getSize(new THREE.Vector3()).length());
 
   const surface = preciseObjectBounds(mesh, true);
+  const meshBounds = preciseObjectBounds(mesh, "mesh");
+  assert.deepEqual(meshBounds.min.toArray(), precise.min.toArray());
+  assert.deepEqual(meshBounds.max.toArray(), precise.max.toArray());
   assert.ok(precise.containsBox(surface));
   assert.notDeepEqual(surface.getSize(new THREE.Vector3()).toArray(), precise.getSize(new THREE.Vector3()).toArray());
   geometry.dispose();
@@ -58,6 +61,8 @@ test("can frame hidden loose curves while surface-only bounds ignore them", () =
 
   assert.deepEqual(preciseObjectBounds(mesh).min.toArray(), [-5, -1, 0]);
   assert.deepEqual(preciseObjectBounds(mesh).max.toArray(), [5, 1, 0]);
+  assert.deepEqual(preciseObjectBounds(mesh, "mesh").min.toArray(), [-1, -1, 0]);
+  assert.deepEqual(preciseObjectBounds(mesh, "mesh").max.toArray(), [1, 1, 0]);
   assert.deepEqual(preciseObjectBounds(mesh, true).min.toArray(), [-1, -1, 0]);
   assert.deepEqual(preciseObjectBounds(mesh, true).max.toArray(), [1, 1, 0]);
 
