@@ -38,7 +38,7 @@ type VectorControl = { type: "vector"; name: string; label: string; value: [numb
 type SelectControl = { type: "select"; name: string; label: string; value: number | string; options: { label: string; value: number | string }[] };
 type Control = RangeControl | CheckboxControl | TextControl | VectorControl | SelectControl;
 type AssetFont = { url: string; family: string; requiredFor: string; fallback: string };
-type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; rotationOrder?: THREE.EulerOrder; surfaceBounds?: boolean; authoredHideLines?: boolean; authoredPreviewLabel?: string; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; attributeEmissionColorRemaps?: { from: [number, number, number]; to: [number, number, number] }[]; authoredLightScale?: number; authoredFillIntensityScale?: number; authoredEnvironmentIntensity?: number; authoredToneMapping?: "none"; controls: Control[] };
+type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; rotationOrder?: THREE.EulerOrder; surfaceBounds?: boolean; authoredHideLines?: boolean; authoredPreviewLabel?: string; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; attributeEmissionColorRemaps?: { from: [number, number, number]; to: [number, number, number] }[]; authoredLightScale?: number; authoredFillIntensityScale?: number; authoredEnvironmentIntensity?: number; authoredEnvironmentRotation?: number; authoredToneMapping?: "none"; controls: Control[] };
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
@@ -57,8 +57,13 @@ const stipplerDebugMode = ({ generated: 1, threshold: 2, distance: 3 } as Record
 const requestedLightScale = Number(query.get("lightScale"));
 const captureLightScale = Number.isFinite(requestedLightScale) && requestedLightScale > 0 ? requestedLightScale : null;
 const requestedEnvironmentIntensity = Number(query.get("environmentIntensity"));
-const captureEnvironmentIntensity = Number.isFinite(requestedEnvironmentIntensity) && requestedEnvironmentIntensity >= 0
+const captureEnvironmentIntensity = query.has("environmentIntensity")
+  && Number.isFinite(requestedEnvironmentIntensity) && requestedEnvironmentIntensity >= 0
   ? requestedEnvironmentIntensity
+  : null;
+const requestedEnvironmentRotation = Number(query.get("environmentRotation"));
+const captureEnvironmentRotation = query.has("environmentRotation") && Number.isFinite(requestedEnvironmentRotation)
+  ? requestedEnvironmentRotation
   : null;
 const select = document.querySelector<HTMLSelectElement>("#assets-select")!;
 const controlsHost = document.querySelector<HTMLElement>("#assets-controls")!;
@@ -291,7 +296,7 @@ async function prepareAuthoredEnvironment(asset: Asset): Promise<void> {
   scene.environment = environment;
   scene.environmentIntensity = captureEnvironmentIntensity ?? asset.authoredEnvironmentIntensity ?? 0.8;
   // Blender and Three use different equirectangular zero-longitude conventions.
-  scene.environmentRotation.set(0, Math.PI, 0);
+  scene.environmentRotation.set(0, captureEnvironmentRotation ?? asset.authoredEnvironmentRotation ?? Math.PI, 0);
 }
 async function evaluate(): Promise<void> {
   const id = ++requestId;

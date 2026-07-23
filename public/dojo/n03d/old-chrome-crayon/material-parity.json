@@ -1,0 +1,82 @@
+{
+  "asset": "n03d-old-chrome-crayon",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "CHROME CRAYON OBJECT",
+    "root": "CHROME CRAYON 3D",
+    "evaluatedMaterial": "chrome.001"
+  },
+  "scope": "Exact evaluated topology, near-identical local positions and normals, and authored Blender viewport material parity.",
+  "geometry": {
+    "blender": {
+      "verts": 71755,
+      "faces": 71104,
+      "triangles": 142203
+    },
+    "gnvm": {
+      "verts": 71755,
+      "faces": 71104,
+      "triangles": 142203
+    },
+    "triangleIndexMismatches": 0,
+    "maximumIndexedPositionDistance": 5.803403743581567e-7,
+    "meanIndexedPositionDistance": 4.738362180312554e-7,
+    "normalAngularErrorDegrees": {
+      "mean": 0.00011714950715227027,
+      "maximum": 0.01154102378522467,
+      "overOneDegree": 0,
+      "oppositeHemisphere": 0
+    },
+    "surfaceComparison": "Blender evaluation exported with tools/export_blender_evaluated_mesh.py and checked with tools/mesh-surface-diff.ts --local",
+    "normalComparison": "Blender evaluated vertex normals exported by tools/export_blender_evaluated_mesh.py and compared by identical vertex index to GN-VM TriSoup normals"
+  },
+  "material": {
+    "name": "chrome.001",
+    "faces": 71104,
+    "graph": "Direct Principled BSDF to active Material Output",
+    "baseColor": [0.800000011920929, 0.800000011920929, 0.800000011920929],
+    "metallic": 1.0,
+    "roughness": 0.0,
+    "ior": 1.5,
+    "emissionStrength": 0.0,
+    "linkedInputs": [],
+    "browserImplementation": "Generic makeBasicBlenderMaterial constant-Principled path; no asset-specific shader is used."
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../../references/n03d/old-chrome-crayon-shader.png",
+    "blenderMetadata": "../../references/n03d/old-chrome-crayon-shader.json",
+    "browserReference": "../../references/n03d/old-chrome-crayon-shader-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-old-chrome-crayon&capture=authored",
+    "blenderAuthoredLightScale": 1.0,
+    "browserAuthoredLightScale": 0.8,
+    "blenderStudioEnvironmentStrength": 0.8,
+    "browserStudioEnvironmentIntensity": 0.8,
+    "browserStudioEnvironmentRotationRadians": -1.5707963267948966,
+    "rotationInterpretation": "The per-asset longitude compensates for Blender/Three environment parameterization on this reflective local-space surface. It does not rotate or alter the generated mesh.",
+    "browserCaptureMethod": "direct 768x768 WebGL canvas buffer"
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9944371288059982,
+    "surfaceMaskIouDilated1px": 0.9944898497231742,
+    "blenderSurfaceCoveredWithin1px": 1.0,
+    "webglSurfaceCoveredWithin1px": 1.0,
+    "surfaceCornerRmsePixels": 0.6123729033991275,
+    "pixelRgbMae": 0.03431464573262011,
+    "pixelLuminanceMae": 0.0309740480298894,
+    "pixelLuminanceCorrelation": 0.6249819544344839,
+    "macroLuminanceMae": 0.024002984471658183,
+    "macroLuminanceCorrelation": 0.6745624754040481,
+    "blackFractionDelta": -0.04112656498518774,
+    "meanLuminanceDelta": 0.0015960420264852435,
+    "meanRgbDelta": [
+      0.00471613066779445,
+      0.00063941158376078,
+      -0.010536010456357292
+    ]
+  },
+  "interpretation": "All evaluated faces use the recovered polished chrome.001 Principled surface. Exact triangle indices, sub-micro-unit indexed position error, and sub-0.012-degree maximum normal error isolate the remaining image difference to Eevee/WebGL PBR and environment-filtering behavior. The measured studio calibration matches mean exposure within 0.0016 and retains positive broad-scale reflection correlation without changing geometry."
+}

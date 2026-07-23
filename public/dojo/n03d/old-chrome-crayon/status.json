@@ -2,11 +2,33 @@
   "id": "n03d-old-chrome-crayon",
   "object": "CHROME CRAYON OBJECT",
   "root": "CHROME CRAYON 3D",
-  "status": "authored-exact",
+  "status": "exact-topology-and-authored-chrome-verified",
   "blender": { "verts": 71755, "faces": 71104, "bbox_size": [0.6543445, 0.5509799, 0.0388659] },
   "gnvm": { "verts": 71755, "faces": 71104, "bbox_size": [0.6543445, 0.5509799, 0.0388659] },
   "parameter_case": { "overrides": { "Line Thiccness": 0.8 }, "blender": { "verts": 51434, "faces": 50810 }, "gnvm": { "verts": 51433, "faces": 50810 } },
   "coverage": "100% of all reachable node types across 9 groups and 250 nodes.",
   "reference": "dojo/references/n03d/old-chrome-crayon.png",
-  "validation": "The authored case matches Blender's 71,755 / 71,104 topology and four-decimal local bounds exactly after running all 1,111 authored Blur Attribute iterations. A second line-thickness case also matches Blender's four-decimal bounds and every face, with one fewer browser vertex. Authored browser evaluation takes about 16 seconds."
+  "authored_reference": "dojo/references/n03d/old-chrome-crayon-shader.png",
+  "validation": "The authored case matches Blender's 71,755 / 71,104 topology and four-decimal local bounds exactly after running all 1,111 authored Blur Attribute iterations. Blender and GN-VM also share all 142,203 triangle indices in the same order; indexed positions differ by at most 0.000000581 units. A second line-thickness case matches Blender's four-decimal bounds and every face, with one fewer browser vertex.",
+  "surface_validation": {
+    "blender": { "verts": 71755, "faces": 71104, "triangles": 142203 },
+    "gnvm": { "verts": 71755, "faces": 71104, "triangles": 142203 },
+    "triangleIndexMismatches": 0,
+    "maximumIndexedPositionDistance": 5.803403743581567e-7,
+    "meanIndexedPositionDistance": 4.738362180312554e-7,
+    "normalMeanAngularErrorDegrees": 0.00011714950715227027,
+    "normalMaximumAngularErrorDegrees": 0.01154102378522467,
+    "method": "Indexed Blender/GN-VM comparison using tools/export_blender_evaluated_mesh.py, followed by tools/mesh-surface-diff.ts --local"
+  },
+  "material": {
+    "name": "chrome.001",
+    "faces": 71104,
+    "contract": "Direct constant Principled: linear RGB 0.8, metallic 1, roughness 0, IOR 1.5, no emission and no linked inputs",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.9944371288059982,
+    "pixelRgbMae": 0.03431464573262011,
+    "macroLuminanceCorrelation": 0.6745624754040481,
+    "meanLuminanceDelta": 0.0015960420264852435,
+    "residual": "The measured studio longitude and intensity align broad reflection placement and mean exposure. Eevee and WebGL retain local PBR and environment-filter differences; pixel identity is not claimed."
+  }
 }

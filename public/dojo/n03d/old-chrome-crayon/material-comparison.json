@@ -1,0 +1,76 @@
+{
+  "captures": {
+    "blender": "old-chrome-crayon-shader.png",
+    "webgl": "old-chrome-crayon-shader-webgl.png",
+    "resolution": [
+      768,
+      768
+    ],
+    "alignment": "same square orthographic camera direction and 1.45 framing scale",
+    "webgl_background_key": "#ff00ff"
+  },
+  "blender": {
+    "surface_pixels": 74008,
+    "black_pixels": 65020,
+    "white_pixels": 0,
+    "gray_pixels": 8988,
+    "black_fraction": 0.8785536698735272,
+    "white_fraction": 0.0,
+    "gray_fraction": 0.12144633012647281,
+    "mean_luminance": 0.036264173902461144
+  },
+  "webgl": {
+    "surface_pixels": 74422,
+    "black_pixels": 62323,
+    "white_pixels": 0,
+    "gray_pixels": 12099,
+    "black_fraction": 0.8374271048883395,
+    "white_fraction": 0.0,
+    "gray_fraction": 0.16257289511166054,
+    "mean_luminance": 0.03786021592894639
+  },
+  "comparison": {
+    "surface_mask_iou": 0.9944371288059982,
+    "surface_mask_iou_dilated_1px": 0.9944898497231742,
+    "blender_surface_covered_within_1px_fraction": 1.0,
+    "webgl_surface_covered_within_1px_fraction": 1.0,
+    "surface_corners": {
+      "blender": {
+        "left": [166.63636363636363, 428.5],
+        "right": [664.3846153846154, 349.5],
+        "bottom": [342.7951807228916, 261.5903614457831],
+        "top": [323.9, 474.4]
+      },
+      "webgl": {
+        "left": [166.6153846153846, 428.5],
+        "right": [665.2777777777778, 349.0],
+        "bottom": [342.66129032258067, 260.66129032258067],
+        "top": [324.9344262295082, 474.42622950819674]
+      }
+    },
+    "surface_corner_deltas_webgl_minus_blender": {
+      "left": [-0.02097902097901283, 0.0],
+      "right": [0.8931623931624699, -0.5],
+      "bottom": [-0.1338904003109178, -0.9290711232024478],
+      "top": [1.034426229508199, 0.026229508196763618]
+    },
+    "surface_corner_rmse_pixels": 0.6123729033991275,
+    "intersection_pixels": 74008,
+    "pixel_rgb_mae": 0.03431464573262011,
+    "mean_rgb_delta": [
+      0.00471613066779445,
+      0.00063941158376078,
+      -0.010536010456357292
+    ],
+    "pixel_luminance_mae": 0.0309740480298894,
+    "pixel_luminance_correlation": 0.6249819544344839,
+    "binary_mask_disagreement_fraction": 0.0,
+    "macro_block_size": 32,
+    "macro_block_count": 89,
+    "macro_luminance_mae": 0.024002984471658183,
+    "macro_luminance_correlation": 0.6745624754040481,
+    "black_fraction_delta": -0.04112656498518774,
+    "mean_luminance_delta": 0.0015960420264852435
+  },
+  "interpretation": "The exact topology and near-identical normals align the reflective silhouette. A measured studio longitude and exposure align broad reflection placement and mean brightness; local Eevee/WebGL PBR and environment-filtering differences remain visible and are quantified rather than claimed pixel-exact."
+}

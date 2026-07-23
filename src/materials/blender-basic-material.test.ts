@@ -174,6 +174,30 @@ test("reconstructs 3D Chrome Grill Crayon's direct Principled metal", () => {
   material?.dispose();
 });
 
+test("reconstructs Legacy 3D Chrome Crayon's polished chrome.001 surface", () => {
+  const dump = JSON.parse(readFileSync("public/dojo/n03d/old-chrome-crayon/dump.json", "utf8")) as Dump;
+  assert.deepEqual(extractBasicBlenderMaterialConfig(dump, "chrome.001"), {
+    kind: "principled",
+    baseColor: [0.800000011920929, 0.800000011920929, 0.800000011920929],
+    metalness: 1,
+    roughness: 0,
+    emissive: [1, 1, 1],
+    emissiveIntensity: 0,
+    opacity: 1,
+    ior: 1.5,
+    transmission: 0,
+    clearcoat: 0,
+    clearcoatRoughness: 0.029999999329447746,
+    linkedInputs: [],
+  });
+  const material = makeBasicBlenderMaterial(dump, "chrome.001");
+  assert.equal(material?.name, "chrome.001 · Blender principled constants");
+  assert.equal(material?.metalness, 1);
+  assert.equal(material?.roughness, 0);
+  assert.deepEqual(material?.color.toArray(), [0.800000011920929, 0.800000011920929, 0.800000011920929]);
+  material?.dispose();
+});
+
 test("renders Spikey Chain Link with Blender's unassigned default surface", async () => {
   const dump = JSON.parse(readFileSync("public/dojo/chrome-assets/chain-link-spikey/dump.json", "utf8")) as Dump;
   const result = await runGenerator(dump, { object: "spikey link" });

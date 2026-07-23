@@ -42,6 +42,19 @@ try:
         list(vertex.co if transform is None else transform @ vertex.co)
         for vertex in mesh.vertices
     ]
+    normal_transform = None if transform is None else transform.to_3x3().inverted().transposed()
+    vertex_normals = [
+        list(vertex.normal if normal_transform is None else (normal_transform @ vertex.normal).normalized())
+        for vertex in mesh.vertices
+    ]
+    corner_normals = [
+        list(
+            corner.vector
+            if normal_transform is None
+            else (normal_transform @ corner.vector).normalized()
+        )
+        for corner in mesh.corner_normals
+    ]
     faces = [list(polygon.vertices) for polygon in mesh.polygons]
     loop_triangles = [list(triangle.vertices) for triangle in mesh.loop_triangles]
     material_names = [material.name if material else None for material in mesh.materials]
@@ -55,6 +68,8 @@ try:
         "object": object_name,
         "space": "LOCAL" if local_space else "WORLD",
         "positions": positions,
+        "vertex_normals": vertex_normals,
+        "corner_normals": corner_normals,
         "faces": faces,
         "loop_triangles": loop_triangles,
         "face_materials": face_materials,

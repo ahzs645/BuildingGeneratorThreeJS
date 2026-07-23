@@ -290,12 +290,12 @@ function topPlanarSummary(label: string, mesh: TriMesh): void {
     });
   }
   const nonzero = nearTop.filter((tri) => tri.area > 1e-8);
-  const zMin = nonzero.length ? Math.min(...nonzero.map((tri) => tri.z)) : 0;
-  const zMax = nonzero.length ? Math.max(...nonzero.map((tri) => tri.z)) : 0;
-  const rMin = nonzero.length ? Math.min(...nonzero.map((tri) => tri.minRadius)) : 0;
-  const rMax = nonzero.length ? Math.max(...nonzero.map((tri) => tri.maxRadius)) : 0;
+  const zMin = nonzero.reduce((minimum, tri) => Math.min(minimum, tri.z), Infinity);
+  const zMax = nonzero.reduce((maximum, tri) => Math.max(maximum, tri.z), -Infinity);
+  const rMin = nonzero.reduce((minimum, tri) => Math.min(minimum, tri.minRadius), Infinity);
+  const rMax = nonzero.reduce((maximum, tri) => Math.max(maximum, tri.maxRadius), -Infinity);
   const area = nonzero.reduce((sum, tri) => sum + tri.area, 0);
-  console.log(`${label} planar top triangles=${nonzero.length} z=[${zMin.toFixed(3)},${zMax.toFixed(3)}] radius=[${rMin.toFixed(3)},${rMax.toFixed(3)}] area=${area.toFixed(3)}`);
+  console.log(`${label} planar top triangles=${nonzero.length} z=[${(nonzero.length ? zMin : 0).toFixed(3)},${(nonzero.length ? zMax : 0).toFixed(3)}] radius=[${(nonzero.length ? rMin : 0).toFixed(3)},${(nonzero.length ? rMax : 0).toFixed(3)}] area=${area.toFixed(3)}`);
 }
 
 function reportTriangleCentroids(label: string, mesh: TriMesh, triangleIds: number[], target: TriMesh, bvh: BvhNode): void {
