@@ -31,8 +31,23 @@ test("builds a scene-light-independent studio approximation with an explicit cav
     color: [0.8, 0.8, 0.8],
     cavityParity: false,
     sceneLightIndependent: true,
+    smoothShading: false,
+    lightingModel: "cube-calibrated lobes",
+    roughness: null,
     targetSrgbLuminance: { topAndLeft: 0.504, screenRight: 0.227 },
     label: "approximation",
   });
+  material.dispose();
+});
+
+test("can preserve Blender smooth vertex normals for curved Workbench assets", () => {
+  const material = makeWorkbenchApproximationMaterial([0.8, 0.8, 0.8], true);
+  assert.match(material.vertexShader, /workbenchViewNormal = normalize\(normalMatrix \* normal\)/);
+  assert.match(material.fragmentShader, /vec3 viewNormal = normalize\(workbenchViewNormal\)/);
+  assert.match(material.fragmentShader, /vec3\(-0\.854701, 0\.111111, 0\.507091\)/);
+  assert.match(material.fragmentShader, /workbenchWrappedLighting/);
+  assert.equal(material.userData.workbenchApproximation.smoothShading, true);
+  assert.equal(material.userData.workbenchApproximation.lightingModel, "Blender 5.1 studio.sl");
+  assert.equal(material.userData.workbenchApproximation.roughness, 0.4);
   material.dispose();
 });

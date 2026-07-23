@@ -888,8 +888,21 @@
     "reference": "dojo/references/joints/pipe-icon.png",
     "blenderStats": { "verts": 73062, "faces": 72486 },
     "localSpace": true,
-    "note": "Exact Blender topology and bit-for-bit matching local bounds for the fixed 2-group, 24-node five-way pipe icon. Blender marks all 24,162 source faces smooth with no sharp edges or split points, so the GN-VM point normals preserve its authored normal contract. The web comparison preserves all generated faces and material assignments.",
-    "controls": []
+    "workbenchColor": [0.8, 0.8, 0.8],
+    "note": "Exact Blender topology and bit-for-bit matching local bounds for the fixed 2-group, 24-node five-way pipe icon. Blender marks all 24,162 source faces smooth with no sharp edges or split points. The default display uses Blender 5.1's bundled studio.sl lighting and source roughness, reaching 0.9971 silhouette IoU and 0.6636 macro luminance correlation against the saved Workbench view (0.7655 against Blender with cavity/shadows disabled). Workbench cavity and screen-space shadows remain. The separate material option preserves the flat.nodes/toon outline.001 assignments as an approximation; the isolated Blender 5.1 authored render is fully transparent.",
+    "controls": [
+      {
+        "type": "select",
+        "name": "__materialPreview",
+        "label": "Blender display",
+        "value": "workbench",
+        "options": [
+          { "label": "Workbench smooth shading", "value": "workbench" },
+          { "label": "Authored assignment approximation", "value": "authored" },
+          { "label": "Geometry-only diagnostic", "value": "diagnostic" }
+        ]
+      }
+    ]
   },
   {
     "id": "n03d-endpoint-guide",

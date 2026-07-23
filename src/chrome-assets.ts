@@ -144,7 +144,9 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
   if(useAuthored&&soup.groups.length){
     for(const group of soup.groups){
       const materialName=group.material??(current.material==="chain-mace"?soup.groups.find((candidate)=>candidate.material)?.material:"")??"";
-      const authored=group.material === null
+      const authored=previewMode === "workbench"
+        ? makeWorkbenchApproximationMaterial(current.workbenchColor ?? [0.8, 0.8, 0.8], !(current.flatShading ?? false))
+        : group.material === null
         ? makeBlenderDefaultSurfaceMaterial()
         : shouldUseWorkbenchApproximation(current.workbenchColor,sourceMaterials,materialName)
         ? makeWorkbenchApproximationMaterial(current.workbenchColor)

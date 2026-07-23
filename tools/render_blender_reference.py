@@ -9,6 +9,8 @@ and ``NODE_DOJO_GN_ONLY=1`` to disable source modifiers after the first active
 Geometry Nodes modifier before adding the temporary realization pass.
 ``NODE_DOJO_AUTHORED_LIGHT_SCALE`` optionally multiplies the authored Area
 light powers for large or small assets while preserving the shared rig layout.
+For Workbench diagnostics, ``NODE_DOJO_WORKBENCH_SHADOWS=0`` and
+``NODE_DOJO_WORKBENCH_CAVITY=0`` isolate the bundled studio-light response.
 """
 import json
 import math
@@ -238,11 +240,13 @@ if authored_material:
     fill.location = center + Vector((2.0, 1.0, 1.0)).normalized() * radius * 2.0
     fill.rotation_euler = (center - fill.location).to_track_quat("-Z", "Y").to_euler()
 else:
+    workbench_shadows = os.environ.get("NODE_DOJO_WORKBENCH_SHADOWS", "1") != "0"
+    workbench_cavity = os.environ.get("NODE_DOJO_WORKBENCH_CAVITY", "1") != "0"
     scene.render.engine = "BLENDER_WORKBENCH"
     scene.display.shading.light = "STUDIO"
     scene.display.shading.color_type = "MATERIAL"
-    scene.display.shading.show_shadows = True
-    scene.display.shading.show_cavity = True
+    scene.display.shading.show_shadows = workbench_shadows
+    scene.display.shading.show_cavity = workbench_cavity
     scene.display.shading.cavity_type = "BOTH"
     scene.display.shading.show_specular_highlight = True
 scene.render.resolution_x = 768
@@ -270,6 +274,8 @@ if meta_path:
         "authored_material": authored_material,
         "geometry_nodes_only": gn_only,
         "authored_light_scale": authored_light_scale if authored_material else None,
+        "workbench_shadows": workbench_shadows if not authored_material else None,
+        "workbench_cavity": workbench_cavity if not authored_material else None,
         "debug_material_output": debug_material_output or None,
     }
     with open(meta_path, "w", encoding="utf-8") as handle:

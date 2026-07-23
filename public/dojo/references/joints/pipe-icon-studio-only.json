@@ -1,0 +1,36 @@
+{
+  "object": "pipe icon",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -42.222286224365234,
+      -42.949951171875,
+      -44.72629165649414
+    ],
+    "max": [
+      43.986083984375,
+      39.532432556152344,
+      37.01131057739258
+    ]
+  },
+  "verts": 73062,
+  "faces": 72486,
+  "materials": [
+    "toon outline.001"
+  ],
+  "evaluated_materials": [
+    "toon outline.001",
+    "flat.nodes"
+  ],
+  "evaluated_material_faces": {
+    "flat.nodes": 48324,
+    "toon outline.001": 24162
+  },
+  "engine": "BLENDER_WORKBENCH",
+  "authored_material": false,
+  "geometry_nodes_only": true,
+  "authored_light_scale": null,
+  "workbench_shadows": false,
+  "workbench_cavity": false,
+  "debug_material_output": null
+}

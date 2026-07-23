@@ -1,0 +1,73 @@
+{
+  "asset": "joint-pipe-icon",
+  "object": "pipe icon",
+  "blenderVersion": "5.1.2",
+  "geometry": {
+    "blender": {
+      "verts": 73062,
+      "faces": 72486
+    },
+    "gnvm": {
+      "verts": 73062,
+      "faces": 72486
+    },
+    "localBounds": "bit-for-bit equal",
+    "normalContract": "All 24,162 source faces are smooth, with no sharp edges or split point normals."
+  },
+  "sourceWorkbenchMaterial": {
+    "displayColor": [
+      0.800000011920929,
+      0.800000011920929,
+      0.800000011920929
+    ],
+    "metallic": 0,
+    "roughness": 0.4000000059604645,
+    "studioLight": "Default",
+    "specularHighlights": true
+  },
+  "browserWorkbench": {
+    "implementation": "Smooth evaluated point normals plus Blender 5.1 studio.sl directions, diffuse/specular colors, wrapped diffuse response, and roughness-aware specular response.",
+    "reference": "../../references/joints/pipe-icon-workbench-webgl.png",
+    "cavity": false,
+    "screenSpaceShadows": false
+  },
+  "comparisons": {
+    "savedWorkbenchReference": {
+      "blenderReference": "../../references/joints/pipe-icon.png",
+      "blenderEffects": {
+        "cavity": true,
+        "screenSpaceShadows": true
+      },
+      "surfaceMaskIoU": 0.997091631999411,
+      "surfaceCornerRmsePixels": 0.2366388482895841,
+      "pixelLuminanceMae": 0.09079122734245758,
+      "pixelLuminanceCorrelation": 0.6726388427046441,
+      "macroLuminanceMae": 0.09179254473648663,
+      "macroLuminanceCorrelation": 0.6636075415110106,
+      "meanLuminanceDelta": 0.0073431412354112435
+    },
+    "studioLightingOnly": {
+      "blenderReference": "../../references/joints/pipe-icon-studio-only.png",
+      "blenderMetadata": "../../references/joints/pipe-icon-studio-only.json",
+      "blenderEffects": {
+        "cavity": false,
+        "screenSpaceShadows": false
+      },
+      "surfaceMaskIoU": 0.997091631999411,
+      "surfaceCornerRmsePixels": 0.2366388482895841,
+      "pixelLuminanceMae": 0.07010845249579323,
+      "pixelLuminanceCorrelation": 0.7615663749882697,
+      "macroLuminanceMae": 0.0681482408709537,
+      "macroLuminanceCorrelation": 0.76553548718493,
+      "meanLuminanceDelta": -0.015354331322142145
+    }
+  },
+  "authoredMaterialDiagnostic": {
+    "evaluatedMaterialFaces": {
+      "flat.nodes": 48324,
+      "toon outline.001": 24162
+    },
+    "isolatedEeveeResult": "The supplied authored material renders fully transparent in Blender 5.1.2 under the isolated shared reference rig. The browser option is therefore labeled as an assignment approximation and is not used as the Blender visual reference."
+  },
+  "interpretation": "Geometry, framing, and the smooth-normal contract are exact. The browser now uses the source Workbench material values and Blender's actual bundled studio-light definition instead of a one-axis gray lobe. The saved Blender image also enables Workbench cavity and screen-space shadows, which remain the dominant visible residual and are not claimed as implemented."
+}

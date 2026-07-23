@@ -6,14 +6,18 @@ const baseUrl = process.argv[2] ?? "http://127.0.0.1:4173";
 const asset = process.argv[3];
 const output = process.argv[4];
 const lightScale = process.argv[5];
+const previewMode = process.argv[6];
 
 if (!asset || !output) {
   throw new Error(
-    "usage: node tools/capture_authored_asset.mjs BASE_URL ASSET_ID OUTPUT.png [LIGHT_SCALE]",
+    "usage: node tools/capture_authored_asset.mjs BASE_URL ASSET_ID OUTPUT.png [LIGHT_SCALE] [PREVIEW_MODE]",
   );
 }
 if (lightScale !== undefined && (!Number.isFinite(Number(lightScale)) || Number(lightScale) <= 0)) {
   throw new Error(`invalid light scale: ${lightScale}`);
+}
+if (previewMode !== undefined && !["authored", "diagnostic", "workbench", "materialx-native"].includes(previewMode)) {
+  throw new Error(`invalid preview mode: ${previewMode}`);
 }
 
 const executablePath = [
@@ -28,6 +32,7 @@ const route = new URL("/chrome-assets", baseUrl);
 route.searchParams.set("asset", asset);
 route.searchParams.set("capture", "authored");
 if (lightScale !== undefined) route.searchParams.set("lightScale", lightScale);
+if (previewMode !== undefined) route.searchParams.set("preview", previewMode);
 
 const browser = await puppeteer.launch({
   headless: true,
@@ -72,6 +77,7 @@ try {
     asset,
     output: resolvedOutput,
     lightScale: lightScale === undefined ? null : Number(lightScale),
+    previewMode: previewMode ?? "authored",
     ...result,
   })}`);
 } finally {
