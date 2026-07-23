@@ -505,8 +505,12 @@
     "dump": "dojo/chrome-assets/3d-chrome-crayon-generator/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/3d-chrome-crayon-generator.png",
+    "authoredReference": "dojo/references/chrome-assets/3d-chrome-crayon-generator-authored.png",
+    "localSpace": true,
+    "surfaceBounds": true,
+    "authoredToneMapping": "none",
     "blenderStats": { "verts": 161722, "faces": 88994 },
-    "note": "Exact Blender geometry across all six recovered-Pixels.ttf reference cases: both engines produce 161,722 vertices / 88,994 faces with matching rounded local bounds. Object Info preserves the As Instance branch, Mesh to Curve retains attached-loop closing edges by repeating their branch pole, and VM-private font sampling metadata no longer crosses Realize Instances to trigger a second glyph dissolve.",
+    "note": "Exact Blender geometry across all six recovered-Pixels.ttf reference cases: both engines produce 161,722 vertices / 88,994 faces with matching rounded local bounds. Object Info preserves the As Instance branch, Mesh to Curve retains attached-loop closing edges by repeating their branch pole, and VM-private font sampling metadata no longer crosses Realize Instances to trigger a second glyph dissolve. Authored mode preserves flat.nodes, the exact 158,950 black / 2,772 gray col values, and the unit power field on all 105,172 surface vertices without tone mapping. The browser additionally displays the graph's 2,797 un-beveled guide segments; Blender's isolated material render omits them, so the committed global capture comparison records that viewport-helper delta rather than claiming a surface-only pixel score.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

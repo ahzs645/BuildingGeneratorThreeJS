@@ -2,9 +2,9 @@
   "id": "3d-chrome-crayon-generator",
   "object": "3D CHROME CRAYON.002",
   "root": "3D CHROME CRAYON generator",
-  "status": "exact-geometry-parity",
+  "status": "exact-geometry-and-authored-material-with-viewport-helper-delta",
   "blender": { "verts": 161722, "faces": 88994 },
   "gnvm": { "verts": 161722, "faces": 88994 },
   "coverage": "100% of reachable node types; Object Info now preserves its As Instance component so the final wrapper switch matches Blender.",
-  "validation": "All six authored input cases match the recovered-Pixels.ttf Blender reference exactly at 161722 vertices, 88994 polygon faces, and rounded local bounds. Mesh to Curve preserves attached-loop closing edges by repeating their branch pole as Blender does. Realize Instances now excludes the VM-private __font_sample_stride marker, preventing a downstream Fill Curve from dissolving already-realized glyph samples a second time while retaining authored curve attributes."
+  "validation": "All six authored input cases match the recovered-Pixels.ttf Blender reference exactly at 161722 vertices, 88994 polygon faces, and rounded local bounds. Mesh to Curve preserves attached-loop closing edges by repeating their branch pole as Blender does. Realize Instances now excludes the VM-private __font_sample_stride marker, preventing a downstream Fill Curve from dissolving already-realized glyph samples a second time while retaining authored curve attributes. The complete 538,800-index surface uses flat.nodes. Browser evaluation preserves 158,950 black and 2,772 gray POINT-domain col values; all 105,172 vertices referenced by faces retain power=1, while 56,550 non-surface points retain power=0. The browser also exposes 3,226 curve points / 2,797 guide segments as a viewport aid. Blender's isolated authored render excludes un-beveled curves, so the global comparison's 0.0289 mask IoU is a documented helper-overlay mismatch, not a geometry or material-parity claim."
 }
