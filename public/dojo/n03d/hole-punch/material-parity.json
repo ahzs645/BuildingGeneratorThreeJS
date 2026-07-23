@@ -1,0 +1,66 @@
+{
+  "asset": "n03d-hole-punch",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "hole punch obj",
+    "root": "hole punch",
+    "material": "Filament PLA .02 mm layer height"
+  },
+  "scope": "Viewport surface reconstruction only. The Wave/Bump layer appearance changes rendered normals but not mesh vertices; it is not a slicer or G-code toolpath.",
+  "geometry": {
+    "blender": { "verts": 153, "faces": 104 },
+    "gnvm": { "verts": 153, "faces": 104 },
+    "materialFaces": 104,
+    "validationCases": 6
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "world",
+    "blenderReference": "../../references/n03d/hole-punch-authored.png",
+    "blenderMetadata": "../../references/n03d/hole-punch-authored.json",
+    "browserReference": "../../references/n03d/hole-punch-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-hole-punch&capture=authored",
+    "blenderAuthoredLightScale": 30,
+    "browserAuthoredLightScale": 720,
+    "browserToneMapping": "none",
+    "lightScaleInterpretation": "Blender Area energy and Three.js RectAreaLight intensity are renderer-specific units. Blender's Medium High Contrast look clips this neutral filament almost entirely white. Increasing the browser light from 45 through 180 to 720 established an exposure ceiling: the remaining dark lines come from derivative bump filtering, not insufficient light."
+  },
+  "recoveredGraph": {
+    "color": {
+      "domain": "POINT",
+      "attribute": "col",
+      "uniqueLinearValue": [0.800000011920929, 0.800000011920929, 0.800000011920929]
+    },
+    "roughness": 0.7732919454574585,
+    "generatedCoordinates": "current filament material-group bounding box",
+    "wave": {
+      "type": "BANDS",
+      "direction": "Z",
+      "scale": -56.31793212890625,
+      "distortion": 0.8557739853858948,
+      "detail": 2,
+      "detailScale": 1,
+      "detailRoughness": 0.5
+    },
+    "bump": {
+      "strength": 0.7392045855522156,
+      "distance": 0.9663976430892944,
+      "filterWidth": 1,
+      "invert": false
+    }
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9950570215042975,
+    "surfaceCornerRmsePixels": 0.600029086979827,
+    "pixelRgbMae": 0.20587280079086206,
+    "pixelLuminanceMae": 0.2066459998183071,
+    "macroLuminanceMae": 0.21194401524560857,
+    "macroLuminanceCorrelation": 0.22043800161445917,
+    "blenderMeanLuminance": 0.9999491239835943,
+    "browserMeanLuminance": 0.7917149746187115,
+    "meanLuminanceDelta": -0.20823414936488271
+  },
+  "interpretation": "The authored geometry, material assignment, col field, and shared filament graph are recovered, and the aligned silhouette is near-identical. Blender's contrast transform clips 99.98% of the surface pixels white, while the WebGL derivative bump retains dark subpixel bands even after a 16x-to-64x exposure sweep. This measured material raster residual is documented rather than treated as mesh or G-code geometry."
+}

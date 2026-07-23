@@ -708,8 +708,11 @@
     "dump": "dojo/n03d/hole-punch/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/hole-punch.png",
+    "authoredReference": "dojo/references/n03d/hole-punch-authored.png",
+    "authoredLightScale": 720,
+    "authoredToneMapping": "none",
     "blenderStats": { "verts": 153, "faces": 104 },
-    "note": "Exact Blender parity across all six validation cases: authored 153 / 104 topology and bounds match, as do manual/curve length, head and shaft dimensions, and the 32-segment resolution case.",
+    "note": "Exact Blender topology and bounds across all six validation cases: authored 153 / 104 geometry matches for manual/curve length, head and shaft dimensions, and the 32-segment resolution case. Authored mode verifies the shared Filament PLA material on its constant linear-0.8 col field, Generated Z-band Wave, derivative Bump, roughness, and backface branch. The committed comparison reaches 0.9951 silhouette IoU; Blender clips almost the entire neutral surface white while WebGL retains subpixel bump bands, producing a documented 0.2059 RGB MAE renderer/filtering residual.",
     "controls": [
       { "type": "checkbox", "name": "crv length", "label": "Use curve length", "value": true },
       { "name": "non crv length", "label": "Manual length", "min": 2, "max": 30, "step": 0.1, "value": 16.1549072265625 },

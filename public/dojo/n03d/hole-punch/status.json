@@ -2,9 +2,17 @@
   "id": "n03d-hole-punch",
   "object": "hole punch obj",
   "root": "hole punch",
-  "status": "exact-parity",
+  "status": "exact-geometry-and-authored-filament-verified",
   "blender": { "verts": 153, "faces": 104 },
   "gnvm": { "verts": 153, "faces": 104 },
   "coverage": "100% of reachable node types across the 7-group, 79-node closure.",
-  "validation": "All six Blender/VM cases are topology- and bounds-exact, covering curve-derived versus manual length, head diameter, shaft diameter, head height, and resolution."
+  "validation": "All six Blender/VM cases are topology- and bounds-exact, covering curve-derived versus manual length, head diameter, shaft diameter, head height, and resolution.",
+  "material": {
+    "name": "Filament PLA .02 mm layer height",
+    "contract": "constant POINT col + Generated Z-band Wave + derivative Bump + Backfacing branch",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.9950570215042975,
+    "pixelRgbMae": 0.20587280079086206,
+    "residual": "Blender's Medium High Contrast capture clips nearly the full neutral surface white; Three.js retains dark subpixel bump bands even at the measured exposure ceiling."
+  }
 }

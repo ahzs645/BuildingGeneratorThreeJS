@@ -1,0 +1,37 @@
+{
+  "object": "hole punch obj",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      149.6891326904297,
+      228.7132568359375,
+      -7.54044771194458
+    ],
+    "max": [
+      155.68344116210938,
+      234.71041870117188,
+      0.25
+    ]
+  },
+  "verts": 153,
+  "faces": 104,
+  "materials": [],
+  "evaluated_materials": [
+    null,
+    "Filament PLA .02 mm layer height"
+  ],
+  "evaluated_material_faces": {
+    "Filament PLA .02 mm layer height": 104
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 30.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}
