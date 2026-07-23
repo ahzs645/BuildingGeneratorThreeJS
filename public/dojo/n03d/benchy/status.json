@@ -2,7 +2,7 @@
   "id": "n03d-benchy-material-preview",
   "object": "Benchy",
   "root": "benchy",
-  "status": "exact-wrapper-parity",
+  "status": "exact-wrapper-and-authored-material-parity",
   "blender": {
     "verts": 112569,
     "faces": 225154
@@ -12,5 +12,15 @@
     "faces": 225154
   },
   "coverage": "100% of reachable node types across the 3-group, 28-node closure.",
-  "validation": "Two Blender/VM filament-color cases have exact topology and local bounds. This graph wraps the supplied high-resolution Benchy mesh with filament material, named-attribute, and smooth-shading logic; it is not a procedural Benchy hull generator. The browser comparison normalizes the shader while preserving the complete source geometry and material assignment."
+  "validation": "Two Blender/VM filament-color cases have exact topology and local bounds. This graph wraps the supplied high-resolution Benchy mesh with filament material, named-attribute, and smooth-shading logic; it is not a procedural Benchy hull generator.",
+  "material": {
+    "name": "Filament PLA .02 mm layer height",
+    "contract": "POINT col attribute + Generated-coordinate Z Wave + derivative Bump + Backfacing shader branch",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.9943950050839909,
+    "macroLuminanceCorrelation": 0.9045143038472304,
+    "macroLuminanceMae": 0.04248225702662637,
+    "meanLuminanceDelta": 0.0011328357785244658,
+    "residual": "Eevee and WebGL retain different high-frequency bump and area-light response; renderer identity is not claimed."
+  }
 }

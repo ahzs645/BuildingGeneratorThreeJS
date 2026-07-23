@@ -5,6 +5,7 @@
     "object": "Bolt Gen_DHTS_Thru Head v03.002",
     "material": "Filament PLA .02 mm layer height"
   },
+  "scope": "Viewport surface reconstruction only. The Wave/Bump layer appearance does not alter geometry and is not a slicer or G-code toolpath.",
   "geometry": {
     "blender": { "verts": 8646, "faces": 8535 },
     "gnvm": { "verts": 8646, "faces": 8535 },

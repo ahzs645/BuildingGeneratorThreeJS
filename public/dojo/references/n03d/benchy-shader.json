@@ -1,0 +1,32 @@
+{
+  "object": "Benchy",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -68.71022033691406,
+      -35.930301666259766,
+      -16.241865158081055
+    ],
+    "max": [
+      70.35919952392578,
+      35.930301666259766,
+      95.01181030273438
+    ]
+  },
+  "verts": 112569,
+  "faces": 225154,
+  "materials": [
+    "Filament PLA .02 mm layer height"
+  ],
+  "evaluated_materials": [
+    "Filament PLA .02 mm layer height"
+  ],
+  "evaluated_material_faces": {
+    "Filament PLA .02 mm layer height": 225154
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": false,
+  "authored_light_scale": 300.0,
+  "debug_material_output": null
+}
