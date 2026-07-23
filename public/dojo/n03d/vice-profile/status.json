@@ -2,7 +2,7 @@
   "id": "n03d-vice-profile",
   "object": "Cube.010",
   "root": "Geometry Nodes.028",
-  "status": "exact-parity",
+  "status": "exact-geometry-and-authored-neutral-surface-verified",
   "blender": {
     "verts": 12,
     "faces": 10
@@ -13,5 +13,16 @@
   },
   "shared_users": ["Cube.008", "Cube.010", "vice plate"],
   "coverage": "100% of reachable node types across the 1-group, 24-node closure.",
-  "validation": "The standalone Cube.010 user has exact authored topology and local bounds. Wave Texture bands and Rotate Vector fields reproduce the sloped vice-jaw flares that were absent from the passthrough fallback. Cube.008 and vice plate reuse this root inside longer modifier stacks."
+  "validation": "The standalone Cube.010 user has exact authored topology and local bounds. Wave Texture bands and Rotate Vector fields reproduce the sloped vice-jaw flares that were absent from the passthrough fallback. All 10 evaluated faces are flat and unassigned, so authored mode uses Blender's neutral fallback rather than a filament or G-code surface. Cube.008 and vice plate reuse this root inside longer modifier stacks.",
+  "material": {
+    "name": null,
+    "contract": "Blender unassigned neutral surface on 10 flat faces",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.9970002740369558,
+    "surfaceCornerRmsePixels": 0.3115135023034256,
+    "pixelRgbMae": 0.029727385048664668,
+    "macroLuminanceCorrelation": 0.902229663944778,
+    "meanLuminanceDelta": -0.0071232636171421615,
+    "scope": "Viewport material parity only; no slicer or G-code toolpath is present."
+  }
 }

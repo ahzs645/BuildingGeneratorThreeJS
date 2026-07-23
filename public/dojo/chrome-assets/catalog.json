@@ -877,10 +877,13 @@
     "dump": "dojo/n03d/vice-profile/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/vice-profile.png",
+    "authoredReference": "dojo/references/n03d/vice-profile-authored.png",
     "blenderStats": { "verts": 12, "faces": 10 },
     "flatShading": true,
     "localSpace": true,
-    "note": "Exact authored topology and local bounds at 12 vertices / 10 faces. The 24-node graph uses two directional Wave Texture fields to deform the seed block into the sloped vice-jaw profile. Cube.008 and vice plate reuse the same root inside longer downstream modifier stacks.",
+    "authoredLightScale": 3.65,
+    "authoredFillIntensityScale": 0.4,
+    "note": "Exact authored topology and local bounds at 12 vertices / 10 faces. The 24-node graph uses two directional Wave Texture fields to deform the seed block into the sloped vice-jaw profile. Blender leaves all 10 faces flat and unassigned, so authored mode uses its neutral fallback rather than a filament or G-code surface. The committed comparison reaches 0.9970 silhouette IoU, 0.31 px corner RMSE, 0.0297 RGB MAE, 0.902 macro luminance correlation, and -0.0071 mean-luminance error. Cube.008 and vice plate reuse the same root inside longer downstream modifier stacks.",
     "controls": []
   },
   {

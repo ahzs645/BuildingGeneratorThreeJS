@@ -1,0 +1,67 @@
+{
+  "asset": "n03d-vice-profile",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "Cube.010",
+    "root": "Geometry Nodes.028",
+    "material": null
+  },
+  "scope": "Authored Blender viewport appearance only. The evaluated vice-jaw profile has no assigned material, filament shader, slicer data, or G-code toolpath.",
+  "geometry": {
+    "blender": {
+      "verts": 12,
+      "faces": 10
+    },
+    "gnvm": {
+      "verts": 12,
+      "faces": 10
+    },
+    "validationCases": 1,
+    "unassignedMaterialFaces": 10,
+    "flatFaces": true
+  },
+  "capture": {
+    "resolution": [
+      768,
+      768
+    ],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local detached evaluated mesh",
+    "blenderReference": "../../references/n03d/vice-profile-authored.png",
+    "blenderMetadata": "../../references/n03d/vice-profile-authored.json",
+    "browserReference": "../../references/n03d/vice-profile-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-vice-profile&capture=authored",
+    "blenderAuthoredLightScale": 30,
+    "browserAuthoredLightScale": 3.65,
+    "browserFillIntensityScale": 0.4,
+    "lightScaleInterpretation": "Blender Area-light energy and Three.js RectAreaLight intensity use different units and scale differently with emitter area. Independent browser key/fill calibration preserves Blender's face-to-face luminance ordering while minimizing joint RGB error."
+  },
+  "recoveredSurface": {
+    "kind": "Blender unassigned material fallback",
+    "baseColorLinear": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "metalness": 0,
+    "roughness": 0.5,
+    "doubleSided": true,
+    "flatShading": true,
+    "proceduralLayerLines": false,
+    "changesMeshGeometry": false
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9970002740369558,
+    "surfaceCornerRmsePixels": 0.3115135023034256,
+    "intersectionPixels": 203739,
+    "pixelRgbMae": 0.029727385048664668,
+    "pixelLuminanceMae": 0.029423454667612925,
+    "pixelLuminanceCorrelation": 0.8978239503193557,
+    "macroLuminanceMae": 0.028527094537595644,
+    "macroLuminanceCorrelation": 0.902229663944778,
+    "binaryMaskDisagreementFraction": 0.06973137200045156,
+    "meanLuminanceDelta": -0.0071232636171421615
+  },
+  "interpretation": "The authored wave-deformed jaw profile, flat-face contract, and neutral unassigned surface are preserved. Silhouette and large-scale lighting structure align closely; the remaining local difference is the measured Eevee-versus-WebGL area-light and edge response, not missing material nodes or print geometry."
+}
