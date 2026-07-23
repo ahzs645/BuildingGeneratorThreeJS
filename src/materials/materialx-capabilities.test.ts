@@ -28,6 +28,29 @@ test("official ESSL accepts typed geomprops while Three TSL still rejects them",
   assert.deepEqual(auditMaterialXDocument(xml, { implementation: "three-tsl" }).unsupportedElements, ["geompropvalue"]);
 });
 
+test("official ESSL accepts direct conductor surfaces while Three TSL rejects them", () => {
+  const xml = `<materialx version="1.39">
+    <nodegraph name="NG">
+      <conductor_bsdf name="metal" type="BSDF"/>
+      <output name="bsdf" type="BSDF" nodename="metal"/>
+    </nodegraph>
+    <surface name="SS" type="surfaceshader">
+      <input name="bsdf" type="BSDF" nodegraph="NG" output="bsdf"/>
+    </surface>
+    <surfacematerial name="M" type="material">
+      <input name="surfaceshader" type="surfaceshader" nodename="SS"/>
+    </surfacematerial>
+  </materialx>`;
+  assert.deepEqual(
+    auditMaterialXDocument(xml, { implementation: "official-essl" }).unsupportedElements,
+    [],
+  );
+  assert.deepEqual(
+    auditMaterialXDocument(xml, { implementation: "three-tsl" }).unsupportedElements,
+    ["conductor_bsdf", "surface"],
+  );
+});
+
 test("preflight identifies procedural height graphs that need the TSL derivative adapter", () => {
   const audit = auditMaterialXDocument(`<materialx version="1.39"><nodegraph name="NG"><noise3d name="height" type="float"/><heighttonormal name="bump" type="vector3"><input name="in" type="float" nodename="height"/></heighttonormal></nodegraph></materialx>`);
   assert.equal(audit.proceduralHeightNormalCount, 1);

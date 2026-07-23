@@ -618,7 +618,7 @@ def main() -> None:
         "sourceBlend": source.name,
         "sourceMaterial": material.name,
         "blenderVersion": bpy.app.version_string,
-        "extractor": "Blender native USD MaterialX network -> standalone Standard Surface MaterialX",
+        "extractor": "Blender native USD MaterialX network -> standalone MaterialX",
         "sourceNodeTypes": source_node_types,
         "nativeMaterialXCategories": categories,
         "materialXVersion": "1.39",
