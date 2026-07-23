@@ -2,7 +2,7 @@
   "id": "n03d-mesh-line-dowel",
   "object": "Plane.003",
   "root": "Shelf_dowel from mesh line",
-  "status": "exact",
+  "status": "exact-geometry-and-authored-mahogany-verified",
   "blender": {
     "verts": 1887,
     "faces": 1778
@@ -16,5 +16,13 @@
     "dowel from mesh line"
   ],
   "coverage": "100% of reachable node types across the 3-group, 42-node closure.",
-  "validation": "Six Blender/VM cases cover the authored mesh-line length, diameter, midpoint placement, cutter mode, round-square profile, and cutter offset. Every case has exact vertex and face counts plus identical local bounds at four-decimal precision. Plane.001 is an identical saved shelf-dowel copy, while Vert.003 uses the same graph over a longer source line."
+  "validation": "Six Blender/VM cases cover the authored mesh-line length, diameter, midpoint placement, cutter mode, round-square profile, and cutter offset. Every case has exact vertex and face counts plus identical local bounds at four-decimal precision. All 1,778 evaluated faces use proc_ mahogany.003, and authored mode now reuses the recovered Generated-coordinate wave/bump, transmission, and coat graph validated on the standalone Dowel Generator. The aligned capture reaches 0.9713 silhouette IoU, 0.55-pixel corner RMSE, 0.0152 RGB MAE, and complete mutual one-pixel surface coverage. Plane.001 is an identical saved shelf-dowel copy, while Vert.003 uses the same graph over a longer source line.",
+  "materialParity": {
+    "report": "material-parity.json",
+    "comparison": "material-comparison.json",
+    "blenderReference": "../../references/n03d/mesh-line-dowel-authored.png",
+    "browserReference": "../../references/n03d/mesh-line-dowel-authored-webgl.png",
+    "material": "proc_ mahogany.003",
+    "scope": "Authored viewport material parity only; no slicer or G-code toolpath is present."
+  }
 }

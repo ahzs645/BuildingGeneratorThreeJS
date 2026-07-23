@@ -1,0 +1,90 @@
+{
+  "asset": "n03d-mesh-line-dowel",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "Plane.003",
+    "root": "Shelf_dowel from mesh line",
+    "material": "proc_ mahogany.003"
+  },
+  "scope": "Authored Eevee surface reconstruction on the exact GN-VM mesh. This object contains no slicer data or G-code toolpath.",
+  "geometry": {
+    "blender": {
+      "verts": 1887,
+      "faces": 1778
+    },
+    "gnvm": {
+      "verts": 1887,
+      "faces": 1778
+    },
+    "materialFaces": {
+      "proc_ mahogany.003": 1778
+    },
+    "validationCases": 6,
+    "role": "The graph derives dowel length and direction from the supplied mesh line, then applies diameter, midpoint, cutter, round-square, and cutter-offset controls."
+  },
+  "capture": {
+    "resolution": [
+      768,
+      768
+    ],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../../references/n03d/mesh-line-dowel-authored.png",
+    "blenderMetadata": "../../references/n03d/mesh-line-dowel-authored.json",
+    "browserReference": "../../references/n03d/mesh-line-dowel-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-mesh-line-dowel&capture=authored",
+    "blenderStudioEnvironmentStrength": 0.8,
+    "browserStudioEnvironmentIntensity": 0.06,
+    "environmentInterpretation": "The same measured studio.exr orientation and intensity used by the standalone Dowel Generator are reused because both assets evaluate the identical proc_ mahogany.003 material."
+  },
+  "recoveredGraph": {
+    "baseColor": "The active HSV/Reroute branch resolves to black.",
+    "roughness": 0.3687744140625,
+    "mapping": {
+      "coordinate": "Generated",
+      "scale": 3.59326171875,
+      "rotation": [
+        0,
+        0,
+        2.822612762451172
+      ]
+    },
+    "wave": {
+      "type": "BANDS",
+      "direction": "X",
+      "scale": 1.380000114440918,
+      "distortion": 13.299999237060547,
+      "detail": 10.229999542236328,
+      "detailScale": 0.8700000047683716,
+      "detailRoughness": 0.5,
+      "phaseOffset": 4.349999904632568
+    },
+    "bump": {
+      "heightRange": [
+        -0.1983642578125,
+        -0.086181640625
+      ],
+      "strength": 0.5017045736312866,
+      "distance": 1
+    },
+    "principled": {
+      "metallic": 0,
+      "transmissionWeight": 0.0535714291036129,
+      "coatWeight": 0.12422360479831696,
+      "coatRoughness": 0.07968944311141968
+    }
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.971261540242526,
+    "surfaceMaskIouDilated1px": 0.9720704821133429,
+    "blenderSurfaceCoveredWithin1pxFraction": 1,
+    "webglSurfaceCoveredWithin1pxFraction": 1,
+    "surfaceCornerRmsePixels": 0.5542080510479344,
+    "pixelRgbMae": 0.0152108417431882,
+    "pixelLuminanceMae": 0.01502872110856268,
+    "macroLuminanceMae": 0.03173095029397281,
+    "meanLuminanceDelta": -0.009305088986417649
+  },
+  "interpretation": "The mesh-line-driven variant now reuses the same recovered mahogany graph as the standalone Dowel Generator rather than falling back to a generic gray material. All 1,778 evaluated faces retain the authored assignment, the silhouette aligns at 0.9713 IoU with 0.55-pixel corner RMSE, and both surfaces have complete mutual one-pixel coverage. The remaining dark reflection and bump placement differences are Eevee/Three.js raster and environment-filtering residuals; pixel identity is not claimed."
+}

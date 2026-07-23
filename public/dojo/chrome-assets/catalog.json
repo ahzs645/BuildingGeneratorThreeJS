@@ -893,10 +893,12 @@
     "dump": "dojo/n03d/mesh-line-dowel/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/mesh-line-dowel.png",
+    "authoredReference": "dojo/references/n03d/mesh-line-dowel-authored.png",
     "blenderStats": { "verts": 1887, "faces": 1778 },
     "flatShading": true,
     "localSpace": true,
-    "note": "Exact Blender topology across all six validation cases. This variant derives the dowel length and direction from the supplied mesh line, then exposes diameter, midpoint placement, cutter mode, round-square profile, and cutter offset. Plane.001 is an identical saved copy; Vert.003 reuses the same graph over a longer line.",
+    "authoredEnvironmentIntensity": 0.06,
+    "note": "Exact Blender topology across all six validation cases. This variant derives the dowel length and direction from the supplied mesh line, then exposes diameter, midpoint placement, cutter mode, round-square profile, and cutter offset. All 1,778 faces use the recovered proc_ mahogany.003 graph shared with Dowel Generator. Its aligned authored capture reaches 0.9713 silhouette IoU, 0.55-pixel corner RMSE, 0.0152 RGB MAE, and complete mutual one-pixel coverage. Plane.001 is an identical saved copy; Vert.003 reuses the same graph over a longer line. This is viewport appearance, not sliced or G-code output.",
     "controls": [
       { "name": "dia/width", "label": "Diameter / width", "min": 2, "max": 40, "step": 0.1, "value": 22 },
       { "type": "checkbox", "name": "from mid", "label": "Build from midpoint", "value": false },
