@@ -1,0 +1,38 @@
+{
+  "object": "10pt spoke flat stickie",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -11.264205932617188,
+      -11.632686614990234,
+      -3.0517578125e-05
+    ],
+    "max": [
+      11.264204978942871,
+      11.6326904296875,
+      -3.0517578125e-05
+    ]
+  },
+  "verts": 4,
+  "faces": 1,
+  "materials": [
+    "10pt spoke stickie"
+  ],
+  "evaluated_materials": [
+    "10pt spoke stickie"
+  ],
+  "evaluated_material_faces": {
+    "10pt spoke stickie": 1
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 1.0,
+  "authored_look": "None",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

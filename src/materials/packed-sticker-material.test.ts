@@ -4,7 +4,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import * as THREE from "three";
 import type { Dump } from "../gnvm";
-import { ensureStickerQuadUv, extractPackedStickerMaterialConfig } from "../packed-sticker-material";
+import { ensureStickerQuadUv, extractPackedStickerMaterialConfig, makePackedStickerMaterial } from "../packed-sticker-material";
 
 const dump = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/chrome-assets/shader-metadata.json",
@@ -15,11 +15,19 @@ test("maps only images actually packed in the supplied Chrome Asset blend", () =
   assert.deepEqual(extractPackedStickerMaterialConfig(dump, "10pt spoke stickie"), {
     imageName: "sticky1@2x.png",
     url: "dojo/chrome-assets/textures/sticky1-2x.png",
+    shader: "spoke-control",
     secondaryTextureCount: 0,
   });
   assert.equal(extractPackedStickerMaterialConfig(dump, "tree sticky"), null);
   assert.equal(extractPackedStickerMaterialConfig(dump, "ryu electrify1"), null);
-  assert.equal(extractPackedStickerMaterialConfig(dump, "8pt soft star stickie")?.secondaryTextureCount, 1);
+  assert.deepEqual(extractPackedStickerMaterialConfig(dump, "8pt soft star stickie"), {
+    imageName: "stickie2.png",
+    url: "dojo/chrome-assets/textures/stickie2.png",
+    shader: "soft-star-wear",
+    secondaryImageName: "sticker texture.png",
+    secondaryUrl: "dojo/chrome-assets/textures/sticker-texture.png",
+    secondaryTextureCount: 1,
+  });
 });
 
 test("restores Blender quad UV corner order from two soup triangles", () => {
@@ -30,5 +38,42 @@ test("restores Blender quad UV corner order from two soup triangles", () => {
   geometry.setIndex([0,1,3, 0,3,2]);
   assert.equal(ensureStickerQuadUv(geometry, { start: 0, count: 6 }), true);
   assert.deepEqual(Array.from(geometry.getAttribute("uv").array), [0,0, 1,0, 0,1, 1,1]);
+  geometry.dispose();
+});
+
+test("reconstructs the spoke tint and soft-star wear shader branches", () => {
+  const originalLoad = THREE.TextureLoader.prototype.load;
+  THREE.TextureLoader.prototype.load = () => new THREE.Texture();
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute([
+    0,0,0, 2,0,0, 0,3,0, 2,3,0,
+  ], 3));
+  geometry.setAttribute("col", new THREE.Float32BufferAttribute([
+    0.4,0.8,0, 0.4,0.8,0, 0.4,0.8,0, 0.4,0.8,0,
+  ], 3));
+  geometry.setIndex([0,1,3, 0,3,2]);
+
+  try {
+    for (const [name, expected] of [
+      ["10pt spoke stickie", /0\.7042236328125/],
+      ["8pt soft star stickie", /packedStickerSecondaryMap/],
+    ] as const) {
+      const material = makePackedStickerMaterial(dump, geometry, { start: 0, count: 6 }, name);
+      assert.ok(material);
+      const shader = {
+        vertexShader: "#include <common>\n#include <begin_vertex>",
+        fragmentShader: "#include <common>\n#include <map_fragment>",
+        uniforms: {} as Record<string, unknown>,
+      };
+      material.onBeforeCompile(shader as never, {} as never);
+      assert.match(shader.vertexShader, /attribute vec3 col/);
+      assert.match(shader.vertexShader, /vPackedStickerCol = col/);
+      assert.match(shader.fragmentShader, expected);
+      assert.doesNotMatch(shader.fragmentShader, /#include <map_fragment>/);
+      material.dispose();
+    }
+  } finally {
+    THREE.TextureLoader.prototype.load = originalLoad;
+  }
   geometry.dispose();
 });

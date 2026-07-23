@@ -1,1 +1,10 @@
-{"id":"spoke-flat-stickie","object":"10pt spoke flat stickie","root":"gn.sticker control","status":"authored-exact","blender":{"verts":4,"faces":1},"gnvm":{"verts":4,"faces":1},"coverage":"100% of reachable node types across the 2-group, 119-node closure.","validation":"The authored 10-point spoke sticker control graph preserves the source quad exactly in topology and four-decimal bounds."}
+{
+  "id": "spoke-flat-stickie",
+  "object": "10pt spoke flat stickie",
+  "root": "gn.sticker control",
+  "status": "authored-material-parity",
+  "blender": { "verts": 4, "faces": 1 },
+  "gnvm": { "verts": 4, "faces": 1 },
+  "coverage": "100% of reachable node types across the 2-group, 119-node closure.",
+  "validation": "The authored 10-point spoke sticker control graph preserves the source quad exactly in topology and four-decimal local bounds. The browser material reconstructs the packed sticky1 image, Blender HSV desaturation, col threshold/tint group, alpha, and unlit output. Aligned Blender/WebGL captures reach 0.993340 silhouette IoU, 0.020223 RGB MAE, and 0.999356 macro luminance correlation."
+}

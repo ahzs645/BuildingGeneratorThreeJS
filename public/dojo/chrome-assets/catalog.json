@@ -251,8 +251,11 @@
     "dump": "dojo/chrome-assets/soft-star-flat-stickie/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/soft-star-flat-stickie.png",
+    "authoredReference": "dojo/references/chrome-assets/soft-star-flat-stickie-authored.png",
     "blenderStats": { "verts": 4, "faces": 1 },
-    "note": "The authored soft-star sticker control graph preserves the source quad exactly in topology and four-decimal local bounds.",
+    "localSpace": true,
+    "authoredToneMapping": "none",
+    "note": "The authored soft-star sticker control graph preserves the source quad exactly in topology and four-decimal local bounds. The browser restores its packed stickie2 image, rotated paper-wear texture, col tint, threshold, HSV, alpha, and unlit output branches.",
     "controls": []
   },
   {
@@ -262,8 +265,11 @@
     "dump": "dojo/chrome-assets/spoke-flat-stickie/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/spoke-flat-stickie.png",
+    "authoredReference": "dojo/references/chrome-assets/spoke-flat-stickie-authored.png",
     "blenderStats": { "verts": 4, "faces": 1 },
-    "note": "The authored 10-point spoke sticker control graph preserves the source quad exactly in topology and four-decimal local bounds.",
+    "localSpace": true,
+    "authoredToneMapping": "none",
+    "note": "The authored 10-point spoke sticker control graph preserves the source quad exactly in topology and four-decimal local bounds. The browser restores its packed image, grayscale/tint threshold group, alpha, and unlit output.",
     "controls": []
   },
   {
