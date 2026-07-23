@@ -339,6 +339,15 @@ reg("GeometryNodeObjectInfo", (api) => {
     if (out.mesh) out.mesh.positions = out.mesh.positions.map(relative);
     for (const spline of out.curves) spline.points = spline.points.map(relative);
     for (const instance of out.instances) instance.position = relative(instance.position);
+    // Blender gives a Mesh-to-Curve component crossing Object Info its 0.01
+    // base display width when a later Bounding Box evaluates it. Local
+    // Mesh-to-Curve wires remain positional; retain that provenance split.
+    if (out.curves.length && out.curveAttributes.has("__gnvm_planar_mesh_curve")) {
+      out.curveAttributes.set("__gnvm_object_info_mesh_curve", {
+        domain: "POINT",
+        data: Array.from({ length: out.curvePointCount() }, () => 1),
+      });
+    }
   }
   // As Instance preserves the object as a one-element instance component.
   // Returning its realized payload directly made Domain Size report zero
@@ -1266,26 +1275,28 @@ reg("GeometryNodeBoundBox", (api) => {
   // radius in every axis, even before the curve has a bevel/profile. Radius is
   // implicitly 1 when the attribute is absent. Text Soup uses that two-unit
   // diameter as padding when sizing its marching-squares sampling grid.
-  // Mesh to Curve produces a Curves component whose unit radius contributes
-  // Blender's 0.01 base curve-width to bounds. Using the generic radius as a
-  // world-unit value enlarged UI Window's sampling grids by almost one unit;
-  // suppressing it entirely left those grids 0.01 units too narrow per side.
-  // Pure native/font Curves retain their full radius behavior.
+  // A Mesh-to-Curve component crossing Object Info contributes Blender's 0.01
+  // base curve-width to bounds. Using the generic radius as a world-unit value
+  // enlarged UI Window's grids by almost one unit; suppressing it entirely
+  // left them 0.01 units too narrow. Local Mesh-to-Curve wires remain purely
+  // positional, while native/font Curves retain their full radius behavior.
   // Procedural Box is the mixed-component exception: its pin mesh and font
   // diagnostic are combined before Bounding Box, and Blender uses the font's
   // positional outline there without expanding it by the generic radius.
   const meshCurve = g.curveAttributes.has("__gnvm_planar_mesh_curve");
-  const radius = (Boolean(g.mesh?.positions.length) && g.curveAttributes.has("__gnvm_planar_font_curve"))
+  const objectInfoMeshCurve = g.curveAttributes.has("__gnvm_object_info_mesh_curve");
+  const radius = (meshCurve && !objectInfoMeshCurve)
+    || (Boolean(g.mesh?.positions.length) && g.curveAttributes.has("__gnvm_planar_font_curve"))
     ? null
     : g.curveAttributes.get("radius");
   let pointIndex = 0;
   for (const spline of g.curves) {
     for (const p of spline.points) {
-      const r = radius === null ? 0 : Math.abs(asNum(radius?.data[pointIndex] ?? 1)) * (meshCurve ? 0.01 : 1);
+      const r = radius === null ? 0 : Math.abs(asNum(radius?.data[pointIndex] ?? 1)) * (objectInfoMeshCurve ? 0.01 : 1);
       count++;
       for (let axis = 0; axis < 3; axis++) {
-        const lower = meshCurve ? Math.fround(Math.fround(p[axis]) - Math.fround(r)) : p[axis] - r;
-        const upper = meshCurve ? Math.fround(Math.fround(p[axis]) + Math.fround(r)) : p[axis] + r;
+        const lower = objectInfoMeshCurve ? Math.fround(Math.fround(p[axis]) - Math.fround(r)) : p[axis] - r;
+        const upper = objectInfoMeshCurve ? Math.fround(Math.fround(p[axis]) + Math.fround(r)) : p[axis] + r;
         min[axis] = Math.min(min[axis], lower);
         max[axis] = Math.max(max[axis], upper);
       }

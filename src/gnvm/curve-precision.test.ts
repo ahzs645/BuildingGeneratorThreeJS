@@ -152,7 +152,7 @@ test("Bounding Box includes Blender's implicit curve-point radius", () => {
   assert.deepEqual((explicit.Max as Field).value, [7, 9, 13]);
 });
 
-test("Bounding Box applies Blender's 0.01 base width to Mesh to Curve wires", () => {
+test("Bounding Box keeps local Mesh to Curve wires positional", () => {
   const geometry = new Geometry();
   geometry.curves = [{ cyclic: false, points: [[2, 3, 4], [5, 7, 11]] }];
   geometry.curveAttributes.set("__gnvm_planar_mesh_curve", { domain: "POINT", data: [1, 1] });
@@ -160,8 +160,13 @@ test("Bounding Box applies Blender's 0.01 base width to Mesh to Curve wires", ()
   assert.ok(handler);
   const outputs = handler({ geo: () => geometry } as EvalAPI);
 
-  assert.deepEqual((outputs.Min as Field).value, [2, 3, 4].map((value) => Math.fround(value - Math.fround(0.01))));
-  assert.deepEqual((outputs.Max as Field).value, [5, 7, 11].map((value) => Math.fround(value + Math.fround(0.01))));
+  assert.deepEqual((outputs.Min as Field).value, [2, 3, 4]);
+  assert.deepEqual((outputs.Max as Field).value, [5, 7, 11]);
+
+  geometry.curveAttributes.set("__gnvm_object_info_mesh_curve", { domain: "POINT", data: [1, 1] });
+  const objectInfo = handler({ geo: () => geometry } as EvalAPI);
+  assert.deepEqual((objectInfo.Min as Field).value, [2, 3, 4].map((value) => Math.fround(value - Math.fround(0.01))));
+  assert.deepEqual((objectInfo.Max as Field).value, [5, 7, 11].map((value) => Math.fround(value + Math.fround(0.01))));
 });
 
 test("Bounding Box pads pure String to Curves outlines by implicit radius", () => {
