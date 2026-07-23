@@ -408,7 +408,7 @@
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/blunt-metal-marker.png",
     "blenderStats": { "verts": 97691, "faces": 97669 },
-    "note": "The authored browser mesh is topology-exact at 97,691 vertices / 97,669 faces. All six Blender parameter-sweep cases match vertex and face counts exactly; authored and flattened bounds agree within 0.0003 units, while FLATTEN off retains a small 0.0496-unit positional residual.",
+    "note": "Exact Blender geometry across all six parameter-sweep cases, including the 189,335-vertex FLATTEN-off branch. Region Extrude Mesh now preserves Blender's unnormalized FACE-to-POINT average normal, bringing every case to matching topology and bounds within 0.0001 units.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

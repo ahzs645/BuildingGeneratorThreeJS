@@ -1039,6 +1039,7 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
     // Region extrude: shared new verts, walls only on boundary edges.
     const vertSet = new Set<number>();
     const normAcc = new Map<number, Vec3>();
+    const normCount = new Map<number, number>();
     const edgeCount = new Map<string, { a: number; b: number; n: number }>();
     for (const fi of selFaces) {
       const f = mesh.faces[fi];
@@ -1047,6 +1048,7 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
         const v = f[i];
         vertSet.add(v);
         normAcc.set(v, vadd(normAcc.get(v) ?? [0, 0, 0], n));
+        normCount.set(v, (normCount.get(v) ?? 0) + 1);
         const a = f[i], b = f[(i + 1) % f.length];
         const k = ekey(a, b);
         const e = edgeCount.get(k) ?? { a, b, n: 0 };
@@ -1107,7 +1109,17 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
       vertexOrder = boundaryOrder99.map((index) => sorted[index]);
     }
     for (const v of vertexOrder) {
-      const moved = vadd(mesh.positions[v], deltaFor(v, normAcc.get(v)!));
+      // Region extrusion uses Blender's FACE -> POINT interpolation of the
+      // selected face normals. That is the arithmetic average, deliberately
+      // *not* normalized again. On a curved or folded surface its magnitude
+      // can be below one; normalizing it made the unflattened Blunt Metal
+      // Marker expand too far even though its topology was already exact.
+      const sum = normAcc.get(v)!;
+      const count = normCount.get(v) ?? 1;
+      const average: Vec3 = [sum[0] / count, sum[1] / count, sum[2] / count];
+      const moved = vadd(mesh.positions[v], offArr
+        ? deltaFor(v, average)
+        : vscale(average[0] || average[1] || average[2] ? average : [0, 0, 1], scale));
       if (boundaryVerts.has(v)) {
         const idx = out.positions.length;
         out.positions.push(moved);
