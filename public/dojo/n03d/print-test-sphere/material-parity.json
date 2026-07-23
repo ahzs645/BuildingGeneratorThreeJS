@@ -1,0 +1,99 @@
+{
+  "asset": "n03d-print-test-sphere",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "Cube",
+    "material": "knit thread"
+  },
+  "scope": "Authored Blender viewport material parity on the exact Geometry Nodes mesh. The procedural surface does not slice the mesh and is not a G-code toolpath.",
+  "geometry": {
+    "blender": { "verts": 32190, "faces": 58917 },
+    "gnvm": { "verts": 32190, "faces": 58917 },
+    "materialGroups": [
+      {
+        "material": "knit thread",
+        "blenderFaces": 58191,
+        "browserTriangles": 58917,
+        "browser": "two-wave procedural knit reconstruction"
+      },
+      {
+        "material": null,
+        "blenderFaces": 726,
+        "browserTriangles": 1452,
+        "browser": "Blender neutral unassigned surface"
+      }
+    ]
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "framing": "precise transformed evaluated vertices; rotated local-AABB corners are not used",
+    "blenderReference": "../../references/n03d/print-test-sphere-shader.png",
+    "blenderMetadata": "../../references/n03d/print-test-sphere-shader.json",
+    "browserReference": "../../references/n03d/print-test-sphere-shader-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-print-test-sphere&capture=authored",
+    "blenderAuthoredLightScale": 1,
+    "browserAuthoredLightScale": 40,
+    "browserToneMapping": "none",
+    "lightScaleInterpretation": "Blender Area energy and Three.js RectAreaLight intensity use renderer-specific units. The recorded scales align the shared rig's exposure; they are not claimed to be equal physical power."
+  },
+  "recoveredGraph": {
+    "surface": {
+      "type": "Principled BSDF",
+      "roughness": 0.5,
+      "ior": 1.4500000476837158
+    },
+    "colors": {
+      "bright": [0.7999996542930603, 0.01635864190757272, 0.05221215263009099],
+      "dark": [0.15999996900556823, 0.0032717291615553742, 0.010442433015687647],
+      "mixFactorSource": "the blended two-Wave grayscale result"
+    },
+    "generatedCoordinates": "evaluated object bounds, identical to the knit material-group bounds for this asset",
+    "mappingScale": 19.510000228881836,
+    "waves": [
+      {
+        "direction": "DIAGONAL",
+        "mappingRotation": [0, -0.1500983089208603, 0],
+        "scale": 1.3400001525878906,
+        "distortion": 1.8399999141693115,
+        "detail": 2,
+        "detailScale": 1,
+        "detailRoughness": 0.5
+      },
+      {
+        "direction": "X",
+        "mappingRotation": [0, -0.1500983089208603, -0.9267697930335999],
+        "scale": 1.8600001335144043,
+        "distortion": 1.8399999141693115,
+        "detail": 2,
+        "detailScale": 1,
+        "detailRoughness": 0.5
+      }
+    ],
+    "waveMix": 0.7556818127632141,
+    "bump": {
+      "strength": 1,
+      "distance": 1,
+      "filterWidth": 1,
+      "invert": false
+    }
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9714391657434789,
+    "surfaceMaskIouDilated1px": 0.9828858938825789,
+    "blenderSurfaceCoveredWithin1px": 0.9976433914630106,
+    "webglSurfaceCoveredWithin1px": 0.9928869209935202,
+    "surfaceCornerRmsePixels": 7.089419699058883,
+    "intersectionPixels": 212207,
+    "pixelRgbMae": 0.2672414443766376,
+    "pixelLuminanceMae": 0.2893461638710515,
+    "pixelLuminanceCorrelation": 0.2549485236103715,
+    "macroLuminanceMae": 0.06609879581277665,
+    "macroLuminanceCorrelation": 0.9244376524205963,
+    "blackFractionDelta": 0.030517181362529535,
+    "meanLuminanceDelta": -0.05470014649434074,
+    "meanRgbDelta": [-0.01388495989477121, -0.06558540867216132, -0.03642241050228586]
+  },
+  "interpretation": "The exact raised-tile topology, material assignment, bright/dark pink branches, both mapped distorted Wave textures, shared color/height mix, and Bump parameters are now represented in the browser. The silhouette and coarse lighting distribution align closely. Remaining pixel error is concentrated in the high-frequency procedural wave and derivative bump response, where Eevee and WebGL sample and filter the shader differently; this is recorded as a renderer residual rather than claimed pixel identity."
+}

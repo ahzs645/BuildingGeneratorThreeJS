@@ -803,9 +803,12 @@
     "dump": "dojo/n03d/print-test-sphere/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/print-test-sphere.png",
+    "authoredReference": "dojo/references/n03d/print-test-sphere-shader.png",
     "blenderStats": { "verts": 32190, "faces": 58917 },
     "flatShading": true,
-    "note": "Exact Blender geometry at 32,190 vertices / 58,917 faces with identical local bounds. Mesh Face Area restores the raised per-face tile scale, and Blender-native subdivided Cube topology ordering preserves the alternating Index modulo selection used by the two tessellation branches.",
+    "authoredLightScale": 40,
+    "authoredToneMapping": "none",
+    "note": "Exact Blender geometry at 32,190 vertices / 58,917 faces with identical local bounds. Mesh Face Area restores the raised per-face tile scale, and Blender-native subdivided Cube topology ordering preserves the alternating Index modulo selection used by the two tessellation branches. Authored mode reconstructs the supplied two-wave procedural pink knit material and its bump normal on the 58,191 assigned faces; the 726 unassigned shell faces retain Blender's neutral surface.",
     "controls": []
   },
   {

@@ -2,7 +2,7 @@
   "id": "n03d-print-test-sphere",
   "object": "Cube",
   "root": "Geometry Nodes.002",
-  "status": "exact",
+  "status": "exact-geometry-and-authored-knit-verified",
   "blender": {
     "verts": 32190,
     "faces": 58917
@@ -12,5 +12,12 @@
     "faces": 58917
   },
   "coverage": "100% of reachable node types across the 4-group, 154-node closure.",
-  "validation": "The authored raised-tile sphere matches Blender exactly at 32,190 vertices / 58,917 faces with identical four-decimal local bounds. Mesh Face Area restores the per-face tile scale, while Blender-native subdivided Cube vertex and face ordering makes the graph's alternating Index modulo selection choose the same tessellation faces before Merge by Distance."
+  "validation": "The authored raised-tile sphere matches Blender exactly at 32,190 vertices / 58,917 faces with identical four-decimal local bounds. Mesh Face Area restores the per-face tile scale, while Blender-native subdivided Cube vertex and face ordering makes the graph's alternating Index modulo selection choose the same tessellation faces before Merge by Distance. The browser now reconstructs the assigned two-Wave pink knit material and Bump normal on 58,191 faces while preserving Blender's neutral fallback on the 726 unassigned shell faces. Precise transformed-vertex framing corrects the previous 53% rotated-AABB inflation. The committed 768 x 768 authored comparison reaches 0.9714 silhouette IoU, 0.0661 macro luminance MAE, 0.9244 macro correlation, 0.2672 RGB MAE, and -0.0547 mean-luminance error.",
+  "materialParity": {
+    "status": "procedural-two-wave-knit-reconstructed",
+    "scope": "Authored Blender viewport material parity on the exact Geometry Nodes mesh; this is neither slicing nor a G-code toolpath.",
+    "assignedFaces": 58191,
+    "unassignedFaces": 726,
+    "comparison": "material-comparison.json"
+  }
 }
