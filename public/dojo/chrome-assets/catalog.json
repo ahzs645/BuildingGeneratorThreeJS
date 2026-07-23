@@ -526,8 +526,12 @@
     "dump": "dojo/chrome-assets/geometry-nodes-001/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/geometry-nodes-001.png",
+    "authoredReference": "dojo/references/chrome-assets/geometry-nodes-001-authored.png",
+    "localSpace": true,
+    "surfaceBounds": true,
+    "authoredEnvironmentIntensity": 2,
     "blenderStats": { "verts": 61812, "faces": 53892 },
-    "note": "The complete 1,007-node root matches Blender in vertex count, face count, and four-decimal local bounds across all four authored, wrapper-switch, thickness, and wrapper-size cases. Authored output is exactly 61,812 / 53,892, thickness 6 is 42,031 / 33,434, and wrapper 60 by 45 is 38,301 / 33,678. Float32 field arithmetic makes the marching, shrink, merge, and three-pass sharpen geometry bit-exact; Blender's pinched-polygon weld splitting and radial Split Edges traversal then reproduce the final Auto Smooth positions and faces.",
+    "note": "The complete 1,007-node root matches Blender in vertex count, face count, and four-decimal local bounds across all four authored, wrapper-switch, thickness, and wrapper-size cases. Authored output is exactly 61,812 / 53,892, thickness 6 is 42,031 / 33,434, and wrapper 60 by 45 is 38,301 / 33,678. Float32 field arithmetic makes the marching, shrink, merge, and three-pass sharpen geometry bit-exact; Blender's pinched-polygon weld splitting and radial Split Edges traversal then reproduce the final Auto Smooth positions and faces. Authored mode reconstructs the direct chrome Principled graph with linear 0.25087 base color, Metallic 1, and Roughness 0.26104. A calibrated studio intensity reduces mean luminance error to -0.0017; aligned captures reach 0.9726 silhouette IoU and 0.5859 macro luminance correlation, with residual Eevee/Three.js reflection placement.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

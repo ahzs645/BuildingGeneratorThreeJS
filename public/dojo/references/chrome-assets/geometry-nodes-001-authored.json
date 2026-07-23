@@ -1,0 +1,41 @@
+{
+  "object": "3D CHROME CRAYON.001",
+  "type": "CURVE",
+  "bbox": {
+    "min": [
+      -36.762447357177734,
+      -33.83238983154297,
+      -2.687518358230591
+    ],
+    "max": [
+      40.27568817138672,
+      22.28449249267578,
+      22.69097328186035
+    ]
+  },
+  "verts": 61812,
+  "faces": 53892,
+  "materials": [
+    "chrome"
+  ],
+  "evaluated_materials": [
+    null,
+    "BDSF_Cross Section 1OCT2024.001",
+    "chrome shading grainy",
+    "chrome"
+  ],
+  "evaluated_material_faces": {
+    "chrome": 53892
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 1.0,
+  "authored_look": "None",
+  "studio_environment": true,
+  "studio_environment_strength": 0.8,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

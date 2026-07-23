@@ -127,6 +127,30 @@ test("reconstructs literal Background material outputs as unlit colors", () => {
   assert.equal(makeBasicBlenderMaterial(linked, "Test"), null);
 });
 
+test("reconstructs 3D Chrome Grill Crayon's direct Principled metal", () => {
+  const dump = JSON.parse(readFileSync("public/dojo/chrome-assets/geometry-nodes-001/dump.json", "utf8")) as Dump;
+  assert.deepEqual(extractBasicBlenderMaterialConfig(dump, "chrome"), {
+    kind: "principled",
+    baseColor: [0.2508697211742401, 0.2508697211742401, 0.2508697211742401],
+    metalness: 1,
+    roughness: 0.26104414463043213,
+    emissive: [1, 1, 1],
+    emissiveIntensity: 0,
+    opacity: 1,
+    ior: 1.5,
+    transmission: 0,
+    clearcoat: 0,
+    clearcoatRoughness: 0.029999999329447746,
+    linkedInputs: [],
+  });
+  const material = makeBasicBlenderMaterial(dump, "chrome");
+  assert.equal(material?.name, "chrome · Blender principled constants");
+  assert.equal(material?.metalness, 1);
+  assert.equal(material?.roughness, 0.26104414463043213);
+  assert.deepEqual(material?.color.toArray(), [0.2508697211742401, 0.2508697211742401, 0.2508697211742401]);
+  material?.dispose();
+});
+
 test("routes the exact N03D print-test surface through flat.w", async () => {
   const dump = JSON.parse(readFileSync("public/dojo/n03d/print-test-mesh/dump.json", "utf8")) as Dump;
   const result = await runGenerator(dump, { object: "print test mesh" });
