@@ -25,26 +25,31 @@
     }
   },
   "openSurfaceBoolean": {
-    "backend": "trimesh-boolean BMS hybrid classifier",
+    "backend": "trimesh-boolean BMS hybrid classifier plus reciprocal-island cycle filtering",
     "blenderBooleanStage": {
       "verts": 29704,
       "polygons": 27433,
       "triangles": 52609,
       "surfaceArea": 14833.581826679256
     },
-    "gnvmBooleanStage": {
+    "unfilteredGnvmBooleanStage": {
       "verts": 27136,
       "triangles": 53872,
       "surfaceArea": 15297.275406194854
     },
-    "surfaceAreaOverhead": 0.03126029377159763,
+    "gnvmBooleanStage": {
+      "verts": 26323,
+      "triangles": 51624,
+      "surfaceArea": 14861.923682820783
+    },
+    "surfaceAreaOverhead": 0.0019106549229096195,
     "directionalSurfaceTest": {
       "blenderVerticesToGnvmP99": 0,
       "blenderTriangleCentroidsToGnvmP99": 0,
-      "gnvmVerticesToBlenderP99": 1.965,
-      "gnvmTriangleCentroidsToBlenderP99": 2.058
+      "gnvmVerticesToBlenderP99": 0,
+      "gnvmTriangleCentroidsToBlenderP99": 0.031
     },
-    "diagnosis": "The source and cutter operands match Blender in topology and bounds. The residual is isolated to BMS classification of closed-cutter regions against the compound open source: all aOutside regions match Blender, while the merged bInside set retains Blender-absent inner surface."
+    "diagnosis": "The source and cutter operands match Blender in topology and bounds. BMS classifies six reciprocal bInside regions across the three source/cutter islands; Blender keeps a maximum-weight spanning forest and omits the weakest cycle-closing pair. A topology/provenance filter now removes that pair without asset names or count signatures. The remaining 0.1911% area delta is limited to splitter tessellation and partial-region semantics."
   },
-  "validation": "Authored output and five non-cutter control variants have exact topology and bounds. The default's 97,008 serialized display triangles now also match Blender index-for-index and winding-for-winding after correcting Curve-to-Mesh endpoint cap orientation. The reconstructed Generated-coordinate noise/Wave bump and Window-coordinate diagonal Backfacing emission reach 0.9951 silhouette IoU, complete mutual one-pixel coverage, 0.00425 RGB MAE, and 0.9979 macro luminance correlation. PRINT VIZ 1OCT2024 stores the authored 0.22 mm layer-height value and includes an optional cross-section inspection branch, but that branch is disabled in the captured default and the supplied project contains no slicer toolpath or source G-code. Cutter mode uses a browser-native open-surface Boolean because Blender's FLOAT solver subtracts three overlapping closed pipes from three open shells, an operation a solid-only Manifold cannot represent. It retains exact bounds and the complete Blender surface: sampled Blender vertices and triangle centroids both measure zero p99 distance to the browser result. The browser keeps an extra inner surface (3.126% area overhead), now isolated to the BMS bInside classifier rather than either generated operand."
+  "validation": "Authored output and five non-cutter control variants have exact topology and bounds. The default's 97,008 serialized display triangles now also match Blender index-for-index and winding-for-winding after correcting Curve-to-Mesh endpoint cap orientation. The reconstructed Generated-coordinate noise/Wave bump and Window-coordinate diagonal Backfacing emission reach 0.9951 silhouette IoU, complete mutual one-pixel coverage, 0.00425 RGB MAE, and 0.9979 macro luminance correlation. PRINT VIZ 1OCT2024 stores the authored 0.22 mm layer-height value and includes an optional cross-section inspection branch, but that branch is disabled in the captured default and the supplied project contains no slicer toolpath or source G-code. Cutter mode uses a browser-native open-surface Boolean because Blender's FLOAT solver subtracts three overlapping closed pipes from three open shells, an operation a solid-only Manifold cannot represent. It retains exact bounds and the complete Blender surface: sampled Blender vertices and triangle centroids both measure zero p99 distance to the browser result. Reciprocal-island cycle filtering removes the former broad inner patch and reduces area overhead from 3.126% to 0.1911%; the remaining small local delta is splitter tessellation rather than a missing Blender surface."
 }

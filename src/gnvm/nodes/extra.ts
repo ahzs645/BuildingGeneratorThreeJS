@@ -27,6 +27,7 @@ import { asBezierSpline } from "../bezier";
 import { Vector3 as ThreeVector3 } from "three";
 import { ConvexHull as ThreeConvexHull } from "three/examples/jsm/math/ConvexHull.js";
 import { blenderBulletHull } from "../bullet-hull";
+import { filterOpenSurfaceCutterCycles } from "../open-surface-boolean";
 import * as TrimeshBoolean from "trimesh-boolean";
 import type {
   SplitResult as OpenBooleanSplit,
@@ -3735,7 +3736,11 @@ function openSurfaceDifference(source: Mesh, cutter: Mesh): Mesh | null {
     { classifier: "hybrid", preRepair: false },
   );
   if (!split) return null;
-  const result = TrimeshBoolean.mergeSplitGroups(split.groups, "subtract");
+  const cycleFilter = filterOpenSurfaceCutterCycles(source, cutter, split);
+  const groups = cycleFilter
+    ? { ...split.groups, bInside: cycleFilter.bInside }
+    : split.groups;
+  const result = TrimeshBoolean.mergeSplitGroups(groups, "subtract");
   if (!result?.triangles.length) return null;
 
   const mesh = new Mesh();

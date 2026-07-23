@@ -81,8 +81,8 @@
         }
       },
       "status": "ok",
-      "verts": 27136,
-      "faces": 53872,
+      "verts": 26323,
+      "faces": 51624,
       "bbox": {
         "min": [
           -66.8282,
