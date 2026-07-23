@@ -1,0 +1,79 @@
+{
+  "updated": "2026-07-23",
+  "scope": "Blender Eevee versus the browser reconstructions of the authored Nodes Node base-plate and noodle materials on exact GN-VM geometry.",
+  "capture": {
+    "resolution": [
+      768,
+      768
+    ],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometry": "Geometry Nodes only, local object transform",
+    "blenderLighting": "shared two-area-light authored rig"
+  },
+  "variants": [
+    {
+      "id": "nodes-node-base-plate",
+      "object": "Plane",
+      "material": "node base.001 + grid dots",
+      "blenderReference": "../references/nodes-node/plane-authored.png",
+      "blenderMetadata": "../references/nodes-node/plane-authored.json",
+      "browserReference": "../references/nodes-node/plane-authored-webgl.png",
+      "comparisonReport": "plane-material-comparison.json",
+      "blender": {
+        "verts": 47652,
+        "faces": 2813,
+        "evaluatedMaterialFaces": {
+          "node base.001": 1369,
+          "grid dots": 1444
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "47,652 verts · 2,813 faces",
+        "lightScale": 1
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9961128662578207,
+        "surfaceMaskIoUDilated1px": 0.9964912818312751,
+        "blenderSurfaceCoveredWithin1px": 1,
+        "browserSurfaceCoveredWithin1px": 1,
+        "pixelLuminanceMae": 0.003806295092458308,
+        "macroLuminanceMae": 0.0032386143353885914,
+        "macroLuminanceCorrelation": 0.8206316653557545,
+        "meanLuminanceDelta": -0.002105023612101462
+      }
+    },
+    {
+      "id": "nodes-node-noodle-pair",
+      "object": "Point.001",
+      "material": "node color.geometry",
+      "blenderReference": "../references/nodes-node/point-001-authored.png",
+      "blenderMetadata": "../references/nodes-node/point-001-authored.json",
+      "browserReference": "../references/nodes-node/point-001-authored-webgl.png",
+      "comparisonReport": "point-001-material-comparison.json",
+      "blender": {
+        "verts": 4736,
+        "faces": 4672,
+        "evaluatedMaterialFaces": {
+          "node color.geometry": 4672
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "4,736 verts · 4,672 faces",
+        "lightScale": 6.6
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.8626865671641791,
+        "surfaceMaskIoUDilated1px": 0.9084177119540577,
+        "blenderSurfaceCoveredWithin1px": 1,
+        "browserSurfaceCoveredWithin1px": 1,
+        "pixelLuminanceMae": 0.02678814061204681,
+        "macroLuminanceMae": 0.006470738623833448,
+        "macroLuminanceCorrelation": 0.97674321096393,
+        "meanLuminanceDelta": 0.010958384254246403
+      }
+    }
+  ],
+  "interpretation": "The graph topology, extracted material constants, scalar procedural fields, material ownership, and geometry are tested separately from renderer pixels. Three.js lighting and screen-derivative bump filtering remain disclosed Eevee residuals."
+}

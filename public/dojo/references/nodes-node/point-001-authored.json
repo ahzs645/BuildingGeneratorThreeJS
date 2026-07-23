@@ -1,0 +1,37 @@
+{
+  "object": "Point.001",
+  "type": "CURVE",
+  "bbox": {
+    "min": [
+      -1.1101468801498413,
+      -1.627371907234192,
+      -1.0524080991744995
+    ],
+    "max": [
+      7.757761001586914,
+      0.0400003120303154,
+      8.64538860321045
+    ]
+  },
+  "verts": 4736,
+  "faces": 4672,
+  "materials": [],
+  "evaluated_materials": [
+    "node color.geometry"
+  ],
+  "evaluated_material_faces": {
+    "node color.geometry": 4672
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "frozen_evaluated_mesh": false,
+  "overrides": {},
+  "authored_light_scale": 1.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

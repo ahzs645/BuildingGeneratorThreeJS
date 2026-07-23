@@ -65,8 +65,23 @@
       "tool": "tools/blender_voronoi_shader_probe.py"
     },
     "webglCompile": "pass; no browser console warnings or errors",
-    "reference": "dojo/references/nodes-node/point-001-authored.png"
+    "reference": "dojo/references/nodes-node/point-001-authored-webgl.png"
   },
-  "result": "exact topology and authored material constants; Blender-aligned curve geometry within 3.34e-6; Smooth F1 scalar probes within 8.2e-7",
+  "alignedEvidence": {
+    "blenderReference": "dojo/references/nodes-node/point-001-authored.png",
+    "blenderMetadata": "dojo/references/nodes-node/point-001-authored.json",
+    "browserReference": "dojo/references/nodes-node/point-001-authored-webgl.png",
+    "comparisonReport": "public/dojo/nodes-node/point-001-material-comparison.json",
+    "browserLightScale": 6.6,
+    "surfaceMaskIoU": 0.8626865671641791,
+    "surfaceMaskIoUDilated1px": 0.9084177119540577,
+    "blenderSurfaceCoveredWithin1px": 1,
+    "browserSurfaceCoveredWithin1px": 1,
+    "pixelLuminanceMae": 0.02678814061204681,
+    "macroLuminanceMae": 0.006470738623833448,
+    "macroLuminanceCorrelation": 0.97674321096393,
+    "meanLuminanceDelta": 0.010958384254246403
+  },
+  "result": "exact topology and authored material constants; Blender-aligned curve geometry within 3.34e-6; Smooth F1 scalar probes within 8.2e-7; aligned material evidence reaches complete mutual one-pixel coverage and 0.9767 macro luminance correlation",
   "note": "The procedural field now follows Blender 5.1's PCG3D and Smooth F1 semantics. Three.js bump derivatives, lighting, and rasterization remain renderer approximations."
 }

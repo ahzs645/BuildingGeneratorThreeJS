@@ -19,6 +19,14 @@
     "generatedDomain": "material-group-local bounds",
     "blenderScalarProbe": "8 samples; browser CPU oracle maximum absolute error 0.000007276",
     "blenderNormalProbe": "256px direct-normal emission; 65536 opaque pixels; RGB ranges [0.482353,0.517647], [0.482353,0.521569], [0.992157,1]",
+    "alignedEvidence": {
+      "surfaceMaskIoU": 0.9961128662578207,
+      "blenderSurfaceCoveredWithin1px": 1,
+      "browserSurfaceCoveredWithin1px": 1,
+      "macroLuminanceMae": 0.0032386143353885914,
+      "macroLuminanceCorrelation": 0.8206316653557545,
+      "report": "plane-material-comparison.json"
+    },
     "rendererApproximation": "Three.js PBR lighting and WebGL screen derivatives; no exact Blender Eevee raster claim",
     "materialFaces": { "node base.001": 1369, "grid dots": 1444 }
   },
@@ -29,6 +37,16 @@
     "strictGraph": "Generated -> Mapping -> 3D Smooth F1 Voronoi -> Map Range -> Greater Than -> Bump -> Principled Normal",
     "exact": ["outer 3-node / 2-link contract", "inner 7-node / 6-link contract", "Principled constants", "Generated bounds", "Blender 5.1 PCG3D cell jitter", "3D Smooth F1 scalar field"],
     "blenderScalarProbe": "3 authored Generated-coordinate samples; maximum absolute AOV error 0.0000008196",
+    "alignedEvidence": {
+      "surfaceMaskIoU": 0.8626865671641791,
+      "surfaceMaskIoUDilated1px": 0.9084177119540577,
+      "blenderSurfaceCoveredWithin1px": 1,
+      "browserSurfaceCoveredWithin1px": 1,
+      "macroLuminanceMae": 0.006470738623833448,
+      "macroLuminanceCorrelation": 0.97674321096393,
+      "browserLightScale": 6.6,
+      "report": "point-001-material-comparison.json"
+    },
     "rendererApproximation": "Three.js PBR lighting and screen derivatives replace Blender Eevee and Bump closure",
     "geometryInvariant": "4736 vertices / 4672 faces / 9344 triangles remain exact; rebuilt evaluated Bezier tangents reduce maximum world-bounds delta from 0.0089175701 to 0.0000004770 and aligned vertex probes to 0.0000033379"
   },
@@ -46,5 +64,5 @@
     { "id": "nodes-node-checkbox-panel", "object": "Cube.004", "root": "Geometry Nodes.015", "nodes": 898, "status": "topology-bounds-exact-recovered-font-vtext", "blender": { "verts": 9134, "faces": 1347 }, "gnvm": { "verts": 9134, "faces": 1347 } },
     { "id": "nodes-node-dual-input-bar", "object": "Cube.003", "root": "Geometry Nodes.003", "nodes": 900, "status": "topology-bounds-exact-recovered-font-vtext", "blender": { "verts": 2691, "faces": 1118 }, "gnvm": { "verts": 2691, "faces": 1118 } }
   ],
-  "validation": "All twelve roots are exact, structurally exact, or topology-and-bounds exact. The check helper now remains visible as a separate evaluated viewport-wire payload while retaining zero mesh vertices/faces; its translated world bounds match Blender within 0.000001 units. The supplied offline Blender reference is correctly blank because the raw curve has no beveled render surface. The recovered DejaVu atlas, even-odd N-gon glyph fill, zero-radius Curve Circle semantics, inclusive cumulative-row placement, and Blender-style legacy curve pass-through make all six large UI variants topology-and-bounds exact. Authored mode reconstructs the shared node base vtext.001 FBM/Wave/Ping-Pong micro-bump, the base plate's node base.001 normalized Noise/Bump graph, and the noodle pair's node color.geometry constants plus Blender 5.1 PCG3D and 3D Smooth F1 scalar semantics. Hooked curves invalidate their imported frame, and handle-edited Bezier curves rebuild exact endpoint derivatives plus evaluated interior bisectors before Curve to Mesh; Noodle Pair now matches Blender's world bounds within 4.8e-7 and aligned vertex probes within 3.34e-6. Three.js lighting, bump derivatives, and rasterization remain renderer approximations."
+  "validation": "All twelve roots are exact, structurally exact, or topology-and-bounds exact. The check helper now remains visible as a separate evaluated viewport-wire payload while retaining zero mesh vertices/faces; its translated world bounds match Blender within 0.000001 units. The supplied offline Blender reference is correctly blank because the raw curve has no beveled render surface. The recovered DejaVu atlas, even-odd N-gon glyph fill, zero-radius Curve Circle semantics, inclusive cumulative-row placement, and Blender-style legacy curve pass-through make all six large UI variants topology-and-bounds exact. Authored mode reconstructs the shared node base vtext.001 FBM/Wave/Ping-Pong micro-bump, the base plate's node base.001 normalized Noise/Bump graph, and the noodle pair's node color.geometry constants plus Blender 5.1 PCG3D and 3D Smooth F1 scalar semantics. Hooked curves invalidate their imported frame, and handle-edited Bezier curves rebuild exact endpoint derivatives plus evaluated interior bisectors before Curve to Mesh; Noodle Pair now matches Blender's world bounds within 4.8e-7 and aligned vertex probes within 3.34e-6. Controlled Blender/WebGL captures validate Base Plate at 0.9961 silhouette IoU and 0.00324 macro luminance MAE, and Noodle Pair at complete mutual one-pixel coverage with 0.9767 macro luminance correlation. Three.js lighting, bump derivatives, and rasterization remain renderer approximations."
 }

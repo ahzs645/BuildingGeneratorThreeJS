@@ -62,8 +62,21 @@
     "implementation": "strict graph recognizer plus MeshPhysicalMaterial shader injection",
     "generatedBounds": "material-group-local",
     "webglCompile": "pass; no browser console warnings or errors",
-    "reference": "dojo/references/nodes-node/plane-authored.png"
+    "reference": "dojo/references/nodes-node/plane-authored-webgl.png"
   },
-  "result": "exact geometry, material grouping, scalar graph, and extracted parameters; renderer approximation remains",
+  "alignedEvidence": {
+    "blenderReference": "dojo/references/nodes-node/plane-authored.png",
+    "blenderMetadata": "dojo/references/nodes-node/plane-authored.json",
+    "browserReference": "dojo/references/nodes-node/plane-authored-webgl.png",
+    "comparisonReport": "public/dojo/nodes-node/plane-material-comparison.json",
+    "surfaceMaskIoU": 0.9961128662578207,
+    "blenderSurfaceCoveredWithin1px": 1,
+    "browserSurfaceCoveredWithin1px": 1,
+    "pixelLuminanceMae": 0.003806295092458308,
+    "macroLuminanceMae": 0.0032386143353885914,
+    "macroLuminanceCorrelation": 0.8206316653557545,
+    "meanLuminanceDelta": -0.002105023612101462
+  },
+  "result": "exact geometry, material grouping, scalar graph, and extracted parameters; aligned Blender/WebGL evidence reaches 0.9961 silhouette IoU and 0.00324 macro luminance MAE",
   "note": "The authored Blender reference uses isolated Eevee with the shared two-area-light rig. Three.js PBR lighting and WebGL screen derivatives do not claim exact Eevee pixel parity."
 }
