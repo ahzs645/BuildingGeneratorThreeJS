@@ -7,6 +7,30 @@ type ManifestPort = {
   name: string;
   type: string;
   value: unknown;
+  path?: string;
+};
+
+export type EsslTextureBinding = {
+  uniform: string;
+  path: string;
+  /**
+   * Authored encoding consumed by the generated MaterialX shader. This is
+   * provenance, and may name a transform already emitted in the ESSL.
+   */
+  sourceColorSpace: "srgb_texture" | "lin_rec709" | "raw";
+  /**
+   * Three/WebGL upload behavior. Keep this "none" when generated ESSL performs
+   * the source-space transform; use "srgb" only when hardware should decode it.
+   */
+  uploadColorSpace: "none" | "srgb";
+  wrapS: "repeat" | "clamp" | "mirror";
+  wrapT: "repeat" | "clamp" | "mirror";
+  minFilter: "nearest" | "linear" | "linear-mipmap-linear";
+  magFilter: "nearest" | "linear";
+  flipY: boolean;
+  sha256: string;
+  bytes: number;
+  mimeType: "image/png" | "image/jpeg" | "image/webp" | "image/avif";
 };
 
 export type ShaderRecord = {
@@ -14,6 +38,7 @@ export type ShaderRecord = {
   fragment: string;
   vertexInterface: { inputs: Record<string, ManifestPort[]> };
   fragmentInterface: { uniforms: Record<string, ManifestPort[]> };
+  textureBindings?: EsslTextureBinding[];
   geometryBindings?: {
     generatedCoordinates?: {
       space: "object";
@@ -31,6 +56,7 @@ export type ShaderRecord = {
 };
 
 export type EsslManifest = {
+  schemaVersion?: number;
   generator: {
     materialx: string;
     specularEnvironment: "FIS";
@@ -40,6 +66,64 @@ export type EsslManifest = {
   };
   licenses: { materialx: string; thirdPartyNotices: string };
   shaders: Record<string, ShaderRecord>;
+};
+
+export const MATERIALX_ESSL_TEXTURE_SCHEMA_VERSION = 2;
+
+/**
+ * Validate the manifest-level relationship between generated filename uniforms
+ * and verified bundle texture records. Payload validation remains in
+ * essl-bundle so this check can also protect direct adapter callers.
+ */
+export function validateMaterialXEsslShaderTextureManifest(
+  manifest: EsslManifest,
+  shaderName: string,
+): readonly EsslTextureBinding[] {
+  const shader = manifest.shaders[shaderName];
+  if (!shader) throw new Error(`Generated MaterialX shader is missing ${shaderName}`);
+  if (
+    shader.textureBindings !== undefined
+    && manifest.schemaVersion !== MATERIALX_ESSL_TEXTURE_SCHEMA_VERSION
+  ) {
+    throw new Error(
+      `MaterialX textureBindings require ESSL manifest schemaVersion ${MATERIALX_ESSL_TEXTURE_SCHEMA_VERSION}`,
+    );
+  }
+  const filenamePorts = Object.values(shader.fragmentInterface.uniforms)
+    .flat()
+    .filter((port) => (
+      port.type === "filename"
+      && typeof port.value === "string"
+      && port.value.length > 0
+    ));
+  const textureBindings = shader.textureBindings ?? [];
+  const declaredUniforms = new Set(textureBindings.map((binding) => binding.uniform));
+  for (const port of filenamePorts) {
+    if (!declaredUniforms.has(port.name)) {
+      throw new Error(`MaterialX filename uniform ${port.name} lacks a validated texture binding`);
+    }
+  }
+  const filenameUniforms = new Set(filenamePorts.map((port) => port.name));
+  for (const binding of textureBindings) {
+    if (!filenameUniforms.has(binding.uniform)) {
+      throw new Error(`MaterialX texture binding ${binding.uniform} does not name a filename uniform`);
+    }
+  }
+  return textureBindings;
+}
+
+export type MaterialXEsslMaterialOptions = {
+  baseUrl: string;
+  manifest: EsslManifest;
+  shaderName: string;
+  radiance: THREE.DataTexture;
+  irradiance: THREE.DataTexture;
+  lights: MaterialXLight[];
+  environmentIntensity: number;
+  geometry: THREE.BufferGeometry;
+  geometryContract: MaterialXGeometryContract;
+  textures?: Readonly<Record<string, THREE.Texture>>;
+  signal?: AbortSignal;
 };
 
 export type MaterialXLight = {
@@ -258,30 +342,34 @@ function stripVersion(source: string): string {
   return source.replace(/^#version 300 es\s*/, "");
 }
 
-export async function createMaterialXEsslMaterial(options: {
-  baseUrl: string;
-  manifest: EsslManifest;
-  shaderName: string;
-  radiance: THREE.DataTexture;
-  irradiance: THREE.DataTexture;
-  lights: MaterialXLight[];
-  environmentIntensity: number;
-  geometry: THREE.BufferGeometry;
-  geometryContract: MaterialXGeometryContract;
-}): Promise<THREE.RawShaderMaterial> {
+export async function createMaterialXEsslMaterial(
+  options: MaterialXEsslMaterialOptions,
+): Promise<THREE.RawShaderMaterial> {
   const shader = options.manifest.shaders[options.shaderName];
   if (!shader) throw new Error(`Generated MaterialX shader is missing ${options.shaderName}`);
+  const textureBindings = validateMaterialXEsslShaderTextureManifest(
+    options.manifest,
+    options.shaderName,
+  );
+  for (const binding of textureBindings) {
+    if (!options.textures?.[binding.uniform]) {
+      throw new Error(`MaterialX texture ${binding.uniform} was not loaded`);
+    }
+  }
   const [vertexShader, fragmentShader] = await Promise.all([
-    fetch(`${options.baseUrl}/${shader.vertex}`).then((response) => {
+    fetch(`${options.baseUrl}/${shader.vertex}`, { signal: options.signal }).then((response) => {
       if (!response.ok) throw new Error(`MaterialX vertex shader fetch failed: ${response.status}`);
       return response.text();
     }),
-    fetch(`${options.baseUrl}/${shader.fragment}`).then((response) => {
+    fetch(`${options.baseUrl}/${shader.fragment}`, { signal: options.signal }).then((response) => {
       if (!response.ok) throw new Error(`MaterialX fragment shader fetch failed: ${response.status}`);
       return response.text();
     }),
   ]);
   const uniforms = generatedUniforms(shader);
+  for (const binding of textureBindings) {
+    uniforms[binding.uniform] = { value: options.textures![binding.uniform] };
+  }
   bindMaterialXGeometry(options.geometry, shader, options.geometryContract, uniforms);
   Object.assign(uniforms, {
     u_worldMatrix: { value: new THREE.Matrix4() },

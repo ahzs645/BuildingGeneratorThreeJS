@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<materialx version="1.39" colorspace="lin_rec709">
+  <!-- Repository-authored capability fixture. It contains no third-party graph or texture data. -->
+  <nodegraph name="NG_synthetic_conductor">
+    <texcoord name="uv" type="vector2" index="0" />
+    <image name="layer_mask" type="color3">
+      <input name="file" type="filename" value="textures/synthetic-checker.png" colorspace="srgb_texture" />
+      <input name="texcoord" type="vector2" nodename="uv" />
+      <input name="uaddressmode" type="string" value="periodic" />
+      <input name="vaddressmode" type="string" value="clamp" />
+      <input name="filtertype" type="string" value="linear" />
+    </image>
+    <extract name="layer_factor" type="float">
+      <input name="in" type="color3" nodename="layer_mask" />
+      <input name="index" type="integer" value="0" />
+    </extract>
+    <conductor_bsdf name="base_metal" type="BSDF">
+      <input name="ior" type="color3" value="0.18, 0.42, 1.36" />
+      <input name="extinction" type="color3" value="3.42, 2.35, 1.77" />
+      <input name="roughness" type="vector2" value="0.18, 0.36" />
+    </conductor_bsdf>
+    <conductor_bsdf name="detail_metal" type="BSDF">
+      <input name="ior" type="color3" value="1.35, 0.96, 0.62" />
+      <input name="extinction" type="color3" value="7.47, 6.40, 5.31" />
+      <input name="roughness" type="vector2" value="0.04, 0.12" />
+      <input name="thinfilm_thickness" type="float" value="240" />
+      <input name="thinfilm_ior" type="float" value="1.45" />
+    </conductor_bsdf>
+    <mix name="layered_metal" type="BSDF">
+      <input name="bg" type="BSDF" nodename="base_metal" />
+      <input name="fg" type="BSDF" nodename="detail_metal" />
+      <input name="mix" type="float" nodename="layer_factor" />
+    </mix>
+    <output name="bsdf_out" type="BSDF" nodename="layered_metal" />
+  </nodegraph>
+  <surface name="synthetic_surface" type="surfaceshader">
+    <input name="bsdf" type="BSDF" nodegraph="NG_synthetic_conductor" output="bsdf_out" />
+  </surface>
+  <surfacematerial name="SyntheticDirectConductor" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="synthetic_surface" />
+  </surfacematerial>
+</materialx>
