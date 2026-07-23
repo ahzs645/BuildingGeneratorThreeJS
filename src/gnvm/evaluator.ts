@@ -11,7 +11,7 @@
 import { Field, Vec3, Domain, FieldCtx, asNum, asVec3, fieldMap, vadd, vcross, vdot, vnorm, vnormBlenderFloat, vscale, vsub } from "./core";
 import { Geometry, Mesh, mergeMeshInto, realizeInstances, topologyOf, Topology } from "./geometry";
 import { splineFrames, splineLength } from "./curves";
-import { EvalAPI, RawNode, REGISTRY, MISSING, SockVal, DataRef } from "./registry";
+import { DUMP_CONTEXT, EvalAPI, RawNode, REGISTRY, MISSING, SockVal, DataRef } from "./registry";
 
 export interface RawGroup {
   name: string;
@@ -132,6 +132,37 @@ function bboxOf(g: Geometry): string {
   }
   const f = (v: number) => (Number.isFinite(v) ? v.toFixed(4) : "?");
   return `[${f(mn[0])},${f(mn[1])},${f(mn[2])}]..[${f(mx[0])},${f(mx[1])},${f(mx[2])}]${bad ? ` !!${bad}nonfinite` : ""}`;
+}
+
+/**
+ * Evaluate an opted-in legacy nested group in the modifier object's world
+ * translation. The translate/evaluate/untranslate round trip is observable in
+ * float32 SDF fields even though the final geometry remains object-local.
+ */
+export function translateGeometryContext(source: Geometry, translation: Vec3): Geometry {
+  const geometry = source.clone();
+  const f = Math.fround;
+  const translate = (point: Vec3): Vec3 => [
+    f(f(point[0]) + f(translation[0])),
+    f(f(point[1]) + f(translation[1])),
+    f(f(point[2]) + f(translation[2])),
+  ];
+  if (geometry.mesh) geometry.mesh.positions = geometry.mesh.positions.map(translate);
+  for (const spline of geometry.curves) {
+    spline.points = spline.points.map(translate);
+    if (spline.controlPoints) spline.controlPoints = spline.controlPoints.map(translate);
+    if (spline.bezierLeft) spline.bezierLeft = spline.bezierLeft.map(translate);
+    if (spline.bezierRight) spline.bezierRight = spline.bezierRight.map(translate);
+  }
+  for (const instance of geometry.instances) {
+    instance.position = translate(instance.position);
+    if (instance.transformMatrix) {
+      instance.transformMatrix = instance.transformMatrix.map((row) => [...row]);
+      for (let axis = 0; axis < 3; axis++)
+        instance.transformMatrix[axis][3] = f(f(instance.transformMatrix[axis][3]) + f(translation[axis]));
+    }
+  }
+  return geometry;
 }
 
 const KEY = (n: string, s: string) => `${n}::${s}`;
@@ -930,7 +961,26 @@ class Invocation {
         const sub: Record<string, SockVal> = {};
         for (const s of node.inputs)
           if (s.identifier) sub[s.identifier] = coerceGroupInput(this.pull(node, s.identifier), s.type);
-        return this.ev.evalGroup(node.group, sub);
+        const coordinateContext = node.props?.gnvm_coordinate_context;
+        if (coordinateContext === "ACTIVE_OBJECT_WORLD_TRANSLATION") {
+          const location = DUMP_CONTEXT.activeObject?.location;
+          if (location?.length === 3) {
+            const translation = location.slice(0, 3) as Vec3;
+            for (const [identifier, value] of Object.entries(sub))
+              if (value instanceof Geometry) sub[identifier] = translateGeometryContext(value, translation);
+            return this.ev.evalGroup(node.group, sub);
+          }
+        }
+        const outputs = this.ev.evalGroup(node.group, sub);
+        if (coordinateContext === "ACTIVE_OBJECT_LOCAL_TRANSLATION") {
+          const location = DUMP_CONTEXT.activeObject?.location;
+          if (location?.length === 3) {
+            const inverse = location.slice(0, 3).map((value) => -value) as Vec3;
+            for (const [identifier, value] of Object.entries(outputs))
+              if (value instanceof Geometry) outputs[identifier] = translateGeometryContext(value, inverse);
+          }
+        }
+        return outputs;
       }
       // Repeat zones: pulling from the output node runs the whole loop; the input
       // node serves the current iteration's state (or the initial values when no

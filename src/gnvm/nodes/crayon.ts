@@ -1009,6 +1009,15 @@ reg("GeometryNodeDualMesh", (api) => {
     for (const face of dual.faces) face.reverse();
     invalidateMeshCaches(dual);
   }
+  // Blender starts every generated dual polygon with the face encountered
+  // immediately before our traversal seed. The cyclically shifted loop is
+  // geometrically identical, but its first corner controls Blender's cached
+  // quad diagonal. Modern Pipe sends the dual mesh into Geometry Proximity,
+  // where the other diagonal changes five SDF voxels across the zero level.
+  for (const face of dual.faces) {
+    const last = face.pop();
+    if (last !== undefined) face.unshift(last);
+  }
   out.mesh = dual;
   return { "Dual Mesh": out };
 });

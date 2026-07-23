@@ -35,10 +35,17 @@ if obj is None or group is None:
 # Several Node Dojo assets live in an excluded library collection. Evaluating
 # them in the authored presentation scene can therefore hide Collection Info
 # dependencies and return a misleading primitive fallback. Isolate the target
-# in a clean scene, matching the reference-render and parity-sweep workflow.
-probe_scene = bpy.data.scenes.new("__NODE_DOJO_GEOMETRY_PROBE_SCENE")
-probe_scene.collection.objects.link(obj)
-bpy.context.window.scene = probe_scene
+# by default, matching the reference-render and parity-sweep workflow. Some
+# legacy volume graphs intentionally inherit their authored scene evaluation
+# context; NODE_DOJO_ACTIVE_SCENE=1 keeps that context for precision probes.
+if os.environ.get("NODE_DOJO_ACTIVE_SCENE") != "1":
+    probe_scene = bpy.data.scenes.new("__NODE_DOJO_GEOMETRY_PROBE_SCENE")
+    probe_scene.collection.objects.link(obj)
+    bpy.context.window.scene = probe_scene
+elif obj.name not in bpy.context.view_layer.objects and bpy.context.scene.collection.objects.get(obj.name) is None:
+    world_matrix = obj.matrix_world.copy()
+    bpy.context.scene.collection.objects.link(obj)
+    obj.matrix_world = world_matrix
 obj.hide_viewport = False
 obj.hide_render = False
 obj.hide_set(False)

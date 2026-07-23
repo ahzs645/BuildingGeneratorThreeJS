@@ -8,6 +8,11 @@ The probe uses Blender's Get Named Grid and Grid to Points nodes, so the
 reported values and active/tile state come from the actual transient OpenVDB
 tree created by the evaluated graph rather than from a separately sampled
 copy of its density field.
+
+Set NODE_DOJO_UNIQUE_PATH=1 when a nested node tree is reused by an earlier
+branch. Every traversed group is then copied before instrumentation so the
+probe cannot replace the shared branch's Volume Cube and corrupt the input to
+the target invocation.
 """
 
 import bpy
@@ -40,6 +45,8 @@ tree_output_identifier = None
 
 for container_name in container_path.split("/"):
     container = tree.nodes[container_name]
+    if os.environ.get("NODE_DOJO_UNIQUE_PATH") == "1":
+        container.node_tree = container.node_tree.copy()
     output = next(node for node in tree.nodes if node.bl_idname == "NodeGroupOutput" and node.is_active_output)
     geometry = next(
         socket

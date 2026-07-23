@@ -6,7 +6,7 @@ import { Field, Vec3 } from "../src/gnvm/core";
 import { Geometry, Mesh, orientClosedSurface, realizeInstances, toTriSoup, topologyOf, transformPoint, triangulateFaceIndices } from "../src/gnvm/geometry";
 import { meshEdgesToChains, resampleSpline, splineFrames } from "../src/gnvm/curves";
 import { DUMP_CONTEXT, EvalAPI, REGISTRY, SockVal, RawSocket } from "../src/gnvm/registry";
-import { Evaluator, gradientDirectionField, makeFieldCtx } from "../src/gnvm/evaluator";
+import { Evaluator, gradientDirectionField, makeFieldCtx, translateGeometryContext } from "../src/gnvm/evaluator";
 import "../src/gnvm/index"; // registers all handlers
 import { ensureBulletHull } from "../src/gnvm/bullet-hull";
 
@@ -574,8 +574,30 @@ function meshSignedAreaXY(m: Mesh): number {
     openGrid.mesh.faces.push([gi(x, y), gi(x + 1, y), gi(x + 1, y + 1)], [gi(x, y), gi(x + 1, y + 1), gi(x, y + 1)]);
   }
   const openDual = runNode("GeometryNodeDualMesh", { Mesh: openGrid })["Dual Mesh"] as Geometry;
-  check("Dual Mesh omits open boundary fans by default", openDual.mesh?.positions.length === 8 && openDual.mesh.faces.length === 1 && openDual.mesh.faces[0].length === 6,
+  check("Dual Mesh omits open boundary fans and preserves Blender's loop start",
+    openDual.mesh?.positions.length === 8
+      && openDual.mesh.faces.length === 1
+      && JSON.stringify(openDual.mesh.faces[0]) === JSON.stringify([0, 3, 6, 7, 4, 1]),
     `${openDual.mesh?.positions.length}v/${openDual.mesh?.faces.length}f ${JSON.stringify(openDual.mesh?.faces[0])}`);
+}
+
+{
+  const source = new Geometry();
+  source.mesh = new Mesh();
+  source.mesh.positions = [[0.25, -0.5, 1]];
+  source.curves = [{ points: [[2, 3, 4]], cyclic: false }];
+  source.instances = [{
+    geometry: new Geometry(), position: [5, 6, 7], rotation: [0, 0, 0], scale: [1, 1, 1],
+    transformMatrix: [[1, 0, 0, 5], [0, 1, 0, 6], [0, 0, 1, 7], [0, 0, 0, 1]],
+  }];
+  const translation: Vec3 = [-21.510175704956055, 88.46116638183594, 40.50298309326172];
+  const shifted = translateGeometryContext(source, translation);
+  check("nested world-coordinate context translates every geometry component",
+    JSON.stringify(shifted.mesh?.positions[0]) === JSON.stringify(translation.map((value, axis) =>
+      Math.fround(Math.fround(source.mesh!.positions[0][axis]) + Math.fround(value))))
+      && shifted.curves[0].points[0][1] === Math.fround(Math.fround(3) + Math.fround(translation[1]))
+      && shifted.instances[0].position[2] === Math.fround(Math.fround(7) + Math.fround(translation[2]))
+      && shifted.instances[0].transformMatrix?.[0][3] === Math.fround(Math.fround(5) + Math.fround(translation[0])));
 }
 
 // Split to Instances is field-driven on its selected domain. Two adjacent

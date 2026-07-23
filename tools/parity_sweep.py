@@ -342,11 +342,17 @@ def main():
         os.makedirs(export_dir, exist_ok=True)
     obj, mod = find_modifier(object_name)
     # Asset-library objects can live in hidden/excluded collections. Evaluate
-    # them in a clean scene, as the isolated reference renderer does, so a
-    # downstream Realize Instances modifier sees the complete geometry set.
-    scene = bpy.data.scenes.new("__NODE_DOJO_PARITY_SCENE")
-    scene.collection.objects.link(obj)
-    bpy.context.window.scene = scene
+    # them in a clean scene by default, as the isolated reference renderer
+    # does. Legacy volume graphs can depend on their authored scene context;
+    # NODE_DOJO_ACTIVE_SCENE=1 retains it for precision comparisons.
+    if os.environ.get("NODE_DOJO_ACTIVE_SCENE") != "1":
+        scene = bpy.data.scenes.new("__NODE_DOJO_PARITY_SCENE")
+        scene.collection.objects.link(obj)
+        bpy.context.window.scene = scene
+    elif obj.name not in bpy.context.view_layer.objects and bpy.context.scene.collection.objects.get(obj.name) is None:
+        world_matrix = obj.matrix_world.copy()
+        bpy.context.scene.collection.objects.link(obj)
+        obj.matrix_world = world_matrix
     obj.hide_render = False
     obj.hide_viewport = False
     obj.hide_set(False)

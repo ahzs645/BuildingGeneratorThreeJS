@@ -12,9 +12,9 @@
   },
   "firstVolumeToMesh": {
     "blender": { "verts": 3496, "faces": 3494 },
-    "gnvm": { "verts": 3522, "faces": 3520 },
-    "delta": { "verts": 26, "faces": 26 },
-    "interpretation": "The corrected grid dimensions remove the former false dense-grid comparison. Small scalar differences remain between Blender's transient world-context FloatGrid and the portable local-space field, so the first zero surface is not yet topologically exact."
+    "gnvm": { "verts": 3496, "faces": 3494 },
+    "delta": { "verts": 0, "faces": 0 },
+    "interpretation": "The tight-wrap group evaluates at the active object's world translation, matching Blender's transient FloatGrid coordinate context. The resulting surface is kept in that context through dual smoothing and auto-smooth, then only the completed shell is returned to browser-local space."
   },
   "firstGridCoordinateContext": {
     "sourceBranch": { "verts": 18060, "faces": 18060, "coordinates": "bit-exact" },
@@ -27,45 +27,59 @@
     },
     "storedGrid": {
       "values": 13800,
-      "differentValues": 13248,
-      "maximumAbsoluteDifference": 0.0049467915669083595,
-      "meanAbsoluteDifference": 0.0009761103164604253,
-      "signDifferences": 42
+      "differentValues": 10613,
+      "maximumAbsoluteDifference": 0.00383178,
+      "meanAbsoluteDifference": 0.0002810,
+      "signDifferences": 0
     },
-    "interpretation": "The source geometry, hull vertices, hull loop triangles, and Geometry Proximity arithmetic are exact when evaluated at the same point. The divergence begins only when Blender evaluates the density field through the nested Volume Cube coordinate context: its linked Min/Max position fields are represented in the transient global FloatGrid transform, while the portable VM keeps them in modifier-local space. The remaining work is coordinate-context emulation, not hull, triangulation, proximity, or transform repair."
+    "interpretation": "The source geometry, hull vertices, hull loop triangles, and direct Geometry Proximity arithmetic are exact. Float values retain harmless sub-voxel rounding differences, but no sample crosses the zero surface and the extracted topology is exact."
   },
   "secondVolumeToMesh": {
     "blender": { "verts": 3308, "faces": 3306 },
     "gnvm": { "verts": 3308, "faces": 3306 },
     "delta": { "verts": 0, "faces": 0 },
-    "interpretation": "After the authored dual-mesh and proximity smoothing loop, the second remesh converges to exact topology counts. Both surfaces are closed genus-zero meshes with 6,612 edges."
+    "storedGrid": {
+      "values": 13800,
+      "differentValues": 12822,
+      "maximumAbsoluteDifference": 0.00010514259338378906,
+      "meanAbsoluteDifference": 0.000007069490472887359,
+      "signDifferences": 0
+    },
+    "dualMeshLoopProbe": {
+      "vertices": 3494,
+      "faces": 3496,
+      "exactPositions": 3494,
+      "exactCyclicFaceStarts": 3496
+    },
+    "interpretation": "Blender starts each Dual Mesh polygon one incident face before the VM's former traversal seed. Preserving that cyclic start restores Blender's cached quad diagonal, eliminates all five second-grid sign differences, and keeps the closed genus-zero output exact at 6,612 edges."
   },
   "finalComposition": {
     "exactStructure": { "verts": 4968, "faces": 4758 },
     "blenderPreAutosmoothShell": { "verts": 3308, "faces": 3306 },
     "gnvmPreAutosmoothShell": { "verts": 3308, "faces": 3306 },
-    "blenderAuthored": { "verts": 11162, "faces": 8064 },
-    "gnvmAuthored": { "verts": 11163, "faces": 8064 }
+    "blender51Authored": { "verts": 11163, "faces": 8064 },
+    "gnvmAuthored": { "verts": 11163, "faces": 8064 },
+    "blender43ArchivedReference": { "verts": 11162, "faces": 8064, "bounds": "exact at four decimals" }
   },
   "autoSmoothEdgeProbe": {
     "thresholdDegrees": 30,
     "authoredDefault": {
       "edges": 6612,
-      "blenderSelected": 125,
-      "gnvmSelected": 126,
-      "finalVertexDelta": 1
+      "blender51Selected": 127,
+      "gnvmSelected": 127,
+      "finalVertexDelta": 0
     },
     "jointSize18": {
-      "edges": 5772,
-      "blenderSelected": 229,
-      "gnvmSelected": 230,
-      "finalVertexDelta": 2
+      "blenderVerts": 10857,
+      "blenderFaces": 7644,
+      "gnvmVerts": 10857,
+      "gnvmFaces": 7644,
+      "boundsMaxAbsDifference": 0
     },
-    "interpretation": "The complete pre-autosmooth surfaces have matching vertex, edge, and face counts. One edge in each case crosses the 30-degree cutoff differently because the first transient SDF scalar field and its later smoothed vertex positions are close but not bit-identical. The same single selection difference creates either one or two extra corner-fan copies depending on local topology."
+    "interpretation": "The complete pre-auto-smooth surfaces and the 30-degree selected edge sets agree in installed Blender 5.1.2. The archived Blender 4.3 default stores one fewer split vertex, but joint size 18 is exact against both versions. No asset-specific angle bias is applied."
   },
   "remaining": {
-    "authoredDefault": "One extra 30-degree auto-smooth edge selection creates one additional referenced corner-fan vertex; all faces and rounded bounds are exact.",
-    "jointSize18": "One extra 30-degree auto-smooth edge selection creates two additional referenced corner-fan vertices; all faces remain exact.",
-    "nextTarget": "Emulate Blender's nested Volume Cube global-grid position context while returning the generated mesh to modifier-local space, then recheck the 42 first-grid sign differences and the final edge-angle classifications."
+    "versionVariance": "The archived Blender 4.3 authored-default and hidden-structure references contain one fewer auto-smooth split vertex than Blender 5.1.2; faces and four-decimal local bounds are unchanged.",
+    "nextTarget": "Broaden parameter sweeps beyond the verified authored default, joint size 18, hidden structure, and bone preview cases."
   }
 }
