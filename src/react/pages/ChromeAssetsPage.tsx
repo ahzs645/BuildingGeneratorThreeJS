@@ -28,6 +28,7 @@ export default function ChromeAssetsPage(): React.JSX.Element {
   const showTypePixelBrushGraph = activeAssetId === "type-pixel-brush";
   const captureMode = query.get("capture");
   const shaderCapture = captureMode === "authored"
+    || captureMode === "materialx-native"
     || (captureMode === "stippler-shader" && activeAssetId === "img-pixel-stippler");
 
   useEffect(() => {

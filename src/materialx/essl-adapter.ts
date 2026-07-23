@@ -69,7 +69,7 @@ export type BlenderSceneContract = {
 
 export type MaterialXGeometryContract = {
   bounds: { space: "object"; min: number[]; max: number[] };
-  geometryProperties: Array<{ name: string; type: string; domain: "point" }>;
+  geometryProperties: Array<{ name: string; type: string; domain: "point" | "vertex" }>;
 };
 
 export function materialXDirection(
@@ -241,7 +241,8 @@ export function bindMaterialXGeometry(
   }
   for (const property of shader.geometryBindings?.properties ?? []) {
     const declaration = contract.geometryProperties.find((candidate) => candidate.name === property.name);
-    if (!declaration || declaration.type !== property.type || declaration.domain !== "point") {
+    if (!declaration || declaration.type !== property.type
+      || (declaration.domain !== "point" && declaration.domain !== "vertex")) {
       throw new Error(`MaterialX geometry property ${property.name}:${property.type} is absent from the scene contract`);
     }
     const attribute = geometry.getAttribute(property.name);

@@ -4,11 +4,13 @@
 
 The prototype adds an isolated `/materialx` route and a material backend contract without changing any production material dispatch or renderer. Its default reference implementation is offline-generated official MaterialX 1.39.4 ESSL running in a route-owned `WebGLRenderer`/`RawShaderMaterial`; `?implementation=tsl` retains the Three `MaterialXLoader`/`WebGPURenderer` experiment. Existing `WebGLRenderer`, `ShaderMaterial`, `EffectComposer`, and post-processing pages remain untouched.
 
-The supplied `chrome.003` material can be extracted reproducibly through Blender 5.1's native USD MaterialX network into standalone `.mtlx`. Native extraction now reconstructs Blender Generated coordinates from exported object-space bounds, and the isolated official-ESSL path binds typed named geometry properties (`rough:float`, then `col:color3`) through a generated interface manifest. Three 0.185.1's TSL loader still lacks `geompropvalue`, and Blender's native export still substitutes the source `rough` property. Therefore `chrome.003` is not claimed as parity-ready: its extraction capability report remains the promotion gate.
+The supplied `chrome.003` material can be extracted reproducibly from `NO3D Chrome Asset Library.blend` through Blender 5.1's native USD MaterialX network into standalone `.mtlx`. Native extraction reconstructs Blender Generated coordinates from exported object-space bounds and restores `rough:float` as `geompropvalue` from the exact FACE-domain 2.5D Chrome Crayon geometry contract. The extraction report has no substituted semantics. The native graph is now generated to official MaterialX 1.39.4 ESSL and available as an opt-in shader preview on the live 97,784-vertex / 97,776-face GN-VM asset. Three 0.185.1's TSL loader still lacks `geompropvalue`, so this recovered graph remains on the official-ESSL path.
+
+This is semantic and binding parity, not renderer identity. The matched 2.5D capture reaches full-frame RMSE `0.057457` and luminance correlation `0.681123`; the zero-roughness metallic highlights differ much more inside the visible object because Eevee and MaterialX FIS use different BRDF/environment filtering. `Authored chrome.003` therefore remains the default, with `Recovered chrome.003 · native MaterialX` exposed for direct review.
 
 The requested Noise/Wave bump description does not match the supplied graph. `chrome.003` contains Noise, but no Wave and no Bump node. The lab therefore exposes two clearly separate views plus an explicit baked fallback:
 
-- `ChromeCrayonSourceLowering`: a general semantic-recovery probe using exported bounds and a typed `rough` point property. It is not the substituted native export and is not labeled source parity.
+- `ChromeCrayonSourceLowering`: the earlier general semantic-recovery probe using exported bounds and a typed `rough` property. It remains historical adapter evidence; the recovered native graph is now captured on the live 2.5D asset separately.
 - `ChromeCrayonNoiseBumpProbe`: a general Noise-to-normal compatibility probe. It is not represented as source parity.
 - `baked-pbr`: a Blender/Cycles tangent-normal and roughness bake for the same probe, used to isolate graph loss from renderer differences.
 
@@ -16,7 +18,7 @@ Unsupported graphs resolve through `materialx -> baked-pbr -> legacy-authored ->
 
 ## Existing architecture and migration boundary
 
-Production material selection remains the hard-coded authored chain in `src/chrome-assets.ts`. That path tries topology-aware authored reconstructions and ends with a normalized diagnostic material. It runs under `WebGLRenderer`.
+Production material selection remains the hard-coded authored chain in `src/chrome-assets.ts`. That path tries topology-aware authored reconstructions and ends with a normalized diagnostic material. It runs under `WebGLRenderer`. The 2.5D Chrome Crayon adds one explicit opt-in official-ESSL preview selected by the user; it does not replace the authored default or alter any other asset.
 
 The building route also uses `WebGLRenderer`, custom `ShaderMaterial`, `EffectComposer`, and WebGL render targets. Three's installed `MaterialXLoader` imports node materials from `three/webgpu`; its source states that these materials require `WebGPURenderer`. `WebGPURenderer` tries WebGPU and initializes a WebGL2 node backend when WebGPU is unavailable. That fallback is not the legacy `WebGLRenderer`, and custom `ShaderMaterial` has no node-library mapping there.
 
@@ -90,7 +92,7 @@ Machine-readable archive evidence is stored in `docs/materialx-evidence/archive/
 materialx -> baked-pbr -> legacy-authored -> normalized
 ```
 
-Resolution is total, records every attempted backend, and reports why a fallback was selected. The contract is intentionally not wired into `src/chrome-assets.ts` yet. Integration should happen only after a material's reference evidence passes review.
+Resolution is total, records every attempted backend, and reports why a fallback was selected. The isolated `/materialx` route uses this contract. The Chrome Asset viewer now has a narrower asset-specific review mode for recovered `chrome.003`, while its default production dispatch remains authored.
 
 Recommended production integration for one material:
 
@@ -114,7 +116,7 @@ Source node types from Blender 5.1.2:
 | Math, multiply | `multiply` | supported |
 | Combine XYZ / Value | typed constants | supported |
 | Texture Coordinate, Generated | `(object position - exported bounds min) / max(bounds extent, epsilon)` | recovered by native extractor and supported by official ESSL path |
-| Attribute, named `rough` | `geompropvalue` + typed `a_geomprop_rough` point buffer | supported by isolated official ESSL probe; native export remains substituted and Three TSL rejects it |
+| Attribute, named `rough` | `geompropvalue` + FACE-domain source contract + flat-expanded vertex buffer | recovered by native extractor and official ESSL path; Three TSL rejects it |
 | Attribute, named `col` diagnostic | `geompropvalue` + typed `a_geomprop_col` color3 point buffer | supported by the same manifest-driven binding; not a `chrome.003` source node |
 | Material Output | `surfacematerial` | supported |
 
@@ -122,7 +124,7 @@ The supplied material has no Wave or Bump node. For the broader Chrome material 
 
 - Wave Texture (`wave` has no `MaterialXLoader` implementation).
 - White Noise equivalence.
-- Named attributes whose exported type/domain or geometry buffer is missing or mismatched. The official-ESSL adapter supports declared point properties generally; Three's TSL path does not yet support `geompropvalue`.
+- Named attributes whose exported type/domain or geometry buffer is missing or mismatched. The official-ESSL adapter supports declared point/vertex GPU properties generally; Three's TSL path does not yet support `geompropvalue`.
 - Backfacing, Transparent/Mix Shader topology, Window coordinates, and Eevee bevel groups.
 - Procedural `heighttonormal` under Three r185. Its built-in implementation forward-samples `TextureNode` UVs and does not reliably perturb a procedural node.
 
@@ -251,9 +253,12 @@ Reproduce the Blender images, start the Vite development server, capture the bro
 
 ```bash
 npm run materialx:render:blender
+npm run materialx:render:25d
 npm run dev -- --host 127.0.0.1 --port 4173
 npm run materialx:capture:web
+npm run materialx:capture:25d
 npm run materialx:compare
+npm run materialx:compare:25d
 ```
 
 Both renderers use the same outward-wound 64×32 UV sphere algorithm, 96-segment floor disc, evaluated Blender camera matrix, three directional lights, generated linear studio environment at `0.18` strength, exposure, and Standard/sRGB transform with no tone mapping. `scene-contract.json` records the authoritative camera and Sun transforms. The environment affects reflections but not the solid camera background. Deterministic capture uses the isolated official ESSL/WebGL2 backend; the optional TSL experiment uses `WebGPURenderer` and its automatic fallback.
@@ -262,9 +267,10 @@ Committed evidence:
 
 | Pair | RGB MAE | RGB RMSE | luminance correlation | Interpretation |
 | --- | ---: | ---: | ---: | --- |
-| source semantic-recovery probe | 0.058130 | 0.165673 | 0.663904 | Generated recovery is native; `rough` still remains a substituted source semantic |
+| source semantic-recovery probe | 0.058130 | 0.165673 | 0.663904 | historical pre-recovery adapter capture; not the recovered native graph |
 | Noise bump probe, canonical topology | 0.019253 | 0.055410 | 0.935745 | shiny response and normal structure align closely; renderer filtering still differs |
 | UI normal-band branch diagnostic | 0.004005 | 0.008603 | 0.999426 | typed `col` and band topology align; normal-space and surface substitutions remain |
+| live 2.5D native `chrome.003` | 0.010685 | 0.057457 | 0.681123 | exact live geometry and recovered source graph; zero-roughness Eevee/FIS highlights remain different |
 
 The normalized sphere-only result for the canonical probe is RMSE `0.146605`, correlation `0.804343`, and mean luminance `0.449082` (Blender) versus `0.457048` (browser). The per-light direction evidence and these measurements are stored beside the full-frame values in `comparison.json`.
 
@@ -274,11 +280,13 @@ The normalized sphere-only result for the canonical probe is RMSE `0.146605`, co
 ![Three Noise bump probe](./materialx-evidence/current/noise-bump-web.png)
 ![Blender UI normal-band diagnostic](./materialx-evidence/current/ui-normal-band-blender.png)
 ![Three UI normal-band diagnostic](./materialx-evidence/current/ui-normal-band-web.png)
+![Blender live 2.5D chrome.003 reference](./materialx-evidence/current/25d-native-blender.png)
+![Browser live 2.5D native MaterialX](./materialx-evidence/current/25d-native-web.png)
 
 ![Blender key-light direction reference](./materialx-evidence/current/light-key-blender.png)
 ![MaterialX key-light direction reference](./materialx-evidence/current/light-key-web.png)
 
-These pixel measurements are renderer evidence, not graph-semantic proof. Graph support is independently recorded in the extraction report and manifest. `chrome.003` cannot be promoted while `chrome-crayon-native.report.json.capability.substitutedSemantics` is non-empty, regardless of image similarity.
+These pixel measurements are renderer evidence, not graph-semantic proof. Graph support is independently recorded in the extraction report and manifest. `chrome-crayon-native.report.json.capability.substitutedSemantics` is empty, and native ESSL/live geometry/capture gates now pass. The authored shader remains the default because the foreground highlight comparison still demonstrates material-renderer differences; the native result is an explicit review mode rather than a silent replacement.
 
 ## Verification
 

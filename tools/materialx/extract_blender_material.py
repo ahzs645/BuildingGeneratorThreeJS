@@ -48,7 +48,7 @@ OPEN_PBR_TO_STANDARD_SURFACE = {
     "specular_weight": "specular",
     "specular_color": "specular_color",
     "specular_roughness": "specular_roughness",
-    "specular_ior": "ior",
+    "specular_ior": "specular_IOR",
     "specular_roughness_anisotropy": "specular_anisotropy",
     "transmission_weight": "transmission",
     "transmission_color": "transmission_color",
@@ -59,11 +59,15 @@ OPEN_PBR_TO_STANDARD_SURFACE = {
     "fuzz_color": "sheen_color",
     "fuzz_roughness": "sheen_roughness",
     "thin_film_thickness": "thin_film_thickness",
-    "thin_film_ior": "thin_film_ior",
+    "thin_film_ior": "thin_film_IOR",
     "geometry_opacity": "opacity",
     "geometry_normal": "normal",
     "emission_color": "emission_color",
     "emission_luminance": "emission",
+}
+
+STANDARD_SURFACE_INPUT_TYPES = {
+    "opacity": "color3",
 }
 
 
@@ -73,6 +77,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--material", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--report", required=True)
+    parser.add_argument("--geometry-contract")
     parser.add_argument("--keep-native-usd", action="store_true")
     return parser.parse_args(argv)
 
@@ -318,6 +323,73 @@ def recover_generated_coordinates(graph: ET.Element, categories: dict[str, str])
     return recovered
 
 
+def recover_named_geometry_properties(
+    graph: ET.Element,
+    material: bpy.types.Material,
+    contract: dict,
+) -> set[str]:
+    """Restore explicitly contracted Blender Attribute links as geompropvalue.
+
+    Blender's USD exporter replaces a linked Attribute socket with its default
+    value. Recovery is allowed only when an external geometry contract names
+    the exact source/target sockets and records the source and GPU binding
+    domains. This keeps extraction generic while preventing an inferred domain
+    or interpolation rule from silently becoming a production shader contract.
+    """
+    recovered = set()
+    if contract.get("material") != material.name:
+        raise RuntimeError(
+            f"Geometry contract material {contract.get('material')!r} does not match {material.name!r}"
+        )
+    for property_ in contract.get("properties", []):
+        attribute = material.node_tree.nodes.get(property_.get("attributeNode", ""))
+        target_node = material.node_tree.nodes.get(property_.get("targetNode", ""))
+        if attribute is None or attribute.bl_idname != "ShaderNodeAttribute":
+            raise RuntimeError(f"Geometry contract attribute node is unavailable: {property_}")
+        if attribute.attribute_name != property_.get("name"):
+            raise RuntimeError(f"Geometry contract attribute name does not match Blender: {property_}")
+        if target_node is None:
+            raise RuntimeError(f"Geometry contract target node is unavailable: {property_}")
+        matching_links = [
+            link for link in material.node_tree.links
+            if link.from_node == attribute
+            and property_.get("outputSocket") in (link.from_socket.name, link.from_socket.identifier)
+            and link.to_node == target_node
+            and property_.get("targetSocket") in (link.to_socket.name, link.to_socket.identifier)
+        ]
+        if len(matching_links) != 1:
+            raise RuntimeError(f"Geometry contract does not match exactly one Blender link: {property_}")
+        link = matching_links[0]
+        if target_node.bl_idname != "ShaderNodeMath":
+            raise RuntimeError(f"Unsupported contracted target node type: {target_node.bl_idname}")
+        socket_index = list(target_node.inputs).index(link.to_socket)
+        if socket_index not in (0, 1):
+            raise RuntimeError(f"Unsupported Math input index for geometry property: {socket_index}")
+        target_name = sanitize(f"bnode__{target_node.name}")
+        target = next((child for child in graph if child.get("name") == target_name), None)
+        if target is None:
+            raise RuntimeError(f"Native MaterialX target node is unavailable: {target_name}")
+        input_name = f"in{socket_index + 1}"
+        target_input = next((child for child in target.findall("input") if child.get("name") == input_name), None)
+        if target_input is None:
+            raise RuntimeError(f"Native MaterialX target input is unavailable: {target_name}.{input_name}")
+
+        property_type = property_.get("type")
+        if property_type not in ("float", "color3", "vector3"):
+            raise RuntimeError(f"Unsupported geometry property type: {property_type}")
+        geomprop_name = sanitize(f"bnode__{attribute.name}_{property_.get('name')}")
+        geomprop = ET.Element("geompropvalue", name=geomprop_name, type=property_type)
+        ET.SubElement(geomprop, "input", name="geomprop", type="string", value=property_.get("name"))
+        default = target_input.get("value")
+        if default is not None:
+            ET.SubElement(geomprop, "input", name="default", type=property_type, value=default)
+        graph.insert(list(graph).index(target), geomprop)
+        target_input.attrib.pop("value", None)
+        target_input.set("nodename", geomprop_name)
+        recovered.add(property_.get("name"))
+    return recovered
+
+
 def add_standard_surface(root: ET.Element, graph: ET.Element, surface_prim, material_name: str) -> None:
     surface = ET.SubElement(root, "standard_surface", name="SS_blender_native", type="surfaceshader")
     output_names = set()
@@ -328,10 +400,15 @@ def add_standard_surface(root: ET.Element, graph: ET.Element, surface_prim, mate
         connection = source_connection(attribute)
         value = attribute.Get()
         input_type = usd_type(attribute)
+        target_type = STANDARD_SURFACE_INPUT_TYPES.get(target_name, input_type)
         if not connection and value is None:
             continue
-        child = ET.SubElement(surface, "input", name=target_name, type=input_type)
+        child = ET.SubElement(surface, "input", name=target_name, type=target_type)
         if connection:
+            if target_type != input_type:
+                raise RuntimeError(
+                    f"Connected OpenPBR input {source_name} needs unsupported {input_type} -> {target_type} conversion"
+                )
             output_name = sanitize(f"{target_name}_out")
             if output_name not in output_names:
                 output_names.add(output_name)
@@ -341,14 +418,22 @@ def add_standard_surface(root: ET.Element, graph: ET.Element, surface_prim, mate
             child.set("nodegraph", graph.get("name"))
             child.set("output", output_name)
         elif value is not None:
-            child.set("value", format_value(value))
+            formatted = format_value(value)
+            if target_type == "color3" and input_type == "float":
+                formatted = ", ".join([formatted] * 3)
+            child.set("value", formatted)
     material = ET.SubElement(root, "surfacematerial", name=sanitize(material_name), type="material")
     ET.SubElement(material, "input", name="surfaceshader", type="surfaceshader", nodename=surface.get("name"))
 
 
-def convert(native_usd: Path, material_name: str, output: Path) -> tuple[bool, str, dict[str, str], int]:
+def convert(
+    native_usd: Path,
+    material: bpy.types.Material,
+    output: Path,
+    geometry_contract: dict,
+) -> tuple[bool, str, dict[str, str], int, set[str]]:
     stage = Usd.Stage.Open(str(native_usd))
-    mtl_prim = material_prim(stage, material_name)
+    mtl_prim = material_prim(stage, material.name)
     graph_prim = next((child for child in mtl_prim.GetChildren() if child.GetTypeName() == "NodeGraph"), None)
     surface_prim = next((child for child in mtl_prim.GetChildren() if shader_id(child).startswith("ND_open_pbr_surface")), None)
     if not graph_prim or not surface_prim:
@@ -357,7 +442,8 @@ def convert(native_usd: Path, material_name: str, output: Path) -> tuple[bool, s
     root = ET.Element("materialx", version="1.39", colorspace="lin_rec709")
     graph, categories = add_nodegraph(root, graph_prim)
     recovered_generated = recover_generated_coordinates(graph, categories)
-    add_standard_surface(root, graph, surface_prim, material_name)
+    recovered_properties = recover_named_geometry_properties(graph, material, geometry_contract)
+    add_standard_surface(root, graph, surface_prim, material.name)
     ET.indent(root, space="  ")
     output.parent.mkdir(parents=True, exist_ok=True)
     ET.ElementTree(root).write(output, encoding="utf-8", xml_declaration=True)
@@ -365,7 +451,7 @@ def convert(native_usd: Path, material_name: str, output: Path) -> tuple[bool, s
     document = mx.createDocument()
     mx.readFromXmlFile(document, str(output))
     valid, message = document.validate()
-    return valid, message, categories, recovered_generated
+    return valid, message, categories, recovered_generated, recovered_properties
 
 
 def main() -> None:
@@ -377,6 +463,11 @@ def main() -> None:
     if material is None or not material.use_nodes:
         raise RuntimeError(f"Node material {args.material!r} not found in {source}")
     clean_previous_dependencies(report_path, output)
+    geometry_contract = (
+        json.loads(Path(args.geometry_contract).resolve().read_text(encoding="utf-8"))
+        if args.geometry_contract
+        else {"material": material.name, "properties": []}
+    )
 
     temporary_directory = None
     if args.keep_native_usd:
@@ -387,7 +478,9 @@ def main() -> None:
     try:
         export_native_usd(material, native_path)
         textures = copy_texture_dependencies(native_path, output, material.name)
-        valid, validation_message, categories, recovered_generated = convert(native_path, material.name, output)
+        valid, validation_message, categories, recovered_generated, recovered_properties = convert(
+            native_path, material, output, geometry_contract
+        )
     finally:
         if temporary_directory is not None:
             temporary_directory.cleanup()
@@ -416,21 +509,28 @@ def main() -> None:
                 for link in socket.links
             }
             materialx_type = "float" if "VALUE" in linked_types else "color3" if "RGBA" in linked_types else "vector3"
+            property_contract = next(
+                (item for item in geometry_contract.get("properties", []) if item.get("name") == node.attribute_name),
+                None,
+            )
             named_geometry_properties.append({
                 "node": node.name,
                 "name": node.attribute_name,
                 "type": materialx_type,
-                "domain": "point",
+                "domain": property_contract.get("sourceDomain") if property_contract else "unknown",
+                "bindingDomain": property_contract.get("bindingDomain") if property_contract else "unknown",
+                "interpolation": property_contract.get("interpolation") if property_contract else "unknown",
             })
-            substituted_semantics.append({
-                "kind": "named-geometry-property",
-                "node": node.name,
-                "name": node.attribute_name,
-                "type": materialx_type,
-                "reason": "Blender native USD lowering substitutes the linked socket default instead of exporting geompropvalue",
-            })
+            if node.attribute_name not in recovered_properties:
+                substituted_semantics.append({
+                    "kind": "named-geometry-property",
+                    "node": node.name,
+                    "name": node.attribute_name,
+                    "type": materialx_type,
+                    "reason": "No exact source-domain geometry contract was available for native recovery",
+                })
     report = {
-        "sourceBlend": os.path.relpath(source, Path.cwd()),
+        "sourceBlend": source.name,
         "sourceMaterial": material.name,
         "blenderVersion": bpy.app.version_string,
         "extractor": "Blender native USD MaterialX network -> standalone Standard Surface MaterialX",
@@ -439,6 +539,7 @@ def main() -> None:
         "materialXVersion": "1.39",
         "validation": {"valid": valid, "message": validation_message},
         "textures": textures,
+        "geometryContract": os.path.relpath(Path(args.geometry_contract).resolve(), Path.cwd()) if args.geometry_contract else None,
         "capability": {
             "generatedCoordinates": generated_uses,
             "namedGeometryProperties": named_geometry_properties,

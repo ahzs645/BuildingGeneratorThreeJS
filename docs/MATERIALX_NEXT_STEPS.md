@@ -2,7 +2,9 @@
 
 ## Checkpoint summary
 
-The isolated MaterialX lab is technically viable. Native extraction now reconstructs Blender Generated coordinates as object position normalized by per-object bounds, with a zero-extent guard. The adapter also implements typed point properties (`rough:float` and `col:color3`) generally, but Blender's native USD network still substitutes `rough`. Therefore the native `chrome.003` graph remains blocked and is not production-ready.
+The isolated MaterialX lab is technically viable. Native extraction now reconstructs Blender Generated coordinates as object position normalized by per-object bounds, with a zero-extent guard. It also restores `rough` as `geompropvalue` from an exact external geometry contract: the topology-exact 2.5D Chrome Crayon evidence identifies a FACE-domain float that is flat-expanded into the browser vertex buffer. The native `chrome.003` extraction report is free of substituted semantics, its official ESSL compiles and links, and the shader is bound to the live 97,784-vertex / 97,776-face GN-VM asset as an opt-in preview.
+
+The matched capture closes the implementation checkpoint without claiming renderer identity. Full-frame RMSE is `0.057457` with luminance correlation `0.681123`. The object is a zero-roughness metal, and Eevee versus MaterialX FIS reflection highlights remain substantially different inside the visible surface. The authored shader therefore remains the default.
 
 The direct-light direction problem is closed. It was not a Blender/Three basis mismatch: the matched UV sphere was wound inward. Eevee rendered the two-sided backfaces, while Three's default `FrontSide` path culled the near hemisphere and shaded the far hemisphere. Both probe generators now use outward winding, and a topology test checks every probe triangle.
 
@@ -23,13 +25,15 @@ Direct lights now follow one explicit contract:
 | rim light, environment disabled | 0.038945 | 0.975296 | direction passes |
 | canonical Noise bump | 0.146605 | 0.804343 | useful parity prototype |
 | UI normal-band branch | 0.012820 | 0.992491 | typed `col` passes; two substitutions remain |
-| native source lowering | 0.440571 | 0.104222 | Generated recovered; blocked by named-property substitution |
+| native source lowering sphere | 0.440571 | 0.104222 | historical substituted capture; superseded by the recovered live 2.5D comparison |
+
+The recovered live 2.5D result is measured separately because it uses an orthographic asset frame rather than the sphere mask: full-frame RMSE `0.057457`, full-frame correlation `0.681123`, and visible-region IoU `0.926767`. The visible-region threshold is reflection-dependent and is not a geometry silhouette claim; topology and bounds are validated independently.
 
 The Noise bump full-frame result is RMSE `0.055410` with correlation `0.935745`. Its Blender/browser sphere mean luminance is `0.449082` versus `0.457048`. Highlight width and fine noise remain different because Eevee, MaterialX FIS, and the two noise implementations are not identical.
 
 The UI result is a branch diagnostic, not a source-material parity claim. Its matched identity-transform fixture neutralizes an official-ESSL world/object normal-space discrepancy, and an emission wrapper substitutes Blender's implicit color-to-Surface coercion. The supplied metadata has no corresponding source `.blend`, so native extraction cannot yet be audited.
 
-The source-lowering image must not be improved with material-name-specific roughness, color, coordinate, or light tweaks. Its poor result remains expected until native extraction preserves the already-supported named-property semantics.
+The source-lowering sphere image must not be improved with material-name-specific roughness, color, coordinate, or light tweaks. Its poor result is historical evidence from before native recovery and remains labeled as such. The recovered native graph is measured in the separate live 2.5D comparison.
 
 ## Prioritized work
 
@@ -44,29 +48,30 @@ The isolated ESSL adapter already:
 
 The native extractor now recognizes Blender's Generated `texcoord`/`convert` surrogate and replaces it with the same general object-position, bounds-offset, safe-extent, and divide graph. The regenerated `chrome-crayon-native.report.json` no longer records a `generated-coordinate` substitution. The interface remains per object, so translation, rotation, and non-uniform scale do not become baked material constants; the explicit epsilon `max` defines zero-extent behavior. Image similarity remains secondary to this semantic proof.
 
-### 2. Carry implemented typed geometry properties through native extraction
+### 2. Carry implemented typed geometry properties through native extraction — complete for `rough`
 
 The isolated manifest-driven adapter already records and binds required point properties by exported name and type, rejects incompatible buffer item sizes, and exercises both `rough:float` and `col:color3`. The UI normal-band diagnostic proves the `col` path without selecting a material name.
 
-Remaining extraction work is to:
+The extractor now accepts an exact external geometry contract and validates the named Attribute node, source socket, target node, and target socket against Blender before emitting `geompropvalue`. For `chrome.003`, the contract cites the topology-exact 2.5D Chrome Crayon dump/status, records FACE-domain source data, flat-expanded vertex binding, and the authored `[0, 0]` range.
 
-- retain named properties in native USD/MaterialX instead of substituting defaults;
-- carry Blender domain and interpolation metadata through extraction;
-- define conversion for corner, face, and constant data beyond the implemented point domain; and
+Remaining broader extraction work is to:
+
+- add equally explicit contracts for other materials instead of inferring domains;
+- define conversion for mixed/nonconstant corner, face, and constant data beyond the implemented point/vertex GPU bindings; and
 - route missing required production data to `baked-pbr`, then `legacy-authored`, instead of silently rendering zero.
 
-`chrome.003` remains blocked while its native report contains `named-geometry-property`. Procedural Mahogany additionally remains blocked on Wave and its other named properties.
+`chrome.003` now passes native extraction semantics on the official ESSL path. Three TSL still rejects `geompropvalue`. Procedural Mahogany remains blocked on Wave and its separate named properties.
 
-### 3. Re-run native `chrome.003` semantic parity
+### 3. Re-run native `chrome.003` semantic parity — complete
 
-After steps 1 and 2:
+Steps 1 and 2 now carry through the full live path:
 
-- regenerate the native extraction and ESSL;
-- capture node diagnostics for Generated coordinates and `rough` before the beauty render;
-- compare Blender and browser with the frozen scene contract; and
-- distinguish residual Blender/MaterialX Noise differences from renderer filtering.
+- native extraction is regenerated from the exact asset-library `.blend`;
+- official MaterialX 1.39.4 ESSL generation exposes both Generated bounds and `rough`;
+- the live 2.5D GN-VM mesh supplies validated object bounds, normals, fallback tangents, and one `rough=0` value per GPU vertex; and
+- matched Blender/browser captures and machine-readable metrics are committed.
 
-Promotion is blocked if the capability audit reports an unsupported element or if a required attribute uses a substituted default. A visually similar image alone is not sufficient.
+The capability audit has no unsupported or substituted source semantics, and no required attribute uses its default. Default-material promotion remains withheld because the measured zero-roughness reflection response is still renderer-dependent. A visually similar image alone is not sufficient.
 
 ### 4. Replace per-fragment FIS with the official prefilter path
 
@@ -107,7 +112,7 @@ Promote one material from `legacy-authored` only when all of the following are t
 - graph diagnostics pass independently of the beauty render;
 - Blender/browser evidence is reviewed under the frozen scene contract;
 - missing data and unsupported renderers still select the existing authored fallback;
-- the production geometry supplies required position, normal, UV, tangent, and named attributes;
+- the production geometry supplies every shader-declared position, normal, tangent/UV when requested, and named attribute;
 - focused tests, the full test suite, and the production build pass; and
 - the change remains scoped to a renderer-owned viewport—no global renderer migration.
 
@@ -116,17 +121,21 @@ Promote one material from `legacy-authored` only when all of the following are t
 ```bash
 npm run materialx:extract
 npm run materialx:generate:essl
+npm run materialx:generate:native
 npm run materialx:generate:ui-normal-band
 npm run materialx:smoke:essl
 npm run materialx:render:blender
+npm run materialx:render:25d
 npm run dev -- --host 127.0.0.1 --port 4173
 npm run materialx:capture:web
+npm run materialx:capture:25d
 npm run materialx:compare
+npm run materialx:compare:25d
 npm test
 npm run build
 ```
 
-`materialx:capture:web` expects the development server to remain running. Runtime resources stay in `public/materialx/references`; captures and authoritative metrics are in `docs/materialx-evidence/current/comparison.json`. Graph support remains independently recorded in extraction reports and generated manifests. Do not claim `chrome.003` parity until its capability report has no substituted semantics.
+The capture commands expect the development server to remain running. Runtime resources stay in `public/materialx/references`; probe metrics are in `comparison.json` and live-asset metrics are in `25d-native-comparison.json`. Graph support remains independently recorded in extraction reports and generated manifests. Native graph and live binding parity now pass; keep authored `chrome.003` as the default until the Eevee/FIS reflection residual is accepted or reduced under a renderer-specific promotion policy.
 
 ## Explicitly deferred
 

@@ -1,0 +1,661 @@
+{
+  "generator": {
+    "lightNodeDef": "ND_directional_light",
+    "lightTypeId": 1,
+    "materialx": "1.39.4",
+    "maxLights": 3,
+    "radianceSamples": 16,
+    "source": "chrome-crayon-native.mtlx",
+    "specularEnvironment": "FIS",
+    "target": "essl"
+  },
+  "licenses": {
+    "materialx": "../licenses/LICENSE",
+    "thirdPartyNotices": "../licenses/THIRD-PARTY.md"
+  },
+  "schemaVersion": 1,
+  "shaders": {
+    "chrome_003": {
+      "element": "chrome_003",
+      "fragment": "chrome_003.frag",
+      "fragmentInterface": {
+        "inputs": {
+          "VertexData": [
+            {
+              "name": "normalWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "tangentWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "positionObject",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_geomprop_rough",
+              "path": "",
+              "type": "float",
+              "value": null
+            },
+            {
+              "name": "positionWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "LightData": [
+            {
+              "name": "type",
+              "path": "",
+              "type": "integer",
+              "value": null
+            },
+            {
+              "name": "direction",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "color",
+              "path": "",
+              "type": "color3",
+              "value": null
+            },
+            {
+              "name": "intensity",
+              "path": "",
+              "type": "float",
+              "value": null
+            }
+          ],
+          "PrivateUniforms": [
+            {
+              "name": "u_envMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": "-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1"
+            },
+            {
+              "name": "u_envRadiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_envLightIntensity",
+              "path": "",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "u_envRadianceMips",
+              "path": "",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "u_envRadianceSamples",
+              "path": "",
+              "type": "integer",
+              "value": 16
+            },
+            {
+              "name": "u_envIrradiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_refractionTwoSided",
+              "path": "",
+              "type": "boolean",
+              "value": null
+            },
+            {
+              "name": "u_viewPosition",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "u_numActiveLightSources",
+              "path": "",
+              "type": "integer",
+              "value": 0
+            }
+          ],
+          "PublicUniforms": [
+            {
+              "name": "backsurfaceshader",
+              "path": "",
+              "type": "surfaceshader",
+              "value": null
+            },
+            {
+              "name": "displacementshader1",
+              "path": "",
+              "type": "displacementshader",
+              "value": null
+            },
+            {
+              "name": "bnode_Texture_Coordinate_Generated_generated_extent_in1",
+              "path": "NG_blender_native/bnode__Texture_Coordinate_Generated_generated_bounds_max",
+              "type": "vector3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "bnode_Texture_Coordinate_Generated_generated_extent_in2",
+              "path": "NG_blender_native/bnode__Texture_Coordinate_Generated_generated_bounds_min",
+              "type": "vector3",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "name": "bnode_Texture_Coordinate_Generated_generated_offset_in2",
+              "path": "NG_blender_native/bnode__Texture_Coordinate_Generated_generated_bounds_min",
+              "type": "vector3",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "name": "bnode_Texture_Coordinate_Generated_generated_safe_extent_in2",
+              "path": "NG_blender_native/bnode__Texture_Coordinate_Generated_generated_safe_extent/in2",
+              "type": "vector3",
+              "value": [
+                9.999999974752427e-07,
+                9.999999974752427e-07,
+                9.999999974752427e-07
+              ]
+            },
+            {
+              "name": "node_001_in2",
+              "path": "NG_blender_native/node_001/in2",
+              "type": "vector3",
+              "value": [
+                131.27000427246094,
+                131.27000427246094,
+                1875.469970703125
+              ]
+            },
+            {
+              "name": "node_002_amount",
+              "path": "NG_blender_native/node_002/amount",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "node_002_axis",
+              "path": "NG_blender_native/node_002/axis",
+              "type": "vector3",
+              "value": [
+                1.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "name": "node_003_amount",
+              "path": "NG_blender_native/node_003/amount",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "node_003_axis",
+              "path": "NG_blender_native/node_003/axis",
+              "type": "vector3",
+              "value": [
+                0.0,
+                1.0,
+                0.0
+              ]
+            },
+            {
+              "name": "node_004_amount",
+              "path": "NG_blender_native/node_004/amount",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "node_004_axis",
+              "path": "NG_blender_native/node_004/axis",
+              "type": "vector3",
+              "value": [
+                0.0,
+                0.0,
+                1.0
+              ]
+            },
+            {
+              "name": "bnode_Mapping_in2",
+              "path": "NG_blender_native/bnode__Mapping/in2",
+              "type": "vector3",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "name": "node_005_index",
+              "path": "NG_blender_native/node_005/index",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "bnode_Noise_Texture_Fac_amplitude",
+              "path": "NG_blender_native/bnode__Noise_Texture_Fac/amplitude",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "bnode_Noise_Texture_Fac_octaves",
+              "path": "NG_blender_native/bnode__Noise_Texture_Fac/octaves",
+              "type": "integer",
+              "value": 2
+            },
+            {
+              "name": "bnode_Noise_Texture_Fac_lacunarity",
+              "path": "NG_blender_native/bnode__Noise_Texture_Fac/lacunarity",
+              "type": "float",
+              "value": 2.0
+            },
+            {
+              "name": "bnode_Noise_Texture_Fac_diminish",
+              "path": "NG_blender_native/bnode__Noise_Texture_Fac/diminish",
+              "type": "float",
+              "value": 0.5
+            },
+            {
+              "name": "bnode_Map_Range_Result_inlow",
+              "path": "NG_blender_native/bnode__Map_Range_Result/inlow",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "bnode_Map_Range_Result_inhigh",
+              "path": "NG_blender_native/bnode__Map_Range_Result/inhigh",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "bnode_Map_Range_Result_outlow",
+              "path": "NG_blender_native/bnode__Map_Range_Result/outlow",
+              "type": "float",
+              "value": -1.0
+            },
+            {
+              "name": "bnode_Map_Range_Result_outhigh",
+              "path": "NG_blender_native/bnode__Map_Range_Result/outhigh",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_blender_native_base",
+              "path": "SS_blender_native/base",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_blender_native_base_color",
+              "path": "SS_blender_native/base_color",
+              "type": "color3",
+              "value": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+              ]
+            },
+            {
+              "name": "SS_blender_native_diffuse_roughness",
+              "path": "SS_blender_native/diffuse_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_metalness",
+              "path": "SS_blender_native/metalness",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_blender_native_specular",
+              "path": "SS_blender_native/specular",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_blender_native_specular_color",
+              "path": "SS_blender_native/specular_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_blender_native_specular_IOR",
+              "path": "SS_blender_native/specular_IOR",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "SS_blender_native_specular_anisotropy",
+              "path": "SS_blender_native/specular_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_specular_rotation",
+              "path": "SS_blender_native/specular_rotation",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_transmission",
+              "path": "SS_blender_native/transmission",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_transmission_color",
+              "path": "SS_blender_native/transmission_color",
+              "type": "color3",
+              "value": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+              ]
+            },
+            {
+              "name": "SS_blender_native_transmission_depth",
+              "path": "SS_blender_native/transmission_depth",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_transmission_scatter",
+              "path": "SS_blender_native/transmission_scatter",
+              "type": "color3",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "name": "SS_blender_native_transmission_scatter_anisotropy",
+              "path": "SS_blender_native/transmission_scatter_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_transmission_dispersion",
+              "path": "SS_blender_native/transmission_dispersion",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_transmission_extra_roughness",
+              "path": "SS_blender_native/transmission_extra_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_subsurface",
+              "path": "SS_blender_native/subsurface",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_subsurface_color",
+              "path": "SS_blender_native/subsurface_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_blender_native_subsurface_radius",
+              "path": "SS_blender_native/subsurface_radius",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_blender_native_subsurface_scale",
+              "path": "SS_blender_native/subsurface_scale",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_blender_native_subsurface_anisotropy",
+              "path": "SS_blender_native/subsurface_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_sheen",
+              "path": "SS_blender_native/sheen",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_sheen_color",
+              "path": "SS_blender_native/sheen_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_blender_native_sheen_roughness",
+              "path": "SS_blender_native/sheen_roughness",
+              "type": "float",
+              "value": 0.5
+            },
+            {
+              "name": "SS_blender_native_coat",
+              "path": "SS_blender_native/coat",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_coat_color",
+              "path": "SS_blender_native/coat_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_blender_native_coat_roughness",
+              "path": "SS_blender_native/coat_roughness",
+              "type": "float",
+              "value": 0.029999999329447746
+            },
+            {
+              "name": "SS_blender_native_coat_anisotropy",
+              "path": "SS_blender_native/coat_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_coat_rotation",
+              "path": "SS_blender_native/coat_rotation",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_coat_IOR",
+              "path": "SS_blender_native/coat_IOR",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "SS_blender_native_coat_affect_color",
+              "path": "SS_blender_native/coat_affect_color",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_coat_affect_roughness",
+              "path": "SS_blender_native/coat_affect_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_thin_film_thickness",
+              "path": "SS_blender_native/thin_film_thickness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_thin_film_IOR",
+              "path": "SS_blender_native/thin_film_IOR",
+              "type": "float",
+              "value": 1.3300000429153442
+            },
+            {
+              "name": "SS_blender_native_emission",
+              "path": "SS_blender_native/emission",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_blender_native_emission_color",
+              "path": "SS_blender_native/emission_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_blender_native_opacity",
+              "path": "SS_blender_native/opacity",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_blender_native_thin_walled",
+              "path": "SS_blender_native/thin_walled",
+              "type": "boolean",
+              "value": false
+            }
+          ]
+        }
+      },
+      "geometryBindings": {
+        "generatedCoordinates": {
+          "boundsMaxUniforms": [
+            "bnode_Texture_Coordinate_Generated_generated_extent_in1"
+          ],
+          "boundsMinUniforms": [
+            "bnode_Texture_Coordinate_Generated_generated_extent_in2",
+            "bnode_Texture_Coordinate_Generated_generated_offset_in2"
+          ],
+          "space": "object"
+        },
+        "properties": [
+          {
+            "attribute": "a_geomprop_rough",
+            "default": "0.800000012",
+            "name": "rough",
+            "required": true,
+            "type": "float"
+          }
+        ]
+      },
+      "vertex": "chrome_003.vert",
+      "vertexInterface": {
+        "inputs": {
+          "VertexInputs": [
+            {
+              "name": "i_position",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_normal",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_tangent",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "a_geomprop_rough",
+              "path": "",
+              "type": "float",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "PrivateUniforms": [
+            {
+              "name": "u_worldMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_viewProjectionMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_worldInverseTransposeMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            }
+          ]
+        }
+      }
+    }
+  }
+}

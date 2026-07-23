@@ -141,8 +141,11 @@ def geometry_bindings(vertex_interface: dict, fragment_interface: dict, definiti
             properties.append({**definition, "attribute": port["name"]})
 
     uniforms = [port for block in fragment_interface["uniforms"].values() for port in block]
-    minimum = [port["name"] for port in uniforms if port["path"].endswith("/generated_bounds_min")]
-    maximum = [port["name"] for port in uniforms if port["path"].endswith("/generated_bounds_max")]
+    # MaterialX flattens internal node names into interface paths when a
+    # nodedef is emitted from a nodegraph, while direct graph inputs retain a
+    # slash separator. Match the authored semantic suffix in either form.
+    minimum = [port["name"] for port in uniforms if port["path"].endswith("generated_bounds_min")]
+    maximum = [port["name"] for port in uniforms if port["path"].endswith("generated_bounds_max")]
     result = {}
     if minimum or maximum:
         if not minimum or not maximum:

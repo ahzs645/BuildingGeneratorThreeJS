@@ -67,9 +67,13 @@
       <input name="outhigh" type="float" value="1" />
       <input name="outlow" type="float" value="-1" />
     </remap>
+    <geompropvalue name="bnode__Attribute_rough" type="float">
+      <input name="geomprop" type="string" value="rough" />
+      <input name="default" type="float" value="0.800000012" />
+    </geompropvalue>
     <multiply name="bnode__Math_001" type="float">
       <input name="in1" type="float" nodename="bnode__Map_Range_Result" />
-      <input name="in2" type="float" value="0.800000012" />
+      <input name="in2" type="float" nodename="bnode__Attribute_rough" />
     </multiply>
     <normal name="node_009" type="vector3" space="world" />
     <normalize name="node_010" type="vector3">
@@ -96,7 +100,7 @@
     <input name="specular" type="float" value="1" />
     <input name="specular_color" type="color3" value="1, 1, 1" />
     <input name="specular_roughness" type="float" nodegraph="NG_blender_native" output="specular_roughness_out" />
-    <input name="ior" type="float" value="1.5" />
+    <input name="specular_IOR" type="float" value="1.5" />
     <input name="specular_anisotropy" type="float" value="0" />
     <input name="transmission" type="float" value="0" />
     <input name="transmission_color" type="color3" value="0.800000012, 0.800000012, 0.800000012" />
@@ -107,8 +111,8 @@
     <input name="sheen_color" type="color3" value="1, 1, 1" />
     <input name="sheen_roughness" type="float" value="0.5" />
     <input name="thin_film_thickness" type="float" value="0" />
-    <input name="thin_film_ior" type="float" value="1.33000004" />
-    <input name="opacity" type="float" value="1" />
+    <input name="thin_film_IOR" type="float" value="1.33000004" />
+    <input name="opacity" type="color3" value="1, 1, 1" />
     <input name="emission_color" type="color3" value="1, 1, 1" />
     <input name="emission" type="float" value="0" />
   </standard_surface>

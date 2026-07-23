@@ -12,6 +12,7 @@ import {
   matrixFromRows,
 } from "../materialx/essl-adapter";
 import { makeProbeGeometry } from "../materialx/probe-geometry";
+import { prepareLiveChromeCrayonGeometry } from "../materialx/live-chrome-geometry";
 
 const generated = (name: string): URL => new URL(`../../public/materialx/generated/${name}`, import.meta.url);
 
@@ -114,4 +115,33 @@ test("comparison probe triangles are outward wound", () => {
     const outward = a.clone().add(b).add(c).normalize();
     assert.ok(geometricNormal.dot(outward) > 0);
   }
+});
+
+test("live 2.5D chrome geometry binds exact vertex roughness and object bounds", () => {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute([
+    -2, -1, 0,
+    3, -1, 0,
+    0, 4, 2,
+  ], 3));
+  geometry.setAttribute("normal", new THREE.Float32BufferAttribute([
+    0, 0, 1,
+    0, 0, 1,
+    0, 0, 1,
+  ], 3));
+  geometry.setAttribute("rough", new THREE.Float32BufferAttribute([0, 0, 0], 1));
+  geometry.setIndex([0, 1, 2]);
+  const contract = prepareLiveChromeCrayonGeometry(geometry);
+  assert.deepEqual(contract, {
+    bounds: { space: "object", min: [-2, -1, 0], max: [3, 4, 2] },
+    geometryProperties: [{ name: "rough", type: "float", domain: "vertex" }],
+  });
+  assert.equal(geometry.getAttribute("tangent").itemSize, 3);
+  assert.equal(geometry.getAttribute("tangent").count, 3);
+
+  geometry.getAttribute("rough").setX(1, 0.25);
+  assert.throws(
+    () => prepareLiveChromeCrayonGeometry(geometry),
+    /exact geometry contract expects rough=0/,
+  );
 });

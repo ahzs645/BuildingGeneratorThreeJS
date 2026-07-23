@@ -10,6 +10,7 @@ const evidenceUrl = (path: string): URL => new URL(`../../docs/materialx-evidenc
 
 test("committed native extraction is validated and records exact source graph facts", () => {
   const report = JSON.parse(asset("chrome-crayon-native.report.json"));
+  assert.equal(report.sourceBlend, "NO3D Chrome Asset Library.blend");
   assert.equal(report.blenderVersion, "5.1.2");
   assert.equal(report.sourceMaterial, "chrome.003");
   assert.equal(report.validation.valid, true);
@@ -20,27 +21,88 @@ test("committed native extraction is validated and records exact source graph fa
   ]);
   assert.equal(report.sourceNodeTypes.includes("ShaderNodeTexWave"), false);
   assert.equal(report.sourceNodeTypes.includes("ShaderNodeBump"), false);
-  assert.equal(report.capability.parityReady, false);
-  assert.deepEqual(report.capability.substitutedSemantics.map((item: { kind: string }) => item.kind), [
-    "named-geometry-property",
-  ]);
+  assert.equal(report.capability.parityReady, true);
+  assert.deepEqual(report.capability.substitutedSemantics, []);
+  assert.deepEqual(report.capability.namedGeometryProperties, [{
+    node: "Attribute",
+    name: "rough",
+    type: "float",
+    domain: "face",
+    bindingDomain: "vertex",
+    interpolation: "flat-expanded",
+  }]);
+  const contract = JSON.parse(asset("chrome-crayon-geometry-contract.json"));
+  assert.equal(report.geometryContract, "public/materialx/chrome-crayon-geometry-contract.json");
+  assert.match(contract.evidence.sourceProject, /NO3D Chrome Asset Library\.blend$/);
+  assert.deepEqual(contract.properties, [{
+    name: "rough",
+    type: "float",
+    sourceDomain: "face",
+    bindingDomain: "vertex",
+    interpolation: "flat-expanded",
+    attributeNode: "Attribute",
+    outputSocket: "Color",
+    targetNode: "Math.001",
+    targetSocket: "Value_001",
+    authoredRange: [0, 0],
+  }]);
   const native = asset("chrome-crayon-native.mtlx");
   assert.match(native, /<position name="bnode__Texture_Coordinate_Generated_generated_position" type="vector3" space="object"/);
   assert.match(native, /<max name="bnode__Texture_Coordinate_Generated_generated_safe_extent"[\s\S]*?value="0\.000001, 0\.000001, 0\.000001"/);
   assert.match(native, /<divide name="bnode__Texture_Coordinate_Generated" type="vector3"/);
   assert.doesNotMatch(native, /<texcoord name="bnode__Texture_Coordinate_Generated"/);
+  assert.match(native, /<geompropvalue name="bnode__Attribute_rough" type="float">/);
+  assert.match(native, /<input name="in2" type="float" nodename="bnode__Attribute_rough"/);
 });
 
 test("committed MaterialX documents pass Three loader capability preflight", () => {
-  for (const path of ["chrome-crayon-native.mtlx", "baked/chrome-crayon-noise-baked.mtlx"]) {
-    const audit = auditMaterialXDocument(asset(path));
-    assert.deepEqual(audit.unsupportedElements, [], path);
-    assert.ok(audit.materialCount >= 1, path);
-  }
+  const native = auditMaterialXDocument(asset("chrome-crayon-native.mtlx"), { implementation: "official-essl" });
+  assert.deepEqual(native.unsupportedElements, []);
+  assert.ok(native.materialCount >= 1);
+  const nativeTsl = auditMaterialXDocument(asset("chrome-crayon-native.mtlx"));
+  assert.deepEqual(nativeTsl.unsupportedElements, ["geompropvalue"]);
+  const baked = auditMaterialXDocument(asset("baked/chrome-crayon-noise-baked.mtlx"));
+  assert.deepEqual(baked.unsupportedElements, []);
+  assert.ok(baked.materialCount >= 1);
   const prototype = auditMaterialXDocument(asset("chrome-crayon-prototype.mtlx"), { implementation: "official-essl" });
   assert.deepEqual(prototype.unsupportedElements, []);
   const uiNormalBand = auditMaterialXDocument(asset("ui-normal-band-prototype.mtlx"), { implementation: "official-essl" });
   assert.deepEqual(uiNormalBand.unsupportedElements, []);
+});
+
+test("native ESSL manifest preserves recovered geometry bindings", () => {
+  const generatedManifest = JSON.parse(asset("generated/native/manifest.json"));
+  const shader = generatedManifest.shaders.chrome_003;
+  assert.deepEqual(shader.geometryBindings.generatedCoordinates, {
+    space: "object",
+    boundsMinUniforms: [
+      "bnode_Texture_Coordinate_Generated_generated_extent_in2",
+      "bnode_Texture_Coordinate_Generated_generated_offset_in2",
+    ],
+    boundsMaxUniforms: [
+      "bnode_Texture_Coordinate_Generated_generated_extent_in1",
+    ],
+  });
+  assert.deepEqual(shader.geometryBindings.properties, [
+    { attribute: "a_geomprop_rough", default: "0.800000012", name: "rough", required: true, type: "float" },
+  ]);
+  assert.ok(fs.statSync(assetUrl("generated/native/chrome_003.frag")).size > 75_000);
+});
+
+test("2.5D Chrome Crayon exposes the native MaterialX live-mesh preview", () => {
+  const catalog = JSON.parse(fs.readFileSync(
+    new URL("../../public/dojo/chrome-assets/catalog.json", import.meta.url),
+    "utf8",
+  ));
+  const assetEntry = catalog.find((entry: { id: string }) => entry.id === "25d-chrome-crayon");
+  const preview = assetEntry.controls.find((control: { name: string }) => control.name === "__materialPreview");
+  assert.ok(preview.options.some((option: { value: string }) => option.value === "materialx-native"));
+  const status = JSON.parse(fs.readFileSync(
+    new URL("../../public/dojo/chrome-assets/25d-chrome-crayon/status.json", import.meta.url),
+    "utf8",
+  ));
+  assert.equal(status.materialx.status, "native-live-preview");
+  assert.equal(status.materialx.default, false);
 });
 
 test("UI normal-band probe is topology-discovered, typed, and explicitly parity-gated", () => {
@@ -139,6 +201,20 @@ test("comparison evidence separates pixels from graph-semantic claims", () => {
     assert.ok(fs.statSync(evidenceUrl(`current/light-${light}-web.png`)).size > 10_000, light);
   }
   assert.match(comparison.interpretation, /Graph-semantic support is reported separately/);
+
+  const live = JSON.parse(evidence("current/25d-native-comparison.json"));
+  assert.equal(live.asset, "25d-chrome-crayon");
+  assert.deepEqual(live.geometry.blender, { vertices: 97_784, faces: 97_776 });
+  assert.deepEqual(live.geometry.web, live.geometry.blender);
+  assert.deepEqual(live.geometry.roughAttribute.range, [0, 0]);
+  assert.ok(live.fullFrame.rgbRootMeanSquareError < 0.06);
+  assert.ok(live.fullFrame.luminanceCorrelation > 0.65);
+  assert.ok(live.foreground.visibleRegionIntersectionOverUnion > 0.92);
+  assert.ok(live.foreground.intersectionLuminanceCorrelation < 0.1);
+  assert.match(live.claim, /Pixel differences remain expected/);
+  for (const renderer of ["blender", "web"]) {
+    assert.ok(fs.statSync(evidenceUrl(`current/25d-native-${renderer}.png`)).size > 10_000, renderer);
+  }
 });
 
 test("upstream r186 experiment is pinned and separates native normals from the local adapter", () => {

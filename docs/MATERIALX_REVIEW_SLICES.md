@@ -2,7 +2,7 @@
 
 The original research branch was intentionally kept separate while `main` had active geometry work. Its historical commits are useful provenance but are cross-cutting rather than clean cherry-picks. The reviewable integration was therefore reconstructed from current `main` in the dependency order below, with each stated gate rerun at its checkpoint.
 
-No slice changes `src/chrome-assets.ts`, the Node Dojo material adapters, or GNVM geometry/node semantics. `/materialx` remains experimental and production dispatch remains unchanged.
+The original three slices leave production dispatch unchanged. The later native-parity checkpoint adds one explicit opt-in `chrome.003` MaterialX preview to `src/chrome-assets.ts`; authored remains the default, and GNVM geometry/node semantics are unchanged.
 
 ## Slice 1: backend contract and capability preflight
 
@@ -95,4 +95,4 @@ Gate: asset/evidence tests, regeneration diff review, headless compile/link smok
 
 ## Promotion boundary
 
-These slices make the lab mergeable; they do not promote a production material. `chrome.003` remains gated until its native capability report contains no substituted semantics. The UI normal-band result is only a matched branch diagnostic while world-normal and color-to-Surface substitutions remain. Production keeps its authored materials and current renderer infrastructure throughout.
+These slices make the lab mergeable; they do not promote a production material. The follow-up native checkpoint now generates `chrome.003` ESSL, binds it to the live 2.5D mesh, and commits a matched capture. Its extraction/binding semantics pass, but Eevee/FIS reflection pixels remain different, so production keeps the authored default and exposes native MaterialX only as a review selection. The UI normal-band result is still only a matched branch diagnostic while world-normal and color-to-Surface substitutions remain.

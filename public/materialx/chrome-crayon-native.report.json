@@ -1,5 +1,5 @@
 {
-  "sourceBlend": "Chrome Crayon Surface Draw Test.blend",
+  "sourceBlend": "NO3D Chrome Asset Library.blend",
   "sourceMaterial": "chrome.003",
   "blenderVersion": "5.1.2",
   "extractor": "Blender native USD MaterialX network -> standalone Standard Surface MaterialX",
@@ -43,6 +43,7 @@
     "message": ""
   },
   "textures": [],
+  "geometryContract": "public/materialx/chrome-crayon-geometry-contract.json",
   "capability": {
     "generatedCoordinates": [
       {
@@ -56,18 +57,12 @@
         "node": "Attribute",
         "name": "rough",
         "type": "float",
-        "domain": "point"
+        "domain": "face",
+        "bindingDomain": "vertex",
+        "interpolation": "flat-expanded"
       }
     ],
-    "substitutedSemantics": [
-      {
-        "kind": "named-geometry-property",
-        "node": "Attribute",
-        "name": "rough",
-        "type": "float",
-        "reason": "Blender native USD lowering substitutes the linked socket default instead of exporting geompropvalue"
-      }
-    ],
-    "parityReady": false
+    "substitutedSemantics": [],
+    "parityReady": true
   }
 }

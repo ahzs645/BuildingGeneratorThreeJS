@@ -1,0 +1,62 @@
+{
+  "comparisonVersion": 1,
+  "asset": "25d-chrome-crayon",
+  "sourceObject": "2.5D CHROME CRAYON OBJECT",
+  "sourceMaterial": "chrome.003",
+  "geometry": {
+    "blender": {
+      "vertices": 97784,
+      "faces": 97776
+    },
+    "web": {
+      "vertices": 97784,
+      "faces": 97776
+    },
+    "roughAttribute": {
+      "sourceDomain": "face",
+      "gpuDomain": "vertex",
+      "range": [
+        0,
+        0
+      ]
+    }
+  },
+  "renderContract": {
+    "resolution": [
+      768,
+      768
+    ],
+    "camera": "matched orthographic bounds frame; direction (1,-1.25,0.85), Z up",
+    "lighting": "shared studio-environment.exr at 0.18 plus scene-contract.json directional lights",
+    "colorTransform": "Standard/sRGB, no tone mapping",
+    "blenderBackend": "Blender 5.1.2 Eevee with the authored chrome.003 node graph",
+    "webBackend": "WebGL2 with official MaterialX 1.39.4 generated ESSL/FIS"
+  },
+  "fullFrame": {
+    "width": 768,
+    "height": 768,
+    "rgbMeanAbsoluteError": 0.010685,
+    "rgbRootMeanSquareError": 0.057457,
+    "luminanceCorrelation": 0.681123,
+    "meanLuminance": {
+      "blender": 0.092228,
+      "web": 0.084781
+    }
+  },
+  "foreground": {
+    "maskThresholdRgbDistance": 0.02,
+    "blenderPixelCount": 37079,
+    "webPixelCount": 35379,
+    "intersectionPixelCount": 34852,
+    "unionPixelCount": 37606,
+    "visibleRegionIntersectionOverUnion": 0.926767,
+    "intersectionRgbMeanAbsoluteError": 0.156751,
+    "intersectionRgbRootMeanSquareError": 0.226085,
+    "intersectionLuminanceCorrelation": 0.033654,
+    "intersectionMeanLuminance": {
+      "blender": 0.329287,
+      "web": 0.210793
+    }
+  },
+  "claim": "Native graph semantics and live geometry bindings are recovered. Pixel differences remain expected across Eevee and MaterialX FIS BRDF/environment sampling and do not establish renderer identity."
+}

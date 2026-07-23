@@ -1,18 +1,29 @@
 {
   "schemaVersion": 1,
   "source": {
-    "blend": "Chrome Crayon Surface Draw Test.blend",
+    "blend": "NO3D Chrome Asset Library.blend",
     "blenderVersion": "5.1.2",
     "material": "chrome.003",
-    "portableGraph": "materialx/chrome-crayon-prototype.mtlx",
+    "portableGraph": "materialx/chrome-crayon-native.mtlx",
+    "geometryContract": "materialx/chrome-crayon-geometry-contract.json",
     "textures": []
   },
   "rendererContract": {
-    "route": "/materialx",
+    "route": "/materialx plus opt-in /chrome-assets?asset=25d-chrome-crayon native preview",
     "threeVersion": "0.185.1",
     "renderer": "isolated official MaterialX ESSL/FIS RawShaderMaterial backend; Three TSL remains available with ?implementation=tsl",
     "environment": "materialx/references/studio-environment.exr FIS radiance plus studio-irradiance.exr SH diffuse irradiance at 0.18 intensity",
     "productionFallback": "legacy-authored"
+  },
+  "liveAssetEvidence": {
+    "catalogId": "25d-chrome-crayon",
+    "shader": "materialx/generated/native/chrome_003.frag",
+    "geometryBinding": "materialx/chrome-crayon-geometry-contract.json",
+    "comparison": "docs/materialx-evidence/current/25d-native-comparison.json",
+    "blenderCapture": "docs/materialx-evidence/current/25d-native-blender.png",
+    "webCapture": "docs/materialx-evidence/current/25d-native-web.png",
+    "selection": "Recovered chrome.003 · native MaterialX",
+    "defaultSelection": "Authored chrome.003"
   },
   "bakedPbrFallback": {
     "materialx": "materialx/baked/chrome-crayon-noise-baked.mtlx",
@@ -37,9 +48,12 @@
     "containsWave": false,
     "containsBump": false,
     "containsNoise": true,
-    "exactUnsupportedSemantics": [
-      "The native Blender export substitutes ShaderNodeTexCoord.Generated; the isolated official-ESSL semantic probe reconstructs it from exported object-space bounds.",
-      "The native Blender export substitutes ShaderNodeAttribute rough; the isolated official-ESSL semantic probe binds typed geompropvalue attributes. Three 0.185.1 TSL still rejects geompropvalue."
+    "recoveredSemantics": [
+      "ShaderNodeTexCoord.Generated is reconstructed from object-space position and evaluated bounds with a zero-extent guard.",
+      "ShaderNodeAttribute rough is restored as geompropvalue from the exact 2.5D Chrome Crayon FACE-domain contract and flat-expanded vertex binding."
+    ],
+    "remainingRendererLimitations": [
+      "Three 0.185.1 TSL still rejects geompropvalue; the isolated official ESSL backend supports the recovered graph."
     ],
     "generalLowerings": [
       "ShaderNodeBsdfPrincipled -> standard_surface",
@@ -53,7 +67,7 @@
   "capabilityGate": {
     "report": "materialx/chrome-crayon-native.report.json",
     "parityClaim": false,
-    "reason": "chrome.003 remains non-parity while the native extraction capability report contains substituted semantics"
+    "reason": "native extraction, ESSL generation, live 2.5D binding, and matched capture pass; authored chrome remains the default because zero-roughness Eevee and MaterialX FIS highlights still have substantial foreground pixel differences"
   },
   "requestedNoiseWaveBumpAudit": {
     "sourceMaterialDiscrepancy": "The supplied chrome.003 graph contains Noise but no Wave or Bump. The Noise/Bump material on the lab is an explicitly labeled compatibility probe, not a claim about the absent source nodes.",

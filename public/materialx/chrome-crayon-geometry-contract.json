@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "material": "chrome.003",
+  "evidence": {
+    "sourceProject": "Node Dojo 2/Blender Tutorial/Utilities/All_N03D_Tools_Asset_Libraries/NO3D Chrome Asset Library.blend",
+    "catalogId": "25d-chrome-crayon",
+    "object": "2.5D CHROME CRAYON OBJECT",
+    "dump": "public/dojo/chrome-assets/25d-chrome-crayon/dump.json",
+    "status": "public/dojo/chrome-assets/25d-chrome-crayon/status.json",
+    "blender": {
+      "verts": 97784,
+      "faces": 97776
+    },
+    "gnvm": {
+      "verts": 97784,
+      "faces": 97776
+    }
+  },
+  "properties": [
+    {
+      "name": "rough",
+      "type": "float",
+      "sourceDomain": "face",
+      "bindingDomain": "vertex",
+      "interpolation": "flat-expanded",
+      "attributeNode": "Attribute",
+      "outputSocket": "Color",
+      "targetNode": "Math.001",
+      "targetSocket": "Value_001",
+      "authoredRange": [
+        0,
+        0
+      ]
+    }
+  ]
+}
