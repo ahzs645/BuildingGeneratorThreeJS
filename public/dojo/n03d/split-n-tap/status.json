@@ -23,7 +23,11 @@
     "gnvm": { "verts": 2372, "faces": 2380, "triangles": 4673, "triangleArea": 946.607 },
     "blenderPointsToGnvmSurface": { "p50": 0, "p90": 0, "p99": 0, "max": 0 },
     "gnvmPointsToBlenderSurface": { "p50": 0, "p90": 0, "p99": 0, "max": 0 },
-    "method": "tools/export_blender_evaluated_mesh.py plus tools/mesh-surface-diff.ts --local"
+    "method": "Blender evaluated-mesh export followed by local-space bidirectional surface comparison.",
+    "tools": [
+      "tools/export_blender_evaluated_mesh.py",
+      "tools/mesh-surface-diff.ts"
+    ]
   },
   "material": {
     "name": "Filament PLA .02 mm layer height",

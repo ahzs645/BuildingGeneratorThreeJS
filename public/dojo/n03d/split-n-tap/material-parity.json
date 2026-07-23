@@ -5,7 +5,8 @@
     "object": "__GNVM_SPLIT_N_TAP",
     "root": "Split n Tap WIP",
     "material": "Filament PLA .02 mm layer height",
-    "configuration": "tools/configure_n03d_reference.py creates the intended one-point carrier because the supplied SPLIT N TAP wrapper evaluates only its placeholder icosphere"
+    "configuration": "A temporary reference configuration creates the intended one-point carrier because the supplied SPLIT N TAP wrapper evaluates only its placeholder icosphere.",
+    "configurationTool": "tools/configure_n03d_reference.py"
   },
   "scope": "Exact evaluated surface and authored Blender viewport material parity. The procedural filament surface does not slice the asset and is not a G-code toolpath.",
   "geometry": {
@@ -21,7 +22,11 @@
       "blenderPointsToGnvm": { "p50": 0, "p90": 0, "p99": 0, "max": 0 },
       "gnvmPointsToBlender": { "p50": 0, "p90": 0, "p99": 0, "max": 0 }
     },
-    "surfaceComparison": "tools/export_blender_evaluated_mesh.py and tools/mesh-surface-diff.ts --local"
+    "surfaceComparison": "Local-space Blender evaluated-mesh export and bidirectional surface comparison.",
+    "surfaceComparisonTools": [
+      "tools/export_blender_evaluated_mesh.py",
+      "tools/mesh-surface-diff.ts"
+    ]
   },
   "capture": {
     "resolution": [768, 768],
