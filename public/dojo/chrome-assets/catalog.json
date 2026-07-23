@@ -91,8 +91,9 @@
     "dump": "dojo/chrome-assets/ui-window-generator/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/ui-window-generator.png",
+    "authoredReference": "dojo/references/chrome-assets/ui-window-generator-authored.png",
     "blenderStats": { "verts": 35886, "faces": 33474 },
-    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. All three subdivision cases have exact Blender topology, including the authored 35,886 / 33,474 result. Exact active-relative transforms and Blender's 0.01 Mesh-to-Curve bound width reduce every bounds delta to at most 0.0001 units.",
+    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. All three subdivision cases have exact Blender topology, including the authored 35,886 / 33,474 result. Exact active-relative transforms and Blender's 0.01 Mesh-to-Curve bound width reduce every bounds delta to at most 0.0001 units. Authored mode restores the flat.nodes col/power emission and grey ui normal-band materials; aligned captures reach 0.9614 silhouette IoU and 0.9871 macro luminance correlation.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",
