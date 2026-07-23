@@ -31,9 +31,21 @@ test("Mesh to Curve canonicalizes pure cycles by point and stored edge order", (
   // Discover the higher-minimum cycle first. Within the other cycle, point 1's
   // edge to point 5 precedes its edge to point 3.
   mesh.edges = [[6, 4], [4, 2], [2, 6], [3, 5], [5, 1], [1, 3]];
+  mesh.attributes.set("__gnvm_canonical_curve_cycles", { domain: "POINT", data: mesh.positions.map(() => 1) });
 
   assert.deepEqual(meshEdgesToChains(mesh).map((chain) => chain.verts), [
     [1, 5, 3],
     [2, 4, 6],
+  ]);
+});
+
+test("Mesh to Curve preserves authored pure-cycle edge discovery order", () => {
+  const mesh = new Mesh();
+  mesh.positions = Array.from({ length: 7 }, (_, index) => [index, 0, 0] as Vec3);
+  mesh.edges = [[6, 4], [4, 2], [2, 6], [3, 5], [5, 1], [1, 3]];
+
+  assert.deepEqual(meshEdgesToChains(mesh).map((chain) => chain.verts), [
+    [6, 4, 2],
+    [3, 5, 1],
   ]);
 });

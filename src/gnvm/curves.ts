@@ -1621,6 +1621,10 @@ function meshEdgesToCurvesInternal(mesh: Mesh, selected?: (vi: number) => boolea
     }
   }
   // remaining unvisited edges belong to valence-2 cycles
+  // Mesh-to-Curve normally follows the mesh's stored edge discovery order.
+  // Topology-rebuilding nodes such as Merge by Distance stamp their result so
+  // cycles instead follow Blender's newly canonicalized edge order.
+  const canonicalizeCycles = mesh.attributes.has("__gnvm_canonical_curve_cycles");
   const cycles: { spline: Spline; verts: number[] }[] = [];
   for (const [start] of adj) {
     for (const nb of adj.get(start)!) {
@@ -1628,6 +1632,10 @@ function meshEdgesToCurvesInternal(mesh: Mesh, selected?: (vi: number) => boolea
       const chain = walk(start, nb);
       if (chain.length <= 2) {
         emit(chain, false);
+        continue;
+      }
+      if (!canonicalizeCycles) {
+        emit(chain, true);
         continue;
       }
       // Blender canonicalizes a pure Mesh-to-Curve cycle at its lowest source
@@ -1650,8 +1658,10 @@ function meshEdgesToCurvesInternal(mesh: Mesh, selected?: (vi: number) => boolea
   }
   // Curve order follows the first point index for pure cycles. Open pole chains
   // above retain their stored-edge discovery order.
-  cycles.sort((a, b) => a.verts[0] - b.verts[0]);
-  out.push(...cycles);
+  if (canonicalizeCycles) {
+    cycles.sort((a, b) => a.verts[0] - b.verts[0]);
+    out.push(...cycles);
+  }
   return out;
 }
 

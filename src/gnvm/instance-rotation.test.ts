@@ -85,6 +85,36 @@ test("Instance on Points composes a native rotation quaternion without an Euler 
   assert.deepEqual(realizeInstances(translated).mesh?.positions, [[11, 21, 0]]);
 });
 
+test("Transform Geometry composes nested rotations as matrices", () => {
+  const payload = new Geometry();
+  payload.mesh = new Mesh();
+  payload.mesh.positions = [[1, 0.25, -0.5]];
+  const geometry = new Geometry();
+  geometry.instances.push({
+    geometry: payload,
+    position: [0, 0, 0],
+    rotation: [0, Math.fround(Math.PI / 4), 0],
+    scale: [0.27, 0.27, 0.27],
+  });
+  const before = realizeInstances(geometry).mesh?.positions[0];
+
+  const transform = REGISTRY.get("GeometryNodeTransform");
+  assert.ok(transform);
+  const result = transform({
+    geo: () => geometry,
+    vec: (name: string) => name === "Rotation"
+      ? [-0.29304078221321106, 0, 0]
+      : name === "Scale" ? [1, 1, 1] : [0, 0, 0],
+  } as never).Geometry as Geometry;
+  const after = realizeInstances(result).mesh?.positions[0];
+
+  assert.ok(before && after);
+  // A world-space X rotation cannot change X, even when the child already has
+  // a Y rotation. Component-wise Euler addition violated this invariant.
+  assert.equal(after[0], before[0]);
+  assert.ok(result.instances[0].transformMatrix);
+});
+
 test("Rotate Instances uses Blender's incoming-matrix local axes without double rotation", () => {
   const payload = new Geometry();
   payload.curves = [{

@@ -5,7 +5,7 @@
   "reachableGroups": 33,
   "reachableNodes": 1130,
   "coverage": "100%",
-  "status": "exact-topology-bounds-near",
+  "status": "exact-parity",
   "materialParity": "The 3-node Attribute Viewer N++ shader is now reconstructed strictly: its Geometry Attribute Vector feeds Emission Color at Strength 1. The evaluated Cube.014 soup does not contain the requested attribute_viewer_n++_ field, so Blender's missing-attribute rule resolves the 21,078-index material range to zero/black; the browser now does the same instead of substituting its green diagnostic material.",
   "blender": {
     "verts": 104454,
@@ -20,9 +20,9 @@
     "faces": 44423,
     "triangles": 108526,
     "bbox": {
-      "min": [-2.0473217964172363, -1.9282912015914917, -5.290398597717285],
-      "max": [4.527321815490723, 0.14779964089393616, 0.4884030520915985]
+      "min": [-2.047687530517578, -1.9282912015914917, -5.290398597717285],
+      "max": [4.5276875495910645, 0.14779964089393616, 0.4884030520915985]
     }
   },
-  "validation": "Exact authored topology and matching two-panel composition. Blender 5.1.2 micro-references prove the Quadrilateral to Bezier, Fillet, and length-Resample chain is coordinate-exact. Realize Instances now scales the built-in curve radius before the BAR ROWS line-thickness sweep, reducing the symmetric X-bounds residual from 0.004715 to 0.000366 units; Y and Z bounds are exact."
+  "validation": "Exact authored topology and exact local bounds for the complete two-panel composition. Blender 5.1.2 parent-group references prove both The Nodes Node groups and their socket materials are coordinate-exact before the root transform. Transform Geometry now left-multiplies complete instance matrices, preserving the socket branch's Y rotation under the root X rotation instead of adding non-commuting Euler components."
 }

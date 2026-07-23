@@ -693,6 +693,14 @@ reg("GeometryNodeMergeByDistance", (api) => {
       m.attributes.set(name, { domain: "CORNER", data });
     }
   }
+  // Blender rebuilds BMesh edge order after a weld. A following Mesh to Curve
+  // therefore canonicalizes pure cycles, unlike an untouched authored mesh
+  // whose stored edge start/direction must be preserved (Intro Chalkboard and
+  // the Node Panels socket outlines depend on that distinction).
+  m.attributes.set("__gnvm_canonical_curve_cycles", {
+    domain: "POINT",
+    data: m.positions.map(() => 1),
+  });
   // With the authored split-fastener Boolean topology, Blender's BMesh weld
   // retains twenty additional coincident seam vertices and forty degenerate
   // coplanar panels. They are intentional input to Heal Mesh_Dojo, not visible

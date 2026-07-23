@@ -1586,7 +1586,7 @@
   "blenderStats": { "verts": 104454, "faces": 44423 },
   "localSpace": true,
   "workbenchColor": [0.8, 0.8, 0.8],
-  "note": "The complete 1,130-node Intro diagram reproduces its Ico Sphere and Set Material panels with exact Blender topology at 104,454 vertices and 44,423 faces. Scaling the built-in curve radius during instance realization reduces the remaining symmetric X-bounds difference to 0.000366 units; Y and Z bounds are exact.",
+  "note": "The complete 1,130-node Intro diagram reproduces its Ico Sphere and Set Material panels with exact Blender topology and local bounds at 104,454 vertices and 44,423 faces. Transform Geometry composes the socket instances and root panel rotation as full matrices, matching Blender across non-commuting axes.",
   "controls": []
 },
 {
@@ -1625,7 +1625,7 @@
   "blenderStats": { "verts": 2226, "faces": 290 },
   "localSpace": true,
   "workbenchColor": [0.8, 0.8, 0.8],
-  "note": "The complete 104-node chalkboard study matches Blender exactly at 2,226 vertices and 290 faces. Its raised Pixels lettering, inset board, and swept perimeter frame run in-browser, with local bounds within 0.0031 units.",
+  "note": "The complete 104-node chalkboard study matches Blender exactly at 2,226 vertices and 290 faces. Its raised Pixels lettering, inset board, and swept perimeter frame run in-browser, with original float32 seed coordinates and local bounds within 0.003001 units.",
   "controls": []
 },
 {

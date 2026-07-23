@@ -200,6 +200,26 @@ function translationMatrix(translation: Vec3): Matrix4Rows {
   ];
 }
 
+/** Matrix form of Transform Geometry's component sockets.
+ *
+ * The Rotation socket is quaternion-backed even when extraction exposes its
+ * Euler display value. Building the three basis columns through the same
+ * float32 path as direct mesh points keeps instance and component transforms
+ * numerically identical before their matrices are composed.
+ */
+function geometryTransformMatrix(position: Vec3, rotation: Vec3, scale: Vec3): Matrix4Rows {
+  const zero: Vec3 = [0, 0, 0];
+  const x = transformPointFloat32([1, 0, 0], zero, rotation, scale);
+  const y = transformPointFloat32([0, 1, 0], zero, rotation, scale);
+  const z = transformPointFloat32([0, 0, 1], zero, rotation, scale);
+  return [
+    [x[0], y[0], z[0], Math.fround(position[0])],
+    [x[1], y[1], z[1], Math.fround(position[1])],
+    [x[2], y[2], z[2], Math.fround(position[2])],
+    [0, 0, 0, 1],
+  ];
+}
+
 function axisAngleMatrix(axisValue: Vec3, angleValue: number): Matrix4Rows {
   const f = Math.fround;
   let lengthSquared = f(f(f(axisValue[0]) * f(axisValue[0])) + f(f(axisValue[1]) * f(axisValue[1])));
@@ -488,15 +508,25 @@ reg(["GeometryNodeTransform", "GeometryNodeTransformGeometry"], (api) => {
     }
   }
   for (const inst of g.instances) {
-    inst.position = transformPoint(inst.position, t, r, s);
-    // Transform Geometry composes with the complete instance transform, not
-    // only its origin. The Dojo text assets rotate/scale glyph instances before
-    // Extrude Mesh and expose the difference in their raised letter bounds.
-    // Component-wise Euler composition is exact for the single-axis rotations
-    // used by these graphs (and matches Rotate Instances' current semantics).
+    // Transform Geometry left-multiplies the complete instance transform.
+    // Adding Euler components is only equivalent when both rotations share an
+    // axis; the Intro panels apply a root X rotation to Y-rotated socket
+    // instances, and the old addition incorrectly changed their X bounds.
+    const baseMatrix = inst.transformMatrix
+      ?? geometryTransformMatrix(inst.position, inst.rotation, inst.scale);
+    inst.transformMatrix = multiplyInstanceMatrices(
+      geometryTransformMatrix(t, r, s),
+      baseMatrix,
+    );
+    inst.position = [
+      inst.transformMatrix[0][3],
+      inst.transformMatrix[1][3],
+      inst.transformMatrix[2][3],
+    ];
+    // Retain socket-compatible components for downstream instance fields; the
+    // composed matrix above remains authoritative for realization.
     inst.rotation = vadd(inst.rotation, r);
     inst.scale = [inst.scale[0] * s[0], inst.scale[1] * s[1], inst.scale[2] * s[2]];
-    inst.transformMatrix = undefined;
   }
   return { Geometry: g };
 });
