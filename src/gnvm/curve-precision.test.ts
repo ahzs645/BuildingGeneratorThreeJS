@@ -287,6 +287,19 @@ test("Curve to Mesh preserves the evaluated Resample Curve frame", () => {
   ]);
 });
 
+test("Curve to Mesh gives filled endpoint caps Blender's authored winding", () => {
+  const result = sweep(
+    { cyclic: false, points: [[0, 0, -1], [0, 0, 1]] },
+    { cyclic: true, points: [[1, 0, 0], [0, 1, 0], [-1, 0, 0], [0, -1, 0]] },
+    true,
+  );
+
+  assert.deepEqual(result.faces.slice(-2), [
+    [3, 2, 1, 0],
+    [4, 5, 6, 7],
+  ]);
+});
+
 test("Resample Curve count truncates a fractional integer-socket value", () => {
   const source = new Geometry();
   source.curves = [{ cyclic: false, points: [[0, 0, 0], [1, 0, 0]] }];

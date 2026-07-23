@@ -1,0 +1,26 @@
+{
+  "object": "old pipe",
+  "type": "MESH",
+  "bbox": {
+    "min": [-68.58819580078125, 50.36826705932617, 6.145580291748047],
+    "max": [-0.34180450439453125, 118.61465454101562, 74.39198303222656]
+  },
+  "verts": 48708,
+  "faces": 48318,
+  "materials": ["Material.003"],
+  "evaluated_materials": ["Filament and Cross Section 1OCT2024"],
+  "evaluated_material_faces": {
+    "Filament and Cross Section 1OCT2024": 48318
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": false,
+  "overrides": {},
+  "authored_light_scale": 1,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

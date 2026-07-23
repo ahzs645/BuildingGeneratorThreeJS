@@ -2,7 +2,7 @@
   "id": "joint-three-way-pipe",
   "object": "old pipe",
   "root": "pipe joint generator.003",
-  "status": "authored-exact",
+  "status": "authored-exact-material-verified",
   "blender": {
     "verts": 48708,
     "faces": 48318
@@ -11,6 +11,18 @@
     "verts": 48708,
     "faces": 48318
   },
+  "authored_reference": "dojo/references/joints/three-way-pipe-authored.png",
   "coverage": "100% of reachable node types across the 20-group, 319-node root closure; three evaluated dowel dependencies are included.",
-  "validation": "Authored output and five non-cutter control variants have exact topology and bounds. Cutter mode now uses a browser-native open-surface Boolean because Blender's FLOAT solver subtracts three overlapping closed pipes from three open shells, an operation a solid-only Manifold cannot represent. It retains exact bounds and every sampled Blender point and triangle centroid lies on the browser surface at zero measured distance. The browser keeps a small extra inner patch (3.1% surface-area overhead): 27,136 vertices / 53,872 triangles versus Blender's 29,705 vertices / 27,431 polygons (52,605 triangles at the probed Boolean stage)."
+  "material": {
+    "evaluated_face_assignments": {
+      "Filament and Cross Section 1OCT2024": 48318
+    },
+    "comparison": "material-parity.json",
+    "triangle_loop_order": {
+      "exact": 97008,
+      "reversed": 0,
+      "other": 0
+    }
+  },
+  "validation": "Authored output and five non-cutter control variants have exact topology and bounds. The default's 97,008 serialized display triangles now also match Blender index-for-index and winding-for-winding after correcting Curve-to-Mesh endpoint cap orientation. The reconstructed Generated-coordinate noise/Wave bump and Window-coordinate diagonal Backfacing emission reach 0.9951 silhouette IoU, complete mutual one-pixel coverage, 0.00425 RGB MAE, and 0.9979 macro luminance correlation. PRINT VIZ 1OCT2024 stores the authored 0.22 mm layer-height value and includes an optional cross-section inspection branch, but that branch is disabled in the captured default and the supplied project contains no slicer toolpath or source G-code. Cutter mode uses a browser-native open-surface Boolean because Blender's FLOAT solver subtracts three overlapping closed pipes from three open shells, an operation a solid-only Manifold cannot represent. It retains exact bounds and every sampled Blender point and triangle centroid lies on the browser surface at zero measured distance. The browser keeps a small extra inner patch (3.1% surface-area overhead): 27,136 vertices / 53,872 triangles versus Blender's 29,705 vertices / 27,431 polygons (52,605 triangles at the probed Boolean stage)."
 }

@@ -969,9 +969,12 @@
     "dump": "dojo/joints/three-way-pipe/dump.json",
     "shaderMetadata": "dojo/joints/shader-metadata.json",
     "reference": "dojo/references/joints/three-way-pipe.png",
+    "authoredReference": "dojo/references/joints/three-way-pipe-authored.png",
     "blenderStats": { "verts": 48708, "faces": 48318 },
     "localSpace": true,
-    "note": "The 20-group, 319-node pipe-joint generator combines three supplied dowels into a printable three-way connector. Authored output and five non-cutter variants match Blender topology and bounds exactly. Cutter mode uses an open-surface browser Boolean: it reproduces every sampled Blender surface point and exact bounds while retaining one small extra inner patch.",
+    "authoredLightScale": 0,
+  "authoredPreviewLabel": "Print visualization (viewport shader; no slicer/G-code)",
+  "note": "The 20-group, 319-node pipe-joint generator combines three supplied dowels into a printable three-way connector. Authored output and five non-cutter variants match Blender topology and bounds exactly; the default's 97,008 display triangles now also match index and winding order exactly. Authored mode reconstructs all 48,318 faces of Filament and Cross Section 1OCT2024, including its Generated-coordinate noise/Wave bump and Window-coordinate diagonal Backfacing emission. The aligned capture reaches 0.9951 silhouette IoU, 0.00425 RGB MAE, and 0.9979 macro luminance correlation. The supplied PRINT VIZ group also contains an optional geometric cross-section inspection branch, disabled in this default capture, but the project contains no sliced toolpath or source G-code. A printable export should send the unchanged design mesh to a slicer; a future toolpath preview would be separate derived geometry. Cutter mode uses an open-surface browser Boolean: it reproduces every sampled Blender surface point and exact bounds while retaining one small extra inner patch.",
     "controls": [
       { "name": "diameter", "label": "Pipe diameter", "min": 8, "max": 50, "step": 0.1, "value": 25 },
       { "name": "size", "label": "Joint size", "min": 10, "max": 80, "step": 0.1, "value": 32.36322021484375 },

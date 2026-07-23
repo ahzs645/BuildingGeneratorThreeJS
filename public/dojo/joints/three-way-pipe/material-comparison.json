@@ -1,0 +1,73 @@
+{
+  "captures": {
+    "blender": "three-way-pipe-authored.png",
+    "webgl": "three-way-pipe-authored-webgl.png",
+    "resolution": [768, 768],
+    "alignment": "same square orthographic camera direction and 1.45 framing scale",
+    "webgl_background_key": "#ff00ff"
+  },
+  "blender": {
+    "surface_pixels": 198453,
+    "black_pixels": 191843,
+    "white_pixels": 0,
+    "gray_pixels": 6610,
+    "black_fraction": 0.9666923654467304,
+    "white_fraction": 0,
+    "gray_fraction": 0.03330763455326954,
+    "mean_luminance": 0.01163569440298172
+  },
+  "webgl": {
+    "surface_pixels": 199434,
+    "black_pixels": 192791,
+    "white_pixels": 0,
+    "gray_pixels": 6643,
+    "black_fraction": 0.9666907347794258,
+    "white_fraction": 0,
+    "gray_fraction": 0.03330926522057422,
+    "mean_luminance": 0.01002029780270084
+  },
+  "comparison": {
+    "surface_mask_iou": 0.9950810794548572,
+    "surface_mask_iou_dilated_1px": 0.9951255480665498,
+    "blender_surface_covered_within_1px_fraction": 1,
+    "webgl_surface_covered_within_1px_fraction": 1,
+    "surface_corners": {
+      "blender": {
+        "left": [178.50327510917032, 390],
+        "right": [690.34375, 322.1875],
+        "bottom": [274, 120.61842105263158],
+        "top": [274.5, 659.4]
+      },
+      "webgl": {
+        "left": [177.50553097345133, 390],
+        "right": [690.3947368421053, 321.6842105263158],
+        "bottom": [274, 119.80434782608695],
+        "top": [274.1320754716981, 660.2641509433962]
+      }
+    },
+    "surface_corner_deltas_webgl_minus_blender": {
+      "left": [-0.9977441357189889, 0],
+      "right": [0.05098684210531701, -0.5032894736842195],
+      "bottom": [0, -0.8140732265446218],
+      "top": [-0.3679245283018986, 0.8641509433962256]
+    },
+    "surface_corner_rmse_pixels": 0.5912099714173442,
+    "intersection_pixels": 198453,
+    "pixel_rgb_mae": 0.004249280253163423,
+    "mean_rgb_delta": [
+      -0.001681872182186561,
+      -0.002955804549847459,
+      -0.0017497898675689438
+    ],
+    "pixel_luminance_mae": 0.003819392623007706,
+    "pixel_luminance_correlation": 0.9687765607740664,
+    "binary_mask_disagreement_fraction": 0,
+    "macro_block_size": 32,
+    "macro_block_count": 230,
+    "macro_luminance_mae": 0.003049926408401911,
+    "macro_luminance_correlation": 0.9978918984950522,
+    "black_fraction_delta": -1.630667304630684e-6,
+    "mean_luminance_delta": -0.0016153966002808787
+  },
+  "interpretation": "The aligned silhouette validates the capture context. The matched black/gray occupancy and high macro luminance correlation validate the observable authored surface; the residual is dominated by subpixel antialiasing and renderer filtering of the screen-space diagonal bands."
+}

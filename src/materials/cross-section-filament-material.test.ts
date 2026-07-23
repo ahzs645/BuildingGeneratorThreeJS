@@ -32,6 +32,24 @@ test("reconstructs the joint library's evaluated filament fields", async () => {
     waveDistortion: 0.8557739853858948,
     bumpMin: 0.98974609375,
     bumpMax: 1.126708984375,
+    jointFilament: {
+      fieldMix: 0.8409091234207153,
+      waveDetail: 2,
+      waveDetailScale: 1,
+      waveDetailRoughness: 0.5,
+      bumpStrength: 1,
+      bumpDistance: 1,
+      bumpFilterWidth: 1,
+      bumpInvert: false,
+      backSaturation: 0.6000000238418579,
+      backValue: 0.12800000607967377,
+      backWaveScale: 51.1998291015625,
+      backWaveDistortion: 0.8557739853858948,
+      backWaveDetail: 2,
+      backWaveDetailScale: 1,
+      backWaveDetailRoughness: 0.5,
+      backWaveThreshold: 0.05000000074505806,
+    },
     mathClay: null,
   });
   const result = await runGenerator(dump, { object: "old pipe" });
@@ -44,13 +62,23 @@ test("reconstructs the joint library's evaluated filament fields", async () => {
   const material = makeCrossSectionFilamentMaterial(dump, geometry, materialName);
   assert.ok(material?.isMeshPhysicalMaterial);
   assert.equal(material?.name, `${materialName} · joint filament reconstruction`);
-  const shader = { vertexShader: "#include <common>\n#include <begin_vertex>", fragmentShader: "#include <common>\n#include <color_fragment>\n#include <roughnessmap_fragment>\n#include <opaque_fragment>" };
+  assert.deepEqual(material?.userData.crossSectionFilamentBounds, {
+    min: [-68.58819580078125, 50.36826705932617, 6.145580291748047],
+    max: [-0.34180450439453125, 118.61465454101562, 74.39198303222656],
+  });
+  const shader = { uniforms: {}, vertexShader: "#include <common>\n#include <begin_vertex>", fragmentShader: "#include <common>\n#include <color_fragment>\n#include <roughnessmap_fragment>\n#include <normal_fragment_maps>\n#include <opaque_fragment>" };
   material?.onBeforeCompile(shader as never, {} as never);
   assert.match(shader.vertexShader, /attribute vec3 col/);
+  assert.match(shader.vertexShader, /attribute float layer/);
   assert.match(shader.fragmentShader, /gl_FrontFacing\?max\(vJointColor/);
-  assert.match(shader.fragmentShader, /if\(!gl_FrontFacing\)outgoingLight=vec3\(0\.0\)/);
+  assert.match(shader.fragmentShader, /jointFilamentWhiteNoise3/);
+  assert.match(shader.fragmentShader, /jointFilamentWave/);
+  assert.match(shader.fragmentShader, /jointFilamentHeight/);
+  assert.match(shader.fragmentShader, /dFdx\(vJointFilamentGenerated\)/);
+  assert.match(shader.fragmentShader, /jointFilamentBackWave/);
+  assert.match(shader.fragmentShader, /if\(!gl_FrontFacing\)outgoingLight=jointFilamentBackColor\(vJointColor\)/);
   assert.match(shader.fragmentShader, /vJointRoughness/);
-  assert.doesNotMatch(shader.fragmentShader, /jointBand|mix\(0\.94,1\.04/);
+  assert.doesNotMatch(shader.fragmentShader, /jointBand|if\(!gl_FrontFacing\)outgoingLight=vec3\(0\.0\)/);
   material?.dispose();
   geometry.dispose();
 });
@@ -89,6 +117,7 @@ test("reconstructs Math Clay's authored procedural filament and emission branche
   assert.equal(config?.blackBackfaceEmission, true);
   assert.equal(config?.roughnessAttribute, null);
   assert.equal(config?.roughnessFallback, 0.5);
+  assert.equal(config?.jointFilament, null);
   assert.deepEqual(config.mathClay, {
     fieldMix: 0.8409091234207153,
     waveDetail: 2,

@@ -17,6 +17,9 @@ light powers for large or small assets while preserving the shared rig layout.
 world at ``NODE_DOJO_STUDIO_ENVIRONMENT_STRENGTH`` (default 0.8). This keeps
 transparent capture film while giving reflective/transmissive materials a
 defined environment.
+``NODE_DOJO_DEBUG_MATERIAL_NAME`` selects the source material used by a
+``NODE_DOJO_DEBUG_MATERIAL_OUTPUT`` probe when the asset does not use the
+probe's historical default material name.
 For Workbench diagnostics, ``NODE_DOJO_WORKBENCH_SHADOWS=0`` and
 ``NODE_DOJO_WORKBENCH_CAVITY=0`` isolate the bundled studio-light response.
 """
@@ -136,9 +139,13 @@ if debug_material_output == "MATH_BEVEL_FACTOR":
     material_links.new(emission.outputs["Emission"], output_node.inputs["Surface"])
     print("NODE_DOJO_DEBUG_MATERIAL_OUTPUT_OK MATH_BEVEL_FACTOR")
 elif debug_material_output == "FILAMENT_BACKFACING":
-    material = bpy.data.materials.get("Filament PLA .02 mm layer height")
+    material_name = os.environ.get(
+        "NODE_DOJO_DEBUG_MATERIAL_NAME",
+        "Filament PLA .02 mm layer height",
+    )
+    material = bpy.data.materials.get(material_name)
     if material is None or material.node_tree is None:
-        raise RuntimeError("N03D filament material not found")
+        raise RuntimeError(f'filament material not found: "{material_name}"')
     material_nodes = material.node_tree.nodes
     material_links = material.node_tree.links
     geometry = next((node for node in material_nodes if node.bl_idname == "ShaderNodeNewGeometry"), None)

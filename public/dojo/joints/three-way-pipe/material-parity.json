@@ -1,0 +1,94 @@
+{
+  "asset": "joint-three-way-pipe",
+  "source": {
+    "project": "NEW JOINT GENERATORS 42 to 43_16DEC2024_01.blend",
+    "object": "old pipe",
+    "root": "pipe joint generator.003"
+  },
+  "scope": "Exact default evaluated geometry, face-loop winding, and the observable authored Blender Eevee surface with PRINT VIZ cross-section inspection disabled. This is a viewport material comparison, not a sliced toolpath or G-code comparison.",
+  "geometry": {
+    "blender": {
+      "verts": 48708,
+      "faces": 48318,
+      "triangles": 97008
+    },
+    "gnvm": {
+      "verts": 48708,
+      "faces": 48318,
+      "triangles": 97008
+    },
+    "localBounds": {
+      "blender": {
+        "min": [-68.58819580078125, 50.36826705932617, 6.145580291748047],
+        "max": [-0.34180450439453125, 118.61465454101562, 74.39198303222656]
+      },
+      "gnvm": {
+        "min": [-68.58819580078125, 50.36826705932617, 6.145580291748047],
+        "max": [-0.34180450439453125, 118.61465454101562, 74.39198303222656]
+      }
+    },
+    "triangleLoopOrder": {
+      "exact": 97008,
+      "cyclicallyEquivalent": 0,
+      "reversed": 0,
+      "other": 0,
+      "interpretation": "All serialized display triangles now use the same indices and winding as Blender. The corrected Curve-to-Mesh endpoint rule reverses the first profile ring and keeps the last profile ring in authored order."
+    },
+    "surfaceComparisonTools": [
+      "tools/export_blender_evaluated_mesh.py",
+      "tools/gnvm-export.ts"
+    ]
+  },
+  "evaluatedMaterials": {
+    "faceAssignments": {
+      "Filament and Cross Section 1OCT2024": 48318
+    },
+    "front": {
+      "baseColor": "POINT-domain col",
+      "roughness": "POINT-domain rough",
+      "generatedCoordinateField": "White Noise Texture mixed with distorted Z-band Wave Texture",
+      "bump": "Map Range field driving Bump strength 1 and distance 1"
+    },
+    "back": {
+      "selector": "Geometry Backfacing",
+      "color": "col transformed by Hue/Saturation/Value",
+      "pattern": "Window-coordinate distorted diagonal Wave Texture with Less Than threshold"
+    },
+    "browserImplementation": "The shared joint material reconstruction now evaluates the Generated-coordinate bump field and the Window-coordinate patterned emission branch. It uses face winding for Backfacing, matching Blender's observable shader contract."
+  },
+  "printVisualization": {
+    "sourceGroup": "PRINT VIZ 1OCT2024",
+    "authoredLayerHeight": 0.2199999988079071,
+    "defaultCrossSectionView": false,
+    "crossSectionBehavior": "When enabled in Blender, the nested cross sectioner group derives inspection geometry and therefore is not a material-only toggle.",
+    "sourceGCodePresent": false,
+    "exportContract": "The evaluated design mesh is the slicer input. Printer-specific layers and G-code must be generated from that mesh with a printer, nozzle, material, support, and infill profile; they cannot be recovered from this viewport shader."
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../../references/joints/three-way-pipe-authored.png",
+    "blenderMetadata": "../../references/joints/three-way-pipe-authored.json",
+    "browserReference": "../../references/joints/three-way-pipe-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=joint-three-way-pipe&capture=authored",
+    "browserAuthoredLightScale": 0,
+    "browserCaptureMethod": "direct 768x768 WebGL canvas buffer"
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9950810794548572,
+    "surfaceMaskIouDilated1px": 0.9951255480665498,
+    "blenderSurfaceCoveredWithin1px": 1,
+    "webglSurfaceCoveredWithin1px": 1,
+    "surfaceCornerRmsePixels": 0.5912099714173442,
+    "pixelRgbMae": 0.004249280253163423,
+    "pixelLuminanceMae": 0.003819392623007706,
+    "pixelLuminanceCorrelation": 0.9687765607740664,
+    "macroLuminanceMae": 0.003049926408401911,
+    "macroLuminanceCorrelation": 0.9978918984950522,
+    "blackFractionDelta": -1.630667304630684e-6,
+    "meanLuminanceDelta": -0.0016153966002808787
+  },
+  "interpretation": "The default joint now matches Blender through topology, triangle winding, material assignment, front/back selection, and the shader's visible diagonal Backfacing bands. The zero-intensity browser rig reproduces the supplied file's effectively black Principled front surface while the authored Backfacing emission remains visible. These bands preview an authored print-like surface; they are not nozzle paths. The optional source cross-section branch is a separate geometric inspection feature and is disabled here."
+}

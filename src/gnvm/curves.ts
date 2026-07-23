@@ -599,7 +599,15 @@ export function sweep(
   if (fillCaps && profile.cyclic && !rail.cyclic) {
     const startFace: number[] = [];
     const endFace: number[] = [];
-    for (let j = 0; j < np; j++) { startFace.push(j); endFace.push((nr - 1) * np + (np - 1 - j)); }
+    // Blender closes an open Curve to Mesh rail with the opposite winding
+    // from the side loop at each endpoint: the first profile ring is reversed
+    // and the final ring keeps profile order. The former inverse pair was
+    // geometrically coincident, but it flipped Geometry/Backfacing on every
+    // cap (visible in the joint library's cross-section shader).
+    for (let j = 0; j < np; j++) {
+      startFace.push(np - 1 - j);
+      endFace.push((nr - 1) * np + j);
+    }
     mesh.faces.push(startFace); mesh.faceMaterial.push(0);
     mesh.faces.push(endFace); mesh.faceMaterial.push(0);
   }

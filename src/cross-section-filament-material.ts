@@ -49,7 +49,27 @@ export type CrossSectionFilamentConfig = {
   waveDistortion: number;
   bumpMin: number;
   bumpMax: number;
+  jointFilament: JointFilamentConfig | null;
   mathClay: MathClayFilamentConfig | null;
+};
+
+export type JointFilamentConfig = {
+  fieldMix: number;
+  waveDetail: number;
+  waveDetailScale: number;
+  waveDetailRoughness: number;
+  bumpStrength: number;
+  bumpDistance: number;
+  bumpFilterWidth: number;
+  bumpInvert: boolean;
+  backSaturation: number;
+  backValue: number;
+  backWaveScale: number;
+  backWaveDistortion: number;
+  backWaveDetail: number;
+  backWaveDetailScale: number;
+  backWaveDetailRoughness: number;
+  backWaveThreshold: number;
 };
 
 export type BdsfCrossSectionConfig = {
@@ -150,6 +170,10 @@ export function extractCrossSectionFilamentConfig(dump: Dump, materialName: stri
   const backShader = backfaceMix ? links.find((link) => link.to_node === backfaceMix.name && link.to_socket === "Shader_001") : undefined;
   const backEmission = nodes.find((node) => node.name === backShader?.from_node && node.type === "ShaderNodeEmission");
   const emissionMix = linkedNode(nodes, links, backEmission, "Color");
+  const hue = nodes.find((node) => node.type === "ShaderNodeHueSaturation" && isLinkedFrom(links, colorNode, node, "Color"));
+  const backWave = nodes.find((node) => node.type === "ShaderNodeTexWave" && node.props?.bands_direction === "DIAGONAL");
+  const backThreshold = nodes.find((node) => node.type === "ShaderNodeMath" && node.props?.operation === "LESS_THAN"
+    && isLinkedFrom(links, backWave, node, "Value"));
   const blackColor = colorInput(emissionMix, "B_Color");
   const blackBackfaceEmission = frontShader?.from_node === principled?.name
     && blackColor !== null
@@ -157,7 +181,10 @@ export function extractCrossSectionFilamentConfig(dump: Dump, materialName: stri
   if (!surfaceMix || !principled || !bump || bump.type !== "ShaderNodeBump" || !heightMap || heightMap.type !== "ShaderNodeMapRange"
     || !fieldMix || fieldMix.type !== "ShaderNodeMix" || !wave || wave.type !== "ShaderNodeTexWave"
     || !whiteNoise || whiteNoise.type !== "ShaderNodeTexWhiteNoise" || !colorLink || !layerLink
-    || !mappingNode || mappingNode.type !== "ShaderNodeMapping" || !scaleNode || !blackBackfaceEmission) return null;
+    || !mappingNode || mappingNode.type !== "ShaderNodeMapping" || !scaleNode || !blackBackfaceEmission
+    || !hue || input(hue, "Hue", 0.5) !== 0.5 || input(hue, "Fac", 1) !== 1
+    || !backWave || !backThreshold || !isLinkedFrom(links, hue, emissionMix, "A_Color")
+    || !isLinkedFrom(links, backThreshold, emissionMix, "Factor_Float")) return null;
 
   const roughnessMap = linkedNode(nodes, links, principled, "Roughness");
   const coatWeightMap = linkedNode(nodes, links, principled, "Coat Weight");
@@ -170,32 +197,47 @@ export function extractCrossSectionFilamentConfig(dump: Dump, materialName: stri
     && isLinkedFrom(links, fieldMix, coatRoughnessMap, "Value")
     && !roughnessLink;
 
+  const sharedField = {
+    fieldMix: input(fieldMix, "Factor_Float", 0.8409091234207153),
+    waveDetail: input(wave, "Detail", 2),
+    waveDetailScale: input(wave, "Detail Scale", 1),
+    waveDetailRoughness: input(wave, "Detail Roughness", 0.5),
+    bumpStrength: input(bump, "Strength", 1),
+    bumpDistance: input(bump, "Distance", 1),
+    bumpFilterWidth: input(bump, "Filter Width", 1),
+    bumpInvert: bump.props?.invert === true,
+    backSaturation: input(hue, "Saturation", 0.6),
+    backValue: input(hue, "Value", 0.128),
+    backWaveScale: input(backWave, "Scale", 51.1998291015625),
+    backWaveDistortion: input(backWave, "Distortion", 0),
+    backWaveDetail: input(backWave, "Detail", 2),
+    backWaveDetailScale: input(backWave, "Detail Scale", 1),
+    backWaveDetailRoughness: input(backWave, "Detail Roughness", 0.5),
+    backWaveThreshold: input(backThreshold, "Value_001", 0.05),
+  } satisfies JointFilamentConfig;
+  const jointFilament = mathTopology ? null : sharedField;
   let mathClay: MathClayFilamentConfig | null = null;
   if (mathTopology) {
-    const hue = nodes.find((node) => node.type === "ShaderNodeHueSaturation" && isLinkedFrom(links, colorNode, node, "Color"));
-    const backWave = nodes.find((node) => node.type === "ShaderNodeTexWave" && node.props?.bands_direction === "DIAGONAL");
-    const backThreshold = nodes.find((node) => node.type === "ShaderNodeMath" && node.props?.operation === "LESS_THAN"
-      && isLinkedFrom(links, backWave, node, "Value"));
     const bevel = linkedNode(nodes, links, bump, "Normal");
     mathClay = {
-      fieldMix: input(fieldMix, "Factor_Float", 0.8409091234207153),
-      waveDetail: input(wave, "Detail", 2),
-      waveDetailScale: input(wave, "Detail Scale", 1),
-      waveDetailRoughness: input(wave, "Detail Roughness", 0.5),
+      fieldMix: sharedField.fieldMix,
+      waveDetail: sharedField.waveDetail,
+      waveDetailScale: sharedField.waveDetailScale,
+      waveDetailRoughness: sharedField.waveDetailRoughness,
       height: range(heightMap, 0.98974609375, 1.126708984375),
       roughness: range(roughnessMap, 1, 0.50048828125),
       coatWeight: range(coatWeightMap, -2.08837890625, 1.2119140625),
       coatRoughness: range(coatRoughnessMap, 0.7176513671875, 0.10000000149011612),
       coatIor: input(principled, "Coat IOR", 1.5),
-      bumpStrength: input(bump, "Strength", 1),
-      bumpDistance: input(bump, "Distance", 1),
-      bumpFilterWidth: input(bump, "Filter Width", 1),
-      bumpInvert: bump.props?.invert === true,
+      bumpStrength: sharedField.bumpStrength,
+      bumpDistance: sharedField.bumpDistance,
+      bumpFilterWidth: sharedField.bumpFilterWidth,
+      bumpInvert: sharedField.bumpInvert,
       backHue: input(hue, "Hue", 0.5),
-      backSaturation: input(hue, "Saturation", 0.6),
-      backValue: input(hue, "Value", 0.128),
-      backWaveScale: input(backWave, "Scale", 51.1998291015625),
-      backWaveThreshold: input(backThreshold, "Value_001", 0.05),
+      backSaturation: sharedField.backSaturation,
+      backValue: sharedField.backValue,
+      backWaveScale: sharedField.backWaveScale,
+      backWaveThreshold: sharedField.backWaveThreshold,
       bevelRadius: input(bevel, "Input_1", 0.5),
     };
   }
@@ -210,6 +252,7 @@ export function extractCrossSectionFilamentConfig(dump: Dump, materialName: stri
     waveDistortion: input(wave, "Distortion", 0),
     bumpMin: input(heightMap, "To Min", 0.99),
     bumpMax: input(heightMap, "To Max", 1.13),
+    jointFilament,
     mathClay,
   };
 }
@@ -458,9 +501,9 @@ export function makeCrossSectionFilamentMaterial(
   const color = geometry.getAttribute(config.colorAttribute);
   const roughness = config.roughnessAttribute ? geometry.getAttribute(config.roughnessAttribute) : null;
   const layer = geometry.getAttribute(config.layerAttribute);
-  const bounds = config.mathClay ? geometryBounds(geometry) : null;
+  const bounds = config.mathClay || config.jointFilament ? geometryBounds(geometry) : null;
   if (!color || color.itemSize !== 3 || (config.roughnessAttribute && (!roughness || roughness.itemSize !== 1))
-    || !layer || layer.itemSize !== 1 || (config.mathClay && !bounds)) return null;
+    || !layer || layer.itemSize !== 1 || ((config.mathClay || config.jointFilament) && !bounds)) return null;
 
   const material = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
@@ -475,15 +518,19 @@ export function makeCrossSectionFilamentMaterial(
   if (bounds) material.userData.crossSectionFilamentBounds = bounds;
   const viewport = new THREE.Vector2(1, 1);
   material.onBeforeRender = (renderer) => {
-    if (config.mathClay) renderer.getDrawingBufferSize(viewport);
+    if (config.mathClay || config.jointFilament) renderer.getDrawingBufferSize(viewport);
   };
   material.onBeforeCompile = (shader) => {
     const roughnessDeclaration = config.roughnessAttribute ? `attribute float ${config.roughnessAttribute};` : "";
     const roughnessValue = config.roughnessAttribute ?? glsl(config.roughnessFallback);
-    const mathVertexDeclaration = config.mathClay ? `\nattribute float ${config.layerAttribute};\nvarying vec3 vMathFilamentGenerated;\nvarying float vMathFilamentLayer;` : "";
+    const mathVertexDeclaration = config.mathClay ? `\nattribute float ${config.layerAttribute};\nvarying vec3 vMathFilamentGenerated;\nvarying float vMathFilamentLayer;`
+      : config.jointFilament ? `\nattribute float ${config.layerAttribute};\nvarying vec3 vJointFilamentGenerated;\nvarying float vJointFilamentLayer;`
+        : "";
     const mathVertexValue = config.mathClay && bounds ? `
 vMathFilamentGenerated=(position-vec3(${bounds.min.map(glsl).join(",")}))/vec3(${bounds.max.map((value, axis) => glsl(Math.max(value - bounds.min[axis], 1e-20))).join(",")});
-vMathFilamentLayer=${config.layerAttribute};` : "";
+vMathFilamentLayer=${config.layerAttribute};` : config.jointFilament && bounds ? `
+vJointFilamentGenerated=(position-vec3(${bounds.min.map(glsl).join(",")}))/vec3(${bounds.max.map((value, axis) => glsl(Math.max(value - bounds.min[axis], 1e-20))).join(",")});
+vJointFilamentLayer=${config.layerAttribute};` : "";
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", `#include <common>\nattribute vec3 ${config.colorAttribute};\n${roughnessDeclaration}\nvarying vec3 vJointColor;\nvarying float vJointRoughness;${mathVertexDeclaration}`)
       .replace("#include <begin_vertex>", `#include <begin_vertex>\nvJointColor=${config.colorAttribute};\nvJointRoughness=${roughnessValue};${mathVertexValue}`);
@@ -493,6 +540,63 @@ vMathFilamentLayer=${config.layerAttribute};` : "";
 diffuseColor.rgb=gl_FrontFacing?max(vJointColor,vec3(0.0)):vec3(0.0);`)
       .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor=clamp(vJointRoughness,0.0,1.0);")
       .replace("#include <opaque_fragment>", "if(!gl_FrontFacing)outgoingLight=vec3(0.0);\n#include <opaque_fragment>");
+
+    if (config.jointFilament && bounds) {
+      const joint = config.jointFilament;
+      const frontWaveConfig: FilamentWaveConfig = {
+        distortion: config.waveDistortion,
+        detail: joint.waveDetail,
+        detailScale: joint.waveDetailScale,
+        detailRoughness: joint.waveDetailRoughness,
+        direction: "Z",
+      };
+      const backWaveConfig: FilamentWaveConfig = {
+        distortion: joint.backWaveDistortion,
+        detail: joint.backWaveDetail,
+        detailScale: joint.backWaveDetailScale,
+        detailRoughness: joint.backWaveDetailRoughness,
+        direction: "DIAGONAL",
+      };
+      shader.uniforms ??= {};
+      shader.uniforms.jointFilamentViewport = { value: viewport };
+      shader.fragmentShader = shader.fragmentShader
+        .replace("#include <common>", `#include <common>
+uniform vec2 jointFilamentViewport;
+varying vec3 vJointFilamentGenerated;
+varying float vJointFilamentLayer;
+${filamentNoiseGlsl("jointFilament", true)}
+${filamentWaveFunctionGlsl("jointFilament", "jointFilamentWave", frontWaveConfig)}
+${filamentWaveFunctionGlsl("jointFilament", "jointFilamentBackWave", backWaveConfig)}
+float jointFilamentField(vec3 generated) {
+  vec3 mapped=generated*${glsl(config.mappingScale)};
+  vec3 white=jointFilamentWhiteNoise3(mapped);
+  float wave=jointFilamentWave(mapped,vJointFilamentLayer);
+  vec3 mixed=mix(white,vec3(wave),${glsl(joint.fieldMix)});
+  return dot(mixed,vec3(0.2126,0.7152,0.0722));
+}
+float jointFilamentHeight(vec3 generated) {
+  return mix(${glsl(config.bumpMin)},${glsl(config.bumpMax)},jointFilamentField(generated));
+}
+vec3 jointFilamentBackColor(vec3 jointColor) {
+  vec3 front=max(jointColor,vec3(0.0));
+  float value=max(max(front.r,front.g),front.b);
+  vec3 color=mix(vec3(value),front,${glsl(joint.backSaturation)})*${glsl(joint.backValue)};
+  vec2 windowCoordinate=gl_FragCoord.xy/max(jointFilamentViewport,vec2(1.0));
+  float mask=jointFilamentBackWave(vec3(windowCoordinate,0.0),${glsl(joint.backWaveScale)});
+  return mask<${glsl(joint.backWaveThreshold)}?vec3(0.0):color;
+}`)
+        .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
+${filamentBumpGlsl({
+          prefix: "jointFilamentBump",
+          coordinate: "vJointFilamentGenerated",
+          heightFunction: (coordinate) => `jointFilamentHeight(${coordinate})`,
+          strength: joint.bumpStrength,
+          distance: joint.bumpDistance,
+          filterWidth: joint.bumpFilterWidth,
+          invert: joint.bumpInvert,
+        })}`)
+        .replace("if(!gl_FrontFacing)outgoingLight=vec3(0.0);", "if(!gl_FrontFacing)outgoingLight=jointFilamentBackColor(vJointColor);");
+    }
 
     if (config.mathClay && bounds) {
       const math = config.mathClay;
@@ -550,6 +654,6 @@ ${filamentBumpGlsl({
         .replace("if(!gl_FrontFacing)outgoingLight=vec3(0.0);", "if(!gl_FrontFacing)outgoingLight=mathFilamentBackColor(vJointColor);");
     }
   };
-  material.customProgramCacheKey = () => `joint-filament-${materialName}-${config.mathClay ? "math-v2" : "v2"}`;
+  material.customProgramCacheKey = () => `joint-filament-${materialName}-${config.mathClay ? "math-v2" : "joint-v3"}`;
   return material;
 }
