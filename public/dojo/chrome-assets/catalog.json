@@ -670,8 +670,11 @@
     "dump": "dojo/n03d/pill-hole-cylindrical/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/pill-hole-cylindrical.png",
+    "authoredReference": "dojo/references/n03d/pill-hole-cylindrical-authored.png",
+    "authoredLightScale": 45,
+    "authoredToneMapping": "none",
     "blenderStats": { "verts": 200, "faces": 176 },
-    "note": "Exact Blender topology and bounds across all five diameter and resolution cases. The retained-source two-cylinder hull preserves Blender's authored caps, 34 exposed points from the second cylinder, 68 outer wall panels, and triangle/quad extension tessellation; the authored result is exactly 200 / 176.",
+    "note": "Exact Blender topology and bounds across all five diameter and resolution cases. The retained-source two-cylinder hull preserves Blender's authored caps, 34 exposed points from the second cylinder, 68 outer wall panels, and triangle/quad extension tessellation; the authored result is exactly 200 / 176. Authored mode verifies the shared Filament PLA material on its constant linear-0.8 col field, Generated Z-band Wave, derivative Bump, roughness, and backface branch; the committed comparison reaches 0.9931 silhouette IoU.",
     "controls": [
       { "name": "top diameter", "label": "Top diameter", "min": 2, "max": 20, "step": 0.1, "value": 8 },
       { "name": "bottom diameter", "label": "Bottom diameter", "min": 2, "max": 20, "step": 0.1, "value": 3 },

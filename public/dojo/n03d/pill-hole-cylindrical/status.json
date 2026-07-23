@@ -2,9 +2,17 @@
   "id": "n03d-pill-hole-cylindrical",
   "object": "Pill Hole_cylindrical",
   "root": "pill hole cylindrical",
-  "status": "exact-parity",
+  "status": "exact-geometry-and-authored-filament-verified",
   "blender": { "verts": 200, "faces": 176 },
   "gnvm": { "verts": 200, "faces": 176 },
   "coverage": "100% of reachable node types across the 3-group, 33-node closure.",
-  "validation": "Five diameter and resolution cases have exact Blender topology and local bounds. The two-cylinder hull retains one authored cap per end, the 34 exposed points from the second cylinder, 68 outer wall panels, and Blender's triangle/quad extension tessellation."
+  "validation": "Five diameter and resolution cases have exact Blender topology and local bounds. The two-cylinder hull retains one authored cap per end, the 34 exposed points from the second cylinder, 68 outer wall panels, and Blender's triangle/quad extension tessellation.",
+  "material": {
+    "name": "Filament PLA .02 mm layer height",
+    "contract": "constant POINT col + Generated Z-band Wave + derivative Bump + Backfacing branch",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.993132081999827,
+    "pixelRgbMae": 0.0920420528902897,
+    "residual": "Blender's contrast look clips the bright neutral surface closer to white; Three.js retains more bump and side-wall shading."
+  }
 }
