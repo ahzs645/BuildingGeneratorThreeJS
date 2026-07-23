@@ -65,6 +65,11 @@ const requestedEnvironmentRotation = Number(query.get("environmentRotation"));
 const captureEnvironmentRotation = query.has("environmentRotation") && Number.isFinite(requestedEnvironmentRotation)
   ? requestedEnvironmentRotation
   : null;
+const requestedSpecularIntensity = Number(query.get("specularIntensity"));
+const captureSpecularIntensity = query.has("specularIntensity")
+  && Number.isFinite(requestedSpecularIntensity) && requestedSpecularIntensity >= 0
+  ? requestedSpecularIntensity
+  : null;
 const select = document.querySelector<HTMLInputElement>("#assets-select")!;
 const assetOptions = document.querySelector<HTMLDataListElement>("#assets-options")!;
 const previousAsset = document.querySelector<HTMLButtonElement>("#assets-previous")!;
@@ -210,6 +215,8 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
             ?? makePackedStickerMaterial(dump,geometry,group,group.material??"")
             ?? makeChromeCrayonMaterial(dump,geometry,group.material??"");
       if(authored instanceof THREE.MeshStandardMaterial)authored.flatShading=current.flatShading??false;
+      if(authored instanceof THREE.MeshPhysicalMaterial && authoredCapture && captureSpecularIntensity !== null)
+        authored.specularIntensity=captureSpecularIntensity;
       materials.push(authored??diagnosticMaterial());
     }
   }

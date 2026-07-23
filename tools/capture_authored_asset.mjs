@@ -10,6 +10,9 @@ const previewMode = process.argv[6];
 const overridesPayload = process.argv[7];
 const backgroundHex = process.env.NODE_DOJO_CAPTURE_BACKGROUND_HEX ?? process.argv[8];
 const sampleCount = process.env.NODE_DOJO_CAPTURE_SAMPLES;
+const environmentIntensity = process.env.NODE_DOJO_CAPTURE_ENVIRONMENT_INTENSITY;
+const environmentRotation = process.env.NODE_DOJO_CAPTURE_ENVIRONMENT_ROTATION;
+const specularIntensity = process.env.NODE_DOJO_CAPTURE_SPECULAR_INTENSITY;
 
 if (!asset || !output) {
   throw new Error(
@@ -32,6 +35,17 @@ if (backgroundHex !== undefined && !/^[0-9a-f]{6}$/i.test(backgroundHex)) {
 if (sampleCount !== undefined && (!Number.isInteger(Number(sampleCount)) || Number(sampleCount) < 1)) {
   throw new Error(`NODE_DOJO_CAPTURE_SAMPLES must be a positive integer: ${sampleCount}`);
 }
+if (environmentIntensity !== undefined
+  && (!Number.isFinite(Number(environmentIntensity)) || Number(environmentIntensity) < 0)) {
+  throw new Error(`NODE_DOJO_CAPTURE_ENVIRONMENT_INTENSITY must be a non-negative number: ${environmentIntensity}`);
+}
+if (environmentRotation !== undefined && !Number.isFinite(Number(environmentRotation))) {
+  throw new Error(`NODE_DOJO_CAPTURE_ENVIRONMENT_ROTATION must be a number: ${environmentRotation}`);
+}
+if (specularIntensity !== undefined
+  && (!Number.isFinite(Number(specularIntensity)) || Number(specularIntensity) < 0)) {
+  throw new Error(`NODE_DOJO_CAPTURE_SPECULAR_INTENSITY must be a non-negative number: ${specularIntensity}`);
+}
 
 const executablePath = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -47,10 +61,17 @@ route.searchParams.set("capture", "authored");
 if (lightScale !== undefined) route.searchParams.set("lightScale", lightScale);
 if (previewMode !== undefined) route.searchParams.set("preview", previewMode);
 if (sampleCount !== undefined) route.searchParams.set("samples", sampleCount);
+if (environmentIntensity !== undefined) route.searchParams.set("environmentIntensity", environmentIntensity);
+if (environmentRotation !== undefined) route.searchParams.set("environmentRotation", environmentRotation);
+if (specularIntensity !== undefined) route.searchParams.set("specularIntensity", specularIntensity);
 
 const browser = await puppeteer.launch({
   headless: true,
   executablePath,
+  // Some exact GN-VM assets occupy the renderer thread for longer than
+  // Puppeteer's default CDP call timeout while their Web Worker finishes.
+  // Keep the protocol ceiling above the explicit readiness timeout below.
+  protocolTimeout: 300_000,
   args: ["--no-sandbox", "--enable-unsafe-swiftshader", "--use-angle=swiftshader"],
 });
 try {
@@ -136,6 +157,9 @@ try {
     previewMode: previewMode ?? "authored",
     backgroundHex: backgroundHex ?? "ff00ff",
     samples: sampleCount === undefined ? null : Number(sampleCount),
+    environmentIntensity: environmentIntensity === undefined ? null : Number(environmentIntensity),
+    environmentRotation: environmentRotation === undefined ? null : Number(environmentRotation),
+    specularIntensity: specularIntensity === undefined ? null : Number(specularIntensity),
     overrides,
     ...result,
   })}`);

@@ -65,6 +65,8 @@ out_path = args[1]
 meta_path = args[2] if len(args) > 2 else None
 local_space = len(args) > 3 and args[3].upper() == "LOCAL"
 freeze_evaluated_mesh = os.environ.get("NODE_DOJO_FREEZE_EVALUATED_MESH") == "1"
+frozen_mesh_path = os.environ.get("NODE_DOJO_FROZEN_MESH_JSON")
+frozen_mesh_local = os.environ.get("NODE_DOJO_FROZEN_MESH_SPACE", "WORLD").upper() == "LOCAL"
 obj = bpy.data.objects.get(object_name)
 if obj is None:
     raise RuntimeError(f'object not found: "{object_name}"')
@@ -168,6 +170,26 @@ elif debug_material_output == "FILAMENT_BACKFACING":
     material_links.new(geometry.outputs["Backfacing"], emission.inputs["Color"])
     material_links.new(emission.outputs["Emission"], output_node.inputs["Surface"])
     print("NODE_DOJO_DEBUG_MATERIAL_OUTPUT_OK FILAMENT_BACKFACING")
+elif debug_material_output == "FILAMENT_NO_BEVEL":
+    material_name = os.environ.get(
+        "NODE_DOJO_DEBUG_MATERIAL_NAME",
+        "Filament and Cross Section 1OCT2024",
+    )
+    material = bpy.data.materials.get(material_name)
+    if material is None or material.node_tree is None:
+        raise RuntimeError(f'filament material not found: "{material_name}"')
+    material_nodes = material.node_tree.nodes
+    material_links = material.node_tree.links
+    bump = next(
+        (node for node in material_nodes if node.bl_idname == "ShaderNodeBump"),
+        None,
+    )
+    if bump is None:
+        raise RuntimeError("filament Bump node not found")
+    for link in list(material_links):
+        if link.to_node == bump and link.to_socket.name == "Normal":
+            material_links.remove(link)
+    print(f"NODE_DOJO_DEBUG_MATERIAL_OUTPUT_OK FILAMENT_NO_BEVEL {material_name}")
 elif debug_material_output == "MAHOGANY_NOISE":
     material_name = os.environ.get(
         "NODE_DOJO_DEBUG_MATERIAL_NAME",
@@ -248,6 +270,65 @@ if mesh:
         name = evaluated_materials[polygon.material_index] if polygon.material_index < len(evaluated_materials) else None
         key = name or "<none>"
         evaluated_material_faces[key] = evaluated_material_faces.get(key, 0) + 1
+if mesh and frozen_mesh_path:
+    mesh.calc_loop_triangles()
+    mesh_transform = None if frozen_mesh_local else evaluated.matrix_world
+    normal_transform = (
+        None
+        if mesh_transform is None
+        else mesh_transform.to_3x3().inverted().transposed()
+    )
+    frozen_payload = {
+        "object": obj.name,
+        "space": "LOCAL" if frozen_mesh_local else "WORLD",
+        "positions": [
+            list(vertex.co if mesh_transform is None else mesh_transform @ vertex.co)
+            for vertex in mesh.vertices
+        ],
+        "vertex_normals": [
+            list(
+                vertex.normal
+                if normal_transform is None
+                else (normal_transform @ vertex.normal).normalized()
+            )
+            for vertex in mesh.vertices
+        ],
+        "corner_normals": [
+            list(
+                corner.vector
+                if normal_transform is None
+                else (normal_transform @ corner.vector).normalized()
+            )
+            for corner in mesh.corner_normals
+        ],
+        "faces": [list(polygon.vertices) for polygon in mesh.polygons],
+        "loop_triangles": [
+            list(triangle.vertices) for triangle in mesh.loop_triangles
+        ],
+        "face_materials": [
+            evaluated_materials[polygon.material_index]
+            if polygon.material_index < len(evaluated_materials)
+            else None
+            for polygon in mesh.polygons
+        ],
+        "stats": {
+            "verts": len(mesh.vertices),
+            "edges": len(mesh.edges),
+            "faces": len(mesh.polygons),
+            "triangles": len(mesh.loop_triangles),
+        },
+    }
+    frozen_mesh_path = os.path.abspath(frozen_mesh_path)
+    os.makedirs(os.path.dirname(frozen_mesh_path), exist_ok=True)
+    with open(frozen_mesh_path, "w", encoding="utf-8") as handle:
+        json.dump(frozen_payload, handle)
+        handle.write("\n")
+    print(
+        "NODE_DOJO_FROZEN_MESH_JSON_OK "
+        f"{frozen_mesh_path} ({frozen_payload['stats']['verts']} verts, "
+        f"{frozen_payload['stats']['faces']} faces, "
+        f"{frozen_payload['stats']['triangles']} triangles)"
+    )
 if (local_space or freeze_evaluated_mesh) and mesh:
     # Evaluate with the authored object/parent transforms intact: Object Info,
     # dependency cycles, and relative transform sockets can observe them. Render
