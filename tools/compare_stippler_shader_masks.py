@@ -2,7 +2,7 @@
 
 Usage:
   blender --background --python tools/compare_stippler_shader_masks.py -- \
-    BLENDER.png WEBGL.png OUT.json [WEBGL_BACKGROUND_HEX]
+    BLENDER.png WEBGL.png OUT.json [WEBGL_BACKGROUND_HEX] [WEBGL_SAMPLES]
 
 The Blender capture must have a transparent background. The opt-in WebGL
 ``capture=authored`` and legacy ``capture=stippler-shader`` routes use #ff00ff
@@ -23,8 +23,11 @@ if len(args) < 3:
     raise RuntimeError("expected BLENDER.png WEBGL.png OUT.json")
 blender_path, webgl_path, out_path = map(os.path.abspath, args[:3])
 webgl_background_hex = args[3] if len(args) > 3 else "ff00ff"
+webgl_samples = int(args[4]) if len(args) > 4 else None
 if len(webgl_background_hex) != 6:
     raise RuntimeError("WEBGL_BACKGROUND_HEX must contain exactly six hexadecimal digits")
+if webgl_samples is not None and webgl_samples < 1:
+    raise RuntimeError("WEBGL_SAMPLES must be a positive integer")
 try:
     webgl_background = tuple(int(webgl_background_hex[offset:offset + 2], 16) / 255 for offset in (0, 2, 4))
 except ValueError as error:
@@ -41,6 +44,20 @@ def load(path):
 
 def luminance(pixel):
     return 0.2126 * pixel[0] + 0.7152 * pixel[1] + 0.0722 * pixel[2]
+
+
+def composite_over(pixel, background):
+    alpha = pixel[3]
+    return (
+        pixel[0] * alpha + background[0] * (1 - alpha),
+        pixel[1] * alpha + background[1] * (1 - alpha),
+        pixel[2] * alpha + background[2] * (1 - alpha),
+        1.0,
+    )
+
+
+def differs_from_key(pixel, background, tolerance):
+    return max(abs(pixel[channel] - background[channel]) for channel in range(3)) > tolerance
 
 
 def fraction(value, total):
@@ -110,15 +127,23 @@ def dilate(mask, width, height, radius=1):
     return result
 
 
-width, height, blender_pixels = load(blender_path)
+width, height, blender_source_pixels = load(blender_path)
 webgl_width, webgl_height, webgl_pixels = load(webgl_path)
 if (width, height) != (webgl_width, webgl_height):
     raise RuntimeError(f"capture sizes differ: {(width, height)} != {(webgl_width, webgl_height)}")
 
-blender_mask = [pixel[3] > 0.5 for pixel in blender_pixels]
 webgl_key_tolerance = 0.08
+blender_alpha_mask = [pixel[3] > 0.5 for pixel in blender_source_pixels]
+blender_pixels = [
+    composite_over(pixel, webgl_background)
+    for pixel in blender_source_pixels
+]
+blender_mask = [
+    differs_from_key(pixel, webgl_background, webgl_key_tolerance)
+    for pixel in blender_pixels
+]
 webgl_mask = [
-    max(abs(pixel[channel] - webgl_background[channel]) for channel in range(3)) > webgl_key_tolerance
+    differs_from_key(pixel, webgl_background, webgl_key_tolerance)
     for pixel in webgl_pixels
 ]
 blender_luminance = [luminance(pixel) for pixel in blender_pixels]
@@ -183,6 +208,10 @@ comparison = {
         "resolution": [width, height],
         "alignment": "same square orthographic camera direction and 1.45 framing scale",
         "webgl_background_key": f"#{webgl_background_hex.lower()}",
+        "comparison_composite": "Blender straight-alpha capture composited over the WebGL key in scene-linear space",
+        "key_tolerance": webgl_key_tolerance,
+        "blender_alpha_gt_0_5_surface_pixels": sum(blender_alpha_mask),
+        "webgl_temporal_samples": webgl_samples,
     },
     "blender": mask_stats(blender_mask, blender_luminance),
     "webgl": mask_stats(webgl_mask, webgl_luminance),
@@ -207,7 +236,7 @@ comparison = {
         "black_fraction_delta": mask_stats(webgl_mask, webgl_luminance)["black_fraction"] - mask_stats(blender_mask, blender_luminance)["black_fraction"],
         "mean_luminance_delta": mask_stats(webgl_mask, webgl_luminance)["mean_luminance"] - mask_stats(blender_mask, blender_luminance)["mean_luminance"],
     },
-    "interpretation": "The aligned silhouette validates the capture context, but luminance occupancy, correlation, and pixel disagreement determine whether the authored WebGL material is visually equivalent. Renderer lighting, environment, tone mapping, texture filtering, and procedural implementations may remain as residuals.",
+    "interpretation": "The transparent Blender capture is composited over the same segmentation key as WebGL before applying one shared key-distance threshold. This compares equivalent antialiased coverage instead of an alpha>0.5 Blender mask against a looser WebGL color-key mask. The aligned silhouette validates the capture context, but luminance occupancy, correlation, and pixel disagreement determine whether the authored WebGL material is visually equivalent. Renderer lighting, environment, tone mapping, texture filtering, and procedural implementations may remain as residuals.",
 }
 with open(out_path, "w", encoding="utf-8") as handle:
     json.dump(comparison, handle, indent=2)

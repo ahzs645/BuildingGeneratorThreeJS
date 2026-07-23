@@ -659,10 +659,12 @@ bit-identical or every source dependency exists.
   and the original nine fonts are missing.
 - 3D Chrome Crayon Generator geometry is exact across all six recovered-font
   cases. Its `mesh` framing mode retains Blender's unreferenced evaluated mesh
-  vertices while excluding the separate loose guide, reaching 0.920131
-  silhouette IoU, 0.0937-pixel corner RMSE, and 0.991061 macro luminance
-  correlation. The remaining residual is `flat.nodes` color interpolation and
-  raster coverage.
+  vertices while excluding the separate loose guide. Its 8-sample Eevee-style
+  capture reaches 0.940531 silhouette IoU, 0.998706 macro luminance
+  correlation, 0.955729 pixel luminance correlation, and +0.004566
+  mean-luminance error after equivalent Blender/WebGL key compositing. The
+  remaining residual is subpixel raster coverage and internal-edge
+  interpolation.
 - Nodes Node UI assets retain small glyph-position and Workbench
   lighting/cavity differences despite topology-and-bounds closure.
 - Hat bill/front exact material parity is blocked by seven missing external

@@ -45,18 +45,40 @@ node groups in `materials` and `shader_node_groups`. The browser material
 runtime does not yet implement `ShaderNodeBsdfMetallic`, its Fresnel modes, or
 generic nested shader-group evaluation.
 
-The native MaterialX experiment was also run against the file:
+The native MaterialX extractor now accepts both the existing OpenPBR root and
+Blender's direct MaterialX surface/BSDF form. Running it against the active
+Aluminum preset produces:
 
 ```text
-Blender 5.1.2 native USD export:
-  material: Material
-  result: no MaterialX NodeGraph or OpenPBR surface
+surface
+  mix (BSDF)
+    mix (BSDF)
+      mix (BSDF)
+        conductor_bsdf
+        conductor_bsdf
+      conductor_bsdf
+    conductor_bsdf
 ```
 
-This is an exporter capability boundary, not evidence that the source shader is
-invalid. The active material surface is supplied by a nested
-`Metallic BSDF+` group, and Blender 5.1 does not flatten that 5.2 graph into the
-USD/MaterialX network consumed by the current extractor.
+The real graph validates as MaterialX 1.39 and generates a 77,369-byte official
+ESSL shader that compiles and links in WebGL2. The direct-conductor path is
+capability-gated to official ESSL; Three.js's current MaterialX TSL loader still
+rejects `surface` and `conductor_bsdf` explicitly.
+
+This proves graph extraction and shader compilation, not browser render parity.
+The active preset still has unresolved inputs:
+
+- two packed scratch textures become sampler uniforms, but the current ESSL
+  adapter does not bind filename inputs;
+- the native USD records `srgb_texture`, while the standalone extractor does
+  not yet propagate that color-space metadata;
+- the reachable Layer Weight → RGB Curves → Color Ramp roughness-Fresnel branch
+  is absent from the native MaterialX network;
+- Blender Generated coordinates need a bounds-normalized geometry contract;
+- the source was written by Blender 5.2.31 but the available extraction run
+  used Blender 5.1.2;
+- no redistribution license covers the source, packed images, or generated
+  derivative shader bundle.
 
 This reference does not directly explain the 3D Chrome Crayon Generator's
 remaining `flat.nodes` residual. That material is attribute-driven emission,
@@ -65,29 +87,30 @@ Library metals and future Blender 5.2 material imports.
 
 ## Modular implementation path
 
-1. Add a typed, versioned shader graph IR for materials and nested
-   `ShaderNodeTree` groups. Preserve socket identifiers, socket types, active
-   outputs, menu values, and source Blender version.
-2. Add a shader capability analyzer that follows only nodes reachable from the
-   active Material Output. Report native MaterialX, portable runtime, baked,
-   and unsupported paths separately.
-3. Normalize direct `ShaderNodeBsdfMetallic` into a backend-independent
-   metallic contract:
-   base color, roughness, anisotropy, anisotropic rotation, tangent, normal,
-   Fresnel mode, edge tint, conductor optical constants, and thin-film inputs.
-4. Implement the simple constant/direct-node contract first in the existing
-   Three.js material backend and in MaterialX/OpenPBR where the target supports
-   it. Keep unsupported conductor or thin-film semantics explicit.
-5. Treat the large `Metallic BSDF+` group as a composition of independently
-   testable passes:
-   base metallic lobe, layered roughness, grazing-angle roughness, brushed
-   anisotropy, scratches/wear, and anodized thin film.
+1. Add a versioned MaterialX bundle descriptor containing the portable graph,
+   generated vertex/fragment shaders, uniform and texture bindings, geometry
+   contract, source fingerprints, license state, and capability report.
+2. Propagate image color space, dimensions, sampler state, byte size, and
+   SHA-256 through extraction and shader generation. Reject missing, absolute,
+   parent-relative, or unlicensed runtime assets.
+3. Teach the ESSL adapter to bind and dispose texture uniforms. Keep this
+   asynchronous lifecycle in the MaterialX lab first; the synchronous authored
+   material registry must not hide loading behind `resolve()`.
+4. Recover Blender RGB Curve semantics as a deterministic 1D LUT, including
+   composite/R/G/B curves, handle behavior, clipping, and extension. Do not
+   approximate the non-identity curve with a straight line.
+5. Preserve explicit Generated-coordinate bounds plus UV/tangent requirements
+   in the geometry contract.
 6. Validate a small preset matrix before expanding to all thirty presets:
    Aluminum, Copper, Gold, Stainless Steel, and Titanium cover neutral,
    colored, brushed, and thin-film-relevant behavior.
 7. Compare deterministic material probes rendered from identical geometry,
    camera, environment, and color-management settings. Keep geometry parity,
    shader-graph parity, and final raster similarity as separate claims.
+
+Until redistribution permission is recovered, use the real file only as a local
+oracle and commit a repository-authored synthetic conductor/texture fixture for
+runtime tests.
 
 ## Required regression evidence
 
@@ -101,4 +124,3 @@ Library metals and future Blender 5.2 material imports.
   represent a branch;
 - no dependency on material or node-group display names when the graph
   topology and socket contract are sufficient.
-
