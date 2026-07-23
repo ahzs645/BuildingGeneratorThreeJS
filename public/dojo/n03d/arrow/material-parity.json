@@ -1,0 +1,72 @@
+{
+  "asset": "n03d-arrow",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "ARROW",
+    "root": "arrow nodes",
+    "materials": ["flat.b.001", "flat.w"]
+  },
+  "scope": "Authored viewport appearance only. This object uses two literal Background shader surfaces and has no filament shader, slicer data, or G-code toolpath.",
+  "geometry": {
+    "blender": { "verts": 1155, "faces": 1153 },
+    "gnvm": { "verts": 1155, "faces": 1153 },
+    "validationCases": 5,
+    "materialFaces": {
+      "flat.b.001": 1120,
+      "flat.w": 33
+    },
+    "materialTriangles": {
+      "flat.b.001": 2240,
+      "flat.w": 33
+    }
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "world",
+    "blenderReference": "../../references/n03d/arrow-authored.png",
+    "blenderMetadata": "../../references/n03d/arrow-authored.json",
+    "browserReference": "../../references/n03d/arrow-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-arrow&capture=authored",
+    "browserToneMapping": "none",
+    "presentationRotationOrder": "YZX",
+    "rotationSweep": {
+      "originalXyz": {
+        "surfaceMaskIou": 0.8292158792650919,
+        "surfaceCornerRmsePixels": 7.304938195168307
+      },
+      "selectedYzx": {
+        "surfaceMaskIou": 0.8600383825460423,
+        "surfaceCornerRmsePixels": 2.204459212801503
+      }
+    }
+  },
+  "recoveredSurfaces": {
+    "flat.b.001": {
+      "node": "Background",
+      "colorLinear": [0, 0, 0],
+      "strength": 1,
+      "lightingIndependent": true
+    },
+    "flat.w": {
+      "node": "Background",
+      "colorLinear": [0.800000011920929, 0.800000011920929, 0.800000011920929],
+      "strength": 1,
+      "lightingIndependent": true
+    }
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.8600383825460423,
+    "surfaceCornerRmsePixels": 2.204459212801503,
+    "pixelRgbMae": 0.10793716914800908,
+    "pixelLuminanceMae": 0.10581774065243495,
+    "pixelLuminanceCorrelation": 0.8661177870839291,
+    "macroLuminanceMae": 0.0953074578081383,
+    "macroLuminanceCorrelation": 0.9666990843544305,
+    "blenderMeanLuminance": 0.8043852972904769,
+    "browserMeanLuminance": 0.7630949575680188,
+    "meanLuminanceDelta": -0.0412903397224581
+  },
+  "interpretation": "The browser now renders the exact black outline and linear-0.8 fill Background graphs rather than a normalized geometry material. Disabling browser tone mapping restores Blender's bright fill occupancy, while the measured presentation rotation compensation reduces corner error from 7.30 to 2.20 pixels. Large-scale black/white structure correlates at 0.9667; the remaining silhouette-area and raster residual comes from the evaluated curve-frame/outline projection and Eevee/WebGL coverage rather than missing shader nodes."
+}

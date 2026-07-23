@@ -2,17 +2,23 @@
   "id": "n03d-arrow",
   "object": "ARROW",
   "root": "arrow nodes",
-  "status": "exact-topology-parity",
+  "status": "exact-geometry-and-authored-background-surfaces-verified",
   "blender": { "verts": 1155, "faces": 1153 },
   "gnvm": { "verts": 1155, "faces": 1153 },
   "coverage": "100% of reachable node types across the 4-group, 58-node closure.",
   "validation": "Five tail-length and tail-width cases match Blender topology exactly with identical four-decimal local bounds. Restoring the seven-point seed mesh at source float32 precision, its seven stored edges in authored order, and the original edge-domain tail masks removes the former 0.0007-unit tail drift while keeping both deformation controls live in-browser. The Mesh to Curve control polygon matches Blender within 2.8e-9 units and the authored evaluated point sets are mutually within 0.0000358 units; the residual is curve-frame arithmetic rather than topology or envelope.",
   "materialParity": {
-    "status": "literal-background-routing-supported",
+    "status": "literal-background-routing-and-capture-verified",
     "groups": [
       { "material": "flat.b.001", "triangles": 2240, "surface": "unlit black" },
       { "material": "flat.w", "triangles": 33, "surface": "unlit linear RGB 0.8000000119" }
     ],
-    "validation": "Both direct Background to Material Output graphs now use the generic browser Background material rather than the normalized geometry fallback."
+    "validation": "Both direct Background to Material Output graphs use the generic browser Background material rather than the normalized geometry fallback.",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.8600383825460423,
+    "surfaceCornerRmsePixels": 2.204459212801503,
+    "pixelRgbMae": 0.10793716914800908,
+    "macroLuminanceCorrelation": 0.9666990843544305,
+    "residual": "The evaluated outline/curve-frame projection still changes silhouette area and edge coverage even though topology, local bounds, and the two literal Background surfaces are exact."
   }
 }

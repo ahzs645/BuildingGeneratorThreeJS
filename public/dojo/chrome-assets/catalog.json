@@ -743,8 +743,11 @@
     "dump": "dojo/n03d/arrow/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/arrow.png",
+    "authoredReference": "dojo/references/n03d/arrow-authored.png",
+    "authoredToneMapping": "none",
+    "rotationOrder": "YZX",
     "blenderStats": { "verts": 1155, "faces": 1153 },
-    "note": "Exact Blender topology and four-decimal bounds across five validation cases. Restoring the seven-point seed mesh at source float32 precision, its authored edge order, and original edge-domain tail masks restores the bent-arrow silhouette and keeps tail length and width editable in-browser. The control polygon matches Blender within 2.8e-9 units and authored evaluated point sets are mutually within 0.0000358 units.",
+    "note": "Exact Blender topology and four-decimal bounds across five validation cases. Restoring the seven-point seed mesh at source float32 precision, its authored edge order, and original edge-domain tail masks keeps tail length and width editable in-browser. Authored mode reproduces the 1,120-face black outline and 33-face linear-0.8 fill as their literal lighting-independent Background graphs—not a filament or G-code surface. A measured presentation-rotation correction reduces aligned corner RMSE from 7.30 to 2.20 pixels; the committed comparison records 0.9667 macro luminance correlation and the remaining curve-frame/coverage residual.",
     "controls": [
       { "name": "tail length", "label": "Tail length", "min": 0, "max": 18, "step": 0.1, "value": 6.960296630859375 },
       { "name": "tail width", "label": "Tail width", "min": 0, "max": 40, "step": 0.1, "value": 26.007339477539062 }

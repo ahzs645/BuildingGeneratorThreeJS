@@ -1,0 +1,40 @@
+{
+  "object": "ARROW",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -180.8342742919922,
+      -4.59829568862915,
+      -1.618476390838623
+    ],
+    "max": [
+      -113.04573822021484,
+      86.97086334228516,
+      2.829827070236206
+    ]
+  },
+  "verts": 1155,
+  "faces": 1153,
+  "materials": [
+    "flat.w"
+  ],
+  "evaluated_materials": [
+    "flat.w",
+    "flat.b.001"
+  ],
+  "evaluated_material_faces": {
+    "flat.w": 33,
+    "flat.b.001": 1120
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 30.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}
