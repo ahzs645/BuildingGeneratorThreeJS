@@ -17,6 +17,10 @@ const shaderMetadata = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/course-modules/intro-shader-metadata.json",
   import.meta.url,
 )), "utf8")) as Dump;
+const curveCrayonDump = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/n03d/curve-crayon/dump.json",
+  import.meta.url,
+)), "utf8")) as Dump;
 const dump = Object.assign(geometryDump, shaderMetadata);
 const materialName = "Attribute Viewer N++";
 
@@ -42,6 +46,37 @@ test("resolves Course Intro's missing Attribute Viewer vector to black emission"
   assert.equal(material?.name, "Attribute Viewer N++ · missing attribute zero emission");
   assert.equal((material as THREE.MeshBasicMaterial).color.getHex(), 0x000000);
   assert.equal(material?.userData.attributeResolution, "missing-zero");
+  material?.dispose();
+  geometry.dispose();
+});
+
+test("reconstructs Curve Crayon's cc1 Color attribute as white emission", async () => {
+  assert.deepEqual(extractAttributeColorEmissionConfig(curveCrayonDump, "flat crayon"), {
+    colorAttribute: "cc1",
+    attributeOutput: "Color",
+    strength: 1,
+  });
+  const result = await runGenerator(curveCrayonDump, { object: "CRAYON" });
+  assert.deepEqual(result.soup.stats, { verts: 1574, faces: 1330, tris: 2680 });
+  assert.deepEqual(result.soup.groups, [{ start: 0, count: 8040, material: "flat crayon" }]);
+  const cc1 = result.soup.attributes.cc1;
+  assert.equal(cc1?.itemSize, 3);
+  assert.equal(cc1?.data.length, 1574 * 3);
+  assert.ok(cc1?.data.every((value) => value === 1));
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));
+  geometry.setAttribute("cc1", new THREE.BufferAttribute(cc1!.data, cc1!.itemSize));
+  const material = makeAttributeColorEmissionMaterial(curveCrayonDump, geometry, "flat crayon");
+  assert.ok(material?.isShaderMaterial);
+  assert.equal(material?.name, "flat crayon · attribute color emission reconstruction");
+  assert.deepEqual(material?.userData.attributeColorEmissionContract, {
+    colorAttribute: "cc1",
+    attributeOutput: "Color",
+    strength: 1,
+  });
+  assert.match((material as THREE.ShaderMaterial).vertexShader, /attribute vec3 cc1/);
+  assert.match((material as THREE.ShaderMaterial).fragmentShader, /vAttributeEmissionColor.*1\.0000000000000000/s);
   material?.dispose();
   geometry.dispose();
 });

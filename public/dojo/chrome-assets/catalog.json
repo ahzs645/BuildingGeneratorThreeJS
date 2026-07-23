@@ -1723,9 +1723,12 @@
   "dump": "dojo/n03d/curve-crayon/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
   "reference": "dojo/references/n03d/curve-crayon.png",
+  "authoredReference": "dojo/references/n03d/curve-crayon-shader.png",
   "blenderStats": { "verts": 1574, "faces": 1330 },
   "localSpace": true,
-  "note": "Exact topology and bounds for the complete 530-node curve-crayon graph. A changed line-weight case is also exact at 2,828 vertices and 2,597 faces.",
+  "authoredToneMapping": "none",
+  "authoredPreviewLabel": "White cc1 attribute emission",
+  "note": "Exact Blender topology and four-decimal local bounds for the complete 530-node curve-crayon graph; a changed line-weight case is also exact at 2,828 vertices / 2,597 faces. The realized authored surface has 2,680 triangles in both engines, 0.00000112-unit mean corresponding triangle-vertex error, a 0.0000268-unit maximum, and 0.00277° maximum geometric-normal error. All 1,330 faces use the literal flat crayon graph: the POINT-domain cc1 Color attribute drives strength-1 Emission and is white throughout the authored result. Disabling display tone mapping preserves that unlit white surface; the committed comparison reaches 0.9737 raw silhouette IoU, complete mutual one-pixel coverage, 0.00324 RGB MAE, and 0.00694 luminance MAE. This is authored viewport appearance, not a slicer or G-code preview.",
   "controls": [
     { "name": "line weight", "label": "Line weight", "min": 1, "max": 20, "step": 0.000001, "value": 6.023773193359375 },
     { "name": "resolution", "label": "Resolution", "min": 0.1, "max": 1, "step": 0.000001, "value": 0.548275887966156 },

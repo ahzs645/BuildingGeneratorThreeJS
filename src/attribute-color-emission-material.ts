@@ -8,7 +8,7 @@ type RawMaterial = { nodes?: RawNode[]; links?: RawLink[] };
 
 export type AttributeColorEmissionConfig = {
   colorAttribute: string;
-  attributeOutput: "Vector";
+  attributeOutput: "Color" | "Vector";
   strength: number;
 };
 
@@ -17,7 +17,8 @@ function input(node: RawNode, name: string): RawSocket | undefined {
 }
 
 /**
- * Recognize Blender's strict three-node Attribute Vector → Emission Color graph.
+ * Recognize Blender's strict three-node Attribute Color/Vector → Emission
+ * Color graph.
  * This is separate from flat.nodes, whose second attribute drives Strength.
  */
 export function extractAttributeColorEmissionConfig(dump: Dump, materialName: string): AttributeColorEmissionConfig | null {
@@ -31,18 +32,19 @@ export function extractAttributeColorEmissionConfig(dump: Dump, materialName: st
   if (!output || !emission || !attribute) return null;
   const surface = links.some((link) => link.from_node === emission.name && link.from_socket === "Emission"
     && link.to_node === output.name && link.to_socket === "Surface");
-  const color = links.some((link) => link.from_node === attribute.name && link.from_socket === "Vector"
+  const color = links.find((link) => link.from_node === attribute.name
+    && (link.from_socket === "Color" || link.from_socket === "Vector")
     && link.to_node === emission.name && link.to_socket === "Color");
   const strengthSocket = input(emission, "Strength");
   const strength = Number(strengthSocket?.value);
   const colorAttribute = String(attribute.props?.attribute_name ?? "");
   if (!surface || !color || strengthSocket?.linked === true || !Number.isFinite(strength) || !colorAttribute) return null;
-  return { colorAttribute, attributeOutput: "Vector", strength };
+  return { colorAttribute, attributeOutput: color.from_socket as "Color" | "Vector", strength };
 }
 
 /**
- * Reconstruct Attribute Vector → Emission. Blender resolves a missing Geometry
- * Attribute to the zero vector, so the exact fallback is black rather than the
+ * Reconstruct Attribute Color/Vector → Emission. Blender resolves a missing
+ * Geometry Attribute to zero, so the exact fallback is black rather than the
  * gallery's neutral diagnostic surface.
  */
 export function makeAttributeColorEmissionMaterial(
@@ -75,7 +77,7 @@ export function makeAttributeColorEmissionMaterial(
     fragmentShader: /* glsl */`
       varying vec3 vAttributeEmissionColor;
       void main() {
-        gl_FragColor = vec4(max(vAttributeEmissionColor, vec3(0.0)) * ${config.strength}, 1.0);
+        gl_FragColor = vec4(max(vAttributeEmissionColor, vec3(0.0)) * ${config.strength.toPrecision(17)}, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }

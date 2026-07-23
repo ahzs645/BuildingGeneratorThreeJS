@@ -1,0 +1,84 @@
+{
+  "asset": "n03d-curve-crayon",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "CRAYON",
+    "root": "crayon curve",
+    "evaluatedMaterial": "flat crayon"
+  },
+  "scope": "Exact evaluated topology, near-identical realized local surface, and authored Blender viewport material parity. This is not slicer or G-code output.",
+  "geometry": {
+    "blender": {
+      "verts": 1574,
+      "faces": 1330,
+      "triangles": 2680
+    },
+    "gnvm": {
+      "verts": 1574,
+      "faces": 1330,
+      "triangles": 2680
+    },
+    "triangleAreaTotal": {
+      "blender": 5148.322,
+      "gnvm": 5148.322
+    },
+    "correspondingTriangleVertexDistance": {
+      "mean": 0.0000011158430098415218,
+      "maximum": 0.000026702880859375
+    },
+    "geometricNormalAngularErrorDegrees": {
+      "mean": 0.00004164449930952149,
+      "p99": 0.0003596059733397716,
+      "maximum": 0.0027602041160913783,
+      "oppositeHemisphere": 0
+    },
+    "surfaceComparison": "Blender was evaluated at the same identity generator transform as the browser, with a temporary Realize Instances pass. tools/mesh-surface-diff.ts --local reports zero bidirectional point and triangle-centroid distance at its displayed precision."
+  },
+  "material": {
+    "name": "flat crayon",
+    "faces": 1330,
+    "nodes": [
+      "Attribute",
+      "Emission",
+      "Material Output"
+    ],
+    "surfaceLink": "Emission.Emission -> Material Output.Surface",
+    "colorLink": "Attribute.Color -> Emission.Color",
+    "attribute": {
+      "name": "cc1",
+      "domain": "POINT",
+      "itemSize": 3,
+      "values": "All 1.0 across 1,574 evaluated vertices"
+    },
+    "strength": 1,
+    "browserImplementation": "Strict makeAttributeColorEmissionMaterial Color-output contract; no diagnostic or lit fallback is used."
+  },
+  "capture": {
+    "resolution": [
+      768,
+      768
+    ],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../../references/n03d/curve-crayon-shader.png",
+    "blenderMetadata": "../../references/n03d/curve-crayon-shader.json",
+    "browserReference": "../../references/n03d/curve-crayon-shader-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-curve-crayon&capture=authored",
+    "browserToneMapping": "none",
+    "toneMappingInterpretation": "The recovered surface is literal white Emission at strength 1. Disabling display tone mapping preserves Blender's clipped-white authored result; scene lighting and the studio environment do not drive it."
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9736625514403292,
+    "surfaceMaskIouDilated1px": 0.9757699763084213,
+    "blenderSurfaceCoveredWithin1px": 1.0,
+    "webglSurfaceCoveredWithin1px": 1.0,
+    "surfaceCornerRmsePixels": 0.5784600659364566,
+    "pixelRgbMae": 0.0032358503609671374,
+    "pixelLuminanceMae": 0.006942840534491089,
+    "binaryMaskDisagreementFraction": 0.000060379181258302136,
+    "macroLuminanceMae": 0.011561118187540746,
+    "meanLuminanceDelta": -0.019570943392479445
+  },
+  "interpretation": "Every evaluated face uses the recovered cc1 attribute-emission graph. The browser now recognizes its Color output directly, uploads the exact white cc1 field, and renders unlit emission rather than relying on the gallery's diagnostic material. Complete mutual one-pixel coverage and the low RGB/luminance errors isolate the residual to subpixel Eevee/WebGL raster coverage."
+}

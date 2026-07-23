@@ -2,11 +2,18 @@
   "id": "n03d-curve-crayon",
   "object": "CRAYON",
   "root": "crayon curve",
-  "status": "topology-and-bounds-exact",
+  "status": "geometry-and-authored-surface-verified",
   "blender": { "verts": 1574, "faces": 1330 },
   "gnvm": { "verts": 1574, "faces": 1330 },
   "parameter_case": { "overrides": { "line weight": 10 }, "blender": { "verts": 2828, "faces": 2597 }, "gnvm": { "verts": 2828, "faces": 2597 } },
   "coverage": "100% of all reachable node types across 12 groups and 530 nodes.",
   "reference": "dojo/references/n03d/curve-crayon.png",
-  "validation": "Authored topology and bounds match Blender within dump rounding. The changed line-weight case is also topology-exact."
+  "authored_reference": "dojo/references/n03d/curve-crayon-shader.png",
+  "material": {
+    "name": "flat crayon",
+    "faces": 1330,
+    "graph": "cc1 Attribute Color -> Emission Color -> Material Output Surface",
+    "strength": 1
+  },
+  "validation": "Authored topology and bounds match Blender within dump rounding, and the changed line-weight case is topology-exact. A realized local-space Blender export confirms the same 2,680 triangles and zero measured bidirectional surface distance; corresponding triangle vertices differ by 0.00000112 units on average and 0.0000268 at maximum. The strict cc1 attribute-emission reconstruction matches Blender's white authored surface with complete mutual one-pixel silhouette coverage, 0.00324 RGB MAE, and 0.00694 luminance MAE."
 }

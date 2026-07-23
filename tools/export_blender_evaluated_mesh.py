@@ -28,6 +28,67 @@ obj = bpy.data.objects.get(object_name)
 if obj is None:
     raise RuntimeError(f'object not found: "{object_name}"')
 
+original_matrix_world = obj.matrix_world.copy()
+evaluate_local_space = os.environ.get("NODE_DOJO_EVALUATE_LOCAL_SPACE") == "1"
+if evaluate_local_space:
+    # Some generators observe their modifier object's transform through
+    # Relative Object Info. Use the same identity generator transform as the
+    # browser and render_blender_reference.py; LOCAL below remains only an
+    # output-coordinate choice.
+    obj.location = (0, 0, 0)
+    obj.rotation_euler = (0, 0, 0)
+    obj.scale = (1, 1, 1)
+    obj.update_tag()
+
+# Evaluate in an isolated scene, matching the reference renderer. Objects in
+# supplied asset-library scenes are frequently hidden or excluded through
+# collection/view-layer state even though their Geometry Nodes output renders
+# correctly once linked into a clean scene.
+original_scene = bpy.context.window.scene
+export_scene = bpy.data.scenes.new("__NODE_DOJO_EVALUATED_MESH_SCENE")
+export_scene.collection.objects.link(obj)
+bpy.context.window.scene = export_scene
+obj.hide_render = False
+obj.hide_viewport = False
+obj.hide_set(False)
+
+realize_group = None
+realize_modifier = None
+if os.environ.get("NODE_DOJO_SKIP_REALIZE") != "1":
+    # Blender renders Geometry Nodes instances even when Object.to_mesh()
+    # returns only the pre-realized mesh component. Match the reference
+    # renderer by appending a temporary realization pass before evaluation.
+    realize_group = bpy.data.node_groups.new(
+        "__EXPORT_EVALUATED_REALIZE_INSTANCES",
+        "GeometryNodeTree",
+    )
+    realize_group.interface.new_socket(
+        name="Geometry",
+        in_out="INPUT",
+        socket_type="NodeSocketGeometry",
+    )
+    realize_group.interface.new_socket(
+        name="Geometry",
+        in_out="OUTPUT",
+        socket_type="NodeSocketGeometry",
+    )
+    realize_input = realize_group.nodes.new("NodeGroupInput")
+    realize = realize_group.nodes.new("GeometryNodeRealizeInstances")
+    realize_output = realize_group.nodes.new("NodeGroupOutput")
+    realize_group.links.new(
+        realize_input.outputs["Geometry"],
+        realize.inputs["Geometry"],
+    )
+    realize_group.links.new(
+        realize.outputs["Geometry"],
+        realize_output.inputs["Geometry"],
+    )
+    realize_modifier = obj.modifiers.new(
+        name="__EXPORT_EVALUATED_REALIZE_INSTANCES",
+        type="NODES",
+    )
+    realize_modifier.node_group = realize_group
+
 depsgraph = bpy.context.evaluated_depsgraph_get()
 depsgraph.update()
 evaluated = obj.evaluated_get(depsgraph)
@@ -86,6 +147,14 @@ try:
         handle.write("\n")
 finally:
     evaluated.to_mesh_clear()
+    if realize_modifier is not None:
+        obj.modifiers.remove(realize_modifier)
+    if realize_group is not None:
+        bpy.data.node_groups.remove(realize_group)
+    if evaluate_local_space:
+        obj.matrix_world = original_matrix_world
+    bpy.context.window.scene = original_scene
+    bpy.data.scenes.remove(export_scene)
 
 print(
     "BLENDER_EVALUATED_MESH_OK "
