@@ -79,11 +79,24 @@ Exercise MaterialX's Apache-2.0 environment prefilter shader inside the isolated
 
 - generate the GGX radiance mip chain once per environment;
 - retain the separate irradiance binding;
-- compare environment-only smooth-metal and roughness-sweep renders;
+- compare environment-only smooth-metal renders at roughness `0`, `2/15`, and
+  `0.2610441`, covering `chrome.003`, `chrome.002`, and the Chrome Grill;
 - measure startup cost, memory, and captured-image changes; and
 - keep FIS as the reference fallback until the prefilter path passes.
 
 Do not copy Blender's GPL Eevee convolution shader. Blender remains external comparison evidence only.
+
+This is a shared renderer problem rather than a per-material color problem.
+Chain and Mace, Chrome Grill, and Text Soup already have aligned silhouettes
+(`0.9626–0.9750` IoU), but their polished-metal spatial correlations remain
+`0.227`, `0.493`, and `0.018`. Chrome Grill's mean luminance is already within
+`-0.00169`, so a monotonic color transform cannot recover the misplaced
+highlight structure. Environment-disabled MaterialX direct-light probes reach
+`0.975–0.991` correlation, while supplying Blender's exact studio EXR improves
+but does not close the chrome assets. The new path must therefore reuse one
+authoritative linear HDR source and one cached GGX-prefiltered representation
+across all three roughness checkpoints, with the current FIS and Three PMREM
+paths retained as measured fallbacks.
 
 ### 5. Calibrate direct-light energy without moving lights
 
