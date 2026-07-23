@@ -82,8 +82,8 @@ test("extracts and renders the authored Send Nodes Hat stitch material", async (
   // to six decimals, so GN-VM rebuilds the authored Bezier samples before the
   // topology-exact embroidery graph runs.
   assert.deepEqual(material?.userData.hatStitchBounds, {
-    min: [-0.04472097381949425, -0.009398020803928375, -0.029892871156334877],
-    max: [0.04209489747881889, 0.0056764534674584866, -0.01783364824950695],
+    min: [-0.04890640452504158, -0.007303861901164055, -0.03394268825650215],
+    max: [0.04028177633881569, 0.007476643193513155, -0.014105534180998802],
   });
 
   const shader = {

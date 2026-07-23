@@ -8,7 +8,7 @@
 //    recorded in MISSING and fall back to passing the first geometry input through,
 //    so evaluation never crashes and we get a coverage report + partial mesh.
 
-import { Field, Vec3, Domain, FieldCtx, asNum, asVec3, fieldMap, vadd, vcross, vdot, vnorm, vnormBlenderFloat, vscale, vsub } from "./core";
+import { Field, Vec3, Domain, FieldCtx, asNum, asVec3, fieldMap, vadd, vcross, vdot, vlen, vnorm, vnormBlenderFloat, vscale, vsub } from "./core";
 import { Geometry, Mesh, mergeMeshInto, realizeInstances, topologyOf, Topology } from "./geometry";
 import { splineFrames, splineLength } from "./curves";
 import { DUMP_CONTEXT, EvalAPI, RawNode, REGISTRY, MISSING, SockVal, DataRef } from "./registry";
@@ -277,10 +277,17 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
   if (!mesh && geo.curves.length)
     for (let si = 0; si < geo.curves.length; si++) {
       const s = geo.curves[si];
+      const cumulative: number[] = [0];
+      for (let j = 1; j < s.points.length; j++) {
+        cumulative[j] = cumulative[j - 1] + vlen(vsub(s.points[j], s.points[j - 1]));
+      }
+      const total = (cumulative.at(-1) ?? 0) + (
+        s.cyclic && s.points.length > 1 ? vlen(vsub(s.points[0], s.points[s.points.length - 1])) : 0
+      );
       for (let j = 0; j < s.points.length; j++) {
         curvePts.push(s.points[j]);
         splineLocalIdx.push(j);
-        splineLocalFactor.push(s.points.length > 1 ? j / (s.points.length - 1) : 0);
+        splineLocalFactor.push(total > 1e-12 ? cumulative[j] / total : 0);
         splineOfPoint.push(si);
       }
     }

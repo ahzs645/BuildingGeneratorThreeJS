@@ -16,21 +16,92 @@ function random01(id: number, seed: number, channel = 0): number {
   return hash32(hash32(id | 0) ^ hash32((seed | 0) + Math.imul(channel + 1, 0x9e3779b9))) / 0x1_0000_0000;
 }
 
+// Blender's Random Value node uses BLI's Jenkins lookup3 hash. Keep this
+// separate from the distribution sampler above: changing that sampler would
+// also change point counts and placement for unrelated node trees.
+function rot(value: number, amount: number): number {
+  return ((value << amount) | (value >>> (32 - amount))) >>> 0;
+}
+
+function hashMix(a: number, b: number, c: number): [number, number, number] {
+  a = (a - c) >>> 0; a = (a ^ rot(c, 4)) >>> 0; c = (c + b) >>> 0;
+  b = (b - a) >>> 0; b = (b ^ rot(a, 6)) >>> 0; a = (a + c) >>> 0;
+  c = (c - b) >>> 0; c = (c ^ rot(b, 8)) >>> 0; b = (b + a) >>> 0;
+  a = (a - c) >>> 0; a = (a ^ rot(c, 16)) >>> 0; c = (c + b) >>> 0;
+  b = (b - a) >>> 0; b = (b ^ rot(a, 19)) >>> 0; a = (a + c) >>> 0;
+  c = (c - b) >>> 0; c = (c ^ rot(b, 4)) >>> 0; b = (b + a) >>> 0;
+  return [a, b, c];
+}
+
+function hashFinal(a: number, b: number, c: number): [number, number, number] {
+  c = (c ^ b) >>> 0; c = (c - rot(b, 14)) >>> 0;
+  a = (a ^ c) >>> 0; a = (a - rot(c, 11)) >>> 0;
+  b = (b ^ a) >>> 0; b = (b - rot(a, 25)) >>> 0;
+  c = (c ^ b) >>> 0; c = (c - rot(b, 16)) >>> 0;
+  a = (a ^ c) >>> 0; a = (a - rot(c, 4)) >>> 0;
+  b = (b ^ a) >>> 0; b = (b - rot(a, 14)) >>> 0;
+  c = (c ^ b) >>> 0; c = (c - rot(b, 24)) >>> 0;
+  return [a, b, c];
+}
+
+function blenderHash(...values: number[]): number {
+  const count = values.length;
+  let a = (0xdeadbeef + (count << 2) + 13) >>> 0;
+  let b = a;
+  let c = a;
+  if (count === 1) {
+    a = (a + (values[0] >>> 0)) >>> 0;
+  } else if (count === 2) {
+    b = (b + (values[1] >>> 0)) >>> 0;
+    a = (a + (values[0] >>> 0)) >>> 0;
+  } else if (count === 3) {
+    c = (c + (values[2] >>> 0)) >>> 0;
+    b = (b + (values[1] >>> 0)) >>> 0;
+    a = (a + (values[0] >>> 0)) >>> 0;
+  } else if (count === 4) {
+    [a, b, c] = hashMix(
+      (a + (values[0] >>> 0)) >>> 0,
+      (b + (values[1] >>> 0)) >>> 0,
+      (c + (values[2] >>> 0)) >>> 0,
+    );
+    a = (a + (values[3] >>> 0)) >>> 0;
+  } else {
+    return 0;
+  }
+  return hashFinal(a, b, c)[2];
+}
+
+function blenderHashToFloat(...values: number[]): number {
+  return Math.fround(blenderHash(...values) / 0xffff_ffff);
+}
+
 reg("FunctionNodeRandomValue", (api) => {
   const dataType = api.prop<string>("data_type", "FLOAT");
   const id = api.field("ID"), seed = api.field("Seed");
+  const idIsLinked = api.node.inputs.find((socket) => socket.identifier === "ID" || socket.name === "ID")?.linked === true;
+  const elementIdAt = (ids: Elem[], index: number, contextIndex?: (index: number) => number): number => (
+    idIsLinked
+      ? Math.round(asNum(ids[index] ?? 0))
+      : Math.round(contextIndex?.(index) ?? index)
+  );
   const build = (minField: Field, maxField: Field, vector: boolean, integer = false): Field => Field.make((ctx) => {
     const mins = minField.array(ctx), maxs = maxField.array(ctx), ids = id.array(ctx), seeds = seed.array(ctx);
     return Array.from({ length: ctx.size }, (_, i) => {
-      const elementId = Math.round(asNum(ids[i] ?? ctx.index?.(i) ?? i));
+      const elementId = elementIdAt(ids, i, ctx.index);
       const elementSeed = Math.round(asNum(seeds[i] ?? 0));
       if (vector) {
         const lo = asVec3(mins[i] ?? [0, 0, 0]), hi = asVec3(maxs[i] ?? [1, 1, 1]);
-        return [0, 1, 2].map((channel) => lo[channel] + (hi[channel] - lo[channel]) * random01(elementId, elementSeed, channel)) as Vec3;
+        return [0, 1, 2].map((channel) => Math.fround(
+          lo[channel] + (hi[channel] - lo[channel]) * blenderHashToFloat(elementSeed, elementId, channel),
+        )) as Vec3;
       }
       const lo = asNum(mins[i] ?? 0), hi = asNum(maxs[i] ?? 1);
-      const value = lo + (hi - lo) * random01(elementId, elementSeed);
-      return integer ? Math.floor(value) : value;
+      if (integer) {
+        const min = Math.min(Math.round(lo), Math.round(hi));
+        const max = Math.max(Math.round(lo), Math.round(hi));
+        return min + (blenderHash(elementId, elementSeed) % (max - min + 1));
+      }
+      return Math.fround(lo + (hi - lo) * blenderHashToFloat(elementSeed, elementId));
     });
   });
   if (dataType === "FLOAT_VECTOR") {
@@ -41,7 +112,9 @@ reg("FunctionNodeRandomValue", (api) => {
     const probability = api.field("Probability");
     const value = Field.make((ctx) => {
       const probabilities = probability.array(ctx), ids = id.array(ctx), seeds = seed.array(ctx);
-      return Array.from({ length: ctx.size }, (_, i) => random01(Math.round(asNum(ids[i] ?? ctx.index?.(i) ?? i)), Math.round(asNum(seeds[i] ?? 0))) < asNum(probabilities[i] ?? .5) ? 1 : 0);
+      return Array.from({ length: ctx.size }, (_, i) => (
+        blenderHashToFloat(elementIdAt(ids, i, ctx.index), Math.round(asNum(seeds[i] ?? 0))) <= asNum(probabilities[i] ?? .5) ? 1 : 0
+      ));
     });
     return { Value: value, Value_003: value };
   }

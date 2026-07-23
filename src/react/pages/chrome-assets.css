@@ -7,3 +7,4 @@
 .assets-shell.shader-capture{background:#ff00ff}.assets-shell.shader-capture .studio-link,.assets-shell.shader-capture .assets-head,.assets-shell.shader-capture .assets-panel,.assets-shell.shader-capture .assets-pane:first-child{display:none}.assets-shell.shader-capture .assets-compare{display:block;background:#ff00ff}.assets-shell.shader-capture .assets-pane{position:absolute;inset:0;background:#ff00ff}.assets-shell.shader-capture .assets-pane figcaption{display:none}
 .assets-shell.graph-open .assets-pane figcaption{bottom:auto;top:150px}
 .assets-shell .graph-toggle{left:24px}
+.assets-picker>div{display:grid;grid-template-columns:34px minmax(0,1fr) 34px;gap:7px}.assets-panel .assets-picker button{width:34px;padding:9px 0;font-size:14px}.assets-panel .assets-picker input{box-sizing:border-box;width:100%;min-width:0;padding:9px;border:1px solid #343b35;border-radius:8px;background:#121612;color:#eff5ec}

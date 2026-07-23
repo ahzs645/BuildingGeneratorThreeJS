@@ -65,7 +65,10 @@ const requestedEnvironmentRotation = Number(query.get("environmentRotation"));
 const captureEnvironmentRotation = query.has("environmentRotation") && Number.isFinite(requestedEnvironmentRotation)
   ? requestedEnvironmentRotation
   : null;
-const select = document.querySelector<HTMLSelectElement>("#assets-select")!;
+const select = document.querySelector<HTMLInputElement>("#assets-select")!;
+const assetOptions = document.querySelector<HTMLDataListElement>("#assets-options")!;
+const previousAsset = document.querySelector<HTMLButtonElement>("#assets-previous")!;
+const nextAsset = document.querySelector<HTMLButtonElement>("#assets-next")!;
 const controlsHost = document.querySelector<HTMLElement>("#assets-controls")!;
 const reference = document.querySelector<HTMLImageElement>("#assets-reference")!;
 const status = document.querySelector<HTMLElement>("#assets-status")!;
@@ -103,7 +106,7 @@ let catalog: Asset[] = [], current: Asset, dump: Dump, requestId = 0, appliedId 
 const loadedFonts = new Map<string, Promise<boolean>>();
 
 function resize(): void { const box = canvas.getBoundingClientRect(); renderer.setSize(box.width, box.height, false);if(temporalCapture){const drawing=renderer.getDrawingBufferSize(new THREE.Vector2());temporalCapture.resize(drawing.x,drawing.y);} if(model.children.length)frame();else camera.updateProjectionMatrix(); }
-function frame(): void { const bounds=preciseObjectBounds(model,current?.surfaceBounds??false);if (bounds.isEmpty()) return; const viewport=canvas.getBoundingClientRect();const aspect=viewport.width/Math.max(viewport.height,1);const center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),radius=Math.max(size.length()*.5,1);const halfWidth=Math.max(size.x,size.y,size.z,1)*.725;camera.left=-halfWidth;camera.right=halfWidth;camera.top=halfWidth/Math.max(aspect,1e-6);camera.bottom=-camera.top;const direction=new THREE.Vector3(1,-1.25,.85).normalize();camera.position.copy(center).addScaledVector(direction,radius*3);camera.up.set(0,0,1);camera.lookAt(center);camera.near=radius/300;camera.far=radius*100;camera.updateProjectionMatrix();if(authoredKey&&authoredFill){authoredKey.width=authoredKey.height=radius*1.5;authoredKey.position.copy(center).addScaledVector(new THREE.Vector3(-1.8,-2.1,2.8).normalize(),radius*2.4);authoredKey.lookAt(center);authoredFill.width=authoredFill.height=radius*2;authoredFill.position.copy(center).addScaledVector(new THREE.Vector3(2,1,1).normalize(),radius*2);authoredFill.lookAt(center);}orbit.target.copy(center);orbit.update(); }
+function frame(): void { const bounds=preciseObjectBounds(model,current?.surfaceBounds??false);if (bounds.isEmpty()) return; const viewport=canvas.getBoundingClientRect();const aspect=viewport.width/Math.max(viewport.height,1);const center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),radius=Math.max(size.length()*.5,.5);const halfWidth=Math.max(size.x,size.y,size.z,1e-4)*.725;camera.left=-halfWidth;camera.right=halfWidth;camera.top=halfWidth/Math.max(aspect,1e-6);camera.bottom=-camera.top;const direction=new THREE.Vector3(1,-1.25,.85).normalize();camera.position.copy(center).addScaledVector(direction,radius*3);camera.up.set(0,0,1);camera.lookAt(center);camera.near=radius/300;camera.far=radius*100;camera.updateProjectionMatrix();if(authoredKey&&authoredFill){authoredKey.width=authoredKey.height=radius*1.5;authoredKey.position.copy(center).addScaledVector(new THREE.Vector3(-1.8,-2.1,2.8).normalize(),radius*2.4);authoredKey.lookAt(center);authoredFill.width=authoredFill.height=radius*2;authoredFill.position.copy(center).addScaledVector(new THREE.Vector3(2,1,1).normalize(),radius*2);authoredFill.lookAt(center);}orbit.target.copy(center);orbit.update(); }
 function overrides(): Record<string, number | boolean | string | number[]> { const values: Record<string, number | boolean | string | number[]> = {}; for (const control of current.controls) { if(control.name.startsWith("__"))continue;const requested=captureOverrideValue(control.value,query.get(`override.${control.name}`));if(requested!==undefined){values[control.name]=requested;continue;}const input=document.querySelector<HTMLInputElement|HTMLSelectElement>(`[data-control="${control.name}"]`); values[control.name]=control.type==="checkbox"?((input as HTMLInputElement|null)?.checked??control.value):control.type==="text"?(input?.value??control.value):control.type==="select"?(typeof control.value==="number"?Number(input?.value??control.value):(input?.value??control.value)):control.type==="vector"?Array.from(document.querySelectorAll<HTMLInputElement>(`[data-control="${control.name}"]`)).sort((a,b)=>Number(a.dataset.axis)-Number(b.dataset.axis)).map((item,index)=>Number(item.value??control.value[index])):rangeOverrideValue(control.value,input?.value,input?.dataset.dirty==="true"); } return values; }
 function visibleControls(): Control[] {
   if (current.controls.some((control) => control.name === "__materialPreview")) return current.controls;
@@ -354,8 +357,22 @@ async function evaluate(): Promise<void> {
     : exact ? "exact" : "inexact";
 }
 function queue(): void { clearTimeout(timer);timer=window.setTimeout(()=>void evaluate().catch((error)=>status.textContent=String(error)),100); }
+function matchingAsset(value: string): Asset | undefined {
+  const normalized = value.trim().toLocaleLowerCase();
+  return catalog.find((item) => item.title.toLocaleLowerCase() === normalized || item.id.toLocaleLowerCase() === normalized);
+}
+function setSelectedAsset(asset: Asset): void {
+  select.value = asset.title;
+  select.dataset.assetId = asset.id;
+}
+function stepAsset(direction: -1 | 1): void {
+  if (!catalog.length) return;
+  const currentIndex = Math.max(0, catalog.findIndex((item) => item.id === select.dataset.assetId));
+  setSelectedAsset(catalog[(currentIndex + direction + catalog.length) % catalog.length]);
+  select.dispatchEvent(new Event("change"));
+}
 async function choose(): Promise<void> {
-  current=catalog.find((item)=>item.id===select.value)??catalog[0];const asset=current;
+  current=matchingAsset(select.value)??catalog.find((item)=>item.id===select.dataset.assetId)??catalog[0];setSelectedAsset(current);const asset=current;
   window.dispatchEvent(new CustomEvent("chrome-assets-selection-change",{detail:{id:current.id,title:current.title,object:current.object,dumpUrl:current.dump}}));reference.src=publicUrl(current.reference);blenderCount.textContent=`${current.blenderStats.verts.toLocaleString()} verts · ${current.blenderStats.faces.toLocaleString()} faces`;note.textContent=current.note??"";note.hidden=!current.note;renderControls();
   await Promise.all([prepareFont(asset), prepareAuthoredEnvironment(asset)]);if(current!==asset)return;
   const [geometryDump,shaderMetadata]=await Promise.all([
@@ -365,8 +382,16 @@ async function choose(): Promise<void> {
   if(current!==asset)return;
   dump=Object.assign(geometryDump,shaderMetadata??{});await evaluate();
 }
-select.addEventListener("change",()=>{const url=new URL(location.href);url.searchParams.set("asset",select.value);history.replaceState(null,"",url);void choose().catch((error)=>status.textContent=String(error));});reset.addEventListener("click",()=>{renderControls();queue();});addEventListener("resize",resize);renderer.setAnimationLoop(()=>{orbit.update();if(temporalCapture&&model.children.length)temporalCapture.render();else renderer.render(scene,camera);});
-fetch(publicUrl("dojo/chrome-assets/catalog.json"),{cache:"no-store"}).then((response)=>response.json()).then((items:Asset[])=>{catalog=items;for(const item of catalog){const option=document.createElement("option");option.value=item.id;option.textContent=item.title;select.append(option);}const requested=new URLSearchParams(location.search).get("asset");if(requested&&catalog.some((item)=>item.id===requested))select.value=requested;resize();return choose();}).catch((error)=>status.textContent=String(error));
+function commitAssetSelection(): void {
+  const asset = matchingAsset(select.value);
+  if (!asset) return;
+  if (select.dataset.assetId === asset.id && current?.id === asset.id) return;
+  setSelectedAsset(asset);
+  const url=new URL(location.href);url.searchParams.set("asset",asset.id);history.replaceState(null,"",url);
+  void choose().catch((error)=>status.textContent=String(error));
+}
+select.addEventListener("input",commitAssetSelection);select.addEventListener("change",commitAssetSelection);previousAsset.addEventListener("click",()=>stepAsset(-1));nextAsset.addEventListener("click",()=>stepAsset(1));reset.addEventListener("click",()=>{renderControls();queue();});addEventListener("resize",resize);renderer.setAnimationLoop(()=>{orbit.update();if(temporalCapture&&model.children.length)temporalCapture.render();else renderer.render(scene,camera);});
+fetch(publicUrl("dojo/chrome-assets/catalog.json"),{cache:"no-store"}).then((response)=>response.json()).then((items:Asset[])=>{catalog=items;for(const item of catalog){const option=document.createElement("option");option.value=item.title;option.label=item.id;assetOptions.append(option);}const requested=new URLSearchParams(location.search).get("asset");setSelectedAsset(catalog.find((item)=>item.id===requested)??catalog[0]);resize();return choose();}).catch((error)=>status.textContent=String(error));
 
 window.addEventListener("type-pixel-brush-graph-change", (event) => {
   if (current?.id !== "type-pixel-brush") return;

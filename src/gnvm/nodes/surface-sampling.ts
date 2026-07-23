@@ -101,17 +101,35 @@ reg("GeometryNodeSampleNearestSurface", (api) => {
 });
 
 reg("GeometryNodeSetCurveRadius", (api) => {
-  const geometry = api.geo("Curve").clone();
-  if (!geometry.curves.length) return { Curve: geometry };
-  const ctx = makeFieldCtx(geometry, "POINT");
-  const selection = api.field("Selection").array(ctx);
-  const radius = api.field("Radius").array(ctx);
-  const current = geometry.curveAttributes.get("radius")?.data ?? new Array(ctx.size).fill(1);
-  geometry.curveAttributes.set("radius", {
-    domain: "POINT",
-    data: Array.from({ length: ctx.size }, (_, index) => asNum(selection[index] ?? 1) > 0 ? Math.max(0, asNum(radius[index] ?? 0)) : current[index] ?? 1),
-  });
-  return { Curve: geometry };
+  const source = api.geo("Curve");
+  const selectionField = api.field("Selection");
+  const radiusField = api.field("Radius");
+  const converted = new WeakMap<import("../geometry").Geometry, import("../geometry").Geometry>();
+  const applyRadius = (input: import("../geometry").Geometry): import("../geometry").Geometry => {
+    const cached = converted.get(input);
+    if (cached) return cached;
+    const geometry = input.clone();
+    converted.set(input, geometry);
+    geometry.instances = geometry.instances.map((instance, index) => ({
+      ...instance,
+      geometry: applyRadius(input.instances[index].geometry),
+    }));
+    if (!geometry.curves.length) return geometry;
+    const ctx = makeFieldCtx(geometry, "POINT");
+    const selection = selectionField.array(ctx);
+    const radius = radiusField.array(ctx);
+    const current = geometry.curveAttributes.get("radius")?.data ?? new Array(ctx.size).fill(1);
+    // Curve radii are signed. A negative radius mirrors the sweep profile;
+    // Blender node trees use that signed scale to taper strands toward zero.
+    geometry.curveAttributes.set("radius", {
+      domain: "POINT",
+      data: Array.from({ length: ctx.size }, (_, index) => (
+        asNum(selection[index] ?? 1) > 0 ? asNum(radius[index] ?? 0) : current[index] ?? 1
+      )),
+    });
+    return geometry;
+  };
+  return { Curve: applyRadius(source) };
 });
 
 type Quaternion = [number, number, number, number];

@@ -1037,7 +1037,9 @@ reg("GeometryNodeCurveLength", (api) => {
 // ---- curve field inputs (light) ------------------------------------------
 reg("GeometryNodeSplineParameter", () => ({
   Factor: Field.perElem((i, ctx) => (ctx.splineFactor ? ctx.splineFactor(i) : 0)),
-  Length: Field.perElem((i, ctx) => (ctx.splineFactor ? ctx.splineFactor(i) : 0)),
+  Length: Field.perElem((i, ctx) => (
+    (ctx.splineFactor ? ctx.splineFactor(i) : 0) * (ctx.splineLength ? ctx.splineLength(i) : 0)
+  )),
   Index: Field.perElem((i, ctx) => (ctx.splineIndex ? ctx.splineIndex(i) : i)),
 }));
 

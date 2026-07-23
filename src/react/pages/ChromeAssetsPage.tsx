@@ -65,7 +65,12 @@ export default function ChromeAssetsPage(): React.JSX.Element {
       <figure className="assets-pane"><figcaption><span>Browser GN-VM · WebGL preview</span><strong id="assets-vm-count">—</strong></figcaption><canvas id="assets-canvas" /></figure>
     </section>
     <aside className="assets-panel">
-      <label><span>Ported asset</span><select id="assets-select" /></label>
+      <label className="assets-picker"><span>Ported asset</span><div>
+        <button id="assets-previous" type="button" aria-label="Previous ported asset" title="Previous asset">←</button>
+        <input id="assets-select" type="text" list="assets-options" autoComplete="off" aria-label="Ported asset" placeholder="Search assets…" />
+        <datalist id="assets-options" />
+        <button id="assets-next" type="button" aria-label="Next ported asset" title="Next asset">→</button>
+      </div></label>
       <div id="assets-font-status" hidden />
       <p id="assets-note" />
       <div id="assets-controls" />
