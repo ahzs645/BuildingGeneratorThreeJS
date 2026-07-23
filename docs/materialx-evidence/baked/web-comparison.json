@@ -1,0 +1,52 @@
+{
+  "comparisonVersion": 1,
+  "bakeSemanticValidation": {
+    "fullFrame": {
+      "width": 768,
+      "height": 768,
+      "rgbMeanAbsoluteError": 0.000355,
+      "rgbRootMeanSquareError": 0.001756,
+      "luminanceCorrelation": 0.999944,
+      "meanLuminance": {
+        "blender": 0.191464,
+        "web": 0.191688
+      }
+    },
+    "sphereRegion": {
+      "normalizedCircleRadius": 0.212,
+      "sampleCount": 83300,
+      "rgbMeanAbsoluteError": 0.002506,
+      "rgbRootMeanSquareError": 0.004668,
+      "luminanceCorrelation": 0.999838,
+      "meanLuminance": {
+        "reference": 0.443501,
+        "candidate": 0.445088
+      }
+    }
+  },
+  "rendererValidation": {
+    "fullFrame": {
+      "width": 768,
+      "height": 768,
+      "rgbMeanAbsoluteError": 0.030234,
+      "rgbRootMeanSquareError": 0.098928,
+      "luminanceCorrelation": 0.768482,
+      "meanLuminance": {
+        "blender": 0.191464,
+        "web": 0.174145
+      }
+    },
+    "sphereRegion": {
+      "normalizedCircleRadius": 0.212,
+      "sampleCount": 83300,
+      "rgbMeanAbsoluteError": 0.188932,
+      "rgbRootMeanSquareError": 0.262766,
+      "luminanceCorrelation": 0.198681,
+      "meanLuminance": {
+        "reference": 0.443501,
+        "candidate": 0.339391
+      }
+    }
+  },
+  "interpretation": "The Blender-to-Blender comparison isolates bake semantics. The Blender-to-Three comparison also contains the known Eevee/Three BRDF, direct-light, shadow, and environment-filtering differences and must not be read as a texture-bake error."
+}

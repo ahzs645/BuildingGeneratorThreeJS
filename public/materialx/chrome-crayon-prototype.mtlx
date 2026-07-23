@@ -1,0 +1,139 @@
+<?xml version="1.0"?>
+<materialx version="1.39" colorspace="lin_rec709">
+  <!-- General semantic-recovery probe for Blender Generated coordinates and
+       named geometry properties. This is not a chrome.003 parity claim. -->
+  <nodegraph name="NG_chrome_crayon_noise">
+    <input name="generated_bounds_min" type="vector3" value="-1.0, -1.0, -1.0" />
+    <input name="generated_bounds_max" type="vector3" value="1.0, 1.0, 1.0" />
+    <position name="generated_object_position" type="vector3" space="object" />
+    <!-- These graph-interface inputs are populated from the Blender-exported
+         bounds. They remain per-object uniforms instead of material constants. -->
+    <subtract name="generated_offset" type="vector3">
+      <input name="in1" type="vector3" nodename="generated_object_position" />
+      <input name="in2" type="vector3" interfacename="generated_bounds_min" />
+    </subtract>
+    <subtract name="generated_extent" type="vector3">
+      <input name="in1" type="vector3" interfacename="generated_bounds_max" />
+      <input name="in2" type="vector3" interfacename="generated_bounds_min" />
+    </subtract>
+    <max name="generated_safe_extent" type="vector3">
+      <input name="in1" type="vector3" nodename="generated_extent" />
+      <input name="in2" type="vector3" value="0.000001, 0.000001, 0.000001" />
+    </max>
+    <divide name="generated_coordinate" type="vector3">
+      <input name="in1" type="vector3" nodename="generated_offset" />
+      <input name="in2" type="vector3" nodename="generated_safe_extent" />
+    </divide>
+    <multiply name="mapping_scale" type="vector3">
+      <input name="in1" type="vector3" nodename="generated_coordinate" />
+      <input name="in2" type="vector3" value="131.27, 131.27, 1875.47" />
+    </multiply>
+    <extract name="mapping_x" type="float">
+      <input name="in" type="vector3" nodename="mapping_scale" />
+      <input name="index" type="integer" value="0" />
+    </extract>
+    <position name="object_position" type="vector3" space="object" />
+    <convert name="mapping_x_vector" type="vector3">
+      <input name="in" type="float" nodename="mapping_x" />
+    </convert>
+    <multiply name="noise_position" type="vector3">
+      <input name="in1" type="vector3" nodename="object_position" />
+      <input name="in2" type="vector3" nodename="mapping_x_vector" />
+    </multiply>
+    <fractal3d name="noise_height" type="float">
+      <input name="position" type="vector3" nodename="noise_position" />
+      <input name="octaves" type="integer" value="2" />
+      <input name="lacunarity" type="float" value="2.0" />
+      <input name="diminish" type="float" value="0.5" />
+      <input name="amplitude" type="float" value="1.0" />
+    </fractal3d>
+    <remap name="signed_noise" type="float">
+      <input name="in" type="float" nodename="noise_height" />
+      <input name="inlow" type="float" value="0.0" />
+      <input name="inhigh" type="float" value="1.0" />
+      <input name="outlow" type="float" value="-1.0" />
+      <input name="outhigh" type="float" value="1.0" />
+    </remap>
+    <multiply name="source_roughness" type="float">
+      <input name="in1" type="float" nodename="signed_noise" />
+      <input name="in2" type="float" nodename="rough_property" />
+    </multiply>
+    <geompropvalue name="rough_property" type="float">
+      <input name="geomprop" type="string" value="rough" />
+      <input name="default" type="float" value="0.8" />
+    </geompropvalue>
+    <geompropvalue name="color_property" type="color3">
+      <input name="geomprop" type="string" value="col" />
+      <input name="default" type="color3" value="0.8, 0.8, 0.8" />
+    </geompropvalue>
+    <multiply name="bump_position" type="vector3">
+      <input name="in1" type="vector3" nodename="object_position" />
+      <input name="in2" type="float" value="4.0" />
+    </multiply>
+    <fractal3d name="bump_height" type="float">
+      <input name="position" type="vector3" nodename="bump_position" />
+      <input name="octaves" type="integer" value="3" />
+      <input name="lacunarity" type="float" value="2.0" />
+      <input name="diminish" type="float" value="0.5" />
+      <input name="amplitude" type="float" value="1.0" />
+    </fractal3d>
+    <heighttonormal name="procedural_normal" type="vector3">
+      <input name="in" type="float" nodename="bump_height" />
+      <input name="scale" type="float" value="0.18" />
+    </heighttonormal>
+    <!-- Blender exports Bump as strength in heighttonormal followed by
+         distance in normalmap; keeping both stages preserves their distinct semantics. -->
+    <normalmap name="bump_normal" type="vector3">
+      <input name="in" type="vector3" nodename="procedural_normal" />
+      <input name="scale" type="float" value="0.1" />
+    </normalmap>
+    <output name="roughness" type="float" nodename="source_roughness" />
+    <output name="normal" type="vector3" nodename="bump_normal" />
+    <output name="color" type="color3" nodename="color_property" />
+  </nodegraph>
+
+  <standard_surface name="SS_chrome_source" type="surfaceshader">
+    <input name="base" type="float" value="1.0" />
+    <input name="base_color" type="color3" value="0.8, 0.8, 0.8" />
+    <input name="metalness" type="float" value="1.0" />
+    <input name="specular_roughness" type="float" nodegraph="NG_chrome_crayon_noise" output="roughness" />
+  </standard_surface>
+  <surfacematerial name="ChromeCrayonSourceLowering" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SS_chrome_source" />
+  </surfacematerial>
+
+  <!-- Compatibility probe only: the supplied chrome.003 graph has no Bump or Wave node. -->
+  <standard_surface name="SS_noise_bump_probe" type="surfaceshader">
+    <input name="base" type="float" value="1.0" />
+    <input name="base_color" type="color3" value="0.8, 0.8, 0.8" />
+    <input name="metalness" type="float" value="1.0" />
+    <input name="specular_roughness" type="float" value="0.32" />
+    <input name="normal" type="vector3" nodegraph="NG_chrome_crayon_noise" output="normal" />
+  </standard_surface>
+  <surfacematerial name="ChromeCrayonNoiseBumpProbe" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SS_noise_bump_probe" />
+  </surfacematerial>
+
+  <!-- Typed color-property diagnostic. It exercises the same manifest-driven
+       binding used for float properties without touching production adapters. -->
+  <standard_surface name="SS_geomprop_color_diagnostic" type="surfaceshader">
+    <input name="base" type="float" value="1.0" />
+    <input name="base_color" type="color3" nodegraph="NG_chrome_crayon_noise" output="color" />
+    <input name="metalness" type="float" value="0.0" />
+    <input name="specular_roughness" type="float" value="0.45" />
+  </standard_surface>
+  <surfacematerial name="MaterialXGeompropColorDiagnostic" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SS_geomprop_color_diagnostic" />
+  </surfacematerial>
+
+  <!-- General lighting diagnostic: no procedural graph, textures, or asset-specific inputs. -->
+  <standard_surface name="SS_smooth_chrome_diagnostic" type="surfaceshader">
+    <input name="base" type="float" value="1.0" />
+    <input name="base_color" type="color3" value="0.8, 0.8, 0.8" />
+    <input name="metalness" type="float" value="1.0" />
+    <input name="specular_roughness" type="float" value="0.32" />
+  </standard_surface>
+  <surfacematerial name="MaterialXSmoothChromeDiagnostic" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SS_smooth_chrome_diagnostic" />
+  </surfacematerial>
+</materialx>

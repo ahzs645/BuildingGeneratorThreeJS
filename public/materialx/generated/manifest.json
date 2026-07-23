@@ -1,0 +1,2031 @@
+{
+  "generator": {
+    "lightNodeDef": "ND_directional_light",
+    "lightTypeId": 1,
+    "materialx": "1.39.4",
+    "maxLights": 3,
+    "radianceSamples": 16,
+    "source": "chrome-crayon-prototype.mtlx",
+    "specularEnvironment": "FIS",
+    "target": "essl"
+  },
+  "licenses": {
+    "materialx": "../licenses/LICENSE",
+    "thirdPartyNotices": "../licenses/THIRD-PARTY.md"
+  },
+  "schemaVersion": 1,
+  "shaders": {
+    "ChromeCrayonNoiseBumpProbe": {
+      "element": "ChromeCrayonNoiseBumpProbe",
+      "fragment": "ChromeCrayonNoiseBumpProbe.frag",
+      "fragmentInterface": {
+        "inputs": {
+          "VertexData": [
+            {
+              "name": "normalWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "tangentWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "bitangentWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "texcoord_0",
+              "path": "",
+              "type": "vector2",
+              "value": null
+            },
+            {
+              "name": "positionObject",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "positionWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "LightData": [
+            {
+              "name": "type",
+              "path": "",
+              "type": "integer",
+              "value": null
+            },
+            {
+              "name": "direction",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "color",
+              "path": "",
+              "type": "color3",
+              "value": null
+            },
+            {
+              "name": "intensity",
+              "path": "",
+              "type": "float",
+              "value": null
+            }
+          ],
+          "PrivateUniforms": [
+            {
+              "name": "u_envMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": "-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1"
+            },
+            {
+              "name": "u_envRadiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_envLightIntensity",
+              "path": "",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "u_envRadianceMips",
+              "path": "",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "u_envRadianceSamples",
+              "path": "",
+              "type": "integer",
+              "value": 16
+            },
+            {
+              "name": "u_envIrradiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_refractionTwoSided",
+              "path": "",
+              "type": "boolean",
+              "value": null
+            },
+            {
+              "name": "u_viewPosition",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "u_numActiveLightSources",
+              "path": "",
+              "type": "integer",
+              "value": 0
+            }
+          ],
+          "PublicUniforms": [
+            {
+              "name": "backsurfaceshader",
+              "path": "",
+              "type": "surfaceshader",
+              "value": null
+            },
+            {
+              "name": "displacementshader1",
+              "path": "",
+              "type": "displacementshader",
+              "value": null
+            },
+            {
+              "name": "geomprop_UV0_index",
+              "path": "UV0",
+              "type": "integer",
+              "value": "0"
+            },
+            {
+              "name": "bump_position_in2",
+              "path": "NG_chrome_crayon_noise/bump_position/in2",
+              "type": "float",
+              "value": 4.0
+            },
+            {
+              "name": "bump_height_amplitude",
+              "path": "NG_chrome_crayon_noise/bump_height/amplitude",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "bump_height_octaves",
+              "path": "NG_chrome_crayon_noise/bump_height/octaves",
+              "type": "integer",
+              "value": 3
+            },
+            {
+              "name": "bump_height_lacunarity",
+              "path": "NG_chrome_crayon_noise/bump_height/lacunarity",
+              "type": "float",
+              "value": 2.0
+            },
+            {
+              "name": "bump_height_diminish",
+              "path": "NG_chrome_crayon_noise/bump_height/diminish",
+              "type": "float",
+              "value": 0.5
+            },
+            {
+              "name": "procedural_normal_scale",
+              "path": "NG_chrome_crayon_noise/procedural_normal/scale",
+              "type": "float",
+              "value": 0.18000000715255737
+            },
+            {
+              "name": "bump_normal_scale",
+              "path": "NG_chrome_crayon_noise/bump_normal/scale",
+              "type": "float",
+              "value": 0.10000000149011612
+            },
+            {
+              "name": "SS_noise_bump_probe_base",
+              "path": "SS_noise_bump_probe/base",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_noise_bump_probe_base_color",
+              "path": "SS_noise_bump_probe/base_color",
+              "type": "color3",
+              "value": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+              ]
+            },
+            {
+              "name": "SS_noise_bump_probe_diffuse_roughness",
+              "path": "SS_noise_bump_probe/diffuse_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_metalness",
+              "path": "SS_noise_bump_probe/metalness",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_noise_bump_probe_specular",
+              "path": "SS_noise_bump_probe/specular",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_noise_bump_probe_specular_color",
+              "path": "SS_noise_bump_probe/specular_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_noise_bump_probe_specular_roughness",
+              "path": "SS_noise_bump_probe/specular_roughness",
+              "type": "float",
+              "value": 0.3199999928474426
+            },
+            {
+              "name": "SS_noise_bump_probe_specular_IOR",
+              "path": "SS_noise_bump_probe/specular_IOR",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "SS_noise_bump_probe_specular_anisotropy",
+              "path": "SS_noise_bump_probe/specular_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_specular_rotation",
+              "path": "SS_noise_bump_probe/specular_rotation",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_transmission",
+              "path": "SS_noise_bump_probe/transmission",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_transmission_color",
+              "path": "SS_noise_bump_probe/transmission_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_noise_bump_probe_transmission_depth",
+              "path": "SS_noise_bump_probe/transmission_depth",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_transmission_scatter",
+              "path": "SS_noise_bump_probe/transmission_scatter",
+              "type": "color3",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "name": "SS_noise_bump_probe_transmission_scatter_anisotropy",
+              "path": "SS_noise_bump_probe/transmission_scatter_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_transmission_dispersion",
+              "path": "SS_noise_bump_probe/transmission_dispersion",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_transmission_extra_roughness",
+              "path": "SS_noise_bump_probe/transmission_extra_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_subsurface",
+              "path": "SS_noise_bump_probe/subsurface",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_subsurface_color",
+              "path": "SS_noise_bump_probe/subsurface_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_noise_bump_probe_subsurface_radius",
+              "path": "SS_noise_bump_probe/subsurface_radius",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_noise_bump_probe_subsurface_scale",
+              "path": "SS_noise_bump_probe/subsurface_scale",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_noise_bump_probe_subsurface_anisotropy",
+              "path": "SS_noise_bump_probe/subsurface_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_sheen",
+              "path": "SS_noise_bump_probe/sheen",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_sheen_color",
+              "path": "SS_noise_bump_probe/sheen_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_noise_bump_probe_sheen_roughness",
+              "path": "SS_noise_bump_probe/sheen_roughness",
+              "type": "float",
+              "value": 0.30000001192092896
+            },
+            {
+              "name": "SS_noise_bump_probe_coat",
+              "path": "SS_noise_bump_probe/coat",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_coat_color",
+              "path": "SS_noise_bump_probe/coat_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_noise_bump_probe_coat_roughness",
+              "path": "SS_noise_bump_probe/coat_roughness",
+              "type": "float",
+              "value": 0.10000000149011612
+            },
+            {
+              "name": "SS_noise_bump_probe_coat_anisotropy",
+              "path": "SS_noise_bump_probe/coat_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_coat_rotation",
+              "path": "SS_noise_bump_probe/coat_rotation",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_coat_IOR",
+              "path": "SS_noise_bump_probe/coat_IOR",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "SS_noise_bump_probe_coat_affect_color",
+              "path": "SS_noise_bump_probe/coat_affect_color",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_coat_affect_roughness",
+              "path": "SS_noise_bump_probe/coat_affect_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_thin_film_thickness",
+              "path": "SS_noise_bump_probe/thin_film_thickness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_thin_film_IOR",
+              "path": "SS_noise_bump_probe/thin_film_IOR",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "SS_noise_bump_probe_emission",
+              "path": "SS_noise_bump_probe/emission",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_noise_bump_probe_emission_color",
+              "path": "SS_noise_bump_probe/emission_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_noise_bump_probe_opacity",
+              "path": "SS_noise_bump_probe/opacity",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_noise_bump_probe_thin_walled",
+              "path": "SS_noise_bump_probe/thin_walled",
+              "type": "boolean",
+              "value": false
+            }
+          ]
+        }
+      },
+      "geometryBindings": {},
+      "vertex": "ChromeCrayonNoiseBumpProbe.vert",
+      "vertexInterface": {
+        "inputs": {
+          "VertexInputs": [
+            {
+              "name": "i_position",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_normal",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_tangent",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_texcoord_0",
+              "path": "",
+              "type": "vector2",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "PrivateUniforms": [
+            {
+              "name": "u_worldMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_viewProjectionMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_worldInverseTransposeMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            }
+          ]
+        }
+      }
+    },
+    "ChromeCrayonSourceLowering": {
+      "element": "ChromeCrayonSourceLowering",
+      "fragment": "ChromeCrayonSourceLowering.frag",
+      "fragmentInterface": {
+        "inputs": {
+          "VertexData": [
+            {
+              "name": "normalWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "tangentWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "positionObject",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_geomprop_rough",
+              "path": "",
+              "type": "float",
+              "value": null
+            },
+            {
+              "name": "positionWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "LightData": [
+            {
+              "name": "type",
+              "path": "",
+              "type": "integer",
+              "value": null
+            },
+            {
+              "name": "direction",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "color",
+              "path": "",
+              "type": "color3",
+              "value": null
+            },
+            {
+              "name": "intensity",
+              "path": "",
+              "type": "float",
+              "value": null
+            }
+          ],
+          "PrivateUniforms": [
+            {
+              "name": "u_envMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": "-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1"
+            },
+            {
+              "name": "u_envRadiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_envLightIntensity",
+              "path": "",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "u_envRadianceMips",
+              "path": "",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "u_envRadianceSamples",
+              "path": "",
+              "type": "integer",
+              "value": 16
+            },
+            {
+              "name": "u_envIrradiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_refractionTwoSided",
+              "path": "",
+              "type": "boolean",
+              "value": null
+            },
+            {
+              "name": "u_viewPosition",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "u_numActiveLightSources",
+              "path": "",
+              "type": "integer",
+              "value": 0
+            }
+          ],
+          "PublicUniforms": [
+            {
+              "name": "backsurfaceshader",
+              "path": "",
+              "type": "surfaceshader",
+              "value": null
+            },
+            {
+              "name": "displacementshader1",
+              "path": "",
+              "type": "displacementshader",
+              "value": null
+            },
+            {
+              "name": "generated_extent_in1",
+              "path": "NG_chrome_crayon_noise/generated_bounds_max",
+              "type": "vector3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "generated_extent_in2",
+              "path": "NG_chrome_crayon_noise/generated_bounds_min",
+              "type": "vector3",
+              "value": [
+                -1.0,
+                -1.0,
+                -1.0
+              ]
+            },
+            {
+              "name": "generated_offset_in2",
+              "path": "NG_chrome_crayon_noise/generated_bounds_min",
+              "type": "vector3",
+              "value": [
+                -1.0,
+                -1.0,
+                -1.0
+              ]
+            },
+            {
+              "name": "generated_safe_extent_in2",
+              "path": "NG_chrome_crayon_noise/generated_safe_extent/in2",
+              "type": "vector3",
+              "value": [
+                9.999999974752427e-07,
+                9.999999974752427e-07,
+                9.999999974752427e-07
+              ]
+            },
+            {
+              "name": "mapping_scale_in2",
+              "path": "NG_chrome_crayon_noise/mapping_scale/in2",
+              "type": "vector3",
+              "value": [
+                131.27000427246094,
+                131.27000427246094,
+                1875.469970703125
+              ]
+            },
+            {
+              "name": "mapping_x_index",
+              "path": "NG_chrome_crayon_noise/mapping_x/index",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "noise_height_amplitude",
+              "path": "NG_chrome_crayon_noise/noise_height/amplitude",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "noise_height_octaves",
+              "path": "NG_chrome_crayon_noise/noise_height/octaves",
+              "type": "integer",
+              "value": 2
+            },
+            {
+              "name": "noise_height_lacunarity",
+              "path": "NG_chrome_crayon_noise/noise_height/lacunarity",
+              "type": "float",
+              "value": 2.0
+            },
+            {
+              "name": "noise_height_diminish",
+              "path": "NG_chrome_crayon_noise/noise_height/diminish",
+              "type": "float",
+              "value": 0.5
+            },
+            {
+              "name": "signed_noise_inlow",
+              "path": "NG_chrome_crayon_noise/signed_noise/inlow",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "signed_noise_inhigh",
+              "path": "NG_chrome_crayon_noise/signed_noise/inhigh",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "signed_noise_outlow",
+              "path": "NG_chrome_crayon_noise/signed_noise/outlow",
+              "type": "float",
+              "value": -1.0
+            },
+            {
+              "name": "signed_noise_outhigh",
+              "path": "NG_chrome_crayon_noise/signed_noise/outhigh",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_chrome_source_base",
+              "path": "SS_chrome_source/base",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_chrome_source_base_color",
+              "path": "SS_chrome_source/base_color",
+              "type": "color3",
+              "value": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+              ]
+            },
+            {
+              "name": "SS_chrome_source_diffuse_roughness",
+              "path": "SS_chrome_source/diffuse_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_metalness",
+              "path": "SS_chrome_source/metalness",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_chrome_source_specular",
+              "path": "SS_chrome_source/specular",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_chrome_source_specular_color",
+              "path": "SS_chrome_source/specular_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_chrome_source_specular_IOR",
+              "path": "SS_chrome_source/specular_IOR",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "SS_chrome_source_specular_anisotropy",
+              "path": "SS_chrome_source/specular_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_specular_rotation",
+              "path": "SS_chrome_source/specular_rotation",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_transmission",
+              "path": "SS_chrome_source/transmission",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_transmission_color",
+              "path": "SS_chrome_source/transmission_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_chrome_source_transmission_depth",
+              "path": "SS_chrome_source/transmission_depth",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_transmission_scatter",
+              "path": "SS_chrome_source/transmission_scatter",
+              "type": "color3",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "name": "SS_chrome_source_transmission_scatter_anisotropy",
+              "path": "SS_chrome_source/transmission_scatter_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_transmission_dispersion",
+              "path": "SS_chrome_source/transmission_dispersion",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_transmission_extra_roughness",
+              "path": "SS_chrome_source/transmission_extra_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_subsurface",
+              "path": "SS_chrome_source/subsurface",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_subsurface_color",
+              "path": "SS_chrome_source/subsurface_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_chrome_source_subsurface_radius",
+              "path": "SS_chrome_source/subsurface_radius",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_chrome_source_subsurface_scale",
+              "path": "SS_chrome_source/subsurface_scale",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_chrome_source_subsurface_anisotropy",
+              "path": "SS_chrome_source/subsurface_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_sheen",
+              "path": "SS_chrome_source/sheen",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_sheen_color",
+              "path": "SS_chrome_source/sheen_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_chrome_source_sheen_roughness",
+              "path": "SS_chrome_source/sheen_roughness",
+              "type": "float",
+              "value": 0.30000001192092896
+            },
+            {
+              "name": "SS_chrome_source_coat",
+              "path": "SS_chrome_source/coat",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_coat_color",
+              "path": "SS_chrome_source/coat_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_chrome_source_coat_roughness",
+              "path": "SS_chrome_source/coat_roughness",
+              "type": "float",
+              "value": 0.10000000149011612
+            },
+            {
+              "name": "SS_chrome_source_coat_anisotropy",
+              "path": "SS_chrome_source/coat_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_coat_rotation",
+              "path": "SS_chrome_source/coat_rotation",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_coat_IOR",
+              "path": "SS_chrome_source/coat_IOR",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "SS_chrome_source_coat_affect_color",
+              "path": "SS_chrome_source/coat_affect_color",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_coat_affect_roughness",
+              "path": "SS_chrome_source/coat_affect_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_thin_film_thickness",
+              "path": "SS_chrome_source/thin_film_thickness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_thin_film_IOR",
+              "path": "SS_chrome_source/thin_film_IOR",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "SS_chrome_source_emission",
+              "path": "SS_chrome_source/emission",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_chrome_source_emission_color",
+              "path": "SS_chrome_source/emission_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_chrome_source_opacity",
+              "path": "SS_chrome_source/opacity",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_chrome_source_thin_walled",
+              "path": "SS_chrome_source/thin_walled",
+              "type": "boolean",
+              "value": false
+            }
+          ]
+        }
+      },
+      "geometryBindings": {
+        "generatedCoordinates": {
+          "boundsMaxUniforms": [
+            "generated_extent_in1"
+          ],
+          "boundsMinUniforms": [
+            "generated_extent_in2",
+            "generated_offset_in2"
+          ],
+          "space": "object"
+        },
+        "properties": [
+          {
+            "attribute": "a_geomprop_rough",
+            "default": "0.8",
+            "name": "rough",
+            "required": true,
+            "type": "float"
+          }
+        ]
+      },
+      "vertex": "ChromeCrayonSourceLowering.vert",
+      "vertexInterface": {
+        "inputs": {
+          "VertexInputs": [
+            {
+              "name": "i_position",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_normal",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_tangent",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "a_geomprop_rough",
+              "path": "",
+              "type": "float",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "PrivateUniforms": [
+            {
+              "name": "u_worldMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_viewProjectionMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_worldInverseTransposeMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            }
+          ]
+        }
+      }
+    },
+    "MaterialXGeompropColorDiagnostic": {
+      "element": "MaterialXGeompropColorDiagnostic",
+      "fragment": "MaterialXGeompropColorDiagnostic.frag",
+      "fragmentInterface": {
+        "inputs": {
+          "VertexData": [
+            {
+              "name": "normalWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "tangentWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_geomprop_col",
+              "path": "",
+              "type": "color3",
+              "value": null
+            },
+            {
+              "name": "positionWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "LightData": [
+            {
+              "name": "type",
+              "path": "",
+              "type": "integer",
+              "value": null
+            },
+            {
+              "name": "direction",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "color",
+              "path": "",
+              "type": "color3",
+              "value": null
+            },
+            {
+              "name": "intensity",
+              "path": "",
+              "type": "float",
+              "value": null
+            }
+          ],
+          "PrivateUniforms": [
+            {
+              "name": "u_envMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": "-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1"
+            },
+            {
+              "name": "u_envRadiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_envLightIntensity",
+              "path": "",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "u_envRadianceMips",
+              "path": "",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "u_envRadianceSamples",
+              "path": "",
+              "type": "integer",
+              "value": 16
+            },
+            {
+              "name": "u_envIrradiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_refractionTwoSided",
+              "path": "",
+              "type": "boolean",
+              "value": null
+            },
+            {
+              "name": "u_viewPosition",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "u_numActiveLightSources",
+              "path": "",
+              "type": "integer",
+              "value": 0
+            }
+          ],
+          "PublicUniforms": [
+            {
+              "name": "backsurfaceshader",
+              "path": "",
+              "type": "surfaceshader",
+              "value": null
+            },
+            {
+              "name": "displacementshader1",
+              "path": "",
+              "type": "displacementshader",
+              "value": null
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_base",
+              "path": "SS_geomprop_color_diagnostic/base",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_diffuse_roughness",
+              "path": "SS_geomprop_color_diagnostic/diffuse_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_metalness",
+              "path": "SS_geomprop_color_diagnostic/metalness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_specular",
+              "path": "SS_geomprop_color_diagnostic/specular",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_specular_color",
+              "path": "SS_geomprop_color_diagnostic/specular_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_specular_roughness",
+              "path": "SS_geomprop_color_diagnostic/specular_roughness",
+              "type": "float",
+              "value": 0.44999998807907104
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_specular_IOR",
+              "path": "SS_geomprop_color_diagnostic/specular_IOR",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_specular_anisotropy",
+              "path": "SS_geomprop_color_diagnostic/specular_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_specular_rotation",
+              "path": "SS_geomprop_color_diagnostic/specular_rotation",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_transmission",
+              "path": "SS_geomprop_color_diagnostic/transmission",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_transmission_color",
+              "path": "SS_geomprop_color_diagnostic/transmission_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_transmission_depth",
+              "path": "SS_geomprop_color_diagnostic/transmission_depth",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_transmission_scatter",
+              "path": "SS_geomprop_color_diagnostic/transmission_scatter",
+              "type": "color3",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_transmission_scatter_anisotropy",
+              "path": "SS_geomprop_color_diagnostic/transmission_scatter_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_transmission_dispersion",
+              "path": "SS_geomprop_color_diagnostic/transmission_dispersion",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_transmission_extra_roughness",
+              "path": "SS_geomprop_color_diagnostic/transmission_extra_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_subsurface",
+              "path": "SS_geomprop_color_diagnostic/subsurface",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_subsurface_color",
+              "path": "SS_geomprop_color_diagnostic/subsurface_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_subsurface_radius",
+              "path": "SS_geomprop_color_diagnostic/subsurface_radius",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_subsurface_scale",
+              "path": "SS_geomprop_color_diagnostic/subsurface_scale",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_subsurface_anisotropy",
+              "path": "SS_geomprop_color_diagnostic/subsurface_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_sheen",
+              "path": "SS_geomprop_color_diagnostic/sheen",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_sheen_color",
+              "path": "SS_geomprop_color_diagnostic/sheen_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_sheen_roughness",
+              "path": "SS_geomprop_color_diagnostic/sheen_roughness",
+              "type": "float",
+              "value": 0.30000001192092896
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_coat",
+              "path": "SS_geomprop_color_diagnostic/coat",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_coat_color",
+              "path": "SS_geomprop_color_diagnostic/coat_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_coat_roughness",
+              "path": "SS_geomprop_color_diagnostic/coat_roughness",
+              "type": "float",
+              "value": 0.10000000149011612
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_coat_anisotropy",
+              "path": "SS_geomprop_color_diagnostic/coat_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_coat_rotation",
+              "path": "SS_geomprop_color_diagnostic/coat_rotation",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_coat_IOR",
+              "path": "SS_geomprop_color_diagnostic/coat_IOR",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_coat_affect_color",
+              "path": "SS_geomprop_color_diagnostic/coat_affect_color",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_coat_affect_roughness",
+              "path": "SS_geomprop_color_diagnostic/coat_affect_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_thin_film_thickness",
+              "path": "SS_geomprop_color_diagnostic/thin_film_thickness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_thin_film_IOR",
+              "path": "SS_geomprop_color_diagnostic/thin_film_IOR",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_emission",
+              "path": "SS_geomprop_color_diagnostic/emission",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_emission_color",
+              "path": "SS_geomprop_color_diagnostic/emission_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_opacity",
+              "path": "SS_geomprop_color_diagnostic/opacity",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_geomprop_color_diagnostic_thin_walled",
+              "path": "SS_geomprop_color_diagnostic/thin_walled",
+              "type": "boolean",
+              "value": false
+            }
+          ]
+        }
+      },
+      "geometryBindings": {
+        "properties": [
+          {
+            "attribute": "a_geomprop_col",
+            "default": "0.8, 0.8, 0.8",
+            "name": "col",
+            "required": true,
+            "type": "color3"
+          }
+        ]
+      },
+      "vertex": "MaterialXGeompropColorDiagnostic.vert",
+      "vertexInterface": {
+        "inputs": {
+          "VertexInputs": [
+            {
+              "name": "i_position",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_normal",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_tangent",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "a_geomprop_col",
+              "path": "",
+              "type": "color3",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "PrivateUniforms": [
+            {
+              "name": "u_worldMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_viewProjectionMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_worldInverseTransposeMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            }
+          ]
+        }
+      }
+    },
+    "MaterialXSmoothChromeDiagnostic": {
+      "element": "MaterialXSmoothChromeDiagnostic",
+      "fragment": "MaterialXSmoothChromeDiagnostic.frag",
+      "fragmentInterface": {
+        "inputs": {
+          "VertexData": [
+            {
+              "name": "normalWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "tangentWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "positionWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "LightData": [
+            {
+              "name": "type",
+              "path": "",
+              "type": "integer",
+              "value": null
+            },
+            {
+              "name": "direction",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "color",
+              "path": "",
+              "type": "color3",
+              "value": null
+            },
+            {
+              "name": "intensity",
+              "path": "",
+              "type": "float",
+              "value": null
+            }
+          ],
+          "PrivateUniforms": [
+            {
+              "name": "u_envMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": "-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1"
+            },
+            {
+              "name": "u_envRadiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_envLightIntensity",
+              "path": "",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "u_envRadianceMips",
+              "path": "",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "u_envRadianceSamples",
+              "path": "",
+              "type": "integer",
+              "value": 16
+            },
+            {
+              "name": "u_envIrradiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_refractionTwoSided",
+              "path": "",
+              "type": "boolean",
+              "value": null
+            },
+            {
+              "name": "u_viewPosition",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "u_numActiveLightSources",
+              "path": "",
+              "type": "integer",
+              "value": 0
+            }
+          ],
+          "PublicUniforms": [
+            {
+              "name": "backsurfaceshader",
+              "path": "",
+              "type": "surfaceshader",
+              "value": null
+            },
+            {
+              "name": "displacementshader1",
+              "path": "",
+              "type": "displacementshader",
+              "value": null
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_base",
+              "path": "SS_smooth_chrome_diagnostic/base",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_base_color",
+              "path": "SS_smooth_chrome_diagnostic/base_color",
+              "type": "color3",
+              "value": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+              ]
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_diffuse_roughness",
+              "path": "SS_smooth_chrome_diagnostic/diffuse_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_metalness",
+              "path": "SS_smooth_chrome_diagnostic/metalness",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_specular",
+              "path": "SS_smooth_chrome_diagnostic/specular",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_specular_color",
+              "path": "SS_smooth_chrome_diagnostic/specular_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_specular_roughness",
+              "path": "SS_smooth_chrome_diagnostic/specular_roughness",
+              "type": "float",
+              "value": 0.3199999928474426
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_specular_IOR",
+              "path": "SS_smooth_chrome_diagnostic/specular_IOR",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_specular_anisotropy",
+              "path": "SS_smooth_chrome_diagnostic/specular_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_specular_rotation",
+              "path": "SS_smooth_chrome_diagnostic/specular_rotation",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_transmission",
+              "path": "SS_smooth_chrome_diagnostic/transmission",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_transmission_color",
+              "path": "SS_smooth_chrome_diagnostic/transmission_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_transmission_depth",
+              "path": "SS_smooth_chrome_diagnostic/transmission_depth",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_transmission_scatter",
+              "path": "SS_smooth_chrome_diagnostic/transmission_scatter",
+              "type": "color3",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_transmission_scatter_anisotropy",
+              "path": "SS_smooth_chrome_diagnostic/transmission_scatter_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_transmission_dispersion",
+              "path": "SS_smooth_chrome_diagnostic/transmission_dispersion",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_transmission_extra_roughness",
+              "path": "SS_smooth_chrome_diagnostic/transmission_extra_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_subsurface",
+              "path": "SS_smooth_chrome_diagnostic/subsurface",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_subsurface_color",
+              "path": "SS_smooth_chrome_diagnostic/subsurface_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_subsurface_radius",
+              "path": "SS_smooth_chrome_diagnostic/subsurface_radius",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_subsurface_scale",
+              "path": "SS_smooth_chrome_diagnostic/subsurface_scale",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_subsurface_anisotropy",
+              "path": "SS_smooth_chrome_diagnostic/subsurface_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_sheen",
+              "path": "SS_smooth_chrome_diagnostic/sheen",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_sheen_color",
+              "path": "SS_smooth_chrome_diagnostic/sheen_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_sheen_roughness",
+              "path": "SS_smooth_chrome_diagnostic/sheen_roughness",
+              "type": "float",
+              "value": 0.30000001192092896
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_coat",
+              "path": "SS_smooth_chrome_diagnostic/coat",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_coat_color",
+              "path": "SS_smooth_chrome_diagnostic/coat_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_coat_roughness",
+              "path": "SS_smooth_chrome_diagnostic/coat_roughness",
+              "type": "float",
+              "value": 0.10000000149011612
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_coat_anisotropy",
+              "path": "SS_smooth_chrome_diagnostic/coat_anisotropy",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_coat_rotation",
+              "path": "SS_smooth_chrome_diagnostic/coat_rotation",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_coat_IOR",
+              "path": "SS_smooth_chrome_diagnostic/coat_IOR",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_coat_affect_color",
+              "path": "SS_smooth_chrome_diagnostic/coat_affect_color",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_coat_affect_roughness",
+              "path": "SS_smooth_chrome_diagnostic/coat_affect_roughness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_thin_film_thickness",
+              "path": "SS_smooth_chrome_diagnostic/thin_film_thickness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_thin_film_IOR",
+              "path": "SS_smooth_chrome_diagnostic/thin_film_IOR",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_emission",
+              "path": "SS_smooth_chrome_diagnostic/emission",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_emission_color",
+              "path": "SS_smooth_chrome_diagnostic/emission_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_opacity",
+              "path": "SS_smooth_chrome_diagnostic/opacity",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "SS_smooth_chrome_diagnostic_thin_walled",
+              "path": "SS_smooth_chrome_diagnostic/thin_walled",
+              "type": "boolean",
+              "value": false
+            }
+          ]
+        }
+      },
+      "geometryBindings": {},
+      "vertex": "MaterialXSmoothChromeDiagnostic.vert",
+      "vertexInterface": {
+        "inputs": {
+          "VertexInputs": [
+            {
+              "name": "i_position",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_normal",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_tangent",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "PrivateUniforms": [
+            {
+              "name": "u_worldMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_viewProjectionMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_worldInverseTransposeMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            }
+          ]
+        }
+      }
+    }
+  }
+}

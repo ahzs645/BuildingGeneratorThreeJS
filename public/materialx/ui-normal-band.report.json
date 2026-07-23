@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "metadata": "public/dojo/chrome-assets/shader-metadata.json",
+    "sha256": "2aa3e62a5edb52f1863e7f802d3936581f25a2924e3c502e4ccdf59a9a81bbe0",
+    "blenderVersion": "5.1.2",
+    "discoveredMaterial": "grey ui",
+    "discovery": "unique active Normal -> Mapping -> CONSTANT ColorRamp mixed with a named color property",
+    "sourceBlendAvailable": false
+  },
+  "activeGraph": {
+    "nodeTypes": [
+      "ShaderNodeAttribute",
+      "ShaderNodeMapping",
+      "ShaderNodeMix",
+      "ShaderNodeOutputMaterial",
+      "ShaderNodeTexCoord",
+      "ShaderNodeValToRGB"
+    ],
+    "disconnectedNodeTypes": [
+      "ShaderNodeBsdfPrincipled",
+      "ShaderNodeShaderToRGB"
+    ],
+    "geometryProperties": [
+      {
+        "name": "col",
+        "type": "color3",
+        "domain": "point",
+        "required": true
+      }
+    ]
+  },
+  "diagnosticLowering": {
+    "coordinateFixture": "identity-transformed probe makes object and world normals equivalent for this diagnostic",
+    "rotationRadians": [
+      0.06943511962890625,
+      1.6045360565185547,
+      0
+    ],
+    "esslRotationDegrees": [
+      -3.978339304722307,
+      -91.93314411507771,
+      0
+    ],
+    "rotationConvention": "Blender Mapping XYZ radians lowered to official ESSL rotate3d by negating each axis amount",
+    "constantRamp": [
+      {
+        "position": 0,
+        "color": [
+          0.03181182220578194,
+          0.03181182220578194,
+          0.03181182220578194
+        ]
+      },
+      {
+        "position": 0.16149117052555084,
+        "color": [
+          0.1993589997291565,
+          0.1993589997291565,
+          0.1993589997291565
+        ]
+      },
+      {
+        "position": 0.26708176732063293,
+        "color": [
+          0.38894182443618774,
+          0.38894182443618774,
+          0.38894182443618774
+        ]
+      },
+      {
+        "position": 0.43944212794303894,
+        "color": [
+          1,
+          1,
+          1
+        ]
+      }
+    ],
+    "mixFactor": 0.6647727489471436,
+    "materialX": "public/materialx/ui-normal-band-prototype.mtlx",
+    "portableNodes": [
+      "normal",
+      "rotate3d",
+      "dotproduct",
+      "ifgreatereq",
+      "geompropvalue",
+      "mix",
+      "standard_surface"
+    ]
+  },
+  "capability": {
+    "supportedSemantics": [
+      "normal-coordinate branch on an identity-transformed probe",
+      "XYZ Euler Mapping rotation",
+      "CONSTANT color ramp",
+      "typed point geometry property col:color3",
+      "RGBA MIX factor"
+    ],
+    "substitutedSemantics": [
+      {
+        "kind": "texture-coordinate-normal-space",
+        "source": "ShaderNodeTexCoord.Normal (Blender native USD export declares world space)",
+        "diagnosticSubstitute": "object-space normal on an identity-transformed probe",
+        "reason": "The official standalone ESSL graph path did not preserve the requested world-space normal; transformed-geometry parity remains gated"
+      },
+      {
+        "kind": "surface-coercion",
+        "source": "NodeSocketColor -> ShaderNodeOutputMaterial.Surface",
+        "diagnosticSubstitute": "standard_surface emission",
+        "reason": "Blender's implicit color-to-surface coercion has no portable MaterialX source NodeDef in the extracted metadata"
+      }
+    ],
+    "extractionBlockers": [
+      "The source .blend is not supplied, so Blender native USD/MaterialX export cannot be audited"
+    ],
+    "parityReady": false
+  }
+}

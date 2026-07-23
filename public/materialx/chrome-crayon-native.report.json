@@ -1,0 +1,78 @@
+{
+  "sourceBlend": "Chrome Crayon Surface Draw Test.blend",
+  "sourceMaterial": "chrome.003",
+  "blenderVersion": "5.1.2",
+  "extractor": "Blender native USD MaterialX network -> standalone Standard Surface MaterialX",
+  "sourceNodeTypes": [
+    "ShaderNodeAttribute",
+    "ShaderNodeBsdfPrincipled",
+    "ShaderNodeCombineXYZ",
+    "ShaderNodeMapRange",
+    "ShaderNodeMapping",
+    "ShaderNodeMath",
+    "ShaderNodeOutputMaterial",
+    "ShaderNodeTexCoord",
+    "ShaderNodeTexNoise",
+    "ShaderNodeValue"
+  ],
+  "nativeMaterialXCategories": {
+    "bnode__Texture_Coordinate_Generated": "texcoord",
+    "node": "convert",
+    "node_001": "multiply",
+    "node_002": "rotate3d",
+    "node_003": "rotate3d",
+    "node_004": "rotate3d",
+    "bnode__Mapping": "add",
+    "node_005": "extract",
+    "node_006": "position",
+    "node_007": "convert",
+    "node_008": "multiply",
+    "bnode__Noise_Texture_Fac": "fractal3d",
+    "bnode__Map_Range_Result": "remap",
+    "bnode__Math_001": "multiply",
+    "node_009": "normal",
+    "node_010": "normalize",
+    "node_011": "tangent",
+    "node_012": "normalize",
+    "node_013": "rotate3d",
+    "node_014": "normalize"
+  },
+  "materialXVersion": "1.39",
+  "validation": {
+    "valid": true,
+    "message": ""
+  },
+  "textures": [],
+  "capability": {
+    "generatedCoordinates": [
+      {
+        "node": "Texture Coordinate",
+        "type": "vector3",
+        "space": "object-bounds-normalized"
+      }
+    ],
+    "namedGeometryProperties": [
+      {
+        "node": "Attribute",
+        "name": "rough",
+        "type": "float",
+        "domain": "point"
+      }
+    ],
+    "substitutedSemantics": [
+      {
+        "kind": "generated-coordinate",
+        "node": "Texture Coordinate",
+        "reason": "Blender native USD lowering does not preserve object-bounds-normalized Generated coordinates"
+      },
+      {
+        "kind": "named-geometry-property",
+        "node": "Attribute",
+        "name": "rough",
+        "type": "float",
+        "reason": "Blender native USD lowering substitutes the linked socket default instead of exporting geompropvalue"
+      }
+    ],
+    "parityReady": false
+  }
+}

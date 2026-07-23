@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<materialx version="1.39" colorspace="lin_rec709">
+  <!-- Generated from a topology match in portable Blender shader metadata.
+       The standard_surface emission wrapper is an explicit diagnostic
+       substitute for Blender's non-portable color-to-Surface coercion. -->
+  <nodegraph name="NG_ui_normal_band">
+    <normal name="object_normal" type="vector3" space="object" />
+    <rotate3d name="normal_rotate_x" type="vector3">
+      <input name="in" type="vector3" nodename="object_normal" />
+      <input name="amount" type="float" value="-3.97833930472" />
+      <input name="axis" type="vector3" value="1, 0, 0" />
+    </rotate3d>
+    <rotate3d name="normal_rotate_y" type="vector3">
+      <input name="in" type="vector3" nodename="normal_rotate_x" />
+      <input name="amount" type="float" value="-91.9331441151" />
+      <input name="axis" type="vector3" value="0, 1, 0" />
+    </rotate3d>
+    <rotate3d name="normal_rotate_z" type="vector3">
+      <input name="in" type="vector3" nodename="normal_rotate_y" />
+      <input name="amount" type="float" value="0" />
+      <input name="axis" type="vector3" value="0, 0, 1" />
+    </rotate3d>
+    <dotproduct name="normal_band_factor" type="float">
+      <input name="in1" type="vector3" nodename="normal_rotate_z" />
+      <input name="in2" type="vector3" value="0.333333333333, 0.333333333333, 0.333333333333" />
+    </dotproduct>
+    <ifgreatereq name="normal_band_1" type="color3">
+      <input name="value1" type="float" nodename="normal_band_factor" />
+      <input name="value2" type="float" value="0.161491170526" />
+      <input name="in1" type="color3" value="0.199358999729, 0.199358999729, 0.199358999729" />
+      <input name="in2" type="color3" value="0.0318118222058, 0.0318118222058, 0.0318118222058" />
+    </ifgreatereq>
+    <ifgreatereq name="normal_band_2" type="color3">
+      <input name="value1" type="float" nodename="normal_band_factor" />
+      <input name="value2" type="float" value="0.267081767321" />
+      <input name="in1" type="color3" value="0.388941824436, 0.388941824436, 0.388941824436" />
+      <input name="in2" type="color3" nodename="normal_band_1" />
+    </ifgreatereq>
+    <ifgreatereq name="normal_band_3" type="color3">
+      <input name="value1" type="float" nodename="normal_band_factor" />
+      <input name="value2" type="float" value="0.439442127943" />
+      <input name="in1" type="color3" value="1, 1, 1" />
+      <input name="in2" type="color3" nodename="normal_band_2" />
+    </ifgreatereq>
+    <geompropvalue name="geometry_color" type="color3">
+      <input name="geomprop" type="string" value="col" />
+      <input name="default" type="color3" value="0, 0, 0" />
+    </geompropvalue>
+    <mix name="band_color_mix" type="color3">
+      <input name="bg" type="color3" nodename="normal_band_3" />
+      <input name="fg" type="color3" nodename="geometry_color" />
+      <input name="mix" type="float" value="0.664772748947" />
+    </mix>
+    <output name="color" type="color3" nodename="band_color_mix" />
+  </nodegraph>
+  <standard_surface name="SS_ui_normal_band_diagnostic" type="surfaceshader">
+    <input name="base" type="float" value="0" />
+    <input name="specular" type="float" value="0" />
+    <input name="emission" type="float" value="1" />
+    <input name="emission_color" type="color3" nodegraph="NG_ui_normal_band" output="color" />
+  </standard_surface>
+  <surfacematerial name="UiNormalBandSemanticRecovery" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SS_ui_normal_band_diagnostic" />
+  </surfacematerial>
+</materialx>

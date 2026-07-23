@@ -1,0 +1,5 @@
+{
+  "pullRequest": "https://github.com/mrdoob/three.js/pull/33485",
+  "commit": "bce55b294825d273eae3e178aab3191f719594e6",
+  "captureBackend": "WebGPURenderer forced to WebGL2"
+}

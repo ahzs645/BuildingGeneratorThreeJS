@@ -1,0 +1,51 @@
+{
+  "experiment": "official MaterialX GenShader ESSL reference",
+  "materialXVersion": "1.39.4",
+  "commit": "270b5cf2ae2be24a3b6ef4b0569f1c93038dda1d",
+  "runtime": "official MaterialX_JavaScript.zip evaluated in /tmp; offline generation also verified with Blender 5.1.2 bundled MaterialX Python modules; neither runtime is vendored",
+  "graph": "fractal3d -> heighttonormal -> normalmap -> standard_surface.normal",
+  "render": {
+    "backend": "Three 0.185.1 RawShaderMaterial, GLSL3, headless WebGL2",
+    "compiled": true,
+    "linked": true,
+    "webGlError": 0,
+    "directLightCalibration": 2,
+    "sphereRgbRootMeanSquareError": 0.231147,
+    "sphereLuminanceCorrelation": 0.801769
+  },
+  "cost": {
+    "browserRuntimeUncompressedMb": 4.1,
+    "offlineBrowserRuntimeMb": 0,
+    "generatedFragmentShaderApproximateKb": 102,
+    "boundary": "WebGL2/RawShaderMaterial reference backend; not the shipped WebGPU/TSL route"
+  },
+  "offlineGeneration": {
+    "blenderVersion": "5.1.2",
+    "materialXVersion": "1.39.4",
+    "directLightStatus": "default stub only; bind a MaterialX light rig before generation for analytic lights",
+    "environmentStatus": "requires separate lat-long radiance mip chain and convolved irradiance texture; Three PMREM CubeUV is not a drop-in resource",
+    "sourceLowering": {
+      "vertexShaderBytes": 821,
+      "fragmentShaderBytes": 102481,
+      "activeUniforms": 64,
+      "compiled": true,
+      "linked": true
+    },
+    "noiseBumpProbe": {
+      "vertexShaderBytes": 901,
+      "fragmentShaderBytes": 103137,
+      "activeUniforms": 61,
+      "compiled": true,
+      "linked": true
+    }
+  },
+  "license": "Apache-2.0",
+  "sources": {
+    "license": "https://github.com/AcademySoftwareFoundation/MaterialX/blob/v1.39.4/LICENSE",
+    "thirdParty": "https://github.com/AcademySoftwareFoundation/MaterialX/blob/v1.39.4/THIRD-PARTY.md",
+    "javascript": "https://github.com/AcademySoftwareFoundation/MaterialX/blob/v1.39.4/javascript/README.md",
+    "pythonGenerator": "https://github.com/AcademySoftwareFoundation/MaterialX/blob/v1.39.4/python/Scripts/generateshader.py",
+    "webViewer": "https://github.com/AcademySoftwareFoundation/MaterialX/tree/v1.39.4/javascript/MaterialXView",
+    "canonicalGraph": "https://github.com/AcademySoftwareFoundation/MaterialX/blob/v1.39.4/resources/Materials/TestSuite/stdlib/convolution/heighttonormal.mtlx"
+  }
+}

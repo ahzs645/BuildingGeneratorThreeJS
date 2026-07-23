@@ -1,0 +1,57 @@
+{
+  "reportVersion": 1,
+  "blenderVersion": "5.1.2",
+  "source": {
+    "blendFile": "Chrome Crayon Surface Draw Test.blend",
+    "blendSha256": "c9f6bf52a5b58ff7a015ce82d3b2dcd7a2640e61bde177808b3783381ea16021",
+    "probe": "tools/materialx/render_blender_references.py bump_copy",
+    "sourceGraph": "Position(object) * 4 -> Noise Texture 3D -> Bump(strength 0.18, distance 0.1)"
+  },
+  "bake": {
+    "engine": "Cycles built into Blender 5.1",
+    "geometry": "64 x 32 UV sphere with equirectangular MaterialXBakeUV",
+    "resolution": [
+      1024,
+      512
+    ],
+    "marginPixels": 24,
+    "normal": {
+      "space": "tangent",
+      "format": "8-bit PNG",
+      "colorSpace": "Non-Color/raw"
+    },
+    "roughness": {
+      "format": "8-bit PNG",
+      "colorSpace": "Non-Color/raw",
+      "sourceValue": 0.32
+    }
+  },
+  "artifacts": {
+    "materialx": "chrome-crayon-noise-baked.mtlx",
+    "normal": "chrome-crayon-noise-normal.png",
+    "roughness": "chrome-crayon-roughness.png",
+    "proceduralReference": "noise-bump-procedural-blender.png",
+    "bakedReference": "noise-bump-baked-blender.png"
+  },
+  "materialxValidation": {
+    "valid": true,
+    "message": ""
+  },
+  "comparison": {
+    "normalizedCircleRadius": 0.212,
+    "sampleCount": 83300,
+    "rgbMeanAbsoluteError": 0.002506,
+    "rgbRootMeanSquareError": 0.004668,
+    "luminanceCorrelation": 0.999838,
+    "meanLuminance": {
+      "procedural": 0.443501,
+      "baked": 0.445088
+    }
+  },
+  "provenance": {
+    "code": "Original project script; no third-party add-on code",
+    "baker": "Blender/Cycles; Blender is GPL-2.0-or-later and is invoked as an external authoring tool",
+    "outputOwnership": "Baked maps are derived from the supplied project .blend and contain no vendored Blender code",
+    "command": "node tools/materialx/run_blender.mjs 'Chrome Crayon Surface Draw Test.blend' tools/materialx/bake_chrome_probe.py -- --asset-dir public/materialx/baked --reference-dir docs/materialx-evidence/baked"
+  }
+}

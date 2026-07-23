@@ -1,0 +1,153 @@
+{
+  "comparisonVersion": 5,
+  "renderContract": {
+    "geometry": "shared outward-wound 64 x 32 UV sphere algorithm and 96-segment floor disc",
+    "camera": "scene-contract.json schema 1; Blender evaluated matrix_world and 50 degree vertical FOV",
+    "lighting": "shared linear studio EXR at 0.18 strength plus three matched directional lights",
+    "environment": "studio-environment.exr; solid camera background, HDR reflections only",
+    "exposure": 0,
+    "colorTransform": "Standard/sRGB, no tone mapping",
+    "webBackend": "WebGLRenderer with offline-generated official MaterialX 1.39.4 ESSL",
+    "webEnvironment": "MaterialX FIS over a trilinear lat-long radiance mip chain at 16 samples per pixel plus a separate third-order SH irradiance EXR",
+    "directLights": "scene-contract.json evaluated Sun local -Z propagation vectors; generated directional NodeDef negates LightData.direction to surface-to-light L",
+    "directionalDiagnostics": "light-{key,fill,rim}-{blender,web}.png; one light at a time, zero environment strength, zero Sun angular radius",
+    "coordinateDiagnostic": "coordinate-cardinals-web.png; columns +X, +Z, -X, -Z; radiance top and direct lights bottom",
+    "uiNormalBandDiagnostic": "ui-normal-band-{blender,web}.png; identity-transform Normal/Mapping/CONSTANT-ramp/typed-col branch with explicit normal-space and emission surface substitutes"
+  },
+  "sourceLowering": {
+    "width": 768,
+    "height": 768,
+    "rgbMeanAbsoluteError": 0.05813,
+    "rgbRootMeanSquareError": 0.165673,
+    "luminanceCorrelation": 0.663904,
+    "meanLuminance": {
+      "blender": 0.173586,
+      "web": 0.219542
+    },
+    "sphereRegion": {
+      "normalizedCircleRadius": 0.212,
+      "sampleCount": 83300,
+      "rgbMeanAbsoluteError": 0.386454,
+      "rgbRootMeanSquareError": 0.440571,
+      "luminanceCorrelation": 0.104222,
+      "meanLuminance": {
+        "blender": 0.316947,
+        "web": 0.660919
+      }
+    }
+  },
+  "noiseBumpProbe": {
+    "width": 768,
+    "height": 768,
+    "rgbMeanAbsoluteError": 0.019253,
+    "rgbRootMeanSquareError": 0.05541,
+    "luminanceCorrelation": 0.935745,
+    "meanLuminance": {
+      "blender": 0.192252,
+      "web": 0.190748
+    },
+    "sphereRegion": {
+      "normalizedCircleRadius": 0.212,
+      "sampleCount": 83300,
+      "rgbMeanAbsoluteError": 0.111161,
+      "rgbRootMeanSquareError": 0.146605,
+      "luminanceCorrelation": 0.804343,
+      "meanLuminance": {
+        "blender": 0.449082,
+        "web": 0.457048
+      }
+    }
+  },
+  "uiNormalBandDiagnostic": {
+    "width": 768,
+    "height": 768,
+    "rgbMeanAbsoluteError": 0.004005,
+    "rgbRootMeanSquareError": 0.008603,
+    "luminanceCorrelation": 0.999426,
+    "meanLuminance": {
+      "blender": 0.233123,
+      "web": 0.230384
+    },
+    "sphereRegion": {
+      "normalizedCircleRadius": 0.212,
+      "sampleCount": 83300,
+      "rgbMeanAbsoluteError": 0.002556,
+      "rgbRootMeanSquareError": 0.01282,
+      "luminanceCorrelation": 0.992491,
+      "meanLuminance": {
+        "blender": 0.737777,
+        "web": 0.737667
+      }
+    },
+    "claim": "branch-semantic diagnostic only; transformed world-normal semantics, source color-to-Surface coercion, and native USD extraction remain parity blockers"
+  },
+  "directionalLightDiagnostics": {
+    "key": {
+      "width": 768,
+      "height": 768,
+      "rgbMeanAbsoluteError": 0.009077,
+      "rgbRootMeanSquareError": 0.025941,
+      "luminanceCorrelation": 0.974221,
+      "meanLuminance": {
+        "blender": 0.133983,
+        "web": 0.141343
+      },
+      "sphereRegion": {
+        "normalizedCircleRadius": 0.212,
+        "sampleCount": 83300,
+        "rgbMeanAbsoluteError": 0.054594,
+        "rgbRootMeanSquareError": 0.068691,
+        "luminanceCorrelation": 0.991038,
+        "meanLuminance": {
+          "blender": 0.177307,
+          "web": 0.229765
+        }
+      }
+    },
+    "fill": {
+      "width": 768,
+      "height": 768,
+      "rgbMeanAbsoluteError": 0.002673,
+      "rgbRootMeanSquareError": 0.011303,
+      "luminanceCorrelation": 0.986845,
+      "meanLuminance": {
+        "blender": 0.063399,
+        "web": 0.064979
+      },
+      "sphereRegion": {
+        "normalizedCircleRadius": 0.212,
+        "sampleCount": 83300,
+        "rgbMeanAbsoluteError": 0.012054,
+        "rgbRootMeanSquareError": 0.029614,
+        "luminanceCorrelation": 0.98825,
+        "meanLuminance": {
+          "blender": 0.058504,
+          "web": 0.068092
+        }
+      }
+    },
+    "rim": {
+      "width": 768,
+      "height": 768,
+      "rgbMeanAbsoluteError": 0.004599,
+      "rgbRootMeanSquareError": 0.015649,
+      "luminanceCorrelation": 0.973208,
+      "meanLuminance": {
+        "blender": 0.067838,
+        "web": 0.070718
+      },
+      "sphereRegion": {
+        "normalizedCircleRadius": 0.212,
+        "sampleCount": 83300,
+        "rgbMeanAbsoluteError": 0.014109,
+        "rgbRootMeanSquareError": 0.038945,
+        "luminanceCorrelation": 0.975296,
+        "meanLuminance": {
+          "blender": 0.060578,
+          "web": 0.065201
+        }
+      }
+    }
+  },
+  "interpretation": "Image metrics include expected Eevee/Three BRDF, shadow, and light-unit differences. Graph-semantic support is reported separately in manifest.json and is not inferred from these pixels."
+}

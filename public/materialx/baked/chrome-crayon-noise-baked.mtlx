@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<materialx version="1.39" colorspace="lin_rec709">
+  <nodegraph name="NG_chrome_crayon_baked">
+    <image name="normal_texture" type="vector3">
+      <input name="file" type="filename" value="chrome-crayon-noise-normal.png" colorspace="raw" />
+    </image>
+    <normalmap name="tangent_normal" type="vector3">
+      <input name="in" type="vector3" nodename="normal_texture" />
+    </normalmap>
+    <image name="roughness_texture" type="float">
+      <input name="file" type="filename" value="chrome-crayon-roughness.png" colorspace="raw" />
+    </image>
+    <output name="normal" type="vector3" nodename="tangent_normal" />
+    <output name="roughness" type="float" nodename="roughness_texture" />
+  </nodegraph>
+  <standard_surface name="SS_chrome_crayon_baked" type="surfaceshader">
+    <input name="base" type="float" value="1.0" />
+    <input name="base_color" type="color3" value="0.8, 0.8, 0.8" />
+    <input name="metalness" type="float" value="1.0" />
+    <input name="specular_roughness" type="float" nodegraph="NG_chrome_crayon_baked" output="roughness" />
+    <input name="normal" type="vector3" nodegraph="NG_chrome_crayon_baked" output="normal" />
+  </standard_surface>
+  <surfacematerial name="ChromeCrayonBakedNoiseBump" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SS_chrome_crayon_baked" />
+  </surfacematerial>
+</materialx>

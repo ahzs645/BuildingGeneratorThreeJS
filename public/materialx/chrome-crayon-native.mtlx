@@ -1,0 +1,103 @@
+<?xml version='1.0' encoding='utf-8'?>
+<materialx version="1.39" colorspace="lin_rec709">
+  <nodegraph name="NG_blender_native">
+    <texcoord name="bnode__Texture_Coordinate_Generated" type="vector2" />
+    <convert name="node" type="vector3">
+      <input name="in" type="vector2" nodename="bnode__Texture_Coordinate_Generated" />
+    </convert>
+    <multiply name="node_001" type="vector3">
+      <input name="in1" type="vector3" nodename="node" />
+      <input name="in2" type="vector3" value="131.270004, 131.270004, 1875.46997" />
+    </multiply>
+    <rotate3d name="node_002" type="vector3">
+      <input name="amount" type="float" value="0" />
+      <input name="axis" type="vector3" value="1, 0, 0" />
+      <input name="in" type="vector3" nodename="node_001" />
+    </rotate3d>
+    <rotate3d name="node_003" type="vector3">
+      <input name="amount" type="float" value="0" />
+      <input name="axis" type="vector3" value="0, 1, 0" />
+      <input name="in" type="vector3" nodename="node_002" />
+    </rotate3d>
+    <rotate3d name="node_004" type="vector3">
+      <input name="amount" type="float" value="0" />
+      <input name="axis" type="vector3" value="0, 0, 1" />
+      <input name="in" type="vector3" nodename="node_003" />
+    </rotate3d>
+    <add name="bnode__Mapping" type="vector3">
+      <input name="in1" type="vector3" nodename="node_004" />
+      <input name="in2" type="vector3" value="0, 0, 0" />
+    </add>
+    <extract name="node_005" type="float">
+      <input name="in" type="vector3" nodename="bnode__Mapping" />
+      <input name="index" type="integer" value="0" />
+    </extract>
+    <position name="node_006" type="vector3" />
+    <convert name="node_007" type="vector3">
+      <input name="in" type="float" nodename="node_005" />
+    </convert>
+    <multiply name="node_008" type="vector3">
+      <input name="in1" type="vector3" nodename="node_006" />
+      <input name="in2" type="vector3" nodename="node_007" />
+    </multiply>
+    <fractal3d name="bnode__Noise_Texture_Fac" type="float">
+      <input name="lacunarity" type="float" value="2" />
+      <input name="octaves" type="integer" value="2" />
+      <input name="position" type="vector3" nodename="node_008" />
+    </fractal3d>
+    <remap name="bnode__Map_Range_Result" type="float">
+      <input name="in" type="float" nodename="bnode__Noise_Texture_Fac" />
+      <input name="inhigh" type="float" value="1" />
+      <input name="inlow" type="float" value="0" />
+      <input name="outhigh" type="float" value="1" />
+      <input name="outlow" type="float" value="-1" />
+    </remap>
+    <multiply name="bnode__Math_001" type="float">
+      <input name="in1" type="float" nodename="bnode__Map_Range_Result" />
+      <input name="in2" type="float" value="0.800000012" />
+    </multiply>
+    <normal name="node_009" type="vector3" space="world" />
+    <normalize name="node_010" type="vector3">
+      <input name="in" type="vector3" nodename="node_009" />
+    </normalize>
+    <tangent name="node_011" type="vector3" space="world" />
+    <normalize name="node_012" type="vector3">
+      <input name="in" type="vector3" nodename="node_011" />
+    </normalize>
+    <rotate3d name="node_013" type="vector3">
+      <input name="amount" type="float" value="-90" />
+      <input name="axis" type="vector3" nodename="node_010" />
+      <input name="in" type="vector3" nodename="node_012" />
+    </rotate3d>
+    <normalize name="node_014" type="vector3">
+      <input name="in" type="vector3" nodename="node_013" />
+    </normalize>
+    <output name="specular_roughness_out" type="float" nodename="bnode__Math_001" />
+  </nodegraph>
+  <standard_surface name="SS_blender_native" type="surfaceshader">
+    <input name="base" type="float" value="1" />
+    <input name="base_color" type="color3" value="0.800000012, 0.800000012, 0.800000012" />
+    <input name="metalness" type="float" value="1" />
+    <input name="specular" type="float" value="1" />
+    <input name="specular_color" type="color3" value="1, 1, 1" />
+    <input name="specular_roughness" type="float" nodegraph="NG_blender_native" output="specular_roughness_out" />
+    <input name="ior" type="float" value="1.5" />
+    <input name="specular_anisotropy" type="float" value="0" />
+    <input name="transmission" type="float" value="0" />
+    <input name="transmission_color" type="color3" value="0.800000012, 0.800000012, 0.800000012" />
+    <input name="coat" type="float" value="0" />
+    <input name="coat_roughness" type="float" value="0.0299999993" />
+    <input name="coat_color" type="color3" value="1, 1, 1" />
+    <input name="sheen" type="float" value="0" />
+    <input name="sheen_color" type="color3" value="1, 1, 1" />
+    <input name="sheen_roughness" type="float" value="0.5" />
+    <input name="thin_film_thickness" type="float" value="0" />
+    <input name="thin_film_ior" type="float" value="1.33000004" />
+    <input name="opacity" type="float" value="1" />
+    <input name="emission_color" type="color3" value="1, 1, 1" />
+    <input name="emission" type="float" value="0" />
+  </standard_surface>
+  <surfacematerial name="chrome_003" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SS_blender_native" />
+  </surfacematerial>
+</materialx>

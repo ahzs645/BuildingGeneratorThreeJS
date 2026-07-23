@@ -1,0 +1,320 @@
+{
+  "comparisonVersion": 1,
+  "upstream": {
+    "pullRequest": "https://github.com/mrdoob/three.js/pull/33485",
+    "commit": "bce55b294825d273eae3e178aab3191f719594e6",
+    "statusAtEvaluation": "open; targeted at Three r186"
+  },
+  "renderContract": {
+    "geometry": "shared 64 x 32 UV sphere and 96-segment floor disc",
+    "camera": "50 degree vertical FOV; position [3.2, 2.2, 3.4]; target [0, 0, 0]",
+    "lighting": "shared studio-environment.exr at 0.18 plus matched directional lights",
+    "colorTransform": "Standard/sRGB, no tone mapping",
+    "webBackend": "WebGPURenderer forced to WebGL2"
+  },
+  "implementations": {
+    "r185LocalAdapter": {
+      "sourceLowering": {
+        "fullFrame": {
+          "width": 768,
+          "height": 768,
+          "rgbMeanAbsoluteError": 0.027472,
+          "rgbRootMeanSquareError": 0.089917,
+          "luminanceCorrelation": 0.663804,
+          "meanLuminance": {
+            "blender": 0.173586,
+            "web": 0.168491
+          }
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.169426,
+          "rgbRootMeanSquareError": 0.238755,
+          "luminanceCorrelation": 0.024907,
+          "meanLuminance": {
+            "reference": 0.316947,
+            "candidate": 0.299382
+          }
+        }
+      },
+      "noiseBumpProbe": {
+        "fullFrame": {
+          "width": 768,
+          "height": 768,
+          "rgbMeanAbsoluteError": 0.030203,
+          "rgbRootMeanSquareError": 0.099224,
+          "luminanceCorrelation": 0.766935,
+          "meanLuminance": {
+            "blender": 0.191464,
+            "web": 0.173927
+          }
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.188714,
+          "rgbRootMeanSquareError": 0.263554,
+          "luminanceCorrelation": 0.197453,
+          "meanLuminance": {
+            "reference": 0.443501,
+            "candidate": 0.337848
+          }
+        }
+      }
+    },
+    "pr33485Native": {
+      "sourceLowering": {
+        "fullFrame": {
+          "width": 768,
+          "height": 768,
+          "rgbMeanAbsoluteError": 0.027472,
+          "rgbRootMeanSquareError": 0.089917,
+          "luminanceCorrelation": 0.663804,
+          "meanLuminance": {
+            "blender": 0.173586,
+            "web": 0.168491
+          }
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.169426,
+          "rgbRootMeanSquareError": 0.238755,
+          "luminanceCorrelation": 0.024907,
+          "meanLuminance": {
+            "reference": 0.316947,
+            "candidate": 0.299382
+          }
+        }
+      },
+      "noiseBumpProbe": {
+        "fullFrame": {
+          "width": 768,
+          "height": 768,
+          "rgbMeanAbsoluteError": 0.03165,
+          "rgbRootMeanSquareError": 0.100264,
+          "luminanceCorrelation": 0.765731,
+          "meanLuminance": {
+            "blender": 0.191464,
+            "web": 0.182663
+          }
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.198945,
+          "rgbRootMeanSquareError": 0.266316,
+          "luminanceCorrelation": 0.129329,
+          "meanLuminance": {
+            "reference": 0.443501,
+            "candidate": 0.399687
+          }
+        }
+      }
+    },
+    "pr33485LocalAdapter": {
+      "sourceLowering": {
+        "fullFrame": {
+          "width": 768,
+          "height": 768,
+          "rgbMeanAbsoluteError": 0.027472,
+          "rgbRootMeanSquareError": 0.089917,
+          "luminanceCorrelation": 0.663804,
+          "meanLuminance": {
+            "blender": 0.173586,
+            "web": 0.168491
+          }
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.169426,
+          "rgbRootMeanSquareError": 0.238755,
+          "luminanceCorrelation": 0.024907,
+          "meanLuminance": {
+            "reference": 0.316947,
+            "candidate": 0.299382
+          }
+        }
+      },
+      "noiseBumpProbe": {
+        "fullFrame": {
+          "width": 768,
+          "height": 768,
+          "rgbMeanAbsoluteError": 0.030203,
+          "rgbRootMeanSquareError": 0.099224,
+          "luminanceCorrelation": 0.766935,
+          "meanLuminance": {
+            "blender": 0.191464,
+            "web": 0.173927
+          }
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.188714,
+          "rgbRootMeanSquareError": 0.263554,
+          "luminanceCorrelation": 0.197453,
+          "meanLuminance": {
+            "reference": 0.443501,
+            "candidate": 0.337848
+          }
+        }
+      }
+    }
+  },
+  "implementationDelta": {
+    "r185AdapterToPrNative": {
+      "sourceLowering": {
+        "fullFrame": {
+          "width": 768,
+          "height": 768,
+          "rgbMeanAbsoluteError": 0.0,
+          "rgbRootMeanSquareError": 0.0,
+          "luminanceCorrelation": 1.0,
+          "meanLuminance": {
+            "blender": 0.168491,
+            "web": 0.168491
+          }
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.0,
+          "rgbRootMeanSquareError": 0.0,
+          "luminanceCorrelation": 1.0,
+          "meanLuminance": {
+            "reference": 0.299382,
+            "candidate": 0.299382
+          }
+        }
+      },
+      "noiseBumpProbe": {
+        "fullFrame": {
+          "width": 768,
+          "height": 768,
+          "rgbMeanAbsoluteError": 0.021185,
+          "rgbRootMeanSquareError": 0.077791,
+          "luminanceCorrelation": 0.821765,
+          "meanLuminance": {
+            "blender": 0.173927,
+            "web": 0.182663
+          }
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.149974,
+          "rgbRootMeanSquareError": 0.206987,
+          "luminanceCorrelation": 0.17071,
+          "meanLuminance": {
+            "reference": 0.337848,
+            "candidate": 0.399687
+          }
+        }
+      }
+    },
+    "r185AdapterToPrAdapter": {
+      "sourceLowering": {
+        "fullFrame": {
+          "width": 768,
+          "height": 768,
+          "rgbMeanAbsoluteError": 0.0,
+          "rgbRootMeanSquareError": 0.0,
+          "luminanceCorrelation": 1.0,
+          "meanLuminance": {
+            "blender": 0.168491,
+            "web": 0.168491
+          }
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.0,
+          "rgbRootMeanSquareError": 0.0,
+          "luminanceCorrelation": 1.0,
+          "meanLuminance": {
+            "reference": 0.299382,
+            "candidate": 0.299382
+          }
+        }
+      },
+      "noiseBumpProbe": {
+        "fullFrame": {
+          "width": 768,
+          "height": 768,
+          "rgbMeanAbsoluteError": 0.0,
+          "rgbRootMeanSquareError": 0.0,
+          "luminanceCorrelation": 1.0,
+          "meanLuminance": {
+            "blender": 0.173927,
+            "web": 0.173927
+          }
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.0,
+          "rgbRootMeanSquareError": 0.0,
+          "luminanceCorrelation": 1.0,
+          "meanLuminance": {
+            "reference": 0.337848,
+            "candidate": 0.337848
+          }
+        }
+      }
+    },
+    "prNativeToPrAdapter": {
+      "sourceLowering": {
+        "fullFrame": {
+          "width": 768,
+          "height": 768,
+          "rgbMeanAbsoluteError": 0.0,
+          "rgbRootMeanSquareError": 0.0,
+          "luminanceCorrelation": 1.0,
+          "meanLuminance": {
+            "blender": 0.168491,
+            "web": 0.168491
+          }
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.0,
+          "rgbRootMeanSquareError": 0.0,
+          "luminanceCorrelation": 1.0,
+          "meanLuminance": {
+            "reference": 0.299382,
+            "candidate": 0.299382
+          }
+        }
+      },
+      "noiseBumpProbe": {
+        "fullFrame": {
+          "width": 768,
+          "height": 768,
+          "rgbMeanAbsoluteError": 0.021185,
+          "rgbRootMeanSquareError": 0.077791,
+          "luminanceCorrelation": 0.821765,
+          "meanLuminance": {
+            "blender": 0.182663,
+            "web": 0.173927
+          }
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.149974,
+          "rgbRootMeanSquareError": 0.206987,
+          "luminanceCorrelation": 0.17071,
+          "meanLuminance": {
+            "reference": 0.399687,
+            "candidate": 0.337848
+          }
+        }
+      }
+    }
+  },
+  "interpretation": "PR #33485 is evaluated both with its native heighttonormal implementation and with the local derivative adapter. Sphere-region metrics use a resolution-independent normalized mask so the shared background cannot dominate the result. Pixel metrics still include renderer/BRDF differences and do not prove graph-semantic parity."
+}
