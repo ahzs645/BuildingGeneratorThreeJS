@@ -2,7 +2,11 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
-import { captureOverrideValue, rangeOverrideValue } from "./chrome-asset-controls";
+import {
+  captureOverrideValue,
+  guideLinePreviewValue,
+  rangeOverrideValue,
+} from "./chrome-asset-controls";
 import type { Dump, TriSoup } from "./gnvm/index";
 import { makeAttributeEmissionMaterial } from "./attribute-emission-material";
 import { attachChainMaceRoughnessAttribute, makeChainMaceMaterial } from "./chain-mace-material";
@@ -116,17 +120,31 @@ function resize(): void { const box = canvas.getBoundingClientRect(); renderer.s
 function frame(): void { const bounds=preciseObjectBounds(model,current?.surfaceBounds??false);if (bounds.isEmpty()) return; const viewport=canvas.getBoundingClientRect();const aspect=viewport.width/Math.max(viewport.height,1);const center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),radius=Math.max(size.length()*.5,.5);const halfWidth=Math.max(size.x,size.y,size.z,1e-4)*.725;camera.left=-halfWidth;camera.right=halfWidth;camera.top=halfWidth/Math.max(aspect,1e-6);camera.bottom=-camera.top;const direction=new THREE.Vector3(1,-1.25,.85).normalize();camera.position.copy(center).addScaledVector(direction,radius*3);camera.up.set(0,0,1);camera.lookAt(center);camera.near=radius/300;camera.far=radius*100;camera.updateProjectionMatrix();if(authoredKey&&authoredFill){authoredKey.width=authoredKey.height=radius*1.5;authoredKey.position.copy(center).addScaledVector(new THREE.Vector3(-1.8,-2.1,2.8).normalize(),radius*2.4);authoredKey.lookAt(center);authoredFill.width=authoredFill.height=radius*2;authoredFill.position.copy(center).addScaledVector(new THREE.Vector3(2,1,1).normalize(),radius*2);authoredFill.lookAt(center);}orbit.target.copy(center);orbit.update(); }
 function overrides(): Record<string, number | boolean | string | number[]> { const values: Record<string, number | boolean | string | number[]> = {}; for (const control of current.controls) { if(control.name.startsWith("__"))continue;const requested=captureOverrideValue(control.value,query.get(`override.${control.name}`));if(requested!==undefined){values[control.name]=requested;continue;}const input=document.querySelector<HTMLInputElement|HTMLSelectElement>(`[data-control="${control.name}"]`); values[control.name]=control.type==="checkbox"?((input as HTMLInputElement|null)?.checked??control.value):control.type==="text"?(input?.value??control.value):control.type==="select"?(typeof control.value==="number"?Number(input?.value??control.value):(input?.value??control.value)):control.type==="vector"?Array.from(document.querySelectorAll<HTMLInputElement>(`[data-control="${control.name}"]`)).sort((a,b)=>Number(a.dataset.axis)-Number(b.dataset.axis)).map((item,index)=>Number(item.value??control.value[index])):rangeOverrideValue(control.value,input?.value,input?.dataset.dirty==="true"); } return values; }
 function visibleControls(): Control[] {
-  if (current.controls.some((control) => control.name === "__materialPreview")) return current.controls;
-  return [{
-    type: "select",
-    name: "__materialPreview",
-    label: "Viewport appearance",
-    value: "authored",
-    options: [
-      { label: current.authoredPreviewLabel ?? "Authored Blender material", value: "authored" },
-      { label: "Geometry-only diagnostic", value: "diagnostic" },
-    ],
-  }, ...current.controls];
+  const controls = current.controls.some((control) => control.name === "__materialPreview")
+    ? [...current.controls]
+    : [{
+        type: "select" as const,
+        name: "__materialPreview",
+        label: "Viewport appearance",
+        value: "authored",
+        options: [
+          { label: current.authoredPreviewLabel ?? "Authored Blender material", value: "authored" },
+          { label: "Geometry-only diagnostic", value: "diagnostic" },
+        ],
+      }, ...current.controls];
+  if (current.authoredHideLines && !controls.some((control) => control.name === "__linePreview")) {
+    controls.splice(1, 0, {
+      type: "select",
+      name: "__linePreview",
+      label: "Loose guide curves",
+      value: guideLinePreviewValue(authoredCapture, true, query.get("lines")),
+      options: [
+        { label: "Show viewport guides", value: "show" },
+        { label: "Hide for Blender surface match", value: "hide" },
+      ],
+    });
+  }
+  return controls;
 }
 function renderControls(): void { const controls=visibleControls();controlsHost.replaceChildren(...controls.map((control) => { const label=document.createElement("label");label.className=`assets-control assets-${control.type??"range"}`;const span=document.createElement("span");span.textContent=control.label;const row=document.createElement("div");const input=document.createElement("input");input.dataset.control=control.name;if(control.type==="checkbox"){input.type="checkbox";input.checked=control.value;input.style.width="18px";input.style.height="18px";input.addEventListener("change",queue);row.append(input);}else if(control.type==="text"){input.type="text";input.value=control.value;input.spellcheck=false;input.addEventListener("input",queue);row.append(input);}else if(control.type==="select"){const menu=document.createElement("select");menu.dataset.control=control.name;const selectedValue=control.name==="__materialPreview"&&requestedPreview?requestedPreview:control.value;for(const item of control.options){const option=document.createElement("option");option.value=String(item.value);option.textContent=item.label;option.selected=item.value===selectedValue;menu.append(option);}menu.addEventListener("change",queue);row.append(menu);}else if(control.type==="vector"){control.value.forEach((value,axis)=>{const component=input.cloneNode() as HTMLInputElement;component.type="number";component.dataset.axis=String(axis);component.step=String(control.step??.01);component.value=String(value);component.setAttribute("aria-label",`${control.label} ${"XYZ"[axis]}`);component.addEventListener("input",queue);row.append(component);});}else{input.type="range";input.min=String(control.min);input.max=String(control.max);input.step=String(control.step);input.value=String(control.value);const output=document.createElement("output");output.value=Number(control.value).toFixed(control.step < .001 ? 3 : 2);input.addEventListener("input",()=>{input.dataset.dirty="true";output.value=Number(input.value).toFixed(control.step < .001 ? 3 : 2);queue();});row.append(input,output);}label.append(span,row);return label;})); reset.hidden=!controls.length; }
 function makeMesh(soup: TriSoup): THREE.Mesh {
@@ -226,13 +244,19 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
       : diagnosticMaterial(),
   );
   const mesh = new THREE.Mesh(geometry, materials.length===1?materials[0]:materials);
-  if (soup.lines && !(authoredCapture && current.authoredHideLines)) {
+  const linePreview = document.querySelector<HTMLSelectElement>('[data-control="__linePreview"]')?.value;
+  if (soup.lines) {
     const wireGeometry = new THREE.BufferGeometry();
     wireGeometry.setAttribute("position", new THREE.BufferAttribute(soup.lines.positions, 3));
     const wireColor = current.workbenchColor
       ? new THREE.Color().setRGB(...current.workbenchColor)
       : new THREE.Color(0xd9e7ff);
-    mesh.add(new THREE.LineSegments(wireGeometry, new THREE.LineBasicMaterial({ color: wireColor })));
+    const lines = new THREE.LineSegments(wireGeometry, new THREE.LineBasicMaterial({ color: wireColor }));
+    // Blender can use loose evaluated curves when framing an object even when
+    // those unbeveled curves do not rasterize. Keep the child for bounds while
+    // making authored surface-only visibility an independent display choice.
+    lines.visible = linePreview !== "hide";
+    mesh.add(lines);
   }
   if (!current.localSpace && source?.rotation) mesh.rotation.set(Number(source.rotation[0] ?? 0), Number(source.rotation[1] ?? 0), Number(source.rotation[2] ?? 0), current.rotationOrder ?? "XYZ");
   if (!current.localSpace && source?.scale) mesh.scale.set(Number(source.scale[0] ?? 1), Number(source.scale[1] ?? 1), Number(source.scale[2] ?? 1));

@@ -21,16 +21,19 @@
   },
   "webgl": {
     "surface_pixels": 150913,
-    "black_pixels": 28399,
-    "white_pixels": 91097,
-    "gray_pixels": 31417,
-    "black_fraction": 0.18818127000324691,
-    "white_fraction": 0.6036391828404445,
-    "gray_fraction": 0.2081795471563086,
-    "mean_luminance": 0.6832690067003816
+    "black_pixels": 30857,
+    "white_pixels": 97727,
+    "gray_pixels": 22329,
+    "black_fraction": 0.20446879990458078,
+    "white_fraction": 0.6475717797671506,
+    "gray_fraction": 0.14795942032826861,
+    "mean_luminance": 0.6790841453867997
   },
   "comparison": {
     "surface_mask_iou": 0.9940826834003698,
+    "surface_mask_iou_dilated_1px": 0.9941840708889876,
+    "blender_surface_covered_within_1px_fraction": 1.0,
+    "webgl_surface_covered_within_1px_fraction": 1.0,
     "surface_corners": {
       "blender": {
         "left": [
@@ -89,21 +92,21 @@
     },
     "surface_corner_rmse_pixels": 0.6378776896489077,
     "intersection_pixels": 150020,
-    "pixel_rgb_mae": 0.16432196269196428,
+    "pixel_rgb_mae": 0.16732977074368366,
     "mean_rgb_delta": [
-      -0.06345540445957928,
-      -0.09070549539727163,
-      -0.13730481155033247
+      -0.06483216634075274,
+      -0.09610200816130784,
+      -0.13816210904835696
     ],
-    "pixel_luminance_mae": 0.16349727697055033,
-    "pixel_luminance_correlation": 0.8157518434101707,
-    "binary_mask_disagreement_fraction": 0.14643380882548993,
+    "pixel_luminance_mae": 0.1673769562443977,
+    "pixel_luminance_correlation": 0.8282213112678566,
+    "binary_mask_disagreement_fraction": 0.15021997067057727,
     "macro_block_size": 32,
     "macro_block_count": 172,
-    "macro_luminance_mae": 0.1055484502718129,
-    "macro_luminance_correlation": 0.8194623267280169,
-    "black_fraction_delta": 0.18818127000324691,
-    "mean_luminance_delta": -0.0904761175733324
+    "macro_luminance_mae": 0.10197398412657815,
+    "macro_luminance_correlation": 0.8318232431398853,
+    "black_fraction_delta": 0.20446879990458078,
+    "mean_luminance_delta": -0.09466097888691427
   },
   "interpretation": "The aligned silhouette validates the capture context, but luminance occupancy, correlation, and pixel disagreement determine whether the authored WebGL material is visually equivalent. Renderer lighting, environment, tone mapping, texture filtering, and procedural implementations may remain as residuals."
 }

@@ -36,3 +36,31 @@ test("frames rotated geometry from transformed vertices instead of inflated AABB
   assert.notDeepEqual(surface.getSize(new THREE.Vector3()).toArray(), precise.getSize(new THREE.Vector3()).toArray());
   geometry.dispose();
 });
+
+test("can frame hidden loose curves while surface-only bounds ignore them", () => {
+  const surfaceGeometry = new THREE.BufferGeometry();
+  surfaceGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+    -1, -1, 0,
+     1, -1, 0,
+     0,  1, 0,
+  ], 3));
+  surfaceGeometry.setIndex([0, 1, 2]);
+  const mesh = new THREE.Mesh(surfaceGeometry);
+
+  const guideGeometry = new THREE.BufferGeometry();
+  guideGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+    -5, 0, 0,
+     5, 0, 0,
+  ], 3));
+  const guide = new THREE.LineSegments(guideGeometry);
+  guide.visible = false;
+  mesh.add(guide);
+
+  assert.deepEqual(preciseObjectBounds(mesh).min.toArray(), [-5, -1, 0]);
+  assert.deepEqual(preciseObjectBounds(mesh).max.toArray(), [5, 1, 0]);
+  assert.deepEqual(preciseObjectBounds(mesh, true).min.toArray(), [-1, -1, 0]);
+  assert.deepEqual(preciseObjectBounds(mesh, true).max.toArray(), [1, 1, 0]);
+
+  guideGeometry.dispose();
+  surfaceGeometry.dispose();
+});

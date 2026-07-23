@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { captureOverrideValue, rangeOverrideValue } from "./chrome-asset-controls";
+import {
+  captureOverrideValue,
+  guideLinePreviewValue,
+  rangeOverrideValue,
+} from "./chrome-asset-controls";
 
 test("range controls preserve an off-step authored float until edited", () => {
   const authored = 1.0638302564620972;
@@ -16,4 +20,13 @@ test("capture URL overrides retain each Geometry Nodes socket type", () => {
   assert.deepEqual(captureOverrideValue([0, 0, 0], "1.5,-2,3"), [1.5, -2, 3]);
   assert.equal(captureOverrideValue(64, null), undefined);
   assert.equal(captureOverrideValue(64, "not-a-number"), undefined);
+});
+
+test("authored captures hide declared guide curves without removing the viewport diagnostic", () => {
+  assert.equal(guideLinePreviewValue(true, true, null), "hide");
+  assert.equal(guideLinePreviewValue(false, true, null), "show");
+  assert.equal(guideLinePreviewValue(true, false, null), "show");
+  assert.equal(guideLinePreviewValue(true, true, "show"), "show");
+  assert.equal(guideLinePreviewValue(false, true, "hide"), "hide");
+  assert.equal(guideLinePreviewValue(true, true, "invalid"), "hide");
 });

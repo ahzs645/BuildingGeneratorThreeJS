@@ -20,3 +20,19 @@ export function captureOverrideValue(
   }
   return raw;
 }
+
+export type GuideLinePreview = "show" | "hide";
+
+/**
+ * Keep loose Geometry Nodes curves visible in the interactive viewport, while
+ * matching Blender's isolated surface render in authored evidence captures.
+ * The URL override keeps the viewport helper available for diagnostics.
+ */
+export function guideLinePreviewValue(
+  authoredCapture: boolean,
+  authoredHideLines: boolean,
+  requested: string | null,
+): GuideLinePreview {
+  if (requested === "show" || requested === "hide") return requested;
+  return authoredCapture && authoredHideLines ? "hide" : "show";
+}

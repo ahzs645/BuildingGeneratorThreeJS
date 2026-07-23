@@ -52,5 +52,5 @@
     "route": "/chrome-assets?asset=blunt-metal-marker",
     "status": "Verified in the live WebGL comparison on 2026-07-15: the browser reports 97,691 vertices / 97,669 faces, labels the topology as matching Blender, and the authored-material mode renders the expected polished chrome instead of the diagnostic fallback."
   },
-  "remaining": "The live browser capture verifies authored material routing and polished zero roughness. The isolated Blender reference remains a normalized geometry render, so final reflection-pattern matching depends on a shared Blender/WebGL environment-lighting fixture rather than this graph's deterministic missing-attribute result."
+  "remaining": "The live browser capture verifies authored material routing and polished zero roughness. Authored surface comparison hides the non-rendering guide while the interactive viewport can restore it. Final reflection-pattern matching depends on Eevee/WebGL environment and filtering behavior rather than this graph's deterministic missing-attribute result."
 }

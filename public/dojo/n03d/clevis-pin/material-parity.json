@@ -15,7 +15,7 @@
     "browserHelperWire": {
       "controlPoints": 40,
       "segments": 40,
-      "role": "Editable curve guide retained by the GN-VM viewport; excluded from mesh topology counts."
+      "role": "Editable curve guide retained by the interactive GN-VM viewport and available through its visibility control; hidden by default in authored surface comparisons and excluded from mesh topology counts."
     }
   },
   "capture": {
@@ -57,13 +57,13 @@
   "comparison": {
     "surfaceMaskIou": 0.9940826834003698,
     "surfaceCornerRmsePixels": 0.6378776896489077,
-    "pixelRgbMae": 0.16432196269196428,
-    "pixelLuminanceMae": 0.16349727697055033,
-    "macroLuminanceMae": 0.1055484502718129,
-    "macroLuminanceCorrelation": 0.8194623267280169,
+    "pixelRgbMae": 0.16732977074368366,
+    "pixelLuminanceMae": 0.1673769562443977,
+    "macroLuminanceMae": 0.10197398412657815,
+    "macroLuminanceCorrelation": 0.8318232431398853,
     "blenderMeanLuminance": 0.773745124273714,
-    "browserMeanLuminance": 0.6832690067003816,
-    "meanLuminanceDelta": -0.0904761175733324
+    "browserMeanLuminance": 0.6790841453867997,
+    "meanLuminanceDelta": -0.09466097888691427
   },
-  "interpretation": "The shared portable filament implementation renders the complete topology-exact Clevis Pin without asset-specific shader code. Silhouette alignment is near-identical and large-scale luminance structure correlates strongly. Blender's Medium High Contrast look clips the yellow-green surface more aggressively, while derivative bump filtering and the retained browser guide wire remain raster residuals; pixel identity is not claimed."
+  "interpretation": "The shared portable filament implementation renders the complete topology-exact Clevis Pin without asset-specific shader code. The surface-only authored control removes the editable guide from the comparison. Silhouette alignment is near-identical and large-scale luminance structure correlates strongly; Blender's Medium High Contrast look clips the yellow-green surface more aggressively, while exposure and derivative bump filtering remain raster residuals. Pixel identity is not claimed."
 }

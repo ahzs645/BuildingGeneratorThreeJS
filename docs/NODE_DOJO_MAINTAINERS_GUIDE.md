@@ -617,8 +617,9 @@ bit-identical or every source dependency exists.
   useful; there is no evidence of a default-field defect.
 - **Three-Way Pipe cutter mode:** exact bounds and zero sampled
   Blender-to-browser surface distance, but the browser open-surface Boolean
-  retains one small inner patch with 3.1% area overhead. Default and five
-  non-cutter variants are exact.
+  retains one small inner patch with 0.1911% area overhead after reciprocal
+  open-shell cycles are filtered. Default and five non-cutter variants are
+  exact.
 - **Accepted small bounds/float residuals:** examples include the Procedural Box
   max-X difference of 0.000001907, Stackable Bin bounds within 0.0004, Course
   Intro Room Stage B's 0.0017 legacy curve-frame bound residual, and the Node
@@ -645,9 +646,10 @@ bit-identical or every source dependency exists.
   capture still records 0.0395 binary-mask disagreement and 0.9683 pixel
   correlation; exact shader pixels are not claimed.
 - Text Soup geometry is exact for all five Pixels-substituted cases. Its full
-  authored viewport comparison is affected by the browser's intentional
-  156-segment guide-wire overlay plus reflection/raster differences; the
-  original nine fonts are missing.
+  surface-only authored comparison reaches 0.962625 silhouette IoU and
+  0.386-pixel corner RMSE. Its exact 156-segment guide remains available through
+  the viewport control; remaining differences are reflection/raster filtering,
+  and the original nine fonts are missing.
 - Nodes Node UI assets retain small glyph-position and Workbench
   lighting/cavity differences despite topology-and-bounds closure.
 - Hat bill/front exact material parity is blocked by seven missing external
