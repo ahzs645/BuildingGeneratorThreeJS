@@ -68,8 +68,11 @@ rejects `surface` and `conductor_bsdf` explicitly.
 This proves graph extraction and shader compilation, not browser render parity.
 The active preset still has unresolved inputs:
 
-- two packed scratch textures become sampler uniforms, but the current ESSL
-  adapter does not bind filename inputs;
+- two packed scratch textures become sampler uniforms. The ESSL runtime now
+  binds filename inputs through a schema-v2 bundle that verifies path, byte
+  count, SHA-256, sampler state, upload color space, and disposal, but the real
+  preset has not been packaged because its texture rights and complete
+  extraction metadata are unresolved;
 - the native USD records `srgb_texture`, while the standalone extractor does
   not yet propagate that color-space metadata;
 - the reachable Layer Weight → RGB Curves → Color Ramp roughness-Fresnel branch
@@ -111,6 +114,17 @@ Library metals and future Blender 5.2 material imports.
 Until redistribution permission is recovered, use the real file only as a local
 oracle and commit a repository-authored synthetic conductor/texture fixture for
 runtime tests.
+
+The rights-safe runtime checkpoint is now present:
+
+- `src/materials/fixtures/materialx-direct-conductor.mtlx` exercises a
+  repository-authored layered direct conductor with a filename input;
+- `src/materialx/essl-bundle.ts` loads only bundle-relative, integrity-checked
+  textures and keeps authored source color space separate from WebGL upload
+  decoding;
+- `src/materials/materialx-essl-bundle.test.ts` covers capability gating,
+  one-to-one sampler binding, path traversal, integrity failures, abort cleanup,
+  and idempotent disposal.
 
 ## Required regression evidence
 
