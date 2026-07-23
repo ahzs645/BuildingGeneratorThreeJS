@@ -2,6 +2,15 @@
 
 Date: 2026-07-09
 
+> **Historical snapshot.** This document preserves the July 9 investigation and
+> its then-current measurements. Later fixes supersede several findings,
+> especially Bubble Vase topology/surface parity, browser materials, and bin
+> selection counts. Use
+> [`NODE_DOJO_MAINTAINERS_GUIDE.md`](NODE_DOJO_MAINTAINERS_GUIDE.md) for the
+> current architecture, terminology, catalog, residuals, and evidence workflow;
+> use each asset's `status.json` as current machine-readable truth. The resolved
+> vase checkpoint is in [`VASE_SEAM_HANDOFF.md`](VASE_SEAM_HANDOFF.md).
+
 ## Scope
 
 This audit treats the independent TypeScript Geometry Nodes VM as the browser implementation (“R/browser version”) and Blender's evaluated modifier output as truth. Blender-baked gallery GLBs are audited separately because their geometry is already Blender output; for those assets, the meaningful risks are export determinism and browser material/lighting reconstruction.

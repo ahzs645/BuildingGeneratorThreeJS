@@ -1,8 +1,10 @@
 # Node Dojo active-root inventory
 
-Generated with Blender 5.1.2 from `tools/node-dojo-projects.json` on 2026-07-12. The reports under `public/dojo/inventory/` are the authoritative object/modifier/root lists.
+Generated with Blender 5.1.2 from `tools/node-dojo-projects.json` on 2026-07-12. The reports under `public/dojo/inventory/` are the authoritative object/modifier/root lists. For the runtime architecture, 101-entry catalog breakdown, evidence terminology, and validation workflow, start with [`NODE_DOJO_MAINTAINERS_GUIDE.md`](NODE_DOJO_MAINTAINERS_GUIDE.md).
 
 The pack contains **16 Blender projects**, **499 active Geometry Nodes modifiers**, and **291 project-local root families**. A root family is counted once per project even when several objects use it.
+
+These source-inventory counts are deliberately different from the **101 browser catalog entries**. The catalog contains 27 Chrome, 28 N03D, 4 New Joint, 13 Math Clay, 12 Nodes Node, 4 Send Nodes Hat, and 13 course presentation/evidence entries. Shared dumps, multiple users of one root, helper classification, and selected distinct course studies account for the difference.
 
 | Project | Active modifiers | Root families | Current web evidence |
 | --- | ---: | ---: | --- |
@@ -34,4 +36,4 @@ A root is not considered ported merely because it evaluates without throwing. Ea
 5. A browser-visible entry showing Blender reference and live GN-VM output.
 6. Regression tests for any new shared node semantics.
 
-This standard is satisfied by every represented reusable root and distinct course study listed in the browser catalog; any documented residual is stated in that asset's status evidence rather than hidden by a generic completion label.
+This standard is satisfied by every represented reusable root and distinct course study listed in the browser catalog; any documented residual is stated in that asset's status evidence rather than hidden by a generic completion label. The expanded acceptance criteria and completion checklist are in [`NODE_DOJO_MAINTAINERS_GUIDE.md`](NODE_DOJO_MAINTAINERS_GUIDE.md#completion-checklist).

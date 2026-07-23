@@ -1,6 +1,9 @@
 # Node Dojo font-source audit
 
-Audit date: 2026-07-13. Local recovered source folder: `/Users/ahmadjalil/Downloads/Node Dojo Extracted Fonts`.
+Audit date: 2026-07-13. The audit used a recovered local source folder that is
+not a repository dependency and is intentionally not a durable evidence path.
+See the dependency and licensing policy in
+[`NODE_DOJO_MAINTAINERS_GUIDE.md`](NODE_DOJO_MAINTAINERS_GUIDE.md#fonts-textures-external-dependencies-and-licensing).
 
 ## Recovered and Blender-validated
 
