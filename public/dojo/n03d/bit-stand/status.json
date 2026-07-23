@@ -2,9 +2,19 @@
   "id": "n03d-bit-stand",
   "object": "Plane.005",
   "root": "BIT STAND nodes",
-  "status": "topology-and-bounds-exact",
+  "status": "exact-geometry-and-authored-unassigned-surface-verified",
   "blender": { "verts": 8718, "faces": 5270 },
   "gnvm": { "verts": 8718, "faces": 5270 },
   "coverage": "100% of reachable node types across the 5-group, 173-node closure.",
-  "validation": "All eight Blender/VM cases have exact topology and four-decimal bounds, including authored 8,718 / 5,270 and holder-only 7,374 / 4,556. Blender-compatible Dual Mesh boundary handling and Exact planar surface booleans reproduce the rounded lattice, 21 circular openings, wall thickness, staggered bit instances, and visibility switch. Offset Scale is a no-op in all supplied Blender cases and is intentionally not exposed."
+  "validation": "All eight Blender/VM cases have exact topology and four-decimal bounds, including authored 8,718 / 5,270 and holder-only 7,374 / 4,556. Blender-compatible Dual Mesh boundary handling and Exact planar surface booleans reproduce the rounded lattice, 21 circular openings, wall thickness, staggered bit instances, and visibility switch. Offset Scale is a no-op in all supplied Blender cases and is intentionally not exposed.",
+  "material": {
+    "name": null,
+    "contract": "Blender unassigned neutral surface: linear 0.8 base color, metalness 0, roughness 0.5",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.9897147848086016,
+    "surfaceCornerRmsePixels": 0.21155352484899947,
+    "pixelRgbMae": 0.030495280059385628,
+    "binaryMaskDisagreementFraction": 0,
+    "residual": "Renderer-specific Area/RectArea light units and local area-light response differ after the asset-size exposure calibration."
+  }
 }

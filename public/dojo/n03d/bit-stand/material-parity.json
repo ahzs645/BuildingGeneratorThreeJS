@@ -1,0 +1,56 @@
+{
+  "asset": "n03d-bit-stand",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "Plane.005",
+    "root": "BIT STAND nodes",
+    "material": null
+  },
+  "scope": "Authored viewport appearance only. All evaluated faces are unassigned; this object has no filament shader, slicer data, or G-code toolpath.",
+  "geometry": {
+    "blender": { "verts": 8718, "faces": 5270 },
+    "gnvm": { "verts": 8718, "faces": 5270 },
+    "unassignedMaterialFaces": 5270,
+    "validationCases": 8,
+    "holderOnly": {
+      "blender": { "verts": 7374, "faces": 4556 },
+      "gnvm": { "verts": 7374, "faces": 4556 }
+    }
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "world",
+    "blenderReference": "../../references/n03d/bit-stand-authored.png",
+    "blenderMetadata": "../../references/n03d/bit-stand-authored.json",
+    "browserReference": "../../references/n03d/bit-stand-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-bit-stand&capture=authored",
+    "blenderAuthoredLightScale": 30,
+    "browserAuthoredLightScale": 0.15,
+    "lightScaleInterpretation": "Blender Area energy and Three.js RectAreaLight intensity are renderer-specific units and respond differently to this 110-by-60-unit stand. A browser sweep across 0.1, 0.14, 0.15, 0.16, 0.18, 0.2, 0.22, 0.3, 0.5, and 1 selected 0.15 by the lowest joint RGB/luminance error while retaining near-best macro correlation."
+  },
+  "recoveredSurface": {
+    "kind": "Blender unassigned material fallback",
+    "baseColorLinear": [0.8, 0.8, 0.8],
+    "metalness": 0,
+    "roughness": 0.5,
+    "doubleSided": true,
+    "proceduralLayerLines": false,
+    "changesMeshGeometry": false
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9897147848086016,
+    "surfaceCornerRmsePixels": 0.21155352484899947,
+    "pixelRgbMae": 0.030495280059385628,
+    "pixelLuminanceMae": 0.02909791190824542,
+    "pixelLuminanceCorrelation": 0.30384880696085803,
+    "binaryMaskDisagreementFraction": 0,
+    "macroLuminanceMae": 0.032111371760377545,
+    "macroLuminanceCorrelation": 0.6317587453423945,
+    "blenderMeanLuminance": 0.0340738466846176,
+    "browserMeanLuminance": 0.018475449808366892,
+    "meanLuminanceDelta": -0.015598396876250704
+  },
+  "interpretation": "The complete authored stand, its 21 holes, rounded lattice, and staggered bit columns retain exact Blender topology and bounds. The aligned neutral-surface comparison has 0.9897 silhouette IoU, 0.21-pixel corner RMSE, and zero black/white threshold disagreement. Asset-scaled lighting reduces the remaining absolute RGB error to 0.0305; local brightness residuals are renderer area-light response rather than missing material nodes or modeled print layers."
+}

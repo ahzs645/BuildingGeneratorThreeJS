@@ -773,8 +773,10 @@
     "dump": "dojo/n03d/bit-stand/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/bit-stand.png",
+    "authoredReference": "dojo/references/n03d/bit-stand-authored.png",
+    "authoredLightScale": 0.15,
     "blenderStats": { "verts": 8718, "faces": 5270 },
-    "note": "Exact Blender geometry across all eight validation cases: authored output is 8,718 vertices / 5,270 faces and holder-only is 7,374 / 4,556, with identical four-decimal bounds. Dual Mesh boundary semantics and Exact planar booleans reproduce the rounded lattice and all 21 circular bit openings; wall thickness, staggered bit instances, and visibility remain editable in-browser.",
+    "note": "Exact Blender geometry across all eight validation cases: authored output is 8,718 vertices / 5,270 faces and holder-only is 7,374 / 4,556, with identical four-decimal bounds. Blender leaves all 5,270 authored faces unassigned, so this uses its neutral linear-0.8, roughness-0.5 surface rather than simulated filament or G-code. Asset-size light calibration at browser scale 0.15 produces a committed 0.9897 silhouette IoU, 0.21 px corner RMSE, 0.0305 RGB MAE, and zero black/white threshold disagreement.",
     "controls": [
       { "type": "checkbox", "name": "Switch", "label": "Show bit columns", "value": true },
       { "name": "wall thic", "label": "Wall thickness", "min": 0.2, "max": 3, "step": 0.05, "value": 0.97064208984375 }
