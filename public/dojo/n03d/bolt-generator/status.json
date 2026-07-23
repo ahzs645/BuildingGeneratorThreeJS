@@ -2,9 +2,18 @@
   "id": "n03d-bolt-generator",
   "object": "Bolt Gen_DHTS_Thru Head v03.002",
   "root": "BOLT GEN DHTS v03_Thru Head_1JUL2024",
-  "status": "topology-parity",
+  "status": "topology-and-authored-material-parity",
   "blender": { "verts": 8646, "faces": 8535 },
   "gnvm": { "verts": 8646, "faces": 8535 },
   "coverage": "100% of reachable node types across the 36-group bolt closure.",
-  "validation": "Six Blender/VM cases cover authored settings, length, head sides, thread-only, tap, and spacer modes. Every case now has exact topology and exact local bounds, including authored 8,646 / 8,535, eight-sided head 8,650 / 8,537, thread-only 8,086 / 8,086, and tap mode 2,009 / 2,667."
+  "validation": "Six Blender/VM cases cover authored settings, length, head sides, thread-only, tap, and spacer modes. Every case now has exact topology and exact local bounds, including authored 8,646 / 8,535, eight-sided head 8,650 / 8,537, thread-only 8,086 / 8,086, and tap mode 2,009 / 2,667.",
+  "material": {
+    "name": "Filament PLA .02 mm layer height",
+    "contract": "POINT col attribute + Generated-coordinate Z Wave + derivative Bump + Backfacing shader branch",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.9971590909090909,
+    "macroLuminanceCorrelation": 0.79132871359776,
+    "meanLuminanceDelta": -0.0032425121643476773,
+    "residual": "Eevee and WebGL retain different high-frequency bump and RectAreaLight response; renderer identity is not claimed."
+  }
 }

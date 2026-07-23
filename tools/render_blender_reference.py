@@ -109,6 +109,28 @@ if debug_material_output == "MATH_BEVEL_FACTOR":
     material_links.new(bevel_node.outputs["Normal"], emission.inputs["Color"])
     material_links.new(emission.outputs["Emission"], output_node.inputs["Surface"])
     print("NODE_DOJO_DEBUG_MATERIAL_OUTPUT_OK MATH_BEVEL_FACTOR")
+elif debug_material_output == "FILAMENT_BACKFACING":
+    material = bpy.data.materials.get("Filament PLA .02 mm layer height")
+    if material is None or material.node_tree is None:
+        raise RuntimeError("N03D filament material not found")
+    material_nodes = material.node_tree.nodes
+    material_links = material.node_tree.links
+    geometry = next((node for node in material_nodes if node.bl_idname == "ShaderNodeNewGeometry"), None)
+    output_node = next(
+        (
+            node
+            for node in material_nodes
+            if node.bl_idname == "ShaderNodeOutputMaterial" and node.is_active_output
+        ),
+        None,
+    )
+    if geometry is None or output_node is None:
+        raise RuntimeError("N03D filament Backfacing diagnostic nodes not found")
+    emission = material_nodes.new("ShaderNodeEmission")
+    emission.inputs["Strength"].default_value = 1.0
+    material_links.new(geometry.outputs["Backfacing"], emission.inputs["Color"])
+    material_links.new(emission.outputs["Emission"], output_node.inputs["Surface"])
+    print("NODE_DOJO_DEBUG_MATERIAL_OUTPUT_OK FILAMENT_BACKFACING")
 elif debug_material_output:
     raise RuntimeError(f"unsupported NODE_DOJO_DEBUG_MATERIAL_OUTPUT: {debug_material_output}")
 

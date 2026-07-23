@@ -1,0 +1,59 @@
+{
+  "asset": "n03d-bolt-generator",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "Bolt Gen_DHTS_Thru Head v03.002",
+    "material": "Filament PLA .02 mm layer height"
+  },
+  "geometry": {
+    "blender": { "verts": 8646, "faces": 8535 },
+    "gnvm": { "verts": 8646, "faces": 8535 },
+    "materialFaces": 8535
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "blenderReference": "../../references/n03d/bolt-generator-shader.png",
+    "blenderMetadata": "../../references/n03d/bolt-generator-shader.json",
+    "browserReference": "../../references/n03d/bolt-generator-shader-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-bolt-generator&capture=authored",
+    "blenderAuthoredLightScale": 30,
+    "browserAuthoredLightScale": 7.5,
+    "lightScaleInterpretation": "Blender Area energy and Three.js RectAreaLight intensity use different units. Each backend keeps the same normalized rig positions and sizes; the recorded scales align mean surface exposure rather than claiming equal physical power."
+  },
+  "recoveredGraph": {
+    "color": "POINT-domain col attribute",
+    "frontColor": "Blender Mix Color COLOR branch; its two HSV inputs share hue and saturation, so the authored front color remains col",
+    "backColor": "Geometry Backfacing selects the authored secondary Principled branch",
+    "roughness": 0.7732919454574585,
+    "generatedCoordinates": "material-group bounding box",
+    "wave": {
+      "type": "BANDS",
+      "direction": "Z",
+      "scale": -56.31793212890625,
+      "distortion": 0.8557739853858948,
+      "detail": 2,
+      "detailScale": 1,
+      "detailRoughness": 0.5
+    },
+    "bump": {
+      "strength": 0.7392045855522156,
+      "distance": 0.9663976430892944,
+      "filterWidth": 1,
+      "invert": false
+    }
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9971590909090909,
+    "surfaceCornerRmsePixels": 0.32459276435060413,
+    "intersectionPixels": 171639,
+    "pixelLuminanceMae": 0.14290388210444174,
+    "pixelLuminanceCorrelation": 0.7558789138000886,
+    "macroLuminanceMae": 0.07320245009125503,
+    "macroLuminanceCorrelation": 0.79132871359776,
+    "meanLuminanceDelta": -0.0032425121643476773,
+    "blackFractionDelta": 0.15736958688134556
+  },
+  "interpretation": "The browser now renders the actual yellow-green authored filament graph rather than the older blue Workbench material-color view. Exact topology, near-identical silhouette, aligned exposure, the col branch, Generated-coordinate Wave texture, and Bump parameters are recovered. Eevee and Three.js still differ at the high-frequency bump/area-light response: the browser produces more near-black layer bands. This is a measured renderer residual, not a claim of pixel identity."
+}

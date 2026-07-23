@@ -505,7 +505,8 @@
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/bolt-generator.png",
     "blenderStats": { "verts": 8646, "faces": 8535 },
-    "note": "Five of six validation cases now have exact Blender topology, including the authored 8,646 / 8,535 result, the eight-sided head, and thread-only; all six have exact bounds and tap mode remains within 0.30% vertices. The browser preserves Blender's sampled head panels and hex-recess ngons. Blender's blue filament shader is shown only in the reference while the browser uses the shared comparison material.",
+    "authoredLightScale": 7.5,
+    "note": "Five of six validation cases now have exact Blender topology, including the authored 8,646 / 8,535 result, the eight-sided head, and thread-only; all six have exact bounds and tap mode remains within 0.30% vertices. The browser preserves Blender's sampled head panels and hex-recess ngons. Its actual yellow-green Filament PLA node graph is reconstructed from the col attribute, Generated-coordinate Wave texture, and Bump node; the older blue image is Blender Workbench, not authored shader evidence. The aligned authored comparison reaches 0.997 silhouette IoU and records the remaining Eevee/WebGL bump-lighting residual.",
     "controls": [
       { "name": "length", "label": "Bolt length", "min": 8, "max": 60, "step": 0.1, "value": 24.632158279418945 },
       { "name": "thread dia", "label": "Thread diameter", "min": 5, "max": 40, "step": 0.1, "value": 14.95798110961914 },
