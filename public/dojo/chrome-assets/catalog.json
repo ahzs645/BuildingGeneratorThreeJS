@@ -1649,12 +1649,14 @@
   "dump": "dojo/n03d/split-n-tap/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
   "reference": "dojo/references/n03d/split-n-tap.png",
+  "authoredReference": "dojo/references/n03d/split-n-tap-shader.png",
+  "authoredLightScale": 3.7,
   "blenderStats": {
     "verts": 2372,
     "faces": 2380
   },
   "localSpace": true,
-  "note": "The supplied SPLIT N TAP object is a placeholder icosphere, so this comparison evaluates its intended nested Split n Tap WIP asset group directly in both engines. Authored output and four length, diameter, and resolution cases match Blender exactly in vertices, faces, and four-decimal bounds; authored is 2,372 / 2,380. Blender's Mesh-to-Curve minimum-twist normals close the loft seam, top cap, and former Z-bound residual. Split and part-selection require missing Object/Object Parent assignments, so the browser hides those nonfunctional controls.",
+  "note": "The supplied SPLIT N TAP object is a placeholder icosphere, so this comparison evaluates its intended nested Split n Tap WIP asset group directly in both engines. Authored output and four length, diameter, and resolution cases match Blender exactly in vertices, faces, and four-decimal bounds; authored is 2,372 / 2,380. A direct 4,673-triangle surface comparison now has zero bidirectional distance, not merely matching counts. Authored viewport mode reconstructs all 2,380 faces of the Filament PLA .02 mm layer-height material and the constant POINT col field without changing the mesh. Its 64-sample comparison reaches 0.9836 silhouette IoU, 0.0496 pixel luminance MAE, 0.8163 pixel correlation, and a +0.00517 mean-luminance delta. This is a visual shader comparison, not sliced G-code. Split and part-selection require missing Object/Object Parent assignments, so the browser hides those nonfunctional controls.",
   "controls": [
     {
       "name": "length",

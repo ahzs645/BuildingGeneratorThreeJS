@@ -2,7 +2,7 @@
   "id": "n03d-split-n-tap",
   "object": "__GNVM_SPLIT_N_TAP",
   "root": "Split n Tap WIP",
-  "status": "topology-and-bounds-exact",
+  "status": "topology-surface-and-authored-material-verified",
   "blender": {
     "verts": 2372,
     "faces": 2380,
@@ -17,5 +17,23 @@
   "source_wrapper": "The supplied SPLIT N TAP object evaluates only a 42-vertex / 80-face placeholder icosphere. Browser and reference evidence instead instantiate its intended nested Split n Tap WIP group on the same one-point carrier geometry.",
   "object_inputs": "Split and select-parts depend on Object/Object Parent inputs that are unassigned in the supplied file. Blender's Split=true branch therefore evaluates empty; the browser catalog hides these nonfunctional controls until object picking is supported.",
   "reference": "dojo/references/n03d/split-n-tap.png",
-  "validation": "Five Blender/VM cases covering authored, short, wide, coarse-resolution, and long/fine shafts match exactly in vertices, faces, and four-decimal bounds. Authored output is 2,372 / 2,380; the variants are 1,213 / 1,221, 3,744 / 3,745, 2,366 / 2,380, and 4,693 / 4,698 on both sides. Linked Float-to-Integer group inputs truncate, full-range Trim Curve opens cyclic splines with a duplicated endpoint, and Fill Curve preserves point indices while normalizing face winding. Carrying Blender's Mesh-to-Curve minimum-twist normals into the loft removes the former 0.0006 Z residual."
+  "validation": "Five Blender/VM cases covering authored, short, wide, coarse-resolution, and long/fine shafts match exactly in vertices, faces, and four-decimal bounds. Authored output is 2,372 / 2,380; the variants are 1,213 / 1,221, 3,744 / 3,745, 2,366 / 2,380, and 4,693 / 4,698 on both sides. Linked Float-to-Integer group inputs truncate, full-range Trim Curve opens cyclic splines with a duplicated endpoint, and Fill Curve preserves point indices while normalizing face winding. Carrying Blender's Mesh-to-Curve minimum-twist normals into the loft removes the former 0.0006 Z residual.",
+  "surface_validation": {
+    "blender": { "verts": 2372, "faces": 2380, "triangles": 4673, "triangleArea": 946.607 },
+    "gnvm": { "verts": 2372, "faces": 2380, "triangles": 4673, "triangleArea": 946.607 },
+    "blenderPointsToGnvmSurface": { "p50": 0, "p90": 0, "p99": 0, "max": 0 },
+    "gnvmPointsToBlenderSurface": { "p50": 0, "p90": 0, "p99": 0, "max": 0 },
+    "method": "tools/export_blender_evaluated_mesh.py plus tools/mesh-surface-diff.ts --local"
+  },
+  "material": {
+    "name": "Filament PLA .02 mm layer height",
+    "faces": 2380,
+    "contract": "POINT col=[0.8,0.8,0.8] + Generated-coordinate Z Wave + derivative Bump + Backfacing color branch",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.9835665836696145,
+    "pixelLuminanceMae": 0.04956744732051394,
+    "pixelLuminanceCorrelation": 0.8162814276426981,
+    "meanLuminanceDelta": 0.005169437820289113,
+    "residual": "The 64-sample WebGL resolve tracks Blender's broad lighting and layer relief closely; remaining differences are Eevee/WebGL area-light response and procedural derivative filtering. This is viewport material parity, not slicer or G-code parity."
+  }
 }
