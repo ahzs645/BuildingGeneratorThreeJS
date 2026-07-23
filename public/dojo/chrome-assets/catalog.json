@@ -25,8 +25,10 @@
     "dump": "dojo/chrome-assets/pixel-marker/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/pixel-marker.png",
+    "authoredReference": "dojo/references/chrome-assets/pixel-marker-authored.png",
+    "authoredToneMapping": "none",
     "blenderStats": { "verts": 209, "faces": 134 },
-    "note": "All six Blender/browser cases have exact topology and rounded local bounds after recovering the source curve's radius and Bezier endpoint tangents.",
+    "note": "All six Blender/browser cases have exact topology and rounded local bounds after recovering the source curve's radius and Bezier endpoint tangents. Authored mode now preserves Blender's HDR white col=5 emission field and disables display tone mapping so the clipped-white surface matches Blender (0.9621 silhouette IoU; 0.0021 RGB MAE).",
     "controls": [
       { "name": "extrude height", "label": "Extrude height", "min": 1, "max": 35, "step": 0.000001, "value": 23.715652465820312 },
       { "name": "line thiccness", "label": "Line thickness", "min": 5, "max": 40, "step": 0.000001, "value": 25 },

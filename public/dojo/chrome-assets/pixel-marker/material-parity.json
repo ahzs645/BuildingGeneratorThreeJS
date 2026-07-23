@@ -1,0 +1,65 @@
+{
+  "updated": "2026-07-23",
+  "target": {
+    "id": "pixel-marker-flat",
+    "project": "NO3D Chrome Asset Library.blend",
+    "object": "PIXEL CRAYON.002",
+    "root": "pixel marker.001",
+    "material": "flat.nodes"
+  },
+  "geometryContract": {
+    "verts": 209,
+    "faces": 134,
+    "tris": 268,
+    "group": {
+      "start": 0,
+      "count": 804,
+      "material": "flat.nodes"
+    },
+    "evaluatedWorldBounds": {
+      "min": [93.63304138183594, -81.4206771850586, 54.76149368286133],
+      "max": [213.90443420410156, 32.7036018371582, 72.24835968017578]
+    }
+  },
+  "authoredShaderContract": {
+    "nodes": 4,
+    "links": 3,
+    "colorPath": "Geometry Attribute col Color → Emission Color",
+    "strengthPath": "Geometry Attribute power Vector → Emission Strength",
+    "evaluatedAttributes": {
+      "col": {
+        "domain": "POINT",
+        "itemSize": 3,
+        "value": [5.0, 5.0, 5.0],
+        "vertices": 209
+      },
+      "power": {
+        "domain": "POINT",
+        "itemSize": 1,
+        "value": 1.0,
+        "vertices": 209
+      }
+    },
+    "browserResolution": "FLOAT_COLOR storage now preserves Blender's negative and HDR channels; only BYTE_COLOR clamps to normalized storage. Authored capture uses NoToneMapping so HDR white clips at display white like Blender Standard."
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "authored source rotation and scale; each renderer frames the evaluated surface center",
+    "blenderReference": "../../references/chrome-assets/pixel-marker-authored.png",
+    "blenderMetadata": "../../references/chrome-assets/pixel-marker-authored.json",
+    "browserReference": "../../references/chrome-assets/pixel-marker-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=pixel-marker-flat&capture=authored",
+    "colorManagement": "Blender uses Standard with Look=None; WebGL uses NoToneMapping and sRGB output."
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9621119625925445,
+    "surfaceCornerRmsePixels": 2.0562015328244785,
+    "intersectionPixels": 74073,
+    "pixelRgbMae": 0.002066288661556381,
+    "meanRgbDelta": [0.0, -0.0061988659846691435, 0.0],
+    "pixelLuminanceMae": 0.00443342895223537
+  },
+  "interpretation": "Blender's opaque surface is display white and 97.23% of the WebGL surface pixels are display white; the remaining RGB error is edge antialias coverage. Geometry, material assignment, HDR color, and emission strength match."
+}

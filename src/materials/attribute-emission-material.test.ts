@@ -18,6 +18,10 @@ const text3dDump = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/chrome-assets/string-to-text-002/dump.json",
   import.meta.url,
 )), "utf8")) as Dump;
+const pixelMarkerDump = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/chrome-assets/pixel-marker/dump.json",
+  import.meta.url,
+)), "utf8")) as Dump;
 const periodicDump = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/periodic-brush/dump.json",
   import.meta.url,
@@ -260,6 +264,28 @@ test("reconstructs 3D String to Text's flat.nodes.003 emission material", async 
   geometry.setAttribute("power", new THREE.BufferAttribute(result.soup.attributes.power.data, 1));
   const material = makeAttributeEmissionMaterial(text3dDump, geometry, "flat.nodes.003");
   assert.equal(material?.name, "flat.nodes.003 · attribute emission reconstruction");
+  assert.deepEqual(material?.userData.attributeResolution, {
+    color: "geometry-color",
+    strength: "geometry-vector",
+  });
+  geometry.dispose();
+  material?.dispose();
+});
+
+test("preserves Pixel Marker Flat's HDR white emission attributes", async () => {
+  const result = await runGenerator(pixelMarkerDump, { object: "PIXEL CRAYON.002", overrides: {} });
+  assert.deepEqual(result.soup.stats, { verts: 209, faces: 134, tris: 268 });
+  assert.deepEqual(result.soup.groups, [{ start: 0, count: 804, material: "flat.nodes" }]);
+  assert.equal(result.soup.attributes.col.itemSize, 3);
+  assert.ok(result.soup.attributes.col.data.every((value) => value === 5));
+  assert.ok(result.soup.attributes.power.data.every((value) => value === 1));
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));
+  geometry.setAttribute("col", new THREE.BufferAttribute(result.soup.attributes.col.data, 3));
+  geometry.setAttribute("power", new THREE.BufferAttribute(result.soup.attributes.power.data, 1));
+  const material = makeAttributeEmissionMaterial(pixelMarkerDump, geometry, "flat.nodes");
+  assert.equal(material?.name, "flat.nodes · attribute emission reconstruction");
   assert.deepEqual(material?.userData.attributeResolution, {
     color: "geometry-color",
     strength: "geometry-vector",

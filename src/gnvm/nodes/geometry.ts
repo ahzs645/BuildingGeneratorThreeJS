@@ -1356,10 +1356,9 @@ reg("GeometryNodeStoreNamedAttribute", (api) => {
     if (!geometry.mesh || !name) return;
     const ctx = makeFieldCtx(geometry, domain);
     let data = value.array(ctx);
-    // Blender's color attributes are bounded storage types even when the
-    // upstream field math produces negative or over-range channels. The Image
-    // Pixel Stippler intentionally relies on this after its legacy HSV group.
-    if (dataType === "FLOAT_COLOR" || dataType === "BYTE_COLOR") {
+    // Blender preserves negative and HDR channels in FLOAT_COLOR attributes.
+    // Only BYTE_COLOR uses normalized bounded storage.
+    if (dataType === "BYTE_COLOR") {
       data = data.map((item) => {
         const color = asVec3(item);
         return color.map((channel) => Math.max(0, Math.min(1, channel))) as Vec3;

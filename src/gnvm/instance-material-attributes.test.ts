@@ -53,6 +53,28 @@ test("Set Material and Store Named Attribute recurse into shared instance payloa
   assert.deepEqual(Array.from(attribute.domainData ?? []), [...color, ...color]);
 });
 
+test("Store Named Attribute preserves HDR FLOAT_COLOR and clamps BYTE_COLOR", () => {
+  const geometry = new Geometry();
+  geometry.mesh = new Mesh();
+  geometry.mesh.positions = [[0, 0, 0]];
+  const store = REGISTRY.get("GeometryNodeStoreNamedAttribute");
+  assert.ok(store);
+
+  const apply = (dataType: string) => store({
+    geo: () => geometry,
+    str: () => "col",
+    prop: (name: string, fallback: unknown) => name === "domain"
+      ? "POINT"
+      : name === "data_type"
+        ? dataType
+        : fallback,
+    field: () => Field.of([-0.5, 2, 5] as Vec3),
+  } as never).Geometry as Geometry;
+
+  assert.deepEqual(apply("FLOAT_COLOR").mesh?.attributes.get("col")?.data, [[-0.5, 2, 5]]);
+  assert.deepEqual(apply("BYTE_COLOR").mesh?.attributes.get("col")?.data, [[0, 1, 1]]);
+});
+
 test("Send Nodes Hat embroidery retains Blender material and face color through realization", async () => {
   const dump = JSON.parse(readFileSync(
     "public/dojo/send-nodes-hat/dump.json",
