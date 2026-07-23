@@ -29,6 +29,17 @@ export { Evaluator, GEOMETRY_PROBE } from "./evaluator";
 export { Geometry, toTriSoup } from "./geometry";
 export type { TriSoup } from "./geometry";
 export { REGISTRY, MISSING } from "./registry";
+export {
+  analyzeProgramCapabilities,
+  EDITOR_ONLY_NODE_TYPES,
+  EVALUATOR_NATIVE_NODE_TYPES,
+} from "./capabilities";
+export type {
+  MissingGroupReference,
+  NodeCapabilityCount,
+  NodeSupport,
+  ProgramCapabilityReport,
+} from "./capabilities";
 export { ensureManifold, isManifoldReady } from "./boolean";
 export { ensureBulletHull, isBulletHullReady } from "./bullet-hull";
 
