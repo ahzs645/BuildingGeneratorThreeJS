@@ -1,14 +1,30 @@
+import { useEffect, useRef } from "react";
 import { StudioLink } from "../StudioLink";
 import { usePageRuntime } from "../page-runtime";
 import "./materialx-lab.css";
 
-const loadMaterialXLab = () => import("../../materialx-lab");
-
 export default function MaterialXLabPage(): React.JSX.Element {
-  usePageRuntime("MaterialX shader parity lab", loadMaterialXLab);
+  usePageRuntime("MaterialX shader parity lab");
+  const rootRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    let disposed = false;
+    let disposeLab: (() => void) | undefined;
+    void import("../../materialx-lab").then(({ mountMaterialXLab }) => {
+      if (disposed || !rootRef.current) return;
+      disposeLab = mountMaterialXLab(rootRef.current);
+    }).catch((error) => {
+      if (disposed || !rootRef.current) return;
+      const graphStatus = rootRef.current.querySelector<HTMLElement>("#materialx-graph");
+      if (graphStatus) graphStatus.textContent = error instanceof Error ? error.message : String(error);
+    });
+    return () => {
+      disposed = true;
+      disposeLab?.();
+    };
+  }, []);
   const capture = new URLSearchParams(location.search).get("capture") === "1";
   const threeLabel = import.meta.env.VITE_MATERIALX_THREE_LABEL || "Three.js 0.185.1 baseline";
-  return <main className={`materialx-lab ${capture ? "capture" : ""}`}>
+  return <main ref={rootRef} className={`materialx-lab ${capture ? "capture" : ""}`}>
     {!capture && <StudioLink />}
     <section className="materialx-viewport">
       <canvas id="materialx-canvas" aria-label="MaterialX shader comparison render" />
