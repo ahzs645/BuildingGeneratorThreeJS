@@ -895,7 +895,15 @@ function meshSignedAreaXY(m: Mesh): number {
   authored.mesh.attributes.set("__gnvm_stored_edge_order", { domain: "CORNER", data: [] });
   const authoredCurve = runNode("GeometryNodeMeshToCurve", { Mesh: authored, Selection: true }).Curve as Geometry;
   const authoredTangent = authoredCurve.curveAttributes.get("__curve_tangent")?.data[0] as Vec3;
+  const authoredNormal = authoredCurve.curveAttributes.get("__curve_normal")?.data[1] as Vec3;
+  check("MeshToCurve authored cycles start at the lower endpoint of the first stored edge",
+    JSON.stringify(authoredCurve.curves[0]?.points) === JSON.stringify([
+      [-2, -1, 0], [-2, 1, .1], [2, 1, .1], [2, -1, 0],
+    ]), JSON.stringify(authoredCurve.curves[0]?.points));
   check("MeshToCurve stores normalized corner-bisector tangents for authored edges", Math.abs(Math.abs(authoredTangent[0]) - Math.abs(authoredTangent[1])) < .002, JSON.stringify(authoredTangent));
+  check("MeshToCurve stores Blender cyclic minimum-twist normals",
+    !!authoredNormal && Math.abs(authoredNormal[2]) > .01,
+    JSON.stringify(authoredCurve.curveAttributes.get("__curve_normal")?.data));
 }
 
 // A loop attached to a branch pole becomes an open spline whose first and

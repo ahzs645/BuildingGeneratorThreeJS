@@ -3,7 +3,7 @@ import { Field, Vec3, Elem, asNum, asVec3, vadd, vsub, vscale, vdot, vcross, vle
 import { Geometry, Mesh, Spline, buildTopology, realizeInstances } from "../geometry";
 import { DUMP_CONTEXT, reg } from "../registry";
 import { makeFieldCtx } from "../evaluator";
-import { resampleSpline, filletSpline, sweep, fillCurves, meshEdgesToChains, splineLength, splineFrames } from "../curves";
+import { resampleSpline, filletSpline, sweep, fillCurves, meshEdgesToChains, splineLength, splineFrames, polySplineNormalsBlender } from "../curves";
 
 function curveGeo(splines: Spline[]): Geometry {
   const g = new Geometry();
@@ -965,22 +965,29 @@ reg("GeometryNodeMeshToCurve", (api) => {
     // normalized incident edge directions. Preserve that field explicitly so
     // Curve to Mesh does not replace it with a length-weighted chord tangent.
     const meshTangents: Vec3[] = [];
-    if (source.attributes.has("__gnvm_stored_edge_order")) for (const { spline } of chains) for (let index = 0; index < spline.points.length; index++) {
-      const count = spline.points.length;
-      const previous = spline.points[(index - 1 + count) % count];
-      const current = spline.points[index];
-      const next = spline.points[(index + 1) % count];
-      let tangent: Vec3;
-      if (!spline.cyclic && index === 0) tangent = vsub(next, current);
-      else if (!spline.cyclic && index + 1 === count) tangent = vsub(current, previous);
-      else {
-        tangent = vadd(vnorm(vsub(current, previous)), vnorm(vsub(next, current)));
-        if (vlen(tangent) < 1e-9) tangent = vsub(next, current);
+    const meshNormals: Vec3[] = [];
+    if (source.attributes.has("__gnvm_stored_edge_order")) for (const { spline } of chains) {
+      const splineTangents: Vec3[] = [];
+      for (let index = 0; index < spline.points.length; index++) {
+        const count = spline.points.length;
+        const previous = spline.points[(index - 1 + count) % count];
+        const current = spline.points[index];
+        const next = spline.points[(index + 1) % count];
+        let tangent: Vec3;
+        if (!spline.cyclic && index === 0) tangent = vsub(next, current);
+        else if (!spline.cyclic && index + 1 === count) tangent = vsub(current, previous);
+        else {
+          tangent = vadd(vnorm(vsub(current, previous)), vnorm(vsub(next, current)));
+          if (vlen(tangent) < 1e-9) tangent = vsub(next, current);
+        }
+        splineTangents.push(vnorm(tangent));
       }
-      meshTangents.push(vnorm(tangent));
+      meshTangents.push(...splineTangents);
+      meshNormals.push(...polySplineNormalsBlender(splineTangents, spline.cyclic));
     }
     if (meshTangents.length) {
       out.curveAttributes.set("__curve_tangent", { domain: "POINT", data: meshTangents });
+      out.curveAttributes.set("__curve_normal", { domain: "POINT", data: meshNormals });
     }
     // carry the mesh's POINT attributes onto the flattened curve control points
     const pointAttrs = [...g.mesh.attributes].filter(([, a]) => a.domain === "POINT");

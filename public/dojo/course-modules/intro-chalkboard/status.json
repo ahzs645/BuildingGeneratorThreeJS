@@ -5,7 +5,7 @@
   "reachableGroups": 7,
   "reachableNodes": 104,
   "coverage": "100%",
-  "status": "exact-topology-bounds-near",
+  "status": "topology-and-bounds-exact",
   "blender": {
     "verts": 2226,
     "faces": 290,
@@ -19,9 +19,9 @@
     "faces": 290,
     "triangles": 1900,
     "bbox": {
-      "min": [-8.233989715576172, -7.7588911056518555, -0.23635628819465637],
-      "max": [8.233989715576172, 7.759144306182861, 0.23521536588668823]
+      "min": [-8.234509468078613, -7.758503437042236, -0.239357590675354],
+      "max": [8.234509468078613, 7.759399890899658, 0.2376922369003296]
     }
   },
-  "validation": "Exact topology and matching chalkboard, raised pixel-font lettering, inset face, and swept perimeter frame. The original float32 seed coordinates are preserved, authored Mesh to Curve cycles retain their stored edge discovery order, and Merge by Distance outputs use Blender's canonical post-weld order. Maximum local-bounds difference is 0.003001 units from cyclic frame interpolation."
+  "validation": "Exact topology and four-decimal bounds for the chalkboard, raised pixel-font lettering, inset face, and swept perimeter frame. Authored Mesh to Curve cycles retain the first stored edge but start at its lower endpoint, while the converted curve carries Blender's float32 minimum-twist normal into Curve to Mesh. The 64 / 64 frame stage is within 0.0000009537907246235167 units symmetrically; the complete 2,226 / 290 point clouds are within 0.0000017192608239479013, with mean nearest-point distance 0.000000600447135076847. Five bound components are bit-exact and max Z differs by only 0.000000014901161193847656."
 }

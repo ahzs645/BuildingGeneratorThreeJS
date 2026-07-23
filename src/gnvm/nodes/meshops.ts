@@ -695,8 +695,8 @@ reg("GeometryNodeMergeByDistance", (api) => {
   }
   // Blender rebuilds BMesh edge order after a weld. A following Mesh to Curve
   // therefore canonicalizes pure cycles, unlike an untouched authored mesh
-  // whose stored edge start/direction must be preserved (Intro Chalkboard and
-  // the Node Panels socket outlines depend on that distinction).
+  // whose first stored discovery edge must be preserved. For authored cycles,
+  // Mesh to Curve separately begins at that edge's lower endpoint.
   m.attributes.set("__gnvm_canonical_curve_cycles", {
     domain: "POINT",
     data: m.positions.map(() => 1),

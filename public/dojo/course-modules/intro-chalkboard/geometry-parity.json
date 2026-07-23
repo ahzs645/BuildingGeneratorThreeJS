@@ -1,0 +1,33 @@
+{
+  "topology": {
+    "blender": { "verts": 2226, "faces": 290 },
+    "gnvm": { "verts": 2226, "faces": 290 }
+  },
+  "bounds": {
+    "blender": {
+      "min": [-8.234509468078613, -7.758503437042236, -0.239357590675354],
+      "max": [8.234509468078613, 7.759399890899658, 0.2376922219991684]
+    },
+    "gnvm": {
+      "min": [-8.234509468078613, -7.758503437042236, -0.239357590675354],
+      "max": [8.234509468078613, 7.759399890899658, 0.2376922369003296]
+    },
+    "maximumAbsoluteDifference": 0.000000014901161193847656,
+    "bitExactComponents": 5,
+    "fourDecimalMatch": true
+  },
+  "frameStage": {
+    "blender": { "verts": 64, "faces": 64 },
+    "gnvm": { "verts": 64, "faces": 64 },
+    "symmetricNearestPointMaximum": 0.0000009537907246235167,
+    "symmetricNearestPointMean": 0.00000023203321921217458
+  },
+  "completeSurface": {
+    "symmetricNearestPointMaximum": 0.0000017192608239479013,
+    "symmetricNearestPointMean": 0.000000600447135076847
+  },
+  "resolution": {
+    "cycleStart": "The first stored authored edge remains the discovery edge, but Blender begins the cycle at that edge's lower vertex id.",
+    "curveFrame": "Mesh to Curve now carries Blender's float32 cyclic minimum-twist normal field into Curve to Mesh."
+  }
+}

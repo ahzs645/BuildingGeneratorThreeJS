@@ -1625,6 +1625,7 @@ function meshEdgesToCurvesInternal(mesh: Mesh, selected?: (vi: number) => boolea
   // Topology-rebuilding nodes such as Merge by Distance stamp their result so
   // cycles instead follow Blender's newly canonicalized edge order.
   const canonicalizeCycles = mesh.attributes.has("__gnvm_canonical_curve_cycles");
+  const authoredEdgeOrder = mesh.attributes.has("__gnvm_stored_edge_order");
   const cycles: { spline: Spline; verts: number[] }[] = [];
   for (const [start] of adj) {
     for (const nb of adj.get(start)!) {
@@ -1635,7 +1636,27 @@ function meshEdgesToCurvesInternal(mesh: Mesh, selected?: (vi: number) => boolea
         continue;
       }
       if (!canonicalizeCycles) {
-        emit(chain, true);
+        if (!authoredEdgeOrder) {
+          emit(chain, true);
+          continue;
+        }
+        // An untouched authored mesh keeps the first stored edge as its cycle
+        // discovery edge, but Blender begins at that edge's lower vertex id.
+        // Intro Chalkboard's first edge is stored as 2 -> 0, so its evaluated
+        // curve begins 0 -> 2; starting 2 -> 0 mirrors the cyclic frame roll.
+        const members = new Set(chain);
+        const discovery = mesh.edges.find(([a, b]) => members.has(a) && members.has(b));
+        if (!discovery) {
+          emit(chain, true);
+          continue;
+        }
+        const authoredStart = Math.min(discovery[0], discovery[1]);
+        const preferredNext = discovery[0] === authoredStart ? discovery[1] : discovery[0];
+        const startIndex = chain.indexOf(authoredStart);
+        const direction = chain[(startIndex + 1) % chain.length] === preferredNext ? 1 : -1;
+        const authored = Array.from({ length: chain.length }, (_, index) =>
+          chain[(startIndex + direction * index + chain.length) % chain.length]);
+        emit(authored, true);
         continue;
       }
       // Blender canonicalizes a pure Mesh-to-Curve cycle at its lowest source

@@ -1625,7 +1625,7 @@
   "blenderStats": { "verts": 2226, "faces": 290 },
   "localSpace": true,
   "workbenchColor": [0.8, 0.8, 0.8],
-  "note": "The complete 104-node chalkboard study matches Blender exactly at 2,226 vertices and 290 faces. Its raised Pixels lettering, inset board, and swept perimeter frame run in-browser, with original float32 seed coordinates and local bounds within 0.003001 units.",
+  "note": "The complete 104-node chalkboard study matches Blender at 2,226 vertices / 290 faces and exact four-decimal bounds. Authored Mesh-to-Curve cycle starts and Blender's minimum-twist converted-curve normals restore the swept perimeter frame; its 64 / 64 surface is within 0.000000954 units, and the complete point clouds are within 0.00000172. Its raised Pixels lettering, inset board, and frame all run in-browser.",
   "controls": []
 },
 {
