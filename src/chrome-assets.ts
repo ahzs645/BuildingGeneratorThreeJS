@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
-import { rangeOverrideValue } from "./chrome-asset-controls";
+import { captureOverrideValue, rangeOverrideValue } from "./chrome-asset-controls";
 import type { Dump, TriSoup } from "./gnvm/index";
 import { makeAttributeEmissionMaterial } from "./attribute-emission-material";
 import { attachChainMaceRoughnessAttribute, makeChainMaceMaterial } from "./chain-mace-material";
@@ -26,6 +26,8 @@ import { makeNodeColorVtextMaterial } from "./node-color-vtext-material";
 import { loadBlenderStudioEnvironment } from "./blender-studio-environment";
 import { EeveeTemporalCapture } from "./eevee-temporal-capture";
 import { makeLiveChromeCrayonMaterial } from "./materialx/live-chrome-crayon";
+import { expandCornerDomainUv } from "./corner-domain-attributes";
+import { makeLightbulbMaterial, preloadLightbulbTextures } from "./lightbulb-material";
 
 type RangeControl = { type?: "range"; name: string; label: string; min: number; max: number; step: number; value: number };
 type CheckboxControl = { type: "checkbox"; name: string; label: string; value: boolean };
@@ -50,6 +52,10 @@ const stipplerCaptureSamples = query.get("samples") === "1" ? 1 : 64;
 const stipplerDebugMode = ({ generated: 1, threshold: 2, distance: 3 } as Record<string, number>)[query.get("debug") ?? ""] ?? 0;
 const requestedLightScale = Number(query.get("lightScale"));
 const captureLightScale = Number.isFinite(requestedLightScale) && requestedLightScale > 0 ? requestedLightScale : null;
+const requestedEnvironmentIntensity = Number(query.get("environmentIntensity"));
+const captureEnvironmentIntensity = Number.isFinite(requestedEnvironmentIntensity) && requestedEnvironmentIntensity >= 0
+  ? requestedEnvironmentIntensity
+  : null;
 const select = document.querySelector<HTMLSelectElement>("#assets-select")!;
 const controlsHost = document.querySelector<HTMLElement>("#assets-controls")!;
 const reference = document.querySelector<HTMLImageElement>("#assets-reference")!;
@@ -89,7 +95,7 @@ const loadedFonts = new Map<string, Promise<boolean>>();
 
 function resize(): void { const box = canvas.getBoundingClientRect(); renderer.setSize(box.width, box.height, false);if(temporalCapture){const drawing=renderer.getDrawingBufferSize(new THREE.Vector2());temporalCapture.resize(drawing.x,drawing.y);} if(model.children.length)frame();else camera.updateProjectionMatrix(); }
 function frame(): void { const bounds = new THREE.Box3();if(current?.surfaceBounds){model.updateMatrixWorld(true);model.traverse((child)=>{if(!(child instanceof THREE.Mesh))return;if(!child.geometry.boundingBox)child.geometry.computeBoundingBox();if(child.geometry.boundingBox)bounds.union(child.geometry.boundingBox.clone().applyMatrix4(child.matrixWorld));});}else bounds.setFromObject(model);if (bounds.isEmpty()) return; const viewport=canvas.getBoundingClientRect();const aspect=viewport.width/Math.max(viewport.height,1);const center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),radius=Math.max(size.length()*.5,1);const halfWidth=Math.max(size.x,size.y,size.z,1)*.725;camera.left=-halfWidth;camera.right=halfWidth;camera.top=halfWidth/Math.max(aspect,1e-6);camera.bottom=-camera.top;const direction=new THREE.Vector3(1,-1.25,.85).normalize();camera.position.copy(center).addScaledVector(direction,radius*3);camera.up.set(0,0,1);camera.lookAt(center);camera.near=radius/300;camera.far=radius*100;camera.updateProjectionMatrix();if(authoredKey&&authoredFill){authoredKey.width=authoredKey.height=radius*1.5;authoredKey.position.copy(center).addScaledVector(new THREE.Vector3(-1.8,-2.1,2.8).normalize(),radius*2.4);authoredKey.lookAt(center);authoredFill.width=authoredFill.height=radius*2;authoredFill.position.copy(center).addScaledVector(new THREE.Vector3(2,1,1).normalize(),radius*2);authoredFill.lookAt(center);}orbit.target.copy(center);orbit.update(); }
-function overrides(): Record<string, number | boolean | string | number[]> { const values: Record<string, number | boolean | string | number[]> = {}; for (const control of current.controls) { if(control.name.startsWith("__"))continue;const input=document.querySelector<HTMLInputElement|HTMLSelectElement>(`[data-control="${control.name}"]`); values[control.name]=control.type==="checkbox"?((input as HTMLInputElement|null)?.checked??control.value):control.type==="text"?(input?.value??control.value):control.type==="select"?(typeof control.value==="number"?Number(input?.value??control.value):(input?.value??control.value)):control.type==="vector"?Array.from(document.querySelectorAll<HTMLInputElement>(`[data-control="${control.name}"]`)).sort((a,b)=>Number(a.dataset.axis)-Number(b.dataset.axis)).map((item,index)=>Number(item.value??control.value[index])):rangeOverrideValue(control.value,input?.value,input?.dataset.dirty==="true"); } return values; }
+function overrides(): Record<string, number | boolean | string | number[]> { const values: Record<string, number | boolean | string | number[]> = {}; for (const control of current.controls) { if(control.name.startsWith("__"))continue;const requested=captureOverrideValue(control.value,query.get(`override.${control.name}`));if(requested!==undefined){values[control.name]=requested;continue;}const input=document.querySelector<HTMLInputElement|HTMLSelectElement>(`[data-control="${control.name}"]`); values[control.name]=control.type==="checkbox"?((input as HTMLInputElement|null)?.checked??control.value):control.type==="text"?(input?.value??control.value):control.type==="select"?(typeof control.value==="number"?Number(input?.value??control.value):(input?.value??control.value)):control.type==="vector"?Array.from(document.querySelectorAll<HTMLInputElement>(`[data-control="${control.name}"]`)).sort((a,b)=>Number(a.dataset.axis)-Number(b.dataset.axis)).map((item,index)=>Number(item.value??control.value[index])):rangeOverrideValue(control.value,input?.value,input?.dataset.dirty==="true"); } return values; }
 function visibleControls(): Control[] {
   if (current.controls.some((control) => control.name === "__materialPreview")) return current.controls;
   return [{
@@ -111,6 +117,11 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
   for (const [name, attribute] of Object.entries(soup.attributes ?? {})) geometry.setAttribute(name, new THREE.BufferAttribute(attribute.data, attribute.itemSize));
   geometry.setIndex(new THREE.BufferAttribute(soup.indices, 1));
   for (const [index, group] of soup.groups.entries()) geometry.addGroup(group.start, group.count, index);
+  const uvBinding = expandCornerDomainUv(geometry, soup);
+  if (uvBinding) {
+    geometry.dispose();
+    geometry = uvBinding.geometry;
+  }
   if (current.material === "image-pixel-stippler") {
     const expanded = expandFaceDomainMaterialAttributes(geometry, soup);
     if (expanded !== geometry) {
@@ -166,6 +177,7 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
             ?? makeFilamentMaterial(dump,geometry,group,group.material??"")
             ?? makeCrossSectionFilamentMaterial(dump,geometry,group.material??"")
             ?? makeHatStitchMaterial(dump,geometry,group,group.material??"")
+            ?? makeLightbulbMaterial(dump,group.material??"")
             ?? makeMahoganyMaterial(dump,geometry,group.material??"")
             ?? makeToonCyclesMaterial(dump,group.material??"")
             ?? makeToonOutlineMaterial(dump,group.material??"")
@@ -243,6 +255,8 @@ async function prepareAuthoredEnvironment(asset: Asset): Promise<void> {
   renderer.toneMapping = asset.authoredToneMapping === "none" && authoredCapture
     ? THREE.NoToneMapping
     : THREE.ACESFilmicToneMapping;
+  if (asset.id === "n03d-conveyor-mechanic") await preloadLightbulbTextures();
+  if (current !== asset) return;
   if (!authoredCapture) return;
   const lightScale = captureLightScale ?? asset.authoredLightScale ?? 1;
   if (authoredKey) authoredKey.intensity = 0.5 * lightScale;
@@ -262,7 +276,7 @@ async function prepareAuthoredEnvironment(asset: Asset): Promise<void> {
   const environment = await loadBlenderStudioEnvironment();
   if (current !== asset) return;
   scene.environment = environment;
-  scene.environmentIntensity = asset.authoredEnvironmentIntensity ?? 0.8;
+  scene.environmentIntensity = captureEnvironmentIntensity ?? asset.authoredEnvironmentIntensity ?? 0.8;
   // Blender and Three use different equirectangular zero-longitude conventions.
   scene.environmentRotation.set(0, Math.PI, 0);
 }

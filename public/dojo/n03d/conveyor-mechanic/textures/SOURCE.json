@@ -1,0 +1,15 @@
+{
+  "asset": "Lightbulb 01",
+  "asset_id": "924dcf6f-ce93-4c51-bea6-8f6fe3e80047",
+  "author": "Poly Haven",
+  "license": "CC0",
+  "source": "Packed image datablocks in N03D TOOLS - 3D printing Utilities.blend",
+  "maps": {
+    "lightbulb-base-color.png": "lightbulb_01_diff.png.001",
+    "lightbulb-metalness.png": "lightbulb_01_metal.png.001",
+    "lightbulb-roughness.png": "lightbulb_01_rough.png.001",
+    "lightbulb-normal.png": "lightbulb_01_nor_gl.png.001",
+    "lightbulb-emissive.png": "lightbulb_01_emissive.jpg"
+  },
+  "extraction_tool": "tools/extract_blender_images.py"
+}

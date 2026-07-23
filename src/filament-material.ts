@@ -356,8 +356,8 @@ normal = normalize(mix(${baseNormal}, ${config.prefix}Perturbed, max(${glsl(conf
  * Reconstruct the shared N03D filament color branches in WebGL. Blender's
  * COLOR blend keeps the front-side `col` value unchanged: both inputs have the
  * same hue/saturation, so the Wave factor only blends identical HSV color.
- * The back branch desaturates that color and scales its HSV value. Wave/Bump
- * normal perturbation remains a separate renderer-parity target.
+ * The back branch preserves that hue/saturation and scales its HSV value.
+ * Wave/Bump normal perturbation remains a separate renderer-parity target.
  */
 export function makeFilamentMaterial(
   dump: Dump,
@@ -403,8 +403,7 @@ ${filamentWaveFunctionGlsl("filament", "filamentWaveHeight", {
   })}`)
       .replace("#include <color_fragment>", `#include <color_fragment>
 vec3 filamentFront = max(vFilamentColor, vec3(0.0));
-float filamentValue = max(max(filamentFront.r, filamentFront.g), filamentFront.b);
-vec3 filamentBack = vec3(filamentValue * ${glsl(config.darkValue)});
+vec3 filamentBack = filamentFront * ${glsl(config.darkValue)};
 diffuseColor.rgb = gl_FrontFacing ? filamentFront : filamentBack;`)
       .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
 ${filamentBumpGlsl({

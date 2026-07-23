@@ -37,6 +37,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
         normals: result.soup.normals,
         indices: result.soup.indices,
         triangleFaces: result.soup.triangleFaces,
+        triangleCorners: result.soup.triangleCorners,
         attributes: result.soup.attributes,
         groups: result.soup.groups,
         stats: result.soup.stats,
@@ -47,6 +48,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
     };
     const transfer: Transferable[] = [result.soup.positions.buffer, result.soup.normals.buffer, result.soup.indices.buffer];
     if (result.soup.triangleFaces) transfer.push(result.soup.triangleFaces.buffer);
+    if (result.soup.triangleCorners) transfer.push(result.soup.triangleCorners.buffer);
     if (result.soup.lines) transfer.push(result.soup.lines.positions.buffer);
     for (const attribute of Object.values(result.soup.attributes)) {
       transfer.push(attribute.data.buffer);
@@ -54,7 +56,13 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
     }
     if (probeSoup) {
       transfer.push(probeSoup.positions.buffer, probeSoup.normals.buffer, probeSoup.indices.buffer);
+      if (probeSoup.triangleFaces) transfer.push(probeSoup.triangleFaces.buffer);
+      if (probeSoup.triangleCorners) transfer.push(probeSoup.triangleCorners.buffer);
       if (probeSoup.lines) transfer.push(probeSoup.lines.positions.buffer);
+      for (const attribute of Object.values(probeSoup.attributes)) {
+        transfer.push(attribute.data.buffer);
+        if (attribute.domainData) transfer.push(attribute.domainData.buffer);
+      }
     }
     scope.postMessage(payload, {
       transfer,
@@ -79,6 +87,7 @@ function transferableSoup(soup: TriSoup): TriSoup {
     normals: soup.normals,
     indices: soup.indices,
     triangleFaces: soup.triangleFaces,
+    triangleCorners: soup.triangleCorners,
     groups: soup.groups,
     stats: soup.stats,
     attributes: soup.attributes,

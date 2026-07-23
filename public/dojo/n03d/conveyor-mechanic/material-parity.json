@@ -1,0 +1,131 @@
+{
+  "asset": "n03d-conveyor-mechanic",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "Cube.011",
+    "root": "simple conveyor mechanic",
+    "sourceObjectMaterialSlots": [],
+    "evaluatedMaterials": [
+      "Filament PLA .02 mm layer height",
+      "lightbulb_01_base"
+    ]
+  },
+  "scope": "Authored Blender viewport surface reconstruction. The drawer's filament material is a shader-only layer-line preview; this graph contains no slicer data or G-code toolpath.",
+  "geometry": {
+    "default": {
+      "blender": {
+        "verts": 16,
+        "faces": 13
+      },
+      "gnvm": {
+        "verts": 16,
+        "faces": 13
+      },
+      "materialFaces": {
+        "Filament PLA .02 mm layer height": 13
+      }
+    },
+    "fullyOpen": {
+      "overrides": {
+        "CLOSE - OPEN": 100
+      },
+      "blender": {
+        "verts": 178,
+        "faces": 169
+      },
+      "gnvm": {
+        "verts": 178,
+        "faces": 169
+      },
+      "materialFaces": {
+        "lightbulb_01_base": 156,
+        "Filament PLA .02 mm layer height": 13
+      }
+    },
+    "validationCases": 7,
+    "role": "The drawer follows the selected X/Y/Z axis and reveals its parented lightbulb completion marker above 80 percent open."
+  },
+  "capture": {
+    "resolution": [
+      768,
+      768
+    ],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "default": {
+      "blenderReference": "../../references/n03d/conveyor-mechanic-authored.png",
+      "blenderMetadata": "../../references/n03d/conveyor-mechanic-authored.json",
+      "browserReference": "../../references/n03d/conveyor-mechanic-authored-webgl.png",
+      "comparisonReport": "material-comparison.json",
+      "browserRoute": "/chrome-assets?asset=n03d-conveyor-mechanic&capture=authored"
+    },
+    "fullyOpen": {
+      "blenderReference": "../../references/n03d/conveyor-mechanic-open-authored.png",
+      "blenderMetadata": "../../references/n03d/conveyor-mechanic-open-authored.json",
+      "browserReference": "../../references/n03d/conveyor-mechanic-open-authored-webgl.png",
+      "comparisonReport": "material-comparison-open.json",
+      "browserRoute": "/chrome-assets?asset=n03d-conveyor-mechanic&capture=authored&override.CLOSE%20-%20OPEN=100"
+    },
+    "blenderAuthoredLightScale": 1,
+    "browserAuthoredLightScale": 15,
+    "blenderStudioEnvironmentStrength": 0.8,
+    "browserStudioEnvironmentIntensity": 0.1,
+    "lightingInterpretation": "Blender Area energy/HDR world strength and Three.js RectAreaLight/PMREM intensity use renderer-specific units. A controlled browser sweep selected 15 and 0.1 for near-zero fully-open exposure error and the best large-scale correlation."
+  },
+  "recoveredSurfaces": {
+    "drawer": {
+      "material": "Filament PLA .02 mm layer height",
+      "colorAttribute": "col",
+      "coordinates": "Generated",
+      "behavior": "The shared procedural Wave/Noise bump and front/back color branches reproduce the Blender viewport layer-line appearance without changing mesh topology."
+    },
+    "completionMarker": {
+      "material": "lightbulb_01_base",
+      "uvAttribute": "UVMap",
+      "maps": [
+        "base color",
+        "metalness",
+        "roughness",
+        "OpenGL tangent normal",
+        "emission"
+      ],
+      "emissionStrength": 66.41999816894531,
+      "sourceAsset": {
+        "name": "Lightbulb 01",
+        "assetId": "924dcf6f-ce93-4c51-bea6-8f6fe3e80047",
+        "author": "Poly Haven",
+        "license": "CC0"
+      },
+      "behavior": "The dump retains the evaluated marker's active corner-domain UV map, and the browser binds the five packed Blender images to one PBR material."
+    }
+  },
+  "comparison": {
+    "default": {
+      "surfaceMaskIou": 0.9966898428826506,
+      "surfaceMaskIouDilated1px": 0.9967059156896578,
+      "blenderSurfaceCoveredWithin1pxFraction": 1,
+      "webglSurfaceCoveredWithin1pxFraction": 1,
+      "surfaceCornerRmsePixels": 0.4124342793265484,
+      "pixelRgbMae": 0.07713213805956533,
+      "pixelLuminanceMae": 0.0549493981551615,
+      "pixelLuminanceCorrelation": 0.7607280145189632,
+      "macroLuminanceMae": 0.048151173690748825,
+      "macroLuminanceCorrelation": 0.9233836645290777,
+      "meanLuminanceDelta": -0.012909412754783953
+    },
+    "fullyOpen": {
+      "surfaceMaskIou": 0.9792061629201649,
+      "surfaceMaskIouDilated1px": 0.9803993560595362,
+      "blenderSurfaceCoveredWithin1pxFraction": 1,
+      "webglSurfaceCoveredWithin1pxFraction": 1,
+      "surfaceCornerRmsePixels": 0.48922415686427373,
+      "pixelRgbMae": 0.07433469896485731,
+      "pixelLuminanceMae": 0.053891949125034755,
+      "pixelLuminanceCorrelation": 0.8824710056502282,
+      "macroLuminanceMae": 0.0384281595942807,
+      "macroLuminanceCorrelation": 0.9721406191177873,
+      "meanLuminanceDelta": -0.003643751380588825
+    }
+  },
+  "interpretation": "The default drawer and fully-open drawer-plus-marker retain exact Blender topology. The authored browser render now preserves filament hue on backfaces, carries the marker's UV seams through Join Geometry, and reconstructs its packed CC0 PBR texture graph. Both captures have complete mutual one-pixel silhouette coverage; fully-open exposure differs by only -0.0036 luminance with 0.9721 macro correlation. Remaining fine highlights are Eevee/Three.js BRDF, PMREM, and texture-filtering residuals. This verifies viewport appearance, not a sliced toolpath."
+}

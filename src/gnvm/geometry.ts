@@ -768,6 +768,8 @@ export function mergeMeshInto(a: Mesh, b: Mesh): void {
   const bEdgeIdx = needEdge ? new Map(canonicalEdgeKeys(b).map((k, i) => [k, i])) : null;
   const baseV = a.positions.length;
   const baseF = a.faces.length;
+  const baseC = a.domainSize("CORNER");
+  const addedC = b.domainSize("CORNER");
   for (const p of b.positions) a.positions.push([...p] as Vec3);
   for (const e of b.edges) a.edges.push([e[0] + baseV, e[1] + baseV]);
   const slotMap = b.materialSlots.map((name) => a.ensureMaterialSlot(name));
@@ -776,8 +778,10 @@ export function mergeMeshInto(a: Mesh, b: Mesh): void {
     a.faceMaterial.push(slotMap[b.faceMaterial[fi] ?? 0] ?? 0);
   }
   invalidateMeshCaches(a);
-  // reconcile POINT + FACE (+ EDGE when present) attributes across the union of names
-  const reconcile = (domain: "POINT" | "FACE" | "EDGE", baseCount: number, addCount: number) => {
+  // Reconcile POINT + FACE + CORNER (+ EDGE when present) attributes across
+  // the union of names. UV maps are CORNER-domain and must survive Join
+  // Geometry/Realize Instances without averaging across seams.
+  const reconcile = (domain: "POINT" | "FACE" | "CORNER" | "EDGE", baseCount: number, addCount: number) => {
     const names = new Set<string>();
     for (const [k, x] of a.attributes) if (x.domain === domain) names.add(k);
     for (const [k, x] of b.attributes) if (x.domain === domain) names.add(k);
@@ -792,6 +796,7 @@ export function mergeMeshInto(a: Mesh, b: Mesh): void {
   };
   reconcile("POINT", baseV, b.positions.length);
   reconcile("FACE", baseF, b.faces.length);
+  reconcile("CORNER", baseC, addedC);
   // EDGE attrs can't just concatenate: buildTopology enumerates ALL face-derived
   // edges before ANY loose wires, so when A has loose edges the joined order
   // interleaves. Map each joined canonical edge back to its source explicitly.
@@ -974,11 +979,13 @@ export interface TriSoup {
   indices: Uint32Array;
   /** Source face for every emitted triangle, in the same order as indices. */
   triangleFaces?: Uint32Array;
+  /** Source mesh corner for every emitted triangle corner. */
+  triangleCorners?: Uint32Array;
   attributes: Record<string, {
     itemSize: 1 | 3;
     data: Float32Array;
     domain?: "POINT" | "FACE" | "CORNER";
-    /** Uninterpolated values retained for flat FACE-domain material inputs. */
+    /** Uninterpolated values retained in the original FACE/CORNER domain. */
     domainData?: Float32Array;
   }>;
   groups: { start: number; count: number; material: string | null }[]; // per material slot
@@ -1182,6 +1189,13 @@ export function toTriSoup(g: Geometry): TriSoup {
   const slotCount = Math.max(1, mesh.materialSlots.length);
   const perSlot: number[][] = Array.from({ length: slotCount }, () => []);
   const perSlotFaces: number[][] = Array.from({ length: slotCount }, () => []);
+  const perSlotCorners: number[][] = Array.from({ length: slotCount }, () => []);
+  const faceCornerStarts: number[] = [];
+  let sourceCorner = 0;
+  for (const face of mesh.faces) {
+    faceCornerStarts.push(sourceCorner);
+    sourceCorner += face.length;
+  }
   let triCount = 0;
   for (let fi = 0; fi < mesh.faces.length; fi++) {
     const f = mesh.faces[fi];
@@ -1189,11 +1203,18 @@ export function toTriSoup(g: Geometry): TriSoup {
     for (const triangle of triangulateFaceIndices(mesh, f)) {
       perSlot[slot].push(...triangle);
       perSlotFaces[slot].push(fi);
+      for (const vertex of triangle) {
+        // Degenerate polygons can repeat a vertex index. Blender's material UV
+        // meshes in this pack do not, and choosing the first matching loop is
+        // the stable fallback for such a degenerate triangle.
+        perSlotCorners[slot].push(faceCornerStarts[fi] + Math.max(0, f.indexOf(vertex)));
+      }
       triCount++;
     }
   }
   const indices = new Uint32Array(triCount * 3);
   const triangleFaces = new Uint32Array(triCount);
+  const triangleCorners = new Uint32Array(triCount * 3);
   const groups: TriSoup["groups"] = [];
   let cursor = 0;
   let triangleCursor = 0;
@@ -1202,6 +1223,7 @@ export function toTriSoup(g: Geometry): TriSoup {
     if (!tri.length) continue;
     groups.push({ start: cursor, count: tri.length, material: mesh.materialSlots[s] ?? null });
     indices.set(tri, cursor);
+    triangleCorners.set(perSlotCorners[s], cursor);
     triangleFaces.set(perSlotFaces[s], triangleCursor);
     cursor += tri.length;
     triangleCursor += perSlotFaces[s].length;
@@ -1239,16 +1261,19 @@ export function toTriSoup(g: Geometry): TriSoup {
       } else data[i] = asNum(value ?? 0);
     }
     let domainData: Float32Array | undefined;
-    if (attribute.domain === "FACE") {
-      domainData = new Float32Array(source.faces.length * itemSize);
-      for (let face = 0; face < source.faces.length; face++) {
-        const value = attribute.data[face] ?? (itemSize === 3 ? [0, 0, 0] : 0);
+    if (attribute.domain === "FACE" || attribute.domain === "CORNER") {
+      const domainSize = attribute.domain === "FACE"
+        ? source.faces.length
+        : source.faces.reduce((count, face) => count + face.length, 0);
+      domainData = new Float32Array(domainSize * itemSize);
+      for (let element = 0; element < domainSize; element++) {
+        const value = attribute.data[element] ?? (itemSize === 3 ? [0, 0, 0] : 0);
         if (itemSize === 3) {
           const vector = asVec3(value);
-          domainData[face * 3] = vector[0];
-          domainData[face * 3 + 1] = vector[1];
-          domainData[face * 3 + 2] = vector[2];
-        } else domainData[face] = asNum(value);
+          domainData[element * 3] = vector[0];
+          domainData[element * 3 + 1] = vector[1];
+          domainData[element * 3 + 2] = vector[2];
+        } else domainData[element] = asNum(value);
       }
     }
     attributes[name] = { itemSize, data, domain: attribute.domain as "POINT" | "FACE" | "CORNER", domainData };
@@ -1283,6 +1308,7 @@ export function toTriSoup(g: Geometry): TriSoup {
     normals: normArr,
     indices,
     triangleFaces,
+    triangleCorners,
     attributes,
     groups,
     stats: { verts: mesh.positions.length, faces: mesh.faces.length, tris: triCount },

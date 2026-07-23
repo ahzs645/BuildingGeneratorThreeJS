@@ -2,7 +2,7 @@
   "id": "n03d-conveyor-mechanic",
   "object": "Cube.011",
   "root": "simple conveyor mechanic",
-  "status": "exact-parity",
+  "status": "exact-geometry-and-authored-surfaces-verified",
   "blender": {
     "verts": 16,
     "faces": 13
@@ -12,5 +12,15 @@
     "faces": 13
   },
   "coverage": "100% of reachable node types across the 5-group, 75-node closure.",
-  "validation": "Seven Blender/VM cases cover authored travel, fully closed/open positions, alternate maximum opening, X/Y/Z direction selection, the guide line, and the parented completion-marker object. Every case now has exact vertex and face counts plus identical four-decimal local bounds. Restoring the drawer and `lite` marker payloads at source float32 precision, and exporting Blender's active-relative matrix for the inherited ~1,797x marker transform, makes all 178 fully-open evaluated coordinates bit-for-bit identical to Blender."
+  "validation": "Seven Blender/VM cases cover authored travel, fully closed/open positions, alternate maximum opening, X/Y/Z direction selection, the guide line, and the parented completion-marker object. Every case has exact vertex and face counts plus identical four-decimal local bounds; all 178 fully-open evaluated coordinates remain bit-for-bit identical. Authored mode now preserves the filament shader's backface hue and reconstructs the lightbulb marker from its active corner UVs plus five packed CC0 PBR maps. The default capture reaches 0.9967 silhouette IoU and 0.9234 macro correlation. The fully-open capture reaches 0.9792 IoU, complete mutual one-pixel coverage, 0.49-pixel corner RMSE, 0.0384 macro luminance MAE, 0.9721 macro correlation, and -0.0036 mean-luminance error.",
+  "materialParity": {
+    "report": "material-parity.json",
+    "defaultComparison": "material-comparison.json",
+    "fullyOpenComparison": "material-comparison-open.json",
+    "defaultBlenderReference": "../../references/n03d/conveyor-mechanic-authored.png",
+    "defaultBrowserReference": "../../references/n03d/conveyor-mechanic-authored-webgl.png",
+    "fullyOpenBlenderReference": "../../references/n03d/conveyor-mechanic-open-authored.png",
+    "fullyOpenBrowserReference": "../../references/n03d/conveyor-mechanic-open-authored-webgl.png",
+    "scope": "Authored viewport materials only; the filament look is not sliced geometry and no G-code toolpath is present."
+  }
 }

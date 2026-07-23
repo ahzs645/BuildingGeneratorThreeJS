@@ -1,0 +1,41 @@
+{
+  "object": "Cube.011",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -25.92702293395996,
+      -46.827003479003906,
+      -37.89867401123047
+    ],
+    "max": [
+      113.90866088867188,
+      -13.105817794799805,
+      36.7755012512207
+    ]
+  },
+  "verts": 178,
+  "faces": 169,
+  "materials": [],
+  "evaluated_materials": [
+    "lightbulb_01_glass",
+    "lightbulb_01_base",
+    "Filament PLA .02 mm layer height"
+  ],
+  "evaluated_material_faces": {
+    "lightbulb_01_base": 156,
+    "Filament PLA .02 mm layer height": 13
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {
+    "CLOSE - OPEN": 100
+  },
+  "authored_light_scale": 1.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": true,
+  "studio_environment_strength": 0.8,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

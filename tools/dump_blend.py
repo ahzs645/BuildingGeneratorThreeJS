@@ -44,7 +44,7 @@ def socket_value(sock):
     except Exception as e:
         return f"<err {e}>"
 
-def dump_mesh_attributes(mesh):
+def dump_mesh_attributes(mesh, include_uv=False):
     attrs = {}
     for attribute in mesh.attributes:
         if attribute.name.startswith(".") or attribute.name == "position":
@@ -70,6 +70,16 @@ def dump_mesh_attributes(mesh):
                 }
         except Exception:
             pass
+    # Blender keeps UV maps in mesh.uv_layers rather than exposing them as a
+    # public FLOAT2 mesh attribute. Geometry Nodes and shader Texture
+    # Coordinate -> UV consume the active layer on the CORNER domain, so retain
+    # it explicitly as a vec3-compatible GN-VM attribute.
+    active_uv = mesh.uv_layers.active if include_uv else None
+    if active_uv is not None and active_uv.name not in attrs:
+        attrs[active_uv.name] = {
+            "domain": "CORNER",
+            "data": [[float(item.uv[0]), float(item.uv[1]), 0.0] for item in active_uv.data],
+        }
     return attrs
 
 def dump_node(node):
@@ -539,7 +549,10 @@ for obj in bpy.data.objects:
             }
             # authored custom attributes (e.g. the bubble vase's 'bottom' vertex
             # tag drives a Named Attribute -> Separate chain in the graph)
-            attrs = dump_mesh_attributes(me)
+            attrs = dump_mesh_attributes(
+                me,
+                include_uv=obj.name == target_object or obj.name in dependency_object_names,
+            )
             # vertex groups are readable via Named Attribute too
             for vg in obj.vertex_groups:
                 data = []
@@ -629,7 +642,7 @@ for obj in bpy.data.objects:
                 "face_materials": [p.material_index for p in mesh.polygons],
                 "edges": [[e.vertices[0], e.vertices[1]] for e in mesh.edges],
                 "materials": [material.name if material else None for material in mesh.materials],
-                "attributes": dump_mesh_attributes(mesh),
+                "attributes": dump_mesh_attributes(mesh, include_uv=True),
             }
         finally:
             evaluated.to_mesh_clear()
