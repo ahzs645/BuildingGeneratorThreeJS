@@ -29,9 +29,25 @@
     "blenderAuthored": { "verts": 11162, "faces": 8064 },
     "gnvmAuthored": { "verts": 11163, "faces": 8064 }
   },
+  "autoSmoothEdgeProbe": {
+    "thresholdDegrees": 30,
+    "authoredDefault": {
+      "edges": 6612,
+      "blenderSelected": 125,
+      "gnvmSelected": 126,
+      "finalVertexDelta": 1
+    },
+    "jointSize18": {
+      "edges": 5772,
+      "blenderSelected": 229,
+      "gnvmSelected": 230,
+      "finalVertexDelta": 2
+    },
+    "interpretation": "The complete pre-autosmooth surfaces have matching vertex, edge, and face counts. One edge in each case crosses the 30-degree cutoff differently because the first transient SDF scalar field and its later smoothed vertex positions are close but not bit-identical. The same single selection difference creates either one or two extra corner-fan copies depending on local topology."
+  },
   "remaining": {
-    "authoredDefault": "One final presentation-branch vertex has no face or edge reference in the VM result; all faces and rounded bounds are exact.",
-    "jointSize18": "The pre-autosmooth mesh is count exact. Two edge angles straddle the 30-degree Split Edges cutoff because the first remesh positions are not bit-identical.",
+    "authoredDefault": "One extra 30-degree auto-smooth edge selection creates one additional referenced corner-fan vertex; all faces and rounded bounds are exact.",
+    "jointSize18": "One extra 30-degree auto-smooth edge selection creates two additional referenced corner-fan vertices; all faces remain exact.",
     "nextTarget": "Match the transient first-grid scalar values in the modifier object's evaluation context, then recheck edge-angle classifications and presentation-component cleanup."
   }
 }
