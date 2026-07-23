@@ -96,6 +96,20 @@ def silhouette_corners(mask, width, height):
     }
 
 
+def dilate(mask, width, height, radius=1):
+    result = [False] * len(mask)
+    for index, enabled in enumerate(mask):
+        if not enabled:
+            continue
+        x = index % width
+        y = index // width
+        for sample_y in range(max(0, y - radius), min(height, y + radius + 1)):
+            row = sample_y * width
+            for sample_x in range(max(0, x - radius), min(width, x + radius + 1)):
+                result[row + sample_x] = True
+    return result
+
+
 width, height, blender_pixels = load(blender_path)
 webgl_width, webgl_height, webgl_pixels = load(webgl_path)
 if (width, height) != (webgl_width, webgl_height):
@@ -113,6 +127,12 @@ intersection = [left and right for left, right in zip(blender_mask, webgl_mask)]
 union = [left or right for left, right in zip(blender_mask, webgl_mask)]
 intersection_count = sum(intersection)
 union_count = sum(union)
+blender_dilated_1px = dilate(blender_mask, width, height)
+webgl_dilated_1px = dilate(webgl_mask, width, height)
+dilated_intersection_1px = sum(left and right for left, right in zip(blender_dilated_1px, webgl_dilated_1px))
+dilated_union_1px = sum(left or right for left, right in zip(blender_dilated_1px, webgl_dilated_1px))
+blender_covered_within_1px = sum(left and right for left, right in zip(blender_mask, webgl_dilated_1px))
+webgl_covered_within_1px = sum(left and right for left, right in zip(webgl_mask, blender_dilated_1px))
 blender_corners = silhouette_corners(blender_mask, width, height)
 webgl_corners = silhouette_corners(webgl_mask, width, height)
 corner_deltas = {
@@ -168,6 +188,9 @@ comparison = {
     "webgl": mask_stats(webgl_mask, webgl_luminance),
     "comparison": {
         "surface_mask_iou": fraction(intersection_count, union_count),
+        "surface_mask_iou_dilated_1px": fraction(dilated_intersection_1px, dilated_union_1px),
+        "blender_surface_covered_within_1px_fraction": fraction(blender_covered_within_1px, sum(blender_mask)),
+        "webgl_surface_covered_within_1px_fraction": fraction(webgl_covered_within_1px, sum(webgl_mask)),
         "surface_corners": {"blender": blender_corners, "webgl": webgl_corners},
         "surface_corner_deltas_webgl_minus_blender": corner_deltas,
         "surface_corner_rmse_pixels": corner_rmse,

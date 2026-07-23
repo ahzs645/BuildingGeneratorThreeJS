@@ -2,7 +2,7 @@
   "id": "n03d-endpoint-guide",
   "object": "Plane.002",
   "root": "Geometry Nodes.007",
-  "status": "exact-parity",
+  "status": "exact-geometry-and-authored-emission-verified",
   "blender": {
     "verts": 320,
     "faces": 288
@@ -12,5 +12,13 @@
     "faces": 288
   },
   "coverage": "100% of reachable node types across the 1-group, 13-node closure.",
-  "validation": "The fixed guide converts the supplied two-point mesh line to a beveled curve and instances square markers on both endpoints. Topology is exact and local bounds differ only by sub-micro-unit floating-point rounding. Geometry Nodes.016 on Plane.007 was audited separately: its isolated authored output is empty and it is not published as a generator."
+  "validation": "The fixed guide converts the supplied two-point mesh line to a beveled curve and instances square markers on both endpoints. Topology is exact and local bounds differ only by sub-micro-unit floating-point rounding. Geometry Nodes replaces the object's mahogany source slot with emit.002 on all 288 evaluated faces; authored mode now preserves that literal white Emission surface without display tone mapping. The geometry is only one to three projected pixels wide, so the raw silhouette IoU is 0.8399, but both captures cover 100% of the other surface within one pixel and the one-pixel-dilated IoU is 0.9230. Geometry Nodes.016 on Plane.007 was audited separately: its isolated authored output is empty and it is not published as a generator.",
+  "materialParity": {
+    "report": "material-parity.json",
+    "comparison": "material-comparison.json",
+    "blenderReference": "../../references/n03d/endpoint-guide-authored.png",
+    "browserReference": "../../references/n03d/endpoint-guide-authored-webgl.png",
+    "material": "emit.002",
+    "scope": "Authored viewport material parity only; no slicer or G-code toolpath is present."
+  }
 }

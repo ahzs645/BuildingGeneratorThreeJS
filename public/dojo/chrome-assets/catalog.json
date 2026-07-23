@@ -1033,9 +1033,11 @@
     "dump": "dojo/n03d/endpoint-guide/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/endpoint-guide.png",
+    "authoredReference": "dojo/references/n03d/endpoint-guide-authored.png",
     "blenderStats": { "verts": 320, "faces": 288 },
     "localSpace": true,
-    "note": "Exact topology for the fixed 13-node mesh-line guide: a beveled center line with instanced square endpoint markers. Local bounds agree with Blender to sub-micro-unit floating-point precision.",
+    "authoredToneMapping": "none",
+    "note": "Exact topology for the fixed 13-node mesh-line guide: a beveled center line with instanced square endpoint markers. Local bounds agree with Blender to sub-micro-unit floating-point precision. Geometry Nodes replaces the object's mahogany slot with the literal white emit.002 material on all 288 faces, which authored mode preserves without display tone mapping. This one-to-three-pixel-wide guide has 0.8399 raw silhouette IoU, but both captures cover 100% of the other surface within one pixel and reach 0.9230 one-pixel-dilated IoU. It contains no slicer or G-code data.",
     "controls": []
   },
   {
