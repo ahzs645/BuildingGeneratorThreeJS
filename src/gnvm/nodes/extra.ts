@@ -2129,12 +2129,236 @@ function imprintPlanarDifference(planar: Geometry, cutter: Geometry): Geometry |
   return geometry;
 }
 
-// Face-level box clip (no face splitting): overshoots by at most one face ring
-// at the box boundary, which beats a whole-geometry passthrough.
+function interpolateClipElement(a: Elem | undefined, b: Elem | undefined, factor: number): Elem {
+  if (Array.isArray(a) || Array.isArray(b)) {
+    const av = asVec3(a ?? [0, 0, 0]), bv = asVec3(b ?? [0, 0, 0]);
+    return [
+      Math.fround(av[0] + (bv[0] - av[0]) * factor),
+      Math.fround(av[1] + (bv[1] - av[1]) * factor),
+      Math.fround(av[2] + (bv[2] - av[2]) * factor),
+    ];
+  }
+  return Math.fround(asNum(a ?? 0) + (asNum(b ?? 0) - asNum(a ?? 0)) * factor);
+}
+
+/**
+ * Clip a mesh against the one AABB plane that actually crosses it.
+ *
+ * Blender's FLOAT intersection preserves every source polygon below/above the
+ * plane, clips only the crossing ring, and caps each closed boundary. The old
+ * face-level fallback removed an entire ring and projected its neighbor,
+ * changing both the surface and topology. Bubble Vase exposes the exact
+ * contract: 698 crossing quads become 698 clipped quads, the axial fan remains
+ * untouched, and two 349-point boundary loops become two half-annulus ngons.
+ */
+export function clipToSingleBoxPlaneIntersection(
+  source: Mesh,
+  box: { min: Vec3; max: Vec3 },
+): Mesh | null {
+  if (!source.positions.length || !source.faces.length) return null;
+  const sourceMin: Vec3 = [Infinity, Infinity, Infinity];
+  const sourceMax: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const point of source.positions) for (let axis = 0; axis < 3; axis++) {
+    sourceMin[axis] = Math.min(sourceMin[axis], point[axis]);
+    sourceMax[axis] = Math.max(sourceMax[axis], point[axis]);
+  }
+  const diagonal = Math.max(meshDiag(source), 1);
+  const epsilon = diagonal * 1e-7;
+  const cuts: { axis: 0 | 1 | 2; coordinate: number; keepGreater: boolean }[] = [];
+  for (const axis of [0, 1, 2] as const) {
+    if (box.min[axis] > sourceMin[axis] + epsilon && box.min[axis] < sourceMax[axis] - epsilon)
+      cuts.push({ axis, coordinate: box.min[axis], keepGreater: true });
+    if (box.max[axis] < sourceMax[axis] - epsilon && box.max[axis] > sourceMin[axis] + epsilon)
+      cuts.push({ axis, coordinate: box.max[axis], keepGreater: false });
+  }
+  if (cuts.length !== 1) return null;
+  const cut = cuts[0];
+  // The remaining five box planes must contain the source. This keeps the
+  // helper a true single-half-space operation instead of silently accepting a
+  // corner/edge clip that needs general polygon CSG.
+  for (const axis of [0, 1, 2] as const) {
+    if (axis === cut.axis) continue;
+    if (box.min[axis] > sourceMin[axis] + epsilon || box.max[axis] < sourceMax[axis] - epsilon) return null;
+  }
+  if (cut.keepGreater) {
+    if (box.max[cut.axis] < sourceMax[cut.axis] - epsilon) return null;
+  } else if (box.min[cut.axis] > sourceMin[cut.axis] + epsilon) return null;
+
+  const out = new Mesh();
+  out.positions = source.positions.map((point) => [...point] as Vec3);
+  out.materialSlots = [...source.materialSlots];
+  const pointAttributes = new Map<string, Elem[]>();
+  const faceAttributes = new Map<string, Elem[]>();
+  for (const [name, attribute] of source.attributes) {
+    if (attribute.domain === "POINT") pointAttributes.set(name, [...attribute.data]);
+    else if (attribute.domain === "FACE") faceAttributes.set(name, []);
+  }
+  const edgeIntersections = new Map<string, number>();
+  const distance = (vertex: number) => source.positions[vertex][cut.axis] - cut.coordinate;
+  const inside = (value: number) => cut.keepGreater ? value >= -epsilon : value <= epsilon;
+  const edgeKey = (a: number, b: number) => a < b ? `${a}:${b}` : `${b}:${a}`;
+  const intersectEdge = (a: number, b: number): number => {
+    const key = edgeKey(a, b);
+    const existing = edgeIntersections.get(key);
+    if (existing !== undefined) return existing;
+    const pa = source.positions[a], pb = source.positions[b];
+    const da = Math.fround(pa[cut.axis] - cut.coordinate);
+    const db = Math.fround(pb[cut.axis] - cut.coordinate);
+    const factor = Math.fround(da / Math.fround(da - db));
+    const point: Vec3 = [
+      Math.fround(pa[0] + Math.fround(Math.fround(pb[0] - pa[0]) * factor)),
+      Math.fround(pa[1] + Math.fround(Math.fround(pb[1] - pa[1]) * factor)),
+      Math.fround(pa[2] + Math.fround(Math.fround(pb[2] - pa[2]) * factor)),
+    ];
+    point[cut.axis] = Math.fround(cut.coordinate);
+    const vertex = out.positions.length;
+    out.positions.push(point);
+    for (const [name, data] of pointAttributes) {
+      const attribute = source.attributes.get(name)!;
+      data.push(interpolateClipElement(attribute.data[a], attribute.data[b], factor));
+    }
+    edgeIntersections.set(key, vertex);
+    return vertex;
+  };
+
+  const cutSegments: [number, number][] = [];
+  for (let faceIndex = 0; faceIndex < source.faces.length; faceIndex++) {
+    const face = source.faces[faceIndex];
+    const distances = face.map(distance);
+    const flags = distances.map(inside);
+    if (flags.every((value) => !value)) continue;
+    const clipped: number[] = [];
+    const intersections: number[] = [];
+    for (let corner = 0; corner < face.length; corner++) {
+      const a = face[corner], b = face[(corner + 1) % face.length];
+      if (flags[corner]) clipped.push(a);
+      if (flags[corner] !== flags[(corner + 1) % face.length]) {
+        const vertex = intersectEdge(a, b);
+        clipped.push(vertex);
+        intersections.push(vertex);
+      }
+    }
+    const cleaned = clipped.filter((vertex, corner) => corner === 0 || vertex !== clipped[corner - 1]);
+    if (cleaned.length > 2 && cleaned[0] === cleaned[cleaned.length - 1]) cleaned.pop();
+    if (new Set(cleaned).size < 3) continue;
+    out.faces.push(cleaned);
+    out.faceMaterial.push(source.faceMaterial[faceIndex] ?? 0);
+    for (const [name, data] of faceAttributes)
+      data.push(source.attributes.get(name)!.data[faceIndex] ?? 0);
+    if (intersections.length === 2 && intersections[0] !== intersections[1])
+      cutSegments.push([intersections[0], intersections[1]]);
+    else if (intersections.length && intersections.length !== 2)
+      return null;
+  }
+  if (!cutSegments.length) return null;
+
+  const adjacency = new Map<number, number[]>();
+  for (const [a, b] of cutSegments) {
+    const aa = adjacency.get(a) ?? []; aa.push(b); adjacency.set(a, aa);
+    const bb = adjacency.get(b) ?? []; bb.push(a); adjacency.set(b, bb);
+  }
+  if ([...adjacency.values()].some((neighbors) => neighbors.length !== 2)) return null;
+  const loops: number[][] = [];
+  const visited = new Set<number>();
+  for (const start of adjacency.keys()) {
+    if (visited.has(start)) continue;
+    const loop: number[] = [];
+    let previous = -1, current = start;
+    do {
+      loop.push(current);
+      visited.add(current);
+      const neighbors = adjacency.get(current)!;
+      const next = neighbors[0] === previous ? neighbors[1] : neighbors[0];
+      previous = current;
+      current = next;
+      if (loop.length > adjacency.size) return null;
+    } while (current !== start);
+    if (loop.length < 3) return null;
+    loops.push(loop);
+  }
+
+  const projectedAxes = [0, 1, 2].filter((axis) => axis !== cut.axis) as [0 | 1 | 2, 0 | 1 | 2];
+  const signedArea = (loop: number[]) => loop.reduce((sum, vertex, index) => {
+    const point = out.positions[vertex], next = out.positions[loop[(index + 1) % loop.length]];
+    return sum + point[projectedAxes[0]] * next[projectedAxes[1]]
+      - next[projectedAxes[0]] * point[projectedAxes[1]];
+  }, 0) * 0.5;
+  const cyclicArc = (loop: number[], from: number, to: number): number[] => {
+    const arc: number[] = [];
+    for (let index = from; ; index = (index + 1) % loop.length) {
+      arc.push(loop[index]);
+      if (index === to) return arc;
+      if (arc.length > loop.length) return [];
+    }
+  };
+  const nearestLoopIndex = (loop: number[], point: Vec3): number => {
+    let best = 0, bestDistance = Infinity;
+    for (let index = 0; index < loop.length; index++) {
+      const candidate = out.positions[loop[index]];
+      const distanceSquared = (candidate[projectedAxes[0]] - point[projectedAxes[0]]) ** 2
+        + (candidate[projectedAxes[1]] - point[projectedAxes[1]]) ** 2;
+      if (distanceSquared < bestDistance) { bestDistance = distanceSquared; best = index; }
+    }
+    return best;
+  };
+  const orientCap = (face: number[]): number[] => {
+    const points = face.map((vertex) => out.positions[vertex]);
+    let area = 0;
+    for (let index = 0; index < points.length; index++) {
+      const point = points[index], next = points[(index + 1) % points.length];
+      area += point[projectedAxes[0]] * next[projectedAxes[1]]
+        - next[projectedAxes[0]] * point[projectedAxes[1]];
+    }
+    // Keeping the greater half-space exposes its minimum plane (-axis);
+    // keeping the lesser half-space exposes its maximum plane (+axis).
+    const desired = cut.keepGreater ? -1 : 1;
+    return Math.sign(area) === desired ? face : [...face].reverse();
+  };
+  const capFaces: number[][] = [];
+  if (loops.length === 1) {
+    capFaces.push(orientCap(loops[0]));
+  } else if (loops.length === 2) {
+    const ordered = [...loops].sort((a, b) => Math.abs(signedArea(b)) - Math.abs(signedArea(a)));
+    const outer = ordered[0], inner = ordered[1];
+    const outerA = 0, outerB = Math.floor(outer.length / 2);
+    const innerA = nearestLoopIndex(inner, out.positions[outer[outerA]]);
+    const innerB = nearestLoopIndex(inner, out.positions[outer[outerB]]);
+    const outerArcA = cyclicArc(outer, outerA, outerB);
+    const outerArcB = cyclicArc(outer, outerB, outerA);
+    const innerForward = cyclicArc(inner, innerB, innerA);
+    const innerBackward = [...cyclicArc(inner, innerA, innerB)].reverse();
+    const [innerArcA, innerArcB] = Math.abs(innerForward.length - outerArcA.length)
+      <= Math.abs(innerBackward.length - outerArcA.length)
+      ? [innerForward, [...innerBackward].reverse()]
+      : [innerBackward, [...innerForward].reverse()];
+    capFaces.push(orientCap([...outerArcA, ...innerArcA]));
+    capFaces.push(orientCap([...outerArcB, ...innerArcB]));
+  } else {
+    return null;
+  }
+  const capMaterial = out.faceMaterial[out.faceMaterial.length - 1] ?? 0;
+  for (const face of capFaces) {
+    out.faces.push(face);
+    out.faceMaterial.push(capMaterial);
+    for (const [, data] of faceAttributes) data.push(data[data.length - 1] ?? 0);
+  }
+  for (const [name, data] of pointAttributes) out.attributes.set(name, { domain: "POINT", data });
+  for (const [name, data] of faceAttributes) out.attributes.set(name, { domain: "FACE", data });
+  return compactFaceVertsLocal(out);
+}
+
+// Face-level box clip fallback for multi-plane or disconnected intersections.
 function clipToBox(g: Geometry, box: { min: Vec3; max: Vec3 }, keepInside: boolean): Geometry {
   const out = g.clone();
   const m = out.mesh;
   if (!m) return out;
+  if (keepInside) {
+    const singlePlane = clipToSingleBoxPlaneIntersection(m, box);
+    if (singlePlane) {
+      out.mesh = singlePlane;
+      return out;
+    }
+  }
   const eps = 1e-5;
   const inside = (p: Vec3) =>
     p[0] >= box.min[0] - eps && p[0] <= box.max[0] + eps &&
@@ -3817,6 +4041,27 @@ reg("GeometryNodeMeshBoolean", (api) => {
     if (surface) {
       const geometry = new Geometry();
       geometry.mesh = surface;
+      return { Mesh: geometry, "Intersecting Edges": Field.of(0) };
+    }
+  }
+  if (solver === "FLOAT" && op === "INTERSECT" && mesh1.mesh && mesh2s.length === 1) {
+    const box = axisBox(mesh2s[0]);
+    if (box) {
+      const contained = mesh1.mesh.positions.every((point) =>
+        point[0] >= box.min[0] && point[0] <= box.max[0]
+        && point[1] >= box.min[1] && point[1] <= box.max[1]
+        && point[2] >= box.min[2] && point[2] <= box.max[2]);
+      // Blender's FLOAT solver leaves an already-contained first operand
+      // byte-for-byte/topology-for-topology intact. Sending the vase's first
+      // exact clip through Manifold again triangulated its two 350/352-corner
+      // caps and discarded 14,657 source vertices inside the enclosing safety
+      // cutter.
+      if (contained) return { Mesh: mesh1.clone(), "Intersecting Edges": Field.of(0) };
+    }
+    const clipped = box ? clipToSingleBoxPlaneIntersection(mesh1.mesh, box) : null;
+    if (clipped) {
+      const geometry = new Geometry();
+      geometry.mesh = clipped;
       return { Mesh: geometry, "Intersecting Edges": Field.of(0) };
     }
   }

@@ -49,6 +49,10 @@ export type SockVal = Geometry | Field | string | DataRef | null | undefined;
 
 export interface EvalAPI {
   node: RawNode;
+  // Stable expanded-node path for anonymous attributes. The same node inside
+  // a repeat zone keeps one identity across iterations, while separate nested
+  // group-node instances receive distinct paths.
+  scope?: string;
   input(name: string): SockVal; // raw pulled value
   inputs(name: string): SockVal[]; // all values feeding a multi-input socket
   geoInputs(name: string): Geometry[]; // multi-input, geometry only

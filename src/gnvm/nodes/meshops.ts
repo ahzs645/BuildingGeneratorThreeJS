@@ -761,7 +761,8 @@ function reconstructSplitFastenerHeal(mesh: Mesh): Mesh {
 // domain interpolation (FACE->POINT = any adjacent face, like Blender).
 let extrudeSeq = 0;
 function faceMaskField(name: string): Field {
-  return Field.perElem((i, ctx) => (asNum((ctx.attr?.(name, i) ?? 0) as Elem) > 0 ? 1 : 0)).tagged("FACE");
+  return Field.perElem((i, ctx) => (asNum((ctx.attr?.(name, i) ?? 0) as Elem) > 0 ? 1 : 0))
+    .tagged("FACE", "BOOLEAN");
 }
 // A new extrude makes earlier extrudes' Top/Side masks stale; carrying them
 // forward made repeat-zone lathes accumulate hundreds of attributes (every
@@ -857,26 +858,20 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
       for (let ei = 0; ei < inEdges.length; ei++)
         if (asNum(a.data[ei] ?? 0) > 0) inheritedTop[ei] = true;
     }
-    const vertexEdgeCount = new Array(mesh.positions.length).fill(0);
-    for (const e of inEdges) for (const v of e.verts) vertexEdgeCount[v]++;
     const sideFaceIdx: number[] = [];
     const newEdgePairs: [number, number][] = []; // duplicated (top) edges
     for (const ei of selEdges) {
       const [ca, cb] = inEdges[ei].verts;
       let [a, b] = orient.get(ekey(ca, cb)) ?? [ca, cb];
-      // Spin repeatedly extrudes the previous pass's Top edges. On interior
-      // profile edges, the adjacent face traverses that top edge opposite the
-      // original profile direction, so reverse it again before constructing
-      // the next quad. Otherwise every angular sector alternates winding and
-      // an odd-step weld leaves a one-sector normal discontinuity. Preserve
-      // the open profile's endpoint strips: their valence stays one on the
-      // source wire and two on later rings, and Blender uses boundary-loop
-      // winding there for the top rim and collapsed axial fan.
-      const profileBoundary = inheritedTop[ei]
-        ? vertexEdgeCount[ca] <= 2 || vertexEdgeCount[cb] <= 2
-        : inEdges[ei].faces.length === 0 && (vertexEdgeCount[ca] <= 1 || vertexEdgeCount[cb] <= 1);
+      // Repeated edge extrusion follows the previous pass's Top edges. The
+      // adjacent side face traverses every such edge opposite the stored Top
+      // direction, including the two endpoint edges of an open profile, so
+      // reverse it before constructing the next strip. Treating endpoint
+      // edges specially made their winding alternate on each Spin sector:
+      // the vase's first wall quad and collapsed axial triangle then cancelled
+      // their neighbors' normals and broke the downstream Solidify offset.
       if (inheritedTop[ei]) {
-        if (!profileBoundary && inEdges[ei].faces.length === 1) [a, b] = [b, a];
+        if (inEdges[ei].faces.length === 1) [a, b] = [b, a];
       } else if (inEdges[ei].faces.length > 0) {
         // Blender traverses an already face-bound edge opposite the adjacent
         // face when building the new side quad. This is observable on an open
@@ -884,7 +879,7 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
         // wall normals. The bin's thickness group intentionally relies on that
         // normal field to inset its duplicate shell.
         [a, b] = [b, a];
-      } else if (profileBoundary) [a, b] = [b, a];
+      }
       const na = dupOf(a), nb = dupOf(b);
       sideFaceIdx.push(out.faces.length);
       const side = [a, b, nb, na];

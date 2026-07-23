@@ -544,15 +544,23 @@ reg("GeometryNodeSetPosition", (api) => {
   const domain = !hasMeshPoints && !g.curves.length && g.instances.length ? "INSTANCE" : "POINT";
   const ctx = makeFieldCtx(g, domain);
   // Selection chains built entirely from FACE/EDGE-domain masks evaluate on
-  // their source domain and convert ONCE at the end (Blender's order) —
-  // per-leaf conversion turns NOT(mask) into "not touching any", wrongly
-  // excluding boundary verts (the vase's outer-shell mask lost its rim).
+  // their source domain and convert ONCE at the end (Blender's order).
+  // Boolean domain adaptation is an AND at the destination element: a point
+  // on the boundary between true and false faces is false. Numeric fields keep
+  // the ordinary averaged interpolation. The vase's Solidify Outer output is
+  // NOT(Inner OR Side); treating its 0.5 boundary average as truthy selected
+  // all 349 rim points and displaced the top by another 15.57 units.
   const selF = api.field("Selection");
   let sel: import("../core").Elem[];
   if (g.mesh && selF.srcDomain && selF.srcDomain !== "POINT" && ctx.toDomain) {
     const srcCtx = makeFieldCtx(g, selF.srcDomain);
     const srcArr = selF.array(srcCtx);
-    sel = Array.from({ length: ctx.size }, (_, i) => ctx.toDomain!(selF.srcDomain!, srcArr, i) ?? 0);
+    sel = Array.from({ length: ctx.size }, (_, i) => {
+      const adapted = ctx.toDomain!(selF.srcDomain!, srcArr, i) ?? 0;
+      return selF.srcDomainValueType === "BOOLEAN"
+        ? (asNum(adapted) >= 1 ? 1 : 0)
+        : adapted;
+    });
   } else {
     sel = selF.array(ctx);
   }
@@ -919,7 +927,24 @@ reg("GeometryNodeRotateInstances", (api) => {
 reg("GeometryNodeRealizeInstances", (api) => ({ Geometry: realizeInstances(api.geo("Geometry")) }));
 
 // ---- capture attribute ----------------------------------------------------
-let captureAttributeSequence = 0;
+const directCaptureNodeIds = new WeakMap<object, number>();
+let directCaptureNodeSequence = 0;
+
+function captureNodeScope(api: EvalAPI): string {
+  if (api.scope) return api.scope;
+  // Direct handler callers (focused tests and small embedding integrations)
+  // do not pass an evaluator scope. Preserve Blender's per-node anonymous
+  // identity there as well: distinct node objects must not collide, while
+  // repeated evaluation of the same object must keep reusing its attribute.
+  const node = api.node as object;
+  let id = directCaptureNodeIds.get(node);
+  if (id === undefined) {
+    id = directCaptureNodeSequence++;
+    directCaptureNodeIds.set(node, id);
+  }
+  return `direct:${id}`;
+}
+
 reg("GeometryNodeCaptureAttribute", (api) => {
   const g = api.geo("Geometry").clone();
   const domMap: Record<string, any> = { POINT: "POINT", EDGE: "EDGE", FACE: "FACE", CORNER: "CORNER", INSTANCE: "INSTANCE", CURVE: "CURVE" };
@@ -928,7 +953,12 @@ reg("GeometryNodeCaptureAttribute", (api) => {
   // contain many nodes all named "Capture Attribute"; a visible-name key lets
   // point-instance attributes overwrite the prototype's anonymous attribute
   // during realization. Each evaluated capture needs its own anonymous ID.
-  const name = `__cap_${captureAttributeSequence++}_${api.node.name}`;
+  // Blender's anonymous attribute identity belongs to the expanded node and
+  // evaluation lifetime. The evaluator gives repeat bodies two rolling scopes
+  // so a state field can still read the preceding iteration while obsolete
+  // captures are overwritten. Generating an unbounded fresh name here retained
+  // one growing array per pass (the vase Spin loop exhausted >8 GB).
+  const name = `__cap_${captureNodeScope(api)}_${api.node.name}`;
   // A geometry set may contain an allocated but empty mesh beside a populated
   // curve component (Join Geometry commonly produces this shape). Capture on
   // the component that actually owns elements instead of letting the empty

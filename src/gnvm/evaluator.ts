@@ -791,10 +791,20 @@ class Invocation {
   private visiting = new Set<string>();
   // Active repeat-zone state: RepeatInput node name -> its current-iteration outputs.
   private repeatState = new Map<string, Record<string, SockVal>>();
+  // Anonymous attributes inside a repeat need the current and previous
+  // iteration alive at once: state fields can read the previous capture while
+  // the current body writes its replacement. Alternating two expanded scopes
+  // preserves that lifetime without retaining every prior iteration.
+  private repeatEpoch = 0;
   // Active per-element state for a For Each Geometry Element zone.
   private foreachState = new Map<string, Record<string, SockVal>>();
 
-  constructor(private ev: Evaluator, private group: RawGroup, private bindings: Record<string, SockVal>) {
+  constructor(
+    private ev: Evaluator,
+    private group: RawGroup,
+    private bindings: Record<string, SockVal>,
+    private scope: string,
+  ) {
     for (const n of group.nodes) this.byName.set(n.name, n);
     for (const l of group.links) {
       if (l.muted) continue;
@@ -821,6 +831,11 @@ class Invocation {
   private socketId(node: RawNode, key: string): string {
     const s = node.inputs.find((x) => x.identifier === key || x.name === key);
     return s?.identifier ?? key;
+  }
+
+  private childScope(node: RawNode): string {
+    const epoch = this.repeatEpoch ? `@${this.repeatEpoch & 1}` : "";
+    return `${this.scope}/${node.name}:${node.group ?? node.type}${epoch}`;
   }
 
   // Pull the value feeding node.socket (from the first link, or the constant).
@@ -1000,10 +1015,10 @@ class Invocation {
             const translation = location.slice(0, 3) as Vec3;
             for (const [identifier, value] of Object.entries(sub))
               if (value instanceof Geometry) sub[identifier] = translateGeometryContext(value, translation);
-            return this.ev.evalGroup(node.group, sub);
+            return this.ev.evalGroup(node.group, sub, this.childScope(node));
           }
         }
-        const outputs = this.ev.evalGroup(node.group, sub);
+        const outputs = this.ev.evalGroup(node.group, sub, this.childScope(node));
         if (coordinateContext === "ACTIVE_OBJECT_LOCAL_TRANSLATION") {
           const location = DUMP_CONTEXT.activeObject?.location;
           if (location?.length === 3) {
@@ -1081,7 +1096,9 @@ class Invocation {
       for (const l of this.group.links)
         if (!l.muted && l.from_node === cur && !zone.has(l.to_node)) { zone.add(l.to_node); queue.push(l.to_node); }
     }
+    const parentEpoch = this.repeatEpoch;
     for (let it = 0; it < nIter; it++) {
+      this.repeatEpoch = it + 1;
       for (const nm of zone) this.memo.delete(nm);
       this.memo.delete(inNode.name);
       this.repeatState.set(inNode.name, { Iteration: Field.of(it), ...state });
@@ -1090,6 +1107,7 @@ class Invocation {
         if (s.identifier && s.identifier !== "__extend__") next[s.identifier] = this.pull(outNode, s.identifier);
       state = next;
     }
+    this.repeatEpoch = parentEpoch;
     this.repeatState.delete(inNode.name);
     // leave the zone's per-iteration memos cleared so later out-of-zone pulls
     // don't see stale last-iteration values for zone nodes
@@ -1216,6 +1234,7 @@ class Invocation {
     };
     return {
       node,
+      scope: `${this.scope}/${node.name}${this.repeatEpoch ? `@${this.repeatEpoch & 1}` : ""}`,
       input: (name) => self.pull(node, name),
       inputs: (name) => self.pullMulti(node, name),
       geoInputs: (name) => self.pullMulti(node, name).filter((v): v is Geometry => v instanceof Geometry),
@@ -1261,10 +1280,10 @@ function firstGeoOr0(outs: Record<string, SockVal>): SockVal {
 export class Evaluator {
   constructor(public program: Program) {}
 
-  evalGroup(name: string, bindings: Record<string, SockVal>): Record<string, SockVal> {
+  evalGroup(name: string, bindings: Record<string, SockVal>, scope = name): Record<string, SockVal> {
     const g = this.program[name];
     if (!g) return {};
-    return new Invocation(this, g, bindings).result();
+    return new Invocation(this, g, bindings, scope).result();
   }
 
   // Evaluate a modifier: bind interface inputs from defaults + overrides, return geometry.

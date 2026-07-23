@@ -1,0 +1,17 @@
+[
+  { "id": "spin", "group": "Geometry Nodes.004", "node": "Group.001", "socket": "Socket_0" },
+  { "id": "solidify-inner-branch", "group": "Solidify N++", "node": "Reroute.005", "socket": "Output" },
+  { "id": "solidify-outer-branch", "group": "Solidify N++", "node": "Reroute.006", "socket": "Output" },
+  { "id": "solidify-joined", "group": "Solidify N++", "node": "Join Geometry", "socket": "Geometry" },
+  { "id": "solidify-merged", "group": "Solidify N++", "node": "Merge by Distance", "socket": "Geometry" },
+  { "id": "solidify", "group": "Geometry Nodes.004", "node": "Group.002", "socket": "Output_0" },
+  { "id": "outer-offset", "group": "Geometry Nodes.004", "node": "Set Position.001", "socket": "Geometry" },
+  { "id": "shell-cutter-box", "group": "Geometry Nodes.004", "node": "Group.007", "socket": "Output_1" },
+  { "id": "shell-cutter-position", "group": "Geometry Nodes.004", "node": "Set Position.002", "socket": "Geometry" },
+  { "id": "shell-boolean", "group": "Geometry Nodes.004", "node": "Group.008", "socket": "Socket_4" },
+  { "id": "bottom-position", "group": "Geometry Nodes.004", "node": "Set Position.004", "socket": "Geometry" },
+  { "id": "bottom-cutter", "group": "Geometry Nodes.004", "node": "Set Position.003", "socket": "Geometry" },
+  { "id": "final-boolean", "group": "Geometry Nodes.004", "node": "Group.009", "socket": "Socket_4" },
+  { "id": "centered", "group": "Geometry Nodes.004", "node": "Group", "socket": "Output_1" },
+  { "id": "output", "group": "Geometry Nodes.004", "node": "Switch.001", "socket": "Output" }
+]

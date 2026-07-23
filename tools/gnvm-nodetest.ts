@@ -2724,8 +2724,8 @@ function meshSignedAreaXY(m: Mesh): number {
     ([, edges]) => edges.length === 2 && edges[0].direction === edges[1].direction,
   );
   check(
-    "closed repeated EDGE extrude repairs endpoint-strip winding",
-    repairedFaces > 0 && windingConflicts.length === 0 && topologyOf(sm).edges.every((edge) => edge.faces.length === 2),
+    "closed repeated EDGE extrude needs no endpoint-strip winding repair",
+    repairedFaces === 0 && windingConflicts.length === 0 && topologyOf(sm).edges.every((edge) => edge.faces.length === 2),
     `repaired=${repairedFaces} conflicts=${windingConflicts.length} ${JSON.stringify(windingConflicts.slice(0, 6))}`,
   );
 }

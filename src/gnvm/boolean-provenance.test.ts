@@ -7,8 +7,10 @@ import {
   manifoldBooleanMany,
   meshToManifoldGL,
 } from "./boolean";
-import { Mesh, mergeMeshInto } from "./geometry";
+import { Geometry, Mesh, mergeMeshInto } from "./geometry";
+import { type EvalAPI, REGISTRY } from "./registry";
 import {
+  clipToSingleBoxPlaneIntersection,
   collapseIsolatedBooleanMicroEdgeForTest,
   dissolveCoplanarFacesForTest,
   splitDisconnectedBooleanMeshForTest,
@@ -82,6 +84,66 @@ test("pairwise Boolean removes internal fan-diagonal intersection vertices", asy
     Math.abs(point[0] - 0.5) < 1e-6
     && Math.abs(point[1] - 0.5) < 1e-6
     && Math.abs(point[2] - 1.1) < 1e-6));
+});
+
+test("single-plane FLOAT intersection preserves shell panels and caps an annulus", () => {
+  const source = new Mesh();
+  const outer = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  const inner = [[-.5, -.5], [-.5, .5], [.5, .5], [.5, -.5]];
+  source.positions = [
+    ...outer.map(([x, y]) => [x, y, 0] as [number, number, number]),
+    ...outer.map(([x, y]) => [x, y, 1] as [number, number, number]),
+    ...inner.map(([x, y]) => [x, y, 0] as [number, number, number]),
+    ...inner.map(([x, y]) => [x, y, 1] as [number, number, number]),
+  ];
+  for (let edge = 0; edge < 4; edge++) {
+    const next = (edge + 1) % 4;
+    source.faces.push([edge, next, 4 + next, 4 + edge]);
+    source.faces.push([8 + edge, 12 + edge, 12 + next, 8 + next]);
+  }
+  source.faceMaterial = source.faces.map(() => 0);
+  source.attributes.set("height", { domain: "POINT", data: source.positions.map((point) => point[2]) });
+  source.attributes.set("panel", { domain: "FACE", data: source.faces.map((_, face) => face) });
+
+  const clipped = clipToSingleBoxPlaneIntersection(source, {
+    min: [-2, -2, -1],
+    max: [2, 2, .5],
+  });
+
+  assert.ok(clipped);
+  assert.equal(clipped.positions.length, 16);
+  assert.equal(clipped.faces.length, 10);
+  assert.deepEqual(
+    clipped.faces.map((face) => face.length).sort((a, b) => a - b),
+    [4, 4, 4, 4, 4, 4, 4, 4, 6, 6],
+  );
+  assert.equal(clipped.positions.filter((point) => point[2] === .5).length, 8);
+  assert.deepEqual(
+    [...(clipped.attributes.get("height")?.data ?? [])].sort((a, b) => Number(a) - Number(b)),
+    [0, 0, 0, 0, 0, 0, 0, 0, .5, .5, .5, .5, .5, .5, .5, .5],
+  );
+  assert.equal(clipped.attributes.get("panel")?.data.length, 10);
+});
+
+test("FLOAT intersection preserves topology inside an enclosing box", () => {
+  const source = new Geometry();
+  source.mesh = box([0, 0, 0], [1, 1, 1], .2, "source");
+  const enclosure = new Geometry();
+  enclosure.mesh = box([-2, -2, -2], [3, 3, 3], 0, "enclosure");
+  const handler = REGISTRY.get("GeometryNodeMeshBoolean");
+  assert.ok(handler);
+
+  const result = handler({
+    geo: (name) => name === "Mesh 1" ? source : enclosure,
+    geoInputs: (name) => name === "Mesh 2" ? [enclosure] : [],
+    prop: (name, fallback) => name === "operation" ? "INTERSECT" : name === "solver" ? "FLOAT" : fallback,
+    node: { name: "Mesh Boolean", inputs: [{ identifier: "Mesh 1", enabled: true }] },
+  } as unknown as EvalAPI).Mesh as Geometry;
+
+  assert.deepEqual(result.mesh!.positions, source.mesh.positions);
+  assert.deepEqual(result.mesh!.faces, source.mesh.faces);
+  assert.deepEqual(result.mesh!.faceMaterial, source.mesh.faceMaterial);
+  assert.deepEqual(result.mesh!.attributes.get("source_face"), source.mesh.attributes.get("source_face"));
 });
 
 test("batch Boolean assigns non-colliding face IDs across operands", async () => {
