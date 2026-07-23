@@ -2,9 +2,9 @@
   "id": "chain-link-spikey",
   "object": "spikey link",
   "root": "chain link_spikey",
-  "status": "exact-topology",
+  "status": "exact-topology-and-authored-default-surface-near-parity",
   "blender": { "verts": 2867, "faces": 5376 },
   "gnvm": { "verts": 2867, "faces": 5376 },
   "coverage": "100% of reachable node types across the 1,748-node root closure and its 256-case Marching Cubes lookup table.",
-  "validation": "Exact Blender topology at 2,867 vertices and 5,376 faces. Cyclic NURBS evaluation now starts on Blender's second-control span, rebuilds evaluated tangents instead of remapping stale control tangents, and sweeps the 9,324-point tube within 0.000014 units of Blender. Scale Elements uses element-center weighting for the four cone fans, aligning the Marching Cubes bounds and final local bounds within 0.0001 units."
+  "validation": "Exact Blender topology at 2,867 vertices and 5,376 faces. Cyclic NURBS evaluation now starts on Blender's second-control span, rebuilds evaluated tangents instead of remapping stale control tangents, and sweeps the 9,324-point tube within 0.000014 units of Blender. Scale Elements uses element-center weighting for the four cone fans, aligning the Marching Cubes bounds and final local bounds within 0.0001 units. The complete 16,128-index result has a null material assignment and no material attributes, matching the source's empty material slots. Browser authored mode therefore uses Blender's neutral 0.8 base color, zero metallic, and Roughness 0.5. With authored key/fill scale 12, the aligned captures measure 0.9899 silhouette IoU, 0.8572 macro luminance correlation, 0.1326 macro luminance MAE, and -0.0027 mean luminance error."
 }

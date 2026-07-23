@@ -556,8 +556,13 @@
     "dump": "dojo/chrome-assets/chain-link-spikey/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/chain-link-spikey.png",
+    "authoredReference": "dojo/references/chrome-assets/chain-link-spikey-authored.png",
+    "localSpace": true,
+    "surfaceBounds": true,
+    "authoredLightScale": 12,
+    "authoredEnvironmentIntensity": 0.8,
     "blenderStats": { "verts": 2867, "faces": 5376 },
-    "note": "Exact Blender topology at 2,867 / 5,376 with local bounds within 0.0001 units. Cyclic NURBS span order and evaluated tangents reproduce the authored 9,324-point tube, while element-center Scale Elements weighting aligns all four cone fans and the downstream Marching Cubes surface.",
+    "note": "Exact Blender topology at 2,867 / 5,376 with local bounds within 0.0001 units. Cyclic NURBS span order and evaluated tangents reproduce the authored 9,324-point tube, while element-center Scale Elements weighting aligns all four cone fans and the downstream Marching Cubes surface. The source has no material slots, so authored mode uses Blender's neutral 0.8 / Roughness 0.5 default surface. A calibrated key/fill scale reaches 0.9899 silhouette IoU, 0.8572 macro luminance correlation, and -0.0027 mean luminance error.",
     "controls": []
   },
   {

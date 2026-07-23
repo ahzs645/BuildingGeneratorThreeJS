@@ -151,6 +151,21 @@ test("reconstructs 3D Chrome Grill Crayon's direct Principled metal", () => {
   material?.dispose();
 });
 
+test("renders Spikey Chain Link with Blender's unassigned default surface", async () => {
+  const dump = JSON.parse(readFileSync("public/dojo/chrome-assets/chain-link-spikey/dump.json", "utf8")) as Dump;
+  const result = await runGenerator(dump, { object: "spikey link" });
+  assert.deepEqual(result.soup.stats, { verts: 2867, faces: 5376, tris: 5376 });
+  assert.deepEqual(result.soup.groups, [{ start: 0, count: 16128, material: null }]);
+  assert.deepEqual(result.soup.attributes, {});
+
+  const material = makeBlenderDefaultSurfaceMaterial();
+  assert.equal(material.name, "Blender unassigned material surface");
+  assert.deepEqual(material.color.toArray(), [0.8, 0.8, 0.8]);
+  assert.equal(material.metalness, 0);
+  assert.equal(material.roughness, 0.5);
+  material.dispose();
+});
+
 test("routes the exact N03D print-test surface through flat.w", async () => {
   const dump = JSON.parse(readFileSync("public/dojo/n03d/print-test-mesh/dump.json", "utf8")) as Dump;
   const result = await runGenerator(dump, { object: "print test mesh" });
