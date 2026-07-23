@@ -29,6 +29,7 @@ test("capability analysis follows nested groups once and classifies node support
       node("Viewer", "GeometryNodeViewer"),
       node("Nested", "GeometryNodeGroup", { group: "Nested" }),
       node("Missing nested", "GeometryNodeGroup", { group: "Absent" }),
+      node("Simulation input", "GeometryNodeSimulationInput"),
       node("Future node", "GeometryNodeFutureFeature"),
       node("Muted future node", "GeometryNodeFutureFeature", { ui: { mute: true } }),
     ]),
@@ -47,7 +48,10 @@ test("capability analysis follows nested groups once and classifies node support
     referencedByGroup: "Root",
     referencedByNode: "Missing nested",
   }]);
-  assert.deepEqual(report.unsupportedNodeTypes, [{ type: "GeometryNodeFutureFeature", count: 1 }]);
+  assert.deepEqual(report.unsupportedNodeTypes, [
+    { type: "GeometryNodeFutureFeature", count: 1 },
+    { type: "GeometryNodeSimulationInput", count: 1 },
+  ]);
   assert.ok(report.nodeTypes.some((entry) =>
     entry.type === "GeometryNodeFutureFeature"
     && entry.support === "muted-passthrough"

@@ -1,7 +1,16 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { REGISTRY, type Dump, type TriSoup } from "./gnvm/index";
+import {
+  analyzeProgramCapabilities,
+  EDITOR_ONLY_NODE_TYPES,
+  EVALUATOR_NATIVE_NODE_TYPES,
+  REGISTRY,
+  type Dump,
+  type ProgramCapabilityReport,
+  type TriSoup,
+} from "./gnvm/index";
+import type { Program } from "./gnvm/evaluator";
 import { isStaticDeploy, publicUrl } from "./base-url";
 
 type ImportedDump = Omit<Dump, "objects" | "node_groups" | "materials"> & {
@@ -17,7 +26,7 @@ type ImportedDump = Omit<Dump, "objects" | "node_groups" | "materials"> & {
 };
 
 type RawSocket = { name: string; identifier: string; socket_type?: string; in_out?: string; item_type?: string; default?: unknown; min_value?: number; max_value?: number };
-type RawNode = { name: string; type: string; label?: string | null; inputs?: Array<{ name: string; identifier: string; linked: boolean; value: unknown }> };
+type RawNode = { name: string; type: string; label?: string | null; ui?: { mute?: boolean }; inputs?: Array<{ name: string; identifier: string; linked: boolean; value: unknown }> };
 type RawGroup = { name?: string; interface?: RawSocket[]; nodes?: RawNode[]; links?: unknown[] };
 type RawMaterial = { nodes?: RawNode[] };
 type GnObject = NonNullable<ImportedDump["objects"]>[number] & { group: string; saved: Record<string, unknown> };
@@ -200,17 +209,47 @@ function showSoup(soup: TriSoup): void {
   emptyState.style.display = "none";
 }
 
-const intrinsicTypes = new Set([
-  "NodeGroupInput", "NodeGroupOutput", "NodeReroute", "NodeFrame", "GeometryNodeGroup",
-  "GeometryNodeRepeatInput", "GeometryNodeRepeatOutput", "GeometryNodeSimulationInput", "GeometryNodeSimulationOutput",
-]);
-const supported = (type: string) => intrinsicTypes.has(type) || REGISTRY.has(type);
+const supported = (type: string) =>
+  EVALUATOR_NATIVE_NODE_TYPES.has(type)
+  || EDITOR_ONLY_NODE_TYPES.has(type)
+  || REGISTRY.has(type);
 
-function nodeInventory(): { nodes: RawNode[]; unsupported: string[] } {
-  if (!dump) return { nodes: [], unsupported: [] };
+function nodeInventory(): RawNode[] {
+  if (!dump) return [];
   const nodes = Object.values(dump.node_groups).flatMap((group) => group.nodes ?? []);
-  const unsupportedTypes = [...new Set(nodes.filter((node) => !supported(node.type)).map((node) => node.type))].sort();
-  return { nodes, unsupported: unsupportedTypes };
+  return nodes;
+}
+
+function activeCapabilities(): ProgramCapabilityReport | null {
+  if (!dump || !activeObject) return null;
+  return analyzeProgramCapabilities(dump.node_groups as unknown as Program, activeObject.group);
+}
+
+function renderCompatibility(): number {
+  const report = activeCapabilities();
+  if (!report) {
+    $("#compat").hidden = true;
+    $("#unsupported").textContent = "Select a Geometry Nodes object to inspect its reachable graph.";
+    return 0;
+  }
+  const nodeCount = report.nodeTypes.reduce((sum, entry) => sum + entry.count, 0);
+  const recognized = report.nodeTypes
+    .filter((entry) => entry.support !== "unsupported")
+    .reduce((sum, entry) => sum + entry.count, 0);
+  const recordCount = nodeCount + report.missingGroups.length;
+  const score = recordCount ? Math.round(recognized / recordCount * 100) : 100;
+  $("#compat").hidden = false;
+  $("#compat-score").textContent = `${score}%`;
+  $("#compat-detail").textContent =
+    `${recognized}/${recordCount} reachable records recognized · ${report.reachableGroups.length} groups`;
+  const gaps = [
+    ...report.unsupportedNodeTypes.map((entry) => `${entry.type} ×${entry.count}`),
+    ...report.missingGroups.map((entry) => `missing group ${entry.group}`),
+  ];
+  $("#unsupported").textContent = gaps.length
+    ? `Selected-output gaps: ${gaps.join(" · ")}`
+    : "Every node and nested group reachable from the selected output is recognized.";
+  return score;
 }
 
 function renderGroups(query = ""): void {
@@ -235,7 +274,7 @@ function renderGroups(query = ""): void {
     list.className = "node-list";
     for (const node of nodes) {
       const row = document.createElement("div");
-      row.className = `node-row${supported(node.type) ? "" : " unsupported"}`;
+      row.className = `node-row${node.ui?.mute || supported(node.type) ? "" : " unsupported"}`;
       const dot = document.createElement("span"); dot.className = "node-dot";
       const label = document.createElement("span"); label.className = "node-name"; label.textContent = node.label || node.name;
       const type = document.createElement("span"); type.className = "node-type"; type.textContent = node.type.replace(/^(GeometryNode|ShaderNode|FunctionNode)/, "");
@@ -311,12 +350,13 @@ function markDirty(): void {
   if (latestSoup) status("Parameters changed · build preview to apply");
 }
 
-function selectObject(index: number): void {
+function selectObject(index: number): number {
   activeObject = objects[index] ?? null;
   previewButton.disabled = !activeObject;
   $("#stage-object").textContent = activeObject ? `${activeObject.name} · ${activeObject.group}` : "No object selected";
   renderParameters();
   renderGroups(nodeSearch.value);
+  return renderCompatibility();
 }
 
 function loadDump(value: ImportedDump, filename: string, bytes: number): void {
@@ -342,18 +382,12 @@ function loadDump(value: ImportedDump, filename: string, bytes: number): void {
   const inventory = nodeInventory();
   $("#metric-objects").textContent = String(objects.length);
   $("#metric-groups").textContent = String(Object.keys(value.node_groups).length);
-  $("#metric-nodes").textContent = inventory.nodes.length.toLocaleString();
+  $("#metric-nodes").textContent = inventory.length.toLocaleString();
   $("#metric-materials").textContent = String(Object.keys(value.materials ?? {}).length);
-  const compatible = inventory.nodes.filter((node) => supported(node.type)).length;
-  const score = inventory.nodes.length ? Math.round(compatible / inventory.nodes.length * 100) : 100;
-  $("#compat").hidden = false;
-  $("#compat-score").textContent = `${score}%`;
-  $("#compat-detail").textContent = `${compatible}/${inventory.nodes.length} nodes recognized`;
-  $("#unsupported").textContent = inventory.unsupported.length ? `Fallback node types: ${inventory.unsupported.join(" · ")}` : "All extracted node types are recognized by the runtime.";
   renderGroups();
-  selectObject(0);
+  const score = selectObject(0);
   status(objects.length ? "Graph extracted · choose an object and build" : "Graph extracted · no runnable Geometry Nodes object found");
-  (window as typeof window & { __BLENDBRIDGE__?: unknown }).__BLENDBRIDGE__ = { loaded: true, filename, objects: objects.length, groups: Object.keys(value.node_groups).length, nodes: inventory.nodes.length, compatibility: score };
+  (window as typeof window & { __BLENDBRIDGE__?: unknown }).__BLENDBRIDGE__ = { loaded: true, filename, objects: objects.length, groups: Object.keys(value.node_groups).length, nodes: inventory.length, compatibility: score };
 }
 
 async function importFile(file: File): Promise<void> {
