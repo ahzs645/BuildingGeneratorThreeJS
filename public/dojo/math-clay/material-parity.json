@@ -10,8 +10,8 @@
     "metadata": "dojo/references/math-clay/lorenze-authored.json",
     "engine": "BLENDER_EEVEE",
     "geometryNodesOnly": true,
-    "authoredLightScale": 28.0,
-    "authoredLightScaleReason": "The isolated reference rig places and sizes its Area lights from the object radius, but Blender Area energy is total power. Scaling the 1000/500 W pair by 28 compensates for this asset's 58.49-unit radius relative to the 11.06-unit N03D calibration target.",
+    "authoredLightScale": 27.967640952252204,
+    "authoredLightScaleReason": "The isolated reference rig places and sizes its Area lights from the object radius, but Blender Area energy is total power. Scaling the 1000/500 W pair by (58.50 / 11.06)^2 compensates for this asset's evaluated radius relative to the N03D calibration target.",
     "verts": 30644,
     "faces": 30642,
     "resolution": [
@@ -21,16 +21,16 @@
     "opaqueSurfacePixels": 290573,
     "opaqueSurfaceFraction": 0.4926435682508681,
     "opaqueSurfaceMeanRgb": [
-      0.090649867405,
-      0.087141937199,
-      0.006960837285
+      0.090439397531,
+      0.086936622791,
+      0.006942131851
     ],
     "opaqueSurfaceMaxRgb": [
       0.439215686275,
       0.427450980392,
       0.121568627451
     ],
-    "opaqueSurfaceMeanLuminance": 0.082098647747,
+    "opaqueSurfaceMeanLuminance": 0.081905710455,
     "evaluatedMaterialFaces": {
       "Filament and Cross Section 1OCT2024": 30642
     }
@@ -57,8 +57,8 @@
     "browserRectAreaScale": 0.62,
     "sweptScales": [0.25, 0.4, 0.55, 0.62, 0.66, 0.7, 0.74, 0.85, 1.0],
     "selectionReason": "Lowest balanced pixel MAE with near-zero mean luminance and black-occupancy deltas against the fixed Blender reference.",
-    "meanLuminanceDelta": 0.0015103745375427413,
-    "blackFractionDelta": 0.019580963261665696
+    "meanLuminanceDelta": 0.00047389383074970814,
+    "blackFractionDelta": 0.015256255336175029
   },
   "remaining": "The coat IOR/Fresnel contract and object-scale lighting calibration are now measured, while the Bevel For Eevee diagnostic shows its AO normal mix is already near the browser's current surface normal for this target. Cross-renderer high-frequency procedural filtering remains pending.",
   "webglComparison": {
@@ -67,15 +67,15 @@
     "browserRoute": "/chrome-assets?asset=math-clay-lorenze&capture=authored",
     "capture": "../references/math-clay/lorenze-authored-webgl.png",
     "comparisonReport": "lorenze-material-comparison.json",
-    "surfaceMaskIou": 0.9940100710170906,
+    "surfaceMaskIou": 0.9961193671688864,
     "intersectionPixels": 290573,
-    "pixelLuminanceMae": 0.04392150291071418,
-    "pixelLuminanceCorrelation": 0.683953329261059,
+    "pixelLuminanceMae": 0.04404629704421655,
+    "pixelLuminanceCorrelation": 0.6733033840723536,
     "binaryMaskDisagreementFraction": 0.0,
-    "macroLuminanceMae": 0.040343091490655486,
-    "macroLuminanceCorrelation": 0.8630298726513875,
-    "blackFractionDelta": 0.019580963261665696,
-    "meanLuminanceDelta": 0.0015103745375427413
+    "macroLuminanceMae": 0.03978410299579884,
+    "macroLuminanceCorrelation": 0.8576427087767204,
+    "blackFractionDelta": 0.015256255336175029,
+    "meanLuminanceDelta": 0.00047389383074970814
   },
   "stageOneCapture": {
     "browserRoute": "/chrome-assets?asset=math-clay-lorenze&capture=authored",
@@ -88,7 +88,7 @@
     "verts": 30644,
     "faces": 30642,
     "liveRouteReverificationSeconds": 1.36,
-    "status": "The WebGL material restores the dense layer-line relief, derives clearcoat Fresnel from the authored 1.59000015 IOR, and uses the measured 0.62 RectArea light scale. The committed capture measures 0.9940 silhouette IoU, 0.0403 macro luminance MAE, 0.863 macro correlation, and 0.0439 pixel luminance MAE."
+    "status": "The WebGL material restores the dense layer-line relief, derives clearcoat Fresnel from the authored 1.59000015 IOR, and uses the measured 0.62 RectArea light scale. The regenerated capture measures 0.9961 silhouette IoU, 0.0398 macro luminance MAE, 0.8576 macro correlation, and 0.0440 pixel luminance MAE."
   },
-  "interpretation": "The 0.9940 silhouette IoU confirms camera and exact geometry alignment. The browser reproduces the authored Generated-coordinate White Noise/Wave field, derivative relief, dynamic roughness and coat fields, patterned dark backface emission, exact coat IOR/Fresnel, and measured asset-scale lighting. Relative to the uncalibrated coat-IOR capture, pixel MAE improves from 0.0622 to 0.0439, macro MAE from 0.0536 to 0.0403, and mean luminance error from +0.0509 to +0.0015. The Blender bevel-factor diagnostic rules out the near-saturated AO normal mix as the dominant residual; high-frequency procedural filtering now leads the remaining pixel difference."
+  "interpretation": "The 0.9961 silhouette IoU confirms camera and exact geometry alignment. The browser reproduces the authored Generated-coordinate White Noise/Wave field, derivative relief, dynamic roughness and coat fields, patterned dark backface emission, exact coat IOR/Fresnel, and measured asset-scale lighting. Relative to the uncalibrated coat-IOR capture, pixel MAE improves from 0.0622 to 0.0440, macro MAE from 0.0536 to 0.0398, and mean luminance error from +0.0509 to +0.0005. The Blender bevel-factor diagnostic rules out the near-saturated AO normal mix as the dominant residual; high-frequency procedural filtering now leads the remaining pixel difference."
 }

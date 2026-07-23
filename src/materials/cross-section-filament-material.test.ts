@@ -4,6 +4,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import * as THREE from "three";
 import {
+  extractBdsfCrossSectionConfig,
   extractCrossSectionFilamentConfig,
   makeCrossSectionFilamentMaterial,
   mathClayFilamentFieldAtGenerated,
@@ -165,5 +166,64 @@ test("reconstructs Math Clay's authored procedural filament and emission branche
   assert.equal((physicalShader.fragmentShader.match(/outgoingLight=mathFilamentBackColor\(vJointColor\)/g) ?? []).length, 1);
   assert.match(physicalShader.fragmentShader, /outgoingLight=mathFilamentBackColor\(vJointColor\);\n#include <opaque_fragment>/);
   material?.dispose();
+  geometry.dispose();
+});
+
+test("reconstructs the D-surface BDSF front color and patterned backface branch", async () => {
+  const bdsfName = "BDSF_Cross Section 1OCT2024.001";
+  assert.deepEqual(extractBdsfCrossSectionConfig(mathDump, bdsfName), {
+    colorAttribute: "col",
+    roughnessAttribute: "rough",
+    alphaAttribute: "alpha",
+    textureAttribute: "texture",
+    bumpStrengthAttribute: "strength",
+    bumpDistanceAttribute: "distance",
+    rayAttribute: "ray",
+    positionAttribute: "pos",
+    directionAttribute: "dir",
+    backSaturation: 0.48399975895881653,
+    backValue: 0.5040002465248108,
+    backWaveScale: 51.1998291015625,
+    backWaveDistortion: 0.8557739853858948,
+    backWaveDetail: 2,
+    backWaveDetailScale: 1,
+    backWaveDetailRoughness: 0.5,
+    backWaveThreshold: 0.117919921875,
+  });
+
+  const result = await runGenerator(mathDump, { object: "Dsurface" });
+  assert.deepEqual(result.soup.stats, { verts: 35054, faces: 35052, tris: 70104 });
+  assert.deepEqual(result.soup.groups, [{ start: 0, count: 210312, material: bdsfName }]);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));
+  for (const [name, attribute] of Object.entries(result.soup.attributes)) {
+    geometry.setAttribute(name, new THREE.BufferAttribute(attribute.data, attribute.itemSize));
+  }
+
+  const material = makeCrossSectionFilamentMaterial(mathDump, geometry, bdsfName);
+  assert.ok(material?.isMeshPhysicalMaterial);
+  assert.equal(material.name, `${bdsfName} · D-surface cross-section reconstruction`);
+  assert.deepEqual(material.userData.bdsfResolvedZeroControls, [
+    "texture",
+    "strength",
+    "distance",
+    "ray",
+    "pos",
+    "dir",
+  ]);
+  const shader = {
+    uniforms: {},
+    vertexShader: "#include <common>\n#include <begin_vertex>",
+    fragmentShader: "#include <common>\n#include <color_fragment>\n#include <roughnessmap_fragment>\n#include <opaque_fragment>",
+  };
+  material.onBeforeCompile(shader as never, {} as never);
+  assert.match(shader.vertexShader, /attribute vec3 col/);
+  assert.match(shader.vertexShader, /attribute float rough/);
+  assert.match(shader.fragmentShader, /diffuseColor\.rgb=max\(vBdsfColor,vec3\(0\.0\)\)/);
+  assert.match(shader.fragmentShader, /bdsfCrossSectionBackWave/);
+  assert.match(shader.fragmentShader, /mix\(vec3\(value\),front,0\.48399975895881653\)\*0\.5040002465248108/);
+  assert.match(shader.fragmentShader, /wave<0\.117919921875\?vec3\(0\.0\):hsv/);
+  assert.match(shader.fragmentShader, /if\(!gl_FrontFacing\)outgoingLight=bdsfCrossSectionBackColor\(vBdsfColor\)/);
+  material.dispose();
   geometry.dispose();
 });

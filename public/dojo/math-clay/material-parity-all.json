@@ -1,0 +1,437 @@
+{
+  "updated": "2026-07-23",
+  "scope": "Authored Eevee material versus the reusable browser material implementation on every cataloged Math Clay generator.",
+  "capture": {
+    "resolution": [
+      768,
+      768
+    ],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometry": "Geometry Nodes only, local object transform",
+    "browserRoute": "/chrome-assets?asset=<id>&capture=authored&lightScale=0.62&preview=authored"
+  },
+  "lighting": {
+    "browserLightScale": 0.62,
+    "blenderReferenceRadius": 11.06,
+    "blenderScaleRule": "(evaluated bounds radius / 11.06)^2, compensating Blender Area light power for the shared radius-scaled rig"
+  },
+  "variants": [
+    {
+      "id": "math-clay-lorenze-001",
+      "object": "Math Clay Study.003",
+      "blenderReference": "../references/math-clay/lorenze-001-authored.png",
+      "blenderMetadata": "../references/math-clay/lorenze-001-authored.json",
+      "browserReference": "../references/math-clay/lorenze-001-authored-webgl.png",
+      "comparisonReport": "lorenze-001-material-comparison.json",
+      "blenderLightScale": 28.428847280771812,
+      "browserLightScale": 0.62,
+      "blender": {
+        "verts": 23968,
+        "faces": 23966,
+        "evaluatedMaterialFaces": {
+          "Filament and Cross Section 1OCT2024": 23966
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "23,968 verts · 23,966 faces"
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9962938068298512,
+        "surfaceCornerRmsePixels": 0.6245021482140972,
+        "pixelLuminanceMae": 0.050607696103050936,
+        "pixelLuminanceCorrelation": 0.5136235210616591,
+        "binaryMaskDisagreementFraction": 0,
+        "macroLuminanceMae": 0.0445798506543182,
+        "macroLuminanceCorrelation": 0.7731048748524363,
+        "blackFractionDelta": -0.042347159592233674,
+        "meanLuminanceDelta": 0.013168392930684426
+      }
+    },
+    {
+      "id": "math-clay-lorenze",
+      "object": "Math Clay Study.002",
+      "blenderReference": "../references/math-clay/lorenze-authored.png",
+      "blenderMetadata": "../references/math-clay/lorenze-authored.json",
+      "browserReference": "../references/math-clay/lorenze-authored-webgl.png",
+      "comparisonReport": "lorenze-material-comparison.json",
+      "blenderLightScale": 27.967640952252204,
+      "browserLightScale": 0.62,
+      "blender": {
+        "verts": 30644,
+        "faces": 30642,
+        "evaluatedMaterialFaces": {
+          "Filament and Cross Section 1OCT2024": 30642
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "30,644 verts · 30,642 faces"
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9961193671688864,
+        "surfaceCornerRmsePixels": 0.5785889104093042,
+        "pixelLuminanceMae": 0.044046297044211105,
+        "pixelLuminanceCorrelation": 0.6733031840298526,
+        "binaryMaskDisagreementFraction": 0,
+        "macroLuminanceMae": 0.03978410299579411,
+        "macroLuminanceCorrelation": 0.8576426993508751,
+        "blackFractionDelta": 0.015256255336175029,
+        "meanLuminanceDelta": 0.0004738938307551621
+      }
+    },
+    {
+      "id": "math-clay-lorenze-007",
+      "object": "Math Clay Study.008",
+      "blenderReference": "../references/math-clay/lorenze-007-authored.png",
+      "blenderMetadata": "../references/math-clay/lorenze-007-authored.json",
+      "browserReference": "../references/math-clay/lorenze-007-authored-webgl.png",
+      "comparisonReport": "lorenze-007-material-comparison.json",
+      "blenderLightScale": 19.975981410704684,
+      "browserLightScale": 0.62,
+      "blender": {
+        "verts": 16249,
+        "faces": 15459,
+        "evaluatedMaterialFaces": {
+          "Filament and Cross Section 1OCT2024": 15459
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "16,249 verts · 15,459 faces"
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9959781375683201,
+        "surfaceCornerRmsePixels": 0.4384313028050862,
+        "pixelLuminanceMae": 0.04097332295430573,
+        "pixelLuminanceCorrelation": 0.6362177673570473,
+        "binaryMaskDisagreementFraction": 0,
+        "macroLuminanceMae": 0.03580866018242309,
+        "macroLuminanceCorrelation": 0.8567390897007052,
+        "blackFractionDelta": -0.04089661026157454,
+        "meanLuminanceDelta": 0.012430725354490912
+      }
+    },
+    {
+      "id": "math-clay-lorenze-003",
+      "object": "Math Clay Study.006",
+      "blenderReference": "../references/math-clay/lorenze-003-authored.png",
+      "blenderMetadata": "../references/math-clay/lorenze-003-authored.json",
+      "browserReference": "../references/math-clay/lorenze-003-authored-webgl.png",
+      "comparisonReport": "lorenze-003-material-comparison.json",
+      "blenderLightScale": 27.79430159478371,
+      "browserLightScale": 0.62,
+      "blender": {
+        "verts": 29226,
+        "faces": 29226,
+        "evaluatedMaterialFaces": {
+          "Filament and Cross Section 1OCT2024": 29226
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "29,226 verts · 29,226 faces"
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9968838671310849,
+        "surfaceCornerRmsePixels": 0.3042817822676536,
+        "pixelLuminanceMae": 0.054560624484545545,
+        "pixelLuminanceCorrelation": 0.4954075861328464,
+        "binaryMaskDisagreementFraction": 0,
+        "macroLuminanceMae": 0.05102830273201957,
+        "macroLuminanceCorrelation": 0.5709335504600264,
+        "blackFractionDelta": -0.14479977489138196,
+        "meanLuminanceDelta": 0.008107204609237029
+      }
+    },
+    {
+      "id": "math-clay-lorenze-005",
+      "object": "Math Clay Study.007",
+      "blenderReference": "../references/math-clay/lorenze-005-authored.png",
+      "blenderMetadata": "../references/math-clay/lorenze-005-authored.json",
+      "browserReference": "../references/math-clay/lorenze-005-authored-webgl.png",
+      "comparisonReport": "lorenze-005-material-comparison.json",
+      "blenderLightScale": 27.10591591039834,
+      "browserLightScale": 0.62,
+      "blender": {
+        "verts": 108958,
+        "faces": 108924,
+        "evaluatedMaterialFaces": {
+          "Filament and Cross Section 1OCT2024": 108924
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "108,958 verts · 108,924 faces"
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9941308530265586,
+        "surfaceCornerRmsePixels": 69.69995835244102,
+        "pixelLuminanceMae": 0.047934573095934484,
+        "pixelLuminanceCorrelation": 0.5219492135109122,
+        "binaryMaskDisagreementFraction": 0,
+        "macroLuminanceMae": 0.034520012238598956,
+        "macroLuminanceCorrelation": 0.7916860423744105,
+        "blackFractionDelta": -0.04941039351015086,
+        "meanLuminanceDelta": 0.0052282723409640824
+      }
+    },
+    {
+      "id": "math-clay-tpms-017",
+      "object": "Math Clay Study.014",
+      "blenderReference": "../references/math-clay/tpms-017-authored.png",
+      "blenderMetadata": "../references/math-clay/tpms-017-authored.json",
+      "browserReference": "../references/math-clay/tpms-017-authored-webgl.png",
+      "comparisonReport": "tpms-017-material-comparison.json",
+      "blenderLightScale": 28.419377350724417,
+      "browserLightScale": 0.62,
+      "blender": {
+        "verts": 155474,
+        "faces": 155472,
+        "evaluatedMaterialFaces": {
+          "Filament and Cross Section 1OCT2024": 155472
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "155,474 verts · 155,472 faces"
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9969718476460847,
+        "surfaceCornerRmsePixels": 0.22039221007116097,
+        "pixelLuminanceMae": 0.04980703304982811,
+        "pixelLuminanceCorrelation": 0.6133825305602852,
+        "binaryMaskDisagreementFraction": 0,
+        "macroLuminanceMae": 0.04464155099627002,
+        "macroLuminanceCorrelation": 0.7338327714786524,
+        "blackFractionDelta": -0.05325317846454014,
+        "meanLuminanceDelta": -0.0170901154356186
+      }
+    },
+    {
+      "id": "math-clay-tpms-019",
+      "object": "Math Clay Study.018",
+      "blenderReference": "../references/math-clay/tpms-019-authored.png",
+      "blenderMetadata": "../references/math-clay/tpms-019-authored.json",
+      "browserReference": "../references/math-clay/tpms-019-authored-webgl.png",
+      "comparisonReport": "tpms-019-material-comparison.json",
+      "blenderLightScale": 24.622729062800637,
+      "browserLightScale": 0.62,
+      "blender": {
+        "verts": 42770,
+        "faces": 42768,
+        "evaluatedMaterialFaces": {
+          "Filament and Cross Section 1OCT2024": 42768
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "42,770 verts · 42,768 faces"
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9920293452479453,
+        "surfaceCornerRmsePixels": 0.7927623996016776,
+        "pixelLuminanceMae": 0.03127255645775527,
+        "pixelLuminanceCorrelation": 0.9492548092618931,
+        "binaryMaskDisagreementFraction": 0,
+        "macroLuminanceMae": 0.013904414834549803,
+        "macroLuminanceCorrelation": 0.9868726412181615,
+        "blackFractionDelta": 0.14123502582307895,
+        "meanLuminanceDelta": -0.013946370665684493
+      }
+    },
+    {
+      "id": "math-clay-tpms-020",
+      "object": "Math Clay Study.019",
+      "blenderReference": "../references/math-clay/tpms-020-authored.png",
+      "blenderMetadata": "../references/math-clay/tpms-020-authored.json",
+      "browserReference": "../references/math-clay/tpms-020-authored-webgl.png",
+      "comparisonReport": "tpms-020-material-comparison.json",
+      "blenderLightScale": 28.214805092255872,
+      "browserLightScale": 0.62,
+      "blender": {
+        "verts": 153602,
+        "faces": 153600,
+        "evaluatedMaterialFaces": {
+          "Filament and Cross Section 1OCT2024": 153600
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "153,602 verts · 153,600 faces"
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9968080166388962,
+        "surfaceCornerRmsePixels": 0.6852639632018206,
+        "pixelLuminanceMae": 0.03138360290783684,
+        "pixelLuminanceCorrelation": 0.9500708532836538,
+        "binaryMaskDisagreementFraction": 0,
+        "macroLuminanceMae": 0.013799729411093786,
+        "macroLuminanceCorrelation": 0.9795223419480448,
+        "blackFractionDelta": 0.14308856901676642,
+        "meanLuminanceDelta": -0.013837843412164874
+      }
+    },
+    {
+      "id": "math-clay-tpms-016",
+      "object": "Math Clay Study.013",
+      "blenderReference": "../references/math-clay/tpms-016-authored.png",
+      "blenderMetadata": "../references/math-clay/tpms-016-authored.json",
+      "browserReference": "../references/math-clay/tpms-016-authored-webgl.png",
+      "comparisonReport": "tpms-016-material-comparison.json",
+      "blenderLightScale": 21.894537754025826,
+      "browserLightScale": 0.62,
+      "blender": {
+        "verts": 87095,
+        "faces": 85386,
+        "evaluatedMaterialFaces": {
+          "Filament and Cross Section 1OCT2024": 85386
+        }
+      },
+      "browser": {
+        "readiness": "inexact",
+        "count": "87,095 verts · 85,386 faces"
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9971367718861138,
+        "surfaceCornerRmsePixels": 0.7367955663937313,
+        "pixelLuminanceMae": 0.05355747102374851,
+        "pixelLuminanceCorrelation": 0.4695159985135925,
+        "binaryMaskDisagreementFraction": 0,
+        "macroLuminanceMae": 0.04672949185158759,
+        "macroLuminanceCorrelation": 0.6069109671822451,
+        "blackFractionDelta": -0.10044633570500339,
+        "meanLuminanceDelta": 0.003905628633893418
+      }
+    },
+    {
+      "id": "math-clay-tpms-018",
+      "object": "Math Clay Study.001",
+      "blenderReference": "../references/math-clay/tpms-018-authored.png",
+      "blenderMetadata": "../references/math-clay/tpms-018-authored.json",
+      "browserReference": "../references/math-clay/tpms-018-authored-webgl.png",
+      "comparisonReport": "tpms-018-material-comparison.json",
+      "blenderLightScale": 21.696257766540075,
+      "browserLightScale": 0.62,
+      "blender": {
+        "verts": 14190,
+        "faces": 13558,
+        "evaluatedMaterialFaces": {
+          "Filament and Cross Section 1OCT2024": 13558
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "14,190 verts · 13,558 faces"
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9969933721297224,
+        "surfaceCornerRmsePixels": 0.42801900551583294,
+        "pixelLuminanceMae": 0.0533055910732163,
+        "pixelLuminanceCorrelation": 0.38761424430276653,
+        "binaryMaskDisagreementFraction": 0,
+        "macroLuminanceMae": 0.044379864932602896,
+        "macroLuminanceCorrelation": 0.5472726345790598,
+        "blackFractionDelta": -0.28672583059524037,
+        "meanLuminanceDelta": 0.020188409811724664
+      }
+    },
+    {
+      "id": "math-clay-lorenze-002",
+      "object": "Math Clay Study.004",
+      "blenderReference": "../references/math-clay/lorenze-002-authored.png",
+      "blenderMetadata": "../references/math-clay/lorenze-002-authored.json",
+      "browserReference": "../references/math-clay/lorenze-002-authored-webgl.png",
+      "comparisonReport": "lorenze-002-material-comparison.json",
+      "blenderLightScale": 27.961532234598167,
+      "browserLightScale": 0.62,
+      "blender": {
+        "verts": 35200,
+        "faces": 35198,
+        "evaluatedMaterialFaces": {
+          "Filament and Cross Section 1OCT2024": 35198
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "35,200 verts · 35,198 faces"
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9970459929939308,
+        "surfaceCornerRmsePixels": 8.49038557969915,
+        "pixelLuminanceMae": 0.05097166055579452,
+        "pixelLuminanceCorrelation": 0.6979363543861459,
+        "binaryMaskDisagreementFraction": 0,
+        "macroLuminanceMae": 0.046801216726697896,
+        "macroLuminanceCorrelation": 0.7946718500570756,
+        "blackFractionDelta": -0.01663877959467497,
+        "meanLuminanceDelta": -0.029541223064352015
+      }
+    },
+    {
+      "id": "math-clay-lorenze-004",
+      "object": "Math Clay Study.005",
+      "blenderReference": "../references/math-clay/lorenze-004-authored.png",
+      "blenderMetadata": "../references/math-clay/lorenze-004-authored.json",
+      "browserReference": "../references/math-clay/lorenze-004-authored-webgl.png",
+      "comparisonReport": "lorenze-004-material-comparison.json",
+      "blenderLightScale": 27.758291233642773,
+      "browserLightScale": 0.62,
+      "blender": {
+        "verts": 61098,
+        "faces": 61124,
+        "evaluatedMaterialFaces": {
+          "Filament and Cross Section 1OCT2024": 61124
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "61,098 verts · 61,124 faces"
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9964862190964717,
+        "surfaceCornerRmsePixels": 0.8296064427408714,
+        "pixelLuminanceMae": 0.046428211986844936,
+        "pixelLuminanceCorrelation": 0.6232808855594876,
+        "binaryMaskDisagreementFraction": 0,
+        "macroLuminanceMae": 0.04172146258580393,
+        "macroLuminanceCorrelation": 0.7586821432000118,
+        "blackFractionDelta": -0.028901286041772334,
+        "meanLuminanceDelta": -0.00889842100264436
+      }
+    },
+    {
+      "id": "math-clay-tpms-main",
+      "object": "Dsurface",
+      "blenderReference": "../references/math-clay/tpms-main-authored.png",
+      "blenderMetadata": "../references/math-clay/tpms-main-authored.json",
+      "browserReference": "../references/math-clay/tpms-main-authored-webgl.png",
+      "comparisonReport": "tpms-main-material-comparison.json",
+      "blenderLightScale": 27.737058024203435,
+      "browserLightScale": 0.62,
+      "blender": {
+        "verts": 35054,
+        "faces": 35052,
+        "evaluatedMaterialFaces": {
+          "BDSF_Cross Section 1OCT2024.001": 35052
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "35,054 verts · 35,052 faces"
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9962535067033023,
+        "surfaceCornerRmsePixels": 1.0338053763539474,
+        "pixelLuminanceMae": 0.007717626788086366,
+        "pixelLuminanceCorrelation": 0.22977737600579504,
+        "binaryMaskDisagreementFraction": 0,
+        "macroLuminanceMae": 0.006713050837446402,
+        "macroLuminanceCorrelation": 0.6184359957787235,
+        "blackFractionDelta": -0.0070243001842617,
+        "meanLuminanceDelta": -0.0025692890811020615
+      }
+    }
+  ],
+  "interpretation": "Each comparison measures the same extracted Filament and Cross Section shader implementation on a distinct evaluated surface. Geometry and camera alignment are reported separately from luminance parity. Eevee/Three high-frequency procedural filtering remains a renderer residual and is not labeled exact."
+}

@@ -1157,8 +1157,13 @@ export function toTriSoup(g: Geometry): TriSoup {
     mesh.faces.push([...face]);
     mesh.faceMaterial.push(source.faceMaterial[fi] ?? 0);
   }
-  orientClosedSurface(mesh);
-  orientShellOutward(mesh);
+  // Export the evaluated face loops verbatim. Winding is observable Geometry
+  // Nodes data: Blender's Geometry/Backfacing shader output, front-face
+  // culling, signed-volume tools, and G-code preparation all depend on it.
+  // Generic display-time "repair" used to reverse intentionally inward
+  // OpenVDB shells (including Math Clay TPMS variants) and made the browser
+  // select the opposite material branch from Blender. Nodes that genuinely
+  // repair topology must do so before this serialization boundary.
   const normals = mesh.vertexNormals();
   const positions = new Float32Array(mesh.positions.length * 3);
   const normArr = new Float32Array(mesh.positions.length * 3);

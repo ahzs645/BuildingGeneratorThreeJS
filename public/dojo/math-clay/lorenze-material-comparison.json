@@ -10,37 +10,93 @@
   },
   "blender": {
     "surface_pixels": 290573,
-    "black_pixels": 176238,
+    "black_pixels": 176519,
     "white_pixels": 0,
-    "gray_pixels": 114335,
-    "black_fraction": 0.6065188438017297,
+    "gray_pixels": 114054,
+    "black_fraction": 0.607485898552171,
     "white_fraction": 0.0,
-    "gray_fraction": 0.3934811561982703,
-    "mean_luminance": 0.0820986524809646
+    "gray_fraction": 0.39251410144782894,
+    "mean_luminance": 0.08190571517354372
   },
   "webgl": {
-    "surface_pixels": 292324,
-    "black_pixels": 183024,
+    "surface_pixels": 291705,
+    "black_pixels": 181657,
     "white_pixels": 0,
-    "gray_pixels": 109300,
-    "black_fraction": 0.6260998070633954,
+    "gray_pixels": 110048,
+    "black_fraction": 0.6227421538883461,
     "white_fraction": 0.0,
-    "gray_fraction": 0.3739001929366046,
-    "mean_luminance": 0.08360902701850734
+    "gray_fraction": 0.3772578461116539,
+    "mean_luminance": 0.08237960900429343
   },
   "comparison": {
-    "surface_mask_iou": 0.9940100710170906,
+    "surface_mask_iou": 0.9961193671688864,
+    "surface_corners": {
+      "blender": {
+        "left": [
+          29.569620253164558,
+          457.7848101265823
+        ],
+        "right": [
+          737.4126984126984,
+          490.7936507936508
+        ],
+        "bottom": [
+          288.8095238095238,
+          52.61904761904762
+        ],
+        "top": [
+          439.375,
+          729.375
+        ]
+      },
+      "webgl": {
+        "left": [
+          28.65,
+          458.0
+        ],
+        "right": [
+          738.3260869565217,
+          490.67391304347825
+        ],
+        "bottom": [
+          289.0833333333333,
+          52.583333333333336
+        ],
+        "top": [
+          439.8,
+          730.2
+        ]
+      }
+    },
+    "surface_corner_deltas_webgl_minus_blender": {
+      "left": [
+        -0.9196202531645596,
+        0.215189873417728
+      ],
+      "right": [
+        0.9133885438233165,
+        -0.11973775017253274
+      ],
+      "bottom": [
+        0.2738095238095184,
+        -0.0357142857142847
+      ],
+      "top": [
+        0.42500000000001137,
+        0.8250000000000455
+      ]
+    },
+    "surface_corner_rmse_pixels": 0.5785889104093042,
     "intersection_pixels": 290573,
-    "pixel_luminance_mae": 0.04392150291071418,
-    "pixel_luminance_correlation": 0.683953329261059,
+    "pixel_luminance_mae": 0.04404629704421655,
+    "pixel_luminance_correlation": 0.6733033840723536,
     "binary_mask_disagreement_fraction": 0.0,
     "macro_block_size": 32,
     "macro_block_count": 327,
-    "macro_luminance_mae": 0.040343091490655486,
-    "macro_luminance_correlation": 0.8630298726513875,
-    "black_fraction_delta": 0.019580963261665696,
-    "mean_luminance_delta": 0.0015103745375427413,
-    "surface_corner_rmse_pixels": 0.6186288527632245
+    "macro_luminance_mae": 0.03978410299579884,
+    "macro_luminance_correlation": 0.8576427087767204,
+    "black_fraction_delta": 0.015256255336175029,
+    "mean_luminance_delta": 0.00047389383074970814
   },
-  "interpretation": "The browser derives clearcoat F0 from Blender's authored 1.59000015 coat IOR and uses a measured 0.62 light scale for this large isolated asset. Relative to the uncalibrated coat-IOR capture, pixel MAE improves from 0.0622 to 0.0439, macro MAE from 0.0536 to 0.0403, macro correlation from 0.8494 to 0.8630, and mean luminance error from +0.0509 to +0.0015. A dedicated Blender diagnostic shows the Bevel For Eevee normal-mix factor is saturated near white on this surface, leaving high-frequency procedural filtering as the dominant residual."
+  "interpretation": "The aligned silhouette validates the capture context, but luminance occupancy, correlation, and pixel disagreement determine whether the authored WebGL material is visually equivalent. Renderer lighting, environment, tone mapping, texture filtering, and procedural implementations may remain as residuals."
 }

@@ -52,6 +52,26 @@ export type CrossSectionFilamentConfig = {
   mathClay: MathClayFilamentConfig | null;
 };
 
+export type BdsfCrossSectionConfig = {
+  colorAttribute: string;
+  roughnessAttribute: string;
+  alphaAttribute: string;
+  textureAttribute: string;
+  bumpStrengthAttribute: string;
+  bumpDistanceAttribute: string;
+  rayAttribute: string;
+  positionAttribute: string;
+  directionAttribute: string;
+  backSaturation: number;
+  backValue: number;
+  backWaveScale: number;
+  backWaveDistortion: number;
+  backWaveDetail: number;
+  backWaveDetailScale: number;
+  backWaveDetailRoughness: number;
+  backWaveThreshold: number;
+};
+
 export type MathClayFilamentField = {
   mapped: [number, number, number];
   white: [number, number, number];
@@ -194,6 +214,96 @@ export function extractCrossSectionFilamentConfig(dump: Dump, materialName: stri
   };
 }
 
+function namedAttribute(nodes: RawNode[], nodeName: string): string | null {
+  const node = nodes.find((candidate) => candidate.name === nodeName && candidate.type === "ShaderNodeAttribute");
+  const name = String(node?.props?.attribute_name ?? "");
+  return /^[A-Za-z_]\w*$/.test(name) ? name : null;
+}
+
+function hasLink(
+  links: RawLink[],
+  fromNode: string,
+  fromSocket: string,
+  toNode: string,
+  toSocket: string,
+): boolean {
+  return links.some((link) => link.from_node === fromNode && link.from_socket === fromSocket
+    && link.to_node === toNode && link.to_socket === toSocket);
+}
+
+/**
+ * Recognize Math Clay's separate D-surface material. Its authored cross-section
+ * controls resolve to zero on the supplied Dsurface, leaving a col/rough
+ * Principled front and a patterned Backfacing emission branch.
+ */
+export function extractBdsfCrossSectionConfig(dump: Dump, materialName: string): BdsfCrossSectionConfig | null {
+  const tree = dump.materials?.[materialName] as RawMaterial | undefined;
+  const nodes = tree?.nodes ?? [];
+  const links = tree?.links ?? [];
+  const node = (name: string, type: string) => nodes.find((candidate) => candidate.name === name && candidate.type === type);
+  const outputNode = node("Material Output", "ShaderNodeOutputMaterial");
+  const principled = node("Principled BSDF", "ShaderNodeBsdfPrincipled");
+  const geometry = node("Geometry", "ShaderNodeNewGeometry");
+  const hue = node("Hue/Saturation/Value", "ShaderNodeHueSaturation");
+  const emission = node("Emission", "ShaderNodeEmission");
+  const wave = node("Wave Texture.001", "ShaderNodeTexWave");
+  const threshold = node("Math.001", "ShaderNodeMath");
+  const bump = node("Bump", "ShaderNodeBump");
+  const colorAttribute = namedAttribute(nodes, "Attribute");
+  const rayAttribute = namedAttribute(nodes, "Attribute.002");
+  const positionAttribute = namedAttribute(nodes, "Attribute.003");
+  const directionAttribute = namedAttribute(nodes, "Attribute.004");
+  const roughnessAttribute = namedAttribute(nodes, "Attribute.005");
+  const alphaAttribute = namedAttribute(nodes, "Attribute.006");
+  const textureAttribute = namedAttribute(nodes, "Attribute.007");
+  const bumpStrengthAttribute = namedAttribute(nodes, "Attribute.008");
+  const bumpDistanceAttribute = namedAttribute(nodes, "Attribute.009");
+  const topology = [
+    ["Geometry", "Backfacing", "Mix Shader", "Fac"],
+    ["Attribute", "Color", "Principled BSDF", "Base Color"],
+    ["Attribute", "Color", "Hue/Saturation/Value", "Color"],
+    ["Principled BSDF", "BSDF", "Mix Shader", "Shader"],
+    ["Emission", "Emission", "Mix Shader", "Shader_001"],
+    ["Wave Texture.001", "Color", "Math.001", "Value"],
+    ["Math.001", "Value", "Mix", "Factor_Float"],
+    ["Hue/Saturation/Value", "Color", "Mix", "A_Color"],
+    ["Mix", "Result_Color", "Emission", "Color"],
+    ["Attribute.005", "Color", "Principled BSDF", "Roughness"],
+    ["Attribute.006", "Alpha", "Principled BSDF", "Alpha"],
+    ["Attribute.007", "Color", "Bump", "Height"],
+    ["Attribute.008", "Fac", "Bump", "Strength"],
+    ["Attribute.009", "Fac", "Bump", "Distance"],
+    ["Bump", "Normal", "Principled BSDF", "Normal"],
+    ["Mix Shader.003", "Shader", "Material Output", "Surface"],
+  ] as const;
+  if (!outputNode || outputNode.props?.is_active_output !== true || !principled || !geometry || !hue
+    || !emission || !wave || !threshold || threshold.props?.operation !== "LESS_THAN" || !bump
+    || !colorAttribute || !rayAttribute || !positionAttribute || !directionAttribute
+    || !roughnessAttribute || !alphaAttribute || !textureAttribute || !bumpStrengthAttribute
+    || !bumpDistanceAttribute || topology.some((link) => !hasLink(links, link[0], link[1], link[2], link[3]))
+    || input(hue, "Hue", 0.5) !== 0.5 || input(hue, "Fac", 1) !== 1) return null;
+
+  return {
+    colorAttribute,
+    roughnessAttribute,
+    alphaAttribute,
+    textureAttribute,
+    bumpStrengthAttribute,
+    bumpDistanceAttribute,
+    rayAttribute,
+    positionAttribute,
+    directionAttribute,
+    backSaturation: input(hue, "Saturation", 1),
+    backValue: input(hue, "Value", 1),
+    backWaveScale: input(wave, "Scale", 5),
+    backWaveDistortion: input(wave, "Distortion", 0),
+    backWaveDetail: input(wave, "Detail", 2),
+    backWaveDetailScale: input(wave, "Detail Scale", 1),
+    backWaveDetailRoughness: input(wave, "Detail Roughness", 0.5),
+    backWaveThreshold: input(threshold, "Value_001", 0.5),
+  };
+}
+
 function lerp(range: Range, value: number): number {
   return range.min + (range.max - range.min) * value;
 }
@@ -249,13 +359,102 @@ function geometryBounds(geometry: THREE.BufferGeometry): FilamentBounds | null {
   return min.every(Number.isFinite) && max.every(Number.isFinite) ? { min, max } : null;
 }
 
+function zeroOrMissingAttribute(geometry: THREE.BufferGeometry, name: string): boolean {
+  const attribute = geometry.getAttribute(name);
+  if (!attribute) return true;
+  for (let index = 0; index < attribute.count; index++) {
+    for (let component = 0; component < attribute.itemSize; component++) {
+      if (attribute.getComponent(index, component) !== 0) return false;
+    }
+  }
+  return true;
+}
+
+export function makeBdsfCrossSectionMaterial(
+  dump: Dump,
+  geometry: THREE.BufferGeometry,
+  materialName: string,
+): THREE.MeshPhysicalMaterial | null {
+  const config = extractBdsfCrossSectionConfig(dump, materialName);
+  if (!config) return null;
+  const color = geometry.getAttribute(config.colorAttribute);
+  const roughness = geometry.getAttribute(config.roughnessAttribute);
+  if (!color || color.itemSize !== 3 || !roughness || roughness.itemSize !== 1) return null;
+
+  // These controls are authored into the general-purpose material but evaluate
+  // to Blender's missing-attribute zero on Dsurface. Refuse nonzero variants
+  // until their clipping and attribute-driven bump branches are implemented.
+  const zeroControls = [
+    config.textureAttribute,
+    config.bumpStrengthAttribute,
+    config.bumpDistanceAttribute,
+    config.rayAttribute,
+    config.positionAttribute,
+    config.directionAttribute,
+  ];
+  if (zeroControls.some((name) => !zeroOrMissingAttribute(geometry, name))) return null;
+
+  const material = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff,
+    metalness: 0,
+    roughness: 1,
+    envMapIntensity: 0.8,
+    side: THREE.DoubleSide,
+  });
+  material.name = `${materialName} · D-surface cross-section reconstruction`;
+  material.userData.bdsfCrossSectionContract = config;
+  material.userData.bdsfResolvedZeroControls = zeroControls;
+  const viewport = new THREE.Vector2(1, 1);
+  material.onBeforeRender = (renderer) => renderer.getDrawingBufferSize(viewport);
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms ??= {};
+    shader.uniforms.bdsfViewport = { value: viewport };
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", `#include <common>
+attribute vec3 ${config.colorAttribute};
+attribute float ${config.roughnessAttribute};
+varying vec3 vBdsfColor;
+varying float vBdsfRoughness;`)
+      .replace("#include <begin_vertex>", `#include <begin_vertex>
+vBdsfColor=${config.colorAttribute};
+vBdsfRoughness=${config.roughnessAttribute};`);
+    const waveConfig: FilamentWaveConfig = {
+      distortion: config.backWaveDistortion,
+      detail: config.backWaveDetail,
+      detailScale: config.backWaveDetailScale,
+      detailRoughness: config.backWaveDetailRoughness,
+      direction: "DIAGONAL",
+    };
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", `#include <common>
+uniform vec2 bdsfViewport;
+varying vec3 vBdsfColor;
+varying float vBdsfRoughness;
+${filamentNoiseGlsl("bdsfCrossSection")}
+${filamentWaveFunctionGlsl("bdsfCrossSection", "bdsfCrossSectionBackWave", waveConfig)}
+vec3 bdsfCrossSectionBackColor(vec3 color) {
+  vec3 front=max(color,vec3(0.0));
+  float value=max(max(front.r,front.g),front.b);
+  vec3 hsv=mix(vec3(value),front,${glsl(config.backSaturation)})*${glsl(config.backValue)};
+  vec2 windowCoordinate=gl_FragCoord.xy/max(bdsfViewport,vec2(1.0));
+  float wave=bdsfCrossSectionBackWave(vec3(windowCoordinate,0.0),${glsl(config.backWaveScale)});
+  return wave<${glsl(config.backWaveThreshold)}?vec3(0.0):hsv;
+}`)
+      .replace("#include <color_fragment>", "#include <color_fragment>\ndiffuseColor.rgb=max(vBdsfColor,vec3(0.0));")
+      .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor=clamp(vBdsfRoughness,0.0,1.0);")
+      .replace("#include <opaque_fragment>", "if(!gl_FrontFacing)outgoingLight=bdsfCrossSectionBackColor(vBdsfColor);\n#include <opaque_fragment>");
+  };
+  material.customProgramCacheKey = () => `math-bdsf-cross-section-${materialName}-v1`;
+  return material;
+}
+
 export function makeCrossSectionFilamentMaterial(
   dump: Dump,
   geometry: THREE.BufferGeometry,
   materialName: string,
 ): THREE.MeshPhysicalMaterial | null {
   const config = extractCrossSectionFilamentConfig(dump, materialName);
-  if (!config) return null;
+  if (!config) return makeBdsfCrossSectionMaterial(dump, geometry, materialName);
   const color = geometry.getAttribute(config.colorAttribute);
   const roughness = config.roughnessAttribute ? geometry.getAttribute(config.roughnessAttribute) : null;
   const layer = geometry.getAttribute(config.layerAttribute);

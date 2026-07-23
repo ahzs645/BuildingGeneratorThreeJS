@@ -1,20 +1,20 @@
 {
-  "object": "Math Clay Study.002",
+  "object": "Math Clay Study.004",
   "type": "MESH",
   "bbox": {
     "min": [
-      -34.03980255126953,
-      -33.590858459472656,
-      -32.332298278808594
+      -33.85548782348633,
+      -33.81258773803711,
+      -33.8132438659668
     ],
     "max": [
-      34.8473014831543,
-      34.40513229370117,
-      33.36033630371094
+      33.7239875793457,
+      33.72435760498047,
+      33.66413497924805
     ]
   },
-  "verts": 30644,
-  "faces": 30642,
+  "verts": 35200,
+  "faces": 35198,
   "materials": [
     "visuals"
   ],
@@ -23,12 +23,12 @@
     "Filament and Cross Section 1OCT2024"
   ],
   "evaluated_material_faces": {
-    "Filament and Cross Section 1OCT2024": 30642
+    "Filament and Cross Section 1OCT2024": 35198
   },
   "engine": "BLENDER_EEVEE",
   "authored_material": true,
   "geometry_nodes_only": true,
-  "authored_light_scale": 27.967640952252204,
+  "authored_light_scale": 27.961532234598167,
   "workbench_shadows": null,
   "workbench_cavity": null,
   "debug_material_output": null

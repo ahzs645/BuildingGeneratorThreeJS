@@ -43,13 +43,25 @@ evaluated = obj.evaluated_get(bpy.context.evaluated_depsgraph_get())
 result = evaluated.to_mesh()
 try:
     face_sizes = {}
+    signed_volume = 0.0
+    radial_orientation = {"outward": 0, "inward": 0}
     for polygon in result.polygons:
         face_sizes[str(len(polygon.vertices))] = face_sizes.get(str(len(polygon.vertices)), 0) + 1
+        center = polygon.center
+        if polygon.normal.dot(center) >= 0:
+            radial_orientation["outward"] += 1
+        else:
+            radial_orientation["inward"] += 1
+        vertices = [result.vertices[index].co for index in polygon.vertices]
+        for corner in range(1, len(vertices) - 1):
+            signed_volume += vertices[0].dot(vertices[corner].cross(vertices[corner + 1])) / 6.0
     positions = [list(vertex.co) for vertex in result.vertices]
     payload = {
         "verts": len(result.vertices),
         "faces": len(result.polygons),
         "face_sizes": face_sizes,
+        "signed_volume": signed_volume,
+        "radial_orientation": radial_orientation,
         "bbox": {
             "min": [min(position[axis] for position in positions) for axis in range(3)],
             "max": [max(position[axis] for position in positions) for axis in range(3)],
