@@ -8,32 +8,20 @@ import {
   rangeOverrideValue,
 } from "./chrome-asset-controls";
 import type { Dump, TriSoup } from "./gnvm/index";
-import { makeAttributeEmissionMaterial } from "./attribute-emission-material";
-import { attachChainMaceRoughnessAttribute, makeChainMaceMaterial } from "./chain-mace-material";
-import { makeChromeCrayonMaterial } from "./chrome-crayon-material";
-import { expandFaceDomainMaterialAttributes, makeImagePixelStipplerMaterial } from "./image-pixel-stippler-material";
-import { makeBasicBlenderMaterial, makeBlenderDefaultSurfaceMaterial } from "./blender-basic-material";
-import { makeAttributePrincipledMaterial } from "./attribute-principled-material";
-import { makeFilamentMaterial } from "./filament-material";
-import { makeCrossSectionFilamentMaterial } from "./cross-section-filament-material";
-import { makeMahoganyMaterial } from "./mahogany-material";
-import { makeToonCyclesMaterial } from "./toon-cycles-material";
-import { makeToonOutlineMaterial } from "./toon-outline-material";
-import { makeGreyUiMaterial } from "./grey-ui-material";
-import { makePackedStickerMaterial } from "./packed-sticker-material";
-import { makeVtextMaterial } from "./vtext-material";
-import { makeHatStitchMaterial } from "./hat-stitch-material";
-import { makeAttributeColorEmissionMaterial } from "./attribute-color-emission-material";
+import { expandFaceDomainMaterialAttributes } from "./image-pixel-stippler-material";
 import { makeWorkbenchApproximationMaterial, shouldUseWorkbenchApproximation } from "./workbench-approx-material";
-import { makeNodeBaseMaterial, makeSimpleNoiseBumpMaterial } from "./node-base-material";
-import { makeNodeColorVtextMaterial } from "./node-color-vtext-material";
 import { loadBlenderStudioEnvironment } from "./blender-studio-environment";
 import { EeveeTemporalCapture } from "./eevee-temporal-capture";
 import { makeLiveChromeCrayonMaterial } from "./materialx/live-chrome-crayon";
 import { expandCornerDomainUv } from "./corner-domain-attributes";
-import { makeLightbulbMaterial, preloadLightbulbTextures } from "./lightbulb-material";
-import { makeKnitThreadMaterial } from "./knit-thread-material";
+import { preloadLightbulbTextures } from "./lightbulb-material";
 import { preciseObjectBounds, type ObjectBoundsMode } from "./precise-object-bounds";
+import {
+  authoredMaterialRegistry,
+  materialNameForGroup,
+  prepareAuthoredMaterialGeometry,
+  type AuthoredMaterialProfile,
+} from "./materials/registry";
 
 type RangeControl = { type?: "range"; name: string; label: string; min: number; max: number; step: number; value: number };
 type CheckboxControl = { type: "checkbox"; name: string; label: string; value: boolean };
@@ -42,7 +30,7 @@ type VectorControl = { type: "vector"; name: string; label: string; value: [numb
 type SelectControl = { type: "select"; name: string; label: string; value: number | string; options: { label: string; value: number | string }[] };
 type Control = RangeControl | CheckboxControl | TextControl | VectorControl | SelectControl;
 type AssetFont = { url: string; family: string; requiredFor: string; fallback: string };
-type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number; triangles?: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; rotationOrder?: THREE.EulerOrder; boundsMode?: ObjectBoundsMode; surfaceBounds?: boolean; authoredHideLines?: boolean; authoredPreviewLabel?: string; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; attributeEmissionColorRemaps?: { from: [number, number, number]; to: [number, number, number] }[]; authoredLightScale?: number; authoredFillIntensityScale?: number; authoredAmbientIntensity?: number; authoredEnvironmentIntensity?: number; authoredEnvironmentRotation?: number; authoredToneMapping?: "none"; controls: Control[] };
+type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number; triangles?: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; rotationOrder?: THREE.EulerOrder; boundsMode?: ObjectBoundsMode; surfaceBounds?: boolean; authoredHideLines?: boolean; authoredPreviewLabel?: string; workbenchColor?: [number, number, number]; material?: AuthoredMaterialProfile; attributeEmissionColorRemaps?: { from: [number, number, number]; to: [number, number, number] }[]; authoredLightScale?: number; authoredFillIntensityScale?: number; authoredAmbientIntensity?: number; authoredEnvironmentIntensity?: number; authoredEnvironmentRotation?: number; authoredToneMapping?: "none"; controls: Control[] };
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
@@ -195,43 +183,21 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
   const source = (dump.objects as any[] | undefined)?.find((object) => object.name === current.object);
   const sourceMaterials = Array.isArray(source?.materials) ? source.materials as Array<string | null | undefined> : undefined;
   const materials: THREE.Material[]=[];
-  if(useAuthored&&current.material==="chain-mace")attachChainMaceRoughnessAttribute(geometry,soup.groups);
+  if(useAuthored)prepareAuthoredMaterialGeometry(current,geometry,soup.groups);
   if(useAuthored&&soup.groups.length){
     for(const group of soup.groups){
-      const materialName=group.material??(current.material==="chain-mace"?soup.groups.find((candidate)=>candidate.material)?.material:"")??"";
-      const authored=previewMode === "workbench"
-        ? makeWorkbenchApproximationMaterial(current.workbenchColor ?? [0.8, 0.8, 0.8], !(current.flatShading ?? false))
-        : group.material === null
-        ? makeBlenderDefaultSurfaceMaterial()
-        : shouldUseWorkbenchApproximation(current.workbenchColor,sourceMaterials,materialName)
-        ? makeWorkbenchApproximationMaterial(current.workbenchColor)
-        : current.material==="image-pixel-stippler"
-        ? makeImagePixelStipplerMaterial(dump,geometry,group.material??"",stipplerDebugMode)
-        : current.material==="chain-mace"
-          ? makeChainMaceMaterial(dump,geometry,materialName)
-        : current.material==="chrome-crayon"
-          ? makeChromeCrayonMaterial(dump,geometry,group.material??"")
-        : current.material==="attribute-emission"
-          ? makeAttributeEmissionMaterial(dump,geometry,group.material??"",current.attributeEmissionColorRemaps)
-          : makeAttributeEmissionMaterial(dump,geometry,group.material??"")
-            ?? makeAttributeColorEmissionMaterial(dump,geometry,group.material??"")
-            ?? makeAttributePrincipledMaterial(dump,geometry,group.material??"")
-            ?? makeNodeBaseMaterial(dump,geometry,group,group.material??"")
-            ?? makeSimpleNoiseBumpMaterial(dump,geometry,group,group.material??"")
-            ?? makeNodeColorVtextMaterial(dump,geometry,group,group.material??"")
-            ?? makeVtextMaterial(dump,geometry,group,group.material??"")
-            ?? makeKnitThreadMaterial(dump,geometry,group,group.material??"")
-            ?? makeFilamentMaterial(dump,geometry,group,group.material??"")
-            ?? makeCrossSectionFilamentMaterial(dump,geometry,group.material??"")
-            ?? makeHatStitchMaterial(dump,geometry,group,group.material??"")
-            ?? makeLightbulbMaterial(dump,group.material??"")
-            ?? makeMahoganyMaterial(dump,geometry,group.material??"")
-            ?? makeToonCyclesMaterial(dump,group.material??"")
-            ?? makeToonOutlineMaterial(dump,group.material??"")
-            ?? makeGreyUiMaterial(dump,geometry,group.material??"")
-            ?? makeBasicBlenderMaterial(dump,group.material??"")
-            ?? makePackedStickerMaterial(dump,geometry,group,group.material??"")
-            ?? makeChromeCrayonMaterial(dump,geometry,group.material??"");
+      const materialName=materialNameForGroup(current,group,soup.groups);
+      const authored=authoredMaterialRegistry.resolve({
+        asset:current,
+        dump,
+        geometry,
+        group,
+        groups:soup.groups,
+        materialName,
+        previewMode,
+        sourceMaterials,
+        stipplerDebugMode,
+      });
       if(authored instanceof THREE.MeshStandardMaterial)authored.flatShading=current.flatShading??false;
       if(authored instanceof THREE.MeshPhysicalMaterial && authoredCapture && captureSpecularIntensity !== null)
         authored.specularIntensity=captureSpecularIntensity;
