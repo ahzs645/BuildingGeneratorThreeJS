@@ -2,9 +2,19 @@
   "id": "sticker-noodle-brush",
   "object": "Sticker Noodle Brush.001",
   "root": "dot periodic brush.001",
-  "status": "exact-sweep",
+  "status": "exact-sweep-and-authored-material-parity",
   "blender": { "verts": 16252, "faces": 956 },
   "gnvm": { "verts": 16252, "faces": 956 },
   "coverage": "100% of reachable node types across the 2-group, 39-node closure.",
-  "validation": "Exact Blender topology across seven cases covering dot distance, dot size, and twist. Four-decimal local bounds are exact except for at most 0.0001 units in the two twist cases."
+  "materialParity": {
+    "name": "flat.nodes",
+    "contract": "The evaluated Vert.017 dependency supplies POINT-domain white col and power=1; the root alternates it with black before driving Emission Color and Strength.",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.9948168674352826,
+    "pixelLuminanceCorrelation": 0.9394038254627175,
+    "macroLuminanceCorrelation": 0.9520510979577897,
+    "pixelLuminanceMae": 0.09360818640218926,
+    "residual": "Eevee and WebGL retain subpixel edge/raster and color-management differences; renderer identity is not claimed."
+  },
+  "validation": "Exact Blender topology across seven cases covering dot distance, dot size, and twist. Four-decimal local bounds are exact except for at most 0.0001 units in the two twist cases. The authored dependency field produces exactly 8,126 white and 8,126 black output vertices with power=1."
 }

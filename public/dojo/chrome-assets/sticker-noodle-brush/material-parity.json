@@ -1,0 +1,62 @@
+{
+  "updated": "2026-07-23",
+  "target": {
+    "id": "sticker-noodle-brush",
+    "project": "NO3D Chrome Asset Library.blend",
+    "object": "Sticker Noodle Brush.001",
+    "root": "dot periodic brush.001",
+    "material": "flat.nodes"
+  },
+  "geometryContract": {
+    "verts": 16252,
+    "faces": 956,
+    "tris": 14340,
+    "group": {
+      "start": 0,
+      "count": 43020,
+      "material": "flat.nodes"
+    }
+  },
+  "authoredShaderContract": {
+    "nodes": 4,
+    "links": 3,
+    "colorPath": "Geometry Attribute col Color → Emission Color",
+    "strengthPath": "Geometry Attribute power Vector → Emission Strength",
+    "dependency": {
+      "object": "Vert.017",
+      "domain": "POINT",
+      "col": [1.0, 1.0, 1.0],
+      "power": 1.0
+    },
+    "evaluatedOutput": {
+      "whiteVertices": 8126,
+      "blackVertices": 8126,
+      "power": 1.0
+    },
+    "browserResolution": "The portable dump retains Vert.017's evaluated col/power fields. The root's alternating named-attribute field survives instancing and realization into the single flat.nodes draw group."
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../../references/chrome-assets/sticker-noodle-brush-authored.png",
+    "blenderMetadata": "../../references/chrome-assets/sticker-noodle-brush-authored.json",
+    "browserReference": "../../references/chrome-assets/sticker-noodle-brush-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=sticker-noodle-brush&capture=authored",
+    "toneMapping": "NoToneMapping preserves the extracted zero/one linear emission field in the authored evidence capture; it does not claim identical Eevee and WebGL color management."
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9948168674352826,
+    "surfaceCornerRmsePixels": 0.6345504479413945,
+    "intersectionPixels": 69288,
+    "pixelLuminanceMae": 0.09360818640218926,
+    "pixelLuminanceCorrelation": 0.9394038254627175,
+    "binaryMaskDisagreementFraction": 0.05951968594850479,
+    "macroLuminanceMae": 0.08603628642229091,
+    "macroLuminanceCorrelation": 0.9520510979577897,
+    "blackFractionDelta": 0.12158967986918168,
+    "meanLuminanceDelta": -0.08696063881581584
+  },
+  "interpretation": "The previous all-black browser result was an extraction defect: the old dump omitted Vert.017's evaluated attributes even though Blender retained them. Restoring that dependency recovers the authored black-and-white spiral/checker pattern without changing topology. The local-space capture also removes the source scene object's placement transform so Blender and WebGL compare the same standalone generator output."
+}
