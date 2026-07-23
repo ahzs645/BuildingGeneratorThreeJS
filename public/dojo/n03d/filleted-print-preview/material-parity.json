@@ -1,0 +1,93 @@
+{
+  "asset": "n03d-filleted-print-preview",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "Plane.006",
+    "root": "Geometry Nodes.015",
+    "sourceObjectMaterialSlot": "emit",
+    "evaluatedMaterial": "Filament PLA .02 mm layer height"
+  },
+  "scope": "Authored viewport surface reconstruction only. The shared PRINT VIZ JUN2024 group stores color and assigns a filament shader; it does not slice the mesh or create a G-code toolpath.",
+  "geometry": {
+    "blender": {
+      "verts": 1808,
+      "faces": 905
+    },
+    "gnvm": {
+      "verts": 1808,
+      "faces": 905
+    },
+    "materialFaces": {
+      "Filament PLA .02 mm layer height": 905
+    },
+    "looseGuide": {
+      "controlPoints": 2724,
+      "segments": 2724,
+      "browserBehavior": "Retained for interactive inspection and hidden only from the authored surface capture because Blender does not rasterize the unbeveled curve."
+    },
+    "role": "The fixed demo fillets and fills the supplied outline, extrudes the surface, and passes the resulting mesh through the material-preview group."
+  },
+  "capture": {
+    "resolution": [
+      768,
+      768
+    ],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "frameTarget": "evaluated surface only",
+    "blenderReference": "../../references/n03d/filleted-print-preview-authored.png",
+    "blenderMetadata": "../../references/n03d/filleted-print-preview-authored.json",
+    "browserReference": "../../references/n03d/filleted-print-preview-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-filleted-print-preview&capture=authored",
+    "blenderAuthoredLightScale": 1,
+    "browserAuthoredLightScale": 25,
+    "lightScaleInterpretation": "Blender Area energy and Three.js RectAreaLight intensity use renderer-specific units. A 5/10/20/24/25/26/28/40/80 browser sweep selected 25 for near-zero mean-luminance error while preserving the best large-scale appearance."
+  },
+  "recoveredGraph": {
+    "geometryGroup": "PRINT VIZ JUN2024",
+    "colorAttribute": {
+      "name": "col",
+      "domain": "POINT",
+      "value": [
+        0.8001017570495605,
+        0.010392473079264164,
+        0,
+        1
+      ]
+    },
+    "frontColor": "The filament material reads col and mixes it through its two HSV branches.",
+    "backColor": "Geometry Backfacing selects the secondary Principled branch.",
+    "roughness": 0.7732919454574585,
+    "generatedCoordinates": "material-group bounding box",
+    "wave": {
+      "type": "BANDS",
+      "direction": "Z",
+      "scale": -56.31793212890625,
+      "distortion": 0.8557739853858948,
+      "detail": 2,
+      "detailScale": 1,
+      "detailRoughness": 0.5
+    },
+    "bump": {
+      "strength": 0.7392045855522156,
+      "distance": 0.9663976430892944,
+      "filterWidth": 1,
+      "invert": false
+    }
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9966606020128509,
+    "surfaceMaskIouDilated1px": 0.9966724021618016,
+    "blenderSurfaceCoveredWithin1pxFraction": 1,
+    "webglSurfaceCoveredWithin1pxFraction": 1,
+    "surfaceCornerRmsePixels": 0.43079461407842706,
+    "pixelRgbMae": 0.08163618765670874,
+    "pixelLuminanceMae": 0.05972479015962246,
+    "pixelLuminanceCorrelation": 0.5636155799200988,
+    "macroLuminanceMae": 0.041419778740546816,
+    "macroLuminanceCorrelation": 0.7684578170213598,
+    "meanLuminanceDelta": -0.007364063639940854
+  },
+  "interpretation": "Authored mode now renders the actual red col field and the shared Generated-coordinate filament Wave/Bump graph on the exact filleted plate. Surface-only framing removes the loose guide from the renderer comparison without removing it from the interactive browser asset. The silhouettes align at 0.9967 IoU and mean exposure differs by only -0.0074 luminance. The remaining fine layer-band and hue differences are Eevee/Three.js lighting, derivative, and tone-mapping residuals. This verifies the Blender viewport preview, not slicing or G-code."
+}

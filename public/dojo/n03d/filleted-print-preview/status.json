@@ -2,7 +2,7 @@
   "id": "n03d-filleted-print-preview",
   "object": "Plane.006",
   "root": "Geometry Nodes.015",
-  "status": "exact-parity",
+  "status": "exact-geometry-and-authored-filament-verified",
   "blender": {
     "verts": 1808,
     "faces": 905
@@ -12,5 +12,13 @@
     "faces": 905
   },
   "coverage": "100% of reachable node types across the 3-group, 46-node closure.",
-  "validation": "The authored no-control output has exact topology and local bounds. Fill Curve now welds adjacent cyclic tangent duplicates created by Limit Radius, correcting the previous +8 vertex / +4 face delta after extrusion."
+  "validation": "The authored no-control output has exact topology and local bounds. Fill Curve now welds adjacent cyclic tangent duplicates created by Limit Radius, correcting the previous +8 vertex / +4 face delta after extrusion. PRINT VIZ JUN2024 stores the fixed red col field and assigns Filament PLA .02 mm layer height to all 905 faces; it does not slice the mesh. Authored mode uses surface-only framing and hides the 2,724-segment unbeveled guide only from the Blender comparison. The aligned result reaches 0.9967 silhouette IoU, 0.43-pixel corner RMSE, 0.0414 macro luminance MAE, 0.7685 macro correlation, and -0.0074 mean-luminance error.",
+  "materialParity": {
+    "report": "material-parity.json",
+    "comparison": "material-comparison.json",
+    "blenderReference": "../../references/n03d/filleted-print-preview-authored.png",
+    "browserReference": "../../references/n03d/filleted-print-preview-authored-webgl.png",
+    "material": "Filament PLA .02 mm layer height",
+    "scope": "Authored viewport filament shader only; no slicer or G-code toolpath is present."
+  }
 }

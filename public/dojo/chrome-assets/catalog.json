@@ -942,10 +942,15 @@
     "dump": "dojo/n03d/filleted-print-preview/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/filleted-print-preview.png",
+    "authoredReference": "dojo/references/n03d/filleted-print-preview-authored.png",
     "blenderStats": { "verts": 1808, "faces": 905 },
     "flatShading": true,
     "localSpace": true,
-    "note": "Exact authored topology and local bounds at 1,808 vertices / 905 faces. This fixed 46-node demo rounds the supplied square with a high-resolution Poly Fillet at each corner, fills the outline, extrudes it, and passes it through the shared print-visualization group.",
+    "surfaceBounds": true,
+    "authoredHideLines": true,
+    "authoredLightScale": 25,
+    "authoredPreviewLabel": "Filament surface shader (not sliced or G-code)",
+    "note": "Exact authored topology and local bounds at 1,808 vertices / 905 faces. This fixed 46-node demo rounds the supplied square with a high-resolution Poly Fillet at each corner, fills the outline, extrudes it, and passes it through PRINT VIZ JUN2024. That group stores the red col field and assigns the viewport-only Filament PLA Wave/Bump shader; it does not slice the mesh or create G-code. Surface-only authored framing omits the 2,724-segment unbeveled guide from the comparison while retaining it interactively. The aligned capture reaches 0.9967 silhouette IoU, 0.0414 macro luminance MAE, 0.7685 macro correlation, and -0.0074 mean-luminance error.",
     "controls": []
   },
   {

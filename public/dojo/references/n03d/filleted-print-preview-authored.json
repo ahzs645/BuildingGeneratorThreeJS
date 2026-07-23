@@ -1,0 +1,38 @@
+{
+  "object": "Plane.006",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -21.086294174194336,
+      -21.086294174194336,
+      0.0
+    ],
+    "max": [
+      21.086294174194336,
+      21.086294174194336,
+      4.505126953125
+    ]
+  },
+  "verts": 1808,
+  "faces": 905,
+  "materials": [
+    "emit"
+  ],
+  "evaluated_materials": [
+    "Filament PLA .02 mm layer height"
+  ],
+  "evaluated_material_faces": {
+    "Filament PLA .02 mm layer height": 905
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 1.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": true,
+  "studio_environment_strength": 0.8,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}
