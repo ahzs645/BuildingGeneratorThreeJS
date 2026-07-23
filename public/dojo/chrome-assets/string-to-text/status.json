@@ -2,11 +2,11 @@
   "id": "string-to-text",
   "object": "Vert.001",
   "root": "Dojo_STRING TO TEXT",
-  "status": "exact-parity",
+  "status": "exact-sweep-and-authored-material-parity",
   "reason": "FACE-domain Split to Instances now evaluates Selection and Group ID like Blender, so each filled glyph face receives its own instance payload and shared boundary vertices are duplicated on realization.",
   "blender": { "verts": 246, "faces": 20 },
   "gnvm": { "verts": 246, "faces": 20 },
-  "validation": "All thirteen Blender/browser cases exactly match in vertex count, face count, and rounded local bounds. The sweep covers editable text, size, alignment, character and line spacing, word wrapping, all fill modes, and reset-letter behavior. Browser material reconstruction also follows the extracted flat.nodes.001 contract: col drives Emission Color and power drives Emission Strength, with an explicit diagnostic fallback.",
+  "validation": "All thirteen Blender/browser cases exactly match in vertex count, face count, and rounded local bounds. The sweep covers editable text, size, alignment, character and line spacing, word wrapping, all fill modes, and reset-letter behavior. Browser material reconstruction follows flat.nodes.001: col drives Emission Color and power drives Emission Strength. Aligned captures reach 0.938208 silhouette IoU, 0.016050 RGB MAE, and 0.013285 luminance MAE; the mask residual is one-pixel antialias coverage around the small glyphs.",
   "portableDump": "dojo/chrome-assets/string-to-text/dump.json",
   "reference": "dojo/references/chrome-assets/string-to-text.png"
 }

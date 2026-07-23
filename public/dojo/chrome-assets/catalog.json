@@ -145,8 +145,11 @@
     "dump": "dojo/chrome-assets/string-to-text/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/string-to-text.png",
+    "authoredReference": "dojo/references/chrome-assets/string-to-text-authored.png",
     "blenderStats": { "verts": 246, "faces": 20 },
-    "note": "Exact Blender/browser parity across all 13 cases. FACE-domain grouping preserves each filled glyph as its own instance, including Blender's duplicated shared-boundary vertices. The extracted col and power fields now drive Blender's authored emission contract in WebGL.",
+    "localSpace": true,
+    "authoredToneMapping": "none",
+    "note": "Exact Blender/browser parity across all 13 cases. FACE-domain grouping preserves each filled glyph as its own instance, including Blender's duplicated shared-boundary vertices. The extracted col and power fields drive Blender's authored yellow-green emission in WebGL. The aligned captures reach 0.9382 silhouette IoU and 0.0161 RGB MAE; the lower IoU is one-pixel antialias coverage around these small glyphs, not missing geometry.",
     "material": "attribute-emission",
     "controls": [
       { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored attribute emission", "value": "authored" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },

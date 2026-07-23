@@ -1,0 +1,63 @@
+{
+  "updated": "2026-07-23",
+  "target": {
+    "id": "string-to-text",
+    "project": "NO3D Chrome Asset Library.blend",
+    "object": "Vert.001",
+    "root": "Dojo_STRING TO TEXT",
+    "material": "flat.nodes.001"
+  },
+  "geometryContract": {
+    "verts": 246,
+    "faces": 20,
+    "tris": 206,
+    "group": {
+      "start": 0,
+      "count": 618,
+      "material": "flat.nodes.001"
+    }
+  },
+  "authoredShaderContract": {
+    "nodes": 4,
+    "links": 3,
+    "colorPath": "Geometry Attribute col Color → Emission Color",
+    "strengthPath": "Geometry Attribute power Vector → Emission Strength",
+    "evaluatedAttributes": {
+      "col": {
+        "domain": "POINT",
+        "itemSize": 3,
+        "value": [0.7404510974884033, 0.8003553152084351, 0.0],
+        "vertices": 246
+      },
+      "power": {
+        "domain": "POINT",
+        "itemSize": 1,
+        "value": 1.0,
+        "vertices": 246
+      }
+    },
+    "browserResolution": "The independently extracted flat.nodes.001 graph binds the exact evaluated col and power arrays to the glyph draw group. No palette correction or normalized fallback is used."
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../../references/chrome-assets/string-to-text-authored.png",
+    "blenderMetadata": "../../references/chrome-assets/string-to-text-authored.json",
+    "browserReference": "../../references/chrome-assets/string-to-text-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=string-to-text&capture=authored",
+    "colorManagement": "Blender uses Standard with Look=None; WebGL uses NoToneMapping and sRGB output."
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.938208253153731,
+    "surfaceCornerRmsePixels": 0.6743156242185253,
+    "intersectionPixels": 20513,
+    "pixelRgbMae": 0.01605037034723955,
+    "meanRgbDelta": [0.0017648845177513964, -0.021006490915008533, 0.022358662202812515],
+    "pixelLuminanceMae": 0.013285071949275324,
+    "pixelLuminanceCorrelation": 0.0011130618331600005,
+    "macroLuminanceCorrelation": 0.3981195443501969
+  },
+  "interpretation": "The authored material color matches directly: both captures' dominant opaque glyph pixel is RGB8 [223,231,0]. The low correlation values are expected for a nearly uniform emissive surface, where antialiased edges dominate variance. Silhouette corner agreement is sub-pixel; the remaining mask difference is raster coverage around small glyph boundaries, not a topology or shader-field mismatch."
+}

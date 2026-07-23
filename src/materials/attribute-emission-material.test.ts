@@ -212,8 +212,13 @@ test("reconstructs String to Text's independently extracted emission material", 
   assert.deepEqual(result.soup.groups, [{ start: 0, count: 618, material: "flat.nodes.001" }]);
   assert.equal(result.soup.attributes.col.itemSize, 3);
   assert.equal(result.soup.attributes.power.itemSize, 1);
-  assert.ok(result.soup.attributes.col.data.some((value) => value > 0.8));
-  assert.ok(result.soup.attributes.col.data.some((value) => value === 0));
+  for (let offset = 0; offset < result.soup.attributes.col.data.length; offset += 3) {
+    assert.deepEqual(Array.from(result.soup.attributes.col.data.slice(offset, offset + 3)), [
+      0.7404510974884033,
+      0.8003553152084351,
+      0,
+    ]);
+  }
   assert.ok(result.soup.attributes.power.data.every((value) => value === 1));
 
   const geometry = new THREE.BufferGeometry();
