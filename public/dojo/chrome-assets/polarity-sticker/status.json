@@ -1,1 +1,10 @@
-{"id":"polarity-sticker","object":"Vert.017","root":"polarity sticker","status":"authored-exact","blender":{"verts":68,"faces":4},"gnvm":{"verts":68,"faces":4},"coverage":"100% of reachable node types across the 2-group, 16-node closure.","validation":"The authored four-part polarity sticker matches Blender exactly in topology and four-decimal bounds."}
+{
+  "id": "polarity-sticker",
+  "object": "Vert.017",
+  "root": "polarity sticker",
+  "status": "authored-material-parity",
+  "blender": { "verts": 68, "faces": 4 },
+  "gnvm": { "verts": 68, "faces": 4 },
+  "coverage": "100% of reachable node types across the 2-group, 16-node closure.",
+  "validation": "The authored four-part polarity sticker matches Blender exactly in topology and four-decimal local bounds. Browser authored mode preserves its alternating white/black col field and unit power through the flat.nodes emission graph without tone mapping. Aligned Blender/WebGL captures reach 0.996714 silhouette IoU, 0.004087 RGB MAE, and 0.999940 macro luminance correlation."
+}

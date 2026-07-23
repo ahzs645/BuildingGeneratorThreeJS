@@ -1,1 +1,10 @@
-{"id":"period-pack-shape","object":"1","root":"Geometry Nodes.004","status":"authored-exact","blender":{"verts":28,"faces":1},"gnvm":{"verts":28,"faces":1},"coverage":"100% of reachable node types across the 2-group, 18-node closure.","validation":"The authored generated 28-sided period-pack shape matches Blender exactly in topology and four-decimal bounds."}
+{
+  "id": "period-pack-shape",
+  "object": "1",
+  "root": "Geometry Nodes.004",
+  "status": "authored-material-parity",
+  "blender": { "verts": 28, "faces": 1 },
+  "gnvm": { "verts": 28, "faces": 1 },
+  "coverage": "100% of reachable node types across the 2-group, 18-node closure.",
+  "validation": "The authored generated 28-sided period-pack shape matches Blender exactly in topology and four-decimal local bounds. Browser authored mode preserves its black col and unit power through the flat.nodes emission graph without tone mapping. Aligned Blender/WebGL captures reach 0.995696 silhouette IoU, 0.001371 RGB MAE, and zero binary mask disagreement."
+}

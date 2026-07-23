@@ -323,8 +323,11 @@
     "dump": "dojo/chrome-assets/period-pack-shape/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/period-pack-shape.png",
+    "authoredReference": "dojo/references/chrome-assets/period-pack-shape-authored.png",
     "blenderStats": { "verts": 28, "faces": 1 },
-    "note": "Authored 28-sided period-pack shape matches Blender exactly in topology and four-decimal local bounds.",
+    "localSpace": true,
+    "authoredToneMapping": "none",
+    "note": "Authored 28-sided period-pack shape matches Blender exactly in topology and four-decimal local bounds. Browser authored mode preserves its black col and unit power through the flat.nodes emission graph.",
     "controls": []
   },
   {
@@ -334,8 +337,11 @@
     "dump": "dojo/chrome-assets/polarity-sticker/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/polarity-sticker.png",
+    "authoredReference": "dojo/references/chrome-assets/polarity-sticker-authored.png",
     "blenderStats": { "verts": 68, "faces": 4 },
-    "note": "Authored four-part polarity sticker matches Blender exactly in topology and four-decimal local bounds.",
+    "localSpace": true,
+    "authoredToneMapping": "none",
+    "note": "Authored four-part polarity sticker matches Blender exactly in topology and four-decimal local bounds. Browser authored mode preserves its white col and unit power through the flat.nodes emission graph.",
     "controls": []
   },
   {

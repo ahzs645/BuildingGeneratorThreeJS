@@ -1,0 +1,108 @@
+{
+  "captures": {
+    "blender": "polarity-sticker-authored.png",
+    "webgl": "polarity-sticker-authored-webgl.png",
+    "resolution": [
+      768,
+      768
+    ],
+    "alignment": "same square orthographic camera direction and 1.45 framing scale"
+  },
+  "blender": {
+    "surface_pixels": 103138,
+    "black_pixels": 50777,
+    "white_pixels": 51272,
+    "gray_pixels": 1089,
+    "black_fraction": 0.4923209680234249,
+    "white_fraction": 0.49712036300878437,
+    "gray_fraction": 0.010558668967790726,
+    "mean_luminance": 0.5025356882671508
+  },
+  "webgl": {
+    "surface_pixels": 103478,
+    "black_pixels": 51198,
+    "white_pixels": 51126,
+    "gray_pixels": 1154,
+    "black_fraction": 0.4947718355592493,
+    "white_fraction": 0.49407603548580376,
+    "gray_fraction": 0.011152128954946945,
+    "mean_luminance": 0.4991661347575702
+  },
+  "comparison": {
+    "surface_mask_iou": 0.9967142774309515,
+    "surface_corners": {
+      "blender": {
+        "left": [
+          119.88,
+          384.04
+        ],
+        "right": [
+          647.1538461538462,
+          382.88461538461536
+        ],
+        "bottom": [
+          383.68148148148146,
+          260.63703703703703
+        ],
+        "top": [
+          383.31851851851854,
+          506.36296296296297
+        ]
+      },
+      "webgl": {
+        "left": [
+          119.62162162162163,
+          382.81081081081084
+        ],
+        "right": [
+          647.3783783783783,
+          384.18918918918916
+        ],
+        "bottom": [
+          383.29559748427675,
+          260.59119496855345
+        ],
+        "top": [
+          383.70440251572325,
+          506.40880503144655
+        ]
+      }
+    },
+    "surface_corner_deltas_webgl_minus_blender": {
+      "left": [
+        -0.2583783783783673,
+        -1.229189189189185
+      ],
+      "right": [
+        0.2245322245321404,
+        1.3045738045738062
+      ],
+      "bottom": [
+        -0.3858839972047008,
+        -0.04584206848358008
+      ],
+      "top": [
+        0.3858839972047008,
+        0.04584206848358008
+      ]
+    },
+    "surface_corner_rmse_pixels": 0.6737960457131659,
+    "intersection_pixels": 103138,
+    "pixel_rgb_mae": 0.004086558530467312,
+    "mean_rgb_delta": [
+      -0.0016986219123179675,
+      -0.0031904742688067885,
+      -0.0016986219123179675
+    ],
+    "pixel_luminance_mae": 0.003984900278032661,
+    "pixel_luminance_correlation": 0.9979272552523027,
+    "binary_mask_disagreement_fraction": 0.0017646260350210397,
+    "macro_block_size": 32,
+    "macro_block_count": 116,
+    "macro_luminance_mae": 0.003765080730154575,
+    "macro_luminance_correlation": 0.9999397690097146,
+    "black_fraction_delta": 0.002450867535824408,
+    "mean_luminance_delta": -0.0033695535095805695
+  },
+  "interpretation": "The aligned silhouette validates the capture context, but luminance occupancy, correlation, and pixel disagreement determine whether the authored WebGL material is visually equivalent. Renderer lighting, environment, tone mapping, texture filtering, and procedural implementations may remain as residuals."
+}

@@ -1,0 +1,36 @@
+{
+  "object": "Vert.017",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -23.51666259765625,
+      -23.51666259765625,
+      0.0
+    ],
+    "max": [
+      23.51666259765625,
+      23.51666259765625,
+      0.0
+    ]
+  },
+  "verts": 68,
+  "faces": 4,
+  "materials": [],
+  "evaluated_materials": [
+    "flat.nodes"
+  ],
+  "evaluated_material_faces": {
+    "flat.nodes": 4
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 1.0,
+  "authored_look": "None",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}
