@@ -21,7 +21,7 @@ import { makeVtextMaterial } from "./vtext-material";
 import { makeHatStitchMaterial } from "./hat-stitch-material";
 import { makeAttributeColorEmissionMaterial } from "./attribute-color-emission-material";
 import { makeWorkbenchApproximationMaterial, shouldUseWorkbenchApproximation } from "./workbench-approx-material";
-import { makeNodeBaseMaterial } from "./node-base-material";
+import { makeNodeBaseMaterial, makeSimpleNoiseBumpMaterial } from "./node-base-material";
 import { makeNodeColorVtextMaterial } from "./node-color-vtext-material";
 import { loadBlenderStudioEnvironment } from "./blender-studio-environment";
 import { EeveeTemporalCapture } from "./eevee-temporal-capture";
@@ -192,6 +192,7 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
             ?? makeAttributeColorEmissionMaterial(dump,geometry,group.material??"")
             ?? makeAttributePrincipledMaterial(dump,geometry,group.material??"")
             ?? makeNodeBaseMaterial(dump,geometry,group,group.material??"")
+            ?? makeSimpleNoiseBumpMaterial(dump,geometry,group,group.material??"")
             ?? makeNodeColorVtextMaterial(dump,geometry,group,group.material??"")
             ?? makeVtextMaterial(dump,geometry,group,group.material??"")
             ?? makeKnitThreadMaterial(dump,geometry,group,group.material??"")

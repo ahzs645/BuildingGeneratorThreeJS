@@ -36,6 +36,8 @@ export type NodeBaseMaterialConfig = {
   bumpInvert: boolean;
 };
 
+export type SimpleNoiseBumpMaterialConfig = NodeBaseMaterialConfig;
+
 const CONTRACT: NodeBaseMaterialConfig = {
   baseColor: [0, 0, 0],
   metallic: 0,
@@ -184,6 +186,142 @@ function heightGlsl(config: NodeBaseMaterialConfig): string {
   float signedFbm = ${terms.join("\n    + ")};
   return ${config.noiseNormalize ? `0.5 * signedFbm / ${glsl(maximum)} + 0.5` : "signedFbm"};
 }`;
+}
+
+function finiteNumber(socket: RawSocket | undefined): number | null {
+  if (!socket || socket.linked || !Number.isFinite(Number(socket.value))) return null;
+  return Number(socket.value);
+}
+
+function finiteColor(socket: RawSocket | undefined): [number, number, number] | null {
+  if (!socket || socket.linked || !Array.isArray(socket.value) || socket.value.length < 3) return null;
+  const value = socket.value.slice(0, 3).map(Number);
+  return value.every(Number.isFinite) ? value as [number, number, number] : null;
+}
+
+/**
+ * Recognize the reusable Blender contract
+ * Generated coordinates -> normalized 3D FBM Noise -> Bump -> Principled.
+ *
+ * The Nodes Node pack uses this second four-node material for the raised input
+ * panels. Keep the recognizer structural and parameter-driven so other exact
+ * copies do not silently fall through to the constant-material approximation.
+ */
+export function extractSimpleNoiseBumpMaterialConfig(
+  dump: Dump,
+  materialName: string,
+): SimpleNoiseBumpMaterialConfig | null {
+  const tree = dump.materials?.[materialName] as RawTree | undefined;
+  if (!tree || tree.nodes?.length !== REQUIRED_NODES.length || tree.links?.length !== REQUIRED_LINKS.length) return null;
+  const nodes = new Map(tree.nodes.map((node) => [node.name, node]));
+  if (REQUIRED_NODES.some(([name, type]) => nodes.get(name)?.type !== type)
+    || REQUIRED_LINKS.some((link) => !hasLink(tree, link))) return null;
+
+  const output = nodes.get("Material Output");
+  const principled = nodes.get("Principled BSDF");
+  const bump = nodes.get("Bump");
+  const noise = nodes.get("Noise Texture");
+  const baseColor = finiteColor(input(principled, "Base Color"));
+  const metallic = finiteNumber(input(principled, "Metallic"));
+  const roughness = finiteNumber(input(principled, "Roughness"));
+  const ior = finiteNumber(input(principled, "IOR"));
+  const specularIorLevel = finiteNumber(input(principled, "Specular IOR Level"));
+  const noiseScale = finiteNumber(input(noise, "Scale"));
+  const noiseDetail = finiteNumber(input(noise, "Detail"));
+  const noiseRoughness = finiteNumber(input(noise, "Roughness"));
+  const noiseLacunarity = finiteNumber(input(noise, "Lacunarity"));
+  const bumpStrength = finiteNumber(input(bump, "Strength"));
+  const bumpDistance = finiteNumber(input(bump, "Distance"));
+  const bumpFilterWidth = finiteNumber(input(bump, "Filter Width"));
+  if (!baseColor || metallic === null || roughness === null || ior === null || specularIorLevel === null
+    || noiseScale === null || noiseDetail === null || noiseRoughness === null || noiseLacunarity === null
+    || bumpStrength === null || bumpDistance === null || bumpFilterWidth === null
+    || !exactProps(output, { is_active_output: true })
+    || !exactProps(principled, { distribution: "GGX", subsurface_method: "RANDOM_WALK_SKIN" })
+    || input(principled, "Normal")?.linked !== true
+    || !exactNumber(input(principled, "Alpha"), 1)
+    || !exactNumber(input(principled, "Transmission Weight"), 0)
+    || !exactNumber(input(principled, "Coat Weight"), 0)
+    || !exactVector(input(principled, "Emission Color"), [0, 0, 0, 1])
+    || !exactNumber(input(principled, "Emission Strength"), 1)
+    || !exactProps(noise, { noise_dimensions: "3D", noise_type: "FBM" })
+    || typeof noise?.props?.normalize !== "boolean"
+    || !exactVector(input(noise, "Vector"), [0, 0, 0])
+    || !exactNumber(input(noise, "W"), 0)
+    || !exactNumber(input(noise, "Offset"), 0)
+    || !exactNumber(input(noise, "Gain"), 1)
+    || !exactNumber(input(noise, "Distortion"), 0)
+    || noiseDetail < 0 || noiseDetail > 15
+    || noiseRoughness < 0 || noiseRoughness > 1
+    || noiseLacunarity <= 0
+    || !exactProps(bump, { invert: false })
+    || input(bump, "Height")?.linked !== true
+    || !exactVector(input(bump, "Normal"), [0, 0, 0])) return null;
+
+  return {
+    baseColor,
+    metallic,
+    roughness,
+    ior,
+    specularIorLevel,
+    noiseScale,
+    noiseDetail,
+    noiseRoughness,
+    noiseLacunarity,
+    noiseNormalize: noise.props.normalize,
+    bumpStrength,
+    bumpDistance,
+    bumpFilterWidth,
+    bumpInvert: false,
+  };
+}
+
+/** Reconstruct any exact four-node Generated Noise/Bump material contract. */
+export function makeSimpleNoiseBumpMaterial(
+  dump: Dump,
+  geometry: THREE.BufferGeometry,
+  group: IndexGroup,
+  materialName: string,
+): THREE.MeshPhysicalMaterial | null {
+  const config = extractSimpleNoiseBumpMaterialConfig(dump, materialName);
+  const bounds = config ? filamentGroupBounds(geometry, group) : null;
+  if (!config || !bounds) return null;
+  const extent = bounds.max.map((value, axis) => Math.max(value - bounds.min[axis], 1e-20));
+  const material = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(...config.baseColor),
+    metalness: config.metallic,
+    roughness: config.roughness,
+    ior: config.ior,
+    specularIntensity: config.specularIorLevel,
+    side: THREE.DoubleSide,
+  });
+  material.name = `${materialName} · authored normalized Noise/Bump reconstruction`;
+  material.userData.simpleNoiseBumpContract = config;
+  material.userData.simpleNoiseBumpGeneratedBounds = bounds satisfies FilamentBounds;
+  material.userData.rendererApproximation = "Exact extracted scalar graph and parameters; Three.js PBR lighting and WebGL screen derivatives approximate Blender's renderer.";
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nvarying vec3 vSimpleNoiseBumpGenerated;")
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvSimpleNoiseBumpGenerated = (position - ${glslVector(bounds.min)}) / ${glslVector(extent)};`);
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", `#include <common>
+varying vec3 vSimpleNoiseBumpGenerated;
+
+${filamentNoiseGlsl("nodeBase")}
+${heightGlsl(config)}`)
+      .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
+${filamentBumpGlsl({
+    prefix: "simpleNoiseBump",
+    coordinate: "vSimpleNoiseBumpGenerated",
+    heightFunction: (coordinate) => `nodeBaseHeight(${coordinate})`,
+    strength: config.bumpStrength,
+    distance: config.bumpDistance,
+    filterWidth: config.bumpFilterWidth,
+    invert: config.bumpInvert,
+  })}`);
+  };
+  material.customProgramCacheKey = () => `simple-noise-bump-${materialName}-${JSON.stringify(config)}-${bounds.min.join(",")}-${bounds.max.join(",")}-v1`;
+  return material;
 }
 
 /** Reconstruct the base plate's authored Generated-Noise micro-bump in Three.js PBR. */

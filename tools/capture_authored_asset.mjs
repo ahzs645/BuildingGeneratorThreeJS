@@ -9,6 +9,7 @@ const lightScale = process.argv[5];
 const previewMode = process.argv[6];
 const overridesPayload = process.argv[7];
 const backgroundHex = process.env.NODE_DOJO_CAPTURE_BACKGROUND_HEX ?? process.argv[8];
+const sampleCount = process.env.NODE_DOJO_CAPTURE_SAMPLES;
 
 if (!asset || !output) {
   throw new Error(
@@ -28,6 +29,9 @@ if (overrides !== null && (typeof overrides !== "object" || Array.isArray(overri
 if (backgroundHex !== undefined && !/^[0-9a-f]{6}$/i.test(backgroundHex)) {
   throw new Error("BACKGROUND_HEX must contain exactly six hexadecimal digits");
 }
+if (sampleCount !== undefined && (!Number.isInteger(Number(sampleCount)) || Number(sampleCount) < 1)) {
+  throw new Error(`NODE_DOJO_CAPTURE_SAMPLES must be a positive integer: ${sampleCount}`);
+}
 
 const executablePath = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -42,6 +46,7 @@ route.searchParams.set("asset", asset);
 route.searchParams.set("capture", "authored");
 if (lightScale !== undefined) route.searchParams.set("lightScale", lightScale);
 if (previewMode !== undefined) route.searchParams.set("preview", previewMode);
+if (sampleCount !== undefined) route.searchParams.set("samples", sampleCount);
 
 const browser = await puppeteer.launch({
   headless: true,
@@ -108,6 +113,12 @@ try {
   await page.evaluate(() => new Promise((resolve) => (
     requestAnimationFrame(() => requestAnimationFrame(resolve))
   )));
+  if (sampleCount !== undefined) {
+    await page.waitForFunction(
+      () => document.querySelector("#assets-canvas")?.dataset.captureReady === "true",
+      { timeout: 240_000 },
+    );
+  }
   if (errors.length) throw new Error(`authored-material browser errors:\n${errors.join("\n")}`);
 
   const canvas = await page.$("#assets-canvas");
@@ -124,6 +135,7 @@ try {
     lightScale: lightScale === undefined ? null : Number(lightScale),
     previewMode: previewMode ?? "authored",
     backgroundHex: backgroundHex ?? "ff00ff",
+    samples: sampleCount === undefined ? null : Number(sampleCount),
     overrides,
     ...result,
   })}`);

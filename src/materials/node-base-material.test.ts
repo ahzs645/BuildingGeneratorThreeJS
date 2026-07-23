@@ -6,7 +6,9 @@ import * as THREE from "three";
 import type { Dump } from "../gnvm";
 import {
   extractNodeBaseMaterialConfig,
+  extractSimpleNoiseBumpMaterialConfig,
   makeNodeBaseMaterial,
+  makeSimpleNoiseBumpMaterial,
   nodeBaseHeightAtGenerated,
 } from "../node-base-material";
 
@@ -109,6 +111,64 @@ test("injects Generated-coordinate normalized Noise and derivative Bump with hon
   assert.match(shader.fragmentShader, /dFdx\(vNodeBaseGenerated\)/);
   assert.match(shader.fragmentShader, /nodeBaseDistance = 1\.0/);
   assert.deepEqual(material.userData.nodeBaseContract, expectedConfig);
+
+  material.dispose();
+  geometry.dispose();
+});
+
+test("reconstructs the Nodes Node raised-panel Material Noise/Bump contract", () => {
+  const expected = {
+    baseColor: [0.10619574785232544, 0.10619574785232544, 0.10619574785232544],
+    metallic: 0,
+    roughness: 0.5,
+    ior: 1.4500000476837158,
+    specularIorLevel: 0,
+    noiseScale: 575.300048828125,
+    noiseDetail: 2,
+    noiseRoughness: 0.5,
+    noiseLacunarity: 2,
+    noiseNormalize: true,
+    bumpStrength: 1,
+    bumpDistance: 1,
+    bumpFilterWidth: 1,
+    bumpInvert: false,
+  };
+  assert.deepEqual(extractSimpleNoiseBumpMaterialConfig(dump, "Material"), expected);
+  assert.deepEqual(extractSimpleNoiseBumpMaterialConfig(dump, "node base.001"), expectedConfig);
+  assert.equal(extractSimpleNoiseBumpMaterialConfig(dump, "node base"), null);
+
+  const changed = structuredClone(dump) as Dump;
+  (changed.materials?.Material as any).links.pop();
+  assert.equal(extractSimpleNoiseBumpMaterialConfig(changed, "Material"), null);
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute([
+    -1, -2, 0,
+    3, -2, 0,
+    -1, 4, 2,
+  ], 3));
+  geometry.setIndex([0, 1, 2]);
+  const material = makeSimpleNoiseBumpMaterial(
+    dump,
+    geometry,
+    { start: 0, count: 3, material: "Material" },
+    "Material",
+  );
+  assert.ok(material);
+  assert.equal(material.name, "Material · authored normalized Noise/Bump reconstruction");
+  assert.deepEqual(material.userData.simpleNoiseBumpContract, expected);
+  assert.deepEqual(material.userData.simpleNoiseBumpGeneratedBounds, {
+    min: [-1, -2, 0],
+    max: [3, 4, 2],
+  });
+  const shader = {
+    vertexShader: "#include <common>\n#include <begin_vertex>",
+    fragmentShader: "#include <common>\n#include <normal_fragment_maps>",
+  };
+  material.onBeforeCompile(shader as never, {} as never);
+  assert.match(shader.vertexShader, /vSimpleNoiseBumpGenerated/);
+  assert.match(shader.fragmentShader, /generated \* 575\.300048828125/);
+  assert.match(shader.fragmentShader, /simpleNoiseBumpPerturbed/);
 
   material.dispose();
   geometry.dispose();
