@@ -14,6 +14,10 @@ const textDump = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/chrome-assets/string-to-text/dump.json",
   import.meta.url,
 )), "utf8")) as Dump;
+const text3dDump = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/chrome-assets/string-to-text-002/dump.json",
+  import.meta.url,
+)), "utf8")) as Dump;
 const periodicDump = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/periodic-brush/dump.json",
   import.meta.url,
@@ -229,6 +233,37 @@ test("reconstructs String to Text's independently extracted emission material", 
   const material = makeAttributeEmissionMaterial(textDump, geometry, "flat.nodes.001");
   assert.equal(material?.name, "flat.nodes.001 · attribute emission reconstruction");
   assert.equal(material?.toneMapped, true);
+  geometry.dispose();
+  material?.dispose();
+});
+
+test("reconstructs 3D String to Text's flat.nodes.003 emission material", async () => {
+  assert.deepEqual(extractAttributeEmissionConfig(text3dDump, "flat.nodes.003"), {
+    colorAttribute: "col",
+    strengthAttribute: "power",
+  });
+  const result = await runGenerator(text3dDump, { object: "Vert.002", overrides: {} });
+  assert.deepEqual(result.soup.stats, { verts: 4446, faces: 26, tris: 4394 });
+  assert.deepEqual(result.soup.groups, [{ start: 0, count: 13182, material: "flat.nodes.003" }]);
+  for (let offset = 0; offset < result.soup.attributes.col.data.length; offset += 3) {
+    assert.deepEqual(Array.from(result.soup.attributes.col.data.slice(offset, offset + 3)), [
+      0.7404510974884033,
+      0.8003553152084351,
+      0,
+    ]);
+  }
+  assert.ok(result.soup.attributes.power.data.every((value) => value === 1));
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));
+  geometry.setAttribute("col", new THREE.BufferAttribute(result.soup.attributes.col.data, 3));
+  geometry.setAttribute("power", new THREE.BufferAttribute(result.soup.attributes.power.data, 1));
+  const material = makeAttributeEmissionMaterial(text3dDump, geometry, "flat.nodes.003");
+  assert.equal(material?.name, "flat.nodes.003 · attribute emission reconstruction");
+  assert.deepEqual(material?.userData.attributeResolution, {
+    color: "geometry-color",
+    strength: "geometry-vector",
+  });
   geometry.dispose();
   material?.dispose();
 });

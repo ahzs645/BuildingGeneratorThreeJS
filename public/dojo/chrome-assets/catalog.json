@@ -103,8 +103,11 @@
     "dump": "dojo/chrome-assets/string-to-text-002/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/string-to-text-002.png",
+    "authoredReference": "dojo/references/chrome-assets/string-to-text-002-authored.png",
     "blenderStats": { "verts": 4446, "faces": 26 },
-    "note": "Exact Blender/browser topology and bounds across the fourteen-case text, size, alignment, spacing, wrapping, and fill sweep.",
+    "localSpace": true,
+    "authoredToneMapping": "none",
+    "note": "Exact Blender/browser topology and bounds across the fourteen-case text, size, alignment, spacing, wrapping, and fill sweep. The 3D branch's flat.nodes.003 material now reproduces Blender's evaluated col/power emission directly. Aligned authored captures reach 0.9461 silhouette IoU and 0.0149 RGB MAE; residual mask error is small-glyph raster coverage.",
     "controls": [
       { "type": "text", "name": "String", "label": "Text", "value": "3D Chrome Crayon" },
       { "name": "Align", "label": "Align: left / center / right", "min": 0, "max": 2, "step": 1, "value": 1 },

@@ -1,0 +1,65 @@
+{
+  "updated": "2026-07-23",
+  "target": {
+    "id": "string-to-text-002",
+    "project": "NO3D Chrome Asset Library.blend",
+    "object": "Vert.002",
+    "root": "Dojo_STRING TO TEXT.002",
+    "material": "flat.nodes.003"
+  },
+  "geometryContract": {
+    "verts": 4446,
+    "faces": 26,
+    "tris": 4394,
+    "group": {
+      "start": 0,
+      "count": 13182,
+      "material": "flat.nodes.003"
+    },
+    "bounds": {
+      "min": [-22.17472267150879, -12.138805389404297, 0.0],
+      "max": [22.17472267150879, 12.138805389404297, 0.0]
+    }
+  },
+  "authoredShaderContract": {
+    "nodes": 4,
+    "links": 3,
+    "colorPath": "Geometry Attribute col Color → Emission Color",
+    "strengthPath": "Geometry Attribute power Vector → Emission Strength",
+    "evaluatedAttributes": {
+      "col": {
+        "domain": "POINT",
+        "itemSize": 3,
+        "value": [0.7404510974884033, 0.8003553152084351, 0.0],
+        "vertices": 4446
+      },
+      "power": {
+        "domain": "POINT",
+        "itemSize": 1,
+        "value": 1.0,
+        "vertices": 4446
+      }
+    },
+    "browserResolution": "The generic authored-material resolver recognizes flat.nodes.003 by graph topology and binds the evaluated attributes without asset-specific palette correction."
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../../references/chrome-assets/string-to-text-002-authored.png",
+    "blenderMetadata": "../../references/chrome-assets/string-to-text-002-authored.json",
+    "browserReference": "../../references/chrome-assets/string-to-text-002-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=string-to-text-002&capture=authored",
+    "colorManagement": "Blender uses Standard with Look=None; WebGL uses NoToneMapping and sRGB output."
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9460863672301495,
+    "surfaceCornerRmsePixels": 1.7409842221536358,
+    "intersectionPixels": 25129,
+    "pixelRgbMae": 0.014900682187482566,
+    "meanRgbDelta": [0.0015451251011220396, -0.019456937742497037, 0.02063907225202631],
+    "pixelLuminanceMae": 0.012348987042757066
+  },
+  "interpretation": "Both captures' dominant opaque glyph pixel is RGB8 [223,231,0]. The RGB and luminance error are confined primarily to antialiased edges; the generated geometry, material assignment, and shader-visible attributes are exact."
+}

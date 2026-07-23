@@ -1,8 +1,8 @@
 {
   "object": "Vert.002",
   "root": "Dojo_STRING TO TEXT.002",
-  "status": "exact-sweep",
+  "status": "exact-sweep-and-authored-material-parity",
   "blender": { "verts": 4446, "faces": 26 },
   "gnvm": { "verts": 4446, "faces": 26 },
-  "validation": "Exact Blender/browser topology and local bounds in all fourteen cases covering editable text, size, alignment, character spacing, text-box wrapping, and fill modes."
+  "validation": "Exact Blender/browser topology and local bounds in all fourteen cases covering editable text, size, alignment, character spacing, text-box wrapping, and fill modes. The browser reconstructs flat.nodes.003 from its evaluated col/power attributes with no palette correction. Aligned captures reach 0.946086 silhouette IoU, 1.741 px corner RMSE, 0.014901 RGB MAE, and 0.012349 luminance MAE; residual mask error is antialias coverage around the small glyphs."
 }
