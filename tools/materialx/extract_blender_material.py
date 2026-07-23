@@ -6,8 +6,9 @@ Run with Blender, not system Python:
     --report public/materialx/chrome-crayon-native.report.json
 
 The script contains no code from third-party Blender add-ons. It translates the
-native USDShade MaterialX network to standalone MaterialX XML and normalizes
-OpenPBR surface inputs to the Standard Surface names consumed by Three r185.
+native USDShade MaterialX network to standalone MaterialX XML. OpenPBR roots
+are normalized to Standard Surface for Three r185; direct MaterialX ``surface``
+roots retain their BSDF graph for the official ESSL backend.
 """
 
 from __future__ import annotations
@@ -70,6 +71,15 @@ STANDARD_SURFACE_INPUT_TYPES = {
     "opacity": "color3",
 }
 
+DIRECT_SURFACE_INPUTS = {
+    "bsdf": "BSDF",
+    "edf": "EDF",
+    "opacity": "float",
+    "thin_walled": "boolean",
+}
+
+_MATERIALX_LIBRARY = None
+
 
 def parse_args() -> argparse.Namespace:
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
@@ -100,7 +110,19 @@ def format_value(value) -> str:
 
 
 def usd_type(attribute) -> str:
+    render_type = attribute.GetMetadata("renderType")
+    if render_type:
+        return str(render_type)
     return TYPE_MAP.get(str(attribute.GetTypeName()), str(attribute.GetTypeName()))
+
+
+def materialx_library():
+    global _MATERIALX_LIBRARY
+    if _MATERIALX_LIBRARY is None:
+        library = mx.createDocument()
+        mx.loadLibraries(mx.getDefaultDataLibraryFolders(), mx.getDefaultDataSearchPath(), library)
+        _MATERIALX_LIBRARY = library
+    return _MATERIALX_LIBRARY
 
 
 def make_probe(material: bpy.types.Material) -> None:
@@ -187,6 +209,10 @@ def node_category_and_type(prim) -> tuple[str, str]:
     identifier = shader_id(prim)
     if not identifier.startswith("ND_"):
         return identifier, "float"
+    nodedef = materialx_library().getNodeDef(identifier)
+    if nodedef is not None:
+        output = prim.GetAttribute("outputs:out")
+        return nodedef.getNodeString(), usd_type(output) if output else nodedef.getType()
     body = identifier[3:]
     output = prim.GetAttribute("outputs:out")
     node_type = usd_type(output) if output else "float"
@@ -426,6 +452,52 @@ def add_standard_surface(root: ET.Element, graph: ET.Element, surface_prim, mate
     ET.SubElement(material, "input", name="surfaceshader", type="surfaceshader", nodename=surface.get("name"))
 
 
+def add_graph_output(
+    graph: ET.Element,
+    output_name: str,
+    output_type: str,
+    connection: tuple[str, str],
+) -> None:
+    output = ET.SubElement(
+        graph,
+        "output",
+        name=output_name,
+        type=output_type,
+        nodename=sanitize(connection[0]),
+    )
+    if connection[1] != "out":
+        output.set("output", connection[1])
+
+
+def add_direct_surface(root: ET.Element, graph: ET.Element, surface_prim, material_name: str) -> None:
+    """Preserve a native ``ND_surface`` graph for MaterialX ESSL generation."""
+    surface = ET.SubElement(root, "surface", name="SS_blender_native", type="surfaceshader")
+    output_names = set()
+    for input_name, fallback_type in DIRECT_SURFACE_INPUTS.items():
+        attribute = surface_prim.GetAttribute(f"inputs:{input_name}")
+        if not attribute:
+            continue
+        connection = source_connection(attribute)
+        value = attribute.Get()
+        if not connection and value is None:
+            continue
+        input_type = usd_type(attribute)
+        if input_type in ("string", "token"):
+            input_type = fallback_type
+        child = ET.SubElement(surface, "input", name=input_name, type=input_type)
+        if connection:
+            output_name = sanitize(f"{input_name}_out")
+            if output_name not in output_names:
+                output_names.add(output_name)
+                add_graph_output(graph, output_name, input_type, connection)
+            child.set("nodegraph", graph.get("name"))
+            child.set("output", output_name)
+        else:
+            child.set("value", format_value(value))
+    material = ET.SubElement(root, "surfacematerial", name=sanitize(material_name), type="material")
+    ET.SubElement(material, "input", name="surfaceshader", type="surfaceshader", nodename=surface.get("name"))
+
+
 def convert(
     native_usd: Path,
     material: bpy.types.Material,
@@ -435,15 +507,28 @@ def convert(
     stage = Usd.Stage.Open(str(native_usd))
     mtl_prim = material_prim(stage, material.name)
     graph_prim = next((child for child in mtl_prim.GetChildren() if child.GetTypeName() == "NodeGraph"), None)
-    surface_prim = next((child for child in mtl_prim.GetChildren() if shader_id(child).startswith("ND_open_pbr_surface")), None)
-    if not graph_prim or not surface_prim:
-        raise RuntimeError("Native USD material lacks its MaterialX NodeGraph or OpenPBR surface")
+    open_pbr_prim = next(
+        (child for child in mtl_prim.GetChildren() if shader_id(child).startswith("ND_open_pbr_surface")),
+        None,
+    )
+    direct_surface_prim = next(
+        (child for child in mtl_prim.GetChildren() if shader_id(child) == "ND_surface"),
+        None,
+    )
+    if not graph_prim or not (open_pbr_prim or direct_surface_prim):
+        raise RuntimeError(
+            "Native USD material lacks its MaterialX NodeGraph and a supported "
+            "OpenPBR or direct ND_surface root"
+        )
 
     root = ET.Element("materialx", version="1.39", colorspace="lin_rec709")
     graph, categories = add_nodegraph(root, graph_prim)
     recovered_generated = recover_generated_coordinates(graph, categories)
     recovered_properties = recover_named_geometry_properties(graph, material, geometry_contract)
-    add_standard_surface(root, graph, surface_prim, material.name)
+    if open_pbr_prim:
+        add_standard_surface(root, graph, open_pbr_prim, material.name)
+    else:
+        add_direct_surface(root, graph, direct_surface_prim, material.name)
     ET.indent(root, space="  ")
     output.parent.mkdir(parents=True, exist_ok=True)
     ET.ElementTree(root).write(output, encoding="utf-8", xml_declaration=True)
