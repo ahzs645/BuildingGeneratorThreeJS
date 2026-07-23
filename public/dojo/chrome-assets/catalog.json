@@ -448,8 +448,12 @@
     "dump": "dojo/chrome-assets/blunt-outline-crayon/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/blunt-outline-crayon.png",
+    "authoredReference": "dojo/references/chrome-assets/blunt-outline-crayon-authored.png",
+    "localSpace": true,
+    "surfaceBounds": true,
+    "authoredToneMapping": "none",
     "blenderStats": { "verts": 24719, "faces": 22853 },
-    "note": "Exact topology and rounded bounds across all five Blender/browser cases after retaining Blender's post-conversion profile-less NURBS wire, its all-corners boolean domain rule, and canonical closed Mesh-to-Curve loop order. The authored result is 24,719 vertices / 22,853 faces.",
+    "note": "Exact topology and rounded bounds across all five Blender/browser cases after retaining Blender's post-conversion profile-less NURBS wire, its all-corners boolean domain rule, and canonical closed Mesh-to-Curve loop order. The authored result is 24,719 vertices / 22,853 faces. Authored mode preserves the exact black-and-white col field and unit power through flat.nodes without tone mapping; aligned captures reach 0.9649 silhouette IoU, 0.9991 macro luminance correlation, and 0.0292 RGB MAE.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

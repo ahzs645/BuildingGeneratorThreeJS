@@ -2,9 +2,9 @@
   "id": "blunt-outline-crayon",
   "object": "PIXEL CRAYON.007",
   "root": "blunt outline crayon",
-  "status": "exact-topology",
+  "status": "exact-topology-and-authored-material-near-parity",
   "blender": { "verts": 24719, "faces": 22853 },
   "gnvm": { "verts": 24719, "faces": 22853 },
   "coverage": "100% of reachable node types; the portable input retains Blender's post-conversion profile-less NURBS wire while real profile sweeps retain evaluated samples.",
-  "validation": "All five Blender/browser cases are topology- and rounded-bounds-exact, including the authored 24,719 / 22,853 result, stroke-thickness at 23,303 / 21,233, and resolution-160 at 17,428 / 15,886. Boolean POINT-to-FACE adaptation uses Blender's all-corners rule, and closed Mesh-to-Curve loops use Blender's lowest-source-point and stored-edge-order canonicalization before resampling."
+  "validation": "All five Blender/browser cases are topology- and rounded-bounds-exact, including the authored 24,719 / 22,853 result, stroke-thickness at 23,303 / 21,233, and resolution-160 at 17,428 / 15,886. Boolean POINT-to-FACE adaptation uses Blender's all-corners rule, and closed Mesh-to-Curve loops use Blender's lowest-source-point and stored-edge-order canonicalization before resampling. Browser authored mode preserves 12,083 black and 12,636 white POINT-domain col values plus unit power through flat.nodes. The aligned local-space comparison measures 0.9649 silhouette IoU, 0.9991 macro luminance correlation, 0.0241 macro luminance MAE, and 0.0292 RGB MAE."
 }

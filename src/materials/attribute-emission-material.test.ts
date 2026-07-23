@@ -34,6 +34,10 @@ const noodleStarDump = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/chrome-assets/sticker-noodle-star/dump.json",
   import.meta.url,
 )), "utf8")) as Dump;
+const bluntOutlineDump = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/chrome-assets/blunt-outline-crayon/dump.json",
+  import.meta.url,
+)), "utf8")) as Dump;
 
 test("extracts the authored flat sticker emission contract", () => {
   assert.deepEqual(extractAttributeEmissionConfig(dump, "flat.nodes"), {
@@ -285,6 +289,39 @@ test("preserves Pixel Marker Flat's HDR white emission attributes", async () => 
   geometry.setAttribute("col", new THREE.BufferAttribute(result.soup.attributes.col.data, 3));
   geometry.setAttribute("power", new THREE.BufferAttribute(result.soup.attributes.power.data, 1));
   const material = makeAttributeEmissionMaterial(pixelMarkerDump, geometry, "flat.nodes");
+  assert.equal(material?.name, "flat.nodes · attribute emission reconstruction");
+  assert.deepEqual(material?.userData.attributeResolution, {
+    color: "geometry-color",
+    strength: "geometry-vector",
+  });
+  geometry.dispose();
+  material?.dispose();
+});
+
+test("preserves Blunt Outline Crayon's black-and-white flat.nodes field", async () => {
+  const result = await runGenerator(bluntOutlineDump, { object: "PIXEL CRAYON.007", overrides: {} });
+  assert.deepEqual(result.soup.stats, { verts: 24719, faces: 22853, tris: 45722 });
+  assert.deepEqual(result.soup.groups, [{ start: 0, count: 137166, material: "flat.nodes" }]);
+  assert.equal(result.soup.attributes.col.itemSize, 3);
+  assert.equal(result.soup.attributes.power.itemSize, 1);
+  assert.ok(result.soup.attributes.power.data.every((value) => value === 1));
+
+  const palette = new Map<string, number>();
+  const colors = result.soup.attributes.col.data;
+  for (let offset = 0; offset < colors.length; offset += 3) {
+    const key = [colors[offset], colors[offset + 1], colors[offset + 2]].join(",");
+    palette.set(key, (palette.get(key) ?? 0) + 1);
+  }
+  assert.deepEqual([...palette.entries()], [
+    ["0,0,0", 12083],
+    ["1,1,1", 12636],
+  ]);
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));
+  geometry.setAttribute("col", new THREE.BufferAttribute(result.soup.attributes.col.data, 3));
+  geometry.setAttribute("power", new THREE.BufferAttribute(result.soup.attributes.power.data, 1));
+  const material = makeAttributeEmissionMaterial(bluntOutlineDump, geometry, "flat.nodes");
   assert.equal(material?.name, "flat.nodes · attribute emission reconstruction");
   assert.deepEqual(material?.userData.attributeResolution, {
     color: "geometry-color",
