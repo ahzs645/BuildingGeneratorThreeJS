@@ -1226,7 +1226,6 @@ reg("GeometryNodeStringToCurves", (api) => {
   const textBoxWidth = Math.max(0, api.num("Text Box Width"));
   const alignX = (api.str("Align X") || api.prop<string>("align_x", "LEFT") || "LEFT").toUpperCase();
   const alignY = api.str("Align Y") || "Top Baseline";
-  const pivotPoint = (api.str("Pivot Point") || "").toUpperCase();
   const fontName = api.ref("Font")?.name;
   const atlas = fontName ? DUMP_CONTEXT.fonts[fontName] : undefined;
   const alignYOffset = size * (atlas?.align_offsets?.[alignY] ?? 0);
@@ -1313,8 +1312,10 @@ reg("GeometryNodeStringToCurves", (api) => {
     let x = 0;
     if (alignX === "CENTER") x = -lineWidth / 2;
     else if (alignX === "RIGHT") x = -lineWidth;
-    // A left-side pivot anchors the bounded text box at the object origin.
-    if (textBoxWidth > 0 && pivotPoint.includes("LEFT")) x += textBoxWidth / 2;
+    // Blender's Bottom Left pivot keeps the first glyph at the local origin;
+    // Text Box Width constrains wrapping/overflow but does not translate the
+    // emitted paragraph by half the box width. The old offset made the Nodes
+    // Node panel titles drift right by exactly Text Box Width / 2.
     const y = alignYOffset + blockOffset - lineIdx * cellH;
     for (const ch of chars) {
       // Blender keeps whitespace as an empty instance. It has no visible

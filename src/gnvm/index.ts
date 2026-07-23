@@ -52,6 +52,7 @@ export interface Dump {
   extraction_metadata?: ExtractionMetadataV1;
   objects?: {
     name: string;
+    type?: string;
     location?: number[];
     rotation?: number[];
     scale?: number[];
@@ -112,7 +113,7 @@ function inverseTransformByMatrix(point: [number, number, number], matrix: numbe
 
 function applyPreNodesHooks(dump: Dump, object: NonNullable<Dump["objects"]>[number], geometry: Geometry): void {
   const objectMatrix = object.matrix_world;
-  if (!objectMatrix || !geometry.curves.length) return;
+  if (!objectMatrix || (!geometry.mesh && !geometry.curves.length)) return;
   const modifiers = object.modifiers ?? [];
   let deformedCurve = false;
   for (const modifier of modifiers) {
@@ -122,6 +123,19 @@ function applyPreNodesHooks(dump: Dump, object: NonNullable<Dump["objects"]>[num
     if (!hookObject?.matrix_world) continue;
     const selected = new Set(modifier.vertex_indices ?? []);
     const strength = Math.max(0, Math.min(1, Number(modifier.strength ?? 1)));
+    if (object.type === "MESH" && geometry.mesh) {
+      for (const vertexIndex of selected) {
+        const point = geometry.mesh.positions[vertexIndex];
+        if (!point) continue;
+        const hookLocal = transformByMatrix(point, modifier.matrix_inverse);
+        const world = transformByMatrix(hookLocal, hookObject.matrix_world);
+        const deformed = inverseTransformByMatrix(world, objectMatrix);
+        point[0] = Math.fround(point[0] + (deformed[0] - point[0]) * strength);
+        point[1] = Math.fround(point[1] + (deformed[1] - point[1]) * strength);
+        point[2] = Math.fround(point[2] + (deformed[2] - point[2]) * strength);
+      }
+      continue;
+    }
     let dataIndex = 0;
     for (const spline of geometry.curves) {
       const controlPoints = spline.controlPoints?.length ? spline.controlPoints : spline.points;
@@ -225,8 +239,8 @@ function baseGeometryOf(dump: Dump, objectName: string): Geometry | null {
     if (normals.length === g.curvePointCount()) {
       g.curveAttributes.set("__curve_normal", { domain: "POINT", data: normals });
     }
-    applyPreNodesHooks(dump, obj, g);
   }
+  applyPreNodesHooks(dump, obj, g);
   return g.mesh || g.curves.length ? g : null;
 }
 

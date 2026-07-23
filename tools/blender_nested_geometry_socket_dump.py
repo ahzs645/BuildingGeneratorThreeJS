@@ -97,13 +97,19 @@ if mode in {"realize", "realize_curve"}:
         temporaries.append(curve_to_mesh)
         root.links.new(container_output, curve_to_mesh.inputs["Curve"])
         container_output = curve_to_mesh.outputs["Mesh"]
-elif mode in {"points", "instance_points"}:
+elif mode in {"points", "curve_points", "instance_points"}:
     # Object.to_mesh() cannot serialize a point-cloud component. Instance a
     # one-vertex mesh on every point and realize it without changing positions.
     if mode == "instance_points":
         to_points = root.nodes.new("GeometryNodeInstancesToPoints")
         temporaries.append(to_points)
         root.links.new(container_output, to_points.inputs["Instances"])
+        container_output = to_points.outputs["Points"]
+    elif mode == "curve_points":
+        to_points = root.nodes.new("GeometryNodeCurveToPoints")
+        to_points.mode = "EVALUATED"
+        temporaries.append(to_points)
+        root.links.new(container_output, to_points.inputs["Curve"])
         container_output = to_points.outputs["Points"]
     vertex = root.nodes.new("GeometryNodeMeshLine")
     vertex.inputs["Count"].default_value = 1

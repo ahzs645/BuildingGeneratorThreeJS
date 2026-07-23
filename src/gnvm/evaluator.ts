@@ -231,6 +231,31 @@ function coerceGroupInput(value: SockVal, socketType: string): SockVal {
   return coerced;
 }
 
+function selectorNumber(value: SockVal): number {
+  if (!(value instanceof Field)) return 0;
+  if (value.isConst) return asNum(value.value);
+  // Legacy material/geometry switch groups expose an integer selector as a
+  // field even when their authored graph is spatially uniform. Material
+  // sockets themselves cannot vary per element, so resolve that uniform field
+  // once instead of treating every non-folded expression as selector zero.
+  try {
+    return asNum(value.array({ size: 1, domain: "POINT" })[0] ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
+function wrappedSelector(value: SockVal, maximum: SockVal): number {
+  const raw = Math.round(selectorNumber(value));
+  const max = Math.round(selectorNumber(maximum));
+  if (max <= 0) return Math.max(0, raw);
+  // The legacy switch groups subtract one, wrap that zero-based value, then
+  // feed a one-based boolean ladder. For example, Nodes Node socket color 32
+  // with max 7 selects slot 4; value 7 remains slot 7 instead of wrapping to
+  // the empty zero state.
+  return (((raw - 1) % max) + max) % max + 1;
+}
+
 // Average a set of field elements (numbers or vec3), for domain interpolation.
 function avgElems(vals: (import("./core").Elem | undefined)[] | undefined): import("./core").Elem | undefined {
   if (!vals || !vals.length) return undefined;
@@ -926,7 +951,7 @@ class Invocation {
         // coercion differences, while the group contract itself is exact.
         if (node.group === "_SWITCH.GEOMETRY 25 slot" || node.group === "_SWITCH.accumalative geo") {
           const rawValue = this.pull(node, "Input_0");
-          const value = Math.max(0, Math.round(rawValue instanceof Field && rawValue.isConst ? asNum(rawValue.value) : 0));
+          const value = wrappedSelector(rawValue, this.pull(node, "Input_4"));
           const geometryInputs = node.inputs.filter((socket) => socket.type === "NodeSocketGeometry" && /^\d+$/.test(socket.name));
           if (node.group === "_SWITCH.GEOMETRY 25 slot") {
             const socket = geometryInputs[value - 1];
@@ -961,7 +986,7 @@ class Invocation {
         }
         if (node.group === "_SWITCH.Materials 15 slot") {
           const rawValue = this.pull(node, "Input_0");
-          const value = Math.max(0, Math.round(rawValue instanceof Field && rawValue.isConst ? asNum(rawValue.value) : 0));
+          const value = wrappedSelector(rawValue, this.pull(node, "Input_4"));
           const sockets = node.inputs.filter((socket) => socket.type === "NodeSocketMaterial" && /^\d+$/.test(socket.name));
           return { Output_19: sockets[value - 1] ? this.pull(node, sockets[value - 1].identifier) : null };
         }

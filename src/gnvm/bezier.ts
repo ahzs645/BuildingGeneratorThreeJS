@@ -8,11 +8,20 @@ function clonePoint(point: Vec3): Vec3 {
 }
 
 function defaultHandles(points: Vec3[], cyclic: boolean): { left: Vec3[]; right: Vec3[] } {
-  void cyclic;
-  // Set Spline Type creates zero-length free handles. Subsequent Set Handle
-  // Positions offsets therefore start at each knot, which is observable in
-  // the Nodes Node noodle groups where every left/right handle is displaced.
-  return { left: points.map(clonePoint), right: points.map(clonePoint) };
+  const left = points.map(clonePoint);
+  const right = points.map(clonePoint);
+  if (!cyclic && points.length === 2) {
+    // Blender converts a two-point Poly spline to Bézier with endpoint handles
+    // one third of the chord apart. Nodes Node then offsets both sides; using
+    // zero-length handles produced the same topology but a visibly different
+    // S-curve and 0.33-unit bounds error.
+    const chordThird = scale(sub(points[1], points[0]), Math.fround(1 / 3));
+    left[0] = sub(points[0], chordThird);
+    right[0] = add(points[0], chordThird);
+    left[1] = sub(points[1], chordThird);
+    right[1] = add(points[1], chordThird);
+  }
+  return { left, right };
 }
 
 function fadd(a: number, b: number): number {

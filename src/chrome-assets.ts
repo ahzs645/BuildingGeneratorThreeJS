@@ -38,7 +38,7 @@ type VectorControl = { type: "vector"; name: string; label: string; value: [numb
 type SelectControl = { type: "select"; name: string; label: string; value: number | string; options: { label: string; value: number | string }[] };
 type Control = RangeControl | CheckboxControl | TextControl | VectorControl | SelectControl;
 type AssetFont = { url: string; family: string; requiredFor: string; fallback: string };
-type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number; triangles?: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; rotationOrder?: THREE.EulerOrder; surfaceBounds?: boolean; authoredHideLines?: boolean; authoredPreviewLabel?: string; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; attributeEmissionColorRemaps?: { from: [number, number, number]; to: [number, number, number] }[]; authoredLightScale?: number; authoredFillIntensityScale?: number; authoredEnvironmentIntensity?: number; authoredEnvironmentRotation?: number; authoredToneMapping?: "none"; controls: Control[] };
+type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number; triangles?: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; rotationOrder?: THREE.EulerOrder; surfaceBounds?: boolean; authoredHideLines?: boolean; authoredPreviewLabel?: string; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; attributeEmissionColorRemaps?: { from: [number, number, number]; to: [number, number, number] }[]; authoredLightScale?: number; authoredFillIntensityScale?: number; authoredAmbientIntensity?: number; authoredEnvironmentIntensity?: number; authoredEnvironmentRotation?: number; authoredToneMapping?: "none"; controls: Control[] };
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
@@ -85,10 +85,12 @@ if (nativeMaterialXCapture) renderer.setClearColor(0x111417, 1);
 const scene = new THREE.Scene();
 let authoredKey: THREE.RectAreaLight | null = null;
 let authoredFill: THREE.RectAreaLight | null = null;
+let authoredAmbient: THREE.AmbientLight | null = null;
 if (authoredCapture) {
   authoredKey = new THREE.RectAreaLight(0xffffff, 0.5, 1, 1);
   authoredFill = new THREE.RectAreaLight(0xffffff, 0.25, 1, 1);
-  scene.add(authoredKey, authoredFill);
+  authoredAmbient = new THREE.AmbientLight(0xffffff, 0);
+  scene.add(authoredKey, authoredFill, authoredAmbient);
 } else {
   const room = new RoomEnvironment();
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -283,6 +285,7 @@ async function prepareAuthoredEnvironment(asset: Asset): Promise<void> {
   const lightScale = captureLightScale ?? asset.authoredLightScale ?? 1;
   if (authoredKey) authoredKey.intensity = 0.5 * lightScale;
   if (authoredFill) authoredFill.intensity = 0.25 * lightScale * (asset.authoredFillIntensityScale ?? 1);
+  if (authoredAmbient) authoredAmbient.intensity = asset.authoredAmbientIntensity ?? 0;
   // This rotation/intensity pair was measured against the bundled Blender
   // studio.exr. Chain & Mace needs it for reflection, while the Hat stitches'
   // authored full-transmission material needs it for a defined refraction

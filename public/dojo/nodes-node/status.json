@@ -6,11 +6,11 @@
     "material": "node base",
     "shaderGroup": "vtext.001",
     "consumers": ["Cube", "Cube.006", "Cube.007", "Cube.005", "Cube.004", "Cube.003"],
-    "status": "authored-live-b-branch-reconstructed",
+    "status": "authored-live-b-branch-reconstructed-all-panel-consumers",
     "generatedDomain": "group-local automatic texspace; Cube.006 Blender probe [-2.2400000095,-0.125,-1.2599998713] to [2.2400000095,0.125,0]",
     "functionalBranch": "non-normalized 3D FBM pair -> dynamic X Wave -> Ping-Pong -> clamped Map Range -> Bump",
     "blenderProbe": "512px direct-normal emission: 206116 opaque pixels, 7692 unique RGB values; spatial micro-bump confirmed",
-    "geometryInvariant": "All six node-base group ranges, local bounds, vertex counts, and face counts remain exact"
+    "geometryInvariant": "All six node-base group ranges, local bounds, vertex counts, face counts, and evaluated material ranges are exact"
   },
   "basePlateMaterialValidation": {
     "material": "node base.001",
@@ -50,19 +50,34 @@
     "rendererApproximation": "Three.js PBR lighting and screen derivatives replace Blender Eevee and Bump closure",
     "geometryInvariant": "4736 vertices / 4672 faces / 9344 triangles remain exact; rebuilt evaluated Bezier tangents reduce maximum world-bounds delta from 0.0089175701 to 0.0000004770 and aligned vertex probes to 0.0000033379"
   },
+  "panelMaterialEvidence": {
+    "status": "seven-authored-roots-captured",
+    "report": "panel-authored-material-parity.json",
+    "capture": "768x768 aligned Blender Eevee and WebGL; six panels use 64-sample temporal resolve",
+    "exactContracts": ["vertex counts", "face counts", "local bounds", "evaluated face/material ownership", "recovered DejaVu glyph outlines"],
+    "rendererMetrics": {
+      "fullPanel": { "surfaceMaskIoU": 0.9726249939382183, "pixelLuminanceMae": 0.04319864602533236, "pixelLuminanceCorrelation": 0.8431208321042258 },
+      "groupOutput": { "surfaceMaskIoU": 0.9490633224957423, "pixelLuminanceMae": 0.037900496481380906, "pixelLuminanceCorrelation": 0.8651247155127686 },
+      "groupIO": { "surfaceMaskIoU": 0.9480934285527092, "pixelLuminanceMae": 0.03500716594349667, "pixelLuminanceCorrelation": 0.8760314672628219 },
+      "selectionBar": { "surfaceMaskIoU": 0.9572338281106835, "pixelLuminanceMae": 0.03750604569570531, "pixelLuminanceCorrelation": 0.8834992522146167 },
+      "checkboxPanel": { "surfaceMaskIoU": 0.9643669069125546, "pixelLuminanceMae": 0.04213866135693643, "pixelLuminanceCorrelation": 0.8655753486239421 },
+      "dualInputBar": { "surfaceMaskIoU": 0.9538349296037006, "pixelLuminanceMae": 0.03426408731204069, "pixelLuminanceCorrelation": 0.8513878104753383 }
+    },
+    "rendererResidual": "Three.js area/ambient lighting, ACES view transform, and screen-space bump derivatives replace Blender Eevee Standard/Medium High Contrast; exact pixel equivalence is not claimed"
+  },
   "variants": [
     { "id": "nodes-node-check", "object": "check", "root": "Geometry Nodes.013", "nodes": 2, "status": "exact-viewport-wire", "blender": { "curveControlPoints": 3, "faces": 0 }, "gnvm": { "meshVerts": 0, "faces": 0, "curveControlPoints": 3, "evaluatedPoints": 25, "wireSegments": 24 }, "worldBoundsMaxError": 4.76837158203125e-7 },
     { "id": "nodes-node-source-cube", "object": "Cube.002", "root": "Geometry Nodes.006", "nodes": 9, "status": "exact-geometry-workbench-approx", "blender": { "verts": 8, "faces": 6 }, "gnvm": { "verts": 8, "faces": 6 }, "render": { "maskIoU": 0.97966, "luminanceMAE": 0.02515, "luminanceCorrelation": 0.99287, "cavityParity": false } },
     { "id": "nodes-node-base-plate", "object": "Plane", "root": "Geometry Nodes.007", "nodes": 11, "status": "exact-geometry-authored-shader-approx", "blender": { "verts": 47652, "faces": 2813, "materialFaces": { "node base.001": 1369, "grid dots": 1444 } }, "gnvm": { "verts": 47652, "faces": 2813, "materialFaces": { "node base.001": 1369, "grid dots": 1444 } } },
     { "id": "nodes-node-noodle-pair", "object": "Point.001", "root": "Geometry Nodes.011", "nodes": 16, "status": "topology-and-bounds-exact-authored-shader-approx", "blender": { "verts": 4736, "faces": 4672 }, "gnvm": { "verts": 4736, "faces": 4672 }, "worldBoundsMaxError": 4.770383306151871e-7, "maximumAlignedVertexError": 0.000003337860107421875, "curveFrameErrorReduction": 0.9999465058 },
     { "id": "nodes-node-stamp-guide", "object": "STAMP.001", "root": "_Stamp Tool", "nodes": 76, "status": "exact-wire-only", "blender": { "verts": 490, "faces": 0 }, "gnvm": { "verts": 490, "faces": 0 } },
-    { "id": "nodes-node-noodle-segment", "object": "Cube.001", "root": "Geometry Nodes.012", "nodes": 151, "status": "exact", "blender": { "verts": 2240, "faces": 2208 }, "gnvm": { "verts": 2240, "faces": 2208 } },
-    { "id": "nodes-node-full-panel", "object": "Cube", "root": "Geometry Nodes.009", "nodes": 895, "status": "topology-bounds-exact-recovered-font-vtext", "blender": { "verts": 12743, "faces": 561 }, "gnvm": { "verts": 12743, "faces": 561 } },
-    { "id": "nodes-node-group-output", "object": "Cube.006", "root": "Geometry Nodes.001", "nodes": 895, "status": "topology-bounds-exact-recovered-font-vtext", "blender": { "verts": 3861, "faces": 80 }, "gnvm": { "verts": 3861, "faces": 80 } },
-    { "id": "nodes-node-group-io", "object": "Cube.007", "root": "Geometry Nodes.002", "nodes": 895, "status": "topology-bounds-exact-recovered-font-vtext", "blender": { "verts": 3453, "faces": 1127 }, "gnvm": { "verts": 3453, "faces": 1127 } },
-    { "id": "nodes-node-selection-bar", "object": "Cube.005", "root": "Geometry Nodes.004", "nodes": 897, "status": "topology-bounds-exact-recovered-font-vtext", "blender": { "verts": 4150, "faces": 169 }, "gnvm": { "verts": 4150, "faces": 169 } },
-    { "id": "nodes-node-checkbox-panel", "object": "Cube.004", "root": "Geometry Nodes.015", "nodes": 898, "status": "topology-bounds-exact-recovered-font-vtext", "blender": { "verts": 9134, "faces": 1347 }, "gnvm": { "verts": 9134, "faces": 1347 } },
-    { "id": "nodes-node-dual-input-bar", "object": "Cube.003", "root": "Geometry Nodes.003", "nodes": 900, "status": "topology-bounds-exact-recovered-font-vtext", "blender": { "verts": 2691, "faces": 1118 }, "gnvm": { "verts": 2691, "faces": 1118 } }
+    { "id": "nodes-node-noodle-segment", "object": "Cube.001", "root": "Geometry Nodes.012", "nodes": 151, "status": "geometry-bounds-exact-authored-socket-material", "blender": { "verts": 2240, "faces": 2208, "materialFaces": { "socket.001": 2208 } }, "gnvm": { "verts": 2240, "faces": 2208, "materialFaces": { "socket.001": 2208 } }, "localBoundsMaxError": 9.5367431640625e-7 },
+    { "id": "nodes-node-full-panel", "object": "Cube", "root": "Geometry Nodes.009", "nodes": 895, "status": "topology-bounds-materials-exact-recovered-font-vtext", "blender": { "verts": 12743, "faces": 561 }, "gnvm": { "verts": 12743, "faces": 561 } },
+    { "id": "nodes-node-group-output", "object": "Cube.006", "root": "Geometry Nodes.001", "nodes": 895, "status": "topology-bounds-materials-exact-recovered-font-vtext", "blender": { "verts": 3861, "faces": 80 }, "gnvm": { "verts": 3861, "faces": 80 } },
+    { "id": "nodes-node-group-io", "object": "Cube.007", "root": "Geometry Nodes.002", "nodes": 895, "status": "topology-bounds-materials-exact-recovered-font-vtext", "blender": { "verts": 3453, "faces": 1127 }, "gnvm": { "verts": 3453, "faces": 1127 } },
+    { "id": "nodes-node-selection-bar", "object": "Cube.005", "root": "Geometry Nodes.004", "nodes": 897, "status": "topology-bounds-materials-exact-recovered-font-vtext", "blender": { "verts": 4150, "faces": 169 }, "gnvm": { "verts": 4150, "faces": 169 } },
+    { "id": "nodes-node-checkbox-panel", "object": "Cube.004", "root": "Geometry Nodes.015", "nodes": 898, "status": "topology-bounds-materials-exact-recovered-font-vtext", "blender": { "verts": 9134, "faces": 1347 }, "gnvm": { "verts": 9134, "faces": 1347 } },
+    { "id": "nodes-node-dual-input-bar", "object": "Cube.003", "root": "Geometry Nodes.003", "nodes": 900, "status": "topology-bounds-materials-exact-recovered-font-vtext", "blender": { "verts": 2691, "faces": 1118 }, "gnvm": { "verts": 2691, "faces": 1118 } }
   ],
-  "validation": "All twelve roots are exact, structurally exact, or topology-and-bounds exact. The check helper now remains visible as a separate evaluated viewport-wire payload while retaining zero mesh vertices/faces; its translated world bounds match Blender within 0.000001 units. The supplied offline Blender reference is correctly blank because the raw curve has no beveled render surface. The recovered DejaVu atlas, even-odd N-gon glyph fill, zero-radius Curve Circle semantics, inclusive cumulative-row placement, and Blender-style legacy curve pass-through make all six large UI variants topology-and-bounds exact. Authored mode reconstructs the shared node base vtext.001 FBM/Wave/Ping-Pong micro-bump, the base plate's node base.001 normalized Noise/Bump graph, and the noodle pair's node color.geometry constants plus Blender 5.1 PCG3D and 3D Smooth F1 scalar semantics. Hooked curves invalidate their imported frame, and handle-edited Bezier curves rebuild exact endpoint derivatives plus evaluated interior bisectors before Curve to Mesh; Noodle Pair now matches Blender's world bounds within 4.8e-7 and aligned vertex probes within 3.34e-6. Controlled Blender/WebGL captures validate Base Plate at 0.9961 silhouette IoU and 0.00324 macro luminance MAE, and Noodle Pair at complete mutual one-pixel coverage with 0.9767 macro luminance correlation. Three.js lighting, bump derivatives, and rasterization remain renderer approximations."
+  "validation": "All twelve roots are exact, structurally exact, or topology-and-bounds exact. The recovered DejaVu atlas, even-odd N-gon glyph fill, zero-radius Curve Circle semantics, inclusive cumulative-row placement, Blender-style legacy curve pass-through, and exact Bottom Left text-box pivot make all six large UI variants topology-and-bounds exact. The legacy one-based material switch now reproduces Blender's subtract-one/wrap-by-max selector, making every evaluated panel face/material range exact, including the Checkbox Panel's socket.integer.001 range. Authored mode reconstructs the shared node base vtext.001 FBM/Wave/Ping-Pong micro-bump, the base plate's node base.001 normalized Noise/Bump graph, and exact constant socket/emission surfaces. Mesh Hooks run before Geometry Nodes, and open two-point Poly-to-Bezier conversion uses Blender's one-third-chord endpoint handles; Noodle Segment now matches Blender bounds within 0.000001. Controlled Blender/WebGL captures cover all seven surfaced roots and preserve silhouettes at 0.9481 to 0.9726 IoU for the six panels, with 0.0343 to 0.0432 pixel luminance MAE. Three.js lighting, bump derivatives, view transform, and rasterization remain explicitly measured renderer approximations."
 }

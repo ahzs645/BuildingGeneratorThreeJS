@@ -51,6 +51,47 @@ test("pre-Geometry-Nodes Hooks and handle edits match the evaluated Blender curv
     `expected aligned Blender probes within 0.000004, got ${maximumAlignedProbeError}`);
 });
 
+test("pre-Geometry-Nodes Hooks deform mesh-line vertices before Mesh to Curve", async () => {
+  const result = await runGenerator(dump, { object: "Cube.001" });
+  assert.deepEqual(result.soup.stats, { verts: 2240, faces: 2208, tris: 4416 });
+  const positions = result.soup.positions;
+  const minimum = [Infinity, Infinity, Infinity];
+  const maximum = [-Infinity, -Infinity, -Infinity];
+  for (let offset = 0; offset < positions.length; offset += 3) {
+    for (let axis = 0; axis < 3; axis++) {
+      minimum[axis] = Math.min(minimum[axis], positions[offset + axis]);
+      maximum[axis] = Math.max(maximum[axis], positions[offset + axis]);
+    }
+  }
+  const blenderMinimum = [-2.1346349716186523, -1.6152281761169434, -6.625772476196289];
+  const blenderMaximum = [6.97879695892334, 0.03989165276288986, 3.510944128036499];
+  const maximumError = Math.max(
+    ...minimum.map((value, axis) => Math.abs(value - blenderMinimum[axis])),
+    ...maximum.map((value, axis) => Math.abs(value - blenderMaximum[axis])),
+  );
+  assert.ok(maximumError < 0.00001, `expected hooked mesh-line bounds within 0.00001, got ${maximumError}`);
+});
+
+test("Nodes Node material selector preserves the Group Output socket material", async () => {
+  const result = await runGenerator(dump, { object: "Cube.006" });
+  assert.deepEqual(result.soup.stats, { verts: 3861, faces: 80, tris: 3885 });
+  const faceCounts = Object.fromEntries(result.soup.groups.map((group) => {
+    const faces = new Set<number>();
+    const firstTriangle = group.start / 3;
+    const triangleCount = group.count / 3;
+    for (let triangle = firstTriangle; triangle < firstTriangle + triangleCount; triangle++) {
+      faces.add(result.soup.triangleFaces[triangle]);
+    }
+    return [group.material ?? "<none>", faces.size];
+  }));
+  assert.deepEqual(faceCounts, {
+    "node base": 10,
+    "<none>": 11,
+    emit: 25,
+    "socket.004": 34,
+  });
+});
+
 test("Set Curve Handle Positions rebuilds endpoint derivatives and invalidates normals", () => {
   const geometry = new Geometry();
   geometry.curves = [{

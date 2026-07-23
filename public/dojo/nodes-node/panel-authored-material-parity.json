@@ -1,0 +1,282 @@
+{
+  "updated": "2026-07-23",
+  "scope": "Controlled Blender Eevee versus browser captures for the remaining surfaced Nodes Node roots.",
+  "capture": {
+    "resolution": [
+      768,
+      768
+    ],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometry": "Geometry Nodes only, local object transform",
+    "font": "DejaVuSans-ExtraLight.ttf is injected into the supplied missing matching font sockets in Blender; the browser uses the committed Blender-evaluated outline atlas.",
+    "blenderLighting": "shared two-area-light authored rig",
+    "panelTemporalResolve": "64-sample Eevee-style Blackman-Harris jitter; the noodle segment uses a single thin-surface sample to avoid presentation blur."
+  },
+  "variants": [
+    {
+      "id": "nodes-node-noodle-segment",
+      "object": "Cube.001",
+      "blenderReference": "../references/nodes-node/cube-001-authored.png",
+      "blenderMetadata": "../references/nodes-node/cube-001-authored.json",
+      "browserReference": "../references/nodes-node/cube-001-authored-webgl.png",
+      "comparisonReport": "cube-001-material-comparison.json",
+      "blender": {
+        "verts": 2240,
+        "faces": 2208,
+        "evaluatedMaterialFaces": {
+          "socket.001": 2208
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "2,240 verts · 2,208 faces",
+        "lightScale": 6.6,
+        "ambientIntensity": 0,
+        "temporalSamples": null
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.8637864611997799,
+        "surfaceMaskIoUDilated1px": 0.9102840704782452,
+        "blenderSurfaceCoveredWithin1px": 1,
+        "browserSurfaceCoveredWithin1px": 1,
+        "pixelLuminanceMae": 0.08295581813456193,
+        "pixelLuminanceCorrelation": 0.8273833419401398,
+        "macroLuminanceMae": 0.08306322706606753,
+        "macroLuminanceCorrelation": 0.9868766170207491,
+        "meanLuminanceDelta": 0.07777326191607964
+      }
+    },
+    {
+      "id": "nodes-node-full-panel",
+      "object": "Cube",
+      "blenderReference": "../references/nodes-node/cube-authored.png",
+      "blenderMetadata": "../references/nodes-node/cube-authored.json",
+      "browserReference": "../references/nodes-node/cube-authored-webgl.png",
+      "comparisonReport": "cube-material-comparison.json",
+      "blender": {
+        "verts": 12743,
+        "faces": 561,
+        "evaluatedMaterialFaces": {
+          "node base": 55,
+          "socket.004": 102,
+          "<none>": 51,
+          "emit": 142,
+          "socket.001": 12,
+          "Attribute Viewer N++": 136,
+          "node color.color": 17,
+          "socket.006": 12,
+          "Material": 34
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "12,743 verts · 561 faces",
+        "lightScale": 8,
+        "ambientIntensity": 0.5,
+        "temporalSamples": 64
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9726249939382183,
+        "surfaceMaskIoUDilated1px": 0.973966784384843,
+        "blenderSurfaceCoveredWithin1px": 0.9945830787270235,
+        "browserSurfaceCoveredWithin1px": 0.9939006042468059,
+        "pixelLuminanceMae": 0.04319864602533236,
+        "pixelLuminanceCorrelation": 0.8431208321042258,
+        "macroLuminanceMae": 0.04106649376894708,
+        "macroLuminanceCorrelation": 0.7955703074484964,
+        "meanLuminanceDelta": 0.03940745258679146
+      }
+    },
+    {
+      "id": "nodes-node-group-output",
+      "object": "Cube.006",
+      "blenderReference": "../references/nodes-node/cube-006-authored.png",
+      "blenderMetadata": "../references/nodes-node/cube-006-authored.json",
+      "browserReference": "../references/nodes-node/cube-006-authored-webgl.png",
+      "comparisonReport": "cube-006-material-comparison.json",
+      "blender": {
+        "verts": 3861,
+        "faces": 80,
+        "evaluatedMaterialFaces": {
+          "node base": 10,
+          "<none>": 11,
+          "emit": 25,
+          "socket.004": 34
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "3,861 verts · 80 faces",
+        "lightScale": 4,
+        "ambientIntensity": 3.2,
+        "temporalSamples": 64
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9490633224957423,
+        "surfaceMaskIoUDilated1px": 0.9531165474544689,
+        "blenderSurfaceCoveredWithin1px": 0.9934722042244396,
+        "browserSurfaceCoveredWithin1px": 0.9858933192006734,
+        "pixelLuminanceMae": 0.037900496481380906,
+        "pixelLuminanceCorrelation": 0.8651247155127686,
+        "macroLuminanceMae": 0.03832864888365363,
+        "macroLuminanceCorrelation": 0.9251211534427165,
+        "meanLuminanceDelta": 0.004569870976703194
+      }
+    },
+    {
+      "id": "nodes-node-group-io",
+      "object": "Cube.007",
+      "blenderReference": "../references/nodes-node/cube-007-authored.png",
+      "blenderMetadata": "../references/nodes-node/cube-007-authored.json",
+      "browserReference": "../references/nodes-node/cube-007-authored-webgl.png",
+      "comparisonReport": "cube-007-material-comparison.json",
+      "blender": {
+        "verts": 3453,
+        "faces": 1127,
+        "evaluatedMaterialFaces": {
+          "node base": 10,
+          "Material": 34,
+          "socket": 1024,
+          "emit": 25,
+          "socket.004": 34
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "3,453 verts · 1,127 faces",
+        "lightScale": 4,
+        "ambientIntensity": 3.2,
+        "temporalSamples": 64
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9480934285527092,
+        "surfaceMaskIoUDilated1px": 0.9523582582725698,
+        "blenderSurfaceCoveredWithin1px": 0.9934983617243923,
+        "browserSurfaceCoveredWithin1px": 0.9856205270274727,
+        "pixelLuminanceMae": 0.03500716594349667,
+        "pixelLuminanceCorrelation": 0.8760314672628219,
+        "macroLuminanceMae": 0.034982066847757065,
+        "macroLuminanceCorrelation": 0.908841710915978,
+        "meanLuminanceDelta": 0.009087229780339046
+      }
+    },
+    {
+      "id": "nodes-node-selection-bar",
+      "object": "Cube.005",
+      "blenderReference": "../references/nodes-node/cube-005-authored.png",
+      "blenderMetadata": "../references/nodes-node/cube-005-authored.json",
+      "browserReference": "../references/nodes-node/cube-005-authored-webgl.png",
+      "comparisonReport": "cube-005-material-comparison.json",
+      "blender": {
+        "verts": 4150,
+        "faces": 169,
+        "evaluatedMaterialFaces": {
+          "node base": 15,
+          "socket.005": 34,
+          "emit": 46,
+          "socket.004": 34,
+          "socket.001": 6,
+          "Attribute Viewer N++": 34
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "4,150 verts · 169 faces",
+        "lightScale": 4,
+        "ambientIntensity": 3.2,
+        "temporalSamples": 64
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9572338281106835,
+        "surfaceMaskIoUDilated1px": 0.9611972649267072,
+        "blenderSurfaceCoveredWithin1px": 0.9923705786732163,
+        "browserSurfaceCoveredWithin1px": 0.9886273106187435,
+        "pixelLuminanceMae": 0.03750604569570531,
+        "pixelLuminanceCorrelation": 0.8834992522146167,
+        "macroLuminanceMae": 0.037505937031782656,
+        "macroLuminanceCorrelation": 0.9077436181381737,
+        "meanLuminanceDelta": 0.015673772368920147
+      }
+    },
+    {
+      "id": "nodes-node-checkbox-panel",
+      "object": "Cube.004",
+      "blenderReference": "../references/nodes-node/cube-004-authored.png",
+      "blenderMetadata": "../references/nodes-node/cube-004-authored.json",
+      "browserReference": "../references/nodes-node/cube-004-authored-webgl.png",
+      "comparisonReport": "cube-004-material-comparison.json",
+      "blender": {
+        "verts": 9134,
+        "faces": 1347,
+        "evaluatedMaterialFaces": {
+          "node base": 25,
+          "socket.004": 34,
+          "<none>": 21,
+          "emit": 118,
+          "Material": 34,
+          "socket": 1024,
+          "socket.003": 6,
+          "Attribute Viewer N++": 34,
+          "socket.integer.001": 34,
+          "node color.color": 17
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "9,134 verts · 1,347 faces",
+        "lightScale": 4,
+        "ambientIntensity": 3.2,
+        "temporalSamples": 64
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9643669069125546,
+        "surfaceMaskIoUDilated1px": 0.9660734784477365,
+        "blenderSurfaceCoveredWithin1px": 0.9897766985884809,
+        "browserSurfaceCoveredWithin1px": 0.9912952568374443,
+        "pixelLuminanceMae": 0.04213866135693643,
+        "pixelLuminanceCorrelation": 0.8655753486239421,
+        "macroLuminanceMae": 0.04171052456262682,
+        "macroLuminanceCorrelation": 0.8568236969112519,
+        "meanLuminanceDelta": 0.006104670428664943
+      }
+    },
+    {
+      "id": "nodes-node-dual-input-bar",
+      "object": "Cube.003",
+      "blenderReference": "../references/nodes-node/cube-003-authored.png",
+      "blenderMetadata": "../references/nodes-node/cube-003-authored.json",
+      "browserReference": "../references/nodes-node/cube-003-authored-webgl.png",
+      "comparisonReport": "cube-003-material-comparison.json",
+      "blender": {
+        "verts": 2691,
+        "faces": 1118,
+        "evaluatedMaterialFaces": {
+          "node base": 10,
+          "socket.004": 34,
+          "Material": 34,
+          "socket": 1024,
+          "emit": 16
+        }
+      },
+      "browser": {
+        "readiness": "exact",
+        "count": "2,691 verts · 1,118 faces",
+        "lightScale": 4,
+        "ambientIntensity": 3.2,
+        "temporalSamples": 64
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9538349296037006,
+        "surfaceMaskIoUDilated1px": 0.9564145355043375,
+        "blenderSurfaceCoveredWithin1px": 0.9930064282714733,
+        "browserSurfaceCoveredWithin1px": 0.9915564311849142,
+        "pixelLuminanceMae": 0.03426408731204069,
+        "pixelLuminanceCorrelation": 0.8513878104753383,
+        "macroLuminanceMae": 0.03530225773902615,
+        "macroLuminanceCorrelation": 0.9577335204414923,
+        "meanLuminanceDelta": 0.0009759874253102707
+      }
+    }
+  ],
+  "interpretation": "Geometry, material ownership, recovered glyph outlines, scalar material contracts, and renderer pixels are reported separately. The browser's magenta capture key is excluded from every metric. Exact material ownership does not imply exact Eevee pixels: Three.js lighting, bump derivatives, and view transform remain measured renderer residuals."
+}
