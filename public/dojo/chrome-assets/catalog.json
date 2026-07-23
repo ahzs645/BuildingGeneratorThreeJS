@@ -44,8 +44,12 @@
     "dump": "dojo/chrome-assets/pixel-marker-003/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/pixel-marker-003.png",
+    "authoredReference": "dojo/references/chrome-assets/pixel-marker-003-authored.png",
+    "authoredEnvironmentIntensity": 0.8,
+    "flatShading": true,
+    "localSpace": true,
     "blenderStats": { "verts": 412, "faces": 428 },
-    "note": "All six Blender/browser cases have exact topology and rounded local bounds, including the shared flat branch and dense pixel-size control.",
+    "note": "All six Blender/browser cases have exact topology and rounded local bounds, including the shared flat branch and dense pixel-size control. Authored mode restores the exact col, rough, and metal fields through the gn.bdsf Principled graph with Blender-sharp faces. The controlled local-space captures reach 0.9957 silhouette IoU and 0.9023 macro luminance correlation; Eevee and Three.js retain a disclosed dielectric/environment color residual.",
     "controls": [
       { "name": "extrude height", "label": "Extrude height", "min": 1, "max": 35, "step": 0.000001, "value": 14.615509033203125 },
       { "name": "line thiccness", "label": "Line thickness", "min": 5, "max": 40, "step": 0.000001, "value": 25 },

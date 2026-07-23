@@ -1,0 +1,74 @@
+{
+  "updated": "2026-07-23",
+  "target": {
+    "id": "pixel-marker-3d",
+    "project": "NO3D Chrome Asset Library.blend",
+    "object": "PIXEL CRAYON.003",
+    "root": "pixel marker.001",
+    "material": "gn.bdsf"
+  },
+  "geometryContract": {
+    "verts": 412,
+    "faces": 428,
+    "tris": 856,
+    "group": {
+      "start": 0,
+      "count": 2568,
+      "material": "gn.bdsf"
+    },
+    "localBounds": {
+      "min": [-74.62594604492188, -74.41059112548828, 0.9766731262207031],
+      "max": [44.2843017578125, 37.62940216064453, 15.592182159423828]
+    }
+  },
+  "authoredShaderContract": {
+    "nodes": 5,
+    "links": 4,
+    "colorPath": "Geometry Attribute col Color → Principled BSDF Base Color",
+    "roughnessPath": "Geometry Attribute rough Color → Principled BSDF Roughness",
+    "metalnessPath": "Geometry Attribute metal Color → Principled BSDF Metallic",
+    "evaluatedAttributes": {
+      "col": {
+        "sourceDomain": "FACE",
+        "browserItemSize": 3,
+        "value": [0.9577709436416626, 1.0, 0.0],
+        "faces": 428
+      },
+      "rough": {
+        "domain": "FACE",
+        "browserItemSize": 1,
+        "value": 0.3693181872367859,
+        "faces": 428
+      },
+      "metal": {
+        "sourceDomain": "POINT",
+        "browserItemSize": 1,
+        "value": 0.0,
+        "vertices": 412
+      }
+    },
+    "browserResolution": "The generic attribute-Principled resolver binds all three evaluated fields. Blender's sharp_face field is represented by flatShading=true without changing topology."
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "lighting": "Blender studio.exr and the byte-identical Three.js PMREM environment at intensity 0.8, plus the shared authored area-light rig",
+    "blenderReference": "../../references/chrome-assets/pixel-marker-003-authored.png",
+    "blenderMetadata": "../../references/chrome-assets/pixel-marker-003-authored.json",
+    "browserReference": "../../references/chrome-assets/pixel-marker-003-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=pixel-marker-3d&capture=authored"
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9956504300548152,
+    "surfaceCornerRmsePixels": 1.1229147388062537,
+    "intersectionPixels": 111707,
+    "pixelRgbMae": 0.21468387871496994,
+    "meanRgbDelta": [-0.033089298327566095, -0.040139739021671034, 0.3178587953288979],
+    "pixelLuminanceMae": 0.13133544467143748,
+    "pixelLuminanceCorrelation": 0.8784420228756521,
+    "macroLuminanceCorrelation": 0.9023372749932488
+  },
+  "interpretation": "Topology, silhouette, material assignment, fields, flat shading, and the broad light/dark pattern are verified. The remaining blue-channel and local luminance error is an explicit Eevee-versus-Three.js Principled and environment-filtering residual, not a geometry or graph-field mismatch."
+}

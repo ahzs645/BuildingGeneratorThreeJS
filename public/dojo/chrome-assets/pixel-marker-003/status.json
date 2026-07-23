@@ -1,8 +1,8 @@
 {
   "object": "PIXEL CRAYON.003",
   "root": "pixel marker.001",
-  "status": "exact-parity",
+  "status": "exact-sweep-and-authored-material-contract",
   "blender": { "verts": 412, "faces": 428 },
   "gnvm": { "verts": 412, "faces": 428 },
-  "validation": "All six Blender/browser cases have exact vertex and face counts and rounded local bounds, covering pixel size, line thickness, flattening, the flat branch, and extrusion height."
+  "validation": "All six Blender/browser cases have exact vertex and face counts and rounded local bounds, covering pixel size, line thickness, flattening, the flat branch, and extrusion height. The browser preserves the exact col=[0.95777094,1,0], rough=0.36931819, and metal=0 fields and flat faces through gn.bdsf. Controlled local-space captures measure 0.9957 silhouette IoU and 0.9023 macro luminance correlation; the remaining RGB residual is the Eevee/Three.js physical-lighting difference."
 }

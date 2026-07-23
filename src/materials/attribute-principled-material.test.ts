@@ -22,6 +22,15 @@ test("reconstructs the 3D Pixel Marker's named-attribute Principled material", a
   const result = await runGenerator(dump, { object: "PIXEL CRAYON.003" });
   assert.deepEqual(result.soup.stats, { verts: 412, faces: 428, tris: 856 });
   assert.deepEqual(result.soup.groups, [{ start: 0, count: 2568, material: "gn.bdsf" }]);
+  for (let offset = 0; offset < result.soup.attributes.col.data.length; offset += 3) {
+    assert.deepEqual(Array.from(result.soup.attributes.col.data.slice(offset, offset + 3)), [
+      0.9577709436416626,
+      1,
+      0,
+    ]);
+  }
+  assert.ok(result.soup.attributes.rough.data.every((value) => value === 0.3693181872367859));
+  assert.ok(result.soup.attributes.metal.data.every((value) => value === 0));
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));
