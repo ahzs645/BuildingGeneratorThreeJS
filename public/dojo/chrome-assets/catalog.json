@@ -65,8 +65,12 @@
     "dump": "dojo/chrome-assets/soft-pixel-marker/dump.json",
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/soft-pixel-marker.png",
+    "authoredReference": "dojo/references/chrome-assets/soft-pixel-marker-authored.png",
+    "authoredEnvironmentIntensity": 0.8,
+    "localSpace": true,
+    "material": "chrome-crayon",
     "blenderStats": { "verts": 8455, "faces": 5664 },
-    "note": "All six Blender/browser cases have exact topology after reproducing OpenSubdiv's non-manifold seams and Blender's evaluated-curve sweep tangents; local bounds differ by at most 0.0001 units.",
+    "note": "All six Blender/browser cases have exact topology after reproducing OpenSubdiv's non-manifold seams and Blender's evaluated-curve sweep tangents; local bounds differ by at most 0.0001 units. The authored object selects chrome.002 with rough=0 on every face, so the procedural roughness branch collapses to polished metal. Controlled studio captures reach 0.9957 silhouette IoU with a disclosed Eevee/Three.js reflection residual.",
     "controls": [
       { "name": "line weight", "label": "Line weight", "min": 5, "max": 40, "step": 0.000001, "value": 22.796825408935547 },
       { "name": "Resolution", "label": "Resolution", "min": 16, "max": 180, "step": 1, "value": 120 },

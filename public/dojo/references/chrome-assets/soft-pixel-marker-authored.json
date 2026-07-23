@@ -1,0 +1,40 @@
+{
+  "object": "PIXEL CRAYON.004",
+  "type": "CURVE",
+  "bbox": {
+    "min": [
+      -75.68911743164062,
+      -81.65779876708984,
+      11.256858825683594
+    ],
+    "max": [
+      44.07268142700195,
+      38.275753021240234,
+      33.256874084472656
+    ]
+  },
+  "verts": 8455,
+  "faces": 5664,
+  "materials": [
+    "gn.bdsf",
+    "flat crayon.002"
+  ],
+  "evaluated_materials": [
+    null,
+    "chrome.002"
+  ],
+  "evaluated_material_faces": {
+    "chrome.002": 5664
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 1.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": true,
+  "studio_environment_strength": 0.8,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

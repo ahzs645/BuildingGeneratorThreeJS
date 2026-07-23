@@ -1,0 +1,58 @@
+{
+  "updated": "2026-07-23",
+  "target": {
+    "id": "soft-pixel-marker",
+    "project": "NO3D Chrome Asset Library.blend",
+    "object": "PIXEL CRAYON.004",
+    "root": "soft pixel marker",
+    "material": "chrome.002"
+  },
+  "geometryContract": {
+    "verts": 8455,
+    "faces": 5664,
+    "tris": 11328,
+    "group": {
+      "start": 0,
+      "count": 33984,
+      "material": "chrome.002"
+    },
+    "localBounds": {
+      "min": [-75.68910217285156, -81.65779876708984, 11.256860733032227],
+      "max": [44.07268142700195, 38.27574157714844, 33.256858825683594]
+    }
+  },
+  "authoredShaderContract": {
+    "materialGraph": "chrome.002 Principled metal with Generated Noise → Map Range → Multiply → Roughness",
+    "baseColor": [0.800000011920929, 0.800000011920929, 0.800000011920929],
+    "metallic": 1.0,
+    "roughnessAttribute": {
+      "name": "rough",
+      "domain": "FACE",
+      "value": 0.0,
+      "faces": 5664
+    },
+    "browserResolution": "The existing Chrome Crayon material backend reconstructs the generated-coordinate noise branch and consumes the exact rough field. Since every authored rough value is zero, the mapped procedural result is multiplied to polished roughness zero in both renderers."
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "lighting": "Blender studio.exr and the byte-identical Three.js PMREM environment at intensity 0.8, plus the shared authored area-light rig",
+    "blenderReference": "../../references/chrome-assets/soft-pixel-marker-authored.png",
+    "blenderMetadata": "../../references/chrome-assets/soft-pixel-marker-authored.json",
+    "browserReference": "../../references/chrome-assets/soft-pixel-marker-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=soft-pixel-marker&capture=authored"
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9957224872644942,
+    "surfaceCornerRmsePixels": 5.479298217477976,
+    "intersectionPixels": 123141,
+    "pixelRgbMae": 0.11002411167119665,
+    "meanRgbDelta": [0.030938837916096883, 0.03650742576878346, 0.03594938529784938],
+    "pixelLuminanceMae": 0.11077998969046128,
+    "pixelLuminanceCorrelation": 0.210886460239385,
+    "macroLuminanceCorrelation": 0.18400071320153769
+  },
+  "interpretation": "Topology, silhouette, material choice, metallic base, and the zero-roughness field are verified. Fine reflection placement remains renderer-dependent because Eevee samples the source environment directly while Three.js uses a PMREM convolution."
+}
