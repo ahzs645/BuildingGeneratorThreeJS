@@ -1345,7 +1345,29 @@ reg("GeometryNodeBoundBox", (api) => {
 
 // ---- passthrough-ish stubs that keep geometry flowing ---------------------
 const passGeometry = (api: EvalAPI) => ({ Geometry: api.geo("Geometry") });
-reg("GeometryNodeSetShadeSmooth", passGeometry);
+reg("GeometryNodeSetShadeSmooth", (api) => {
+  const domain = api.prop<"FACE" | "EDGE">("domain", "FACE");
+  const selection = api.field("Selection");
+  const shadeSmooth = api.field("Shade Smooth");
+  const g = mapInstancePayloadMeshes(api.geo("Geometry"), (geometry) => {
+    if (!geometry.mesh || (domain !== "FACE" && domain !== "EDGE")) return;
+    const ctx = makeFieldCtx(geometry, domain);
+    const selected = selection.array(ctx);
+    const smooth = shadeSmooth.array(ctx);
+    const attributeName = domain === "EDGE" ? "sharp_edge" : "sharp_face";
+    const existing = geometry.mesh.attributes.get(attributeName);
+    const data = existing?.domain === domain ? [...existing.data] : Array.from({ length: ctx.size }, () => 0);
+    while (data.length < ctx.size) data.push(0);
+    for (let index = 0; index < ctx.size; index++) {
+      if (!asNum(selected[index] ?? 1)) continue;
+      // Blender stores the inverse of the node's UI value: smooth faces and
+      // smooth edge transitions are represented by false sharp attributes.
+      data[index] = asNum(smooth[index] ?? 1) ? 0 : 1;
+    }
+    geometry.mesh.attributes.set(attributeName, { domain, data });
+  });
+  return { Geometry: g };
+});
 reg("GeometryNodeSetID", passGeometry);
 reg("GeometryNodeStoreNamedAttribute", (api) => {
   const name = api.str("Name");

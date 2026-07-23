@@ -977,6 +977,13 @@ export interface TriSoup {
   positions: Float32Array; // xyz per vertex (indexed)
   normals: Float32Array;
   indices: Uint32Array;
+  /**
+   * Blender split normals in emitted triangle-corner order. Present only when
+   * a retained EDGE-domain sharp_edge attribute separates smooth fans.
+   * Renderers can expand the indexed display mesh while keeping GN topology
+   * and statistics unchanged.
+   */
+  cornerNormals?: Float32Array;
   /** Source face for every emitted triangle, in the same order as indices. */
   triangleFaces?: Uint32Array;
   /** Source mesh corner for every emitted triangle corner. */
@@ -999,6 +1006,108 @@ export interface TriSoup {
     positions: Float32Array; // duplicated xyz endpoints, two per segment
     stats: { controlPoints: number; evaluatedPoints: number; segments: number; splines: number };
   };
+}
+
+/**
+ * Reconstruct Blender's smooth-normal fans separated by sharp mesh edges.
+ *
+ * Geometry Nodes retains `sharp_edge` as EDGE-domain data even though a WebGL
+ * index can bind only one normal to each point. Keep the evaluated mesh
+ * indexed for topology/export, and return a normal for each source face corner
+ * so the display adapter can split only its render vertices.
+ */
+function sharpCornerNormals(mesh: Mesh): Vec3[] | undefined {
+  const sharp = mesh.attributes.get("sharp_edge");
+  const sharpFace = mesh.attributes.get("sharp_face");
+  const hasSharpEdges = sharp?.domain === "EDGE" && sharp.data.some((value) => asNum(value) > 0);
+  const hasSharpFaces = sharpFace?.domain === "FACE" && sharpFace.data.some((value) => asNum(value) > 0);
+  if (!hasSharpEdges && !hasSharpFaces) return undefined;
+
+  const faceNormals = mesh.faces.map((face) => faceNormalBlenderFloat(mesh, face));
+  const contributions: Vec3[][] = mesh.faces.map((face, faceIndex) => {
+    const normal = faceNormals[faceIndex];
+    return face.map((vertex, corner) => {
+      const point = mesh.positions[vertex];
+      const previous = mesh.positions[face[(corner - 1 + face.length) % face.length]];
+      const next = mesh.positions[face[(corner + 1) % face.length]];
+      const a = normalizeBlenderFloat([
+        f32(previous[0] - point[0]),
+        f32(previous[1] - point[1]),
+        f32(previous[2] - point[2]),
+      ]);
+      const b = normalizeBlenderFloat([
+        f32(next[0] - point[0]),
+        f32(next[1] - point[1]),
+        f32(next[2] - point[2]),
+      ]);
+      const dot = f32(f32(f32(a[0] * b[0]) + f32(a[1] * b[1])) + f32(a[2] * b[2]));
+      const angle = safeAcosApproxBlenderFloat(dot);
+      return [
+        f32(normal[0] * angle),
+        f32(normal[1] * angle),
+        f32(normal[2] * angle),
+      ] as Vec3;
+    });
+  });
+
+  const incident = mesh.positions.map(() => new Set<number>());
+  for (let face = 0; face < mesh.faces.length; face++)
+    for (const vertex of mesh.faces[face]) incident[vertex].add(face);
+
+  // A separate disjoint-set per point follows the smooth face fan through
+  // every incident non-sharp edge. Boundary edges simply have no second face.
+  const parents = incident.map((faces) => new Map([...faces].map((face) => [face, face])));
+  const find = (point: number, face: number): number => {
+    const parent = parents[point];
+    let root = face;
+    while (parent.get(root) !== root) root = parent.get(root)!;
+    let cursor = face;
+    while (parent.get(cursor) !== cursor) {
+      const next = parent.get(cursor)!;
+      parent.set(cursor, root);
+      cursor = next;
+    }
+    return root;
+  };
+  const union = (point: number, a: number, b: number): void => {
+    const rootA = find(point, a);
+    const rootB = find(point, b);
+    if (rootA !== rootB) parents[point].set(rootB, rootA);
+  };
+
+  const topology = topologyOf(mesh);
+  for (let edge = 0; edge < topology.edges.length; edge++) {
+    const item = topology.edges[edge];
+    if (asNum(sharp?.data[edge] ?? 0) > 0 || item.faces.length < 2) continue;
+    if (item.faces.some((face) => asNum(sharpFace?.data[face] ?? 0) > 0)) continue;
+    for (const point of item.verts)
+      for (let index = 1; index < item.faces.length; index++)
+        union(point, item.faces[0], item.faces[index]);
+  }
+
+  const sums = mesh.positions.map(() => new Map<number, Vec3>());
+  for (let face = 0; face < mesh.faces.length; face++) {
+    for (let corner = 0; corner < mesh.faces[face].length; corner++) {
+      const point = mesh.faces[face][corner];
+      const root = find(point, face);
+      const current = sums[point].get(root) ?? [0, 0, 0];
+      const contribution = contributions[face][corner];
+      sums[point].set(root, [
+        f32(current[0] + contribution[0]),
+        f32(current[1] + contribution[1]),
+        f32(current[2] + contribution[2]),
+      ]);
+    }
+  }
+
+  const result: Vec3[] = [];
+  for (let face = 0; face < mesh.faces.length; face++) {
+    for (const point of mesh.faces[face]) {
+      const normal = normalizeBlenderFloat(sums[point].get(find(point, face)) ?? faceNormals[face]);
+      result.push(normal[0] || normal[1] || normal[2] ? normal : faceNormals[face]);
+    }
+  }
+  return result;
 }
 
 /**
@@ -1215,6 +1324,8 @@ export function toTriSoup(g: Geometry): TriSoup {
   const indices = new Uint32Array(triCount * 3);
   const triangleFaces = new Uint32Array(triCount);
   const triangleCorners = new Uint32Array(triCount * 3);
+  const sourceCornerNormals = sharpCornerNormals(source);
+  const cornerNormals = sourceCornerNormals ? new Float32Array(triCount * 9) : undefined;
   const groups: TriSoup["groups"] = [];
   let cursor = 0;
   let triangleCursor = 0;
@@ -1225,6 +1336,15 @@ export function toTriSoup(g: Geometry): TriSoup {
     indices.set(tri, cursor);
     triangleCorners.set(perSlotCorners[s], cursor);
     triangleFaces.set(perSlotFaces[s], triangleCursor);
+    if (cornerNormals) {
+      for (let corner = 0; corner < perSlotCorners[s].length; corner++) {
+        const normal = sourceCornerNormals![perSlotCorners[s][corner]] ?? [0, 0, 1];
+        const target = (cursor + corner) * 3;
+        cornerNormals[target] = normal[0];
+        cornerNormals[target + 1] = normal[1];
+        cornerNormals[target + 2] = normal[2];
+      }
+    }
     cursor += tri.length;
     triangleCursor += perSlotFaces[s].length;
   }
@@ -1307,6 +1427,7 @@ export function toTriSoup(g: Geometry): TriSoup {
     positions,
     normals: normArr,
     indices,
+    cornerNormals,
     triangleFaces,
     triangleCorners,
     attributes,

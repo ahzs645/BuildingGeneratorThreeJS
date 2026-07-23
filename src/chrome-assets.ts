@@ -50,7 +50,9 @@ const requestedPreview = nativeMaterialXCapture ? "materialx-native" : query.get
 const stipplerCapture = requestedAsset === "img-pixel-stippler"
   && (captureMode === "authored" || captureMode === "stippler-shader");
 const authoredCapture = captureMode === "authored" || stipplerCapture;
-const stipplerCaptureSamples = query.get("samples") === "1" ? 1 : 64;
+const requestedSamples = Number(query.get("samples"));
+const temporalCaptureRequested = stipplerCapture || (authoredCapture && query.has("samples"));
+const temporalCaptureSamples = Number.isInteger(requestedSamples) && requestedSamples > 0 ? requestedSamples : 64;
 const stipplerDebugMode = ({ generated: 1, threshold: 2, distance: 3 } as Record<string, number>)[query.get("debug") ?? ""] ?? 0;
 const requestedLightScale = Number(query.get("lightScale"));
 const captureLightScale = Number.isFinite(requestedLightScale) && requestedLightScale > 0 ? requestedLightScale : null;
@@ -70,7 +72,7 @@ const fontStatus = document.querySelector<HTMLElement>("#assets-font-status")!;
 const note = document.querySelector<HTMLElement>("#assets-note")!;
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setPixelRatio(stipplerCapture ? 1 : Math.min(devicePixelRatio, 2)); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.setPixelRatio(temporalCaptureRequested ? 1 : Math.min(devicePixelRatio, 2)); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
 if (nativeMaterialXCapture) renderer.setClearColor(0x111417, 1);
 const scene = new THREE.Scene();
 let authoredKey: THREE.RectAreaLight | null = null;
@@ -90,7 +92,7 @@ if (authoredCapture) {
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, .01, 5000);
 const orbit = new OrbitControls(camera, canvas); orbit.enableDamping = true;
 const model = new THREE.Group(); scene.add(model);
-const temporalCapture = stipplerCapture ? new EeveeTemporalCapture(renderer, scene, camera, canvas, stipplerCaptureSamples) : null;
+const temporalCapture = temporalCaptureRequested ? new EeveeTemporalCapture(renderer, scene, camera, canvas, temporalCaptureSamples) : null;
 const material = new THREE.MeshPhysicalMaterial({ color: 0xc8e99b, roughness: .35, metalness: .06, side: THREE.DoubleSide });
 let catalog: Asset[] = [], current: Asset, dump: Dump, requestId = 0, appliedId = 0, timer = 0;
 const loadedFonts = new Map<string, Promise<boolean>>();
@@ -130,6 +132,14 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
       geometry.dispose();
       geometry = expanded;
     }
+  }
+  if (soup.cornerNormals) {
+    if (geometry.index) {
+      const expanded = geometry.toNonIndexed();
+      geometry.dispose();
+      geometry = expanded;
+    }
+    geometry.setAttribute("normal", new THREE.BufferAttribute(soup.cornerNormals, 3));
   }
   if (current.surfaceBounds && soup.indices.length) {
     const bounds = new THREE.Box3();
@@ -350,7 +360,7 @@ async function choose(): Promise<void> {
   if(current!==asset)return;
   dump=Object.assign(geometryDump,shaderMetadata??{});await evaluate();
 }
-select.addEventListener("change",()=>{const url=new URL(location.href);url.searchParams.set("asset",select.value);history.replaceState(null,"",url);void choose().catch((error)=>status.textContent=String(error));});reset.addEventListener("click",()=>{renderControls();queue();});addEventListener("resize",resize);renderer.setAnimationLoop(()=>{orbit.update();if(temporalCapture&&current?.id==="img-pixel-stippler"&&model.children.length)temporalCapture.render();else renderer.render(scene,camera);});
+select.addEventListener("change",()=>{const url=new URL(location.href);url.searchParams.set("asset",select.value);history.replaceState(null,"",url);void choose().catch((error)=>status.textContent=String(error));});reset.addEventListener("click",()=>{renderControls();queue();});addEventListener("resize",resize);renderer.setAnimationLoop(()=>{orbit.update();if(temporalCapture&&model.children.length)temporalCapture.render();else renderer.render(scene,camera);});
 fetch(publicUrl("dojo/chrome-assets/catalog.json"),{cache:"no-store"}).then((response)=>response.json()).then((items:Asset[])=>{catalog=items;for(const item of catalog){const option=document.createElement("option");option.value=item.id;option.textContent=item.title;select.append(option);}const requested=new URLSearchParams(location.search).get("asset");if(requested&&catalog.some((item)=>item.id===requested))select.value=requested;resize();return choose();}).catch((error)=>status.textContent=String(error));
 
 window.addEventListener("type-pixel-brush-graph-change", (event) => {

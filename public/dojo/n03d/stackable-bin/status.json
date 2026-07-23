@@ -2,11 +2,20 @@
   "id": "n03d-stackable-bin",
   "object": "BIN_ Stackable Gridfinity 31MAY2024",
   "root": "bin.stackable",
-  "status": "topology-and-bounds-exact",
+  "status": "topology-bounds-and-authored-material-verified",
   "blender": { "verts": 11288, "faces": 10410, "bounds": { "min": [0.5005, 0.5005, 0], "max": [83.5835, 41.5415, 29.9826] } },
   "gnvm": { "verts": 11288, "faces": 10410, "bounds": { "min": [0.5005, 0.5005, 0], "max": [83.5835, 41.5415, 29.983] } },
   "coverage": "100% of all reachable node types across 14 groups and 302 nodes.",
   "parameter_sweep": "All seven authored, 3x3, depth 40, horizontal-divider, two-vertical-divider, raised-divider, and optional grid-line cases match Blender topology exactly. Grid-lines mode is 13,328 / 12,449 on both sides, with bounds within 0.0004 units.",
   "reference": "dojo/references/n03d/stackable-bin.png",
-  "validation": "Modifier named-attribute bindings preserve the source profile's top-edge and inner-wall selections; closed planar Curve to Mesh frames and the evaluated hollow-foot dependency reproduce Blender's complete bin shell and placement. Crossing cyclic outlines are split into a planar arrangement before triangle filling, and the final collinear boundary point is retained by splitting its neighboring triangle, closing the last six-vertex/six-face grid-line gap."
+  "validation": "Modifier named-attribute bindings preserve the source profile's top-edge and inner-wall selections; closed planar Curve to Mesh frames and the evaluated hollow-foot dependency reproduce Blender's complete bin shell and placement. Crossing cyclic outlines are split into a planar arrangement before triangle filling, and the final collinear boundary point is retained by splitting its neighboring triangle, closing the last six-vertex/six-face grid-line gap. Set Shade Smooth now reproduces Blender's inverse sharp_face and sharp_edge attributes: all 10,410 faces are smooth, zero faces are sharp, and exactly 6,048 of 21,680 edges are sharp. Triangle-corner split display normals preserve those islands without changing the indexed GN topology.",
+  "material": {
+    "name": "Filament PLA .02 mm layer height",
+    "contract": "POINT col attribute + Generated-coordinate Z Wave + derivative Bump + Backfacing color branch",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.9855442345105022,
+    "pixelLuminanceMae": 0.07195125399437563,
+    "meanLuminanceDelta": -0.0011497035694263968,
+    "residual": "The 64-sample browser resolve aligns exposure and suppresses single-frame band aliasing, but Eevee and WebGL retain different spatial lighting and bump-filter response. This is viewport material parity, not slicer or G-code parity."
+  }
 }

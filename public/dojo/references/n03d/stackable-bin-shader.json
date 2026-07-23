@@ -1,0 +1,39 @@
+{
+  "object": "BIN_ Stackable Gridfinity 31MAY2024",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      0.5004999041557312,
+      0.5004999041557312,
+      0.0
+    ],
+    "max": [
+      83.58350372314453,
+      41.541500091552734,
+      29.98259735107422
+    ]
+  },
+  "verts": 11288,
+  "faces": 10410,
+  "materials": [
+    "filament .02 mm.001"
+  ],
+  "evaluated_materials": [
+    null,
+    "Filament PLA .02 mm layer height"
+  ],
+  "evaluated_material_faces": {
+    "Filament PLA .02 mm layer height": 10410
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": false,
+  "overrides": {},
+  "authored_light_scale": 50.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

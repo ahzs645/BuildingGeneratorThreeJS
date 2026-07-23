@@ -116,7 +116,9 @@ test("resolves Blunt Metal Marker's absent rough attribute to polished chrome", 
   assert.deepEqual(Object.fromEntries(Object.entries(result.soup.attributes).map(([name, attribute]) => [name, attribute.itemSize])), {
     col: 3,
     power: 1,
+    sharp_face: 1,
   });
+  assert.ok(result.soup.attributes.sharp_face.data.every((value) => value === 0));
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));

@@ -42,10 +42,12 @@ test("assigns the evaluated chrome material to every realized face", async () =>
   assert.deepEqual(result.soup.groups, [
     { start: 0, count: 675444, material: "chrome.002" },
   ]);
-  assert.deepEqual(Object.keys(result.soup.attributes), ["1", "__gnvm_material_match"]);
+  assert.deepEqual(Object.keys(result.soup.attributes), ["1", "sharp_face", "__gnvm_material_match"]);
   assert.equal(result.soup.attributes["1"].itemSize, 1);
   assert.equal(result.soup.attributes["1"].data.filter((value) => value === 0).length, 11781);
   assert.equal(result.soup.attributes["1"].data.filter((value) => value === 1).length, 108946);
+  assert.equal(result.soup.attributes.sharp_face.itemSize, 1);
+  assert.ok(result.soup.attributes.sharp_face.data.every((value) => value === 0));
   assert.equal(result.soup.attributes.rough, undefined);
 
   const geometry = new THREE.BufferGeometry();

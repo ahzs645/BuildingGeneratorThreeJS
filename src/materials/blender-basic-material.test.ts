@@ -179,7 +179,9 @@ test("renders Spikey Chain Link with Blender's unassigned default surface", asyn
   const result = await runGenerator(dump, { object: "spikey link" });
   assert.deepEqual(result.soup.stats, { verts: 2867, faces: 5376, tris: 5376 });
   assert.deepEqual(result.soup.groups, [{ start: 0, count: 16128, material: null }]);
-  assert.deepEqual(result.soup.attributes, {});
+  assert.deepEqual(Object.keys(result.soup.attributes), ["sharp_face"]);
+  assert.equal(result.soup.attributes.sharp_face.itemSize, 1);
+  assert.ok(result.soup.attributes.sharp_face.data.every((value) => value === 0));
 
   const material = makeBlenderDefaultSurfaceMaterial();
   assert.equal(material.name, "Blender unassigned material surface");

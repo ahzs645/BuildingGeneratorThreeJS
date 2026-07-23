@@ -36,6 +36,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
         positions: result.soup.positions,
         normals: result.soup.normals,
         indices: result.soup.indices,
+        cornerNormals: result.soup.cornerNormals,
         triangleFaces: result.soup.triangleFaces,
         triangleCorners: result.soup.triangleCorners,
         attributes: result.soup.attributes,
@@ -47,6 +48,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
       probeSoup: probeSoup ? transferableSoup(probeSoup) : undefined,
     };
     const transfer: Transferable[] = [result.soup.positions.buffer, result.soup.normals.buffer, result.soup.indices.buffer];
+    if (result.soup.cornerNormals) transfer.push(result.soup.cornerNormals.buffer);
     if (result.soup.triangleFaces) transfer.push(result.soup.triangleFaces.buffer);
     if (result.soup.triangleCorners) transfer.push(result.soup.triangleCorners.buffer);
     if (result.soup.lines) transfer.push(result.soup.lines.positions.buffer);
@@ -56,6 +58,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
     }
     if (probeSoup) {
       transfer.push(probeSoup.positions.buffer, probeSoup.normals.buffer, probeSoup.indices.buffer);
+      if (probeSoup.cornerNormals) transfer.push(probeSoup.cornerNormals.buffer);
       if (probeSoup.triangleFaces) transfer.push(probeSoup.triangleFaces.buffer);
       if (probeSoup.triangleCorners) transfer.push(probeSoup.triangleCorners.buffer);
       if (probeSoup.lines) transfer.push(probeSoup.lines.positions.buffer);
@@ -86,6 +89,7 @@ function transferableSoup(soup: TriSoup): TriSoup {
     positions: soup.positions,
     normals: soup.normals,
     indices: soup.indices,
+    cornerNormals: soup.cornerNormals,
     triangleFaces: soup.triangleFaces,
     triangleCorners: soup.triangleCorners,
     groups: soup.groups,

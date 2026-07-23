@@ -1738,9 +1738,11 @@
   "dump": "dojo/n03d/stackable-bin/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
   "reference": "dojo/references/n03d/stackable-bin.png",
+  "authoredReference": "dojo/references/n03d/stackable-bin-shader.png",
+  "authoredLightScale": 15,
   "blenderStats": { "verts": 11288, "faces": 10410 },
   "localSpace": true,
-  "note": "Exact topology across all seven cases for the complete 302-node bin graph. Authored output is 11,288 / 10,410 and optional grid lines are 13,328 / 12,449 on both Blender and the browser, with bounds within 0.0004 units. Planar crossing resolution and Blender-style retention of the last collinear fill point reproduce every swept groove junction.",
+  "note": "Exact topology across all seven cases for the complete 302-node bin graph. Authored output is 11,288 / 10,410 and optional grid lines are 13,328 / 12,449 on both Blender and the browser, with bounds within 0.0004 units. Planar crossing resolution and Blender-style retention of the last collinear fill point reproduce every swept groove junction. Authored viewport mode reconstructs the Filament PLA .02 mm layer-height shader and POINT col field without changing the generated mesh. Set Shade Smooth reproduces Blender's 6,048 sharp edges and zero sharp faces using split display normals. The recorded 64-sample comparison reaches 0.9855 silhouette IoU, 0.0720 pixel luminance MAE, and a -0.00115 mean-luminance delta. This visual shader is not a slicer preview or G-code toolpath.",
   "controls": [
     { "name": "x", "label": "Grid X", "min": 1, "max": 8, "step": 1, "value": 4 },
     { "name": "y", "label": "Grid Y", "min": 1, "max": 8, "step": 1, "value": 2 },

@@ -1,0 +1,88 @@
+{
+  "asset": "n03d-stackable-bin",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "BIN_ Stackable Gridfinity 31MAY2024",
+    "root": "bin.stackable",
+    "material": "Filament PLA .02 mm layer height"
+  },
+  "scope": "Authored Blender viewport material and split-normal parity on the exact Geometry Nodes mesh. The procedural filament surface does not slice the bin and is not a G-code toolpath.",
+  "geometry": {
+    "blender": {
+      "verts": 11288,
+      "faces": 10410
+    },
+    "gnvm": {
+      "verts": 11288,
+      "faces": 10410
+    },
+    "materialFaces": 10410,
+    "localBounds": {
+      "min": [0.5005, 0.5005, 0.0],
+      "max": [83.5835, 41.5415, 29.9826]
+    },
+    "shadeSmooth": {
+      "faces": 10410,
+      "sharpFaces": 0,
+      "edges": 21680,
+      "sharpEdges": 6048,
+      "browserRepresentation": "indexed GN mesh plus triangle-corner split display normals"
+    }
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../../references/n03d/stackable-bin-shader.png",
+    "blenderMetadata": "../../references/n03d/stackable-bin-shader.json",
+    "browserReference": "../../references/n03d/stackable-bin-shader-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-stackable-bin&capture=authored&lightScale=15&samples=64",
+    "blenderAuthoredLightScale": 50,
+    "browserAuthoredLightScale": 15,
+    "browserTemporalSamples": 64,
+    "temporalFilter": "Eevee-style Blackman-Harris jitter and linear RGBA16F accumulation",
+    "lightScaleInterpretation": "Blender Area energy and Three.js RectAreaLight intensity use renderer-specific units. The recorded scales align mean exposure under the shared normalized rig; they do not claim equal physical power."
+  },
+  "recoveredGraph": {
+    "color": "POINT-domain col attribute, authored default [0.9781173468, 1.0, 0.0]",
+    "roughness": 0.7732919454574585,
+    "generatedCoordinates": "complete shaded bin bounds",
+    "wave": {
+      "type": "BANDS",
+      "direction": "Z",
+      "scale": -56.31793212890625,
+      "distortion": 0.8557739853858948,
+      "detail": 2,
+      "detailScale": 1,
+      "detailRoughness": 0.5
+    },
+    "bump": {
+      "strength": 0.7392045855522156,
+      "distance": 0.9663976430892944,
+      "filterWidth": 1,
+      "invert": false
+    },
+    "branchValues": {
+      "dark": 0.16399909555912018,
+      "bright": 0.8679997324943542
+    }
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9855442345105022,
+    "surfaceMaskIouDilated1px": 0.9855942298804184,
+    "blenderSurfaceCoveredWithin1px": 1.0,
+    "webglSurfaceCoveredWithin1px": 0.9982589771490751,
+    "surfaceCornerRmsePixels": 0.9161119694145444,
+    "intersectionPixels": 149443,
+    "pixelRgbMae": 0.06085799090250339,
+    "pixelLuminanceMae": 0.07195125399437563,
+    "pixelLuminanceCorrelation": 0.15299988748772128,
+    "macroLuminanceMae": 0.07918463151145942,
+    "macroLuminanceCorrelation": -0.12137392220196393,
+    "blackFractionDelta": -0.004590378940465595,
+    "meanLuminanceDelta": -0.0011497035694263968,
+    "meanRgbDelta": [0.0025338504724889805, -0.0018205415836901205, -0.02272341379850288]
+  },
+  "interpretation": "The exact bin shell, feet, material assignment, POINT col branch, Generated-coordinate layer bands, distorted Wave texture, Backfacing branch, Bump parameters, face smoothing, and sharp-edge normal islands are represented in the browser. The 64-sample resolve removes the severe single-frame line aliasing and aligns mean exposure within 0.0012 while retaining a subpixel-aligned silhouette. Low spatial correlation records the remaining difference in Eevee versus WebGL area-light response and procedural derivative filtering; renderer identity is not claimed."
+}
