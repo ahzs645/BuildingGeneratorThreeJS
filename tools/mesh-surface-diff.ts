@@ -116,6 +116,15 @@ function readProbeJson(path: string): TriMesh {
 
 function readVm(path: string, filter?: string | null): TriMesh {
   const vm = JSON.parse(readFileSync(path, "utf8"));
+  // Intermediate GN-VM geometry probes use the same nested position/face
+  // representation as Blender's node probe. Accept that form directly so an
+  // open-surface Boolean (or any other internal node) can be compared without
+  // first converting it into the flattened final-export payload.
+  if (Array.isArray(vm.positions?.[0])) {
+    if (filter !== undefined)
+      throw new Error("--material is only available for final GN-VM exports");
+    return readProbeJson(path);
+  }
   const local = process.argv.includes("--local");
   const loc = local ? [0, 0, 0] : vm.object?.location ?? [275.16204833984375, 0, 0];
   const rot = local ? [0, 0, 0] : vm.object?.rotation ?? [0, 0, 0];

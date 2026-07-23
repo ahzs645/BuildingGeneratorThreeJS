@@ -3,48 +3,16 @@
 // imports the registry to dispatch).
 import { Field, Vec3, Domain, Elem } from "./core";
 import { Geometry } from "./geometry";
+import type { DataRef, DumpObject, FontAtlas, RawNode } from "./dump-schema";
 
-export interface RawSocket {
-  name: string;
-  identifier: string;
-  idx?: number;
-  type: string;
-  linked: boolean;
-  enabled?: boolean;
-  value: any;
-}
-export interface RawOutput {
-  name: string;
-  identifier: string;
-  type?: string;
-  default?: any;
-}
-export interface RawNode {
-  name: string;
-  type: string;
-  label: string | null;
-  ui?: { mute?: boolean };
-  inputs: RawSocket[];
-  outputs: RawOutput[];
-  props?: Record<string, any>;
-  baked_instances?: { position: Vec3; rotation?: Vec3; scale: Vec3 }[];
-  group?: string;
-  // Repeat/simulation zones: name of the paired output node (on the input node).
-  paired_output?: string;
-}
-
-// Datablock reference (material/object/image) as dumped.
-export interface DataRef {
-  datablock?: string;
-  name: string;
-}
-export interface FontAtlas {
-  name: string;
-  error?: string;
-  sample_stride?: number;
-  align_offsets?: Record<string, number>;
-  glyphs: Record<string, { advance: number; curves: { cyclic: boolean; points: number[][] }[] }>;
-}
+export type {
+  DataRef,
+  DumpObject,
+  FontAtlas,
+  RawNode,
+  RawOutput,
+  RawSocket,
+} from "./dump-schema";
 export type SockVal = Geometry | Field | string | DataRef | null | undefined;
 
 export interface EvalAPI {
@@ -76,20 +44,6 @@ export const MISSING = new Map<string, number>();
 
 // Dump-level context (scene objects) so nodes like Object Info can materialize
 // referenced objects. Set by runGenerator before evaluation.
-export interface DumpObject {
-  name: string;
-  type?: string;
-  location?: number[];
-  rotation?: number[];
-  scale?: number[];
-  matrix_world?: number[][];
-  relative_matrices?: Record<string, number[][]>;
-  materials?: string[];
-  mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][]; attributes?: Record<string, { domain: import("./core").Domain; data: Elem[] }> };
-  evaluated_mesh?: { verts: number[][]; faces: number[][]; face_materials?: number[]; edges?: [number, number][]; materials?: (string | null)[]; attributes?: Record<string, { domain: import("./core").Domain; data: Elem[] }> };
-  curves?: { points: number[][]; control_points?: number[][]; bezier_left?: number[][]; bezier_right?: number[][]; cyclic: boolean; resolution?: number; tilts?: number[]; radii?: number[]; tangents?: number[][]; normals?: number[][] }[];
-  modifiers?: { type: string; node_group?: string; input_values?: Record<string, any>; object?: string; vertex_indices?: number[]; matrix_inverse?: number[][]; strength?: number }[];
-}
 export const DUMP_CONTEXT: {
   objects: DumpObject[];
   collections: { name: string; objects: string[] }[];

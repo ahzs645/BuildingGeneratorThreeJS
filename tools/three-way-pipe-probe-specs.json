@@ -1,0 +1,20 @@
+[
+  {
+    "id": "source",
+    "group": "pipe joint generator.003",
+    "node": "Group.001",
+    "socket": "Socket_0"
+  },
+  {
+    "id": "cutter",
+    "group": "pipe joint generator.003",
+    "node": "Group.003",
+    "socket": "Socket_0"
+  },
+  {
+    "id": "boolean",
+    "group": "DOJO_BOOL.001",
+    "node": "Mesh Boolean.007",
+    "socket": "Mesh"
+  }
+]

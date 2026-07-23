@@ -51,7 +51,11 @@ GEOMETRY_PROBE.node = nodeName;
 GEOMETRY_PROBE.socket = socketName;
 GEOMETRY_PROBE.geometry = null;
 const rawOverrides = overridesPath ? JSON.parse(readFileSync(overridesPath, "utf8")) : {};
-const overrides = Array.isArray(rawOverrides) ? rawOverrides[0]?.overrides ?? {} : rawOverrides;
+const fileOverrides = Array.isArray(rawOverrides) ? rawOverrides[0]?.overrides ?? {} : rawOverrides;
+const overrides = {
+  ...fileOverrides,
+  ...JSON.parse(process.env.GNVM_PROBE_OVERRIDES ?? "{}") as Record<string, unknown>,
+};
 const result = await runGenerator(dump, { object: objectName, overrides });
 // Built-in node handlers can expose their value at evaluation time. Group
 // nodes are evaluated by the evaluator itself, so when a route has connected

@@ -1,5 +1,5 @@
 // Public entry point for the geometry-nodes VM.
-import { Evaluator, Program } from "./evaluator";
+import { Evaluator } from "./evaluator";
 import { Geometry, Mesh, toTriSoup, TriSoup } from "./geometry";
 import { DUMP_CONTEXT, MISSING, REGISTRY, type DumpObject } from "./registry";
 import { ensureManifold } from "./boolean";
@@ -7,7 +7,8 @@ import { ensureBulletHull } from "./bullet-hull";
 import { evaluateBezierSpline } from "./bezier";
 import type { Vec3 } from "./core";
 import { matchLegacyCurvePassthrough } from "./nodes/geometry";
-import { resolveObjectDependencyOrder, type ExtractionMetadataV1 } from "./dependency-metadata";
+import { resolveObjectDependencyOrder } from "./dependency-metadata";
+import type { Dump } from "./dump-schema";
 
 // Registering the handler modules populates the REGISTRY.
 import "./nodes/math";
@@ -29,6 +30,26 @@ export { Evaluator, GEOMETRY_PROBE } from "./evaluator";
 export { Geometry, toTriSoup } from "./geometry";
 export type { TriSoup } from "./geometry";
 export { REGISTRY, MISSING } from "./registry";
+export { DumpValidationError, normalizeDump, validateDump } from "./dump-schema";
+export type {
+  DataRef,
+  Dump,
+  DumpCurve,
+  DumpEvaluatedMesh,
+  DumpImage,
+  DumpInterfaceItem,
+  DumpLink,
+  DumpMesh,
+  DumpMeshAttribute,
+  DumpModifier,
+  DumpNodeGroup,
+  DumpObject,
+  DumpValidationIssue,
+  FontAtlas,
+  RawNode,
+  RawOutput,
+  RawSocket,
+} from "./dump-schema";
 export {
   analyzeProgramCapabilities,
   EDITOR_ONLY_NODE_TYPES,
@@ -50,40 +71,6 @@ export interface RunResult {
     handled: number;
     missingTypes: { type: string; count: number }[];
   };
-}
-
-// A dump-file shape (subset we consume).
-export interface Dump {
-  node_groups: Program;
-  scene?: { frame_current?: number; fps?: number; fps_base?: number };
-  collections?: { name: string; objects: string[] }[];
-  images?: { name: string; filepath?: string; size: number[]; pixels_rgba8?: string; channels?: number }[];
-  fonts?: Record<string, import("./registry").FontAtlas>;
-  dependency_objects?: string[];
-  extraction_metadata?: ExtractionMetadataV1;
-  objects?: {
-    name: string;
-    type?: string;
-    location?: number[];
-    rotation?: number[];
-    scale?: number[];
-    matrix_world?: number[][];
-    relative_matrices?: Record<string, number[][]>;
-    modifiers?: { type: string; node_group?: string; input_values?: Record<string, any>; object?: string; vertex_indices?: number[]; matrix_inverse?: number[][]; strength?: number }[];
-    curves?: {
-      points: number[][];
-      control_points?: number[][];
-      bezier_left?: number[][];
-      bezier_right?: number[][];
-      cyclic: boolean;
-      resolution?: number;
-      tilts?: number[];
-      radii?: number[];
-      tangents?: number[][];
-    }[];
-  }[];
-  materials?: Record<string, { nodes?: { type: string; inputs?: { name: string; identifier: string; linked: boolean; value: unknown }[] }[] }>;
-  shader_node_groups?: Record<string, unknown>;
 }
 
 // Find the modifier group name for an object (or the first NODES modifier in the file).

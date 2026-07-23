@@ -1,43 +1,10 @@
-import type { Dump } from "../gnvm";
+import type { Dump, RawNode as DumpNode, RawOutput, RawSocket } from "../gnvm/dump-schema";
 
 export type GraphSocketDirection = "input" | "output";
 export type GraphNodeKind = "node" | "frame" | "reroute";
 
-export interface DumpSocket {
-  name: string;
-  identifier: string;
-  type?: string;
-  idx?: number;
-  linked?: boolean;
-  enabled?: boolean;
-  hide?: boolean;
-  hide_value?: boolean;
-  display_shape?: string;
-  value?: unknown;
-  default?: unknown;
-}
-
-export interface DumpNode {
-  name: string;
-  type: string;
-  label?: string | null;
-  group?: string;
-  ui?: {
-    location?: number[];
-    location_absolute?: number[];
-    width?: number;
-    height?: number;
-    dimensions?: number[];
-    hide?: boolean;
-    mute?: boolean;
-    parent?: string | null;
-    use_custom_color?: boolean;
-    color?: number[];
-  };
-  inputs?: DumpSocket[];
-  outputs?: DumpSocket[];
-  props?: Record<string, unknown>;
-}
+export type DumpSocket = RawSocket | RawOutput;
+export type { DumpNode };
 
 export interface GraphSocket {
   /** Stable editor handle ID. The extracted Blender identifier remains separate. */
