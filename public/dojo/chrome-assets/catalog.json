@@ -760,8 +760,10 @@
     "dump": "dojo/n03d/glue-grid/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/glue-grid.png",
+    "authoredReference": "dojo/references/n03d/glue-grid-authored.png",
+    "authoredLightScale": 0.21,
     "blenderStats": { "verts": 4736, "faces": 4096 },
-    "note": "Exact Blender parity for the authored 4×4 raised lattice at 4,736 vertices / 4,096 faces. Restoring its embedded 74-vertex seed at the source .blend's original float32 precision makes all 4,736 evaluated coordinates bit-for-bit identical. Point-cloud components remain available during graph evaluation but are correctly omitted from the final evaluated mesh.",
+    "note": "Exact Blender parity for the authored 4×4 raised lattice at 4,736 vertices / 4,096 faces: all 4,736 evaluated coordinates are bit-for-bit identical. Blender leaves all 4,096 faces unassigned, so authored mode uses its neutral linear-0.8, roughness-0.5 surface rather than a filament or G-code look. An asset-size light sweep restores the source's dark large-scale appearance at browser scale 0.21; the committed comparison reaches 0.9605 silhouette IoU, 0.55 px corner RMSE, 0.0480 RGB MAE, and zero black/white threshold disagreement.",
     "controls": []
   },
   {

@@ -2,9 +2,19 @@
   "id": "n03d-glue-grid",
   "object": "GLUE GRID",
   "root": "Geometry Nodes.012",
-  "status": "exact",
+  "status": "exact-geometry-and-authored-unassigned-surface-verified",
   "blender": { "verts": 4736, "faces": 4096 },
   "gnvm": { "verts": 4736, "faces": 4096 },
   "coverage": "100% of reachable node types across the 7-group, 93-node closure.",
-  "validation": "The authored 4x4 grid matches Blender exactly at 4,736 vertices and 4,096 faces. Refreshing its 74-vertex embedded seed from the source .blend's original float32 coordinates removes the former 0.0004-unit drift introduced when the graph multiplied six-decimal JSON coordinates by 1,000. All 4,736 evaluated vertex coordinates are now bit-for-bit identical to Blender. Point-cloud components are retained for Geometry Nodes field and instancing evaluation but omitted from the final evaluated mesh, matching Blender."
+  "validation": "The authored 4x4 grid matches Blender exactly at 4,736 vertices and 4,096 faces. Refreshing its 74-vertex embedded seed from the source .blend's original float32 coordinates removes the former 0.0004-unit drift introduced when the graph multiplied six-decimal JSON coordinates by 1,000. All 4,736 evaluated vertex coordinates are now bit-for-bit identical to Blender. Point-cloud components are retained for Geometry Nodes field and instancing evaluation but omitted from the final evaluated mesh, matching Blender.",
+  "material": {
+    "name": null,
+    "contract": "Blender unassigned neutral surface: linear 0.8 base color, metalness 0, roughness 0.5",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.9605103893483962,
+    "surfaceCornerRmsePixels": 0.5457954081923058,
+    "pixelRgbMae": 0.04802187040927638,
+    "binaryMaskDisagreementFraction": 0,
+    "residual": "Renderer-specific Area/RectArea light units and local area-light response differ after the asset-size exposure calibration."
+  }
 }

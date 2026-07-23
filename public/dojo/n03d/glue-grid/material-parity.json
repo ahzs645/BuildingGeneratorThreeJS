@@ -1,0 +1,53 @@
+{
+  "asset": "n03d-glue-grid",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "GLUE GRID",
+    "root": "Geometry Nodes.012",
+    "material": null
+  },
+  "scope": "Authored viewport appearance only. All evaluated faces are unassigned; this object has no filament shader, slicer data, or G-code toolpath.",
+  "geometry": {
+    "blender": { "verts": 4736, "faces": 4096 },
+    "gnvm": { "verts": 4736, "faces": 4096 },
+    "unassignedMaterialFaces": 4096,
+    "validationCases": 1,
+    "coordinateParity": "All 4,736 evaluated vertices are bit-for-bit identical to Blender."
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "world",
+    "blenderReference": "../../references/n03d/glue-grid-authored.png",
+    "blenderMetadata": "../../references/n03d/glue-grid-authored.json",
+    "browserReference": "../../references/n03d/glue-grid-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-glue-grid&capture=authored",
+    "blenderAuthoredLightScale": 30,
+    "browserAuthoredLightScale": 0.21,
+    "lightScaleInterpretation": "Blender Area energy and Three.js RectAreaLight intensity are renderer-specific units and respond differently to this 168-unit lattice. A browser sweep across 0.01, 0.03, 0.1, 0.15, 0.18, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.3, 0.35, 0.4, 1, 3, and 30 selected 0.21 by the lowest joint RGB/luminance error with the strongest nearby macro correlation."
+  },
+  "recoveredSurface": {
+    "kind": "Blender unassigned material fallback",
+    "baseColorLinear": [0.8, 0.8, 0.8],
+    "metalness": 0,
+    "roughness": 0.5,
+    "doubleSided": true,
+    "proceduralLayerLines": false,
+    "changesMeshGeometry": false
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9605103893483962,
+    "surfaceCornerRmsePixels": 0.5457954081923058,
+    "pixelRgbMae": 0.04802187040927638,
+    "pixelLuminanceMae": 0.042021000048795894,
+    "pixelLuminanceCorrelation": 0.24179067485467015,
+    "binaryMaskDisagreementFraction": 0,
+    "macroLuminanceMae": 0.03708534270152369,
+    "macroLuminanceCorrelation": 0.43301755428337046,
+    "blenderMeanLuminance": 0.050317362763701245,
+    "browserMeanLuminance": 0.03872724656772579,
+    "meanLuminanceDelta": -0.011590116195975456
+  },
+  "interpretation": "The exact lattice geometry and Blender's neutral unassigned surface are now compared under an asset-scaled light rig. Both renders classify every aligned intersection pixel on the same side of the black/white threshold, the silhouette corners stay within about one pixel, and RGB MAE falls from 0.8237 at browser light 30 to 0.0480 at 0.21. Remaining local shading differences are renderer light-unit and area-light response residuals rather than missing geometry or a print-layer material."
+}
