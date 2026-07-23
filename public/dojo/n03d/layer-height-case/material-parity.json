@@ -1,0 +1,66 @@
+{
+  "asset": "n03d-layer-height-case",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "tutorial",
+    "root": "Geometry Nodes.031",
+    "material": "filament visualizer .02 mm layer height.001"
+  },
+  "scope": "Viewport surface reconstruction only. The Wave/Bump layer appearance does not alter geometry and is not a slicer or G-code toolpath.",
+  "geometry": {
+    "blender": { "verts": 4512, "faces": 3032 },
+    "gnvm": { "verts": 4512, "faces": 3032 },
+    "materialFaces": {
+      "unassigned": 1718,
+      "filament visualizer .02 mm layer height.001": 1314
+    }
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../../references/n03d/layer-height-case-shader.png",
+    "blenderMetadata": "../../references/n03d/layer-height-case-shader.json",
+    "browserReference": "../../references/n03d/layer-height-case-shader-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-layer-height-case&capture=authored",
+    "blenderAuthoredLightScale": 300,
+    "browserAuthoredLightScale": 5,
+    "lightScaleInterpretation": "Blender Area energy and Three.js RectAreaLight intensity use different units. Each backend keeps the same normalized rig positions and sizes; the recorded scales align exposure rather than claiming equal physical power."
+  },
+  "recoveredGraph": {
+    "sourceColorAttribute": "POINT-domain FLOAT_COLOR col, preserved as portable RGB",
+    "unassignedMaterialSlots": "Null source slot remains null instead of shifting the later filament slot",
+    "frontColor": "The authored col branch and Generated-coordinate Z Wave field",
+    "backColor": "Geometry Backfacing selects the authored secondary Principled branch",
+    "roughness": 0.5,
+    "generatedCoordinates": "material-group bounding box",
+    "wave": {
+      "type": "BANDS",
+      "direction": "Z",
+      "scale": -82.73394775390625,
+      "distortion": 0.8557739853858948,
+      "detail": 2,
+      "detailScale": 1,
+      "detailRoughness": 0.5
+    },
+    "bump": {
+      "strength": 0.7392045855522156,
+      "distance": 0.5083978176116943,
+      "filterWidth": 1,
+      "invert": false
+    }
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9983343478240354,
+    "surfaceCornerRmsePixels": 0.5828870683329617,
+    "intersectionPixels": 211576,
+    "pixelLuminanceMae": 0.06458905207906462,
+    "pixelLuminanceCorrelation": 0.953292674270066,
+    "macroLuminanceMae": 0.057504196576526695,
+    "macroLuminanceCorrelation": 0.9718653303902014,
+    "meanLuminanceDelta": -0.035852847202415467,
+    "blackFractionDelta": 0.4597894818378761
+  },
+  "interpretation": "The browser now preserves the source FLOAT_COLOR col attribute, the empty first material slot, Blender's neutral unassigned surface, and the authored layer-line material instead of showing the former green diagnostic fallback. Exact topology, material-face counts, near-identical silhouette, and strong aligned luminance correlation are measured. Eevee and Three.js still differ in the high-frequency Bump response, so renderer identity is not claimed."
+}

@@ -39,6 +39,8 @@ function geometryOfDumpObject(obj: (typeof DUMP_CONTEXT.objects)[number] | undef
     m.faceMaterial = source.face_materials ? [...source.face_materials] : m.faces.map(() => 0);
     const evaluatedMaterials = (source as { materials?: (string | null)[] }).materials;
     m.materialSlots = evaluatedMaterials?.length ? [...evaluatedMaterials] : obj?.materials?.length ? [...obj.materials] : [null];
+    const highestMaterialSlot = m.faceMaterial.reduce((highest, slot) => Math.max(highest, slot), -1);
+    while (m.materialSlots.length <= highestMaterialSlot) m.materialSlots.push(null);
     m.edges = (source.edges ?? []).map((edge) => [...edge] as [number, number]);
     for (const [name, attribute] of Object.entries(source.attributes ?? {})) {
       m.attributes.set(name, { domain: attribute.domain, data: [...attribute.data] });

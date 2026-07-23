@@ -192,3 +192,21 @@ export function makeBasicBlenderMaterial(dump: Dump, materialName: string): THRE
   material.userData.blenderMaterialContract = config;
   return material;
 }
+
+/** Blender's neutral surface for faces whose material slot is unassigned. */
+export function makeBlenderDefaultSurfaceMaterial(): THREE.MeshPhysicalMaterial {
+  const material = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(0.8, 0.8, 0.8),
+    metalness: 0,
+    roughness: 0.5,
+    side: THREE.DoubleSide,
+  });
+  material.name = "Blender unassigned material surface";
+  material.userData.blenderMaterialContract = {
+    kind: "unassigned",
+    baseColor: [0.8, 0.8, 0.8],
+    metalness: 0,
+    roughness: 0.5,
+  };
+  return material;
+}

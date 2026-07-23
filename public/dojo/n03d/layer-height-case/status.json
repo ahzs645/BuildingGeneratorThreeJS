@@ -12,5 +12,5 @@
     "faces": 3032
   },
   "coverage": "100% of reachable node types across the 1-group, 14-node closure.",
-  "validation": "The authored hard-case preview has exact topology and local bounds. Its named layer-height attributes drive the face offsets. Blender marks every source polygon flat, so the asset library's per-face shading is authored parity rather than a split-normal fallback. The filament-visualizer shader is still normalized."
+  "validation": "The authored hard-case preview has exact topology and local bounds. Its named layer-height attributes drive the face offsets. Blender marks every source polygon flat, and the browser now preserves the source RGB col attribute, empty material slot, neutral unassigned surface, and authored Generated-coordinate Wave/Bump filament visualizer. The aligned authored comparison reaches 0.9983 silhouette IoU and 0.9719 macro luminance correlation."
 }

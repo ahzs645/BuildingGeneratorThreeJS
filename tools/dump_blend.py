@@ -60,6 +60,14 @@ def dump_mesh_attributes(mesh):
                     "domain": attribute.domain,
                     "data": [[float(component) for component in item.vector] for item in attribute.data],
                 }
+            elif attribute.data_type in ("FLOAT_COLOR", "BYTE_COLOR"):
+                # GN-VM color fields and WebGL attributes use RGB. Blender's
+                # fourth component is alpha metadata and is not consumed by the
+                # supplied Geometry Nodes or shader graphs.
+                attrs[attribute.name] = {
+                    "domain": attribute.domain,
+                    "data": [[float(component) for component in item.color[:3]] for item in attribute.data],
+                }
         except Exception:
             pass
     return attrs
@@ -486,7 +494,12 @@ for obj in bpy.data.objects:
          # their exact float32 values; decimal rounding can move a relative
          # dependency surface by several ULPs before Raycast amplifies it.
          "matrix_world": matrix_float32_json(evaluated_world_matrix(obj)),
-         "visible": not obj.hide_render, "modifiers": [], "materials": [m.name for m in obj.data.materials if m is not None] if obj.type in ("MESH", "CURVE") and obj.data else []}
+         "visible": not obj.hide_render, "modifiers": [],
+         # Preserve empty slot positions. Polygon material_index values address
+         # the slot array, so filtering None silently shifts every later
+         # material and can turn Blender's unassigned faces into authored ones.
+         "materials": [m.name if m else None for m in obj.data.materials]
+         if obj.type in ("MESH", "CURVE") and obj.data else []}
     if active_evaluated_world is not None and obj.name in dependency_object_names:
         # Relative Object/Collection Info is evaluated in the modifier object's
         # space. Export Blender's own matrix inversion/multiplication result so
@@ -514,19 +527,7 @@ for obj in bpy.data.objects:
             }
             # authored custom attributes (e.g. the bubble vase's 'bottom' vertex
             # tag drives a Named Attribute -> Separate chain in the graph)
-            attrs = {}
-            for a in me.attributes:
-                if a.domain != "POINT" or a.name.startswith(".") or a.name == "position":
-                    continue
-                try:
-                    if a.data_type in ("FLOAT", "INT", "BOOLEAN"):
-                        attrs[a.name] = {"domain": "POINT",
-                                         "data": [float(x.value) for x in a.data]}
-                    elif a.data_type == "FLOAT_VECTOR":
-                        attrs[a.name] = {"domain": "POINT",
-                                         "data": [[float(c) for c in x.vector] for x in a.data]}
-                except Exception:
-                    pass
+            attrs = dump_mesh_attributes(me)
             # vertex groups are readable via Named Attribute too
             for vg in obj.vertex_groups:
                 data = []

@@ -1,0 +1,35 @@
+{
+  "object": "tutorial",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -62.531517028808594,
+      -63.10441589355469,
+      0.0
+    ],
+    "max": [
+      30.294151306152344,
+      63.10441589355469,
+      74.75802612304688
+    ]
+  },
+  "verts": 4512,
+  "faces": 3032,
+  "materials": [
+    null,
+    "filament visualizer .02 mm layer height.001"
+  ],
+  "evaluated_materials": [
+    null,
+    "filament visualizer .02 mm layer height.001"
+  ],
+  "evaluated_material_faces": {
+    "<none>": 1718,
+    "filament visualizer .02 mm layer height.001": 1314
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "authored_light_scale": 300.0,
+  "debug_material_output": null
+}

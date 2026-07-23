@@ -2,12 +2,21 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import * as THREE from "three";
-import { extractBasicBlenderMaterialConfig, makeBasicBlenderMaterial } from "../blender-basic-material";
+import { extractBasicBlenderMaterialConfig, makeBasicBlenderMaterial, makeBlenderDefaultSurfaceMaterial } from "../blender-basic-material";
 import { runGenerator, type Dump } from "../gnvm";
 
 function dumpWith(nodes: unknown[], links: unknown[]): Dump {
   return { node_groups: {}, materials: { Test: { nodes, links } } } as Dump;
 }
+
+test("uses Blender's neutral default surface for an unassigned slot", () => {
+  const material = makeBlenderDefaultSurfaceMaterial();
+  assert.equal(material.name, "Blender unassigned material surface");
+  assert.deepEqual(material.color.toArray(), [0.8, 0.8, 0.8]);
+  assert.equal(material.metalness, 0);
+  assert.equal(material.roughness, 0.5);
+  material.dispose();
+});
 
 test("follows the active Material Output to a direct Principled shader", () => {
   const dump = dumpWith([

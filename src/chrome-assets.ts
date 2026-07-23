@@ -8,7 +8,7 @@ import { makeAttributeEmissionMaterial } from "./attribute-emission-material";
 import { attachChainMaceRoughnessAttribute, makeChainMaceMaterial } from "./chain-mace-material";
 import { makeChromeCrayonMaterial } from "./chrome-crayon-material";
 import { expandFaceDomainMaterialAttributes, makeImagePixelStipplerMaterial } from "./image-pixel-stippler-material";
-import { makeBasicBlenderMaterial } from "./blender-basic-material";
+import { makeBasicBlenderMaterial, makeBlenderDefaultSurfaceMaterial } from "./blender-basic-material";
 import { makeAttributePrincipledMaterial } from "./attribute-principled-material";
 import { makeFilamentMaterial } from "./filament-material";
 import { makeCrossSectionFilamentMaterial } from "./cross-section-filament-material";
@@ -34,7 +34,7 @@ type VectorControl = { type: "vector"; name: string; label: string; value: [numb
 type SelectControl = { type: "select"; name: string; label: string; value: number | string; options: { label: string; value: number | string }[] };
 type Control = RangeControl | CheckboxControl | TextControl | VectorControl | SelectControl;
 type AssetFont = { url: string; family: string; requiredFor: string; fallback: string };
-type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; blenderStats: { verts: number; faces: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; authoredLightScale?: number; controls: Control[] };
+type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; authoredLightScale?: number; controls: Control[] };
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
@@ -144,7 +144,9 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
   if(useAuthored&&soup.groups.length){
     for(const group of soup.groups){
       const materialName=group.material??(current.material==="chain-mace"?soup.groups.find((candidate)=>candidate.material)?.material:"")??"";
-      const authored=shouldUseWorkbenchApproximation(current.workbenchColor,sourceMaterials,materialName)
+      const authored=group.material === null
+        ? makeBlenderDefaultSurfaceMaterial()
+        : shouldUseWorkbenchApproximation(current.workbenchColor,sourceMaterials,materialName)
         ? makeWorkbenchApproximationMaterial(current.workbenchColor)
         : current.material==="image-pixel-stippler"
         ? makeImagePixelStipplerMaterial(dump,geometry,group.material??"",stipplerDebugMode)
@@ -274,6 +276,7 @@ async function evaluate(): Promise<void> {
 
   const mesh = makeMesh(result.soup);
   const previewMode = document.querySelector<HTMLSelectElement>('[data-control="__materialPreview"]')?.value;
+  reference.src = publicUrl(previewMode === "diagnostic" ? current.reference : current.authoredReference ?? current.reference);
   if (previewMode === "materialx-native") {
     status.textContent = "Binding recovered chrome.003 MaterialX graph to live GN-VM geometry…";
     await applyNativeChromeMaterial(mesh, result.soup);
