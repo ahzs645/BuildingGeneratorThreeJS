@@ -1,0 +1,102 @@
+{
+  "asset": "n03d-procedural-box",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "PROC.BOX WIP",
+    "root": "Geometry Nodes.003"
+  },
+  "scope": "Exact evaluated topology, near-identical local surface, and the observable authored Blender Eevee result. This is not slicer or G-code output.",
+  "geometry": {
+    "blender": {
+      "verts": 90928,
+      "faces": 87165,
+      "triangles": 179928
+    },
+    "gnvm": {
+      "verts": 90928,
+      "faces": 87165,
+      "triangles": 179928
+    },
+    "localBounds": {
+      "blender": {
+        "min": [-47.234230041503906, -62.315162658691406, 0],
+        "max": [31.506650924682617, 62.315162658691406, 74.75802612304688]
+      },
+      "gnvm": {
+        "min": [-47.234230041503906, -62.315162658691406, 0],
+        "max": [31.506649017333984, 62.315162658691406, 74.75802612304688]
+      }
+    },
+    "sampledSurfaceDistance": {
+      "blenderPointsToGnvm": {
+        "p50": 0,
+        "p90": 0,
+        "p99": 0,
+        "maximum": 0.043
+      },
+      "gnvmPointsToBlender": {
+        "p50": 0,
+        "p90": 0,
+        "p99": 0,
+        "maximum": 0.002
+      },
+      "blenderTriangleCentroidsToGnvm": {
+        "p50": 0,
+        "p90": 0,
+        "p99": 0,
+        "maximum": 0.069
+      },
+      "gnvmTriangleCentroidsToBlender": {
+        "p50": 0,
+        "p90": 0,
+        "p99": 0.001,
+        "maximum": 0.048
+      }
+    },
+    "surfaceComparisonTools": [
+      "tools/export_blender_evaluated_mesh.py",
+      "tools/mesh-surface-diff.ts"
+    ]
+  },
+  "evaluatedMaterials": {
+    "faceAssignments": {
+      "<none>": 85648,
+      "filament visualizer .02 mm layer height.001": 1517
+    },
+    "filamentVisualizer": {
+      "attribute": "POINT-domain col",
+      "generatedCoordinateWave": true,
+      "bump": true,
+      "backfacingBranch": true
+    },
+    "observableBlenderResult": "The isolated supplied Eevee file renders every evaluated face in the black luminance class; mean surface luminance is 0.00231965.",
+    "browserImplementation": "Authored mode uses the existing evaluated assignments and filament reconstruction under an asset-scoped zero-intensity authored rig, matching the supplied black render. Diagnostic mode remains available for readable geometry inspection.",
+    "calibrationInterpretation": "The zero-intensity browser rig reproduces the source file's observable black Eevee output without changing or baking the generated mesh. It is a presentation calibration, not a claim that the filament graph or unassigned surfaces emit black."
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../../references/n03d/procedural-box-shader.png",
+    "blenderMetadata": "../../references/n03d/procedural-box-shader.json",
+    "browserReference": "../../references/n03d/procedural-box-shader-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-procedural-box&capture=authored",
+    "browserAuthoredLightScale": 0,
+    "browserCaptureMethod": "direct 768x768 WebGL canvas buffer"
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9965567573636738,
+    "surfaceMaskIouDilated1px": 0.9965850822011947,
+    "blenderSurfaceCoveredWithin1px": 1.0,
+    "webglSurfaceCoveredWithin1px": 1.0,
+    "surfaceCornerRmsePixels": 0.35931323952417155,
+    "pixelRgbMae": 0.0029954432939279197,
+    "pixelLuminanceMae": 0.0025992590556153552,
+    "binaryMaskDisagreementFraction": 0,
+    "macroLuminanceMae": 0.0024629638789537838,
+    "blackFractionDelta": -0.004705052049638336,
+    "meanLuminanceDelta": -0.0013847540452898038
+  },
+  "interpretation": "The browser and Blender silhouettes are aligned to subpixel precision, and both captures place the complete surface in the black luminance class apart from WebGL antialias-edge coverage. Correlation is intentionally not treated as meaningful for an almost-constant black target; RGB/luminance error, occupancy, and silhouette agreement are the relevant evidence."
+}

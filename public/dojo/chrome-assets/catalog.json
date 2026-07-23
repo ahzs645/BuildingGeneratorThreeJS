@@ -1587,12 +1587,15 @@
   "dump": "dojo/n03d/procedural-box/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
   "reference": "dojo/references/n03d/procedural-box.png",
+  "authoredReference": "dojo/references/n03d/procedural-box-shader.png",
   "blenderStats": {
     "verts": 90928,
     "faces": 87165
   },
   "localSpace": true,
-  "note": "Complete 529-node authored storage-box assembly with exact Blender topology across all eight size, seam, height, animated-lid, and split-pin cases. Authored output is 90,928 / 87,165 and split-pin output is 83,154 / 79,693. Full-precision authored bounds differ only at max X by 0.0000019073486328125; the other five components are bit-exact. Font-outline positional bounds keep the centered split-print pin on the build plane, dense open-shell Exact Booleans retain the dowel-bore boundary samples, and concave-ngon triangulation removes the former wall spikes.",
+  "authoredLightScale": 0,
+  "authoredPreviewLabel": "Supplied Eevee result (black; use Diagnostic for form)",
+  "note": "Complete 529-node authored storage-box assembly with exact Blender topology across all eight size, seam, height, animated-lid, and split-pin cases. Authored output is 90,928 / 87,165 and split-pin output is 83,154 / 79,693. Full-precision authored bounds differ only at max X by 0.0000019073486328125; the other five components are bit-exact. Font-outline positional bounds keep the centered split-print pin on the build plane, dense open-shell Exact Booleans retain the dowel-bore boundary samples, and concave-ngon triangulation removes the former wall spikes. The supplied Eevee file renders all 87,165 faces essentially black: 85,648 faces are unassigned and 1,517 retain filament visualizer .02 mm layer height.001. Authored mode preserves that observable result while Diagnostic mode keeps the form readable. The aligned capture reaches 0.9966 silhouette IoU, complete mutual one-pixel coverage, 0.00300 RGB MAE, and -0.00138 mean-luminance error. This is viewport appearance, not sliced or G-code output.",
   "controls": [
     {
       "name": "width",

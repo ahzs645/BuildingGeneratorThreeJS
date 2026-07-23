@@ -1,0 +1,38 @@
+{
+  "object": "PROC.BOX WIP",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -47.234230041503906,
+      -62.315162658691406,
+      0.0
+    ],
+    "max": [
+      31.506650924682617,
+      62.315162658691406,
+      74.75802612304688
+    ]
+  },
+  "verts": 90928,
+  "faces": 87165,
+  "materials": [],
+  "evaluated_materials": [
+    null,
+    "filament visualizer .02 mm layer height.001"
+  ],
+  "evaluated_material_faces": {
+    "<none>": 85648,
+    "filament visualizer .02 mm layer height.001": 1517
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": false,
+  "overrides": {},
+  "authored_light_scale": 1.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

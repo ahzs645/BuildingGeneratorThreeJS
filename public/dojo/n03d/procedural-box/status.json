@@ -2,10 +2,19 @@
   "id": "n03d-procedural-box",
   "object": "PROC.BOX WIP",
   "root": "Geometry Nodes.003",
-  "status": "topology-exact-bounds-near",
+  "status": "topology-exact-bounds-near-authored-surface-verified",
   "blender": { "verts": 90928, "faces": 87165 },
   "gnvm": { "verts": 90928, "faces": 87165 },
   "reference": "dojo/references/n03d/procedural-box.png",
+  "authored_reference": "dojo/references/n03d/procedural-box-shader.png",
   "coverage": "100% of reachable node types, including bundled G_Center Geometry and G_Implicit Geometry helpers.",
-  "validation": "All eight authored, size, seam, height, animated-lid, and split-pin cases match Blender topology exactly. Authored output is 90,928 / 87,165 and split-pin output is 83,154 / 79,693. A full-precision authored-mesh comparison finds five of six bound components bit-exact; max X differs by only 0.0000019073486328125 at the same extreme vertex (31.506650924682617 in Blender versus 31.506649017333984 in GN-VM). String-to-Curves font outlines preserve Blender's positional Bounding Box semantics through nested realization, keeping the centered split-print pin on the build plane. Dense open-shell Exact Booleans retain Blender's collinear panel boundary samples, and concave wall profiles are ear-clipped for a clean Blender-matching silhouette."
+  "material": {
+    "evaluated_face_assignments": {
+      "<none>": 85648,
+      "filament visualizer .02 mm layer height.001": 1517
+    },
+    "observable_blender_result": "The supplied Eevee file renders the complete evaluated surface essentially black.",
+    "comparison": "material-parity.json"
+  },
+  "validation": "All eight authored, size, seam, height, animated-lid, and split-pin cases match Blender topology exactly. Authored output is 90,928 / 87,165 and split-pin output is 83,154 / 79,693. A full-precision authored-mesh comparison finds five of six bound components bit-exact; max X differs by only 0.0000019073486328125 at the same extreme vertex (31.506650924682617 in Blender versus 31.506649017333984 in GN-VM). String-to-Curves font outlines preserve Blender's positional Bounding Box semantics through nested realization, keeping the centered split-print pin on the build plane. Dense open-shell Exact Booleans retain Blender's collinear panel boundary samples, and concave wall profiles are ear-clipped for a clean Blender-matching silhouette. The 179,928-triangle surface comparison has 0.000 median and 99th-percentile point distance in both directions; sampled maximum point distance is 0.043 Blender-to-browser and 0.002 browser-to-Blender. The authored black result reaches 0.9966 silhouette IoU, complete mutual one-pixel coverage, 0.00300 RGB MAE, and 0.00260 luminance MAE."
 }
