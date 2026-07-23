@@ -1,0 +1,7 @@
+[
+  { "name": "authored defaults", "overrides": {} },
+  { "name": "short length 5", "overrides": { "length": 5 } },
+  { "name": "wide diameter 15", "overrides": { "diameter": 15 } },
+  { "name": "coarse resolution 24", "overrides": { "resolution": 24 } },
+  { "name": "long fine shaft", "overrides": { "length": 20, "resolution": 200 } }
+]

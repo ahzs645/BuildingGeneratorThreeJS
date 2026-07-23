@@ -1,0 +1,38 @@
+{
+  "blenderVersion": "5.1.2",
+  "object": "__GNVM_SPLIT_N_TAP",
+  "group": "Split n Tap WIP",
+  "cases": [
+    {
+      "name": "authored defaults",
+      "overrides": {},
+      "blender": { "verts": 2372, "faces": 2380, "bbox": { "min": [-14.0217, -14.0369, 0], "max": [14.045, 14.0369, 10.2506] } },
+      "gnvm": { "verts": 2372, "faces": 2380, "bbox": { "min": [-14.0217, -14.0369, 0], "max": [14.045, 14.0369, 10.2506] } }
+    },
+    {
+      "name": "short length 5",
+      "overrides": { "length": 5 },
+      "blender": { "verts": 1213, "faces": 1221, "bbox": { "min": [-14.0217, -14.0369, 0], "max": [14.045, 14.0369, 5.2506] } },
+      "gnvm": { "verts": 1213, "faces": 1221, "bbox": { "min": [-14.0217, -14.0369, 0], "max": [14.045, 14.0369, 5.2506] } }
+    },
+    {
+      "name": "wide diameter 15",
+      "overrides": { "diameter": 15 },
+      "blender": { "verts": 3744, "faces": 3745, "bbox": { "min": [-14.0403, -14.0415, 0], "max": [14.045, 14.0415, 10.2593] } },
+      "gnvm": { "verts": 3744, "faces": 3745, "bbox": { "min": [-14.0403, -14.0415, 0], "max": [14.045, 14.0415, 10.2593] } }
+    },
+    {
+      "name": "coarse resolution 24",
+      "overrides": { "resolution": 24 },
+      "blender": { "verts": 2366, "faces": 2380, "bbox": { "min": [-13.9509, -13.998, 0], "max": [14.045, 13.998, 10.2487] } },
+      "gnvm": { "verts": 2366, "faces": 2380, "bbox": { "min": [-13.9509, -13.998, 0], "max": [14.045, 13.998, 10.2487] } }
+    },
+    {
+      "name": "long fine shaft",
+      "overrides": { "length": 20, "resolution": 200 },
+      "blender": { "verts": 4693, "faces": 4698, "bbox": { "min": [-14.0248, -14.0394, 0], "max": [14.045, 14.0394, 20.2506] } },
+      "gnvm": { "verts": 4693, "faces": 4698, "bbox": { "min": [-14.0248, -14.0394, 0], "max": [14.045, 14.0394, 20.2506] } }
+    }
+  ],
+  "result": "All five cases are exact in vertex count, face count, and four-decimal local bounds."
+}

@@ -2,7 +2,7 @@
   "id": "n03d-split-n-tap",
   "object": "__GNVM_SPLIT_N_TAP",
   "root": "Split n Tap WIP",
-  "status": "topology-exact-bounds-submillimeter",
+  "status": "topology-and-bounds-exact",
   "blender": {
     "verts": 2372,
     "faces": 2380,
@@ -11,11 +11,11 @@
   "gnvm": {
     "verts": 2372,
     "faces": 2380,
-    "bbox_size": [28.0667, 28.0738, 10.2512]
+    "bbox_size": [28.0667, 28.0738, 10.2506]
   },
   "coverage": "100% of reachable node types, including bundled G_Parenting, G_Implicit Attribute, and G_Implicit Geometry helpers.",
   "source_wrapper": "The supplied SPLIT N TAP object evaluates only a 42-vertex / 80-face placeholder icosphere. Browser and reference evidence instead instantiate its intended nested Split n Tap WIP group on the same one-point carrier geometry.",
   "object_inputs": "Split and select-parts depend on Object/Object Parent inputs that are unassigned in the supplied file. Blender's Split=true branch therefore evaluates empty; the browser catalog hides these nonfunctional controls until object picking is supported.",
   "reference": "dojo/references/n03d/split-n-tap.png",
-  "validation": "Five Blender/VM cases covering authored, short, wide, coarse-resolution, and long/fine shafts have exact vertex and face counts. Linked Float-to-Integer group inputs truncate, full-range Trim Curve opens cyclic splines with a duplicated endpoint, and Fill Curve preserves point indices while normalizing face winding. Together these restore the loft resolution, welded radial seam, top-cap normal, and normal-driven displacement. X/Y bounds are exact to four decimals; the worst remaining bound delta is 0.0006 units."
+  "validation": "Five Blender/VM cases covering authored, short, wide, coarse-resolution, and long/fine shafts match exactly in vertices, faces, and four-decimal bounds. Authored output is 2,372 / 2,380; the variants are 1,213 / 1,221, 3,744 / 3,745, 2,366 / 2,380, and 4,693 / 4,698 on both sides. Linked Float-to-Integer group inputs truncate, full-range Trim Curve opens cyclic splines with a duplicated endpoint, and Fill Curve preserves point indices while normalizing face winding. Carrying Blender's Mesh-to-Curve minimum-twist normals into the loft removes the former 0.0006 Z residual."
 }

@@ -1466,7 +1466,7 @@
     "faces": 2380
   },
   "localSpace": true,
-  "note": "The supplied SPLIT N TAP object is a placeholder icosphere, so this comparison evaluates its intended nested Split n Tap WIP asset group directly in both engines. Authored output and four length, diameter, and resolution cases match Blender topology exactly; authored is 2,372 / 2,380 with X/Y bounds exact to four decimals and a 0.0006-unit maximum bound delta. The loft seam and top cap are closed. Blender's Split and part-selection inputs require missing Object/Object Parent assignments, so the browser hides those nonfunctional controls.",
+  "note": "The supplied SPLIT N TAP object is a placeholder icosphere, so this comparison evaluates its intended nested Split n Tap WIP asset group directly in both engines. Authored output and four length, diameter, and resolution cases match Blender exactly in vertices, faces, and four-decimal bounds; authored is 2,372 / 2,380. Blender's Mesh-to-Curve minimum-twist normals close the loft seam, top cap, and former Z-bound residual. Split and part-selection require missing Object/Object Parent assignments, so the browser hides those nonfunctional controls.",
   "controls": [
     {
       "name": "length",
