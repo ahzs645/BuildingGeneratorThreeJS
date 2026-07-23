@@ -1,6 +1,6 @@
 {
   "source": "gnvm",
-  "dump": "/tmp/cube011-dump-matrix2.json",
+  "dump": "public/dojo/n03d/conveyor-mechanic/dump.json",
   "object": "Cube.011",
   "results": [
     {
@@ -23,7 +23,7 @@
           15.13
         ]
       },
-      "elapsed_ms": 20
+      "elapsed_ms": 29
     },
     {
       "combo": {
@@ -47,7 +47,7 @@
           15.13
         ]
       },
-      "elapsed_ms": 0
+      "elapsed_ms": 1
     },
     {
       "combo": {
@@ -62,16 +62,16 @@
       "bbox": {
         "min": [
           -25.927,
-          -46.8272,
-          -37.8992
+          -46.827,
+          -37.8987
         ],
         "max": [
-          113.9093,
+          113.9087,
           -13.1058,
-          36.7749
+          36.7755
         ]
       },
-      "elapsed_ms": 2
+      "elapsed_ms": 5
     },
     {
       "combo": {
@@ -119,7 +119,7 @@
           15.13
         ]
       },
-      "elapsed_ms": 0
+      "elapsed_ms": 1
     },
     {
       "combo": {
@@ -167,7 +167,7 @@
           15.13
         ]
       },
-      "elapsed_ms": 4
+      "elapsed_ms": 8
     }
   ]
 }

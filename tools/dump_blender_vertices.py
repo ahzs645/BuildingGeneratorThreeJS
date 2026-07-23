@@ -13,6 +13,27 @@ args = sys.argv[sys.argv.index("--") + 1:]
 obj = bpy.data.objects.get(args[0])
 if obj is None:
     raise RuntimeError(f"object not found: {args[0]}")
+# Keep this lightweight vertex diagnostic usable for parameter variants without
+# creating a temporary .blend. This matches the override contract used by the
+# parity and nested-field probes.
+probe_overrides = json.loads(os.environ.get("NODE_DOJO_PROBE_OVERRIDES", "{}"))
+if probe_overrides:
+    modifier = next(
+        (candidate for candidate in obj.modifiers if candidate.type == "NODES" and candidate.node_group is not None),
+        None,
+    )
+    if modifier is None:
+        raise RuntimeError(f"no Geometry Nodes modifier on {obj.name!r}")
+    identifiers = {
+        item.name: item.identifier
+        for item in modifier.node_group.interface.items_tree
+        if item.item_type == "SOCKET" and item.in_out == "INPUT"
+    }
+    for name, value in probe_overrides.items():
+        identifier = identifiers.get(name)
+        if identifier is None:
+            raise KeyError(f"modifier input not found: {name}")
+        modifier[identifier] = value
 # Asset-library studies are often stored in collections excluded from the
 # active scene. evaluated_get() returns only their seed mesh until they are
 # temporarily linked into the active dependency graph.

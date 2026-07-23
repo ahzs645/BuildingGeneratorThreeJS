@@ -787,7 +787,7 @@
     "blenderStats": { "verts": 16, "faces": 13 },
     "flatShading": true,
     "localSpace": true,
-    "note": "Exact Blender topology across seven validation cases. The full 75-node mechanic moves the supplied drawer along X, Y, or Z, exposes maximum travel and open percentage, optionally shows its guide line, and adds the parented lightbulb completion marker above 80% open.",
+    "note": "Exact Blender parity across seven validation cases. The full 75-node mechanic moves the supplied drawer along X, Y, or Z, exposes maximum travel and open percentage, optionally shows its guide line, and adds the parented lightbulb completion marker above 80% open. Full-precision payloads and Blender's active-relative marker matrix make all 178 fully-open coordinates bit-for-bit identical.",
     "controls": [
       {
         "type": "select",

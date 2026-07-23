@@ -12,5 +12,5 @@
     "faces": 13
   },
   "coverage": "100% of reachable node types across the 5-group, 75-node closure.",
-  "validation": "Seven Blender/VM cases cover authored travel, fully closed/open positions, alternate maximum opening, X/Y/Z direction selection, the guide line, and the parented completion-marker object. Every case has exact vertex and face counts; the maximum local-bounds difference is 0.0006 units."
+  "validation": "Seven Blender/VM cases cover authored travel, fully closed/open positions, alternate maximum opening, X/Y/Z direction selection, the guide line, and the parented completion-marker object. Every case now has exact vertex and face counts plus identical four-decimal local bounds. Restoring the drawer and `lite` marker payloads at source float32 precision, and exporting Blender's active-relative matrix for the inherited ~1,797x marker transform, makes all 178 fully-open evaluated coordinates bit-for-bit identical to Blender."
 }

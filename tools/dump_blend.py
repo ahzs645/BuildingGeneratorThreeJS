@@ -462,10 +462,17 @@ def evaluated_world_matrix(obj):
     cached = evaluated_world_matrix_cache.get(obj.name)
     if cached is not None:
         return cached
-    try:
-        matrix = obj.evaluated_get(depsgraph).matrix_world.copy()
-    except Exception:
+    # evaluated_get() can succeed while returning an identity/stale matrix for
+    # objects in excluded asset-library collections. Those objects are absent
+    # from the active view layer, so resolve their ordinary parent chain from
+    # matrix_basis instead of accepting the stale dependency-graph value.
+    if obj.name not in bpy.context.view_layer.objects:
         matrix = resolved_world_matrix(obj)
+    else:
+        try:
+            matrix = obj.evaluated_get(depsgraph).matrix_world.copy()
+        except Exception:
+            matrix = resolved_world_matrix(obj)
     evaluated_world_matrix_cache[obj.name] = matrix
     return matrix
 
