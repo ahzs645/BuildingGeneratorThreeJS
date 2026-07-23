@@ -1,0 +1,34 @@
+{
+  "object": "Cube.005",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      46.2674560546875,
+      -16.1944580078125,
+      -15.130000114440918
+    ],
+    "max": [
+      98.12150573730469,
+      75.41698455810547,
+      15.130000114440918
+    ]
+  },
+  "verts": 16,
+  "faces": 13,
+  "materials": [],
+  "evaluated_materials": [],
+  "evaluated_material_faces": {
+    "<none>": 13
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 30.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

@@ -843,9 +843,14 @@
     "dump": "dojo/n03d/simple-conveyor/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/simple-conveyor.png",
+    "authoredReference": "dojo/references/n03d/simple-conveyor-authored.png",
+    "authoredHideLines": true,
     "blenderStats": { "verts": 16, "faces": 13 },
+    "flatShading": true,
     "localSpace": true,
-    "note": "Exact 16 / 13 topology and bounds across authored, half-close, and closed cases. The close/open control translates the drawer body over the referenced mesh-line distance. The loose String to Curves dimension annotation contributes no evaluated mesh faces in Blender or the browser. This root is shared by Cube.005 and Cube.019.",
+    "authoredLightScale": 1.2,
+    "authoredFillIntensityScale": 0.4,
+    "note": "Exact 16 / 13 topology and bounds across authored, half-close, and closed cases. The close/open control translates the drawer body over the referenced mesh-line distance. Blender leaves all 13 faces flat and unassigned, so authored mode uses its neutral fallback rather than a filament or G-code surface. The 654 loose dimension-guide segments remain interactive but are hidden from the Eevee-authored capture. The committed comparison reaches 0.9949 silhouette IoU, 0.51 px corner RMSE, 0.0663 RGB MAE, 0.532 macro luminance correlation, and -0.0011 mean-luminance error. This root is shared by Cube.005 and Cube.019.",
     "controls": [
       { "name": "close > open", "label": "Close → open", "min": 0, "max": 1, "step": 0.01, "value": 0 }
     ]

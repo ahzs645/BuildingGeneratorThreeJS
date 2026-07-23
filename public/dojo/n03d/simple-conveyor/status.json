@@ -2,7 +2,7 @@
   "id": "n03d-simple-conveyor",
   "object": "Cube.005",
   "root": "simple conveyer",
-  "status": "exact-parity",
+  "status": "exact-geometry-and-authored-neutral-surface-verified",
   "blender": {
     "verts": 16,
     "faces": 13
@@ -13,5 +13,16 @@
   },
   "shared_users": ["Cube.005", "Cube.019"],
   "coverage": "100% of reachable node types across the 2-group, 27-node closure.",
-  "validation": "Authored, half-close, and closed cases have exact topology and local bounds. The close/open input translates the drawer body over the referenced mesh-line distance. Its String to Curves branch is loose dimension annotation and contributes no evaluated mesh faces in Blender or the browser."
+  "validation": "Authored, half-close, and closed cases have exact topology and local bounds. The close/open input translates the drawer body over the referenced mesh-line distance. Its String to Curves branch is loose dimension annotation and contributes no evaluated mesh faces in Blender or the browser. All 13 evaluated faces are flat and unassigned, so authored mode uses Blender's neutral fallback rather than a filament or G-code surface.",
+  "material": {
+    "name": null,
+    "contract": "Blender unassigned neutral surface on 13 flat faces",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.994933189155789,
+    "surfaceCornerRmsePixels": 0.5109343793130988,
+    "pixelRgbMae": 0.06629706412719469,
+    "macroLuminanceCorrelation": 0.5315647198867559,
+    "meanLuminanceDelta": -0.00107018943989666,
+    "scope": "Viewport material parity only; no slicer or G-code toolpath is present."
+  }
 }
