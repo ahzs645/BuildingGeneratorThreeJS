@@ -1,0 +1,7 @@
+[
+  { "name": "authored arrow", "overrides": {} },
+  { "name": "short narrow tail", "overrides": { "tail length": 1.5, "tail width": 3 } },
+  { "name": "long narrow tail", "overrides": { "tail length": 12, "tail width": 3 } },
+  { "name": "short wide tail", "overrides": { "tail length": 1.5, "tail width": 34 } },
+  { "name": "long wide tail", "overrides": { "tail length": 12, "tail width": 34 } }
+]

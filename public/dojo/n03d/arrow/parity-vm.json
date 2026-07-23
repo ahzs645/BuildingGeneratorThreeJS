@@ -23,7 +23,7 @@
           7.8016
         ]
       },
-      "elapsed_ms": 46
+      "elapsed_ms": 31
     },
     {
       "combo": {
@@ -48,7 +48,7 @@
           7.8016
         ]
       },
-      "elapsed_ms": 8
+      "elapsed_ms": 6
     },
     {
       "combo": {
@@ -73,7 +73,7 @@
           7.8016
         ]
       },
-      "elapsed_ms": 8
+      "elapsed_ms": 5
     },
     {
       "combo": {
@@ -98,7 +98,7 @@
           7.8016
         ]
       },
-      "elapsed_ms": 7
+      "elapsed_ms": 6
     },
     {
       "combo": {
@@ -123,7 +123,7 @@
           7.8016
         ]
       },
-      "elapsed_ms": 7
+      "elapsed_ms": 5
     }
   ]
 }

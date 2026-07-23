@@ -638,7 +638,7 @@
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/arrow.png",
     "blenderStats": { "verts": 1155, "faces": 1153 },
-    "note": "Exact Blender topology and four-decimal bounds across five validation cases. Restoring the seven-point seed mesh at source float32 precision removes the former 0.0007-unit tail drift; preserving its edge-domain tail masks restores the authored bent-arrow silhouette and keeps tail length and width editable in-browser. Authored evaluated point sets are mutually within 0.0000358 units.",
+    "note": "Exact Blender topology and four-decimal bounds across five validation cases. Restoring the seven-point seed mesh at source float32 precision, its authored edge order, and original edge-domain tail masks restores the bent-arrow silhouette and keeps tail length and width editable in-browser. The control polygon matches Blender within 2.8e-9 units and authored evaluated point sets are mutually within 0.0000358 units.",
     "controls": [
       { "name": "tail length", "label": "Tail length", "min": 0, "max": 18, "step": 0.1, "value": 6.960296630859375 },
       { "name": "tail width", "label": "Tail width", "min": 0, "max": 40, "step": 0.1, "value": 26.007339477539062 }
