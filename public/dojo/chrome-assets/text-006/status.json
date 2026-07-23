@@ -3,7 +3,8 @@
   "objects": ["text", "txt"],
   "status": "authored-material-parity",
   "blender": { "object": "text", "verts": 1373, "faces": 1135 },
-  "gnvmEmbeddedFont": { "verts": 1373, "faces": 1135 },
+  "gnvm": { "verts": 1373, "faces": 1135 },
+  "fontPolicy": "embedded extracted SF Intermosaic outline atlas",
   "coverage": { "missingNodeTypes": 0 },
   "validation": "The supplied SF Intermosaic glyph atlas, raised glyph extrusion, background plate, and authored bounds match realized Blender output exactly. All thirteen text, layout, transform, background, and extreme character-spacing cases have exact vertex and face counts. Four-decimal bounds differ by at most 0.0001 units. Browser authored mode reconstructs the flat.nodes col/power emission and black background plate without display tone mapping. Aligned Blender/WebGL captures reach 0.981835 silhouette IoU, 0.032852 RGB MAE, and 0.999343 macro luminance correlation."
 }
