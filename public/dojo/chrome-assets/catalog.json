@@ -789,9 +789,11 @@
     "dump": "dojo/n03d/print-bed-previewer/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/print-bed-previewer.png",
+    "authoredReference": "dojo/references/n03d/print-bed-previewer-authored.png",
+    "authoredHideLines": true,
     "blenderStats": { "verts": 10692, "faces": 95 },
     "flatShading": true,
-    "note": "Exact Blender geometry across seven validation cases: 10,692 vertices / 95 faces with identical local bounds. No print object is assigned in the supplied file, so slice/layer/transform inputs are Blender no-ops and are not exposed. The neutral comparison preserves material assignment but does not reproduce the original build-plate shader because its logo_600x600_crop_center.webp is missing from the pack.",
+    "note": "Exact Blender geometry across seven validation cases: 10,692 vertices / 95 faces with identical local bounds. No print object or G-code is assigned in the supplied file, so slice/layer/transform inputs are Blender no-ops and are not exposed. The supplied build-plate image is also missing; authored mode reproduces Blender's observable black missing-image surface without inventing replacement artwork. The committed comparison reaches 0.9955 silhouette IoU, 0.36 px corner RMSE, 0.0033 RGB MAE, and zero black/white threshold disagreement.",
     "controls": []
   },
   {
@@ -830,7 +832,8 @@
     "blenderStats": { "verts": 112569, "faces": 225154 },
     "localSpace": true,
     "authoredLightScale": 5,
-    "note": "Exact topology and bounds across two filament-color cases at 112,569 vertices / 225,154 faces. This 28-node graph wraps the supplied high-resolution Benchy mesh with filament material, named-attribute, and smooth-shading logic; it does not procedurally generate the boat. Authored mode now reconstructs the actual Filament PLA col, Generated-coordinate Wave, and Bump graph. Its aligned Blender/WebGL comparison reaches 0.9944 silhouette IoU, 0.9045 macro luminance correlation, 0.0425 macro MAE, and +0.0011 mean-luminance error.",
+    "authoredPreviewLabel": "Filament surface shader (not sliced or G-code)",
+    "note": "Exact topology and bounds across two filament-color cases at 112,569 vertices / 225,154 faces. This 28-node graph wraps the supplied high-resolution Benchy mesh with a viewport-only filament material, named-attribute, and smooth-shading logic; it does not procedurally generate or slice the boat, and it contains no G-code toolpath. Authored mode reconstructs the actual Filament PLA col, Generated-coordinate Wave, and Bump graph. Its aligned Blender/WebGL comparison reaches 0.9944 silhouette IoU, 0.9045 macro luminance correlation, 0.0425 macro MAE, and +0.0011 mean-luminance error.",
     "controls": []
   },
   {

@@ -13,7 +13,7 @@ type RawLink = {
 type RawMaterial = { nodes?: RawNode[]; links?: RawLink[] };
 
 export type BasicBlenderMaterialConfig = {
-  kind: "principled" | "emission" | "diffuse" | "glossy" | "background";
+  kind: "principled" | "emission" | "diffuse" | "glossy" | "background" | "color-surface";
   baseColor: [number, number, number];
   metalness: number;
   roughness: number;
@@ -69,6 +69,50 @@ function linkedInputs(node: RawNode): string[] {
     .sort();
 }
 
+function missingImageColorSurfaceConfig(dump: Dump, tree: RawMaterial): BasicBlenderMaterialConfig | null {
+  const nodes = tree.nodes ?? [];
+  const links = tree.links ?? [];
+  const output = nodes.find((node) => node.type === "ShaderNodeOutputMaterial" && node.props?.is_active_output === true)
+    ?? nodes.find((node) => node.type === "ShaderNodeOutputMaterial");
+  const surface = output
+    ? links.find((candidate) => candidate.to_node === output.name && candidate.to_socket === "Surface"
+      && candidate.from_type === "NodeSocketColor")
+    : undefined;
+  const brightness = nodes.find((node) => node.name === surface?.from_node && node.type === "ShaderNodeBrightContrast");
+  const brightnessInput = brightness
+    ? links.find((candidate) => candidate.to_node === brightness.name && candidate.to_socket === "Color")
+    : undefined;
+  const hsv = nodes.find((node) => node.name === brightnessInput?.from_node && node.type === "ShaderNodeHueSaturation");
+  const hsvInput = hsv
+    ? links.find((candidate) => candidate.to_node === hsv.name && candidate.to_socket === "Color")
+    : undefined;
+  const image = nodes.find((node) => node.name === hsvInput?.from_node && node.type === "ShaderNodeTexImage");
+  const imageRef = image?.props?.image as { name?: unknown } | undefined;
+  const imageName = typeof imageRef?.name === "string" ? imageRef.name : "";
+  const images = Array.isArray(dump.images) ? dump.images as Array<{ name?: unknown; size?: unknown }> : [];
+  const record = images.find((candidate) => candidate.name === imageName);
+  const size = Array.isArray(record?.size) ? record.size.map(Number) : [];
+  if (!brightness || !hsv || !image || !imageName || size.length < 2 || size[0] !== 0 || size[1] !== 0) return null;
+
+  // Blender 5 renders this invalid Color-to-Surface chain black when the
+  // upstream image datablock has no pixels. Preserve the supplied .blend's
+  // observable fallback without inventing replacement artwork.
+  return {
+    kind: "color-surface",
+    baseColor: [0, 0, 0],
+    metalness: 0,
+    roughness: 1,
+    emissive: [0, 0, 0],
+    emissiveIntensity: 1,
+    opacity: 1,
+    ior: 1.5,
+    transmission: 0,
+    clearcoat: 0,
+    clearcoatRoughness: 0,
+    linkedInputs: [`Image Texture:${imageName} (missing 0x0)`],
+  };
+}
+
 /**
  * Extract the constant portion of a Blender surface shader.
  *
@@ -80,6 +124,8 @@ function linkedInputs(node: RawNode): string[] {
 export function extractBasicBlenderMaterialConfig(dump: Dump, materialName: string): BasicBlenderMaterialConfig | null {
   const tree = dump.materials?.[materialName] as RawMaterial | undefined;
   if (!tree) return null;
+  const missingImageSurface = missingImageColorSurfaceConfig(dump, tree);
+  if (missingImageSurface) return missingImageSurface;
   const node = directSurfaceNode(tree);
   if (!node) return null;
 
@@ -163,13 +209,15 @@ export function extractBasicBlenderMaterialConfig(dump: Dump, materialName: stri
 export function makeBasicBlenderMaterial(dump: Dump, materialName: string): THREE.MeshPhysicalMaterial | THREE.MeshBasicMaterial | null {
   const config = extractBasicBlenderMaterialConfig(dump, materialName);
   if (!config) return null;
-  if (config.kind === "background") {
+  if (config.kind === "background" || config.kind === "color-surface") {
     const material = new THREE.MeshBasicMaterial({
       color: new THREE.Color(...config.baseColor).multiplyScalar(Math.max(0, config.emissiveIntensity)),
       side: THREE.DoubleSide,
       toneMapped: true,
     });
-    material.name = `${materialName} · Blender background constants`;
+    material.name = config.kind === "background"
+      ? `${materialName} · Blender background constants`
+      : `${materialName} · Blender missing-image color surface`;
     material.userData.blenderMaterialContract = config;
     return material;
   }

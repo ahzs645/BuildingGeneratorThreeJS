@@ -34,7 +34,7 @@ type VectorControl = { type: "vector"; name: string; label: string; value: [numb
 type SelectControl = { type: "select"; name: string; label: string; value: number | string; options: { label: string; value: number | string }[] };
 type Control = RangeControl | CheckboxControl | TextControl | VectorControl | SelectControl;
 type AssetFont = { url: string; family: string; requiredFor: string; fallback: string };
-type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; rotationOrder?: THREE.EulerOrder; surfaceBounds?: boolean; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; attributeEmissionColorRemaps?: { from: [number, number, number]; to: [number, number, number] }[]; authoredLightScale?: number; authoredEnvironmentIntensity?: number; authoredToneMapping?: "none"; controls: Control[] };
+type Asset = { id: string; title: string; object: string; dump: string; shaderMetadata?: string; reference: string; authoredReference?: string; blenderStats: { verts: number; faces: number }; curveStats?: { controlPoints: number; evaluatedPoints?: number; segments?: number }; note?: string; font?: AssetFont; flatShading?: boolean; localSpace?: boolean; rotationOrder?: THREE.EulerOrder; surfaceBounds?: boolean; authoredHideLines?: boolean; authoredPreviewLabel?: string; workbenchColor?: [number, number, number]; material?: "image-pixel-stippler" | "attribute-emission" | "chrome-crayon" | "chain-mace"; attributeEmissionColorRemaps?: { from: [number, number, number]; to: [number, number, number] }[]; authoredLightScale?: number; authoredEnvironmentIntensity?: number; authoredToneMapping?: "none"; controls: Control[] };
 type Reply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
@@ -92,15 +92,14 @@ function frame(): void { const bounds = new THREE.Box3();if(current?.surfaceBoun
 function overrides(): Record<string, number | boolean | string | number[]> { const values: Record<string, number | boolean | string | number[]> = {}; for (const control of current.controls) { if(control.name.startsWith("__"))continue;const input=document.querySelector<HTMLInputElement|HTMLSelectElement>(`[data-control="${control.name}"]`); values[control.name]=control.type==="checkbox"?((input as HTMLInputElement|null)?.checked??control.value):control.type==="text"?(input?.value??control.value):control.type==="select"?(typeof control.value==="number"?Number(input?.value??control.value):(input?.value??control.value)):control.type==="vector"?Array.from(document.querySelectorAll<HTMLInputElement>(`[data-control="${control.name}"]`)).sort((a,b)=>Number(a.dataset.axis)-Number(b.dataset.axis)).map((item,index)=>Number(item.value??control.value[index])):rangeOverrideValue(control.value,input?.value,input?.dataset.dirty==="true"); } return values; }
 function visibleControls(): Control[] {
   if (current.controls.some((control) => control.name === "__materialPreview")) return current.controls;
-  const printAsset = current.dump.startsWith("dojo/n03d/");
   return [{
     type: "select",
     name: "__materialPreview",
-    label: printAsset ? "Viewport appearance" : "Material display",
+    label: "Viewport appearance",
     value: "authored",
     options: [
-      { label: printAsset ? "Simulated filament shader" : "Authored Blender material", value: "authored" },
-      { label: printAsset ? "Geometry only" : "Geometry-only diagnostic", value: "diagnostic" },
+      { label: current.authoredPreviewLabel ?? "Authored Blender material", value: "authored" },
+      { label: "Geometry-only diagnostic", value: "diagnostic" },
     ],
   }, ...current.controls];
 }
@@ -171,9 +170,9 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
             ?? makeToonCyclesMaterial(dump,group.material??"")
             ?? makeToonOutlineMaterial(dump,group.material??"")
             ?? makeGreyUiMaterial(dump,geometry,group.material??"")
+            ?? makeBasicBlenderMaterial(dump,group.material??"")
             ?? makePackedStickerMaterial(dump,geometry,group,group.material??"")
-            ?? makeChromeCrayonMaterial(dump,geometry,group.material??"")
-            ?? makeBasicBlenderMaterial(dump,group.material??"");
+            ?? makeChromeCrayonMaterial(dump,geometry,group.material??"");
       if(authored instanceof THREE.MeshStandardMaterial)authored.flatShading=current.flatShading??false;
       materials.push(authored??diagnosticMaterial());
     }
@@ -184,7 +183,7 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
       : diagnosticMaterial(),
   );
   const mesh = new THREE.Mesh(geometry, materials.length===1?materials[0]:materials);
-  if (soup.lines) {
+  if (soup.lines && !(authoredCapture && current.authoredHideLines)) {
     const wireGeometry = new THREE.BufferGeometry();
     wireGeometry.setAttribute("position", new THREE.BufferAttribute(soup.lines.positions, 3));
     const wireColor = current.workbenchColor

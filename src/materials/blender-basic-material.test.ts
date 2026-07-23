@@ -127,6 +127,29 @@ test("reconstructs literal Background material outputs as unlit colors", () => {
   assert.equal(makeBasicBlenderMaterial(linked, "Test"), null);
 });
 
+test("reconstructs Print Bed Previewer's supplied missing-image Color surface as black", () => {
+  const dump = JSON.parse(readFileSync("public/dojo/n03d/print-bed-previewer/dump.json", "utf8")) as Dump;
+  assert.deepEqual(extractBasicBlenderMaterialConfig(dump, "build plate"), {
+    kind: "color-surface",
+    baseColor: [0, 0, 0],
+    metalness: 0,
+    roughness: 1,
+    emissive: [0, 0, 0],
+    emissiveIntensity: 1,
+    opacity: 1,
+    ior: 1.5,
+    transmission: 0,
+    clearcoat: 0,
+    clearcoatRoughness: 0,
+    linkedInputs: ["Image Texture:logo_600x600_crop_center.webp (missing 0x0)"],
+  });
+  const material = makeBasicBlenderMaterial(dump, "build plate");
+  assert.ok(material?.isMeshBasicMaterial);
+  assert.equal(material?.color.getHex(), 0x000000);
+  assert.equal(material?.name, "build plate · Blender missing-image color surface");
+  material?.dispose();
+});
+
 test("reconstructs 3D Chrome Grill Crayon's direct Principled metal", () => {
   const dump = JSON.parse(readFileSync("public/dojo/chrome-assets/geometry-nodes-001/dump.json", "utf8")) as Dump;
   assert.deepEqual(extractBasicBlenderMaterialConfig(dump, "chrome"), {

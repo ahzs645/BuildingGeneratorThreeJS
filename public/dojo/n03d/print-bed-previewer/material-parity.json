@@ -1,0 +1,58 @@
+{
+  "asset": "n03d-print-bed-previewer",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "Print Bed Previewer_Object",
+    "root": "Print Bed Previewer.001",
+    "material": "build plate"
+  },
+  "scope": "Authored Blender viewport appearance only. The supplied object has no print object or G-code toolpath assigned, so this checkpoint does not claim slicing, extrusion-path, or machine-output parity.",
+  "geometry": {
+    "blender": {
+      "verts": 10692,
+      "faces": 95
+    },
+    "gnvm": {
+      "verts": 10692,
+      "faces": 95
+    },
+    "validationCases": 7,
+    "materialFaces": 95,
+    "wireHelpers": {
+      "points": 152,
+      "segments": 152,
+      "authoredCapture": "Hidden because Blender Eevee does not render the viewport guide curves; retained in the interactive browser view."
+    }
+  },
+  "materialGraph": {
+    "activeSurface": "Image Texture -> Hue/Saturation -> Brightness/Contrast -> Material Output Surface",
+    "image": "logo_600x600_crop_center.webp",
+    "imageState": "Referenced datablock is 0 x 0 and the source file is not packed or present in the supplied Node Dojo files.",
+    "observableBlenderFallback": "Black Color-to-Surface output",
+    "unusedBranch": "The separate Principled BSDF metallic/noise/bump branch is not connected to the active Material Output and therefore does not affect this render.",
+    "browser": "Generic missing-image Color-surface reconstruction; no replacement logo artwork is invented."
+  },
+  "capture": {
+    "resolution": [
+      768,
+      768
+    ],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "blenderReference": "../../references/n03d/print-bed-previewer-authored.png",
+    "blenderMetadata": "../../references/n03d/print-bed-previewer-authored.json",
+    "browserReference": "../../references/n03d/print-bed-previewer-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-print-bed-previewer&capture=authored",
+    "browserLightScale": 1
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9954891411324717,
+    "surfaceCornerRmsePixels": 0.35904918913617057,
+    "intersectionPixels": 121378,
+    "pixelRgbMae": 0.0033236204502348657,
+    "pixelLuminanceMae": 0.0027353043147334026,
+    "binaryMaskDisagreementFraction": 0,
+    "meanLuminanceDelta": -0.0010719372428342035
+  },
+  "interpretation": "The browser preserves the exact evaluated bed geometry and all 95 build-plate material assignments, then reproduces the black result rendered by the supplied Blender file's missing-image active surface. This is a faithful checkpoint for the available source, not a substitute for the unavailable bed image and not a G-code preview."
+}

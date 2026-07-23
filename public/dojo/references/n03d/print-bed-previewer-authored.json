@@ -1,0 +1,43 @@
+{
+  "object": "Print Bed Previewer_Object",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      175.40057373046875,
+      -216.07138061523438,
+      0.9518810510635376
+    ],
+    "max": [
+      431.0047607421875,
+      56.56494140625,
+      237.83523559570312
+    ]
+  },
+  "verts": 10692,
+  "faces": 95,
+  "materials": [
+    "build plate",
+    "Filament PLA .02 mm layer height",
+    "cross section.002"
+  ],
+  "evaluated_materials": [
+    null,
+    "build plate",
+    "Filament PLA .02 mm layer height",
+    "cross section.002"
+  ],
+  "evaluated_material_faces": {
+    "build plate": 95
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 30.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": false,
+  "studio_environment_strength": null,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}
