@@ -1,0 +1,41 @@
+{
+  "object": "PIPE GEN 4.3_OCT2024_00",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -175.8002166748047,
+      26.130413055419922,
+      -28.50333023071289
+    ],
+    "max": [
+      23.896053314208984,
+      239.44094848632812,
+      157.1541748046875
+    ]
+  },
+  "verts": 11163,
+  "faces": 8064,
+  "materials": [
+    "Filament and Cross Section 1OCT2024"
+  ],
+  "evaluated_materials": [
+    "Filament and Cross Section 1OCT2024",
+    null,
+    "proc_ mahogany.001"
+  ],
+  "evaluated_material_faces": {
+    "Filament and Cross Section 1OCT2024": 3306,
+    "proc_ mahogany.001": 4758
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": true,
+  "studio_environment_strength": 0.8,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

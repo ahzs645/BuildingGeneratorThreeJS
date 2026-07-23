@@ -26,6 +26,12 @@ test("extracts the authored procedural mahogany ramps and mapping", () => {
   assert.equal(config.colorBAttribute, "col2");
   assert.equal(config.scaleAttribute, "scale");
   assert.equal(config.rotationAttribute, "rot");
+  assert.deepEqual(config.colorFallback, [0, 0, 0]);
+  assert.equal(config.noiseScale, 1000);
+  assert.equal(config.noiseDetail, 2);
+  assert.equal(config.noiseRoughness, 0.5);
+  assert.equal(config.noiseLacunarity, 2);
+  assert.equal(config.noiseNormalize, true);
   assert.deepEqual(config.roughnessRamp, [
     { position: 0, color: 0.5449315309524536 },
     { position: 0.9937888383865356, color: 0.4111188054084778 },
@@ -35,7 +41,7 @@ test("extracts the authored procedural mahogany ramps and mapping", () => {
   assert.equal(config.transmission, 0.0535714291036129);
 });
 
-test("builds the shader with geometry scale/rotation and missing-color fallbacks", () => {
+test("builds the shader with geometry scale/rotation and Blender's black missing-attribute fallback", () => {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute([0,0,0, 1,0,0, 0,1,1], 3));
   geometry.setAttribute("scale", new THREE.Float32BufferAttribute([1,1,1], 1));
@@ -45,9 +51,13 @@ test("builds the shader with geometry scale/rotation and missing-color fallbacks
   assert.equal(material?.name, `${name} · procedural mahogany reconstruction`);
   const shader = { vertexShader: "#include <common>\n#include <begin_vertex>", fragmentShader: "#include <common>\n#include <color_fragment>\n#include <roughnessmap_fragment>" };
   material?.onBeforeCompile(shader as never, {} as never);
-  assert.match(shader.vertexShader, /vMahoganyA=vec3\(0.800000011920929/);
+  assert.match(shader.vertexShader, /vMahoganyA=vec3\(0.0,0.0,0.0\)/);
   assert.match(shader.vertexShader, /attribute float scale/);
   assert.match(shader.fragmentShader, /mahoganyWave/);
+  assert.match(shader.fragmentShader, /mahoganyTextureNoise/);
+  assert.match(shader.fragmentShader, /generated \* 1000.0/);
+  assert.match(shader.fragmentShader, /mahoganyNoiseValue=mahoganyTextureNoise/);
+  assert.doesNotMatch(shader.fragmentShader, /float mahoganyHash\(vec3/);
   assert.match(shader.fragmentShader, /mahoganyRamp/);
   material?.dispose();
   geometry.dispose();

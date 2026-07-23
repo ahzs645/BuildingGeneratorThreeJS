@@ -20,7 +20,11 @@ type MahoganyCommonConfig = {
   waveDetailRoughness: number;
   wavePhase: number;
   noiseScale: number;
+  noiseDetail: number;
+  noiseRoughness: number;
+  noiseLacunarity: number;
   noiseDistortion: number;
+  noiseNormalize: boolean;
   mapToMin: number;
   transmission: number;
   clearcoat: number;
@@ -202,7 +206,11 @@ export function extractMahoganyMaterialConfig(dump: Dump, materialName: string):
     waveDetailRoughness: input(wave, "Detail Roughness", 0.5),
     wavePhase: input(wave, "Phase Offset", 4.35),
     noiseScale: input(noise, "Scale", 1000),
+    noiseDetail: input(noise, "Detail", 2),
+    noiseRoughness: input(noise, "Roughness", 0.5),
+    noiseLacunarity: input(noise, "Lacunarity", 2),
     noiseDistortion: input(noise, "Distortion", 0.57),
+    noiseNormalize: noise.props?.normalize === true,
     mapToMin: input(mapRange, "To Min", -1.6521),
     transmission: input(principled, "Transmission Weight", 0),
     clearcoat: input(principled, "Coat Weight", 0),
@@ -220,7 +228,10 @@ export function extractMahoganyMaterialConfig(dump: Dump, materialName: string):
       colorBAttribute,
       scaleAttribute,
       rotationAttribute,
-      colorFallback: outputColor(colorA) ?? [0.8, 0.8, 0.8],
+      // Blender's Attribute shader node returns zero when a named geometry
+      // attribute is absent. Its UI output preview remains 0.8 gray, but that
+      // display default is not the evaluated missing-attribute value.
+      colorFallback: [0, 0, 0],
       roughnessRamp: rampElements.slice(0, 2).map((element: any) => ({
         position: Number(element.position),
         color: Number(element.color?.[0]),
@@ -286,6 +297,49 @@ export function extractMahoganyMaterialConfig(dump: Dump, materialName: string):
 
 function glsl(value: number): string {
   return Number.isInteger(value) ? value.toFixed(1) : `${value}`;
+}
+
+function mahoganyNoiseTextureGlsl(config: MahoganyCommonConfig): string {
+  const completedOctaves = Math.max(1, Math.floor(config.noiseDetail) + 1);
+  const amplitudes = Array.from(
+    { length: completedOctaves },
+    (_, octave) => config.noiseRoughness ** octave,
+  );
+  const frequencies = Array.from(
+    { length: completedOctaves },
+    (_, octave) => config.noiseLacunarity ** octave,
+  );
+  const sum = amplitudes.map(
+    (amplitude, octave) => `${glsl(amplitude)} * mahoganyNoise(p * ${glsl(frequencies[octave])})`,
+  ).join("\n    + ");
+  const maxAmplitude = amplitudes.reduce((total, amplitude) => total + amplitude, 0);
+  const remainder = config.noiseDetail - Math.floor(config.noiseDetail);
+  const normalized = config.noiseNormalize
+    ? `0.5 * (${sum}) / ${glsl(maxAmplitude)} + 0.5`
+    : `(${sum})`;
+  const nextAmplitude = config.noiseRoughness ** completedOctaves;
+  const nextFrequency = config.noiseLacunarity ** completedOctaves;
+  const withRemainder = remainder === 0
+    ? normalized
+    : config.noiseNormalize
+      ? `mix(${normalized}, 0.5 * ((${sum}) + ${glsl(nextAmplitude)} * mahoganyNoise(p * ${glsl(nextFrequency)})) / ${glsl(maxAmplitude + nextAmplitude)} + 0.5, ${glsl(remainder)})`
+      : `mix(${normalized}, ((${sum}) + ${glsl(nextAmplitude)} * mahoganyNoise(p * ${glsl(nextFrequency)})), ${glsl(remainder)})`;
+  // Blender's random_vector3_offset(seed) uses hash_float2_to_float and
+  // maps each component into [100, 200]. These lookup3-derived values are the
+  // seed 0/1/2 offsets used by the 3D Noise Texture distortion branch.
+  const offsets = [
+    [186.03127584467438, 114.9559537682114, 154.44750347045425],
+    [199.8400018782914, 162.2925926843408, 154.048234399885],
+    [111.63384265071569, 157.36939531224067, 199.0881114730351],
+  ];
+  return `float mahoganyTextureNoise(vec3 generated) {
+  vec3 p = generated * ${glsl(config.noiseScale)};
+  p += vec3(
+    mahoganyNoise(p + vec3(${offsets[0].map(glsl).join(",")})),
+    mahoganyNoise(p + vec3(${offsets[1].map(glsl).join(",")})),
+    mahoganyNoise(p + vec3(${offsets[2].map(glsl).join(",")}))) * ${glsl(config.noiseDistortion)};
+  return ${withRemainder};
+}`;
 }
 
 export function makeMahoganyMaterial(dump: Dump, geometry: THREE.BufferGeometry, materialName: string): THREE.MeshPhysicalMaterial | null {
@@ -388,20 +442,28 @@ ${filamentBumpGlsl({
     shader.fragmentShader = shader.fragmentShader
       .replace("#include <common>", `#include <common>
 varying vec3 vMahoganyA;varying vec3 vMahoganyB;varying float vMahoganyScale;varying vec3 vMahoganyRotation;varying vec3 vMahoganyGenerated;
-float mahoganyHash(vec3 p){p=fract(p*0.1031);p+=dot(p,p.yzx+33.33);return fract((p.x+p.y)*p.z);}
-vec3 mahoganyRotate(vec3 p,vec3 r){vec3 c=cos(r),s=sin(r);p=vec3(p.x,p.y*c.x-p.z*s.x,p.y*s.x+p.z*c.x);p=vec3(p.x*c.y+p.z*s.y,p.y,-p.x*s.y+p.z*c.y);return vec3(p.x*c.z-p.y*s.z,p.x*s.z+p.y*c.z,p.z);}`)
+vec3 mahoganyRotate(vec3 p,vec3 r){vec3 c=cos(r),s=sin(r);p=vec3(p.x,p.y*c.x-p.z*s.x,p.y*s.x+p.z*c.x);p=vec3(p.x*c.y+p.z*s.y,p.y,-p.x*s.y+p.z*c.y);return vec3(p.x*c.z-p.y*s.z,p.x*s.z+p.y*c.z,p.z);}
+${filamentNoiseGlsl("mahogany")}
+${filamentWaveFunctionGlsl("mahogany", "mahoganyWave", {
+    distortion: config.waveDistortion,
+    detail: config.waveDetail,
+    detailScale: config.waveDetailScale,
+    detailRoughness: config.waveDetailRoughness,
+    direction: "X",
+    phaseOffset: config.wavePhase,
+  })}
+${mahoganyNoiseTextureGlsl(config)}`)
       .replace("#include <color_fragment>", `#include <color_fragment>
 vec3 mahoganyP=mahoganyRotate(vMahoganyGenerated*max(vMahoganyScale,1e-4),vMahoganyRotation);
-float mahoganyNoise=mahoganyHash(mahoganyP*${glsl(config.noiseScale)}+${glsl(config.noiseDistortion)});
-float mahoganyWarp=(mahoganyHash(mahoganyP*${glsl(config.waveDetail)})-0.5)*${glsl(config.waveDistortion)};
-float mahoganyWave=0.5+0.5*sin((mahoganyP.x*${glsl(config.waveScale)}+mahoganyWarp+${glsl(config.wavePhase)})*6.28318530718);
-float mahoganyMapped=mix(${glsl(config.mapToMin)},mahoganyNoise,mahoganyWave);
+float mahoganyNoiseValue=mahoganyTextureNoise(vMahoganyGenerated);
+float mahoganyWaveValue=mahoganyWave(mahoganyP,${glsl(config.waveScale)});
+float mahoganyMapped=mix(${glsl(config.mapToMin)},mahoganyNoiseValue,mahoganyWaveValue);
 float mahoganyColorFactor=clamp(mahoganyMapped,0.0,1.0);
 diffuseColor.rgb=mix(max(vMahoganyA,vec3(0.0)),max(vMahoganyB,vec3(0.0)),mahoganyColorFactor);`)
       .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
 float mahoganyRamp=mix(${glsl(config.roughnessRamp[0].color)},${glsl(config.roughnessRamp[1].color)},clamp((mahoganyMapped-${glsl(config.roughnessRamp[0].position)})/max(${glsl(config.roughnessRamp[1].position - config.roughnessRamp[0].position)},1e-6),0.0,1.0));
-roughnessFactor=clamp(mix(mahoganyMapped,mahoganyNoise,mahoganyRamp),0.0,1.0);`);
+roughnessFactor=clamp(mix(mahoganyMapped,mahoganyNoiseValue,mahoganyRamp),0.0,1.0);`);
   };
-  material.customProgramCacheKey = () => `mahogany-attributes-${materialName}-v1`;
+  material.customProgramCacheKey = () => `mahogany-attributes-${materialName}-v2`;
   return material;
 }

@@ -164,6 +164,40 @@ elif debug_material_output == "FILAMENT_BACKFACING":
     material_links.new(geometry.outputs["Backfacing"], emission.inputs["Color"])
     material_links.new(emission.outputs["Emission"], output_node.inputs["Surface"])
     print("NODE_DOJO_DEBUG_MATERIAL_OUTPUT_OK FILAMENT_BACKFACING")
+elif debug_material_output == "MAHOGANY_NOISE":
+    material_name = os.environ.get(
+        "NODE_DOJO_DEBUG_MATERIAL_NAME",
+        "proc_ mahogany.001",
+    )
+    material = bpy.data.materials.get(material_name)
+    if material is None or material.node_tree is None:
+        raise RuntimeError(f'mahogany material not found: "{material_name}"')
+    material_nodes = material.node_tree.nodes
+    material_links = material.node_tree.links
+    noise = next(
+        (
+            node
+            for node in material_nodes
+            if node.bl_idname == "ShaderNodeTexNoise"
+            and getattr(node, "noise_dimensions", "") == "3D"
+        ),
+        None,
+    )
+    output_node = next(
+        (
+            node
+            for node in material_nodes
+            if node.bl_idname == "ShaderNodeOutputMaterial" and node.is_active_output
+        ),
+        None,
+    )
+    if noise is None or output_node is None:
+        raise RuntimeError("mahogany Noise Texture diagnostic nodes not found")
+    emission = material_nodes.new("ShaderNodeEmission")
+    emission.inputs["Strength"].default_value = 1.0
+    material_links.new(noise.outputs["Fac"], emission.inputs["Color"])
+    material_links.new(emission.outputs["Emission"], output_node.inputs["Surface"])
+    print(f"NODE_DOJO_DEBUG_MATERIAL_OUTPUT_OK MAHOGANY_NOISE {material_name}")
 elif debug_material_output:
     raise RuntimeError(f"unsupported NODE_DOJO_DEBUG_MATERIAL_OUTPUT: {debug_material_output}")
 

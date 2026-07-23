@@ -1,0 +1,113 @@
+{
+  "asset": "joint-modern-pipe",
+  "source": {
+    "project": "NEW JOINT GENERATORS 42 to 43_16DEC2024_01.blend",
+    "object": "PIPE GEN 4.3_OCT2024_00",
+    "root": "neupipe.001"
+  },
+  "scope": "Exact installed-Blender-5.1 evaluated geometry, face-material assignments, and the observable authored Eevee surface. The filament appearance is a viewport shader, not a sliced toolpath or G-code comparison.",
+  "geometry": {
+    "blender": {
+      "verts": 11163,
+      "faces": 8064
+    },
+    "gnvm": {
+      "verts": 11163,
+      "faces": 8064
+    },
+    "localBounds": {
+      "blender": {
+        "min": [
+          -175.8002166748047,
+          26.130413055419922,
+          -28.50333023071289
+        ],
+        "max": [
+          23.896053314208984,
+          239.44094848632812,
+          157.1541748046875
+        ]
+      },
+      "gnvm": {
+        "min": [
+          -175.8002166748047,
+          26.130413055419922,
+          -28.50333023071289
+        ],
+        "max": [
+          23.896053314208984,
+          239.44094848632812,
+          157.1541748046875
+        ]
+      }
+    },
+    "versionVariance": "The archived Blender 4.3 default contains one fewer auto-smooth split vertex while preserving all 8,064 faces and four-decimal local bounds. Installed Blender 5.1.2 and GN-VM agree at 11,163 vertices."
+  },
+  "evaluatedMaterials": {
+    "faceAssignments": {
+      "Filament and Cross Section 1OCT2024": 3306,
+      "proc_ mahogany.001": 4758
+    },
+    "filament": {
+      "role": "blue generated joint shell",
+      "color": "POINT-domain col attribute",
+      "surface": "shared Generated-coordinate procedural filament and cross-section reconstruction"
+    },
+    "mahogany": {
+      "role": "six source structure pipes",
+      "colorAttributes": [
+        "col1",
+        "col2"
+      ],
+      "missingAttributeBehavior": "The evaluated structure geometry has no col1 or col2 attributes. Blender evaluates missing Shader Attribute values as black even though the node's UI preview swatch is gray; WebGL now follows the evaluated black fallback.",
+      "generatedCoordinates": "material-group bounding box",
+      "noise": {
+        "dimensions": "3D",
+        "scale": 1000,
+        "detail": 2,
+        "roughness": 0.5,
+        "lacunarity": 2,
+        "distortion": 0.57,
+        "normalize": true
+      },
+      "wave": "distorted X-band Wave Texture modulated by the Generated-coordinate Noise Texture",
+      "roughness": "authored color ramp evaluated from the mixed Wave/Noise field"
+    }
+  },
+  "printVisualization": {
+    "surfaceOnly": true,
+    "sourceGCodePresent": false,
+    "exportContract": "The evaluated design mesh is the slicer input. Printer-specific layers and G-code require a printer, nozzle, filament, support, infill, and speed profile and cannot be recovered from this viewport material."
+  },
+  "capture": {
+    "resolution": [
+      768,
+      768
+    ],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../../references/joints/modern-pipe-authored.png",
+    "blenderMetadata": "../../references/joints/modern-pipe-authored.json",
+    "browserReference": "../../references/joints/modern-pipe-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=joint-modern-pipe&capture=authored",
+    "blenderEnvironment": "bundled studio.exr at strength 0.8, Medium High Contrast, no area lights",
+    "browserEnvironment": "bundled studio.exr at scene intensity 1 and material envMapIntensity 0.8, rotation pi",
+    "environmentInterpretation": "The effective environment intensity is 0.8 in both renderers. Three.js separates scene and material environment multipliers, while Blender stores one world strength."
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9914269652393891,
+    "surfaceMaskIouDilated1px": 0.9916700436759872,
+    "blenderSurfaceCoveredWithin1px": 1,
+    "webglSurfaceCoveredWithin1px": 1,
+    "surfaceCornerRmsePixels": 0.5760513713639979,
+    "pixelRgbMae": 0.07929398090450639,
+    "pixelLuminanceMae": 0.0721166914689401,
+    "pixelLuminanceCorrelation": 0.4316694914197897,
+    "macroLuminanceMae": 0.04890597525646334,
+    "macroLuminanceCorrelation": 0.6568236537923325,
+    "blackFractionDelta": 0.01222175519907931,
+    "meanLuminanceDelta": 0.0033059584209282067
+  },
+  "interpretation": "Modern Pipe now agrees with Blender on complete evaluated topology, bounds, material-face ownership, the blue filament shell, and the missing-attribute-driven black mahogany structure. Its aligned exposure and occupancy are close, while Eevee and Three.js/PMREM retain different high-frequency noise filtering, bump derivatives, environment sampling, and Principled BRDF response."
+}

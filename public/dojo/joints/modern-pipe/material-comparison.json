@@ -1,0 +1,112 @@
+{
+  "captures": {
+    "blender": "modern-pipe-authored.png",
+    "webgl": "modern-pipe-authored-webgl.png",
+    "resolution": [
+      768,
+      768
+    ],
+    "alignment": "same square orthographic camera direction and 1.45 framing scale",
+    "webgl_background_key": "#ff00ff"
+  },
+  "blender": {
+    "surface_pixels": 63489,
+    "black_pixels": 47801,
+    "white_pixels": 207,
+    "gray_pixels": 15481,
+    "black_fraction": 0.7529020775252406,
+    "white_fraction": 0.003260407314652932,
+    "gray_fraction": 0.2438375151601065,
+    "mean_luminance": 0.0745295389769879
+  },
+  "webgl": {
+    "surface_pixels": 64038,
+    "black_pixels": 48997,
+    "white_pixels": 0,
+    "gray_pixels": 15041,
+    "black_fraction": 0.7651238327243199,
+    "white_fraction": 0,
+    "gray_fraction": 0.23487616727568006,
+    "mean_luminance": 0.0778354973979161
+  },
+  "comparison": {
+    "surface_mask_iou": 0.9914269652393891,
+    "surface_mask_iou_dilated_1px": 0.9916700436759872,
+    "blender_surface_covered_within_1px_fraction": 1,
+    "webgl_surface_covered_within_1px_fraction": 1,
+    "surface_corners": {
+      "blender": {
+        "left": [
+          115.60606060606061,
+          343.3030303030303
+        ],
+        "right": [
+          663.4193548387096,
+          404.2903225806452
+        ],
+        "bottom": [
+          354,
+          96.58695652173913
+        ],
+        "top": [
+          354,
+          526.4130434782609
+        ]
+      },
+      "webgl": {
+        "left": [
+          115.58974358974359,
+          343.79487179487177
+        ],
+        "right": [
+          664.2105263157895,
+          403.89473684210526
+        ],
+        "bottom": [
+          353.8484848484849,
+          95.6969696969697
+        ],
+        "top": [
+          354.1515151515151,
+          527.3030303030303
+        ]
+      }
+    },
+    "surface_corner_deltas_webgl_minus_blender": {
+      "left": [
+        -0.016317016317017874,
+        0.49184149184145554
+      ],
+      "right": [
+        0.7911714770798426,
+        -0.3955857385399213
+      ],
+      "bottom": [
+        -0.1515151515151274,
+        -0.8899868247694229
+      ],
+      "top": [
+        0.1515151515151274,
+        0.8899868247693803
+      ]
+    },
+    "surface_corner_rmse_pixels": 0.5760513713639979,
+    "intersection_pixels": 63489,
+    "pixel_rgb_mae": 0.07929398090450639,
+    "mean_rgb_delta": [
+      0.015639208475686325,
+      -0.0015391886474151561,
+      -0.0036363185754256754
+    ],
+    "pixel_luminance_mae": 0.0721166914689401,
+    "pixel_luminance_correlation": 0.4316694914197897,
+    "binary_mask_disagreement_fraction": 0.04696876624297122,
+    "macro_block_size": 32,
+    "macro_block_count": 88,
+    "macro_luminance_mae": 0.04890597525646334,
+    "macro_luminance_correlation": 0.6568236537923325,
+    "black_fraction_delta": 0.01222175519907931,
+    "mean_luminance_delta": 0.0033059584209282067
+  },
+  "interpretation": "The aligned silhouette and complete mutual one-pixel coverage validate the shared geometry and capture context. Black/gray occupancy and mean exposure are closely aligned. The lower pixel-scale correlation is localized to renderer-specific Eevee versus Three.js/PMREM lighting, BRDF response, procedural-noise filtering, and high-frequency bump filtering; pixel identity is not claimed."
+}
