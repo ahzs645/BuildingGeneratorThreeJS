@@ -123,6 +123,10 @@ if local_space:
 scene = bpy.data.scenes.new("__NODE_DOJO_REFERENCE_SCENE")
 scene.collection.objects.link(obj)
 bpy.context.window.scene = scene
+frame_override = os.environ.get("NODE_DOJO_FRAME")
+if frame_override is not None:
+    scene.frame_set(int(frame_override))
+    print(f"NODE_DOJO_FRAME_OK {scene.frame_current}")
 obj.hide_render = False
 obj.hide_viewport = False
 obj.hide_set(False)

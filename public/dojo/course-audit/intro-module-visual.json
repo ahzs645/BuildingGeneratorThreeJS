@@ -1,0 +1,97 @@
+{
+  "source": "INTRO MODULE_ The Basics of Nodes and Node Dojo_2MAY2024.blend",
+  "auditDate": "2026-07-22",
+  "scope": "All eleven roots structurally classified as complex-study in the Intro Module",
+  "roots": [
+    {
+      "object": "Plane.023",
+      "root": "geo",
+      "reachableNodes": 1181,
+      "classification": "published-distinct-study",
+      "catalogId": "course-intro-challenge",
+      "blender": { "verts": 2331, "faces": 16 }
+    },
+    {
+      "object": "Cube.014",
+      "root": "Geometry Nodes.023",
+      "reachableNodes": 1130,
+      "classification": "published-distinct-study",
+      "catalogId": "course-intro-node-panels",
+      "blender": { "verts": 104454, "faces": 44423 }
+    },
+    {
+      "object": "Plane.025",
+      "root": "Geometry Nodes.025",
+      "reachableNodes": 291,
+      "classification": "published-distinct-study",
+      "catalogId": "course-intro-step-bars",
+      "blender": { "verts": 48, "faces": 12 }
+    },
+    {
+      "object": "Plane.017",
+      "root": "Geometry Nodes.012",
+      "reachableNodes": 290,
+      "classification": "published-distinct-study",
+      "catalogId": "course-intro-room-material-stage",
+      "frame": 1405,
+      "blender": { "verts": 3808, "faces": 3160 }
+    },
+    {
+      "object": "Plane.024",
+      "root": "Geometry Nodes.024",
+      "reachableNodes": 288,
+      "classification": "published-distinct-study",
+      "catalogId": "course-intro-cross-exercise",
+      "blender": { "verts": 48, "faces": 38 }
+    },
+    {
+      "object": "Plane.009",
+      "root": "Geometry Nodes.014",
+      "reachableNodes": 167,
+      "classification": "published-distinct-study",
+      "catalogId": "course-intro-room-stage-b",
+      "blender": { "verts": 2860, "faces": 2398 }
+    },
+    {
+      "object": "Plane.003",
+      "root": "Geometry Nodes.001",
+      "reachableNodes": 166,
+      "classification": "published-distinct-study",
+      "catalogId": "course-intro-room-stage-a",
+      "blender": { "verts": 4080, "faces": 2479 }
+    },
+    {
+      "object": "Plane.034",
+      "root": "Room",
+      "reachableNodes": 163,
+      "classification": "published-distinct-study",
+      "catalogId": "course-intro-room",
+      "blender": { "verts": 3788, "faces": 2542 }
+    },
+    {
+      "object": "chalkboard",
+      "root": "Geometry Nodes.011",
+      "reachableNodes": 104,
+      "classification": "published-distinct-study",
+      "catalogId": "course-intro-chalkboard",
+      "blender": { "verts": 2226, "faces": 290 }
+    },
+    {
+      "object": "Plane.019",
+      "root": "Geometry Nodes.032",
+      "reachableNodes": 101,
+      "classification": "published-distinct-study",
+      "catalogId": "course-intro-node-dojo",
+      "blender": { "verts": 5546, "faces": 2667 }
+    },
+    {
+      "object": "Plane.035",
+      "root": "Geometry Nodes.036",
+      "reachableNodes": 64,
+      "classification": "published-distinct-study",
+      "catalogId": "course-intro-node-tabs",
+      "blender": { "verts": 2411, "faces": 81 }
+    }
+  ],
+  "validation": "Every nominal Intro complex study was isolated, evaluated in Blender 5.1, and represented in the browser library. Ten have exact or near-exact published evidence from their authored or supplied cached frame. The open Room stage is topology-exact with a maximum 0.0017-unit legacy curve-frame bounds residual. The frame-1405 material stage is exact after honoring its explicitly unassigned Font socket rather than substituting fallback glyphs."
+}

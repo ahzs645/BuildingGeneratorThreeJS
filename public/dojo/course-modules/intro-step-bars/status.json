@@ -1,0 +1,27 @@
+{
+  "id": "course-intro-step-bars",
+  "source": "INTRO MODULE_ The Basics of Nodes and Node Dojo_2MAY2024.blend",
+  "object": "Plane.025",
+  "root": "Geometry Nodes.025",
+  "reachableGroups": 11,
+  "reachableNodes": 291,
+  "coverage": "100%",
+  "status": "exact-parity",
+  "blender": {
+    "verts": 48,
+    "faces": 12,
+    "bbox": {
+      "min": [-0.745, -0.17, -0.065],
+      "max": [0.745, 0.68, 0.065]
+    }
+  },
+  "gnvm": {
+    "verts": 48,
+    "faces": 12,
+    "bbox": {
+      "min": [-0.745, -0.17, -0.065],
+      "max": [0.745, 0.68, 0.065]
+    }
+  },
+  "validation": "The visible two-step bar output of this 291-node instructional closure matches Blender exactly in topology and four-decimal local bounds."
+}

@@ -181,6 +181,34 @@ test("Bounding Box pads pure String to Curves outlines by implicit radius", () =
   assert.deepEqual((outputs.Max as Field).value, [6, 8, 12]);
 });
 
+test("String to Curves keeps an explicitly unassigned Blender font empty", () => {
+  const handler = REGISTRY.get("GeometryNodeStringToCurves");
+  assert.ok(handler);
+  const outputs = handler({
+    node: {
+      name: "String to Curves",
+      type: "GeometryNodeStringToCurves",
+      label: null,
+      inputs: [{
+        name: "Font",
+        identifier: "Font",
+        type: "NodeSocketFont",
+        linked: false,
+        value: null,
+      }],
+      outputs: [],
+    },
+    str: () => "MAT",
+    ref: () => null,
+  } as unknown as EvalAPI);
+
+  const geometry = outputs["Curve Instances"] as Geometry;
+  assert.equal(geometry.instances.length, 0);
+  assert.equal(geometry.curves.length, 0);
+  assert.equal(geometry.mesh == null, true);
+  assert.equal(outputs.Remainder, "MAT");
+});
+
 test("Bounding Box uses positions for font curves beside a mesh component", () => {
   const geometry = new Geometry();
   geometry.mesh = new Mesh();

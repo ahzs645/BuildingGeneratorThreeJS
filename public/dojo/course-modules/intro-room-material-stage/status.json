@@ -1,0 +1,28 @@
+{
+  "id": "course-intro-room-material-stage",
+  "source": "INTRO MODULE_ The Basics of Nodes and Node Dojo_2MAY2024.blend",
+  "object": "Plane.017",
+  "root": "Geometry Nodes.012",
+  "reachableGroups": 16,
+  "reachableNodes": 290,
+  "coverage": "100%",
+  "status": "exact-parity-frame-1405",
+  "frame": 1405,
+  "blender": {
+    "verts": 3808,
+    "faces": 3160,
+    "bbox": {
+      "min": [-6.7142, -6.7142, 31.5148],
+      "max": [6.7142, 6.7142, 37.4291]
+    }
+  },
+  "gnvm": {
+    "verts": 3808,
+    "faces": 3160,
+    "bbox": {
+      "min": [-6.7142, -6.7142, 31.5148],
+      "max": [6.7142, 6.7142, 37.4291]
+    }
+  },
+  "validation": "Forcing the supplied scene to its saved frame 1405 produces exact topology and four-decimal local bounds in Blender and GN-VM. Blender's unopened dependency cache still displays the older frame-1 transform until the timeline is evaluated. The MAT helper's Font socket is explicitly unassigned, so both engines correctly omit its glyph branch while retaining the arrow and complete Room/material lesson geometry."
+}

@@ -1,0 +1,27 @@
+{
+  "id": "course-intro-cross-exercise",
+  "source": "INTRO MODULE_ The Basics of Nodes and Node Dojo_2MAY2024.blend",
+  "object": "Plane.024",
+  "root": "Geometry Nodes.024",
+  "reachableGroups": 11,
+  "reachableNodes": 288,
+  "coverage": "100%",
+  "status": "exact-parity",
+  "blender": {
+    "verts": 48,
+    "faces": 38,
+    "bbox": {
+      "min": [-0.565, -0.565, 0],
+      "max": [0.565, 0.565, 0.22]
+    }
+  },
+  "gnvm": {
+    "verts": 48,
+    "faces": 38,
+    "bbox": {
+      "min": [-0.565, -0.565, 0],
+      "max": [0.565, 0.565, 0.22]
+    }
+  },
+  "validation": "The visible cross-shaped output of this 288-node instructional closure matches Blender exactly in topology and four-decimal local bounds."
+}

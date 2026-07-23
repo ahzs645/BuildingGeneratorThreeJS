@@ -6,7 +6,7 @@ The pack contains **16 Blender projects**, **499 active Geometry Nodes modifiers
 
 | Project | Active modifiers | Root families | Current web evidence |
 | --- | ---: | ---: | --- |
-| Intro Module | 82 | 52 | All roots classified; Geometry Nodes panel and CHALLENGE title live and exact |
+| Intro Module | 82 | 52 | All 11 complex studies visually closed and represented; remaining roots classified |
 | New Joint Generators | 32 | 13 | Inventory complete |
 | N03D 3D-printing Utilities | 77 | 39 | Inventory complete |
 | Recursive Bin | 1 | 1 | Live Blender/GN-VM comparison |
@@ -14,7 +14,7 @@ The pack contains **16 Blender projects**, **499 active Geometry Nodes modifiers
 | The Nodes Node | 17 | 12 | All 12 roots live; 6 exact/structural, 6 UI panels topology-and-bounds exact |
 | Knit Graphic | 0 | 0 | No active Geometry Nodes modifier |
 | Typewriter | 1 | 1 | Live GN-VM; recovered Blurmed outlines embedded, frame-240 topology/layout exact |
-| Send Nodes Hat | 5 | 4 | All 4 roots live; 3 exact, embroidery partial |
+| Send Nodes Hat | 5 | 4 | All 4 roots live and topology-exact, including embroidery |
 | Module 2 | 103 | 69 | All roots classified; shared finale live and topology/bounds exact |
 | Module 3 | 28 | 20 | All roots classified; shared finale live and topology/bounds exact |
 | Module 4 | 68 | 35 | All roots classified; shared finale live and topology/bounds exact |
@@ -34,4 +34,4 @@ A root is not considered ported merely because it evaluates without throwing. Ea
 5. A browser-visible entry showing Blender reference and live GN-VM output.
 6. Regression tests for any new shared node semantics.
 
-This standard is currently satisfied by Periodic Brush and Flat Stickie Pack in the Chrome Asset Library, and by the earlier dedicated comparison targets where equivalent evidence already exists.
+This standard is satisfied by every represented reusable root and distinct course study listed in the browser catalog; any documented residual is stated in that asset's status evidence rather than hidden by a generic completion label.

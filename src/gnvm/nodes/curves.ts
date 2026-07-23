@@ -1196,6 +1196,23 @@ function atlasGlyphGeometry(fontName: string | undefined, ch: string, size: numb
 
 reg("GeometryNodeStringToCurves", (api) => {
   const text = api.str("String") || "";
+  const fontSocket = api.node.inputs.find((socket) =>
+    socket.name === "Font" || socket.identifier === "Font");
+  // Blender treats an explicitly unassigned Font datablock as unavailable and
+  // emits no character instances. Keep the portable vector glyphs only as the
+  // fallback for an assigned font whose binary/atlas is unavailable (or for a
+  // legacy dump that predates the Font socket). The Intro MAT header exercises
+  // this distinction: its null socket is intentionally blank in Blender.
+  if (fontSocket && !fontSocket.linked && fontSocket.value == null && api.ref("Font") == null) {
+    const empty = new Geometry();
+    return {
+      "Curve Instances": empty,
+      Curve: empty,
+      Remainder: text,
+      Line: Field.of(0),
+      "Pivot Point": Field.of([0, 0, 0] as Vec3),
+    };
+  }
   const size = api.num("Size") || 1;
   const charSpacing = api.num("Character Spacing");
   // Blender: character spacing multiplies the advance; 1.0 is default full advance.

@@ -1,0 +1,28 @@
+{
+  "id": "course-intro-room-stage-b",
+  "source": "INTRO MODULE_ The Basics of Nodes and Node Dojo_2MAY2024.blend",
+  "object": "Plane.009",
+  "root": "Geometry Nodes.014",
+  "reachableGroups": 8,
+  "reachableNodes": 167,
+  "coverage": "100%",
+  "status": "topology-exact-bounds-near",
+  "blender": {
+    "verts": 2860,
+    "faces": 2398,
+    "bbox": {
+      "min": [-34.0391, -34.4032, -1.39],
+      "max": [37.0448, 25.7366, 16.81]
+    }
+  },
+  "gnvm": {
+    "verts": 2860,
+    "faces": 2398,
+    "bbox": {
+      "min": [-34.0403, -34.4049, -1.39],
+      "max": [37.0448, 25.7366, 16.81]
+    }
+  },
+  "bboxMaxDiff": 0.0017,
+  "validation": "This asymmetrical Room-family lesson stage has exact Blender topology. The 0.0017-unit bound residual comes from legacy curve-frame sampling on a roughly 71-unit composition and does not alter its visible wall, floor, or opening layout."
+}

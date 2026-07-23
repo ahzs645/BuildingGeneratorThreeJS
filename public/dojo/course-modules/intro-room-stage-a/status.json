@@ -1,0 +1,27 @@
+{
+  "id": "course-intro-room-stage-a",
+  "source": "INTRO MODULE_ The Basics of Nodes and Node Dojo_2MAY2024.blend",
+  "object": "Plane.003",
+  "root": "Geometry Nodes.001",
+  "reachableGroups": 8,
+  "reachableNodes": 166,
+  "coverage": "100%",
+  "status": "exact-parity",
+  "blender": {
+    "verts": 4080,
+    "faces": 2479,
+    "bbox": {
+      "min": [-35.5565, -35.5565, -1.39],
+      "max": [35.5565, 35.5565, 18.3242]
+    }
+  },
+  "gnvm": {
+    "verts": 4080,
+    "faces": 2479,
+    "bbox": {
+      "min": [-35.5565, -35.5565, -1.39],
+      "max": [35.5565, 35.5565, 18.3242]
+    }
+  },
+  "validation": "This visible earlier Room-family lesson stage is exact in topology and four-decimal local bounds. It retains the framed walls, floor, entrance, and the FIRST NODETREES header visible in the supplied Intro scene."
+}

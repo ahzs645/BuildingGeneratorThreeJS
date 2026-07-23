@@ -144,7 +144,7 @@ test("course sidecars preserve the authored material libraries", () => {
   ], [[74, 11], [83, 10], [77, 12]]);
 });
 
-test("all 96 catalog assets now load portable shader metadata", () => {
-  assert.equal(catalog.length, 96);
-  assert.equal(catalog.filter((asset: any) => typeof asset.shaderMetadata === "string").length, 96);
+test("all 101 catalog assets now load portable shader metadata", () => {
+  assert.equal(catalog.length, 101);
+  assert.equal(catalog.filter((asset: any) => typeof asset.shaderMetadata === "string").length, 101);
 });
