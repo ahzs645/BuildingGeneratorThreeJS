@@ -82,7 +82,7 @@
     "shaderMetadata": "dojo/chrome-assets/shader-metadata.json",
     "reference": "dojo/references/chrome-assets/ui-window-generator.png",
     "blenderStats": { "verts": 35886, "faces": 33474 },
-    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. Authored topology matches Blender exactly at 35,886 / 33,474, and both subdivision cases are topology-exact. A 12,361-point Blender probe confirms the exact weighted Blur Attribute mixer used by the primary frame; after all 334 passes, authored and subdivision sweep bounds remain within 0.0101 units of Blender.",
+    "note": "The supplied Pixels Medium TTF is loaded by the page; its Blender-extracted outline atlas remains available as the geometry fallback. All three subdivision cases have exact Blender topology, including the authored 35,886 / 33,474 result. Exact active-relative transforms and Blender's 0.01 Mesh-to-Curve bound width reduce every bounds delta to at most 0.0001 units.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",

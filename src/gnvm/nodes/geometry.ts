@@ -1266,25 +1266,28 @@ reg("GeometryNodeBoundBox", (api) => {
   // radius in every axis, even before the curve has a bevel/profile. Radius is
   // implicitly 1 when the attribute is absent. Text Soup uses that two-unit
   // diameter as padding when sizing its marching-squares sampling grid.
-  // Mesh to Curve produces an evaluated wire whose Bounding Box is based on
-  // its positions only. Blender does not pad those wires by the generic
-  // Curves radius; doing so enlarged UI Window's two sampling grids by almost
-  // exactly one unit per side. Pure native/font Curves still use their radius.
+  // Mesh to Curve produces a Curves component whose unit radius contributes
+  // Blender's 0.01 base curve-width to bounds. Using the generic radius as a
+  // world-unit value enlarged UI Window's sampling grids by almost one unit;
+  // suppressing it entirely left those grids 0.01 units too narrow per side.
+  // Pure native/font Curves retain their full radius behavior.
   // Procedural Box is the mixed-component exception: its pin mesh and font
   // diagnostic are combined before Bounding Box, and Blender uses the font's
   // positional outline there without expanding it by the generic radius.
-  const radius = g.curveAttributes.has("__gnvm_planar_mesh_curve")
-    || (Boolean(g.mesh?.positions.length) && g.curveAttributes.has("__gnvm_planar_font_curve"))
+  const meshCurve = g.curveAttributes.has("__gnvm_planar_mesh_curve");
+  const radius = (Boolean(g.mesh?.positions.length) && g.curveAttributes.has("__gnvm_planar_font_curve"))
     ? null
     : g.curveAttributes.get("radius");
   let pointIndex = 0;
   for (const spline of g.curves) {
     for (const p of spline.points) {
-      const r = radius === null ? 0 : Math.abs(asNum(radius?.data[pointIndex] ?? 1));
+      const r = radius === null ? 0 : Math.abs(asNum(radius?.data[pointIndex] ?? 1)) * (meshCurve ? 0.01 : 1);
       count++;
       for (let axis = 0; axis < 3; axis++) {
-        min[axis] = Math.min(min[axis], p[axis] - r);
-        max[axis] = Math.max(max[axis], p[axis] + r);
+        const lower = meshCurve ? Math.fround(Math.fround(p[axis]) - Math.fround(r)) : p[axis] - r;
+        const upper = meshCurve ? Math.fround(Math.fround(p[axis]) + Math.fround(r)) : p[axis] + r;
+        min[axis] = Math.min(min[axis], lower);
+        max[axis] = Math.max(max[axis], upper);
       }
       pointIndex++;
     }
