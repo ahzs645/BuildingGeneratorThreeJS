@@ -1,0 +1,36 @@
+{
+  "object": "Plane.004",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -10.99559497833252,
+      -10.99889850616455,
+      -50.00242614746094
+    ],
+    "max": [
+      11.0,
+      10.99889850616455,
+      50.00242614746094
+    ]
+  },
+  "verts": 333,
+  "faces": 224,
+  "materials": [],
+  "evaluated_materials": [
+    "proc_ mahogany.003"
+  ],
+  "evaluated_material_faces": {
+    "proc_ mahogany.003": 224
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "overrides": {},
+  "authored_light_scale": 1.0,
+  "authored_look": "None",
+  "studio_environment": true,
+  "studio_environment_strength": 0.8,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null
+}

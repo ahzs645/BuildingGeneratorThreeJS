@@ -1,0 +1,72 @@
+{
+  "asset": "n03d-dowel",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "Plane.004",
+    "root": "dowel",
+    "material": "proc_ mahogany.003"
+  },
+  "scope": "Authored Eevee surface reconstruction on the exact GN-VM mesh.",
+  "geometry": {
+    "blender": { "verts": 333, "faces": 224 },
+    "gnvm": { "verts": 333, "faces": 224 },
+    "materialFaces": 224,
+    "validationCases": 6
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "geometrySpace": "local",
+    "blenderReference": "../../references/n03d/dowel-authored.png",
+    "blenderMetadata": "../../references/n03d/dowel-authored.json",
+    "browserReference": "../../references/n03d/dowel-authored-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-dowel&capture=authored",
+    "blenderStudioEnvironmentStrength": 0.8,
+    "browserStudioEnvironmentIntensity": 0.06,
+    "environmentInterpretation": "Blender world strength and Three.js PMREM intensity are renderer-specific units. The recorded browser intensity aligns mean surface exposure while preserving the same studio.exr orientation."
+  },
+  "recoveredGraph": {
+    "baseColor": "The first HSV node clamps its negative Value branch to black; the downstream HSV node reads that black branch through Reroute, so both Mix colors and the final Base Color are exactly black.",
+    "roughness": "NodeGroup.015 remaps the black Base Color from [0,1] to [0.3687744140625,191.3863525390625]; the linked Principled Roughness resolves to 0.3687744140625.",
+    "mapping": {
+      "coordinate": "Generated",
+      "scale": 3.59326171875,
+      "rotation": [0, 0, 2.822612762451172]
+    },
+    "wave": {
+      "type": "BANDS",
+      "direction": "X",
+      "scale": 1.380000114440918,
+      "distortion": 13.299999237060547,
+      "detail": 10.229999542236328,
+      "detailScale": 0.8700000047683716,
+      "detailRoughness": 0.5,
+      "phaseOffset": 4.349999904632568
+    },
+    "constantNoiseFac": 0.49755859375,
+    "bump": {
+      "heightRange": [-0.1983642578125, -0.086181640625],
+      "strength": 0.5017045736312866,
+      "distance": 1,
+      "filterWidth": 1
+    },
+    "principled": {
+      "metallic": 0,
+      "transmissionWeight": 0.0535714291036129,
+      "coatWeight": 0.12422360479831696,
+      "coatRoughness": 0.07968944311141968
+    }
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.9828841529148354,
+    "surfaceCornerRmsePixels": 0.6694622645697582,
+    "pixelLuminanceMae": 0.04117656294333375,
+    "macroLuminanceMae": 0.0356081652993402,
+    "macroLuminanceCorrelation": -0.0480545004081503,
+    "blenderMeanLuminance": 0.024908936693436155,
+    "browserMeanLuminance": 0.025324714664869175,
+    "meanLuminanceDelta": 0.00041577797143301995
+  },
+  "interpretation": "The browser no longer falls back to a gray diagnostic material: it renders the supplied attribute-free N03D mahogany graph on the exact dowel topology. Mean exposure is aligned within 0.00042 luminance and the silhouette is near-identical. Eevee and Three.js place the very dark coat and bump reflections in different screen regions, so spatial luminance correlation remains a renderer residual rather than a claim of pixel identity."
+}

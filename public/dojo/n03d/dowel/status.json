@@ -2,9 +2,16 @@
   "id": "n03d-dowel",
   "object": "Plane.004",
   "root": "dowel",
-  "status": "exact",
+  "status": "exact-geometry-and-authored-material-reconstructed",
   "blender": { "verts": 333, "faces": 224 },
   "gnvm": { "verts": 333, "faces": 224 },
   "coverage": "100% of reachable node types across the 42-node root closure.",
-  "validation": "Six Blender/VM cases cover authored diameter, alternate diameter, endpoint placement, cutter mode, round-square profile, and cutter offset. Every case has exact vertex and face counts plus matching four-decimal local bounds."
+  "validation": "Six Blender/VM cases cover authored diameter, alternate diameter, endpoint placement, cutter mode, round-square profile, and cutter offset. Every case has exact vertex and face counts plus matching four-decimal local bounds.",
+  "material": {
+    "name": "proc_ mahogany.003",
+    "contract": "black HSV base + NodeGroup.015 roughness + Generated Mapping + distorted X-band Wave + derivative Bump + transmission/coat",
+    "comparison": "material-parity.json",
+    "surfaceMaskIou": 0.9828841529148354,
+    "residual": "Eevee and WebGL distribute the very dark studio-environment coat and bump reflections differently; renderer identity is not claimed."
+  }
 }

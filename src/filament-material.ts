@@ -27,7 +27,8 @@ export type FilamentWaveConfig = {
   detail: number;
   detailScale: number;
   detailRoughness: number;
-  direction: "Z" | "DIAGONAL";
+  direction: "X" | "Z" | "DIAGONAL";
+  phaseOffset?: number;
 };
 
 export type FilamentBumpGlslConfig = {
@@ -225,7 +226,9 @@ export function filamentWaveHeightAtCoordinate(
   }
   const phase = (config.direction === "DIAGONAL"
     ? 10 * (point[0] + point[1] + point[2])
-    : 20 * point[2]) + config.distortion * noise / normalization;
+    : 20 * point[config.direction === "X" ? 0 : 2])
+    + config.distortion * noise / normalization
+    + (config.phaseOffset ?? 0);
   return 0.5 + 0.5 * Math.sin(phase - Math.PI / 2);
 }
 
@@ -321,11 +324,13 @@ export function filamentWaveFunctionGlsl(
     .reduce((sum, value) => sum + value, 0);
   const phase = config.direction === "DIAGONAL"
     ? "10.0 * (point.x + point.y + point.z)"
-    : "20.0 * point.z";
+    : config.direction === "X"
+      ? "20.0 * point.x"
+      : "20.0 * point.z";
   return `float ${functionName}(vec3 coordinate, float scale) {
   vec3 point = (coordinate * scale + vec3(0.000001)) * 0.999999;
   float noise = ${terms.join("\n    + ")};
-  float phase = ${phase} + ${glsl(config.distortion)} * noise / ${glsl(normalization)};
+  float phase = ${phase} + ${glsl(config.distortion)} * noise / ${glsl(normalization)} + ${glsl(config.phaseOffset ?? 0)};
   return 0.5 + 0.5 * sin(phase - 1.5707963267948966);
 }`;
 }

@@ -10,11 +10,18 @@ const dump = JSON.parse(await readFile(fileURLToPath(new URL(
   "../../public/dojo/joints/shader-metadata.json",
   import.meta.url,
 )), "utf8")) as Dump;
+const n03dDump = JSON.parse(await readFile(fileURLToPath(new URL(
+  "../../public/dojo/n03d/dowel/dump.json",
+  import.meta.url,
+)), "utf8")) as Dump;
 const name = "proc_ mahogany.001";
+const n03dName = "proc_ mahogany.003";
 
 test("extracts the authored procedural mahogany ramps and mapping", () => {
   const config = extractMahoganyMaterialConfig(dump, name);
   assert.ok(config);
+  assert.equal(config.variant, "attributes");
+  if (config.variant !== "attributes") return;
   assert.equal(config.colorAAttribute, "col1");
   assert.equal(config.colorBAttribute, "col2");
   assert.equal(config.scaleAttribute, "scale");
@@ -43,5 +50,49 @@ test("builds the shader with geometry scale/rotation and missing-color fallbacks
   assert.match(shader.fragmentShader, /mahoganyWave/);
   assert.match(shader.fragmentShader, /mahoganyRamp/);
   material?.dispose();
+  geometry.dispose();
+});
+
+test("extracts N03D's attribute-free procedural mahogany contract", () => {
+  const config = extractMahoganyMaterialConfig(n03dDump, n03dName);
+  assert.ok(config);
+  assert.equal(config.variant, "n03d");
+  if (config.variant !== "n03d") return;
+  assert.deepEqual(config.mappingRotation, [0, 0, 2.822612762451172]);
+  assert.equal(config.mappingScale, 3.59326171875);
+  assert.equal(config.noiseConstant, 0.49755859375);
+  assert.deepEqual(config.colorA, [0, 0, 0]);
+  assert.deepEqual(config.colorB, [0, 0, 0]);
+  assert.equal(config.bumpHeightMin, -0.1983642578125);
+  assert.equal(config.bumpHeightMax, -0.086181640625);
+  assert.deepEqual(config.roughnessRemap, {
+    min: 0.3687744140625,
+    max: 191.3863525390625,
+  });
+});
+
+test("builds N03D mahogany without geometry attributes", () => {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute([
+    0, 0, 0,
+    1, 0, 0,
+    0, 1, 1,
+  ], 3));
+  const material = makeMahoganyMaterial(n03dDump, geometry, n03dName);
+  assert.ok(material?.isMeshPhysicalMaterial);
+  assert.equal(material.name, `${n03dName} · N03D procedural mahogany reconstruction`);
+  assert.equal(material.roughness, 0.3687744140625);
+  assert.equal(material.userData.mahoganyContract.variant, "n03d");
+  const shader = {
+    vertexShader: "#include <common>\n#include <begin_vertex>",
+    fragmentShader: "#include <common>\n#include <color_fragment>\n#include <normal_fragment_maps>",
+  };
+  material.onBeforeCompile(shader as never, {} as never);
+  assert.match(shader.vertexShader, /varying vec3 vMahoganyGenerated/);
+  assert.match(shader.fragmentShader, /mahoganyN03dWave/);
+  assert.match(shader.fragmentShader, /0\.49755859375/);
+  assert.match(shader.fragmentShader, /mahoganyN03dHeight/);
+  assert.match(shader.fragmentShader, /mahoganyN03dBumpPerturbed/);
+  material.dispose();
   geometry.dispose();
 });

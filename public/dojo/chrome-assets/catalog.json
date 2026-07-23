@@ -572,8 +572,12 @@
     "dump": "dojo/n03d/dowel/dump.json",
     "shaderMetadata": "dojo/n03d/shader-metadata.json",
     "reference": "dojo/references/n03d/dowel.png",
+    "authoredReference": "dojo/references/n03d/dowel-authored.png",
+    "localSpace": true,
+    "surfaceBounds": true,
+    "authoredEnvironmentIntensity": 0.06,
     "blenderStats": { "verts": 333, "faces": 224 },
-    "note": "Exact Blender topology and four-decimal bounds across all six validation cases. Diameter, midpoint placement, cutter mode, round/square profile, and cutter offset all evaluate live in the browser.",
+    "note": "Exact Blender topology and four-decimal bounds across all six validation cases. Diameter, midpoint placement, cutter mode, round/square profile, and cutter offset all evaluate live in the browser. Authored mode reconstructs the attribute-free proc_ mahogany.003 graph: its black HSV base, NodeGroup.015 roughness, Generated-coordinate distorted X bands, bump, transmission, and coat are all recovered; the committed comparison records the remaining Eevee/WebGL reflection-layout residual.",
     "controls": [
       { "name": "dia/width", "label": "Diameter / width", "min": 2, "max": 40, "step": 0.1, "value": 22 },
       { "type": "checkbox", "name": "from mid", "label": "Build from midpoint", "value": true },
