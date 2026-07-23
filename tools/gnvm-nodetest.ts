@@ -430,6 +430,16 @@ function meshSignedAreaXY(m: Mesh): number {
   }, { mode: "RADIUS" }).Curve as Geometry;
   check("Curve Arc connects center into a cyclic fill loop", arc.curves[0].cyclic && arc.curves[0].points.length === 5);
   check("Curve Arc preserves radius endpoints", approx(arc.curves[0].points[0], [2, 0, 0]) && approx(arc.curves[0].points[3], [0, 2, 0]));
+
+  const inverted = runNode("GeometryNodeCurveArc", {
+    Resolution: 3, Radius: 2, "Start Angle": 0, "Sweep Angle": Math.PI,
+    "Connect Center": false, "Invert Arc": true,
+  }, { mode: "RADIUS" }).Curve as Geometry;
+  check("Curve Arc invert keeps the start and selects the opposite sweep",
+    approx(inverted.curves[0].points[0], [2, 0, 0])
+      && approx(inverted.curves[0].points[1], [0, -2, 0])
+      && approx(inverted.curves[0].points[2], [-2, 0, 0]),
+    JSON.stringify(inverted.curves[0].points));
 }
 
 {

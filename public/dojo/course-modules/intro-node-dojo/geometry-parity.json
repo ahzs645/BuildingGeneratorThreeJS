@@ -1,0 +1,37 @@
+{
+  "case": "visible cached frame 1",
+  "topology": {
+    "blender": { "verts": 5546, "faces": 2667 },
+    "gnvm": { "verts": 5546, "faces": 2667 }
+  },
+  "bounds": {
+    "blender": {
+      "min": [-7.092873573303223, -5.352100849151611, -2.2800002098083496],
+      "max": [7.133107662200928, 10.613457679748535, 1.6703100204467773]
+    },
+    "gnvm": {
+      "min": [-7.092875003814697, -5.352100849151611, -2.2800002098083496],
+      "max": [7.133110046386719, 10.613457679748535, 1.670235514640808]
+    },
+    "absoluteDifference": {
+      "min": [0.000001430511474609375, 0, 0],
+      "max": [0.000002384185791015625, 0, 0.00007450580596923828],
+      "maximum": 0.00007450580596923828
+    }
+  },
+  "symmetricNearestPoint": {
+    "blenderToGnvm": {
+      "maximum": 0.00007920952720588948,
+      "mean": 0.0000005521627707045178
+    },
+    "gnvmToBlender": {
+      "maximum": 0.00007920952720588948,
+      "mean": 0.0000005521627707045178
+    }
+  },
+  "yinYang": {
+    "formerIssue": "Invert Arc reversed the positive-sweep point order, mirroring the inner S curve while retaining the same topology and outer bounds.",
+    "resolution": "Invert Arc now keeps the start point and negates the sweep, matching Blender's opposite-side arc contract."
+  },
+  "remaining": "The maximum residual is on the arced display-title curve frame; it is sub-0.00008 and does not alter topology or the visible composition."
+}

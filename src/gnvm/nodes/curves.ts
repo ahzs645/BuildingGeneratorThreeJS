@@ -230,7 +230,10 @@ reg("GeometryNodeCurveArc", (api) => {
   const points: Vec3[] = [];
   for (let i = 0; i < resolution; i++) {
     const factor = i / (resolution - 1);
-    const angle = start + sweep * (invert ? 1 - factor : factor);
+    // Blender's Invert Arc keeps the start point and selects the arc on the
+    // opposite side of the circle. It reverses the sweep sign; it does not
+    // merely reverse the point order of the original positive-sweep arc.
+    const angle = start + sweep * (invert ? -factor : factor);
     points.push([Math.cos(angle) * radius, Math.sin(angle) * radius, 0]);
   }
   const connect = api.bool("Connect Center");
