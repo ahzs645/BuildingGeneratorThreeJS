@@ -2,7 +2,7 @@
   "id": "chain-and-mace",
   "object": "spikey chain and mace.005",
   "root": "dojo_chain and mace",
-  "status": "exact-parity-sweep",
+  "status": "exact-sweep-and-authored-material-near-parity",
   "blender": { "verts": 120727, "faces": 214718 },
   "gnvm": { "verts": 120727, "faces": 214718 },
   "coverage": "All five authored input sweeps execute with exact vertex and face counts and local bounds within 0.0001 units of Blender.",
@@ -17,6 +17,11 @@
       "blenderEvaluated": { "1": { "domain": "POINT", "value": 1, "count": 120727 }, "rough": { "domain": "FACE", "zeroFaces": 205408, "value2Faces": 9310 } },
       "restoredForShader": { "rough": { "mace": 2, "chainMissingValue": 0 } }
     },
-    "evidence": "The exact soup contains an 18,620-triangle chrome.002 range and a 206,528-triangle null range. Blender's realized mesh has slots [chrome.002, null], assigns all 214,718 faces to slot zero, and carries rough=2 on the 9,310 mace faces while the joined chain resolves it to zero. The authored Mapping output drives Noise Scale while Noise Vector stays zero, so Blender produces a constant mapped value of 1/15 rather than spatial grain; the browser reproduces roughness 2/15 on the mace and zero on the chain. The authored capture decodes Blender's exact CC0 studio.exr (SHA-256 c36c7fd390b2cdf8693360cf3662cb1d710c95fa799d9f822f42997167839b56), uses 0.8 environment strength and a measured PI longitude correction, and retains the deterministic RectArea rig. Pixel correlation improves from -0.0670 to 0.2424, macro correlation from -0.2582 to 0.2296, pixel MAE from 0.2069 to 0.1985, macro MAE from 0.1823 to 0.1066, and mean luminance delta from -0.1840 to -0.0146. This luminance gain trades against mask IoU (0.9406 to 0.9369) and binary disagreement (0.0897 to 0.1485), which remain sensitive to Eevee versus Three.js rasterization."
+    "evidence": "The exact soup contains an 18,620-triangle chrome.002 range and a 206,528-triangle null range. Blender's realized mesh has slots [chrome.002, null], assigns all 214,718 faces to slot zero, and carries rough=2 on the 9,310 mace faces while the joined chain resolves it to zero. The authored Mapping output drives Noise Scale while Noise Vector stays zero, so Blender produces a constant mapped value of 1/15 rather than spatial grain; the browser reproduces roughness 2/15 on the mace and zero on the chain. The authored capture decodes Blender's exact CC0 studio.exr (SHA-256 c36c7fd390b2cdf8693360cf3662cb1d710c95fa799d9f822f42997167839b56), uses 0.8 environment strength and a measured PI longitude correction, and retains the deterministic RectArea rig. The current aligned capture reaches 0.974982 silhouette IoU, 0.227440 pixel luminance correlation, 0.244688 macro luminance correlation, and 0.105727 macro luminance MAE. Eevee versus Three.js BRDF, area-light units, tone mapping, and rasterization remain renderer residuals."
+  },
+  "shaderEvidence": {
+    "blenderReference": "public/dojo/references/chrome-assets/chain-and-mace-shader.png",
+    "webglCapture": "public/dojo/references/chrome-assets/chain-and-mace-shader-webgl.png",
+    "comparison": "public/dojo/chrome-assets/chain-and-mace/shader-comparison.json"
   }
 }

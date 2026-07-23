@@ -2,7 +2,7 @@
   "id": "img-pixel-stippler",
   "object": "IMG PIXEL STIPPLER",
   "root": "IMG STIPPLE",
-  "status": "geometry-exact-expanded-sweep",
+  "status": "exact-sweep-and-authored-material-near-parity",
   "blender": { "verts": 72094, "faces": 71550 },
   "gnvm": { "verts": 72094, "faces": 71550 },
   "coverage": "100% of reachable node types across the 3-group, 170-node closure.",

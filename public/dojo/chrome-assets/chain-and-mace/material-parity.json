@@ -39,5 +39,17 @@
     "macroLuminanceCorrelation": 0.22958338907052045,
     "meanLuminanceDelta": -0.014594410559189669
   },
+  "currentAuthoredCapture": {
+    "blenderReference": "../../references/chrome-assets/chain-and-mace-shader.png",
+    "webglCapture": "../../references/chrome-assets/chain-and-mace-shader-webgl.png",
+    "comparison": "shader-comparison.json",
+    "surfaceMaskIou": 0.9749817916970138,
+    "pixelLuminanceMae": 0.20807022390891355,
+    "pixelLuminanceCorrelation": 0.22744000325374988,
+    "binaryMaskDisagreementFraction": 0.15316425752312654,
+    "macroLuminanceMae": 0.10572701125249959,
+    "macroLuminanceCorrelation": 0.2446880879969938,
+    "meanLuminanceDelta": -0.028628833761938977
+  },
   "interpretation": "The material graph's roughness semantics are exact and the invented spatial grain is removed. Adding the exact CC0 studio.exr used by the Blender fixture makes both pixel and macro luminance correlation positive, reduces macro MAE from 0.1823 to 0.1066, reduces pixel MAE from 0.2069 to 0.1985, and brings the mean luminance delta from -0.1840 to -0.0146. The luminance improvement trades against silhouette-edge sensitivity: mask IoU changes from 0.9406 to 0.9369 and binary disagreement from 0.0897 to 0.1485. Eevee versus Three.js BRDF, area-light units, tone mapping, and rasterization remain renderer residuals."
 }
