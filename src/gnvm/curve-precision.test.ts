@@ -324,6 +324,23 @@ test("Curve to Mesh rebuilds NURBS normals after Set Spline Type", () => {
   assert.deepEqual(rebuilt.positions, expected.positions);
 });
 
+test("Curve to Mesh keeps converted profile +X inward on cyclic planar rails", () => {
+  const rail = {
+    cyclic: true,
+    points: [[0, 0, 0], [4, 0, 0], [4, 3, 0], [0, 3, 0]] as Vec3[],
+  };
+  const asymmetricProfile = {
+    cyclic: false,
+    points: [[0, 0, 0], [1, 0, 0]] as Vec3[],
+  };
+
+  const native = sweep(rail, asymmetricProfile, false);
+  const converted = sweep(rail, asymmetricProfile, false, undefined, undefined, undefined, false, true);
+  assert.ok(Math.min(...native.positions.map((point) => point[0])) < 0);
+  assert.ok(Math.min(...converted.positions.map((point) => point[0])) >= 0);
+  assert.ok(Math.max(...converted.positions.map((point) => point[0])) <= 4);
+});
+
 test("Align Rotation preserves native Curve to Points quaternion at 180 degrees", () => {
   const curve = new Geometry();
   curve.curves = [{ cyclic: false, points: [[0, 0, 1], [0, 0, -1]] }];

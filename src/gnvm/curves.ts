@@ -467,6 +467,7 @@ export function sweep(
   tangentOverrides?: Vec3[],
   normalOverrides?: Vec3[],
   planarFromMesh = false,
+  profileFromMesh = false,
 ): Mesh {
   const mesh = new Mesh();
   const rp = rail.points;
@@ -549,10 +550,17 @@ export function sweep(
     const evaluatedNormal = rail.splineType !== "NURBS" && normalOverrides?.[i] && vlen(normalOverrides[i]) > 1e-9
       ? normalOverrides[i]
       : null;
+    // A Mesh-to-Curve profile retains Blender's converted profile axes. On a
+    // horizontal cyclic rail its +X axis points inward, unlike native curve
+    // profiles whose +X axis points outward. Stackable Bin's asymmetric wall
+    // section exposes the distinction; circular profiles hide the half-turn.
+    const convertedProfile = horizontalPlanar && profileFromMesh;
     const normal = evaluatedNormal
       ? evaluatedNormal
       : horizontalPlanar
-        ? vnorm([frame.tangent[1] * planarOrientation, -frame.tangent[0] * planarOrientation, 0])
+        ? convertedProfile
+          ? vnorm([-frame.tangent[1] * planarOrientation, frame.tangent[0] * planarOrientation, 0])
+          : vnorm([frame.tangent[1] * planarOrientation, -frame.tangent[0] * planarOrientation, 0])
       : tiltedPlanarNormal
         ? vscale(vnorm(vcross(tiltedPlanarNormal, frame.tangent)), planarOrientation)
       : planarOpen && Math.abs(planarTurn) > 1e-6
@@ -561,7 +569,7 @@ export function sweep(
     const binormal = evaluatedNormal
       ? vnorm(vcross(frame.tangent, evaluatedNormal))
       : horizontalPlanar
-      ? vnorm(vcross(frame.tangent, normal))
+      ? convertedProfile ? vscale(frame.binormal, -1) : vnorm(vcross(frame.tangent, normal))
       : tiltedPlanarNormal ? tiltedPlanarNormal : vscale(frame.binormal, evaluatedFrameSign);
     const f = Math.fround;
     const s = f(scales?.[i] ?? 1);

@@ -670,6 +670,7 @@ reg("GeometryNodeCurveToMesh", (api) => {
     const normalAttribute = rail.curveAttributes.get("__curve_normal")?.data;
     const importedTangentAttribute = rail.curveAttributes.has("__curve_imported_tangent");
     const planarFromMesh = rail.curveAttributes.has("__gnvm_planar_mesh_curve");
+    const profileFromMesh = prof.curveAttributes.has("__gnvm_planar_mesh_curve");
   // Curve radius drives the sweep scale but is a built-in curve property, not
   // a named mesh attribute on Curve to Mesh's output.
   const railPointAttributes = [...rail.curveAttributes].filter(([name, attribute]) => attribute.domain === "POINT" && name !== "radius");
@@ -768,7 +769,7 @@ reg("GeometryNodeCurveToMesh", (api) => {
         profileBase += p.points.length;
         continue;
       }
-      const sm = sweep(r, p, caps, scales, tangentOverrides, normalOverrides, planarFromMesh);
+      const sm = sweep(r, p, caps, scales, tangentOverrides, normalOverrides, planarFromMesh, profileFromMesh);
       const base = mesh.positions.length;
       for (const pos of sm.positions) mesh.positions.push(pos);
       for (let fi = 0; fi < sm.faces.length; fi++) { mesh.faces.push(sm.faces[fi].map((v) => v + base)); mesh.faceMaterial.push(0); }
