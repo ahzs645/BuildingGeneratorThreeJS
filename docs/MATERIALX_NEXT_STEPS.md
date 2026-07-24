@@ -153,6 +153,17 @@ because it reduces the two axes to their geometric mean. Production
 anisotropic materials must keep direct/FIS evaluation or use a future
 anisotropic environment filter.
 
+The uniform anodization gate is now complete as well. The supplied Gold group
+maps its voltage socket to nanometers as `voltage * 1.62` and uses a thin-film
+IOR of `2.46`. A 150 V checkpoint therefore compares Blender and MaterialX at
+exactly `243 nm`. Its Cycles/direct-light sphere reaches RGB RMSE `0.061831`
+and luminance correlation `0.998885`.
+
+This result does not cover the source's separate procedural discoloration
+branch. That branch is enabled by default and adds noise-driven thin-film
+streaks, so it remains a texture-semantic gate rather than part of the uniform
+anodization checkpoint.
+
 Remaining work for this item is to:
 
 - apply the shared basis and PREFILTER backend to Chrome Grill, Chain and Mace,

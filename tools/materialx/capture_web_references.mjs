@@ -5,6 +5,7 @@ import puppeteer from "puppeteer-core";
 const baseUrl = process.argv[2] ?? "http://127.0.0.1:4173";
 const outputDir = path.resolve(process.argv[3] ?? "docs/materialx-evidence/current");
 const expectedImplementation = process.argv[4];
+const thinFilmSweep = process.argv.includes("--thin-film-sweep");
 const executablePath = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   "/Applications/Chromium.app/Contents/MacOS/Chromium",
@@ -20,6 +21,31 @@ const browser = await puppeteer.launch({
 try {
   const page = await browser.newPage();
   await page.setViewport({ width: 768, height: 768, deviceScaleFactor: 1 });
+  if (thinFilmSweep) {
+    for (const thickness of [120, 150, 180, 200, 220, 243, 260, 280, 300, 340, 380]) {
+      await page.goto(
+        `${baseUrl}/materialx?capture=1&diagnostic=metal-thin-film&thickness=${thickness}`,
+        { waitUntil: "domcontentloaded" },
+      );
+      await page.waitForFunction(
+        (selectedThickness) => (
+          document.documentElement.dataset.materialxImplementation === "official-essl-prefilter"
+          && document.documentElement.dataset.materialxPreset === "thin-film-gold"
+          && document.documentElement.dataset.materialxThinFilm === String(selectedThickness)
+        ),
+        { timeout: 360_000 },
+        thickness,
+      );
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const sweepCanvas = await page.$("#materialx-canvas");
+      if (!sweepCanvas) throw new Error(`MaterialX thin-film ${thickness} nm canvas missing`);
+      const filename = `materialx-thinfilm-${thickness}.png`;
+      await sweepCanvas.screenshot({ path: path.join(outputDir, filename) });
+      console.log(`MATERIALX_WEB_SWEEP ${filename}`);
+    }
+    await browser.close();
+    process.exit(0);
+  }
   for (const [variant, filename] of [["source", "chrome-source-web.png"], ["bump", "noise-bump-web.png"]]) {
     await page.goto(`${baseUrl}/materialx?capture=1&variant=${variant}&forceWebGL=1`, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => document.documentElement.dataset.materialBackend === "materialx", { timeout: 30_000 });
@@ -160,6 +186,23 @@ try {
     await anisotropyCanvas.screenshot({ path: path.join(outputDir, filename) });
     console.log(`MATERIALX_WEB_REFERENCE ${filename}`);
   }
+  await page.goto(
+    `${baseUrl}/materialx?capture=1&diagnostic=metal-thin-film`,
+    { waitUntil: "domcontentloaded" },
+  );
+  await page.waitForFunction(
+    () => (
+      document.documentElement.dataset.materialxImplementation === "official-essl-prefilter"
+      && document.documentElement.dataset.materialxPreset === "thin-film-gold"
+      && document.documentElement.dataset.materialxThinFilm === "243"
+    ),
+    { timeout: 360_000 },
+  );
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const thinFilmCanvas = await page.$("#materialx-canvas");
+  if (!thinFilmCanvas) throw new Error("MaterialX Gold thin-film canvas missing");
+  await thinFilmCanvas.screenshot({ path: path.join(outputDir, "metal-thin-film-gold-243nm-web.png") });
+  console.log("MATERIALX_WEB_REFERENCE metal-thin-film-gold-243nm-web.png");
 } finally {
   await browser.close();
 }

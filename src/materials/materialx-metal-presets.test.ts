@@ -66,14 +66,28 @@ test("rights-safe metal probe index preserves the physical constants and roughne
     index.anisotropyProbe.mapping.alphaY
       - 0.35 ** 2 * index.anisotropyProbe.mapping.aspect,
   ) < 1e-15);
+  assert.equal(index.thinFilmProbe.shader, "MetalF82GoldThinFilm243nm");
+  assert.equal(index.thinFilmProbe.anodizationVoltage, 150);
+  assert.equal(index.thinFilmProbe.nanometersPerVolt, 1.62);
+  assert.equal(index.thinFilmProbe.thinFilmThicknessNanometers, 243);
+  assert.equal(index.thinFilmProbe.thinFilmIor, 2.46);
+  assert.deepEqual(index.thinFilmProbe.sourceSockets, {
+    voltage: "Socket_30 · Annodization Voltage (Thin Film)",
+    thinFilmIor: "Socket_14 · Thin Film IOR",
+    proceduralStreakFactor: "Socket_29 · Factor",
+  });
+  assert.ok(Math.abs(
+    index.thinFilmProbe.thinFilmThicknessNanometers
+      - index.thinFilmProbe.anodizationVoltage * index.thinFilmProbe.nanometersPerVolt,
+  ) < 1e-12);
 });
 
 test("metal preset MaterialX and official ESSL bundle carry microfacet alpha without third-party assets", () => {
   const source = publicAsset("metal-preset-probes.mtlx");
   const audit = auditMaterialXDocument(source, { implementation: "official-essl" });
   assert.deepEqual(audit.unsupportedElements, []);
-  assert.equal(audit.materialCount, 8);
-  assert.equal((source.match(/value="0\.1225, 0\.1225"/g) ?? []).length, 6);
+  assert.equal(audit.materialCount, 9);
+  assert.equal((source.match(/value="0\.1225, 0\.1225"/g) ?? []).length, 7);
   assert.doesNotMatch(source, /<(?:image|tiledimage|triplanarprojection)\b|type="filename"/);
 
   const manifest = JSON.parse(publicAsset("generated/metal-presets/manifest.json"));
@@ -84,6 +98,7 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
     "MetalF82GoldProbe",
     "MetalF82GoldAnisotropicR0",
     "MetalF82GoldAnisotropicR90",
+    "MetalF82GoldThinFilm243nm",
   ].sort());
   for (const { shader } of Object.values(expectedPresets)) {
     const uniforms = manifest.shaders[shader].fragmentInterface.uniforms.PublicUniforms;
@@ -112,11 +127,24 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
     publicAsset("generated/metal-presets/MetalF82GoldAnisotropicR90.frag"),
     /mx_rotate_vector3\(/,
   );
+  const thinFilmUniforms = manifest.shaders.MetalF82GoldThinFilm243nm
+    .fragmentInterface.uniforms.PublicUniforms;
+  assert.equal(
+    thinFilmUniforms.find((uniform: { name: string }) => uniform.name === "f82_thinfilm_thickness").value,
+    243,
+  );
+  assert.ok(Math.abs(
+    thinFilmUniforms.find((uniform: { name: string }) => uniform.name === "f82_thinfilm_ior").value
+      - 2.46,
+  ) < 1e-6);
+  const thinFilmFragment = publicAsset("generated/metal-presets/MetalF82GoldThinFilm243nm.frag");
+  assert.match(thinFilmFragment, /mx_generalized_schlick_bsdf\(/);
+  assert.match(thinFilmFragment, /mx_init_fresnel_schlick\([^;]+thinfilm_thickness, thinfilm_ior\)/);
 });
 
 test("matched Blender and browser metal probes pass the constant-input similarity gate", () => {
   const comparison = JSON.parse(fs.readFileSync(evidenceUrl("comparison.json"), "utf8"));
-  assert.equal(comparison.comparisonVersion, 9);
+  assert.equal(comparison.comparisonVersion, 10);
   assert.match(comparison.renderContract.metalPresetMatrix, /0\.35.*0\.1225/);
   assert.deepEqual(Object.keys(comparison.metalPresetMatrix), Object.keys(expectedPresets));
   for (const id of Object.keys(expectedPresets)) {
@@ -158,5 +186,20 @@ test("matched Blender and browser metal probes pass the constant-input similarit
         `${rotation} ${renderer}`,
       );
     }
+  }
+  assert.match(comparison.renderContract.metalThinFilmProbe, /150 V x 1\.62 nm\/V = 243 nm/);
+  const thinFilm = comparison.metalThinFilmProbe;
+  assert.ok(thinFilm.sphereRegion.rgbRootMeanSquareError < 0.07);
+  assert.ok(thinFilm.sphereRegion.luminanceCorrelation > 0.99);
+  assert.ok(Math.abs(
+    thinFilm.sphereRegion.meanLuminance.blender
+      - thinFilm.sphereRegion.meanLuminance.web,
+  ) < 0.02);
+  assert.match(thinFilm.claim, /thin-film thickness and IOR semantics only/);
+  for (const renderer of ["blender", "web"]) {
+    assert.ok(
+      fs.statSync(evidenceUrl(`metal-thin-film-gold-243nm-${renderer}.png`)).size > 10_000,
+      renderer,
+    );
   }
 });

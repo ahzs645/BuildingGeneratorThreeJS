@@ -151,4 +151,29 @@
   <surfacematerial name="MetalF82GoldAnisotropicR90" type="material">
     <input name="surfaceshader" type="surfaceshader" nodename="surface_f82_gold_anisotropic_r90" />
   </surfacematerial>
+
+  <!--
+    The supplied Gold group maps its anodization voltage input to nanometers by
+    multiplying by 1.62. The source describes 146-152 V as a rose-gold range;
+    this representative 150 V input therefore becomes 243 nm.
+  -->
+  <nodegraph name="NG_metal_f82_gold_thinfilm_243nm">
+    <generalized_schlick_bsdf name="f82" type="BSDF">
+      <input name="color0" type="color3" value="1, 0.7758224606513977, 0.3049874007701874" />
+      <input name="color82" type="color3" value="0.9734454154968262, 1, 0.9911020398139954" />
+      <input name="color90" type="color3" value="1, 1, 1" />
+      <input name="exponent" type="float" value="5" />
+      <input name="roughness" type="vector2" value="0.1225, 0.1225" />
+      <input name="thinfilm_thickness" type="float" value="243" />
+      <input name="thinfilm_ior" type="float" value="2.46" />
+      <input name="scatter_mode" type="string" value="R" />
+    </generalized_schlick_bsdf>
+    <output name="out" type="BSDF" nodename="f82" />
+  </nodegraph>
+  <surface name="surface_f82_gold_thinfilm_243nm" type="surfaceshader">
+    <input name="bsdf" type="BSDF" nodegraph="NG_metal_f82_gold_thinfilm_243nm" output="out" />
+  </surface>
+  <surfacematerial name="MetalF82GoldThinFilm243nm" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_f82_gold_thinfilm_243nm" />
+  </surfacematerial>
 </materialx>

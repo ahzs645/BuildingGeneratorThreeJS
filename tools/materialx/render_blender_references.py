@@ -360,7 +360,16 @@ def physical_conductor(name, ior, extinction, roughness=0.35):
     return material
 
 
-def artistic_f82(name, base_color, edge_tint, roughness=0.35, anisotropy=0.0, rotation=0.0):
+def artistic_f82(
+    name,
+    base_color,
+    edge_tint,
+    roughness=0.35,
+    anisotropy=0.0,
+    rotation=0.0,
+    thin_film_thickness=0.0,
+    thin_film_ior=1.5,
+):
     """Build a rights-safe constant-input Blender Metallic BSDF F82 probe."""
     material = bpy.data.materials.new(f"Artistic F82 Probe · {name}")
     material.use_nodes = True
@@ -382,7 +391,9 @@ def artistic_f82(name, base_color, edge_tint, roughness=0.35, anisotropy=0.0, ro
     if metallic.inputs.get("Weight") is not None:
         metallic.inputs["Weight"].default_value = 1.0
     if metallic.inputs.get("Thin Film Thickness") is not None:
-        metallic.inputs["Thin Film Thickness"].default_value = 0.0
+        metallic.inputs["Thin Film Thickness"].default_value = thin_film_thickness
+    if metallic.inputs.get("Thin Film IOR") is not None:
+        metallic.inputs["Thin Film IOR"].default_value = thin_film_ior
     output = tree.nodes.new("ShaderNodeOutputMaterial")
     tree.links.new(metallic.outputs["BSDF"], output.inputs["Surface"])
     return material
@@ -526,6 +537,17 @@ def render_physical_conductor_matrix(output: Path, probe, floor, lights):
                 output / f"metal-anisotropy-gold-{slug}-blender.png"
             )
             bpy.ops.render.render(write_still=True)
+        probe.data.materials[0] = artistic_f82(
+            "Gold Thin Film 243nm",
+            F82_GOLD["base_color"],
+            F82_GOLD["edge_tint"],
+            thin_film_thickness=243.0,
+            thin_film_ior=2.46,
+        )
+        bpy.context.scene.render.filepath = str(
+            output / "metal-thin-film-gold-243nm-blender.png"
+        )
+        bpy.ops.render.render(write_still=True)
     finally:
         scene.cycles.use_denoising = original_cycles_denoising
         scene.cycles.samples = original_cycles_samples

@@ -86,7 +86,7 @@ def main():
         return format(value, ".7g").replace(".", "p")
 
     output = {
-        "comparisonVersion": 9,
+        "comparisonVersion": 10,
         "renderContract": {
             "geometry": "shared outward-wound 64 x 32 UV sphere algorithm and 96-segment floor disc",
             "camera": "scene-contract.json schema 1; Blender evaluated matrix_world and 50 degree vertical FOV",
@@ -103,6 +103,7 @@ def main():
             "metalPresetMatrix": "metal-preset-{aluminum,copper,gold,stainless-steel,titanium}-{blender,web}.png; constant PHYSICAL_CONDUCTOR n/k values, Blender perceptual roughness 0.35 mapped to MaterialX microfacet alpha 0.1225, no direct lights or floor",
             "metalF82Probe": "metal-f82-gold-{blender,web}.png; Blender Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, exact linear color0/color82 values, roughness 0.35 mapped to alpha 0.1225, no direct lights or floor",
             "metalAnisotropyProbe": "metal-anisotropy-gold-{r0,r90}-{blender,web}.png; Blender Cycles versus MaterialX, anisotropy 0.8, radial-Y/Tworld tangent, rotations 0 and 0.25 turns, Blender alpha/aspect mapping, key light only, no environment or floor",
+            "metalThinFilmProbe": "metal-thin-film-gold-243nm-{blender,web}.png; Blender Cycles Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, source Gold-group mapping 150 V x 1.62 nm/V = 243 nm, thin-film IOR 2.46, key light only, no environment or floor",
         },
         "sourceLowering": {
             **metrics(directory / "chrome-source-blender.png", directory / "chrome-source-web.png"),
@@ -184,6 +185,17 @@ def main():
                 "claim": "constant-input anisotropy/tangent semantics only; no brushed texture branch",
             }
             for rotation in ("r0", "r90")
+        },
+        "metalThinFilmProbe": {
+            **metrics(
+                directory / "metal-thin-film-gold-243nm-blender.png",
+                directory / "metal-thin-film-gold-243nm-web.png",
+            ),
+            "sphereRegion": sphere_metrics(
+                directory / "metal-thin-film-gold-243nm-blender.png",
+                directory / "metal-thin-film-gold-243nm-web.png",
+            ),
+            "claim": "constant-input thin-film thickness and IOR semantics only; no procedural streak branch",
         },
         "interpretation": "Image metrics include expected Eevee/Three BRDF, shadow, and light-unit differences. Graph-semantic support is reported separately in manifest.json and is not inferred from these pixels.",
     }

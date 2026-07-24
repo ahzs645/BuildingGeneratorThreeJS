@@ -54,6 +54,22 @@
     "source": "Blender Cycles intern/cycles/kernel/svm/closure.h Metallic BSDF setup; behavior is re-expressed as constants and MaterialX graph nodes.",
     "scope": "Constant-input anisotropy and tangent rotation only; no brushed texture or source add-on graph is embedded."
   },
+  "thinFilmProbe": {
+    "baseProbe": "gold",
+    "shader": "MetalF82GoldThinFilm243nm",
+    "sourceGroup": "Gold",
+    "sourceSockets": {
+      "voltage": "Socket_30 · Annodization Voltage (Thin Film)",
+      "thinFilmIor": "Socket_14 · Thin Film IOR",
+      "proceduralStreakFactor": "Socket_29 · Factor"
+    },
+    "anodizationVoltage": 150,
+    "nanometersPerVolt": 1.62,
+    "thinFilmThicknessNanometers": 243,
+    "thinFilmIor": 2.46,
+    "mapping": "The supplied Gold group multiplies voltage by 1.62 before the native Metallic BSDF Thin Film Thickness input; the source describes 146-152 V as a rose-gold range, and this 150 V control point therefore becomes 243 nm.",
+    "scope": "Uniform constant-input thin-film thickness and IOR only; Socket_29's procedural streak/discoloration texture branch and the source add-on graph are not embedded."
+  },
   "presets": [
     {
       "id": "aluminum",

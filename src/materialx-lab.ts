@@ -51,6 +51,15 @@ type MetalPresetProbeIndex = {
       formula: string;
     };
   };
+  thinFilmProbe: {
+    baseProbe: string;
+    shader: string;
+    anodizationVoltage: number;
+    nanometersPerVolt: number;
+    thinFilmThicknessNanometers: number;
+    thinFilmIor: number;
+    mapping: string;
+  };
   presets: Array<{
     id: string;
     label: string;
@@ -87,7 +96,11 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   const metalPresetDiagnostic = requestedDiagnostic === "metal-preset";
   const metalF82Diagnostic = requestedDiagnostic === "metal-f82";
   const metalAnisotropyDiagnostic = requestedDiagnostic === "metal-anisotropy";
-  const metalProbeDiagnostic = metalPresetDiagnostic || metalF82Diagnostic || metalAnisotropyDiagnostic;
+  const metalThinFilmDiagnostic = requestedDiagnostic === "metal-thin-film";
+  const metalProbeDiagnostic = metalPresetDiagnostic
+    || metalF82Diagnostic
+    || metalAnisotropyDiagnostic
+    || metalThinFilmDiagnostic;
   const dependencyImplementation = import.meta.env.VITE_MATERIALX_THREE_IMPLEMENTATION || "r185";
   const environmentMode = metalProbeDiagnostic || query.get("environment") === "prefilter"
     ? "prefilter"
@@ -104,8 +117,17 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   const roughnessDiagnostic = requestedDiagnostic === "roughness-sweep";
   const requestedMetalPreset = query.get("preset") ?? "aluminum";
   const requestedMetalRotation = Number(query.get("rotation") ?? "0");
+  const requestedThinFilmThickness = Number(query.get("thickness") ?? "243");
   if (metalAnisotropyDiagnostic && ![0, 0.25].includes(requestedMetalRotation)) {
     throw new Error(`MaterialX anisotropy diagnostic supports rotation 0 or 0.25; received ${query.get("rotation")}`);
+  }
+  if (
+    metalThinFilmDiagnostic
+    && (!Number.isFinite(requestedThinFilmThickness)
+      || requestedThinFilmThickness < 0
+      || requestedThinFilmThickness > 10_000)
+  ) {
+    throw new Error(`MaterialX thin-film diagnostic requires 0–10000 nm; received ${query.get("thickness")}`);
   }
   const requestedRoughness = Number(query.get("roughness") ?? "0.32");
   if (roughnessDiagnostic && (!Number.isFinite(requestedRoughness) || requestedRoughness < 0 || requestedRoughness > 1)) {
@@ -130,6 +152,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     roughness: ownerDocument.documentElement.dataset.materialxRoughness,
     preset: ownerDocument.documentElement.dataset.materialxPreset,
     rotation: ownerDocument.documentElement.dataset.materialxRotation,
+    thinFilm: ownerDocument.documentElement.dataset.materialxThinFilm,
   };
 
   function ownMaterial<T extends THREE.Material>(material: T): T {
@@ -348,7 +371,13 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
           return response.json() as Promise<MetalPresetProbeIndex>;
         }),
       ]);
-      const preset = metalAnisotropyDiagnostic
+      const preset = metalThinFilmDiagnostic
+        ? {
+            id: "thin-film-gold",
+            label: `Gold thin film · ${requestedThinFilmThickness} nm`,
+            shader: presetIndex.thinFilmProbe.shader,
+          }
+        : metalAnisotropyDiagnostic
         ? {
             id: "anisotropy-gold",
             label: `Gold anisotropy · rotation ${requestedMetalRotation}`,
@@ -370,17 +399,25 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
         environmentIntensity: 0.18,
         geometry: probe.geometry,
         geometryContract: sceneContract.probe,
+        uniformOverrides: metalThinFilmDiagnostic
+          ? { f82_thinfilm_thickness: requestedThinFilmThickness }
+          : undefined,
       }));
       material.uniforms.u_numActiveLightSources.value = 0;
       for (const light of [key, fill, rim]) light.intensity = 0;
-      if (metalAnisotropyDiagnostic) {
+      if (metalAnisotropyDiagnostic || metalThinFilmDiagnostic) {
         material.uniforms.u_numActiveLightSources.value = 1;
         material.uniforms.u_envLightIntensity.value = 0;
       }
       floor.visible = false;
       probe.material = material;
       status.textContent = `materialx · PREFILTER · ${preset.label}`;
-      if (metalAnisotropyDiagnostic) {
+      if (metalThinFilmDiagnostic) {
+        const thinFilm = presetIndex.thinFilmProbe;
+        rendererStatus.textContent += " · generalized Schlick thin film";
+        graphStatus.textContent = `${thinFilm.shader} · ${requestedThinFilmThickness} nm · IOR ${thinFilm.thinFilmIor}`;
+        fallbackStatus.textContent = `Constant-input thin film · ${thinFilm.anodizationVoltage} V × ${thinFilm.nanometersPerVolt} nm/V`;
+      } else if (metalAnisotropyDiagnostic) {
         const anisotropy = presetIndex.anisotropyProbe;
         rendererStatus.textContent += " · anisotropic generalized Schlick";
         graphStatus.textContent = `${preset.shader} · αx=${anisotropy.mapping.alphaX} · αy=${anisotropy.mapping.alphaY}`;
@@ -399,13 +436,20 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       ownerDocument.documentElement.dataset.materialxReady = "true";
       ownerDocument.documentElement.dataset.materialBackend = "materialx";
       ownerDocument.documentElement.dataset.materialxImplementation = implementation;
-      ownerDocument.documentElement.dataset.materialxPreset = metalAnisotropyDiagnostic
-        ? "anisotropy-gold"
+      ownerDocument.documentElement.dataset.materialxPreset = metalThinFilmDiagnostic
+        ? "thin-film-gold"
+        : metalAnisotropyDiagnostic
+          ? "anisotropy-gold"
         : metalF82Diagnostic
           ? "f82-gold"
           : preset.id;
       if (metalAnisotropyDiagnostic) {
         ownerDocument.documentElement.dataset.materialxRotation = String(requestedMetalRotation);
+      }
+      if (metalThinFilmDiagnostic) {
+        ownerDocument.documentElement.dataset.materialxThinFilm = String(
+          requestedThinFilmThickness,
+        );
       }
       renderer.setAnimationLoop(() => renderer.render(scene, camera));
       return;
@@ -666,5 +710,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     else dataset.materialxPreset = previousDataset.preset;
     if (previousDataset.rotation === undefined) delete dataset.materialxRotation;
     else dataset.materialxRotation = previousDataset.rotation;
+    if (previousDataset.thinFilm === undefined) delete dataset.materialxThinFilm;
+    else dataset.materialxThinFilm = previousDataset.thinFilm;
   };
 }

@@ -1,5 +1,5 @@
 {
-  "comparisonVersion": 9,
+  "comparisonVersion": 10,
   "renderContract": {
     "geometry": "shared outward-wound 64 x 32 UV sphere algorithm and 96-segment floor disc",
     "camera": "scene-contract.json schema 1; Blender evaluated matrix_world and 50 degree vertical FOV",
@@ -15,7 +15,8 @@
     "uiNormalBandDiagnostic": "ui-normal-band-{blender,web}.png; identity-transform Normal/Mapping/CONSTANT-ramp/typed-col branch with explicit normal-space and emission surface substitutes",
     "metalPresetMatrix": "metal-preset-{aluminum,copper,gold,stainless-steel,titanium}-{blender,web}.png; constant PHYSICAL_CONDUCTOR n/k values, Blender perceptual roughness 0.35 mapped to MaterialX microfacet alpha 0.1225, no direct lights or floor",
     "metalF82Probe": "metal-f82-gold-{blender,web}.png; Blender Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, exact linear color0/color82 values, roughness 0.35 mapped to alpha 0.1225, no direct lights or floor",
-    "metalAnisotropyProbe": "metal-anisotropy-gold-{r0,r90}-{blender,web}.png; Blender Cycles versus MaterialX, anisotropy 0.8, radial-Y/Tworld tangent, rotations 0 and 0.25 turns, Blender alpha/aspect mapping, key light only, no environment or floor"
+    "metalAnisotropyProbe": "metal-anisotropy-gold-{r0,r90}-{blender,web}.png; Blender Cycles versus MaterialX, anisotropy 0.8, radial-Y/Tworld tangent, rotations 0 and 0.25 turns, Blender alpha/aspect mapping, key light only, no environment or floor",
+    "metalThinFilmProbe": "metal-thin-film-gold-243nm-{blender,web}.png; Blender Cycles Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, source Gold-group mapping 150 V x 1.62 nm/V = 243 nm, thin-film IOR 2.46, key light only, no environment or floor"
   },
   "sourceLowering": {
     "width": 768,
@@ -479,6 +480,29 @@
       },
       "claim": "constant-input anisotropy/tangent semantics only; no brushed texture branch"
     }
+  },
+  "metalThinFilmProbe": {
+    "width": 768,
+    "height": 768,
+    "rgbMeanAbsoluteError": 0.005269,
+    "rgbRootMeanSquareError": 0.023304,
+    "luminanceCorrelation": 0.998819,
+    "meanLuminance": {
+      "blender": 0.098631,
+      "web": 0.096933
+    },
+    "sphereRegion": {
+      "normalizedCircleRadius": 0.212,
+      "sampleCount": 83300,
+      "rgbMeanAbsoluteError": 0.032269,
+      "rgbRootMeanSquareError": 0.061831,
+      "luminanceCorrelation": 0.998885,
+      "meanLuminance": {
+        "blender": 0.231857,
+        "web": 0.219482
+      }
+    },
+    "claim": "constant-input thin-film thickness and IOR semantics only; no procedural streak branch"
   },
   "interpretation": "Image metrics include expected Eevee/Three BRDF, shadow, and light-unit differences. Graph-semantic support is reported separately in manifest.json and is not inferred from these pixels."
 }

@@ -231,13 +231,36 @@ Eevee 5.1 also rendered this native node isotropically in the diagnostic, so
 the authoritative Blender anisotropy references use Cycles and say so in the
 render contract.
 
+The uniform thin-film gate is now traced from the actual Gold group rather than
+guessed from its rendered sphere. `Socket_30` exposes
+`Annodization Voltage (Thin Film)`, and `Math.139` multiplies it by `1.62`
+before the result reaches every Metallic BSDF node as nanometer thickness.
+`Socket_14` supplies the source default thin-film IOR of `2.46`. The source
+description identifies 146–152 V as a rose-gold range, so the matched control
+point uses:
+
+```text
+150 V * 1.62 nm/V = 243 nm
+```
+
+The browser expresses those same constants through MaterialX
+`generalized_schlick_bsdf.thinfilm_thickness` and `thinfilm_ior`. The matched
+Cycles/direct-light sphere reaches RGB RMSE `0.061831`, luminance correlation
+`0.998885`, and mean luminance `0.231857 / 0.219482` for Blender/web.
+
+This is deliberately a uniform probe. The Gold group defaults `Socket_29` to
+`1.0`, enabling a second branch that adds noise-driven film streaks scaled up
+to 1,390 nm. That spatial discoloration branch remains open and is not hidden
+inside the constant-input parity claim.
+
 ## Required regression evidence
 
 - extraction determinism and source fingerprint;
 - reachable node-type and nested-group inventory;
 - constant-input unit probes for both `F82` and `PHYSICAL_CONDUCTOR` — complete;
-- anisotropy rotation and tangent-direction probes;
-- thin-film thickness/IOR probes;
+- anisotropy rotation and tangent-direction probes — complete;
+- uniform thin-film thickness/IOR probe — complete;
+- procedural thin-film streak/discoloration branch;
 - Blender and browser renders using one shared studio environment;
 - explicit capability reports when the MaterialX or portable backend cannot
   represent a branch;
