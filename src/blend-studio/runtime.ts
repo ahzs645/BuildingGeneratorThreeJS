@@ -13,7 +13,9 @@ export type BlendStudioRuntimeSnapshot = {
   stats?: TriSoup["stats"];
   runtimeSeconds?: number;
   missingTypes?: { type: string; count: number }[];
+  approximateTypes?: { type: string; count: number }[];
   lineStats?: NonNullable<TriSoup["lines"]>["stats"];
+  pointStats?: NonNullable<TriSoup["points"]>["stats"];
 };
 
 export type BlendStudioEvaluation = {
@@ -32,12 +34,25 @@ export type BlendStudioRuntimeController = {
   dispose: () => void;
 };
 
+export const BLEND_STUDIO_EVALUATION_TIMEOUT_MS = 180_000;
+
+export class BlendStudioEvaluationCancelledError extends Error {
+  constructor() {
+    super("Evaluation cancelled");
+    this.name = "BlendStudioEvaluationCancelledError";
+  }
+}
+
 type WorkerReply =
   | {
       id: number;
       ok: true;
       soup: TriSoup;
-      coverage: { handled: number; missingTypes: { type: string; count: number }[] };
+      coverage: {
+        handled: number;
+        missingTypes: { type: string; count: number }[];
+        approximateTypes: { type: string; count: number }[];
+      };
     }
   | { id: number; ok: false; error: string };
 
@@ -127,6 +142,10 @@ export function mountBlendStudioRuntime({
   let queueTimer = 0;
   let disposed = false;
   let lastValid = false;
+  let activeEvaluation: {
+    id: number;
+    reject: (reason?: unknown) => void;
+  } | null = null;
 
   const resize = (): void => {
     const rect = canvas.getBoundingClientRect();
@@ -191,6 +210,20 @@ export function mountBlendStudioRuntime({
         new THREE.LineBasicMaterial({ color: 0x7de2c2, transparent: true, opacity: .94 }),
       ));
     }
+    if (soup.points?.positions.length) {
+      const pointGeometry = new THREE.BufferGeometry();
+      pointGeometry.setAttribute("position", new THREE.BufferAttribute(soup.points.positions, 3));
+      currentRoot.add(new THREE.Points(
+        pointGeometry,
+        new THREE.PointsMaterial({
+          color: 0xf2bd67,
+          size: .04,
+          sizeAttenuation: true,
+          transparent: true,
+          opacity: .96,
+        }),
+      ));
+    }
     scene.add(currentRoot);
     currentRoot.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(currentRoot);
@@ -199,6 +232,11 @@ export function mountBlendStudioRuntime({
     currentRoot.position.sub(center);
     currentRoot.updateMatrixWorld(true);
     const radius = Math.max(size.length() * .5, .01);
+    currentRoot.traverse((object) => {
+      const pointMaterial = (object as THREE.Points).material;
+      if (pointMaterial instanceof THREE.PointsMaterial)
+        pointMaterial.size = Math.max(radius / 80, .0005);
+    });
     const distance = radius / Math.sin(THREE.MathUtils.degToRad(camera.fov * .5));
     camera.position.set(distance * .72, distance * .48, distance * .92);
     camera.near = Math.max(radius / 1_000, .0001);
@@ -218,6 +256,9 @@ export function mountBlendStudioRuntime({
     window.clearTimeout(timeout);
     worker?.terminate();
     worker = null;
+    const active = activeEvaluation;
+    activeEvaluation = null;
+    active?.reject(new BlendStudioEvaluationCancelledError());
   };
 
   const evaluate = (request: BlendStudioEvaluation): Promise<void> => {
@@ -231,13 +272,17 @@ export function mountBlendStudioRuntime({
       lastValid,
     });
     return new Promise((resolve, reject) => {
-      worker = new Worker(new URL("../blend-import-worker.ts", import.meta.url), {
+      const evaluationWorker = new Worker(new URL("../blend-import-worker.ts", import.meta.url), {
         type: "module",
         name: "blend-studio-gnvm",
       });
+      worker = evaluationWorker;
+      activeEvaluation = { id, reject };
       timeout = window.setTimeout(() => {
-        worker?.terminate();
-        worker = null;
+        if (activeEvaluation?.id !== id) return;
+        activeEvaluation = null;
+        evaluationWorker.terminate();
+        if (worker === evaluationWorker) worker = null;
         const error = new Error("Evaluation stopped after the 180 second safety limit");
         onState({
           state: "error",
@@ -245,12 +290,13 @@ export function mountBlendStudioRuntime({
           lastValid,
         });
         reject(error);
-      }, 180_000);
-      worker.onmessage = (event: MessageEvent<WorkerReply>) => {
-        if (event.data.id !== id) return;
+      }, BLEND_STUDIO_EVALUATION_TIMEOUT_MS);
+      evaluationWorker.onmessage = (event: MessageEvent<WorkerReply>) => {
+        if (event.data.id !== id || activeEvaluation?.id !== id) return;
+        activeEvaluation = null;
         window.clearTimeout(timeout);
-        worker?.terminate();
-        worker = null;
+        evaluationWorker.terminate();
+        if (worker === evaluationWorker) worker = null;
         if (!event.data.ok) {
           const message = event.data.error.split("\n")[0];
           onState({
@@ -264,23 +310,30 @@ export function mountBlendStudioRuntime({
         showSoup(request.dump, event.data.soup);
         lastValid = true;
         const missing = event.data.coverage.missingTypes;
+        const approximations = event.data.coverage.approximateTypes;
         onState({
           state: "ready",
           message: missing.length
             ? `Ready with ${missing.length} runtime fallback ${missing.length === 1 ? "type" : "types"}`
+            : approximations.length
+              ? `Ready with ${approximations.length} bounded approximation ${approximations.length === 1 ? "type" : "types"}`
             : "Ready · all executed nodes handled",
           lastValid,
           stats: event.data.soup.stats,
           lineStats: event.data.soup.lines?.stats,
+          pointStats: event.data.soup.points?.stats,
           runtimeSeconds: (performance.now() - started) / 1_000,
           missingTypes: missing,
+          approximateTypes: approximations,
         });
         resolve();
       };
-      worker.onerror = (event) => {
+      evaluationWorker.onerror = (event) => {
+        if (activeEvaluation?.id !== id) return;
+        activeEvaluation = null;
         window.clearTimeout(timeout);
-        worker?.terminate();
-        worker = null;
+        evaluationWorker.terminate();
+        if (worker === evaluationWorker) worker = null;
         const message = event.message || "Evaluation worker failed";
         onState({
           state: "error",
@@ -289,11 +342,12 @@ export function mountBlendStudioRuntime({
         });
         reject(new Error(message));
       };
-      worker.postMessage({
+      evaluationWorker.postMessage({
         id,
         dump: request.dump,
         object: request.target.kind === "object" ? request.target.objectName : undefined,
         group: request.target.groupName,
+        modifierIndex: request.target.kind === "object" ? request.target.modifierIndex : undefined,
         targetKind: request.target.kind,
         overrides: request.overrides,
         seed: request.seed,

@@ -2,12 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isStaticDeploy, publicUrl } from "../../base-url";
 import type { Dump } from "../../gnvm";
 import {
+  autoEvaluationPolicyForBlendStudioTarget,
   compatibilityForBlendStudioTarget,
+  connectedGeometryInputsForBlendStudioTarget,
   controlsForBlendStudioTarget,
   discoverBlendStudioTargets,
   seedableObjectNames,
   type BlendStudioSeed,
 } from "../../blend-studio/model";
+import { presetContractForBlendStudioTarget } from "../../blend-studio/preset-contracts";
 import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import { useBlendStudioRuntime } from "../blend-studio/useBlendStudioRuntime";
 import { usePageRuntime } from "../page-runtime";
@@ -114,7 +117,7 @@ export default function BlendBridgePage(): React.JSX.Element {
   const [sourceKey, setSourceKey] = useState("");
   const [targetId, setTargetId] = useState("");
   const [overrides, setOverrides] = useState<Record<string, number | boolean>>({});
-  const [seedValue, setSeedValue] = useState("cube");
+  const [seedValue, setSeedValue] = useState("authored");
   const [geometryInput, setGeometryInput] = useState("");
   const [geometryOutput, setGeometryOutput] = useState("");
   const runtime = useBlendStudioRuntime();
@@ -148,6 +151,14 @@ export default function BlendBridgePage(): React.JSX.Element {
     () => workingDump && target ? compatibilityForBlendStudioTarget(workingDump, target) : null,
     [target, workingDump],
   );
+  const autoEvaluation = useMemo(
+    () => workingDump && target ? autoEvaluationPolicyForBlendStudioTarget(workingDump, target) : null,
+    [target, workingDump],
+  );
+  const presetContract = useMemo(
+    () => workingDump && target ? presetContractForBlendStudioTarget(workingDump, target) : null,
+    [target, workingDump],
+  );
   const seedObjects = useMemo(
     () => workingDump ? seedableObjectNames(workingDump) : [],
     [workingDump],
@@ -159,6 +170,12 @@ export default function BlendBridgePage(): React.JSX.Element {
           && item.in_out === "INPUT"
           && item.socket_type === "NodeSocketGeometry"
           && item.identifier)
+      : [],
+    [target, workingDump],
+  );
+  const connectedGeometryInputs = useMemo(
+    () => workingDump && target
+      ? connectedGeometryInputsForBlendStudioTarget(workingDump, target)
       : [],
     [target, workingDump],
   );
@@ -181,6 +198,7 @@ export default function BlendBridgePage(): React.JSX.Element {
       materials: Object.keys(workingDump.materials ?? {}).length,
     };
   }, [targets, workingDump]);
+  const extractionWarnings = workingDump?.extraction_metadata?.warnings ?? [];
 
   useEffect(() => {
     if (!target || !workingDump) return;
@@ -188,22 +206,41 @@ export default function BlendBridgePage(): React.JSX.Element {
       controls.map((control) => [control.identifier, control.value]),
     ) as Record<string, number | boolean>;
     setOverrides(next);
-    setGeometryInput(String(geometryInputs[0]?.identifier ?? ""));
+    setGeometryInput(String(connectedGeometryInputs[0]?.identifier ?? ""));
     setGeometryOutput(String(geometryOutputs[0]?.identifier ?? ""));
-    if (target.kind === "object") setSeedValue("cube");
-  }, [sourceKey, target?.id]);
+    setSeedValue(
+      presetContract?.mode === "seed" && presetContract.recommendedSeed
+        ? presetContract.recommendedSeed.kind
+        : target.kind === "object" ? "authored" : "cube",
+    );
+  }, [
+    connectedGeometryInputs,
+    controls,
+    geometryOutputs,
+    presetContract,
+    sourceKey,
+    target,
+    workingDump,
+  ]);
 
-  useEffect(() => {
-    if (!workingDump || !target) return;
-    runtime.queue({
+  const evaluation = useMemo(() => {
+    if (!workingDump || !target) return null;
+    return {
       dump: workingDump,
       target,
       overrides,
-      seed: target.kind === "group" && geometryInputs.length ? seedFromValue(seedValue) : undefined,
+      seed: connectedGeometryInputs.length && seedValue !== "authored"
+        ? seedFromValue(seedValue)
+        : undefined,
       geometryInput: geometryInput || undefined,
       output: geometryOutput || undefined,
-    });
-  }, [geometryInput, geometryInputs.length, geometryOutput, overrides, seedValue, target, workingDump, runtime.queue]);
+    };
+  }, [connectedGeometryInputs.length, geometryInput, geometryOutput, overrides, seedValue, target, workingDump]);
+
+  useEffect(() => {
+    if (evaluation && autoEvaluation?.enabled) runtime.queue(evaluation);
+    else runtime.cancel();
+  }, [autoEvaluation?.enabled, evaluation, runtime.cancel, runtime.queue]);
 
   useEffect(() => {
     if (!graphMaximized) return;
@@ -353,9 +390,10 @@ export default function BlendBridgePage(): React.JSX.Element {
           </option>)}
         </select>
       </label>
-      {target?.kind === "group" && geometryInputs.length > 0 && <label className="blend-field">
-        <span>Geometry input</span>
+      {target && connectedGeometryInputs.length > 0 && <label className="blend-field">
+        <span>Apply graph to</span>
         <select value={seedValue} onChange={(event) => setSeedValue(event.target.value)}>
+          {target.kind === "object" && <option value="authored">Authored object · {target.objectName}</option>}
           <option value="cube">Primitive · Cube</option>
           <option value="plane">Primitive · Plane</option>
           <option value="curve-circle">Primitive · Curve circle</option>
@@ -363,13 +401,15 @@ export default function BlendBridgePage(): React.JSX.Element {
           {seedObjects.map((name) => <option key={name} value={`object:${name}`}>Object · {name}</option>)}
         </select>
       </label>}
-      {target?.kind === "group" && geometryInputs.length > 1 && <label className="blend-field">
+      {target && connectedGeometryInputs.length > 1 && <label className="blend-field">
         <span>Input socket</span>
         <select value={geometryInput} onChange={(event) => setGeometryInput(event.target.value)}>
-          {geometryInputs.map((item) => <option key={item.identifier} value={item.identifier}>{item.name}</option>)}
+          {connectedGeometryInputs.map((item) => <option key={item.identifier} value={item.identifier}>{item.name}</option>)}
         </select>
       </label>}
-      {target?.kind === "group" && geometryOutputs.length > 1 && <label className="blend-field">
+      {target && geometryInputs.length > 0 && connectedGeometryInputs.length === 0
+        && <p className="blend-studio-copy">Pure generator · its exposed Geometry socket is disconnected, so output is driven by node parameters.</p>}
+      {target && geometryOutputs.length > 1 && <label className="blend-field">
         <span>Preview output</span>
         <select value={geometryOutput} onChange={(event) => setGeometryOutput(event.target.value)}>
           {geometryOutputs.map((item) => <option key={item.identifier} value={item.identifier}>{item.name}</option>)}
@@ -380,17 +420,10 @@ export default function BlendBridgePage(): React.JSX.Element {
           type="button"
           disabled={!workingDump || !target || runtime.snapshot.state === "evaluating"}
           onClick={() => {
-            if (!workingDump || !target) return;
-            void runtime.evaluate({
-              dump: workingDump,
-              target,
-              overrides,
-              seed: target.kind === "group" && geometryInputs.length ? seedFromValue(seedValue) : undefined,
-              geometryInput: geometryInput || undefined,
-              output: geometryOutput || undefined,
-            }).catch(() => {});
+            if (!evaluation) return;
+            void runtime.evaluate(evaluation).catch(() => {});
           }}
-        >Evaluate now</button>
+        >Apply to preview</button>
         <button type="button" disabled={!workingDump} onClick={() => {
           if (!workingDump) return;
           const base = (sourceName || "blend-graph").replace(/\.blend$/i, "").replace(/[^a-z0-9._-]+/gi, "-");
@@ -443,10 +476,30 @@ export default function BlendBridgePage(): React.JSX.Element {
     </section>
     {compatibility && <section>
       <div className="blend-compat-score"><strong>{compatibility.score}%</strong><div><b>reachable records recognized</b><span>{compatibility.recognizedNodes}/{compatibility.totalNodes} nodes · {compatibility.report.reachableGroups.length} groups</span></div></div>
+      {autoEvaluation && <p className="blend-studio-copy">
+        {autoEvaluation.reason}. {!autoEvaluation.enabled && "Use Apply to preview the partial result explicitly."}
+      </p>}
       <div className="blend-gaps">
         {compatibility.gaps.length
           ? compatibility.gaps.map((gap) => <span key={gap}>{gap}</span>)
           : <p>No statically unsupported nodes in this target closure.</p>}
+      </div>
+    </section>}
+    {presetContract && <section>
+      <div className="section-title"><span>Input contract</span><small>{presetContract.mode.replaceAll("-", " ")}</small></div>
+      <p className="blend-studio-copy">{presetContract.reason}</p>
+      {presetContract.unboundDatablockInputs.length > 0 && <div className="blend-gaps">
+        {presetContract.unboundDatablockInputs.map((name) =>
+          <span key={name}>Unbound datablock input · {name}</span>)}
+      </div>}
+    </section>}
+    {extractionWarnings.length > 0 && <section>
+      <div className="section-title"><span>Source packaging</span><small>{extractionWarnings.length} warnings</small></div>
+      <div className="blend-gaps">
+        {extractionWarnings.slice(0, 8).map((warning, index) =>
+          <span key={`${warning.code}:${index}`}>{warning.message}</span>)}
+        {extractionWarnings.length > 8
+          && <p>{extractionWarnings.length - 8} additional extraction warnings are retained in the exported JSON.</p>}
       </div>
     </section>}
     {runtime.snapshot.stats && <section className="blend-result">
@@ -461,10 +514,14 @@ export default function BlendBridgePage(): React.JSX.Element {
               <strong>{runtime.snapshot.lineStats.evaluatedPoints.toLocaleString()} curve points</strong>
               <b>{runtime.snapshot.lineStats.segments.toLocaleString()} segments · {runtime.snapshot.lineStats.splines.toLocaleString()} splines</b>
             </>
+          : runtime.snapshot.pointStats
+            ? <strong>{runtime.snapshot.pointStats.points.toLocaleString()} point-cloud points</strong>
           : <strong>Empty geometry output</strong>}
       <small>{runtime.snapshot.runtimeSeconds?.toFixed(2)}s in worker</small>
       {(runtime.snapshot.missingTypes ?? []).map((entry) =>
         <em key={entry.type}>{entry.type} ×{entry.count}</em>)}
+      {(runtime.snapshot.approximateTypes ?? []).map((entry) =>
+        <em key={entry.type}>Bounded approximation · {entry.type} ×{entry.count}</em>)}
     </section>}
     <section className="blend-note">
       <span className="panel-label">Truth contract</span>

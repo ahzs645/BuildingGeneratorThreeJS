@@ -361,6 +361,50 @@ reg("GeometryNodeSetCurveTilt", (api) => {
   return { Curve: geometry };
 });
 
+reg("GeometryNodeSetCurveNormal", (api) => {
+  const geometry = api.geo("Curve").clone();
+  const pointCount = geometry.curvePointCount();
+  if (!pointCount) return { Curve: geometry };
+  const selection = api.resolve(api.field("Selection"), geometry, "POINT");
+  const custom = api.resolve(api.field("Normal"), geometry, "POINT");
+  const mode = api.str("Mode") || "Minimum Twist";
+  const previous = geometry.curveAttributes.get("__curve_normal");
+  const previousValues = previous?.domain === "POINT" ? previous.data : [];
+  const tangents: Vec3[] = [];
+  const normals: Vec3[] = [];
+  let pointOffset = 0;
+  for (const spline of geometry.curves) {
+    const frames = splineFrames(spline.points, spline.cyclic);
+    for (let index = 0; index < spline.points.length; index++) {
+      const frame = frames[index];
+      const tangent = frame?.tangent ?? [0, 0, 1];
+      tangents.push(tangent);
+      if (asNum(selection[pointOffset + index] ?? 1) <= 0) {
+        normals.push(asVec3(previousValues[pointOffset + index] ?? frame?.normal ?? [1, 0, 0]));
+        continue;
+      }
+      if (mode === "Free") {
+        const projected = vsub(
+          asVec3(custom[pointOffset + index] ?? [0, 0, 1]),
+          vscale(tangent, vdot(asVec3(custom[pointOffset + index] ?? [0, 0, 1]), tangent)),
+        );
+        normals.push(vlen(projected) > 1e-9 ? vnorm(projected) : frame?.normal ?? [1, 0, 0]);
+        continue;
+      }
+      if (mode === "Z Up") {
+        const projected = vsub([0, 0, 1], vscale(tangent, tangent[2]));
+        normals.push(vlen(projected) > 1e-9 ? vnorm(projected) : frame?.normal ?? [1, 0, 0]);
+        continue;
+      }
+      normals.push(frame?.normal ?? [1, 0, 0]);
+    }
+    pointOffset += spline.points.length;
+  }
+  geometry.curveAttributes.set("__curve_tangent", { domain: "POINT", data: tangents });
+  geometry.curveAttributes.set("__curve_normal", { domain: "POINT", data: normals });
+  return { Curve: geometry };
+});
+
 interface CurveSample {
   value: Elem;
   position: Vec3;

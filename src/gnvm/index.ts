@@ -1,7 +1,13 @@
 // Public entry point for the geometry-nodes VM.
 import { Evaluator } from "./evaluator";
 import { Geometry, toTriSoup } from "./geometry";
-import { DUMP_CONTEXT, MISSING, REGISTRY, type DumpObject } from "./registry";
+import {
+  APPROXIMATIONS,
+  DUMP_CONTEXT,
+  MISSING,
+  REGISTRY,
+  type DumpObject,
+} from "./registry";
 import { ensureManifold } from "./boolean";
 import { ensureBulletHull } from "./bullet-hull";
 import { matchLegacyCurvePassthrough } from "./nodes/geometry";
@@ -9,6 +15,12 @@ import { resolveObjectDependencyOrder } from "./dependency-metadata";
 import type { Dump } from "./dump-schema";
 import { baseGeometryOf } from "./dump-object-geometry";
 import type { RunResult } from "./run-result";
+import {
+  resolveGeometrySeed,
+  runNodeGroup,
+  type GroupGeometrySeed,
+  type RunNodeGroupOptions,
+} from "./group-runner";
 
 // Registering the handler modules populates the REGISTRY.
 import "./nodes/math";
@@ -23,13 +35,18 @@ import "./nodes/volume";
 import "./nodes/points";
 import "./nodes/color";
 import "./nodes/curve-handles";
+import "./nodes/material-fields";
 import "./nodes/edge-paths";
 import "./nodes/surface-sampling";
+import "./nodes/matrix";
+import "./nodes/uv";
+import "./nodes/import-stl";
 
 export { Evaluator, GEOMETRY_PROBE } from "./evaluator";
 export { Geometry, toTriSoup } from "./geometry";
 export type { TriSoup } from "./geometry";
-export { REGISTRY, MISSING } from "./registry";
+export { APPROXIMATIONS, REGISTRY, MISSING } from "./registry";
+export type { SockVal, VolumeGrid } from "./registry";
 export { DumpValidationError, normalizeDump, validateDump } from "./dump-schema";
 export type {
   DataRef,
@@ -52,6 +69,7 @@ export type {
 } from "./dump-schema";
 export {
   analyzeProgramCapabilities,
+  BOUNDED_APPROXIMATION_NODE_TYPES,
   EDITOR_ONLY_NODE_TYPES,
   EVALUATOR_NATIVE_NODE_TYPES,
 } from "./capabilities";
@@ -64,7 +82,7 @@ export type {
 export { ensureManifold, isManifoldReady } from "./boolean";
 export { ensureBulletHull, isBulletHullReady } from "./bullet-hull";
 export { baseGeometryOf } from "./dump-object-geometry";
-export { createPrimitiveGeometry, runNodeGroup } from "./group-runner";
+export { createPrimitiveGeometry, resolveGeometrySeed, runNodeGroup } from "./group-runner";
 export type {
   GroupGeometrySeed,
   PrimitiveGeometrySeed,
@@ -72,16 +90,36 @@ export type {
 } from "./group-runner";
 export type { RunCoverage, RunResult } from "./run-result";
 
+export interface RunGeneratorOptions {
+  object?: string;
+  group?: string;
+  /** Zero-based index in the object's complete Blender modifier array. */
+  modifierIndex?: number;
+  overrides?: Record<string, any>;
+  /** Replace the modifier's authored Geometry input with another geometry. */
+  geometry?: GroupGeometrySeed;
+  /** Serializable worker/API-friendly alias for geometry. */
+  seed?: Exclude<GroupGeometrySeed, Geometry>;
+  /** Target Geometry input identifier or friendly name. */
+  geometryInput?: string;
+}
+
+export type RunGeometryTargetOptions =
+  | ({ kind: "object" } & RunGeneratorOptions)
+  | ({ kind: "group" } & RunNodeGroupOptions);
+
 // Find the modifier group name for an object (or the first NODES modifier in the file).
 export function findModifierGroup(
   dump: Dump,
   objectName?: string,
   groupName?: string,
+  modifierIndex?: number,
 ): { group: string; inputs: Record<string, any>; objectName: string } | null {
   const objs = dump.objects ?? [];
   for (const o of objs) {
     if (objectName && o.name !== objectName) continue;
-    for (const m of o.modifiers ?? []) {
+    for (const [index, m] of (o.modifiers ?? []).entries()) {
+      if (modifierIndex !== undefined && index !== modifierIndex) continue;
       if (
         m.type === "NODES"
         && m.node_group
@@ -90,6 +128,40 @@ export function findModifierGroup(
     }
   }
   return null;
+}
+
+function modifierIndexForSelection(
+  dump: Dump,
+  objectName: string,
+  groupName: string,
+  requestedIndex?: number,
+): number {
+  const object = (dump.objects ?? []).find((candidate) => candidate.name === objectName);
+  if (!object) return -1;
+  if (requestedIndex !== undefined) {
+    const modifier = object.modifiers?.[requestedIndex];
+    return modifier?.type === "NODES" && modifier.node_group === groupName ? requestedIndex : -1;
+  }
+  return (object.modifiers ?? []).findIndex((modifier) =>
+    modifier.type === "NODES" && modifier.node_group === groupName);
+}
+
+function applyFriendlyOverrides(
+  groupDef: Dump["node_groups"][string] | undefined,
+  savedInputs: Record<string, any>,
+  overrides: Record<string, any>,
+): Record<string, any> {
+  const merged = { ...savedInputs };
+  for (const [key, value] of Object.entries(overrides)) {
+    merged[key] = value;
+    // Friendly-name UI overrides must replace the identifier value captured in
+    // the modifier dump; identifier-first binding otherwise restores the saved
+    // value. Duplicate names intentionally update every matching socket.
+    for (const item of groupDef?.interface ?? [])
+      if (item.item_type === "SOCKET" && item.in_out === "INPUT" && item.name === key && item.identifier)
+        merged[item.identifier] = value;
+  }
+  return merged;
 }
 
 function isGeometryPassthroughGroup(group: any): boolean {
@@ -131,11 +203,12 @@ function hasPortableRuntimeMeshAttributes(geometry: Geometry): boolean {
 
 export async function runGenerator(
   dump: Dump,
-  opts: { object?: string; group?: string; overrides?: Record<string, any> } = {},
+  opts: RunGeneratorOptions = {},
 ): Promise<RunResult> {
   // Mesh boolean and Blender-compatible convex hull need WASM; load both once.
   await Promise.all([ensureManifold(), ensureBulletHull()]);
   MISSING.clear();
+  APPROXIMATIONS.clear();
   DUMP_CONTEXT.objects = (dump.objects ?? []) as any;
   DUMP_CONTEXT.collections = dump.collections ?? [];
   DUMP_CONTEXT.images = dump.images ?? [];
@@ -150,12 +223,32 @@ export async function runGenerator(
   }
   DUMP_CONTEXT.frame = Number(opts.overrides?.__frame ?? dump.scene?.frame_current ?? 0);
   DUMP_CONTEXT.fps = Number(dump.scene?.fps ?? 24) / Math.max(Number(dump.scene?.fps_base ?? 1), 1e-9);
-  const found = findModifierGroup(dump, opts.object, opts.group);
+  const found = findModifierGroup(dump, opts.object, opts.group, opts.modifierIndex);
   if (!found) {
-    const selection = [opts.object, opts.group].filter(Boolean).join(" / ");
+    const selection = [
+      opts.object,
+      opts.modifierIndex === undefined ? undefined : `modifier ${opts.modifierIndex}`,
+      opts.group,
+    ].filter((value) => value !== undefined && value !== "").join(" / ");
     throw new Error(`no matching geometry-nodes modifier found in dump${selection ? `: ${selection}` : ""}`);
   }
-  DUMP_CONTEXT.activeObject = DUMP_CONTEXT.objects.find((object) => object.name === found.objectName);
+  const activeObject = DUMP_CONTEXT.objects.find((object) => object.name === found.objectName);
+  const targetModifierIndex = modifierIndexForSelection(
+    dump,
+    found.objectName,
+    found.group,
+    opts.modifierIndex,
+  );
+  if (!activeObject || targetModifierIndex < 0)
+    throw new Error(`geometry-nodes modifier selection became unavailable: ${found.objectName} / ${found.group}`);
+  const modifierStack = (activeObject.modifiers ?? [])
+    .map((modifier, index) => ({ modifier, index }))
+    .filter(({ modifier, index }) =>
+      index <= targetModifierIndex
+      && modifier.type === "NODES"
+      && Boolean(modifier.node_group)
+      && Boolean(dump.node_groups[modifier.node_group!]));
+  DUMP_CONTEXT.activeObject = activeObject;
   // Note: Solidify N++ Thickness in this dump is intentionally ~0.1 (unlinked).
   // "Wall thiccness" drives bubble displacement, NOT solidify depth — do not
   // rebind it onto Solidify or dual walls balloon into self-intersecting shells.
@@ -163,7 +256,8 @@ export async function runGenerator(
   // Evaluate reachable referenced-object modifier roots before the main root.
   // Object Info sees Blender's evaluated geometry set, including curve-only
   // outputs that cannot be represented by Object.to_mesh() during extraction.
-  const dependencyNames = resolveObjectDependencyOrder(dump, found.group, found.objectName);
+  const dependencyNames = [...new Set(modifierStack.flatMap(({ modifier }) =>
+    resolveObjectDependencyOrder(dump, modifier.node_group!, found.objectName)))];
   const objectsByName = new Map(DUMP_CONTEXT.objects.map((object) => [object.name, object]));
   // Keep the main object pending while its dependencies cook. Object Info
   // back-edges to it then match Blender's unavailable cycle edge instead of
@@ -205,36 +299,69 @@ export async function runGenerator(
       if (dependencyGeometry.curves.length || dependencyGeometry.instances.length || !object.evaluated_mesh || exactRuntimeAttributes)
         DUMP_CONTEXT.evaluatedObjects.set(object.name, dependencyGeometry);
     }
-    DUMP_CONTEXT.activeObject = DUMP_CONTEXT.objects.find((object) => object.name === found.objectName);
-    const groupDef: any = dump.node_groups[found.group];
-    const merged: Record<string, any> = { ...found.inputs };
-    for (const [key, value] of Object.entries(opts.overrides ?? {})) {
-      merged[key] = value;
-      // Friendly-name UI overrides must replace the identifier value captured in
-      // the modifier dump; identifier-first binding otherwise restores the saved
-      // value. Duplicate names intentionally update every matching socket.
-      for (const item of groupDef?.interface ?? [])
-        if (item.item_type === "SOCKET" && item.in_out === "INPUT" && item.name === key)
-          merged[item.identifier] = value;
+    DUMP_CONTEXT.activeObject = activeObject;
+    if (opts.geometry && opts.seed) throw new Error("choose either geometry or seed, not both");
+    const replacementGeometry = opts.geometry ?? opts.seed;
+    let incomingGeometry = baseGeometryOf(dump, found.objectName);
+    let geometry = new Geometry();
+    for (const { modifier, index } of modifierStack) {
+      const groupName = modifier.node_group!;
+      const groupDef = dump.node_groups[groupName];
+      const selected = index === targetModifierIndex;
+      const merged = applyFriendlyOverrides(
+        groupDef,
+        modifier.input_values ?? {},
+        selected ? opts.overrides ?? {} : {},
+      );
+      const geometrySockets = groupDef.interface?.filter(
+        (item) => item.item_type === "SOCKET"
+          && item.in_out === "INPUT"
+          && item.socket_type === "NodeSocketGeometry",
+      ) ?? [];
+      const requestedGeometryInput = selected ? opts.geometryInput : undefined;
+      const geometrySocket = requestedGeometryInput
+        ? geometrySockets.find((socket) =>
+            socket.identifier === requestedGeometryInput || socket.name === requestedGeometryInput)
+        : geometrySockets[0];
+      if (requestedGeometryInput && !geometrySocket)
+        throw new Error(`Geometry input not found: ${requestedGeometryInput}`);
+      if (selected && replacementGeometry && !geometrySocket)
+        throw new Error(`modifier group has no Geometry input: ${groupName}`);
+      if (geometrySocket) {
+        const input = selected && replacementGeometry
+          ? resolveGeometrySeed(dump, replacementGeometry).geometry
+          : incomingGeometry;
+        if (input && geometrySocket.identifier) merged[geometrySocket.identifier] = input;
+      }
+      geometry = ev.evalModifierGroup(groupName, merged).geometry;
+      incomingGeometry = geometry;
     }
-    // Blender feeds the object's own (pre-modifier) mesh into the tree's Geometry
-    // input — e.g. the bubble vase's seed mesh. Bind it by socket identifier.
-    const geoSocket = groupDef?.interface?.find(
-      (it: any) => it.item_type === "SOCKET" && it.in_out === "INPUT" && it.socket_type === "NodeSocketGeometry"
-    );
-    if (geoSocket) {
-      const base = baseGeometryOf(dump, found.objectName);
-      if (base) merged[geoSocket.identifier] = base;
-    }
-    const { geometry } = ev.evalModifierGroup(found.group, merged);
     const soup = toTriSoup(geometry);
     const missingTypes = [...MISSING.entries()].map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count);
+    const approximateTypes = [...APPROXIMATIONS.entries()].map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count);
     return {
       geometry,
       soup,
-      coverage: { handled: REGISTRY.size, missingTypes },
+      coverage: { handled: REGISTRY.size, missingTypes, approximateTypes },
     };
   } finally {
     DUMP_CONTEXT.evaluatingObjects.clear();
   }
+}
+
+/**
+ * One execution boundary for Studio/API callers. Object modifiers retain their
+ * saved bindings and dependency cooking; reusable groups bind their interface
+ * directly. Both accept the same serializable seed geometry contract.
+ */
+export async function runGeometryTarget(
+  dump: Dump,
+  options: RunGeometryTargetOptions,
+): Promise<RunResult> {
+  if (options.kind === "group") {
+    const { kind: _kind, ...groupOptions } = options;
+    return runNodeGroup(dump, groupOptions);
+  }
+  const { kind: _kind, ...generatorOptions } = options;
+  return runGenerator(dump, generatorOptions);
 }

@@ -1,8 +1,9 @@
 // Geometry-operation handlers.
 import { Field, Vec3, asVec3, asNum, vadd } from "../core";
 import { Geometry, Mesh, InstanceRef, MATERIAL_MATCH_ATTRIBUTE, buildTopology, inverseTransformPoint, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint, transformPointFloat32, transformPointMatrixFloat32, triangulateFaceIndices } from "../geometry";
+import { decomposeMatrix, identityMatrix, invertMatrix, multiplyMatrices, objectTransformMatrix } from "../matrix";
 import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitives";
-import { reg, EvalAPI, DUMP_CONTEXT } from "../registry";
+import { reg, EvalAPI, DUMP_CONTEXT, recordApproximation } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 import { evaluateBezierSpline } from "../bezier";
 
@@ -335,6 +336,16 @@ reg("GeometryNodeObjectInfo", (api) => {
   // reads the pending embroidery root while the embroidery reads the front).
   const pending = Boolean(ref?.name && DUMP_CONTEXT.evaluatingObjects.has(ref.name));
   const obj = pending ? undefined : DUMP_CONTEXT.objects.find((o) => o.name === ref?.name);
+  const hasObject = Boolean(ref?.name && obj);
+  const originalTransform = pending || !hasObject ? identityMatrix() : objectTransformMatrix(obj);
+  const relative = hasObject && api.prop<string>("transform_space", "ORIGINAL") === "RELATIVE";
+  const outputTransform = relative
+    ? multiplyMatrices(
+        invertMatrix(objectTransformMatrix(DUMP_CONTEXT.activeObject)).matrix,
+        originalTransform,
+      )
+    : originalTransform;
+  const transformParts = decomposeMatrix(outputTransform);
   // Blender's Geometry output includes the referenced object's evaluated
   // modifier stack. Targeted dumps embed that mesh so nested asset generators
   // (Sticker Noodle Brush -> Polarity Sticker) remain procedural in the VM.
@@ -380,10 +391,11 @@ reg("GeometryNodeObjectInfo", (api) => {
     geometry.instances.push({ geometry: out, position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] });
   }
   return {
+    Transform: outputTransform,
     Geometry: geometry,
-    Location: Field.of(((obj?.location ?? [0, 0, 0]) as Vec3)),
-    Rotation: Field.of(((obj?.rotation ?? [0, 0, 0]) as Vec3)),
-    Scale: Field.of(((obj?.scale ?? [1, 1, 1]) as Vec3)),
+    Location: Field.of(relative ? transformParts.translation : ((obj?.location ?? [0, 0, 0]) as Vec3)),
+    Rotation: Field.of(relative ? transformParts.rotation : ((obj?.rotation ?? [0, 0, 0]) as Vec3)),
+    Scale: Field.of(relative ? transformParts.scale : ((obj?.scale ?? [1, 1, 1]) as Vec3)),
   };
 });
 
@@ -1052,6 +1064,9 @@ reg("GeometryNodeCaptureAttribute", (api) => {
 type ProximityTriangle = { a: Vec3; b: Vec3; c: Vec3; min: Vec3; max: Vec3; center: Vec3 };
 type ProximityBvh = { min: Vec3; max: Vec3; left?: ProximityBvh; right?: ProximityBvh; triangles?: ProximityTriangle[] };
 const proximityBvhCache = new WeakMap<Mesh, ProximityBvh | null>();
+type ProximitySegment = { a: Vec3; b: Vec3; min: Vec3; max: Vec3; center: Vec3; index: number };
+type ProximityEdgeBvh = { min: Vec3; max: Vec3; left?: ProximityEdgeBvh; right?: ProximityEdgeBvh; segments?: ProximitySegment[] };
+const proximityEdgeBvhCache = new WeakMap<Mesh, ProximityEdgeBvh | null>();
 
 function buildProximityBvh(triangles: ProximityTriangle[]): ProximityBvh | null {
   if (!triangles.length) return null;
@@ -1080,6 +1095,64 @@ function proximityBvh(mesh: Mesh): ProximityBvh | null {
   }
   const result = buildProximityBvh(triangles);
   proximityBvhCache.set(mesh, result);
+  return result;
+}
+
+function buildProximityEdgeBvh(segments: ProximitySegment[]): ProximityEdgeBvh | null {
+  if (!segments.length) return null;
+  const min: Vec3 = [Infinity, Infinity, Infinity];
+  const max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const segment of segments) for (let axis = 0; axis < 3; axis++) {
+    min[axis] = Math.min(min[axis], segment.min[axis]);
+    max[axis] = Math.max(max[axis], segment.max[axis]);
+  }
+  if (segments.length <= 6) return { min, max, segments };
+  const spans = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
+  const axis = spans[1] > spans[0]
+    ? (spans[2] > spans[1] ? 2 : 1)
+    : (spans[2] > spans[0] ? 2 : 0);
+  const ordered = [...segments].sort((a, b) =>
+    a.center[axis] - b.center[axis] || a.index - b.index);
+  const middle = ordered.length >> 1;
+  return {
+    min,
+    max,
+    left: buildProximityEdgeBvh(ordered.slice(0, middle))!,
+    right: buildProximityEdgeBvh(ordered.slice(middle))!,
+  };
+}
+
+function proximityEdgeBvh(mesh: Mesh): ProximityEdgeBvh | null {
+  const cached = proximityEdgeBvhCache.get(mesh);
+  if (cached !== undefined) return cached;
+  const segments = buildTopology(mesh).edges.map((edge, index) => {
+    const a = mesh.positions[edge.verts[0]];
+    const b = mesh.positions[edge.verts[1]];
+    const min: Vec3 = [
+      Math.min(a[0], b[0]),
+      Math.min(a[1], b[1]),
+      Math.min(a[2], b[2]),
+    ];
+    const max: Vec3 = [
+      Math.max(a[0], b[0]),
+      Math.max(a[1], b[1]),
+      Math.max(a[2], b[2]),
+    ];
+    return {
+      a,
+      b,
+      min,
+      max,
+      center: [
+        (min[0] + max[0]) * .5,
+        (min[1] + max[1]) * .5,
+        (min[2] + max[2]) * .5,
+      ] as Vec3,
+      index,
+    };
+  });
+  const result = buildProximityEdgeBvh(segments);
+  proximityEdgeBvhCache.set(mesh, result);
   return result;
 }
 
@@ -1163,9 +1236,25 @@ function nearestFacePoint(point: Vec3, root: ProximityBvh | null): { d: number; 
       }
       return;
     }
-    const children = [node.left, node.right].filter((child): child is ProximityBvh => !!child)
-      .sort((a, b) => boxDistanceSquared(p, a.min, a.max) - boxDistanceSquared(p, b.min, b.max));
-    for (const child of children) visit(child);
+    const left = node.left;
+    const right = node.right;
+    if (!left) {
+      if (right) visit(right);
+      return;
+    }
+    if (!right) {
+      visit(left);
+      return;
+    }
+    const leftDistance = boxDistanceSquared(p, left.min, left.max);
+    const rightDistance = boxDistanceSquared(p, right.min, right.max);
+    if (leftDistance <= rightDistance) {
+      visit(left);
+      visit(right);
+    } else {
+      visit(right);
+      visit(left);
+    }
   };
   visit(root);
   return { d: f(Math.sqrt(bestSquared)), q: best };
@@ -1210,6 +1299,77 @@ export function nearestEdgePointFloat32(point: Vec3, segments: [Vec3, Vec3][]): 
   return { d: Number.isFinite(bestSq) ? f(Math.sqrt(bestSq)) : 0, q: best };
 }
 
+function nearestEdgePointBvhFloat32(
+  point: Vec3,
+  root: ProximityEdgeBvh | null,
+): { d: number; q: Vec3 } {
+  if (!root) return { d: 0, q: [0, 0, 0] };
+  const f = Math.fround;
+  const p: Vec3 = [f(point[0]), f(point[1]), f(point[2])];
+  const dot = (a: Vec3, b: Vec3) => {
+    let result = f(f(a[0] * b[0]) + f(a[1] * b[1]));
+    result = f(result + f(a[2] * b[2]));
+    return result;
+  };
+  let bestSquared = Infinity;
+  let bestIndex = Infinity;
+  let best: Vec3 = [0, 0, 0];
+  const visit = (node: ProximityEdgeBvh) => {
+    if (boxDistanceSquared(p, node.min, node.max) > bestSquared) return;
+    if (node.segments) {
+      for (const segment of node.segments) {
+        const a: Vec3 = [f(segment.a[0]), f(segment.a[1]), f(segment.a[2])];
+        const b: Vec3 = [f(segment.b[0]), f(segment.b[1]), f(segment.b[2])];
+        const u: Vec3 = [f(b[0] - a[0]), f(b[1] - a[1]), f(b[2] - a[2])];
+        const h: Vec3 = [f(p[0] - a[0]), f(p[1] - a[1]), f(p[2] - a[2])];
+        const denominator = dot(u, u);
+        const lambda = denominator > 0 ? f(dot(u, h) / denominator) : 0;
+        const factor = Math.max(0, Math.min(1, lambda));
+        const q: Vec3 = [
+          f(a[0] + f(u[0] * factor)),
+          f(a[1] + f(u[1] * factor)),
+          f(a[2] + f(u[2] * factor)),
+        ];
+        const delta: Vec3 = [f(q[0] - p[0]), f(q[1] - p[1]), f(q[2] - p[2])];
+        const squared = dot(delta, delta);
+        if (
+          squared < bestSquared
+          || (squared === bestSquared && segment.index < bestIndex)
+        ) {
+          bestSquared = squared;
+          bestIndex = segment.index;
+          best = q;
+        }
+      }
+      return;
+    }
+    const left = node.left;
+    const right = node.right;
+    if (!left) {
+      if (right) visit(right);
+      return;
+    }
+    if (!right) {
+      visit(left);
+      return;
+    }
+    const leftDistance = boxDistanceSquared(p, left.min, left.max);
+    const rightDistance = boxDistanceSquared(p, right.min, right.max);
+    if (leftDistance <= rightDistance) {
+      visit(left);
+      visit(right);
+    } else {
+      visit(right);
+      visit(left);
+    }
+  };
+  visit(root);
+  return {
+    d: Number.isFinite(bestSquared) ? f(Math.sqrt(bestSquared)) : 0,
+    q: best,
+  };
+}
+
 const BLENDER_BVH_POINT_EPSILON = Math.fround(1.1920928955078125e-7);
 
 export function nearestPointBvhLeafFloat32(point: Vec3, target: Vec3): { dSquared: number; q: Vec3 } {
@@ -1244,9 +1404,9 @@ reg("GeometryNodeProximity", (api) => {
   const pts: Vec3[] = target.mesh ? target.mesh.positions : target.curves.flatMap((s) => s.points);
   const targetElement = api.prop<string>("target_element", "POINTS");
   const faces = targetElement === "FACES" && target.mesh ? proximityBvh(target.mesh) : null;
-  const segments: [Vec3, Vec3][] = targetElement === "EDGES" && target.mesh
-    ? buildTopology(target.mesh).edges.map((edge) => [target.mesh!.positions[edge.verts[0]], target.mesh!.positions[edge.verts[1]]])
-    : [];
+  const edges = targetElement === "EDGES" && target.mesh
+    ? proximityEdgeBvh(target.mesh)
+    : null;
   const posLinked = api.node.inputs.find((s) => s.identifier === "Source Position")?.linked;
   const posF = posLinked ? api.field("Source Position") : null;
   type KdNode = { index: number; axis: 0 | 1 | 2; left: KdNode | null; right: KdNode | null };
@@ -1266,7 +1426,7 @@ reg("GeometryNodeProximity", (api) => {
   const nearest = (p: Vec3): { d: number; q: Vec3 } => {
     if (!pts.length) return { d: 0, q: [0, 0, 0] };
     if (faces) return nearestFacePoint(p, faces);
-    if (segments.length) return nearestEdgePointFloat32(p, segments);
+    if (edges) return nearestEdgePointBvhFloat32(p, edges);
     // Blender's point BVH stores float coordinates and BVHTreeNearest.dist_sq
     // is a float. Recomputing this path in JavaScript doubles moved every
     // Chrome Crayon proximity sample, then amplified the error in the marching
@@ -1397,6 +1557,37 @@ reg("GeometryNodeSetShadeSmooth", (api) => {
     geometry.mesh.attributes.set(attributeName, { domain, data });
   });
   return { Geometry: g };
+});
+reg("GeometryNodeSetMeshNormal", (api) => {
+  const mode = api.prop<string>("mode", "SHARPNESS");
+  const source = api.geo("Mesh");
+  if (mode !== "SHARPNESS") {
+    // FREE and TANGENT_SPACE author custom split normals, which the current
+    // mesh model cannot retain independently from generated shading normals.
+    // Keep geometry flowing, but make the bounded fallback visible in runtime
+    // coverage rather than silently claiming Blender parity.
+    recordApproximation(api.node.type);
+    return { Mesh: source.clone() };
+  }
+
+  const edgeSharpness = api.field("Edge Sharpness");
+  const faceSharpness = api.field("Face Sharpness");
+  const g = mapInstancePayloadMeshes(source, (geometry) => {
+    if (!geometry.mesh) return;
+    // Resolve both fields against the unchanged input mesh. Either field may
+    // depend on the previous sharpness attributes.
+    const edgeValues = edgeSharpness.array(makeFieldCtx(geometry, "EDGE"));
+    const faceValues = faceSharpness.array(makeFieldCtx(geometry, "FACE"));
+    geometry.mesh.attributes.set("sharp_edge", {
+      domain: "EDGE",
+      data: edgeValues.map((value) => asNum(value) ? 1 : 0),
+    });
+    geometry.mesh.attributes.set("sharp_face", {
+      domain: "FACE",
+      data: faceValues.map((value) => asNum(value) ? 1 : 0),
+    });
+  });
+  return { Mesh: g };
 });
 reg("GeometryNodeSetID", passGeometry);
 reg("GeometryNodeStoreNamedAttribute", (api) => {

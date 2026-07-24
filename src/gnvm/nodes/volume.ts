@@ -1,33 +1,36 @@
 import { asNum, Field, Vec3 } from "../core";
 import { makeFieldCtx } from "../evaluator";
-import { Geometry, Mesh } from "../geometry";
+import { Geometry, Mesh, realizeInstances, triangulateFaceIndices } from "../geometry";
 import {
   OPENVDB_AMBIGUOUS_FACE,
   openVdbCellSigns,
   openVdbEdgeGroup,
   openVdbGroupCount,
 } from "../openvdb-edge-groups";
-import { reg, SockVal } from "../registry";
+import { recordApproximation, reg, type VolumeGrid } from "../registry";
 
-interface VolumeGrid {
-  kind: "GNVM_VOLUME_GRID";
-  background: number;
-  min: Vec3;
-  max: Vec3;
-  resolution: Vec3;
-  origin: Vec3;
-  voxelSize: Vec3;
-  values: Float32Array;
-}
+export type { VolumeGrid } from "../registry";
 
 export interface VolumeGridDiagnostics {
-  stage: "volume-cube" | "volume-to-mesh";
+  stage:
+    | "volume-cube"
+    | "volume-to-mesh"
+    | "mesh-to-sdf-grid"
+    | "points-to-sdf-grid"
+    | "grid-to-mesh";
   background: number;
   min: Vec3;
   max: Vec3;
   resolution: Vec3;
   origin: Vec3;
   spacing: Vec3;
+  requestedSpacing?: number;
+  requestedSampleCount?: number;
+  sampleCount?: number;
+  sampleBudget?: number;
+  budgetAdjusted?: boolean;
+  requestedAdaptivity?: number;
+  adaptivityApplied?: boolean;
   isolation?: number;
   values: Float32Array;
 }
@@ -280,14 +283,85 @@ function surfaceNets(values: Float32Array, resolution: Vec3, isolation: number, 
 /** Direct hook for focused topology tests; production evaluation uses the registered nodes below. */
 export const surfaceNetsForTest = surfaceNets;
 
+interface BoundedResolution {
+  resolution: Vec3;
+  requestedSampleCount: number;
+  budgetAdjusted: boolean;
+  sampleBudget: number;
+}
+
+function resolutionSampleCount(resolution: Vec3): number {
+  return resolution[0] * resolution[1] * resolution[2];
+}
+
+function requestedResolution(values: Vec3): Vec3 {
+  return values.map((value) => {
+    if (!Number.isFinite(value))
+      throw new RangeError("Volume grid resolution must contain finite values");
+    return Math.max(2, Math.trunc(value));
+  }) as Vec3;
+}
+
+/**
+ * Preserve the requested lattice when it fits, otherwise increase the stride
+ * uniformly while retaining both endpoints on every axis.
+ */
+function boundedVolumeResolution(
+  requested: Vec3,
+  sampleBudget = denseSdfSampleBudget,
+): BoundedResolution {
+  if (!Number.isFinite(sampleBudget) || sampleBudget < 8)
+    throw new RangeError("Dense volume sample budget must allow at least a 2×2×2 lattice");
+  const normalized = requestedResolution(requested);
+  const requestedSampleCount = resolutionSampleCount(normalized);
+  if (requestedSampleCount <= sampleBudget) {
+    return {
+      resolution: normalized,
+      requestedSampleCount,
+      budgetAdjusted: false,
+      sampleBudget,
+    };
+  }
+
+  const atStride = (stride: number): Vec3 => normalized.map((count) =>
+    Math.max(2, Math.floor((count - 1) / stride) + 1)) as Vec3;
+  let lower = 1;
+  let upper = Math.max(...normalized.map((count) => count - 1));
+  // Find the smallest uniform stride whose endpoint-preserving lattice fits.
+  for (let iteration = 0; iteration < 64; iteration++) {
+    const middle = lower + (upper - lower) * 0.5;
+    if (resolutionSampleCount(atStride(middle)) > sampleBudget) lower = middle;
+    else upper = middle;
+  }
+  let resolution = atStride(upper);
+  while (resolutionSampleCount(resolution) > sampleBudget) {
+    upper *= 1.0000001;
+    resolution = atStride(upper);
+  }
+  return {
+    resolution,
+    requestedSampleCount,
+    budgetAdjusted: true,
+    sampleBudget,
+  };
+}
+
+export const boundedVolumeResolutionForTest = boundedVolumeResolution;
+
 reg("GeometryNodeVolumeCube", (api) => {
+  recordApproximation("GeometryNodeVolumeCube");
   const min = api.vec("Min");
   const max = api.vec("Max");
-  const resolution: Vec3 = [
-    Math.max(2, Math.trunc(api.num("Resolution X"))),
-    Math.max(2, Math.trunc(api.num("Resolution Y"))),
-    Math.max(2, Math.trunc(api.num("Resolution Z"))),
+  const requested: Vec3 = [
+    api.num("Resolution X"),
+    api.num("Resolution Y"),
+    api.num("Resolution Z"),
   ];
+  const normalizedRequested = requestedResolution(requested);
+  const layout = boundedVolumeResolution(normalizedRequested);
+  const resolution = layout.resolution;
+  const requestedVoxelSize = Math.max(...max.map((value, axis) =>
+    Math.max(1e-9, (value - min[axis]) / Math.max(1, normalizedRequested[axis] - 1))));
   const voxelSize: Vec3 = [
     Math.max(1e-9, (max[0] - min[0]) / Math.max(1, resolution[0] - 1)),
     Math.max(1e-9, (max[1] - min[1]) / Math.max(1, resolution[1] - 1)),
@@ -327,6 +401,10 @@ reg("GeometryNodeVolumeCube", (api) => {
     origin,
     voxelSize,
     values,
+    requestedVoxelSize,
+    requestedSampleCount: layout.requestedSampleCount,
+    budgetAdjusted: layout.budgetAdjusted,
+    sampleBudget: layout.sampleBudget,
   };
   volumeGridDiagnosticSink?.({
     stage: "volume-cube",
@@ -336,9 +414,14 @@ reg("GeometryNodeVolumeCube", (api) => {
     resolution: [...resolution] as Vec3,
     origin: [...origin] as Vec3,
     spacing: [...voxelSize] as Vec3,
+    requestedSpacing: requestedVoxelSize,
+    requestedSampleCount: layout.requestedSampleCount,
+    sampleCount: values.length,
+    sampleBudget: layout.sampleBudget,
+    budgetAdjusted: layout.budgetAdjusted,
     values,
   });
-  return { Volume: volume as unknown as SockVal };
+  return { Volume: volume };
 });
 
 function sampleVolumeAtIndex(volume: VolumeGrid, coordinates: Vec3): number {
@@ -367,26 +450,95 @@ interface ResampledVolumeGrid {
   resolution: Vec3;
   origin: Vec3;
   spacing: Vec3;
+  requestedSpacing: number;
+  requestedSampleCount: number;
+  sampleBudget: number;
+  budgetAdjusted: boolean;
 }
 
 function resampleVolumeGrid(volume: VolumeGrid, requestedSpacing: number): ResampledVolumeGrid {
   const sampleSpacing = Math.max(...volume.voxelSize);
-  // Blender narrows both voxel sizes and their ratio to float before passing
-  // the scale into OpenVDB's double-precision GridTransformer matrix.
-  const factor = Math.fround(Math.fround(sampleSpacing) / Math.fround(requestedSpacing));
-  const inverseFactor = 1 / factor;
-  // The output grid transform receives `1.0f / factor`, so its world-space
-  // voxel basis has one additional float rounding beyond the sampling matrix.
-  const transformScale = Math.fround(1 / factor);
-  const spacing: Vec3 = volume.voxelSize.map((size) => size * transformScale) as Vec3;
-  // OpenVDB transforms the inclusive source index bounds outward. BoxSampler
-  // then needs one interpolated sample beyond the negative bound, followed by
-  // a hard sparse-background guard. On the positive side, ceil the transformed
-  // maximum and keep three samples so interpolation reaches the background.
-  // Rebase target indices [-2, ceil(max) + 3] to a dense array.
-  const transformedMax: Vec3 = volume.resolution.map((count) => Math.ceil((count - 1) * factor)) as Vec3;
-  const resolution: Vec3 = transformedMax.map((maximum) => maximum + 6) as Vec3;
-  const origin: Vec3 = volume.min.map((minimum, axis) => minimum - 2 * spacing[axis]) as Vec3;
+  if (!Number.isFinite(sampleSpacing) || sampleSpacing <= 0)
+    throw new RangeError("Volume grid voxel size must contain finite positive values");
+  if (!Number.isFinite(Math.fround(sampleSpacing)))
+    throw new RangeError("Volume grid voxel size must fit Blender's float socket range");
+  if (!Number.isFinite(requestedSpacing) || requestedSpacing <= 0)
+    throw new RangeError("Volume to Mesh voxel size must be a finite positive number");
+  const normalizedRequestedSpacing = Math.max(1e-6, requestedSpacing);
+  const layoutForSpacing = (targetSpacing: number) => {
+    // Blender narrows both voxel sizes and their ratio to float before passing
+    // the scale into OpenVDB's double-precision GridTransformer matrix.
+    const targetSpacingFloat = Math.fround(targetSpacing);
+    if (!Number.isFinite(targetSpacingFloat))
+      throw new RangeError("Volume to Mesh voxel size must fit Blender's float socket range");
+    const factor = Math.fround(Math.fround(sampleSpacing) / targetSpacingFloat);
+    if (!Number.isFinite(factor) || factor <= 0)
+      throw new RangeError("Volume to Mesh voxel-size ratio is outside Blender's float range");
+    const inverseFactor = 1 / factor;
+    // The output grid transform receives `1.0f / factor`, so its world-space
+    // voxel basis has one additional float rounding beyond the sampling matrix.
+    const transformScale = Math.fround(1 / factor);
+    const spacing = volume.voxelSize.map((size) => size * transformScale) as Vec3;
+    // OpenVDB transforms the inclusive source index bounds outward. BoxSampler
+    // then needs one interpolated sample beyond the negative bound, followed by
+    // a hard sparse-background guard. On the positive side, ceil the transformed
+    // maximum and keep three samples so interpolation reaches the background.
+    // Rebase target indices [-2, ceil(max) + 3] to a dense array.
+    const transformedMax = volume.resolution.map((count) =>
+      Math.ceil((count - 1) * factor)) as Vec3;
+    const resolution = transformedMax.map((maximum) => maximum + 6) as Vec3;
+    const origin = volume.min.map((minimum, axis) =>
+      minimum - 2 * spacing[axis]) as Vec3;
+    return {
+      factor,
+      inverseFactor,
+      spacing,
+      resolution,
+      origin,
+      sampleCount: resolutionSampleCount(resolution),
+    };
+  };
+
+  const requestedLayout = layoutForSpacing(normalizedRequestedSpacing);
+  const minimumResolution = volume.resolution.map((count) => count > 1 ? 7 : 6) as Vec3;
+  if (resolutionSampleCount(minimumResolution) > denseSdfSampleBudget)
+    throw new RangeError(
+      `Dense volume resampling needs at least ${resolutionSampleCount(minimumResolution)} samples, above the configured ${denseSdfSampleBudget} sample budget`,
+    );
+  let effectiveSpacing = normalizedRequestedSpacing;
+  let layout = requestedLayout;
+  if (layout.sampleCount > denseSdfSampleBudget) {
+    let lower = normalizedRequestedSpacing;
+    let upper = normalizedRequestedSpacing;
+    do {
+      upper *= 2;
+      if (!Number.isFinite(upper))
+        throw new RangeError("Volume to Mesh could not derive a finite bounded voxel size");
+      layout = layoutForSpacing(upper);
+    } while (layout.sampleCount > denseSdfSampleBudget);
+    for (let iteration = 0; iteration < 64; iteration++) {
+      const middle = lower + (upper - lower) * 0.5;
+      const candidate = layoutForSpacing(middle);
+      if (candidate.sampleCount > denseSdfSampleBudget) lower = middle;
+      else {
+        upper = middle;
+        layout = candidate;
+      }
+    }
+    effectiveSpacing = upper;
+    layout = layoutForSpacing(effectiveSpacing);
+    while (layout.sampleCount > denseSdfSampleBudget) {
+      effectiveSpacing *= 1.0000001;
+      layout = layoutForSpacing(effectiveSpacing);
+    }
+  }
+  const {
+    factor,
+    inverseFactor,
+    spacing,
+    resolution,
+    origin,
+  } = layout;
   const values = new Float32Array(resolution[0] * resolution[1] * resolution[2]);
   values.fill(volume.background);
   const active = new Uint8Array(values.length);
@@ -457,14 +609,682 @@ function resampleVolumeGrid(volume: VolumeGrid, requestedSpacing: number): Resam
   };
   for (const tile of tiles) transformUnit(tile);
   for (const leaf of leaves) transformUnit(leaf);
-  return { values, resolution, origin, spacing };
+  return {
+    values,
+    resolution,
+    origin,
+    spacing,
+    requestedSpacing: normalizedRequestedSpacing,
+    requestedSampleCount: requestedLayout.sampleCount,
+    sampleBudget: denseSdfSampleBudget,
+    budgetAdjusted: effectiveSpacing !== normalizedRequestedSpacing,
+  };
 }
 
 /** Focused hook for sparse-boundary parity tests. */
 export const resampleVolumeGridForTest = resampleVolumeGrid;
 
+interface SdfTriangle {
+  a: Vec3;
+  b: Vec3;
+  c: Vec3;
+  min: Vec3;
+  max: Vec3;
+  center: Vec3;
+}
+
+interface SdfBvh {
+  min: Vec3;
+  max: Vec3;
+  left?: SdfBvh;
+  right?: SdfBvh;
+  triangles?: SdfTriangle[];
+}
+
+interface SdfSphere {
+  center: Vec3;
+  radius: number;
+}
+
+interface SphereBvh {
+  min: Vec3;
+  max: Vec3;
+  maxRadius: number;
+  left?: SphereBvh;
+  right?: SphereBvh;
+  spheres?: SdfSphere[];
+}
+
+export const MAX_DENSE_SDF_SAMPLES = 1_000_000;
+let denseSdfSampleBudget = MAX_DENSE_SDF_SAMPLES;
+
+/**
+ * Configure the process-local dense SDF allocation ceiling.
+ *
+ * Pass null to restore the browser-safe default. Studio controllers can raise
+ * this for an explicit manual preview; automatic live evaluation should keep
+ * the default and inspect `budgetAdjusted` diagnostics.
+ */
+export function setDenseSdfSampleBudget(maxSamples: number | null): void {
+  if (maxSamples === null) {
+    denseSdfSampleBudget = MAX_DENSE_SDF_SAMPLES;
+    return;
+  }
+  if (!Number.isFinite(maxSamples) || maxSamples <= 0)
+    throw new RangeError("Dense SDF sample budget must be a finite positive number");
+  denseSdfSampleBudget = Math.max(8, Math.min(16_000_000, Math.trunc(maxSamples)));
+}
+const SDF_RAY_DIRECTION: Vec3 = [1, 0.3713906763541037, 0.1437023951028752];
+
+function triangleBounds(a: Vec3, b: Vec3, c: Vec3): Pick<SdfTriangle, "min" | "max" | "center"> {
+  const min: Vec3 = [
+    Math.min(a[0], b[0], c[0]),
+    Math.min(a[1], b[1], c[1]),
+    Math.min(a[2], b[2], c[2]),
+  ];
+  const max: Vec3 = [
+    Math.max(a[0], b[0], c[0]),
+    Math.max(a[1], b[1], c[1]),
+    Math.max(a[2], b[2], c[2]),
+  ];
+  return {
+    min,
+    max,
+    center: [
+      (min[0] + max[0]) * 0.5,
+      (min[1] + max[1]) * 0.5,
+      (min[2] + max[2]) * 0.5,
+    ],
+  };
+}
+
+function trianglesOf(mesh: Mesh): SdfTriangle[] {
+  const triangles: SdfTriangle[] = [];
+  for (const face of mesh.faces) {
+    for (const [ia, ib, ic] of triangulateFaceIndices(mesh, face)) {
+      const a = mesh.positions[ia], b = mesh.positions[ib], c = mesh.positions[ic];
+      if (![...a, ...b, ...c].every(Number.isFinite)) continue;
+      const ab: Vec3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+      const ac: Vec3 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+      const cross: Vec3 = [
+        ab[1] * ac[2] - ab[2] * ac[1],
+        ab[2] * ac[0] - ab[0] * ac[2],
+        ab[0] * ac[1] - ab[1] * ac[0],
+      ];
+      if (cross[0] * cross[0] + cross[1] * cross[1] + cross[2] * cross[2] <= 1e-24) continue;
+      triangles.push({ a, b, c, ...triangleBounds(a, b, c) });
+    }
+  }
+  return triangles;
+}
+
+function boundsOfTriangles(triangles: SdfTriangle[]): { min: Vec3; max: Vec3 } {
+  const min: Vec3 = [Infinity, Infinity, Infinity];
+  const max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const triangle of triangles) for (let axis = 0; axis < 3; axis++) {
+    min[axis] = Math.min(min[axis], triangle.min[axis]);
+    max[axis] = Math.max(max[axis], triangle.max[axis]);
+  }
+  return { min, max };
+}
+
+function buildSdfBvh(triangles: SdfTriangle[]): SdfBvh {
+  const bounds = boundsOfTriangles(triangles);
+  if (triangles.length <= 8) return { ...bounds, triangles };
+  const centerMin: Vec3 = [Infinity, Infinity, Infinity];
+  const centerMax: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const triangle of triangles) for (let axis = 0; axis < 3; axis++) {
+    centerMin[axis] = Math.min(centerMin[axis], triangle.center[axis]);
+    centerMax[axis] = Math.max(centerMax[axis], triangle.center[axis]);
+  }
+  let axis = 0;
+  if (centerMax[1] - centerMin[1] > centerMax[axis] - centerMin[axis]) axis = 1;
+  if (centerMax[2] - centerMin[2] > centerMax[axis] - centerMin[axis]) axis = 2;
+  const sorted = [...triangles].sort((a, b) => a.center[axis] - b.center[axis]);
+  const middle = Math.floor(sorted.length / 2);
+  return {
+    ...bounds,
+    left: buildSdfBvh(sorted.slice(0, middle)),
+    right: buildSdfBvh(sorted.slice(middle)),
+  };
+}
+
+function buildSphereBvh(spheres: SdfSphere[]): SphereBvh {
+  const min: Vec3 = [Infinity, Infinity, Infinity];
+  const max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  let maxRadius = 0;
+  for (const sphere of spheres) {
+    maxRadius = Math.max(maxRadius, sphere.radius);
+    for (let axis = 0; axis < 3; axis++) {
+      min[axis] = Math.min(min[axis], sphere.center[axis]);
+      max[axis] = Math.max(max[axis], sphere.center[axis]);
+    }
+  }
+  if (spheres.length <= 12) return { min, max, maxRadius, spheres };
+  let axis = 0;
+  if (max[1] - min[1] > max[axis] - min[axis]) axis = 1;
+  if (max[2] - min[2] > max[axis] - min[axis]) axis = 2;
+  const sorted = [...spheres].sort((a, b) => a.center[axis] - b.center[axis]);
+  const middle = Math.floor(sorted.length / 2);
+  return {
+    min,
+    max,
+    maxRadius,
+    left: buildSphereBvh(sorted.slice(0, middle)),
+    right: buildSphereBvh(sorted.slice(middle)),
+  };
+}
+
+function pointBoxDistanceSquared(point: Vec3, min: Vec3, max: Vec3): number {
+  let squared = 0;
+  for (let axis = 0; axis < 3; axis++) {
+    const delta = point[axis] < min[axis]
+      ? min[axis] - point[axis]
+      : point[axis] > max[axis]
+        ? point[axis] - max[axis]
+        : 0;
+    squared += delta * delta;
+  }
+  return squared;
+}
+
+function nearestSphereDistance(point: Vec3, root: SphereBvh, initial: number): number {
+  let best = initial;
+  const lowerBound = (node: SphereBvh) =>
+    Math.sqrt(pointBoxDistanceSquared(point, node.min, node.max)) - node.maxRadius;
+  const visit = (node: SphereBvh) => {
+    if (lowerBound(node) >= best) return;
+    if (node.spheres) {
+      for (const sphere of node.spheres) {
+        const dx = point[0] - sphere.center[0];
+        const dy = point[1] - sphere.center[1];
+        const dz = point[2] - sphere.center[2];
+        best = Math.min(best, Math.hypot(dx, dy, dz) - sphere.radius);
+      }
+      return;
+    }
+    const leftDistance = node.left ? lowerBound(node.left) : Infinity;
+    const rightDistance = node.right ? lowerBound(node.right) : Infinity;
+    if (leftDistance < rightDistance) {
+      if (node.left) visit(node.left);
+      if (node.right) visit(node.right);
+    } else {
+      if (node.right) visit(node.right);
+      if (node.left) visit(node.left);
+    }
+  };
+  visit(root);
+  return best;
+}
+
+// Closest-point regions from Real-Time Collision Detection. Keeping the
+// squared result avoids one square root per candidate while traversing the BVH.
+function pointTriangleDistanceSquared(point: Vec3, triangle: SdfTriangle): number {
+  const subtract = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const squared = (a: Vec3) => dot(a, a);
+  const ab = subtract(triangle.b, triangle.a);
+  const ac = subtract(triangle.c, triangle.a);
+  const ap = subtract(point, triangle.a);
+  const d1 = dot(ab, ap), d2 = dot(ac, ap);
+  if (d1 <= 0 && d2 <= 0) return squared(ap);
+  const bp = subtract(point, triangle.b);
+  const d3 = dot(ab, bp), d4 = dot(ac, bp);
+  if (d3 >= 0 && d4 <= d3) return squared(bp);
+  const vc = d1 * d4 - d3 * d2;
+  if (vc <= 0 && d1 >= 0 && d3 <= 0) {
+    const projection = subtract(ap, [ab[0] * d1 / (d1 - d3), ab[1] * d1 / (d1 - d3), ab[2] * d1 / (d1 - d3)]);
+    return squared(projection);
+  }
+  const cp = subtract(point, triangle.c);
+  const d5 = dot(ab, cp), d6 = dot(ac, cp);
+  if (d6 >= 0 && d5 <= d6) return squared(cp);
+  const vb = d5 * d2 - d1 * d6;
+  if (vb <= 0 && d2 >= 0 && d6 <= 0) {
+    const projection = subtract(ap, [ac[0] * d2 / (d2 - d6), ac[1] * d2 / (d2 - d6), ac[2] * d2 / (d2 - d6)]);
+    return squared(projection);
+  }
+  const va = d3 * d6 - d5 * d4;
+  if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+    const edge = subtract(triangle.c, triangle.b);
+    const weight = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+    const projection = subtract(bp, [edge[0] * weight, edge[1] * weight, edge[2] * weight]);
+    return squared(projection);
+  }
+  const denominator = 1 / (va + vb + vc);
+  const v = vb * denominator, w = vc * denominator;
+  const projection = subtract(ap, [
+    ab[0] * v + ac[0] * w,
+    ab[1] * v + ac[1] * w,
+    ab[2] * v + ac[2] * w,
+  ]);
+  return squared(projection);
+}
+
+function nearestTriangleDistanceSquared(point: Vec3, root: SdfBvh): number {
+  let best = Infinity;
+  const visit = (node: SdfBvh) => {
+    if (pointBoxDistanceSquared(point, node.min, node.max) >= best) return;
+    if (node.triangles) {
+      for (const triangle of node.triangles)
+        best = Math.min(best, pointTriangleDistanceSquared(point, triangle));
+      return;
+    }
+    const leftDistance = node.left
+      ? pointBoxDistanceSquared(point, node.left.min, node.left.max)
+      : Infinity;
+    const rightDistance = node.right
+      ? pointBoxDistanceSquared(point, node.right.min, node.right.max)
+      : Infinity;
+    if (leftDistance < rightDistance) {
+      if (node.left) visit(node.left);
+      if (node.right) visit(node.right);
+    } else {
+      if (node.right) visit(node.right);
+      if (node.left) visit(node.left);
+    }
+  };
+  visit(root);
+  return best;
+}
+
+function rayIntersectsBox(origin: Vec3, min: Vec3, max: Vec3): boolean {
+  let near = 0, far = Infinity;
+  for (let axis = 0; axis < 3; axis++) {
+    const inverse = 1 / SDF_RAY_DIRECTION[axis];
+    let a = (min[axis] - origin[axis]) * inverse;
+    let b = (max[axis] - origin[axis]) * inverse;
+    if (a > b) [a, b] = [b, a];
+    near = Math.max(near, a);
+    far = Math.min(far, b);
+    if (far < near) return false;
+  }
+  return far > 1e-10;
+}
+
+function rayTriangleDistance(origin: Vec3, triangle: SdfTriangle): number | null {
+  const subtract = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const cross = (a: Vec3, b: Vec3): Vec3 => [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+  const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const edge1 = subtract(triangle.b, triangle.a);
+  const edge2 = subtract(triangle.c, triangle.a);
+  const p = cross(SDF_RAY_DIRECTION, edge2);
+  const determinant = dot(edge1, p);
+  if (Math.abs(determinant) < 1e-12) return null;
+  const inverse = 1 / determinant;
+  const translated = subtract(origin, triangle.a);
+  const u = dot(translated, p) * inverse;
+  if (u < -1e-10 || u > 1 + 1e-10) return null;
+  const q = cross(translated, edge1);
+  const v = dot(SDF_RAY_DIRECTION, q) * inverse;
+  if (v < -1e-10 || u + v > 1 + 1e-10) return null;
+  const distance = dot(edge2, q) * inverse;
+  return distance > 1e-10 ? distance : null;
+}
+
+function pointIsInsideMesh(point: Vec3, root: SdfBvh): boolean {
+  const hits: number[] = [];
+  const visit = (node: SdfBvh) => {
+    if (!rayIntersectsBox(point, node.min, node.max)) return;
+    if (node.triangles) {
+      for (const triangle of node.triangles) {
+        const distance = rayTriangleDistance(point, triangle);
+        if (distance !== null) hits.push(distance);
+      }
+      return;
+    }
+    if (node.left) visit(node.left);
+    if (node.right) visit(node.right);
+  };
+  visit(root);
+  hits.sort((a, b) => a - b);
+  let uniqueHits = 0;
+  let previous = -Infinity;
+  for (const hit of hits) {
+    const tolerance = 1e-8 * Math.max(1, Math.abs(hit));
+    if (hit - previous <= tolerance) continue;
+    previous = hit;
+    uniqueHits++;
+  }
+  return uniqueHits % 2 === 1;
+}
+
+function isClosedTwoManifold(mesh: Mesh): boolean {
+  const edgeUses = new Map<string, number>();
+  for (const face of mesh.faces) {
+    for (let corner = 0; corner < face.length; corner++) {
+      const a = face[corner], b = face[(corner + 1) % face.length];
+      const key = a < b ? `${a},${b}` : `${b},${a}`;
+      edgeUses.set(key, (edgeUses.get(key) ?? 0) + 1);
+    }
+  }
+  return edgeUses.size > 0 && [...edgeUses.values()].every((uses) => uses === 2);
+}
+
+function boundedGridLayout(
+  sourceMin: Vec3,
+  sourceMax: Vec3,
+  requestedVoxelSize: number,
+  padding: number,
+): Omit<VolumeGrid, "kind" | "background" | "values"> {
+  let spacing = Number.isFinite(requestedVoxelSize) && requestedVoxelSize > 0
+    ? Math.max(1e-6, requestedVoxelSize)
+    : 1e-3;
+  const layout = () => {
+    const origin = sourceMin.map((value) => value - padding * spacing) as Vec3;
+    const resolution = sourceMax.map((value, axis) =>
+      Math.max(2, Math.ceil((value - sourceMin[axis]) / spacing) + padding * 2 + 1)) as Vec3;
+    return { origin, resolution, sampleCount: resolution[0] * resolution[1] * resolution[2] };
+  };
+  let current = layout();
+  const requestedSpacing = spacing;
+  const requestedSampleCount = current.sampleCount;
+  const sampleBudget = denseSdfSampleBudget;
+  if (current.sampleCount > sampleBudget) {
+    spacing *= Math.cbrt(current.sampleCount / sampleBudget);
+    current = layout();
+    while (current.sampleCount > sampleBudget) {
+      spacing *= 1.01;
+      current = layout();
+    }
+  }
+  const voxelSize: Vec3 = [spacing, spacing, spacing];
+  const max = current.origin.map((value, axis) =>
+    value + (current.resolution[axis] - 1) * spacing) as Vec3;
+  return {
+    min: [...current.origin] as Vec3,
+    max,
+    resolution: current.resolution,
+    origin: current.origin,
+    voxelSize,
+    requestedVoxelSize: requestedSpacing,
+    requestedSampleCount,
+    budgetAdjusted: spacing !== requestedSpacing,
+    sampleBudget,
+  };
+}
+
+export const boundedGridLayoutForTest = boundedGridLayout;
+
+function emptySdfGrid(voxelSize: number): VolumeGrid {
+  const spacing = Number.isFinite(voxelSize) && voxelSize > 0 ? Math.max(1e-6, voxelSize) : 1e-3;
+  const background = spacing * 3;
+  return {
+    kind: "GNVM_VOLUME_GRID",
+    background,
+    min: [0, 0, 0],
+    max: [spacing, spacing, spacing],
+    resolution: [2, 2, 2],
+    origin: [0, 0, 0],
+    voxelSize: [spacing, spacing, spacing],
+    values: new Float32Array(8).fill(background),
+    requestedVoxelSize: spacing,
+    requestedSampleCount: 8,
+    budgetAdjusted: false,
+    sampleBudget: denseSdfSampleBudget,
+  };
+}
+
+function meshToSdfGrid(mesh: Mesh | null, voxelSize: number, bandWidth: number): VolumeGrid {
+  const triangles = mesh ? trianglesOf(mesh) : [];
+  if (!triangles.length) return emptySdfGrid(voxelSize);
+  const bounds = boundsOfTriangles(triangles);
+  const padding = Number.isFinite(bandWidth)
+    ? Math.max(1, Math.min(64, Math.trunc(bandWidth)))
+    : 3;
+  const layout = boundedGridLayout(bounds.min, bounds.max, voxelSize, padding);
+  const spacing = layout.voxelSize[0];
+  const background = padding * spacing;
+  const values = new Float32Array(layout.resolution[0] * layout.resolution[1] * layout.resolution[2]);
+  const bvh = buildSdfBvh(triangles);
+  // OpenVDB's mesh rasterizer accepts open and non-manifold polygon soups.
+  // Its stable contract there is an unsigned narrow band with a tiny negative
+  // surface sample, rather than treating an arbitrary ray-parity half-space as
+  // solid. Closed two-manifolds retain signed interior distances even when one
+  // or more face windings are flipped.
+  const signedInterior = mesh ? isClosedTwoManifold(mesh) : false;
+  for (let z = 0; z < layout.resolution[2]; z++) for (let y = 0; y < layout.resolution[1]; y++) {
+    for (let x = 0; x < layout.resolution[0]; x++) {
+      const point: Vec3 = [
+        layout.origin[0] + x * spacing,
+        layout.origin[1] + y * spacing,
+        layout.origin[2] + z * spacing,
+      ];
+      const unsigned = Math.sqrt(nearestTriangleDistanceSquared(point, bvh));
+      // OpenVDB's mesh rasterizer retains an inside-biased float at samples
+      // lying exactly on a closed surface. A literal zero makes dual
+      // contouring drop the boundary row/column of otherwise planar faces
+      // (a unit cube at 0.25 spacing collapses from Blender's 5x5 quads per
+      // side to 3x3). One float32-scale inward bias preserves that topology.
+      const signed = unsigned <= spacing * 1e-7
+        ? -spacing * 4.76837158203125e-7
+        : signedInterior && pointIsInsideMesh(point, bvh) ? -unsigned : unsigned;
+      values[z * layout.resolution[0] * layout.resolution[1] + y * layout.resolution[0] + x] =
+        Math.fround(Math.max(-background, Math.min(background, signed)));
+    }
+  }
+  return { kind: "GNVM_VOLUME_GRID", background, ...layout, values };
+}
+
+function pointsToSdfGrid(points: Vec3[], radii: number[], voxelSize: number): VolumeGrid {
+  const spheres = points.flatMap((center, index): SdfSphere[] =>
+    center.every(Number.isFinite)
+      ? [{ center, radius: Math.max(0, Number.isFinite(radii[index]) ? radii[index] : 0) }]
+      : []);
+  if (!spheres.length) return emptySdfGrid(voxelSize);
+  const sourceMin: Vec3 = [Infinity, Infinity, Infinity];
+  const sourceMax: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const sphere of spheres) for (let axis = 0; axis < 3; axis++) {
+    sourceMin[axis] = Math.min(sourceMin[axis], sphere.center[axis] - sphere.radius);
+    sourceMax[axis] = Math.max(sourceMax[axis], sphere.center[axis] + sphere.radius);
+  }
+  // Blender's particle-to-level-set path uses the OpenVDB default three-voxel
+  // half width; the node intentionally exposes no separate Band Width input.
+  const padding = 3;
+  const layout = boundedGridLayout(sourceMin, sourceMax, voxelSize, padding);
+  const spacing = layout.voxelSize[0];
+  const background = padding * spacing;
+  const values = new Float32Array(layout.resolution[0] * layout.resolution[1] * layout.resolution[2]);
+  const bvh = buildSphereBvh(spheres);
+  for (let z = 0; z < layout.resolution[2]; z++) for (let y = 0; y < layout.resolution[1]; y++) {
+    for (let x = 0; x < layout.resolution[0]; x++) {
+      const sample: Vec3 = [
+        layout.origin[0] + x * spacing,
+        layout.origin[1] + y * spacing,
+        layout.origin[2] + z * spacing,
+      ];
+      const distance = nearestSphereDistance(sample, bvh, background);
+      values[z * layout.resolution[0] * layout.resolution[1] + y * layout.resolution[0] + x] =
+        Math.fround(Math.max(-background, Math.min(background, distance)));
+    }
+  }
+  return { kind: "GNVM_VOLUME_GRID", background, ...layout, values };
+}
+
+/** Focused hooks for bounded SDF conversion tests. */
+export const meshToSdfGridForTest = meshToSdfGrid;
+export const pointsToSdfGridForTest = pointsToSdfGrid;
+
+/**
+ * Deterministic dense-grid adaptivity for the browser runtime.
+ *
+ * OpenVDB uses a sparse-tree error metric that is not available in GNVM.
+ * Spatial clustering still makes Adaptivity functional and monotonic while
+ * preserving a zero-adaptivity bit-for-bit path. Diagnostics label this as a
+ * bounded implementation instead of claiming OpenVDB's exact topology.
+ */
+function adaptSurfaceMesh(mesh: Mesh, adaptivity: number, spacing: Vec3): Mesh {
+  const amount = Math.max(0, Math.min(1, Number.isFinite(adaptivity) ? adaptivity : 0));
+  if (amount <= 0 || mesh.positions.length < 4) return mesh;
+  const base = Math.max(1e-9, Math.max(...spacing));
+  // Small values primarily remove redundant planar samples; the quartic term
+  // makes the final portion converge to one coarse cell per canonical side.
+  const cellSize = base * (1 - .5 * amount + 3 * amount ** 2);
+  const min: Vec3 = [Infinity, Infinity, Infinity];
+  for (const point of mesh.positions)
+    for (let axis = 0; axis < 3; axis++) min[axis] = Math.min(min[axis], point[axis]);
+  const clusters = new Map<string, { sum: Vec3; count: number; source: number[] }>();
+  for (let vertex = 0; vertex < mesh.positions.length; vertex++) {
+    const point = mesh.positions[vertex];
+    const key = [0, 1, 2].map((axis) =>
+      Math.floor((point[axis] - min[axis] + 1e-10) / cellSize)).join(",");
+    const cluster = clusters.get(key);
+    if (cluster) {
+      cluster.sum = [
+        cluster.sum[0] + point[0],
+        cluster.sum[1] + point[1],
+        cluster.sum[2] + point[2],
+      ];
+      cluster.count++;
+      cluster.source.push(vertex);
+    } else {
+      clusters.set(key, { sum: [...point] as Vec3, count: 1, source: [vertex] });
+    }
+  }
+  const output = new Mesh();
+  const remap = new Int32Array(mesh.positions.length);
+  for (const cluster of clusters.values()) {
+    const vertex = output.positions.length;
+    output.positions.push([
+      cluster.sum[0] / cluster.count,
+      cluster.sum[1] / cluster.count,
+      cluster.sum[2] / cluster.count,
+    ]);
+    for (const source of cluster.source) remap[source] = vertex;
+  }
+  const emitted = new Set<string>();
+  for (const sourceFace of mesh.faces) {
+    const face: number[] = [];
+    for (const source of sourceFace) {
+      const vertex = remap[source];
+      if (face.at(-1) !== vertex) face.push(vertex);
+    }
+    if (face.length > 1 && face[0] === face.at(-1)) face.pop();
+    if (new Set(face).size < 3) continue;
+    const canonical = [...new Set(face)].sort((a, b) => a - b).join(",");
+    if (emitted.has(canonical)) continue;
+    emitted.add(canonical);
+    output.faces.push(face);
+  }
+  output.materialSlots = [...mesh.materialSlots];
+  return output;
+}
+
+export function adaptiveSurfaceNetsForTest(
+  values: Float32Array,
+  resolution: Vec3,
+  isolation: number,
+  origin: Vec3,
+  spacing: Vec3,
+  adaptivity: number,
+): Mesh {
+  return adaptSurfaceMesh(
+    surfaceNets(values, resolution, isolation, origin, spacing),
+    adaptivity,
+    spacing,
+  );
+}
+
+reg("GeometryNodeMeshToSDFGrid", (api) => {
+  recordApproximation("GeometryNodeMeshToSDFGrid");
+  const source = realizeInstances(api.geo("Mesh"));
+  const volume = meshToSdfGrid(
+    source.mesh ?? null,
+    Math.max(1e-6, api.num("Voxel Size")),
+    Math.max(1, Math.trunc(api.num("Band Width"))),
+  );
+  volumeGridDiagnosticSink?.({
+    stage: "mesh-to-sdf-grid",
+    background: volume.background,
+    min: [...volume.min] as Vec3,
+    max: [...volume.max] as Vec3,
+    resolution: [...volume.resolution] as Vec3,
+    origin: [...volume.origin] as Vec3,
+    spacing: [...volume.voxelSize] as Vec3,
+    requestedSpacing: volume.requestedVoxelSize,
+    requestedSampleCount: volume.requestedSampleCount,
+    sampleCount: volume.values.length,
+    sampleBudget: volume.sampleBudget,
+    budgetAdjusted: volume.budgetAdjusted,
+    isolation: 0,
+    values: volume.values,
+  });
+  return { "SDF Grid": volume };
+});
+
+reg("GeometryNodePointsToSDFGrid", (api) => {
+  recordApproximation("GeometryNodePointsToSDFGrid");
+  const source = realizeInstances(api.geo("Points"));
+  const mesh = source.mesh;
+  const points = mesh?.positions ?? [];
+  const resolved = mesh
+    ? api.resolve(api.field("Radius"), source, "POINT").map(asNum)
+    : [];
+  const volume = pointsToSdfGrid(points, resolved, Math.max(1e-6, api.num("Voxel Size")));
+  volumeGridDiagnosticSink?.({
+    stage: "points-to-sdf-grid",
+    background: volume.background,
+    min: [...volume.min] as Vec3,
+    max: [...volume.max] as Vec3,
+    resolution: [...volume.resolution] as Vec3,
+    origin: [...volume.origin] as Vec3,
+    spacing: [...volume.voxelSize] as Vec3,
+    requestedSpacing: volume.requestedVoxelSize,
+    requestedSampleCount: volume.requestedSampleCount,
+    sampleCount: volume.values.length,
+    sampleBudget: volume.sampleBudget,
+    budgetAdjusted: volume.budgetAdjusted,
+    isolation: 0,
+    values: volume.values,
+  });
+  return { "SDF Grid": volume };
+});
+
+reg("GeometryNodeGridToMesh", (api) => {
+  recordApproximation("GeometryNodeGridToMesh");
+  const volume = api.input("Grid");
+  if (!isVolumeGrid(volume)) return { Mesh: new Geometry() };
+  const threshold = api.num("Threshold");
+  const adaptivity = Math.max(0, Math.min(1, api.num("Adaptivity")));
+  volumeGridDiagnosticSink?.({
+    stage: "grid-to-mesh",
+    background: volume.background,
+    min: [...volume.min] as Vec3,
+    max: [...volume.max] as Vec3,
+    resolution: [...volume.resolution] as Vec3,
+    origin: [...volume.origin] as Vec3,
+    spacing: [...volume.voxelSize] as Vec3,
+    requestedSpacing: volume.requestedVoxelSize,
+    requestedSampleCount: volume.requestedSampleCount,
+    sampleCount: volume.values.length,
+    sampleBudget: volume.sampleBudget,
+    budgetAdjusted: volume.budgetAdjusted,
+    requestedAdaptivity: adaptivity,
+    adaptivityApplied: adaptivity > 0,
+    isolation: threshold,
+    values: volume.values,
+  });
+  const mesh = adaptiveSurfaceNetsForTest(
+    volume.values,
+    volume.resolution,
+    threshold,
+    volume.origin,
+    volume.voxelSize,
+    adaptivity,
+  );
+  mesh.materialSlots = [null];
+  const geometry = new Geometry();
+  geometry.mesh = mesh;
+  return { Mesh: geometry };
+});
+
 reg("GeometryNodeVolumeToMesh", (api) => {
-  const volume = api.input("Volume") as unknown;
+  recordApproximation("GeometryNodeVolumeToMesh");
+  const volume = api.input("Volume");
   if (!isVolumeGrid(volume)) return { Mesh: new Geometry() };
 
   const sampleSpacing = Math.max(...volume.voxelSize);
@@ -476,7 +1296,8 @@ reg("GeometryNodeVolumeToMesh", (api) => {
   // scales only its voxel basis. Preserve that minimum-bound origin instead of
   // re-centering the target lattice. For anisotropic grids Blender chooses the
   // maximum source voxel size as the requested-size reference.
-  const { values: sampledGrid, resolution, origin, spacing } = resampleVolumeGrid(volume, requestedSpacing);
+  const resampled = resampleVolumeGrid(volume, requestedSpacing);
+  const { values: sampledGrid, resolution, origin, spacing } = resampled;
 
   const threshold = api.num("Threshold");
   // Zero-level SDF surfaces must reach OpenVDB verbatim: Modern Pipe's first
@@ -496,6 +1317,11 @@ reg("GeometryNodeVolumeToMesh", (api) => {
     resolution: [...resolution] as Vec3,
     origin: [...origin] as Vec3,
     spacing: [...spacing] as Vec3,
+    requestedSpacing: resampled.requestedSpacing,
+    requestedSampleCount: resampled.requestedSampleCount,
+    sampleCount: sampledGrid.length,
+    sampleBudget: resampled.sampleBudget,
+    budgetAdjusted: resampled.budgetAdjusted,
     isolation,
     values: sampledGrid,
   });

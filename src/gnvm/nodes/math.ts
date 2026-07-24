@@ -156,6 +156,76 @@ reg("ShaderNodeMath", (api) => {
   };
 });
 
+// ---- Integer Math --------------------------------------------------------
+// Geometry Nodes integer sockets store signed 32-bit values. Keep arithmetic
+// in that range so linked fields behave like Blender rather than silently
+// widening to JavaScript's 53-bit integer representation.
+const int32 = (value: number): number => Math.trunc(value) | 0;
+const integerDivide = (a: number, b: number): number =>
+  b === 0 ? 0 : int32(Math.trunc(a / b));
+const integerGcd = (a0: number, b0: number): number => {
+  let a = Math.abs(a0);
+  let b = Math.abs(b0);
+  while (b !== 0) [a, b] = [b, a % b];
+  return int32(a);
+};
+const integerPower = (base: number, exponent: number): number => {
+  if (exponent < 0) {
+    if (base === 1) return 1;
+    if (base === -1) return exponent % 2 === 0 ? 1 : -1;
+    return 0;
+  }
+  const value = Math.pow(base, exponent);
+  // Blender's integer power uses a saturating float-to-int conversion, unlike
+  // the wrapping behavior of the ordinary integer arithmetic operations.
+  if (!Number.isFinite(value) || value > 0x7fffffff) return 0x7fffffff;
+  if (value < -0x80000000) return -0x80000000;
+  return int32(value);
+};
+
+const INTEGER_MATH: Record<string, (a: number, b: number, c: number) => number> = {
+  ADD: (a, b) => int32(a + b),
+  SUBTRACT: (a, b) => int32(a - b),
+  MULTIPLY: (a, b) => Math.imul(a, b),
+  DIVIDE: integerDivide,
+  MULTIPLY_ADD: (a, b, c) => int32(Math.imul(a, b) + c),
+  ABSOLUTE: (a) => int32(Math.abs(a)),
+  NEGATE: (a) => int32(-a),
+  POWER: integerPower,
+  MINIMUM: (a, b) => Math.min(a, b),
+  MAXIMUM: (a, b) => Math.max(a, b),
+  SIGN: (a) => Math.sign(a),
+  DIVIDE_ROUND: (a, b) => {
+    if (b === 0) return 0;
+    const magnitude = Math.floor(Math.abs(a / b) + 0.5);
+    return int32(Math.sign(a) * Math.sign(b) * magnitude);
+  },
+  DIVIDE_FLOOR: (a, b) => b === 0 ? 0 : int32(Math.floor(a / b)),
+  DIVIDE_CEIL: (a, b) => b === 0 ? 0 : int32(Math.ceil(a / b)),
+  FLOORED_MODULO: (a, b) => b === 0 ? 0 : int32(a - b * Math.floor(a / b)),
+  MODULO: (a, b) => b === 0 ? 0 : int32(a % b),
+  GCD: integerGcd,
+  LCM: (a, b) => {
+    if (a === 0 || b === 0) return 0;
+    const divisor = integerGcd(a, b);
+    return Math.imul(
+      integerDivide(int32(Math.abs(a)), divisor),
+      int32(Math.abs(b)),
+    );
+  },
+};
+
+reg("FunctionNodeIntegerMath", (api) => {
+  const operation = api.prop<string>("operation", "ADD");
+  const fn = INTEGER_MATH[operation] ?? INTEGER_MATH.ADD;
+  return {
+    Value: fieldMap(
+      [api.field("Value"), api.field("Value_001"), api.field("Value_002")],
+      (a, b, c) => fn(int32(num(a)), int32(num(b)), int32(num(c))),
+    ),
+  };
+});
+
 type CurvePoint = { location: [number, number]; handle_type?: string };
 function floatCurveSample(points: CurvePoint[], value: number, extend: string): number {
   if (points.length < 2) return value;

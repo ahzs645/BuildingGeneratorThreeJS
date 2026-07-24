@@ -150,12 +150,18 @@ export interface DumpCurve {
 export interface DumpModifier {
   name?: string;
   type: string;
+  show_viewport?: boolean;
   node_group?: string;
   input_values?: Record<string, any>;
   object?: string;
   vertex_indices?: number[];
   matrix_inverse?: number[][];
   strength?: number;
+  falloff_type?: string;
+  falloff_radius?: number;
+  use_falloff_uniform?: boolean;
+  vertex_group?: string;
+  invert_vertex_group?: boolean;
   [key: string]: unknown;
 }
 

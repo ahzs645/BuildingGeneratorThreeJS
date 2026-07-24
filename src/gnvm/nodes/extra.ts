@@ -21,7 +21,7 @@ import {
 import { Geometry, Mesh, mergeMeshInto, realizeInstances, rotateEulerXYZ, Spline, buildTopology, triangulateFaceIndices } from "../geometry";
 import { fillCurves, meshEdgesToChains, splineLength, splineSegments, splineFrames } from "../curves";
 import { makeFieldCtx } from "../evaluator";
-import { reg, EvalAPI } from "../registry";
+import { ClosureValue, EMPTY_CLOSURE, reg, EvalAPI, type SockVal } from "../registry";
 import { getManifoldFaceProvenance, isManifoldMesh, isManifoldReady, manifoldBoolean, manifoldBooleanBox, manifoldBooleanMany, manifoldHull } from "../boolean";
 import { asBezierSpline } from "../bezier";
 import { Vector3 as ThreeVector3 } from "three";
@@ -266,11 +266,35 @@ function menuSwitchIndex(api: EvalAPI): number {
 
 reg("GeometryNodeMenuSwitch", (api) => {
   const idx = menuSwitchIndex(api);
-  const picked = api.input(`Item_${idx}`);
+  const picked = idx >= 0 ? api.input(`Item_${idx}`) : undefined;
   const dt = api.prop<string>("data_type", "");
-  if (dt === "GEOMETRY") return { Output: picked instanceof Geometry ? picked : new Geometry() };
-  if (picked instanceof Field) return { Output: picked };
-  return { Output: Field.of(0) };
+  // Blender 5.1 exposes one boolean output beside the selected value for every
+  // menu item. Authored graphs use those sockets as mutually-exclusive branch
+  // masks (separate-half routes x/y/z geometry through them), so returning only
+  // Output silently empties otherwise fully supported closures.
+  const outputs: Record<string, SockVal> = {};
+  for (const output of api.node.outputs) {
+    const item = itemIndex(output.identifier);
+    if (item >= 0) outputs[output.identifier] = Field.of(item === idx ? 1 : 0);
+  }
+  if (dt === "GEOMETRY") {
+    outputs.Output = picked instanceof Geometry ? picked : new Geometry();
+  } else if (dt === "STRING") {
+    outputs.Output = typeof picked === "string" ? picked : "";
+  } else if (
+    dt === "OBJECT"
+    || dt === "COLLECTION"
+    || dt === "MATERIAL"
+    || dt === "TEXTURE"
+    || dt === "IMAGE"
+  ) {
+    // Datablock sockets are opaque identity values at the VM boundary. Do not
+    // coerce them through Field, which loses the referenced Blender ID.
+    outputs.Output = picked ?? null;
+  } else {
+    outputs.Output = picked instanceof Field ? picked : Field.of(0);
+  }
+  return outputs;
 });
 
 reg("GeometryNodeIndexSwitch", (api) => {
@@ -455,6 +479,332 @@ function blenderRandomVec4Offset(seed: number): Vec4 {
   ) as Vec4;
 }
 
+export interface GaborTextureSample {
+  value: number;
+  phase: number;
+  intensity: number;
+}
+
+export class UnsupportedGaborDimensionError extends Error {
+  readonly nodeType = "ShaderNodeTexGabor";
+
+  constructor(readonly dimension: string) {
+    super(`ShaderNodeTexGabor mode is not supported: ${dimension}`);
+    this.name = "UnsupportedGaborDimensionError";
+  }
+}
+
+export class UnsupportedClosureEvaluationError extends Error {
+  readonly nodeType = "NodeEvaluateClosure";
+
+  constructor(readonly nodeName: string) {
+    super(`NodeEvaluateClosure cannot execute a linked closure: ${nodeName}`);
+    this.name = "UnsupportedClosureEvaluationError";
+  }
+}
+
+function blenderHashFloat3ToFloat(seed: Vec3): number {
+  return f32(blenderHashInt3(
+    floatBits(f32(seed[0])),
+    floatBits(f32(seed[1])),
+    floatBits(f32(seed[2])),
+  ) / f32(0xffffffff));
+}
+
+function blenderHashFloat3ToFloat2(seed: Vec3): [number, number] {
+  return [
+    blenderHashFloat3ToFloat(seed),
+    blenderHashFloat3ToFloat([seed[2], seed[0], seed[1]]),
+  ];
+}
+
+function blenderGaborKernel2D(
+  position: [number, number],
+  frequency: number,
+  orientation: number,
+): [number, number] {
+  const distanceSquared = f32(
+    f32(position[0] * position[0]) + f32(position[1] * position[1]),
+  );
+  const hannWindow = f32(
+    f32(.5) + f32(f32(.5) * f32(Math.cos(Math.PI * distanceSquared))),
+  );
+  const gaussianEnvelope = f32(Math.exp(-Math.PI * distanceSquared));
+  const envelope = f32(gaussianEnvelope * hannWindow);
+  const frequencyVector: [number, number] = [
+    f32(frequency * f32(Math.cos(orientation))),
+    f32(frequency * f32(Math.sin(orientation))),
+  ];
+  const dot = f32(
+    f32(position[0] * frequencyVector[0]) + f32(position[1] * frequencyVector[1]),
+  );
+  const angle = f32(2 * Math.PI * dot);
+  return [
+    f32(envelope * f32(Math.cos(angle))),
+    f32(envelope * f32(Math.sin(angle))),
+  ];
+}
+
+function blenderGaborNoiseCell2D(
+  cell: [number, number],
+  position: [number, number],
+  frequency: number,
+  isotropy: number,
+  baseOrientation: number,
+): [number, number] {
+  const noise: [number, number] = [0, 0];
+  for (let impulse = 0; impulse < 8; impulse++) {
+    const orientationSeed: Vec3 = [cell[0], cell[1], impulse * 3];
+    const centerSeed: Vec3 = [cell[0], cell[1], impulse * 3 + 1];
+    const weightSeed: Vec3 = [cell[0], cell[1], impulse * 3 + 2];
+    const randomOrientation = f32(
+      f32(blenderHashFloat3ToFloat(orientationSeed) - f32(.5)) * Math.PI,
+    );
+    const orientation = f32(baseOrientation + f32(randomOrientation * isotropy));
+    const center = blenderHashFloat3ToFloat2(centerSeed);
+    const kernelPosition: [number, number] = [
+      f32(position[0] - center[0]),
+      f32(position[1] - center[1]),
+    ];
+    const distanceSquared = f32(
+      f32(kernelPosition[0] * kernelPosition[0])
+      + f32(kernelPosition[1] * kernelPosition[1]),
+    );
+    if (distanceSquared >= 1) continue;
+    const weight = blenderHashFloat3ToFloat(weightSeed) < .5 ? -1 : 1;
+    const kernel = blenderGaborKernel2D(kernelPosition, frequency, orientation);
+    noise[0] = f32(noise[0] + f32(weight * kernel[0]));
+    noise[1] = f32(noise[1] + f32(weight * kernel[1]));
+  }
+  return noise;
+}
+
+/**
+ * Blender's 2D sparse Gabor convolution, including its float32 hash and
+ * accumulation boundaries. This is the only mode used by the audited asset.
+ */
+export function blenderGaborTexture2D(
+  coordinates: Vec3,
+  scaleValue: number,
+  frequencyValue: number,
+  anisotropyValue: number,
+  orientationValue: number,
+): GaborTextureSample {
+  const scaled: [number, number] = [
+    f32(f32(coordinates[0]) * f32(scaleValue)),
+    f32(f32(coordinates[1]) * f32(scaleValue)),
+  ];
+  const isotropy = f32(
+    f32(1) - f32(Math.max(0, Math.min(1, f32(anisotropyValue)))),
+  );
+  const frequency = Math.max(f32(.001), f32(frequencyValue));
+  const cell: [number, number] = [Math.floor(scaled[0]), Math.floor(scaled[1])];
+  const local: [number, number] = [
+    f32(scaled[0] - cell[0]),
+    f32(scaled[1] - cell[1]),
+  ];
+  const phasor: [number, number] = [0, 0];
+  for (let y = -1; y <= 1; y++) {
+    for (let x = -1; x <= 1; x++) {
+      const sample = blenderGaborNoiseCell2D(
+        [f32(cell[0] + x), f32(cell[1] + y)],
+        [f32(local[0] - x), f32(local[1] - y)],
+        frequency,
+        isotropy,
+        f32(orientationValue),
+      );
+      phasor[0] = f32(phasor[0] + sample[0]);
+      phasor[1] = f32(phasor[1] + sample[1]);
+    }
+  }
+
+  // sqrt(8 * .5 * .25) is exactly one in float32, so Blender's empirical
+  // six-standard-deviation normalization reduces to six for 2D.
+  const normalization = f32(6);
+  return {
+    value: f32(f32(f32(phasor[1] / normalization) * f32(.5)) + f32(.5)),
+    phase: f32(
+      f32(f32(Math.atan2(phasor[1], phasor[0])) + f32(Math.PI))
+      / f32(f32(2) * f32(Math.PI)),
+    ),
+    intensity: f32(
+      f32(Math.sqrt(f32(
+        f32(phasor[0] * phasor[0]) + f32(phasor[1] * phasor[1]),
+      ))) / normalization,
+    ),
+  };
+}
+
+function blenderHashFloat4ToFloat(seed: Vec4): number {
+  return f32(blenderHashInt4(
+    floatBits(f32(seed[0])),
+    floatBits(f32(seed[1])),
+    floatBits(f32(seed[2])),
+    floatBits(f32(seed[3])),
+  ) / f32(0xffffffff));
+}
+
+function blenderHashFloat4ToFloat2(seed: Vec4): [number, number] {
+  return [
+    blenderHashFloat4ToFloat(seed),
+    blenderHashFloat4ToFloat([seed[2], seed[0], seed[3], seed[1]]),
+  ];
+}
+
+function blenderHashFloat4ToFloat3(seed: Vec4): Vec3 {
+  return [
+    blenderHashFloat4ToFloat(seed),
+    blenderHashFloat4ToFloat([seed[2], seed[0], seed[3], seed[1]]),
+    blenderHashFloat4ToFloat([seed[3], seed[2], seed[1], seed[0]]),
+  ];
+}
+
+function blenderGaborKernel3D(
+  position: Vec3,
+  frequency: number,
+  orientation: Vec3,
+): [number, number] {
+  const distanceSquared = f32(
+    f32(f32(position[0] * position[0]) + f32(position[1] * position[1]))
+    + f32(position[2] * position[2]),
+  );
+  const hannWindow = f32(
+    f32(.5) + f32(f32(.5) * f32(Math.cos(Math.PI * distanceSquared))),
+  );
+  const gaussianEnvelope = f32(Math.exp(-Math.PI * distanceSquared));
+  const envelope = f32(gaussianEnvelope * hannWindow);
+  const frequencyVector = orientation.map((value) =>
+    f32(frequency * value)) as Vec3;
+  const dot = f32(
+    f32(f32(position[0] * frequencyVector[0])
+    + f32(position[1] * frequencyVector[1]))
+    + f32(position[2] * frequencyVector[2]),
+  );
+  const angle = f32(2 * Math.PI * dot);
+  return [
+    f32(envelope * f32(Math.cos(angle))),
+    f32(envelope * f32(Math.sin(angle))),
+  ];
+}
+
+function blenderGaborOrientation3D(
+  orientation: Vec3,
+  isotropy: number,
+  seed: Vec4,
+): Vec3 {
+  if (isotropy === 0) return orientation;
+  let inclination = f32(Math.acos(orientation[2]));
+  const xyLength = f32(Math.hypot(orientation[0], orientation[1]));
+  let azimuth = 0;
+  if (xyLength > 0) {
+    const sign = orientation[1] < 0 ? -1 : orientation[1] > 0 ? 1 : 0;
+    azimuth = f32(sign * f32(Math.acos(f32(orientation[0] / xyLength))));
+  }
+  const randomAngles = blenderHashFloat4ToFloat2(seed);
+  inclination = f32(inclination + f32(f32(randomAngles[0] * Math.PI) * isotropy));
+  azimuth = f32(azimuth + f32(f32(randomAngles[1] * Math.PI) * isotropy));
+  const sinInclination = f32(Math.sin(inclination));
+  return [
+    f32(sinInclination * f32(Math.cos(azimuth))),
+    f32(sinInclination * f32(Math.sin(azimuth))),
+    f32(Math.cos(inclination)),
+  ];
+}
+
+function blenderGaborNoiseCell3D(
+  cell: Vec3,
+  position: Vec3,
+  frequency: number,
+  isotropy: number,
+  baseOrientation: Vec3,
+): [number, number] {
+  const noise: [number, number] = [0, 0];
+  for (let impulse = 0; impulse < 8; impulse++) {
+    const orientationSeed: Vec4 = [cell[0], cell[1], cell[2], impulse * 3];
+    const centerSeed: Vec4 = [cell[0], cell[1], cell[2], impulse * 3 + 1];
+    const weightSeed: Vec4 = [cell[0], cell[1], cell[2], impulse * 3 + 2];
+    const orientation = blenderGaborOrientation3D(
+      baseOrientation,
+      isotropy,
+      orientationSeed,
+    );
+    const center = blenderHashFloat4ToFloat3(centerSeed);
+    const kernelPosition = position.map((value, axis) =>
+      f32(value - center[axis])) as Vec3;
+    const distanceSquared = f32(
+      f32(f32(kernelPosition[0] * kernelPosition[0])
+      + f32(kernelPosition[1] * kernelPosition[1]))
+      + f32(kernelPosition[2] * kernelPosition[2]),
+    );
+    if (distanceSquared >= 1) continue;
+    const weight = blenderHashFloat4ToFloat(weightSeed) < .5 ? -1 : 1;
+    const kernel = blenderGaborKernel3D(kernelPosition, frequency, orientation);
+    noise[0] = f32(noise[0] + f32(weight * kernel[0]));
+    noise[1] = f32(noise[1] + f32(weight * kernel[1]));
+  }
+  return noise;
+}
+
+/** Blender's float32 3D sparse Gabor convolution. */
+export function blenderGaborTexture3D(
+  coordinates: Vec3,
+  scaleValue: number,
+  frequencyValue: number,
+  anisotropyValue: number,
+  orientationValue: Vec3,
+): GaborTextureSample {
+  const scaled = coordinates.map((value) =>
+    f32(f32(value) * f32(scaleValue))) as Vec3;
+  const isotropy = f32(
+    f32(1) - f32(Math.max(0, Math.min(1, f32(anisotropyValue)))),
+  );
+  const frequency = Math.max(f32(.001), f32(frequencyValue));
+  const orientationLength = f32(Math.sqrt(f32(
+    f32(f32(f32(orientationValue[0]) * f32(orientationValue[0]))
+    + f32(f32(orientationValue[1]) * f32(orientationValue[1])))
+    + f32(f32(orientationValue[2]) * f32(orientationValue[2])),
+  )));
+  const baseOrientation = orientationLength > 0
+    ? orientationValue.map((value) =>
+      f32(f32(value) / orientationLength)) as Vec3
+    : [0, 0, 0] as Vec3;
+  const cell = scaled.map(Math.floor) as Vec3;
+  const local = scaled.map((value, axis) => f32(value - cell[axis])) as Vec3;
+  const phasor: [number, number] = [0, 0];
+  for (let z = -1; z <= 1; z++) {
+    for (let y = -1; y <= 1; y++) {
+      for (let x = -1; x <= 1; x++) {
+        const sample = blenderGaborNoiseCell3D(
+          [f32(cell[0] + x), f32(cell[1] + y), f32(cell[2] + z)],
+          [f32(local[0] - x), f32(local[1] - y), f32(local[2] - z)],
+          frequency,
+          isotropy,
+          baseOrientation,
+        );
+        phasor[0] = f32(phasor[0] + sample[0]);
+        phasor[1] = f32(phasor[1] + sample[1]);
+      }
+    }
+  }
+  const integral = f32(f32(1) / f32(f32(4) * f32(Math.SQRT2)));
+  const standardDeviation = f32(Math.sqrt(
+    f32(f32(f32(8) * f32(.5)) * integral),
+  ));
+  const normalization = f32(f32(6) * standardDeviation);
+  return {
+    value: f32(f32(f32(phasor[1] / normalization) * f32(.5)) + f32(.5)),
+    phase: f32(
+      f32(f32(Math.atan2(phasor[1], phasor[0])) + f32(Math.PI))
+      / f32(f32(2) * f32(Math.PI)),
+    ),
+    intensity: f32(
+      f32(Math.sqrt(f32(
+        f32(phasor[0] * phasor[0]) + f32(phasor[1] * phasor[1]),
+      ))) / normalization,
+    ),
+  };
+}
+
 const blenderNoiseDistortionOffsets = [0, 1, 2].map((seed) => {
   const offset = blenderRandomVec4Offset(seed);
   return [offset[0], offset[1], offset[2]] as Vec3;
@@ -540,6 +890,97 @@ reg("ShaderNodeTexNoise", (api) => {
       return red.map((value, index) => [asNum(value), asNum(green[index]), asNum(blue[index])] as Vec3);
     }),
   };
+});
+
+reg("ShaderNodeTexGabor", (api) => {
+  const dimension = api.prop<string>("gabor_type", "2D");
+  if (dimension !== "2D" && dimension !== "3D")
+    throw new UnsupportedGaborDimensionError(dimension);
+  const linkedVector = api.node.inputs.find((socket) => socket.identifier === "Vector")?.linked ?? false;
+  const vector = api.field("Vector");
+  const scale = api.field("Scale");
+  const frequency = api.field("Frequency");
+  const anisotropy = api.field("Anisotropy");
+  const orientation = api.field(
+    dimension === "3D" ? "Orientation 3D" : "Orientation 2D",
+  );
+  const cache = new WeakMap<import("../core").FieldCtx, GaborTextureSample[]>();
+  const evaluate = (ctx: import("../core").FieldCtx): GaborTextureSample[] => {
+    const cached = cache.get(ctx);
+    if (cached) return cached;
+    const vectors = vector.array(ctx);
+    const scales = scale.array(ctx);
+    const frequencies = frequency.array(ctx);
+    const anisotropies = anisotropy.array(ctx);
+    const orientations = orientation.array(ctx);
+    const samples = Array.from({ length: ctx.size }, (_, index) => {
+      const coordinates = linkedVector
+        ? asVec3(vectors[index] ?? 0)
+        : ctx.position?.(index) ?? [0, 0, 0];
+      const scaleValue = asNum(scales[index] ?? 5);
+      const frequencyValue = asNum(frequencies[index] ?? 2);
+      const anisotropyValue = asNum(anisotropies[index] ?? 1);
+      return dimension === "3D"
+        ? blenderGaborTexture3D(
+          coordinates,
+          scaleValue,
+          frequencyValue,
+          anisotropyValue,
+          asVec3(orientations[index] ?? [Math.SQRT1_2, Math.SQRT1_2, 0]),
+        )
+        : blenderGaborTexture2D(
+          coordinates,
+          scaleValue,
+          frequencyValue,
+          anisotropyValue,
+          asNum(orientations[index] ?? Math.PI / 4),
+        );
+    });
+    cache.set(ctx, samples);
+    return samples;
+  };
+  return {
+    Value: Field.make((ctx) => evaluate(ctx).map((sample) => sample.value)),
+    Phase: Field.make((ctx) => evaluate(ctx).map((sample) => sample.phase)),
+    Intensity: Field.make((ctx) => evaluate(ctx).map((sample) => sample.intensity)),
+  };
+});
+
+reg("NodeEvaluateClosure", (api) => {
+  const closure = api.input("Closure");
+  if (closure instanceof ClosureValue) {
+    const inputs: Record<string, SockVal> = {};
+    for (const input of api.node.inputs) {
+      if (
+        !input.identifier
+        || input.identifier === "Closure"
+        || input.identifier === "__extend__"
+      ) continue;
+      inputs[input.identifier] = api.input(input.identifier);
+      if (input.name) inputs[input.name] = inputs[input.identifier];
+    }
+    const evaluated = closure.evaluate(inputs);
+    const outputs: Record<string, SockVal> = {};
+    for (const output of api.node.outputs) {
+      if (!output.identifier || output.identifier === "__extend__") continue;
+      outputs[output.identifier] = evaluated[output.identifier]
+        ?? evaluated[output.name]
+        ?? api.input(output.identifier);
+    }
+    return outputs;
+  }
+  if (closure !== EMPTY_CLOSURE)
+    throw new UnsupportedClosureEvaluationError(api.node.name);
+
+  // An empty closure is Blender's identity closure: every dynamic signature
+  // output receives the input with the same stable identifier.
+  const outputs: Record<string, ReturnType<EvalAPI["input"]>> = {};
+  for (const output of api.node.outputs) {
+    if (!output.identifier || output.identifier === "__extend__") continue;
+    const input = api.node.inputs.find((socket) => socket.identifier === output.identifier);
+    if (input) outputs[output.identifier] = api.input(input.identifier);
+  }
+  return outputs;
 });
 
 // Mirrors Cycles' svm_wave. Scale is applied to the vector before both the

@@ -179,6 +179,102 @@ const tagQuaternion = (q: Quat): TaggedRotation => {
   Object.defineProperty(euler, ROTATION_QUATERNION, { value: stored, enumerable: false });
   return euler;
 };
+
+function crossFloat32(a: Vec3, b: Vec3): Vec3 {
+  const f = Math.fround;
+  return [
+    f(f(f(a[1]) * f(b[2])) - f(f(a[2]) * f(b[1]))),
+    f(f(f(a[2]) * f(b[0])) - f(f(a[0]) * f(b[2]))),
+    f(f(f(a[0]) * f(b[1])) - f(f(a[1]) * f(b[0]))),
+  ];
+}
+
+function orthogonalOfNonZeroVector(vector: Vec3): Vec3 {
+  const f = Math.fround;
+  const value = vector.map(f) as Vec3;
+  if (value[0] !== -value[1]) return [f(-value[1]), value[0], 0];
+  if (value[0] !== -value[2]) return [f(-value[2]), 0, value[0]];
+  return [0, f(-value[2]), value[1]];
+}
+
+function quaternionFromBasisColumns(columns: [Vec3, Vec3, Vec3]): Quat {
+  // Convert the column-major basis used by Blender's float3x3 into the
+  // equivalent row-major coefficients used by the VM's quaternion helpers.
+  const m00 = columns[0][0], m01 = columns[1][0], m02 = columns[2][0];
+  const m10 = columns[0][1], m11 = columns[1][1], m12 = columns[2][1];
+  const m20 = columns[0][2], m21 = columns[1][2], m22 = columns[2][2];
+  const trace = m00 + m11 + m22;
+  let quaternion: Quat;
+  if (trace > 0) {
+    const scale = Math.sqrt(trace + 1) * 2;
+    quaternion = [(m21 - m12) / scale, (m02 - m20) / scale, (m10 - m01) / scale, scale / 4];
+  } else if (m00 > m11 && m00 > m22) {
+    const scale = Math.sqrt(Math.max(0, 1 + m00 - m11 - m22)) * 2;
+    quaternion = [scale / 4, (m01 + m10) / scale, (m02 + m20) / scale, (m21 - m12) / scale];
+  } else if (m11 > m22) {
+    const scale = Math.sqrt(Math.max(0, 1 + m11 - m00 - m22)) * 2;
+    quaternion = [(m01 + m10) / scale, scale / 4, (m12 + m21) / scale, (m02 - m20) / scale];
+  } else {
+    const scale = Math.sqrt(Math.max(0, 1 + m22 - m00 - m11)) * 2;
+    quaternion = [(m02 + m20) / scale, (m12 + m21) / scale, scale / 4, (m10 - m01) / scale];
+  }
+  return quatNormalize(quaternion);
+}
+
+const axisIndex = (axis: string): number => axis === "Y" ? 1 : axis === "Z" ? 2 : 0;
+
+// Blender's Rotation input is a quaternion-backed constant. The extractor
+// preserves its authored XYZ Euler property as `rotation_euler`.
+reg("FunctionNodeInputRotation", (api) => ({
+  Rotation: Field.of(tagQuaternion(quatFromEulerXYZ(
+    api.prop<Vec3>("rotation_euler", [0, 0, 0]),
+  ))),
+}));
+
+reg("FunctionNodeAxesToRotation", (api) => {
+  const primaryAxis = axisIndex(api.prop<string>("primary_axis", "Z"));
+  const secondaryAxis = axisIndex(api.prop<string>("secondary_axis", "X"));
+  if (primaryAxis === secondaryAxis) return { Rotation: Field.of(tagQuaternion([0, 0, 0, 1])) };
+  const tertiaryAxis = 3 - primaryAxis - secondaryAxis;
+  const tertiaryFactor = (secondaryAxis + 1) % 3 === primaryAxis ? -1 : 1;
+
+  return {
+    Rotation: fieldMap(
+      [api.field("Primary Axis"), api.field("Secondary Axis")],
+      (primaryValue, secondaryValue) => {
+        let primary = vnormBlenderFloat(asVec3(primaryValue));
+        let secondary = asVec3(secondaryValue).map(Math.fround) as Vec3;
+        let tertiary: Vec3;
+        const primaryIsNonZero = primary.some((component) => component !== 0);
+        const secondaryIsNonZero = secondary.some((component) => component !== 0);
+        if (primaryIsNonZero && secondaryIsNonZero) {
+          tertiary = crossFloat32(primary, secondary);
+          if (tertiary.every((component) => component === 0))
+            tertiary = orthogonalOfNonZeroVector(primary);
+          tertiary = vnormBlenderFloat(tertiary);
+          secondary = crossFloat32(tertiary, primary);
+        } else if (primaryIsNonZero) {
+          secondary = vnormBlenderFloat(orthogonalOfNonZeroVector(primary));
+          tertiary = crossFloat32(primary, secondary);
+        } else if (secondaryIsNonZero) {
+          secondary = vnormBlenderFloat(secondary);
+          primary = vnormBlenderFloat(orthogonalOfNonZeroVector(secondary));
+          tertiary = crossFloat32(primary, secondary);
+        } else {
+          return tagQuaternion([0, 0, 0, 1]);
+        }
+
+        const columns: [Vec3, Vec3, Vec3] = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+        columns[primaryAxis] = primary;
+        columns[secondaryAxis] = secondary;
+        columns[tertiaryAxis] = tertiary.map((component) =>
+          Math.fround(tertiaryFactor * component)) as Vec3;
+        return tagQuaternion(quaternionFromBasisColumns(columns));
+      },
+    ),
+  };
+});
+
 function quatRotate(q: Quat, v: Vec3): Vec3 {
   const u: Vec3 = [q[0], q[1], q[2]];
   const s = q[3];

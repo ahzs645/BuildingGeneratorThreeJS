@@ -31,7 +31,16 @@ type RawGroup = { name?: string; interface?: RawSocket[]; nodes?: RawNode[]; lin
 type RawMaterial = { nodes?: RawNode[] };
 type GnObject = NonNullable<ImportedDump["objects"]>[number] & { group: string; saved: Record<string, unknown> };
 type WorkerReply =
-  | { id: number; ok: true; soup: TriSoup; coverage: { handled: number; missingTypes: { type: string; count: number }[] } }
+  | {
+      id: number;
+      ok: true;
+      soup: TriSoup;
+      coverage: {
+        handled: number;
+        missingTypes: { type: string; count: number }[];
+        approximateTypes: { type: string; count: number }[];
+      };
+    }
   | { id: number; ok: false; error: string };
 
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
@@ -59,7 +68,7 @@ let worker: Worker | null = null;
 let workerTimeout = 0;
 let runId = 0;
 let latestSoup: TriSoup | null = null;
-let currentMesh: THREE.Mesh | null = null;
+let currentRoot: THREE.Group | null = null;
 let currentGrid: THREE.GridHelper | null = null;
 
 function humanBytes(value = 0): string {
@@ -156,12 +165,17 @@ function materialFor(name: string | null): THREE.Material {
 }
 
 function disposeCurrent(): void {
-  if (currentMesh) {
-    scene.remove(currentMesh);
-    currentMesh.geometry.dispose();
-    const mats = Array.isArray(currentMesh.material) ? currentMesh.material : [currentMesh.material];
-    mats.forEach((material) => material.dispose());
-    currentMesh = null;
+  if (currentRoot) {
+    scene.remove(currentRoot);
+    currentRoot.traverse((object) => {
+      const renderable = object as THREE.Mesh | THREE.LineSegments | THREE.Points;
+      renderable.geometry?.dispose();
+      const materials = renderable.material
+        ? Array.isArray(renderable.material) ? renderable.material : [renderable.material]
+        : [];
+      materials.forEach((material) => material.dispose());
+    });
+    currentRoot = null;
   }
   if (currentGrid) {
     scene.remove(currentGrid);
@@ -173,27 +187,61 @@ function disposeCurrent(): void {
 
 function showSoup(soup: TriSoup): void {
   disposeCurrent();
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.BufferAttribute(soup.positions, 3));
-  geometry.setAttribute("normal", new THREE.BufferAttribute(soup.normals, 3));
-  geometry.setIndex(new THREE.BufferAttribute(soup.indices, 1));
-  for (const [name, attribute] of Object.entries(soup.attributes ?? {})) geometry.setAttribute(name, new THREE.BufferAttribute(attribute.data, attribute.itemSize));
-  const materials: THREE.Material[] = [];
-  for (const [index, group] of soup.groups.entries()) {
-    geometry.addGroup(group.start, group.count, index);
-    materials.push(materialFor(group.material));
+  currentRoot = new THREE.Group();
+  currentRoot.rotation.x = -Math.PI / 2;
+  if (soup.positions.length || soup.indices.length) {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(soup.positions, 3));
+    geometry.setAttribute("normal", new THREE.BufferAttribute(soup.normals, 3));
+    geometry.setIndex(new THREE.BufferAttribute(soup.indices, 1));
+    for (const [name, attribute] of Object.entries(soup.attributes ?? {}))
+      geometry.setAttribute(name, new THREE.BufferAttribute(attribute.data, attribute.itemSize));
+    const materials: THREE.Material[] = [];
+    for (const [index, group] of soup.groups.entries()) {
+      geometry.addGroup(group.start, group.count, index);
+      materials.push(materialFor(group.material));
+    }
+    if (!materials.length) materials.push(materialFor(null));
+    currentRoot.add(new THREE.Mesh(
+      geometry,
+      materials.length === 1 ? materials[0] : materials,
+    ));
   }
-  if (!materials.length) materials.push(materialFor(null));
-  currentMesh = new THREE.Mesh(geometry, materials.length === 1 ? materials[0] : materials);
-  currentMesh.rotation.x = -Math.PI / 2;
-  scene.add(currentMesh);
-  currentMesh.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(currentMesh);
+  if (soup.lines?.positions.length) {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(soup.lines.positions, 3));
+    currentRoot.add(new THREE.LineSegments(
+      geometry,
+      new THREE.LineBasicMaterial({ color: 0x7de2c2, transparent: true, opacity: .94 }),
+    ));
+  }
+  if (soup.points?.positions.length) {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(soup.points.positions, 3));
+    currentRoot.add(new THREE.Points(
+      geometry,
+      new THREE.PointsMaterial({
+        color: 0xf2bd67,
+        size: .04,
+        sizeAttenuation: true,
+        transparent: true,
+        opacity: .96,
+      }),
+    ));
+  }
+  scene.add(currentRoot);
+  currentRoot.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(currentRoot);
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
-  currentMesh.position.sub(center);
-  currentMesh.updateMatrixWorld(true);
+  currentRoot.position.sub(center);
+  currentRoot.updateMatrixWorld(true);
   const radius = Math.max(size.length() * 0.5, 0.01);
+  currentRoot.traverse((object) => {
+    const pointMaterial = (object as THREE.Points).material;
+    if (pointMaterial instanceof THREE.PointsMaterial)
+      pointMaterial.size = Math.max(radius / 80, .0005);
+  });
   const distance = radius / Math.sin(THREE.MathUtils.degToRad(camera.fov * 0.5));
   camera.position.set(distance * 0.72, distance * 0.48, distance * 0.92);
   camera.near = Math.max(radius / 1000, 0.0001);
@@ -244,6 +292,8 @@ function renderCompatibility(): number {
     `${recognized}/${recordCount} reachable records recognized · ${report.reachableGroups.length} groups`;
   const gaps = [
     ...report.unsupportedNodeTypes.map((entry) => `${entry.type} ×${entry.count}`),
+    ...report.approximatedNodeTypes.map((entry) =>
+      `bounded approximation ${entry.type} ×${entry.count}`),
     ...report.missingGroups.map((entry) => `missing group ${entry.group}`),
   ];
   $("#unsupported").textContent = gaps.length
@@ -460,11 +510,34 @@ function buildPreview(): void {
     exportMeshButton.disabled = false;
     showSoup(reply.soup);
     const elapsed = ((performance.now() - started) / 1000).toFixed(2);
-    status(`${reply.soup.stats.verts.toLocaleString()} vertices · ${reply.soup.stats.tris.toLocaleString()} triangles · ${elapsed}s`, true);
-    $("#stage-mode").textContent = reply.coverage.missingTypes.length ? `${reply.coverage.missingTypes.length} fallback types` : "100% runtime coverage";
+    const displayStats = [
+      reply.soup.stats.verts || reply.soup.stats.tris
+        ? `${reply.soup.stats.verts.toLocaleString()} vertices · ${reply.soup.stats.tris.toLocaleString()} triangles`
+        : "",
+      reply.soup.lines?.stats.evaluatedPoints
+        ? `${reply.soup.lines.stats.evaluatedPoints.toLocaleString()} curve points`
+        : "",
+      reply.soup.points?.stats.points
+        ? `${reply.soup.points.stats.points.toLocaleString()} point-cloud points`
+        : "",
+    ].filter(Boolean);
+    status(`${displayStats.join(" · ") || "empty geometry"} · ${elapsed}s`, true);
+    $("#stage-mode").textContent = reply.coverage.missingTypes.length
+      ? `${reply.coverage.missingTypes.length} runtime fallback ${reply.coverage.missingTypes.length === 1 ? "type" : "types"}`
+      : reply.coverage.approximateTypes.length
+        ? `${reply.coverage.approximateTypes.length} bounded approximation ${reply.coverage.approximateTypes.length === 1 ? "type" : "types"}`
+        : "All executed nodes handled";
     (window as typeof window & { __BLENDBRIDGE__?: Record<string, unknown> }).__BLENDBRIDGE__ = {
       ...((window as typeof window & { __BLENDBRIDGE__?: Record<string, unknown> }).__BLENDBRIDGE__ ?? {}),
-      preview: { object: activeObject?.name, ...reply.soup.stats, seconds: Number(elapsed), missing: reply.coverage.missingTypes.length },
+      preview: {
+        object: activeObject?.name,
+        ...reply.soup.stats,
+        curvePoints: reply.soup.lines?.stats.evaluatedPoints ?? 0,
+        points: reply.soup.points?.stats.points ?? 0,
+        seconds: Number(elapsed),
+        missing: reply.coverage.missingTypes.length,
+        approximated: reply.coverage.approximateTypes.length,
+      },
     };
   };
   worker.onerror = (event) => { cancelEvaluation(`Evaluation worker failed · ${event.message}`); };

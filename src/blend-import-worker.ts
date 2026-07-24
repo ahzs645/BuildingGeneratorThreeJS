@@ -1,7 +1,6 @@
 import {
   GEOMETRY_PROBE,
-  runGenerator,
-  runNodeGroup,
+  runGeometryTarget,
   toTriSoup,
   type Dump,
   type RunNodeGroupOptions,
@@ -13,6 +12,7 @@ type Request = {
   dump: Dump;
   object?: string;
   group?: string;
+  modifierIndex?: number;
   targetKind?: "object" | "group";
   overrides: Record<string, number | boolean>;
   seed?: RunNodeGroupOptions["seed"];
@@ -34,6 +34,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
     dump,
     object,
     group,
+    modifierIndex,
     targetKind,
     overrides,
     seed,
@@ -53,15 +54,27 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
     GEOMETRY_PROBE.node = probe?.node ?? null;
     GEOMETRY_PROBE.socket = probe?.socket ?? null;
     GEOMETRY_PROBE.geometry = null;
-    const result = targetKind === "group"
-      ? await runNodeGroup(dump, {
+    const result = await runGeometryTarget(
+      dump,
+      targetKind === "group"
+        ? {
+          kind: "group",
           group: group ?? "",
           overrides,
           seed,
           geometryInput,
           output,
-        })
-      : await runGenerator(dump, { object, group, overrides });
+        }
+        : {
+          kind: "object",
+          object,
+          group,
+          modifierIndex,
+          overrides,
+          seed,
+          geometryInput,
+        },
+    );
     const probeSoup = GEOMETRY_PROBE.geometry ? toTriSoup(GEOMETRY_PROBE.geometry) : undefined;
     const payload = {
       id,
@@ -77,6 +90,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
         groups: result.soup.groups,
         stats: result.soup.stats,
         lines: result.soup.lines,
+        points: result.soup.points,
       },
       coverage: result.coverage,
       probeSoup: probeSoup ? transferableSoup(probeSoup) : undefined,
@@ -86,6 +100,8 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
     if (result.soup.triangleFaces) transfer.push(result.soup.triangleFaces.buffer);
     if (result.soup.triangleCorners) transfer.push(result.soup.triangleCorners.buffer);
     if (result.soup.lines) transfer.push(result.soup.lines.positions.buffer);
+    if (result.soup.points)
+      transfer.push(result.soup.points.positions.buffer, result.soup.points.radii.buffer);
     for (const attribute of Object.values(result.soup.attributes)) {
       transfer.push(attribute.data.buffer);
       if (attribute.domainData) transfer.push(attribute.domainData.buffer);
@@ -96,6 +112,8 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
       if (probeSoup.triangleFaces) transfer.push(probeSoup.triangleFaces.buffer);
       if (probeSoup.triangleCorners) transfer.push(probeSoup.triangleCorners.buffer);
       if (probeSoup.lines) transfer.push(probeSoup.lines.positions.buffer);
+      if (probeSoup.points)
+        transfer.push(probeSoup.points.positions.buffer, probeSoup.points.radii.buffer);
       for (const attribute of Object.values(probeSoup.attributes)) {
         transfer.push(attribute.data.buffer);
         if (attribute.domainData) transfer.push(attribute.domainData.buffer);
@@ -130,5 +148,6 @@ function transferableSoup(soup: TriSoup): TriSoup {
     stats: soup.stats,
     attributes: soup.attributes,
     lines: soup.lines,
+    points: soup.points,
   };
 }

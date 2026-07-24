@@ -1006,6 +1006,12 @@ export interface TriSoup {
     positions: Float32Array; // duplicated xyz endpoints, two per segment
     stats: { controlPoints: number; evaluatedPoints: number; segments: number; splines: number };
   };
+  /** Loose point-cloud display payload, kept separate from mesh topology. */
+  points?: {
+    positions: Float32Array;
+    radii: Float32Array;
+    stats: { points: number };
+  };
 }
 
 /**
@@ -1240,11 +1246,32 @@ export function toTriSoup(g: Geometry): TriSoup {
   // a mesh face/edge; a later conversion that gives them topology remains a
   // normal mesh and is retained.
   const marker = realizedMesh.attributes.get("__gnvm_point_cloud");
+  let points: TriSoup["points"];
   let source = realizedMesh;
   if (marker?.domain === "POINT") {
     const referenced = new Set<number>();
     for (const face of realizedMesh.faces) for (const vertex of face) referenced.add(vertex);
     for (const edge of realizedMesh.edges) { referenced.add(edge[0]); referenced.add(edge[1]); }
+    const pointIndices = realizedMesh.positions.flatMap((_, vertex) =>
+      !referenced.has(vertex) && asNum(marker.data[vertex] ?? 0) > 0 ? [vertex] : []);
+    if (pointIndices.length) {
+      const radius = realizedMesh.attributes.get("radius");
+      const pointPositions = new Float32Array(pointIndices.length * 3);
+      const pointRadii = new Float32Array(pointIndices.length);
+      for (let point = 0; point < pointIndices.length; point++) {
+        const vertex = pointIndices[point];
+        const position = realizedMesh.positions[vertex];
+        pointPositions.set(position, point * 3);
+        pointRadii[point] = radius?.domain === "POINT"
+          ? Math.max(0, asNum(radius.data[vertex] ?? 0.05))
+          : 0.05;
+      }
+      points = {
+        positions: pointPositions,
+        radii: pointRadii,
+        stats: { points: pointIndices.length },
+      };
+    }
     const retained = realizedMesh.positions.map((_, vertex) => referenced.has(vertex) || asNum(marker.data[vertex] ?? 0) <= 0);
     if (retained.some((value) => !value)) {
       const filtered = new Mesh();
@@ -1434,5 +1461,6 @@ export function toTriSoup(g: Geometry): TriSoup {
     groups,
     stats: { verts: mesh.positions.length, faces: mesh.faces.length, tris: triCount },
     lines,
+    points,
   };
 }

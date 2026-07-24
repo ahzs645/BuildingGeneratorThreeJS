@@ -86,3 +86,107 @@ test("capability analysis is portable when every reachable node is supported", (
   const registry = new Map<string, Handler>([["ShaderNodeMath", handler]]);
   assert.equal(analyzeProgramCapabilities(program, "Root", registry).portable, true);
 });
+
+test("capability analysis distinguishes runnable approximations from exact support", () => {
+  const program: Program = {
+    Root: group("Root", [
+      node("UV", "GeometryNodeUVUnwrap"),
+      node("Output", "NodeGroupOutput"),
+    ]),
+  };
+  const registry = new Map<string, Handler>([["GeometryNodeUVUnwrap", handler]]);
+  const report = analyzeProgramCapabilities(program, "Root", registry);
+  assert.equal(report.portable, true);
+  assert.equal(report.exact, false);
+  assert.deepEqual(report.approximatedNodeTypes, [
+    { type: "GeometryNodeUVUnwrap", count: 1 },
+  ]);
+});
+
+test("capability analysis classifies dense volume creation and resampling as bounded", () => {
+  const program: Program = {
+    Root: group("Root", [
+      node("Volume Cube", "GeometryNodeVolumeCube"),
+      node("Volume to Mesh", "GeometryNodeVolumeToMesh"),
+      node("Output", "NodeGroupOutput"),
+    ]),
+  };
+  const registry = new Map<string, Handler>([
+    ["GeometryNodeVolumeCube", handler],
+    ["GeometryNodeVolumeToMesh", handler],
+  ]);
+  const report = analyzeProgramCapabilities(program, "Root", registry);
+  assert.equal(report.portable, true);
+  assert.equal(report.exact, false);
+  assert.deepEqual(report.approximatedNodeTypes, [
+    { type: "GeometryNodeVolumeCube", count: 1 },
+    { type: "GeometryNodeVolumeToMesh", count: 1 },
+  ]);
+});
+
+test("Set Mesh Normal is exact only for the implemented sharpness mode", () => {
+  const makeProgram = (mode: string): Program => ({
+    Root: group("Root", [
+      node("Set Mesh Normal", "GeometryNodeSetMeshNormal", {
+        props: { mode },
+      }),
+      node("Output", "NodeGroupOutput"),
+    ]),
+  });
+  const registry = new Map<string, Handler>([
+    ["GeometryNodeSetMeshNormal", handler],
+  ]);
+
+  const sharpness = analyzeProgramCapabilities(
+    makeProgram("SHARPNESS"),
+    "Root",
+    registry,
+  );
+  assert.equal(sharpness.exact, true);
+  assert.deepEqual(sharpness.approximatedNodeTypes, []);
+
+  for (const mode of ["FREE", "TANGENT_SPACE"]) {
+    const custom = analyzeProgramCapabilities(makeProgram(mode), "Root", registry);
+    assert.equal(custom.portable, true);
+    assert.equal(custom.exact, false);
+    assert.deepEqual(custom.approximatedNodeTypes, [
+      { type: "GeometryNodeSetMeshNormal", count: 1 },
+    ]);
+  }
+});
+
+test("Import STL support is conditional on a validated embedded payload", () => {
+  const withoutPayload: Program = {
+    Root: group("Root", [
+      node("Import", "GeometryNodeImportSTL"),
+      node("Output", "NodeGroupOutput"),
+    ]),
+  };
+  const registry = new Map<string, Handler>([["GeometryNodeImportSTL", handler]]);
+  const unsupported = analyzeProgramCapabilities(withoutPayload, "Root", registry);
+  assert.equal(unsupported.portable, false);
+  assert.deepEqual(unsupported.unsupportedNodeTypes, [
+    { type: "GeometryNodeImportSTL", count: 1 },
+  ]);
+
+  const withPayload: Program = {
+    Root: group("Root", [
+      node("Import", "GeometryNodeImportSTL", {
+        embedded_stl: {
+          version: 1,
+          format: "ascii",
+          source_size_bytes: 120,
+          source_sha256: "b".repeat(64),
+          triangle_count: 1,
+          positions: [[0, 0, 0], [1, 0, 0], [0, 1, 0]],
+          faces: [[0, 1, 2]],
+        },
+      }),
+      node("Output", "NodeGroupOutput"),
+    ]),
+  };
+  const supported = analyzeProgramCapabilities(withPayload, "Root", registry);
+  assert.equal(supported.portable, true);
+  assert.equal(supported.exact, true);
+  assert.deepEqual(supported.unsupportedNodeTypes, []);
+});

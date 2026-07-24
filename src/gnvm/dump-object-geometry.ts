@@ -34,6 +34,7 @@ function applyPreNodesHooks(dump: Dump, object: DumpObject, geometry: Geometry):
   for (const modifier of modifiers) {
     if (modifier.type === "NODES") break;
     if (modifier.type !== "HOOK" || !modifier.object || !modifier.matrix_inverse) continue;
+    if (modifier.show_viewport === false) continue;
     const hookObject = dump.objects?.find((candidate) => candidate.name === modifier.object);
     if (!hookObject?.matrix_world) continue;
     const selected = new Set(modifier.vertex_indices ?? []);

@@ -62,9 +62,13 @@ test("reconstructs the joint library's evaluated filament fields", async () => {
   const material = makeCrossSectionFilamentMaterial(dump, geometry, materialName);
   assert.ok(material?.isMeshPhysicalMaterial);
   assert.equal(material?.name, `${materialName} · joint filament reconstruction`);
+  // Geometry Nodes modifier output stays in the active object's local space.
+  // Applying `old pipe`'s extracted world transform to these bounds yields the
+  // former world-space expectation exactly; Generated coordinates must use the
+  // local bounds because Three applies the object transform at render time.
   assert.deepEqual(material?.userData.crossSectionFilamentBounds, {
-    min: [-68.58819580078125, 50.36826705932617, 6.145580291748047],
-    max: [-0.34180450439453125, 118.61465454101562, 74.39198303222656],
+    min: [-49.9541015625, -4.572967529296875, -27.38681983947754],
+    max: [21.5972900390625, 66.97842407226562, 44.164581298828125],
   });
   const shader = { uniforms: {}, vertexShader: "#include <common>\n#include <begin_vertex>", fragmentShader: "#include <common>\n#include <color_fragment>\n#include <roughnessmap_fragment>\n#include <normal_fragment_maps>\n#include <opaque_fragment>" };
   material?.onBeforeCompile(shader as never, {} as never);

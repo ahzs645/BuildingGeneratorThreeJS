@@ -1,8 +1,18 @@
-import { Elem, Vec3, asNum, asVec3, vadd, vlen, vnorm, vsub } from "../core";
+import { Elem, Field, Vec3, asNum, asVec3, vadd, vlen, vnorm, vsub } from "../core";
 import { evaluateBezierSpline } from "../bezier";
 import { Geometry, Spline } from "../geometry";
 import { makeFieldCtx } from "../evaluator";
 import { reg } from "../registry";
+
+reg("GeometryNodeInputCurveHandlePositions", (api) => {
+  const relative = api.bool("Relative");
+  return {
+    Left: Field.perElem((index, context) =>
+      context.curveHandleLeft?.(index, relative) ?? [0, 0, 0]).tagged("POINT"),
+    Right: Field.perElem((index, context) =>
+      context.curveHandleRight?.(index, relative) ?? [0, 0, 0]).tagged("POINT"),
+  };
+});
 
 function authoredSpline(source: Spline): Spline {
   return {

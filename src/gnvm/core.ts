@@ -62,6 +62,10 @@ export interface FieldCtx {
   position?: (i: number) => Vec3;
   normal?: (i: number) => Vec3;
   index?: (i: number) => number;
+  materialIndex?: (i: number) => number;
+  materialName?: (i: number) => string | null;
+  curveHandleLeft?: (i: number, relative?: boolean) => Vec3;
+  curveHandleRight?: (i: number, relative?: boolean) => Vec3;
   // Native rotation of an instance-domain element. Keep this separate from
   // named attributes: Instance Rotation is an intrinsic of the transform.
   instanceRotation?: (i: number) => Vec3;
@@ -72,8 +76,14 @@ export interface FieldCtx {
   faceArea?: (i: number) => number; // polygon area in scene units squared
   faceNeighborCount?: (i: number) => number; // faces sharing an edge with face i
   edgeVerts?: (i: number) => [number, number]; // endpoints of edge i (EDGE domain)
+  edgeFaces?: (i: number) => number[]; // faces using edge i
   edgeFaceCount?: (i: number) => number; // faces using edge i
   edgeAngle?: (i: number, signed?: boolean) => number; // angle between adjacent face normals
+  cornerVertex?: (i: number) => number; // vertex attached to corner i
+  cornerFace?: (i: number) => number; // face containing corner i
+  cornerNextEdge?: (i: number) => number; // outgoing edge in increasing corner order
+  cornerPreviousEdge?: (i: number) => number; // incoming edge in decreasing corner order
+  vertexCorners?: (i: number) => number[]; // corners attached to vertex i
   islandIndex?: (i: number) => number; // connected-component id of element i
   islandCount?: () => number; // number of connected components
   // Curve spline queries (for SplineParameter): index/factor WITHIN each spline.
@@ -135,10 +145,7 @@ export class Field {
   // Resolve to an array of length ctx.size.
   array(ctx: FieldCtx): Elem[] {
     if (this.constant !== undefined) {
-      const c = this.constant;
-      const out: Elem[] = new Array(ctx.size);
-      for (let i = 0; i < ctx.size; i++) out[i] = c;
-      return out;
+      return new Array<Elem>(ctx.size).fill(this.constant);
     }
     const cached = this.resolved.get(ctx);
     if (cached) return cached;
@@ -160,9 +167,60 @@ export function fieldMap(inputs: Field[], op: (...vals: Elem[]) => Elem): Field 
     return Field.of(op(...inputs.map((f) => f.value)));
   }
   const out = Field.make((ctx) => {
-    const arrs = inputs.map((f) => f.array(ctx));
     const res: Elem[] = new Array(ctx.size);
-    for (let i = 0; i < ctx.size; i++) res[i] = op(...arrs.map((a) => a[i]));
+    // Field graphs are often tens of math nodes deep and resolve over hundreds
+    // of thousands of elements. Avoid allocating `arrs.map(...)` for every
+    // element, and do not materialize full arrays for constant operands.
+    const arrays = inputs.map((field) =>
+      field.isConst ? null : field.array(ctx));
+    const value = (input: number, index: number): Elem =>
+      inputs[input].isConst ? inputs[input].value : arrays[input]![index];
+    switch (inputs.length) {
+      case 1:
+        for (let i = 0; i < ctx.size; i++) res[i] = op(value(0, i));
+        break;
+      case 2:
+        for (let i = 0; i < ctx.size; i++)
+          res[i] = op(value(0, i), value(1, i));
+        break;
+      case 3:
+        for (let i = 0; i < ctx.size; i++)
+          res[i] = op(value(0, i), value(1, i), value(2, i));
+        break;
+      case 4:
+        for (let i = 0; i < ctx.size; i++)
+          res[i] = op(value(0, i), value(1, i), value(2, i), value(3, i));
+        break;
+      case 5:
+        for (let i = 0; i < ctx.size; i++)
+          res[i] = op(
+            value(0, i),
+            value(1, i),
+            value(2, i),
+            value(3, i),
+            value(4, i),
+          );
+        break;
+      case 6:
+        for (let i = 0; i < ctx.size; i++)
+          res[i] = op(
+            value(0, i),
+            value(1, i),
+            value(2, i),
+            value(3, i),
+            value(4, i),
+            value(5, i),
+          );
+        break;
+      default: {
+        const values = new Array<Elem>(inputs.length);
+        for (let i = 0; i < ctx.size; i++) {
+          for (let input = 0; input < inputs.length; input++)
+            values[input] = value(input, i);
+          res[i] = op(...values);
+        }
+      }
+    }
     return res;
   });
   // propagate the source-domain tag when every varying input agrees

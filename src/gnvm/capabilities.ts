@@ -1,4 +1,5 @@
 import type { Program } from "./evaluator";
+import { hasEmbeddedStlPayload } from "./import-stl-payload";
 import { REGISTRY, type Handler, type RawNode } from "./registry";
 
 /**
@@ -18,6 +19,8 @@ export const EVALUATOR_NATIVE_NODE_TYPES = new Set([
   "GeometryNodeRepeatOutput",
   "GeometryNodeForeachGeometryElementInput",
   "GeometryNodeForeachGeometryElementOutput",
+  "NodeClosureInput",
+  "NodeClosureOutput",
 ]);
 
 /**
@@ -32,7 +35,23 @@ export const EDITOR_ONLY_NODE_TYPES = new Set([
   "GeometryNodeGizmoDial",
 ]);
 
-export type NodeSupport = "native" | "handler" | "editor-only" | "muted-passthrough" | "unsupported";
+export const BOUNDED_APPROXIMATION_NODE_TYPES = new Set([
+  "GeometryNodeGridToMesh",
+  "GeometryNodeMeshToSDFGrid",
+  "GeometryNodePointsToSDFGrid",
+  "GeometryNodeVolumeCube",
+  "GeometryNodeVolumeToMesh",
+  "GeometryNodeUVPackIslands",
+  "GeometryNodeUVUnwrap",
+]);
+
+export type NodeSupport =
+  | "native"
+  | "handler"
+  | "bounded-approximation"
+  | "editor-only"
+  | "muted-passthrough"
+  | "unsupported";
 
 export interface NodeCapabilityCount {
   type: string;
@@ -52,15 +71,36 @@ export interface ProgramCapabilityReport {
   missingGroups: MissingGroupReference[];
   nodeTypes: NodeCapabilityCount[];
   unsupportedNodeTypes: { type: string; count: number }[];
+  approximatedNodeTypes: { type: string; count: number }[];
   portable: boolean;
+  exact: boolean;
 }
 
 type HandlerRegistry = ReadonlyMap<string, Handler>;
 
-function supportOf(node: RawNode, registry: HandlerRegistry): NodeSupport {
+function supportOf(
+  node: RawNode,
+  registry: HandlerRegistry,
+): NodeSupport {
   if (node.ui?.mute) return "muted-passthrough";
   if (EVALUATOR_NATIVE_NODE_TYPES.has(node.type)) return "native";
   if (EDITOR_ONLY_NODE_TYPES.has(node.type)) return "editor-only";
+  if (
+    node.type === "ShaderNodeTexGabor"
+    && !["2D", "3D"].includes(node.props?.gabor_type ?? "2D")
+  ) return "unsupported";
+  if (
+    node.type === "GeometryNodeSetMeshNormal"
+    && (node.props?.mode ?? "SHARPNESS") !== "SHARPNESS"
+    && registry.has(node.type)
+  ) return "bounded-approximation";
+  // Import STL is portable only when extraction embedded the exact authored
+  // triangle payload. A registered handler must not turn a missing local file
+  // into a false static support claim.
+  if (node.type === "GeometryNodeImportSTL" && !hasEmbeddedStlPayload(node))
+    return "unsupported";
+  if (BOUNDED_APPROXIMATION_NODE_TYPES.has(node.type) && registry.has(node.type))
+    return "bounded-approximation";
   if (registry.has(node.type)) return "handler";
   return "unsupported";
 }
@@ -77,6 +117,16 @@ export function analyzeProgramCapabilities(
   rootGroup: string,
   registry: HandlerRegistry = REGISTRY,
 ): ProgramCapabilityReport {
+  const staticallyReachableGroups = new Set<string>();
+  const groupStack = [rootGroup];
+  while (groupStack.length) {
+    const groupName = groupStack.pop()!;
+    if (staticallyReachableGroups.has(groupName)) continue;
+    staticallyReachableGroups.add(groupName);
+    for (const node of program[groupName]?.nodes ?? [])
+      if (node.type === "GeometryNodeGroup" && node.group)
+        groupStack.push(node.group);
+  }
   const reachableGroups: string[] = [];
   const visited = new Set<string>();
   const pending: { group: string; referencedByGroup: string | null; referencedByNode: string | null }[] = [
@@ -126,6 +176,10 @@ export function analyzeProgramCapabilities(
     .filter((entry) => entry.support === "unsupported")
     .map(({ type, count }) => ({ type, count }))
     .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));
+  const approximatedNodeTypes = nodeTypes
+    .filter((entry) => entry.support === "bounded-approximation")
+    .map(({ type, count }) => ({ type, count }))
+    .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));
 
   return {
     rootGroup,
@@ -133,6 +187,10 @@ export function analyzeProgramCapabilities(
     missingGroups,
     nodeTypes,
     unsupportedNodeTypes,
+    approximatedNodeTypes,
     portable: missingGroups.length === 0 && unsupportedNodeTypes.length === 0,
+    exact: missingGroups.length === 0
+      && unsupportedNodeTypes.length === 0
+      && approximatedNodeTypes.length === 0,
   };
 }

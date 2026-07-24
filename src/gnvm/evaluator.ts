@@ -11,8 +11,9 @@
 import { Field, Vec3, Domain, FieldCtx, asNum, fieldMap, vadd, vcross, vdot, vlen, vnorm, vnormBlenderFloat, vscale, vsub } from "./core";
 import { Geometry, Mesh, mergeMeshInto, realizeInstances, topologyOf, Topology } from "./geometry";
 import { splineFrames, splineLength } from "./curves";
-import { DUMP_CONTEXT, EvalAPI, RawNode, REGISTRY, MISSING, SockVal, DataRef } from "./registry";
+import { ClosureValue, DUMP_CONTEXT, EMPTY_CLOSURE, EvalAPI, RawNode, REGISTRY, MISSING, SockVal, DataRef } from "./registry";
 import { tryEvaluateGroupOverride } from "./group-overrides";
+import { identityMatrix, MatrixValue } from "./matrix";
 
 export { gradientDirectionField } from "./group-overrides";
 
@@ -24,6 +25,24 @@ export interface RawGroup {
   interface: any[];
 }
 export type Program = Record<string, RawGroup>;
+
+export const MAX_CLOSURE_EVALUATION_DEPTH = 32;
+
+export class ClosureRecursionLimitError extends Error {
+  readonly nodeType = "NodeEvaluateClosure";
+
+  constructor(
+    readonly groupName: string,
+    readonly nodeName: string,
+    readonly limit: number,
+  ) {
+    super(
+      `Closure evaluation exceeded the depth limit of ${limit}: `
+      + `${groupName} / ${nodeName}`,
+    );
+    this.name = "ClosureRecursionLimitError";
+  }
+}
 
 // Per-node geometry trace for debugging (off by default; near-zero cost when off).
 export const TRACE: { on: boolean; log: { group: string; node: string; type: string; out: string; verts: number; faces: number; curves: number; inst: number; bbox?: string }[] } = { on: false, log: [] };
@@ -172,6 +191,11 @@ const KEY = (n: string, s: string) => `${n}::${s}`;
 
 function wrapConst(socketType: string, value: any): SockVal {
   const t = socketType;
+  if (t === "NodeSocketClosure") return EMPTY_CLOSURE;
+  if (t === "NodeSocketMatrix")
+    return value instanceof MatrixValue
+      ? value.clone()
+      : Array.isArray(value) ? new MatrixValue(value) : identityMatrix();
   if (value && typeof value === "object" && !Array.isArray(value) && typeof value.attribute === "string") {
     const fallback = t.includes("Vector") || t.includes("Rotation") || t.includes("Color")
       ? (Array.isArray(value.value) ? value.value.slice(0, 3) as Vec3 : [0, 0, 0] as Vec3)
@@ -427,7 +451,25 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
     faceArea: (i) => (mesh ? mesh.faceArea(i) : 0),
     faceNeighborCount: (i) => (mesh ? T().faceNeighbors[i] ?? 0 : 0),
     edgeVerts: (i) => (mesh ? T().edges[i]?.verts ?? [0, 0] : [0, 0]),
+    edgeFaces: (i) => (mesh ? T().edges[i]?.faces ?? [] : []),
     edgeFaceCount: (i) => (mesh ? T().edges[i]?.faces.length ?? 0 : 0),
+    cornerVertex: (i) => (mesh ? C().vert[i] ?? 0 : 0),
+    cornerFace: (i) => (mesh ? C().face[i] ?? 0 : 0),
+    cornerNextEdge: (i) => {
+      if (!mesh || i < 0 || i >= C().vert.length) return 0;
+      const faceIndex = C().face[i];
+      const face = mesh.faces[faceIndex];
+      const local = i - C().faceStart[faceIndex];
+      return EK().get(edgeKeyOf(face[local], face[(local + 1) % face.length])) ?? 0;
+    },
+    cornerPreviousEdge: (i) => {
+      if (!mesh || i < 0 || i >= C().vert.length) return 0;
+      const faceIndex = C().face[i];
+      const face = mesh.faces[faceIndex];
+      const local = i - C().faceStart[faceIndex];
+      return EK().get(edgeKeyOf(face[(local - 1 + face.length) % face.length], face[local])) ?? 0;
+    },
+    vertexCorners: (i) => (mesh ? VC()[i] ?? [] : []),
     edgeAngle: (i, signed = false) => {
       if (!mesh) return 0;
       const edge = T().edges[i];
@@ -608,6 +650,34 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
       if (!normals) normals = mesh.vertexNormals();
       return normals[i] ?? [0, 0, 1];
     },
+    materialIndex: (i) => {
+      if (!mesh) return 0;
+      if (domain === "FACE") return mesh.faceMaterial[i] ?? 0;
+      return asNum(toDomain("FACE", mesh.faceMaterial, i) ?? 0);
+    },
+    materialName: (i) => {
+      if (!mesh) return null;
+      const materialIndex = domain === "FACE"
+        ? mesh.faceMaterial[i] ?? 0
+        : Math.round(asNum(toDomain("FACE", mesh.faceMaterial, i) ?? 0));
+      return mesh.materialSlots[materialIndex] ?? null;
+    },
+    curveHandleLeft: (i, relative = false) => {
+      if (mesh) return [0, 0, 0];
+      const spline = geo.curves[splineOfPoint[i] ?? 0];
+      const local = splineLocalIdx[i] ?? 0;
+      const position = spline?.controlPoints?.[local] ?? spline?.points[local] ?? [0, 0, 0];
+      const handle = spline?.bezierLeft?.[local] ?? position;
+      return relative ? vsub(handle, position) : handle;
+    },
+    curveHandleRight: (i, relative = false) => {
+      if (mesh) return [0, 0, 0];
+      const spline = geo.curves[splineOfPoint[i] ?? 0];
+      const local = splineLocalIdx[i] ?? 0;
+      const position = spline?.controlPoints?.[local] ?? spline?.points[local] ?? [0, 0, 0];
+      const handle = spline?.bezierRight?.[local] ?? position;
+      return relative ? vsub(handle, position) : handle;
+    },
     index: (i) => i,
     attr: (name, i) => {
       if (domain === "INSTANCE") return geo.instances[i]?.attributes?.get(name);
@@ -648,12 +718,15 @@ class Invocation {
   private repeatEpoch = 0;
   // Active per-element state for a For Each Geometry Element zone.
   private foreachState = new Map<string, Record<string, SockVal>>();
+  // Dynamic inputs bound while executing a captured Closure zone.
+  private closureState = new Map<string, Record<string, SockVal>>();
 
   constructor(
     private ev: Evaluator,
     private group: RawGroup,
     private bindings: Record<string, SockVal>,
     private scope: string,
+    private closureBudget = { depth: 0 },
   ) {
     for (const n of group.nodes) this.byName.set(n.name, n);
     for (const l of group.links) {
@@ -839,6 +912,13 @@ class Invocation {
       }
       case "GeometryNodeForeachGeometryElementOutput":
         return this.runForeachZone(node);
+      case "NodeClosureInput":
+        return this.closureState.get(node.name) ?? {};
+      case "NodeClosureOutput":
+        return {
+          Closure: new ClosureValue((inputs) =>
+            this.runClosureZone(node, inputs)),
+        };
     }
     const handler = REGISTRY.get(node.type);
     if (!handler) {
@@ -858,6 +938,56 @@ class Invocation {
       out[output.identifier] = input ? this.pull(node, input.identifier) : Field.of(0);
     }
     return out;
+  }
+
+  private runClosureZone(
+    outNode: RawNode,
+    inputs: Record<string, SockVal>,
+  ): Record<string, SockVal> {
+    if (this.closureBudget.depth >= MAX_CLOSURE_EVALUATION_DEPTH) {
+      throw new ClosureRecursionLimitError(
+        this.group.name,
+        outNode.name,
+        MAX_CLOSURE_EVALUATION_DEPTH,
+      );
+    }
+    this.closureBudget.depth++;
+    try {
+      const inNode = this.group.nodes.find((node) =>
+        node.type === "NodeClosureInput" && node.paired_output === outNode.name)
+        ?? this.group.nodes.find((node) => node.type === "NodeClosureInput");
+      if (!inNode) return {};
+
+      // Each invocation gets independent memoization. A closure may be evaluated
+      // repeatedly with different dynamic arguments, so reusing the creator's
+      // memo would incorrectly retain the first call's fields and geometry.
+      const invocation = new Invocation(
+        this.ev,
+        this.group,
+        this.bindings,
+        `${this.scope}/${outNode.name}:closure`,
+        this.closureBudget,
+      );
+      const bound: Record<string, SockVal> = {};
+      for (const output of inNode.outputs) {
+        if (!output.identifier || output.identifier === "__extend__") continue;
+        bound[output.identifier] = inputs[output.identifier]
+          ?? inputs[output.name]
+          ?? wrapConst(output.type ?? "NodeSocketFloat", output.default);
+      }
+      invocation.closureState.set(inNode.name, bound);
+
+      const results: Record<string, SockVal> = {};
+      for (const input of outNode.inputs) {
+        if (!input.identifier || input.identifier === "__extend__") continue;
+        const value = invocation.pull(outNode, input.identifier);
+        results[input.identifier] = value;
+        if (input.name) results[input.name] = value;
+      }
+      return results;
+    } finally {
+      this.closureBudget.depth--;
+    }
   }
 
   // Run a repeat zone to completion. State items are keyed by socket identifier
@@ -1053,7 +1183,13 @@ class Invocation {
       },
       ref: (name) => {
         const v = self.pull(node, name);
-        return v && typeof v === "object" && !(v instanceof Geometry) && !(v instanceof Field) ? (v as DataRef) : null;
+        return v
+          && typeof v === "object"
+          && !(v instanceof Geometry)
+          && !(v instanceof Field)
+          && !(v instanceof MatrixValue)
+          ? (v as DataRef)
+          : null;
       },
       prop: (name, dflt) => (node.props && name in node.props ? node.props[name] : dflt),
       resolve: (f, geo, domain) => f.array(makeFieldCtx(geo, domain)),

@@ -7,6 +7,9 @@ import os
 import struct
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from stl_payload import StlPayloadError, load_stl_payload
+
 tool_args = sys.argv[sys.argv.index("--") + 1:]
 out_path = tool_args[0]
 target_object = tool_args[1] if len(tool_args) > 1 else None
@@ -119,6 +122,38 @@ def dump_node(node):
             "idx": i,
             "value": None if s.is_linked else socket_value(s),
         })
+    # Import STL cannot read a user's filesystem in the browser. Embed only a
+    # strict, bounded triangle payload while Blender still has access to an
+    # authored, unlinked path. Missing/dynamic/rejected paths remain explicit
+    # capability failures; no placeholder mesh is fabricated.
+    if node.bl_idname == "GeometryNodeImportSTL":
+        path_socket = next((
+            socket for socket in node.inputs
+            if socket.identifier == "Path" or socket.name == "Path"
+        ), None)
+        authored_path = (
+            getattr(path_socket, "default_value", None)
+            if path_socket is not None and not path_socket.is_linked
+            else None
+        )
+        if isinstance(authored_path, str) and authored_path:
+            resolved_path = bpy.path.abspath(
+                authored_path,
+                library=getattr(node.id_data, "library", None),
+            )
+            if os.path.isfile(resolved_path):
+                try:
+                    d["embedded_stl"] = load_stl_payload(resolved_path)
+                except StlPayloadError as error:
+                    d["stl_embedding_error"] = {
+                        "code": error.code,
+                        "message": str(error),
+                    }
+                except OSError as error:
+                    d["stl_embedding_error"] = {
+                        "code": "STL_READ_FAILED",
+                        "message": str(error),
+                    }
     # node-level props (operation, data_type, mode, etc.)
     props = {}
     for p in node.bl_rna.properties:
@@ -388,49 +423,77 @@ dependency_collection_names = set()
 dependency_object_names = set()
 dependency_image_names = set()
 trees_to_dump = {}
-if target_object and bpy.data.objects.get(target_object):
-    for modifier in bpy.data.objects[target_object].modifiers:
-        if modifier.type != "NODES" or not modifier.node_group:
-            continue
-        trees_to_dump[modifier.node_group.name] = modifier.node_group
-        for item in modifier.node_group.interface.items_tree:
-            if item.item_type != "SOCKET" or item.in_out != "INPUT":
-                continue
-            try:
-                value = modifier[item.identifier]
-                if isinstance(value, bpy.types.Collection):
-                    dependency_collection_names.add(value.name)
-                elif isinstance(value, bpy.types.Object):
-                    dependency_object_names.add(value.name)
-                elif isinstance(value, bpy.types.Image):
-                    dependency_image_names.add(value.name)
-            except Exception:
-                pass
-dependency_object_names.update({
-    obj.name
-    for name in dependency_collection_names
-    for obj in bpy.data.collections[name].objects
-})
 
-# Targeted dumps must include dependencies referenced inside the graph too,
-# especially Object Info payloads whose own Geometry Nodes modifiers generate
-# the real asset (for example Chrome's spikey chain link). Traverse nested
-# groups and referenced object/collection modifiers to a fixed point.
-pending_dependency_trees = list(trees_to_dump.values())
-# Objects supplied through the target modifier's interface are dependencies
-# even though the corresponding Object Info sockets are linked and therefore
-# have no node-level default_value to discover below. Include their own node
-# groups before traversing the graph so modifier-authored attributes survive
-# nested Object Info evaluation (Flat Stickie Pack's `col` attributes).
-for dependency_object_name in sorted(dependency_object_names):
-    dependency_object = bpy.data.objects.get(dependency_object_name)
-    if dependency_object is None:
-        continue
-    for modifier in dependency_object.modifiers:
-        if modifier.type == "NODES" and modifier.node_group:
-            pending_dependency_trees.append(modifier.node_group)
+# Traverse modifier roots, nested groups, interface-bound pointers, and
+# referenced object modifier roots to a fixed point. Full-file Studio imports
+# seed this with every Geometry Nodes modifier; targeted imports seed only the
+# requested object. Older full dumps seeded no roots here, so large Object Info
+# dependencies were discovered too late to receive portable geometry.
+pending_dependency_trees = []
+pending_dependency_objects = []
 scanned_dependency_trees = set()
-while pending_dependency_trees:
+scanned_dependency_objects = set()
+
+
+def add_dependency_object(obj):
+    if obj is None or obj.name in dependency_object_names:
+        return
+    dependency_object_names.add(obj.name)
+    pending_dependency_objects.append(obj)
+
+
+def add_dependency_collection(collection):
+    if collection is None:
+        return
+    dependency_collection_names.add(collection.name)
+    for dependency_object in collection.objects:
+        add_dependency_object(dependency_object)
+
+
+def scan_dependency_pointer(value):
+    if isinstance(value, bpy.types.Object):
+        add_dependency_object(value)
+    elif isinstance(value, bpy.types.Collection):
+        add_dependency_collection(value)
+    elif isinstance(value, bpy.types.Image):
+        dependency_image_names.add(value.name)
+
+
+def scan_nodes_modifier(modifier):
+    if modifier.type != "NODES" or not modifier.node_group:
+        return
+    trees_to_dump[modifier.node_group.name] = modifier.node_group
+    pending_dependency_trees.append(modifier.node_group)
+    for item in modifier.node_group.interface.items_tree:
+        if item.item_type != "SOCKET" or item.in_out != "INPUT":
+            continue
+        try:
+            scan_dependency_pointer(modifier[item.identifier])
+        except Exception:
+            pass
+
+
+if target_object and bpy.data.objects.get(target_object):
+    root_objects = [bpy.data.objects[target_object]]
+else:
+    root_objects = [
+        obj for obj in bpy.data.objects
+        if any(modifier.type == "NODES" and modifier.node_group for modifier in obj.modifiers)
+    ]
+for root_object in root_objects:
+    for modifier in root_object.modifiers:
+        scan_nodes_modifier(modifier)
+
+while pending_dependency_trees or pending_dependency_objects:
+    while pending_dependency_objects:
+        dependency_object = pending_dependency_objects.pop()
+        if dependency_object.name in scanned_dependency_objects:
+            continue
+        scanned_dependency_objects.add(dependency_object.name)
+        for modifier in dependency_object.modifiers:
+            scan_nodes_modifier(modifier)
+    if not pending_dependency_trees:
+        continue
     tree = pending_dependency_trees.pop()
     if tree.name in scanned_dependency_trees:
         continue
@@ -440,21 +503,7 @@ while pending_dependency_trees:
         if node.bl_idname == "GeometryNodeGroup" and node.node_tree:
             pending_dependency_trees.append(node.node_tree)
         for socket in node.inputs:
-            value = getattr(socket, "default_value", None)
-            objects = []
-            if isinstance(value, bpy.types.Object):
-                dependency_object_names.add(value.name)
-                objects.append(value)
-            elif isinstance(value, bpy.types.Collection):
-                dependency_collection_names.add(value.name)
-                objects.extend(value.objects)
-                dependency_object_names.update(obj.name for obj in value.objects)
-            elif isinstance(value, bpy.types.Image):
-                dependency_image_names.add(value.name)
-            for dependency_object in objects:
-                for modifier in dependency_object.modifiers:
-                    if modifier.type == "NODES" and modifier.node_group:
-                        pending_dependency_trees.append(modifier.node_group)
+            scan_dependency_pointer(getattr(socket, "default_value", None))
 
 result["dependency_objects"] = sorted(dependency_object_names)
 depsgraph = bpy.context.evaluated_depsgraph_get()
@@ -509,6 +558,67 @@ def evaluated_world_matrix(obj):
 
 active_evaluated_world = evaluated_world_matrix(bpy.data.objects[target_object]) if target_object and bpy.data.objects.get(target_object) else None
 
+# A full Studio import does not know which modifier the user will preview yet.
+# Keep small meshes as before, and additionally reserve a bounded budget for
+# larger objects that are direct Geometry Nodes modifier entry points. This
+# makes those targets runnable without a second extraction while preventing a
+# library of high-poly meshes from producing an unbounded JSON payload.
+SMALL_BASE_MESH_VERTEX_LIMIT = 10_000
+MODIFIER_SEED_VERTEX_LIMIT = 250_000
+MODIFIER_SEED_TOTAL_VERTEX_LIMIT = 1_000_000
+BASE_MESH_SERIALIZED_BYTE_LIMIT = int(os.environ.get(
+    "NODE_DOJO_BASE_MESH_SERIALIZED_BYTE_LIMIT",
+    64 * 1024 * 1024,
+))
+BASE_MESH_TOTAL_SERIALIZED_BYTE_LIMIT = int(os.environ.get(
+    "NODE_DOJO_BASE_MESH_TOTAL_SERIALIZED_BYTE_LIMIT",
+    128 * 1024 * 1024,
+))
+modifier_seed_object_names = set()
+modifier_seed_vertices = 0
+embedded_mesh_serialized_bytes = 0
+
+
+def reserve_serialized_mesh_payload(mesh_payload):
+    global embedded_mesh_serialized_bytes
+    serialized_bytes = len(json.dumps(
+        mesh_payload,
+        indent=1,
+        default=str,
+        ensure_ascii=False,
+    ).encode("utf-8"))
+    remaining_bytes = BASE_MESH_TOTAL_SERIALIZED_BYTE_LIMIT - embedded_mesh_serialized_bytes
+    if (
+        serialized_bytes <= BASE_MESH_SERIALIZED_BYTE_LIMIT
+        and serialized_bytes <= remaining_bytes
+    ):
+        embedded_mesh_serialized_bytes += serialized_bytes
+        return None
+    return {
+        "code": (
+            "BASE_MESH_OBJECT_SERIALIZED_LIMIT"
+            if serialized_bytes > BASE_MESH_SERIALIZED_BYTE_LIMIT
+            else "BASE_MESH_TOTAL_SERIALIZED_LIMIT"
+        ),
+        "serialized_bytes": serialized_bytes,
+        "per_object_limit": BASE_MESH_SERIALIZED_BYTE_LIMIT,
+        "remaining_total_limit": max(0, remaining_bytes),
+    }
+
+
+for candidate in sorted(bpy.data.objects, key=lambda item: item.name):
+    if candidate.type != "MESH" or not candidate.data:
+        continue
+    if not any(modifier.type == "NODES" and modifier.node_group for modifier in candidate.modifiers):
+        continue
+    vertex_count = len(candidate.data.vertices)
+    if (
+        vertex_count <= MODIFIER_SEED_VERTEX_LIMIT
+        and modifier_seed_vertices + vertex_count <= MODIFIER_SEED_TOTAL_VERTEX_LIMIT
+    ):
+        modifier_seed_object_names.add(candidate.name)
+        modifier_seed_vertices += vertex_count
+
 for obj in bpy.data.objects:
     o = {"name": obj.name, "type": obj.type, "location": list(obj.location),
          "rotation": list(obj.rotation_euler), "scale": list(obj.scale),
@@ -535,9 +645,14 @@ for obj in bpy.data.objects:
         # Embed small BASE meshes (pre-modifier obj.data): ObjectInfo materializes
         # referenced objects (e.g. 'printbed'), and GN modifiers need the object's
         # own mesh bound to their Geometry input (e.g. the bubble vase's seed).
-        if obj.name == target_object or len(obj.data.vertices) <= 10000:
+        if (
+            obj.name == target_object
+            or len(obj.data.vertices) <= SMALL_BASE_MESH_VERTEX_LIMIT
+            or obj.name in dependency_object_names
+            or obj.name in modifier_seed_object_names
+        ):
             me = obj.data
-            o["mesh"] = {
+            mesh_payload = {
                 "verts": [[float(v.co.x), float(v.co.y), float(v.co.z)] for v in me.vertices],
                 "faces": [list(p.vertices) for p in me.polygons],
                 "face_materials": [p.material_index for p in me.polygons],
@@ -565,7 +680,15 @@ for obj in bpy.data.objects:
                     data.append(round(w, 6))
                 attrs[vg.name] = {"domain": "POINT", "data": data}
             if attrs:
-                o["mesh"]["attributes"] = attrs
+                mesh_payload["attributes"] = attrs
+            # Vertex counts alone do not bound polygon corners or custom
+            # attributes. Measure the exact representation used by the final
+            # indented JSON and keep both per-object and aggregate limits.
+            embedding_error = reserve_serialized_mesh_payload(mesh_payload)
+            if embedding_error is None:
+                o["mesh"] = mesh_payload
+            else:
+                o["mesh_embedding_error"] = embedding_error
     elif obj.type == "CURVE" and obj.data:
         # Geometry Nodes receives the object's pre-modifier curve component.
         # Store evaluated polylines so the browser VM can resample Bezier input
@@ -636,7 +759,7 @@ for obj in bpy.data.objects:
         evaluated = obj.evaluated_get(depsgraph)
         mesh = evaluated.to_mesh()
         try:
-            o["evaluated_mesh"] = {
+            evaluated_mesh_payload = {
                 "verts": [[float(v.co.x), float(v.co.y), float(v.co.z)] for v in mesh.vertices],
                 "faces": [list(p.vertices) for p in mesh.polygons],
                 "face_materials": [p.material_index for p in mesh.polygons],
@@ -644,15 +767,27 @@ for obj in bpy.data.objects:
                 "materials": [material.name if material else None for material in mesh.materials],
                 "attributes": dump_mesh_attributes(mesh, include_uv=True),
             }
+            embedding_error = reserve_serialized_mesh_payload(evaluated_mesh_payload)
+            if embedding_error is None:
+                o["evaluated_mesh"] = evaluated_mesh_payload
+            else:
+                o["evaluated_mesh_embedding_error"] = embedding_error
         finally:
             evaluated.to_mesh_clear()
     for mod in obj.modifiers:
         m = {"name": mod.name, "type": mod.type}
-        if mod.type == "HOOK" and mod.object:
-            m["object"] = mod.object.name
+        if mod.type == "HOOK":
+            m["show_viewport"] = bool(getattr(mod, "show_viewport", True))
             m["vertex_indices"] = list(mod.vertex_indices)
-            m["matrix_inverse"] = [[round(float(value), 9) for value in row] for row in mod.matrix_inverse]
             m["strength"] = float(mod.strength)
+            m["falloff_type"] = str(mod.falloff_type)
+            m["falloff_radius"] = float(mod.falloff_radius)
+            m["use_falloff_uniform"] = bool(mod.use_falloff_uniform)
+            m["vertex_group"] = str(mod.vertex_group or "")
+            m["invert_vertex_group"] = bool(getattr(mod, "invert_vertex_group", False))
+            if mod.object:
+                m["object"] = mod.object.name
+                m["matrix_inverse"] = matrix_float32_json(mod.matrix_inverse)
         if mod.type == "NODES" and mod.node_group:
             m["node_group"] = mod.node_group.name
             if target_object is None or obj.name == target_object or obj.name in dependency_object_names:
@@ -775,6 +910,22 @@ else:
             if isinstance(font, bpy.types.VectorFont):
                 referenced_fonts[font.name] = font
     for font_name, font in referenced_fonts.items():
+        authored_path = getattr(font, "filepath", "") or ""
+        resolved_path = bpy.path.abspath(authored_path) if authored_path and authored_path != "<builtin>" else ""
+        if (
+            authored_path
+            and authored_path != "<builtin>"
+            and not getattr(font, "packed_file", None)
+            and not os.path.isfile(resolved_path)
+        ):
+            result["fonts"][font_name] = {
+                "name": font_name,
+                "filepath": authored_path,
+                "unavailable": True,
+                "glyphs": {},
+            }
+            print(f"FONT_ATLAS_UNAVAILABLE {font_name}: {authored_path}")
+            continue
         try:
             result["fonts"][font_name] = dump_font_atlas(font)
         except Exception as error:
@@ -843,7 +994,7 @@ def build_extraction_metadata(payload):
             item = object_payloads.get(name)
             if not item:
                 return "unavailable"
-            return "embedded" if any(key in item for key in ("mesh", "curves", "evaluated_mesh")) else "referenced"
+            return "embedded" if any(key in item for key in ("mesh", "curves", "evaluated_mesh")) else "unavailable"
         if kind == "collection":
             return "embedded" if name in collections else "unavailable"
         if kind == "material":
@@ -991,6 +1142,180 @@ def build_extraction_metadata(payload):
                 "message": f"{obj['name']} uses an explicitly frozen evaluated dependency snapshot.",
                 "path": [obj["name"]],
             })
+        if (
+            obj.get("type") == "MESH"
+            and obj.get("mesh_stats", {}).get("verts", 0) > 0
+            and not obj.get("mesh")
+            and any(modifier.get("type") == "NODES" for modifier in obj.get("modifiers", []))
+        ):
+            embedding_error = obj.get("mesh_embedding_error")
+            warnings.append({
+                "code": "MODIFIER_BASE_MESH_OMITTED",
+                "message": (
+                    f"{obj['name']} base mesh was omitted by the portable extraction budget"
+                    + (
+                        f" ({embedding_error.get('serialized_bytes', 0)} serialized bytes; "
+                        f"{embedding_error.get('code', 'limit exceeded')})"
+                        if embedding_error else ""
+                    )
+                    + "; run a target-aware extraction for this object."
+                ),
+                "path": [obj["name"]],
+            })
+    dependency_names = set(payload.get("dependency_objects", []))
+    for dependency_name in sorted(dependency_names):
+        obj = object_payloads.get(dependency_name)
+        if not obj or obj.get("type") not in ("MESH", "CURVE"):
+            continue
+        has_geometry = any(key in obj for key in ("mesh", "curves", "evaluated_mesh"))
+        if not has_geometry:
+            embedding_error = (
+                obj.get("evaluated_mesh_embedding_error")
+                or obj.get("mesh_embedding_error")
+            )
+            warnings.append({
+                "code": "DEPENDENCY_OBJECT_GEOMETRY_UNAVAILABLE",
+                "message": (
+                    f"{dependency_name} is required by Object/Collection Info, but its geometry "
+                    "was omitted from the bounded portable payload"
+                    + (
+                        f" ({embedding_error.get('serialized_bytes', 0)} serialized bytes; "
+                        f"{embedding_error.get('code', 'limit exceeded')})"
+                        if embedding_error else ""
+                    )
+                    + "."
+                ),
+                "path": [dependency_name],
+            })
+        elif (
+            obj.get("evaluated_mesh_embedding_error")
+            and any(modifier.get("type") == "NODES" for modifier in obj.get("modifiers", []))
+        ):
+            embedding_error = obj["evaluated_mesh_embedding_error"]
+            warnings.append({
+                "code": "DEPENDENCY_EVALUATED_MESH_OMITTED",
+                "message": (
+                    f"{dependency_name} evaluated dependency snapshot exceeded the portable budget "
+                    f"({embedding_error.get('serialized_bytes', 0)} serialized bytes; "
+                    f"{embedding_error.get('code', 'limit exceeded')}); browser evaluation must "
+                    "reconstruct it from the embedded base and node groups."
+                ),
+                "path": [dependency_name],
+            })
+    for collection_name in sorted(dependency_collection_names):
+        collection = collections.get(collection_name)
+        if not collection:
+            continue
+        unavailable = []
+        for object_name in collection.get("objects", []):
+            child = object_payloads.get(object_name)
+            if (
+                child
+                and child.get("type") in ("MESH", "CURVE")
+                and not any(key in child for key in ("mesh", "curves", "evaluated_mesh"))
+            ):
+                unavailable.append(object_name)
+        if unavailable:
+            warnings.append({
+                "code": "DEPENDENCY_COLLECTION_GEOMETRY_INCOMPLETE",
+                "message": (
+                    f"{collection_name} is required by Collection Info, but "
+                    f"{len(unavailable)} geometry-bearing "
+                    f"{'object is' if len(unavailable) == 1 else 'objects are'} unavailable."
+                ),
+                "path": [collection_name, *unavailable],
+            })
+    for group_name, group in payload["node_groups"].items():
+        for node in group.get("nodes", []):
+            if node.get("type") != "GeometryNodeImportSTL":
+                continue
+            path_socket = next((
+                socket for socket in node.get("inputs", [])
+                if socket.get("identifier") == "Path" or socket.get("name") == "Path"
+            ), None)
+            if path_socket and path_socket.get("linked"):
+                warnings.append({
+                    "code": "EXTERNAL_STL_PATH_DYNAMIC",
+                    "message": f"{group_name} / {node['name']} uses a linked STL path that cannot be embedded statically.",
+                    "path": [group_name, node["name"]],
+                })
+                continue
+            authored_path = path_socket.get("value") if path_socket else None
+            if not isinstance(authored_path, str) or not authored_path:
+                warnings.append({
+                    "code": "EXTERNAL_STL_PATH_EMPTY",
+                    "message": f"{group_name} / {node['name']} has no portable STL path.",
+                    "path": [group_name, node["name"]],
+                })
+                continue
+            if node.get("embedded_stl"):
+                continue
+            embedding_error = node.get("stl_embedding_error")
+            resolved_path = bpy.path.abspath(authored_path)
+            warnings.append({
+                "code": (
+                    "EXTERNAL_STL_UNAVAILABLE"
+                    if not os.path.isfile(resolved_path)
+                    else "EXTERNAL_STL_EMBED_REJECTED"
+                    if embedding_error
+                    else "EXTERNAL_STL_NOT_EMBEDDED"
+                ),
+                "message": (
+                    f"{group_name} / {node['name']} references an STL that is unavailable: {authored_path}"
+                    if not os.path.isfile(resolved_path)
+                    else (
+                        f"{group_name} / {node['name']} STL was rejected: {embedding_error.get('code')}: {embedding_error.get('message')}"
+                        if embedding_error
+                        else f"{group_name} / {node['name']} references an external STL that was not embedded: {authored_path}"
+                    )
+                ),
+                "path": [group_name, node["name"], authored_path],
+            })
+    for font in bpy.data.fonts:
+        authored_path = getattr(font, "filepath", "") or ""
+        if not authored_path or authored_path == "<builtin>" or getattr(font, "packed_file", None):
+            continue
+        resolved_path = bpy.path.abspath(authored_path)
+        if not os.path.isfile(resolved_path):
+            warnings.append({
+                "code": "EXTERNAL_FONT_UNAVAILABLE",
+                "message": f"{font.name} references an unavailable external font: {authored_path}",
+                "path": [font.name, authored_path],
+            })
+    for image in bpy.data.images:
+        authored_path = getattr(image, "filepath", "") or ""
+        if (
+            not authored_path
+            or authored_path == "<builtin>"
+            or getattr(image, "packed_file", None)
+            or getattr(image, "source", "") in ("GENERATED", "VIEWER")
+        ):
+            continue
+        resolved_path = bpy.path.abspath(authored_path)
+        extracted_image = images.get(image.name, {})
+        if extracted_image.get("pixels_rgba8"):
+            continue
+        available = os.path.isfile(resolved_path)
+        pixel_error = extracted_image.get("pixel_error")
+        warnings.append({
+            "code": (
+                "EXTERNAL_IMAGE_UNAVAILABLE"
+                if not available
+                else "EXTERNAL_IMAGE_EMBED_REJECTED"
+                if pixel_error
+                else "EXTERNAL_IMAGE_NOT_EMBEDDED"
+            ),
+            "message": (
+                f"{image.name} references an unavailable external image: {authored_path}"
+                if not available
+                else (
+                    f"{image.name} image pixels could not be embedded: {pixel_error}"
+                    if pixel_error
+                    else f"{image.name} references an external image that was not embedded: {authored_path}"
+                )
+            ),
+            "path": [image.name, authored_path],
+        })
 
     roots = []
     if target_object and target_object in object_ids:
@@ -1014,7 +1339,7 @@ def build_extraction_metadata(payload):
 
     return {
         "schema_version": 1,
-        "extractor": {"name": "tools/dump_blend.py", "version": "1.1", "blender_version": bpy.app.version_string},
+        "extractor": {"name": "tools/dump_blend.py", "version": "1.4", "blender_version": bpy.app.version_string},
         "source": source,
         "roots": {"objects": roots, "node_groups": root_groups},
         "provenance": {

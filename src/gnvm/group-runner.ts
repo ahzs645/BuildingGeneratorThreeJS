@@ -6,7 +6,7 @@ import type { Dump, DumpInterfaceItem } from "./dump-schema";
 import { Evaluator } from "./evaluator";
 import { Geometry, toTriSoup } from "./geometry";
 import { meshCube, meshGrid, meshLine } from "./primitives";
-import { DUMP_CONTEXT, MISSING, REGISTRY } from "./registry";
+import { APPROXIMATIONS, DUMP_CONTEXT, MISSING, REGISTRY } from "./registry";
 import type { RunResult } from "./run-result";
 
 // Keep this module usable as a direct entry point, not only through index.ts.
@@ -23,8 +23,12 @@ import "./nodes/volume";
 import "./nodes/points";
 import "./nodes/color";
 import "./nodes/curve-handles";
+import "./nodes/material-fields";
 import "./nodes/edge-paths";
 import "./nodes/surface-sampling";
+import "./nodes/matrix";
+import "./nodes/uv";
+import "./nodes/import-stl";
 
 export type PrimitiveGeometrySeed =
   | {
@@ -170,7 +174,7 @@ export function createPrimitiveGeometry(seed: PrimitiveGeometrySeed): Geometry {
   return geometry;
 }
 
-function resolveGeometrySeed(dump: Dump, seed: GroupGeometrySeed): { geometry: Geometry; objectName?: string } {
+export function resolveGeometrySeed(dump: Dump, seed: GroupGeometrySeed): { geometry: Geometry; objectName?: string } {
   if (seed instanceof Geometry) return { geometry: seed.clone() };
   if (seed.kind === "object") {
     const objectName = "objectName" in seed ? seed.objectName : seed.object;
@@ -233,6 +237,7 @@ export async function runNodeGroup(dump: Dump, options: RunNodeGroupOptions): Pr
 
   await Promise.all([ensureManifold(), ensureBulletHull()]);
   MISSING.clear();
+  APPROXIMATIONS.clear();
   prepareDumpContext(dump, options.activeObject ?? seedObjectName, options.frame);
   try {
     const result = new Evaluator(dump.node_groups).evalModifierGroup(options.group, bindings);
@@ -246,6 +251,9 @@ export async function runNodeGroup(dump: Dump, options: RunNodeGroupOptions): Pr
       coverage: {
         handled: REGISTRY.size,
         missingTypes: [...MISSING.entries()]
+          .map(([type, count]) => ({ type, count }))
+          .sort((left, right) => right.count - left.count),
+        approximateTypes: [...APPROXIMATIONS.entries()]
           .map(([type, count]) => ({ type, count }))
           .sort((left, right) => right.count - left.count),
       },

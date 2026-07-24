@@ -2,7 +2,7 @@
 // geometry's domain. These drive the bin's recursive subdivision (quad detection),
 // wall thickening (edge neighbors), and bin selection (islands).
 import { Field, Vec3, asNum } from "../core";
-import { reg } from "../registry";
+import { reg, type EvalAPI } from "../registry";
 import { FIELD_PROBE } from "../evaluator";
 
 // Face Neighbors: Vertex Count = verts in the face; Face Count = adjacent faces.
@@ -15,6 +15,17 @@ reg("GeometryNodeInputMeshFaceNeighbors", () => ({
 // Edge Neighbors: how many faces use this edge (2 = interior, 1 = boundary).
 reg("GeometryNodeInputMeshEdgeNeighbors", () => ({
   "Face Count": Field.perElem((i, ctx) => (ctx.edgeFaceCount ? ctx.edgeFaceCount(i) : 0)).tagged("EDGE"),
+}));
+
+// Blender stores edge smoothness as the inverse `sharp_edge` built-in
+// attribute. Meshes without that optional attribute are smooth by default.
+// Keep the EDGE source-domain tag so downstream fields adapt the boolean only
+// after the complete expression has been evaluated.
+reg("GeometryNodeInputEdgeSmooth", () => ({
+  Smooth: Field.perElem((i, ctx) => {
+    if (ctx.component !== "MESH") return 0;
+    return asNum(ctx.attr?.("sharp_edge", i) ?? 0) ? 0 : 1;
+  }).tagged("EDGE", "BOOLEAN"),
 }));
 
 reg("GeometryNodeInputMeshEdgeAngle", (api) => {
@@ -96,5 +107,123 @@ reg("GeometryNodeCornersOfFace", (api) => {
       }
       return out;
     }),
+  };
+});
+
+const linkedInput = (api: EvalAPI, name: string): boolean =>
+  Boolean(api.node.inputs.find((socket) =>
+    (socket.identifier === name || socket.name === name) && socket.linked));
+
+const periodicIndex = (value: number, size: number): number => {
+  if (size <= 0) return 0;
+  return ((Math.trunc(value) % size) + size) % size;
+};
+
+reg("GeometryNodeOffsetCornerInFace", (api) => {
+  const cornerLinked = linkedInput(api, "Corner Index");
+  const cornerField = api.field("Corner Index");
+  const offsetField = api.field("Offset");
+  return {
+    "Corner Index": Field.make((ctx) => {
+      const cornerValues = cornerLinked ? cornerField.array(ctx) : null;
+      const offsets = offsetField.array(ctx);
+      const faceContext = ctx.fork?.("FACE");
+      const cornerContext = ctx.fork?.("CORNER");
+      if (!faceContext || !cornerContext)
+        return Array.from({ length: ctx.size }, () => 0);
+      const faceStarts: number[] = new Array(faceContext.size);
+      for (let corner = 0; corner < cornerContext.size; corner++) {
+        const face = cornerContext.cornerFace?.(corner);
+        if (face !== undefined && faceStarts[face] === undefined)
+          faceStarts[face] = corner;
+      }
+      return Array.from({ length: ctx.size }, (_, index) => {
+        const corner = Math.trunc(asNum(cornerValues?.[index] ?? index));
+        const face = cornerContext.cornerFace?.(corner);
+        if (face === undefined || corner < 0) return 0;
+        if (corner >= cornerContext.size) return 0;
+        const faceStart = faceStarts[face] ?? 0;
+        const faceSize = faceContext.faceVertCount?.(face) ?? 0;
+        if (!faceSize) return 0;
+        return faceStart + periodicIndex(corner - faceStart + asNum(offsets[index] ?? 0), faceSize);
+      });
+    }).tagged("CORNER"),
+  };
+});
+
+reg("GeometryNodeEdgesOfCorner", (api) => {
+  const cornerLinked = linkedInput(api, "Corner Index");
+  const cornerField = api.field("Corner Index");
+  const edge = (previous: boolean) => Field.make((ctx) => {
+    const cornerValues = cornerLinked ? cornerField.array(ctx) : null;
+    const cornerContext = ctx.fork?.("CORNER");
+    return Array.from({ length: ctx.size }, (_, index) => {
+      const corner = Math.trunc(asNum(cornerValues?.[index] ?? index));
+      if (!cornerContext || corner < 0 || corner >= cornerContext.size) return 0;
+      return previous
+        ? cornerContext.cornerPreviousEdge?.(corner) ?? 0
+        : cornerContext.cornerNextEdge?.(corner) ?? 0;
+    });
+  }).tagged("CORNER");
+  return {
+    "Next Edge Index": edge(false),
+    "Previous Edge Index": edge(true),
+  };
+});
+
+reg("GeometryNodeCornersOfVertex", (api) => {
+  const vertexLinked = linkedInput(api, "Vertex Index");
+  const vertexField = api.field("Vertex Index");
+  const sortIndexField = api.field("Sort Index");
+  const weights = api.field("Weights");
+  const resolve = (ctx: import("../core").FieldCtx) => {
+    const vertexValues = vertexLinked ? vertexField.array(ctx) : null;
+    const sortIndices = sortIndexField.array(ctx);
+    const cornerContext = ctx.fork?.("CORNER");
+    const weightValues = cornerContext && !weights.isConst ? weights.array(cornerContext) : null;
+    const corners: number[] = new Array(ctx.size);
+    const totals: number[] = new Array(ctx.size);
+    for (let index = 0; index < ctx.size; index++) {
+      const vertex = Math.trunc(asNum(vertexValues?.[index] ?? index));
+      const attached = ctx.vertexCorners?.(vertex) ?? ctx.fork?.("POINT")?.vertexCorners?.(vertex) ?? [];
+      totals[index] = attached.length;
+      if (!attached.length) {
+        corners[index] = 0;
+        continue;
+      }
+      const ordered = weightValues
+        ? attached
+            .map((corner, order) => ({ corner, order, weight: asNum(weightValues[corner] ?? 0) }))
+            .sort((left, right) => left.weight - right.weight || left.order - right.order)
+            .map(({ corner }) => corner)
+        : attached;
+      corners[index] = ordered[periodicIndex(asNum(sortIndices[index] ?? 0), ordered.length)];
+    }
+    return { corners, totals };
+  };
+  return {
+    "Corner Index": Field.make((ctx) => resolve(ctx).corners).tagged("POINT"),
+    Total: Field.make((ctx) => resolve(ctx).totals).tagged("POINT"),
+  };
+});
+
+reg("GeometryNodeMeshFaceSetBoundaries", (api) => {
+  const faceSets = api.field("Face Set");
+  return {
+    "Boundary Edges": Field.make((ctx) => {
+      const faceContext = ctx.fork?.("FACE");
+      const edgeContext = ctx.fork?.("EDGE");
+      if (!faceContext || !edgeContext) return Array.from({ length: ctx.size }, () => 0);
+      const sets = faceSets.array(faceContext);
+      const boundaries = Array.from({ length: edgeContext.size }, (_, edge) => {
+        const faces = edgeContext.edgeFaces?.(edge) ?? [];
+        if (faces.length < 2) return 0;
+        const first = asNum(sets[faces[0]] ?? 0);
+        return faces.some((face) => asNum(sets[face] ?? 0) !== first) ? 1 : 0;
+      });
+      if (ctx.domain === "EDGE") return boundaries;
+      return Array.from({ length: ctx.size }, (_, index) =>
+        asNum(ctx.toDomain?.("EDGE", boundaries, index) ?? 0));
+    }).tagged("EDGE", "BOOLEAN"),
   };
 });

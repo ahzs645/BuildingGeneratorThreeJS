@@ -128,6 +128,62 @@ reg("GeometryNodeMeshIcoSphere", (api) => ({
   "UV Map": Field.of([0, 0, 0]),
 }));
 
+reg("GeometryNodePointsToVertices", (api) => {
+  const source = realizeInstances(api.geo("Points"));
+  const output = new Geometry();
+  output.mesh = new Mesh();
+  const mesh = source.mesh;
+  if (!mesh) return { Mesh: output };
+
+  const marker = mesh.attributes.get("__gnvm_point_cloud");
+  const referenced = new Set<number>();
+  for (const face of mesh.faces) for (const point of face) referenced.add(point);
+  for (const edge of mesh.edges) {
+    referenced.add(edge[0]);
+    referenced.add(edge[1]);
+  }
+  // Current dumps stamp the point-cloud component explicitly. Older portable
+  // payloads represented a pure point cloud as a topology-free Mesh, so retain
+  // that fallback only when there is no mesh topology to misclassify.
+  const pointSources = marker?.domain === "POINT"
+    ? mesh.positions.flatMap((_, point) =>
+        !referenced.has(point) && asNum(marker.data[point] ?? 0) > 0 ? [point] : [])
+    : mesh.faces.length === 0 && mesh.edges.length === 0
+      ? mesh.positions.map((_, point) => point)
+      : [];
+  if (!pointSources.length) return { Mesh: output };
+
+  // Field Index and point attributes are component-local in Blender. Evaluate
+  // Selection against a compact point-cloud view rather than the mixed
+  // internal Mesh storage used by GN-VM.
+  const pointCloud = new Geometry();
+  pointCloud.mesh = new Mesh();
+  pointCloud.mesh.positions = pointSources.map((point) => [...mesh.positions[point]] as Vec3);
+  for (const [name, attribute] of mesh.attributes) {
+    if (attribute.domain !== "POINT") continue;
+    pointCloud.mesh.attributes.set(name, {
+      domain: "POINT",
+      data: pointSources.map((point) => attribute.data[point] ?? 0),
+    });
+  }
+  const selection = api.field("Selection").array(makeFieldCtx(pointCloud, "POINT"));
+  const selectedSources: number[] = [];
+  for (let point = 0; point < pointSources.length; point++) {
+    if (asNum(selection[point] ?? 1) <= 0) continue;
+    const sourcePoint = pointSources[point];
+    selectedSources.push(sourcePoint);
+    output.mesh.positions.push([...mesh.positions[sourcePoint]] as Vec3);
+  }
+  for (const [name, attribute] of mesh.attributes) {
+    if (name === "__gnvm_point_cloud" || attribute.domain !== "POINT") continue;
+    output.mesh.attributes.set(name, {
+      domain: "POINT",
+      data: selectedSources.map((point) => attribute.data[point] ?? 0),
+    });
+  }
+  return { Mesh: output };
+});
+
 type Triangle = { a: Vec3; b: Vec3; c: Vec3; normal: Vec3; area: number; weight: number };
 
 function normalRotation(normal: Vec3): Vec3 {

@@ -3,6 +3,7 @@
 // imports the registry to dispatch).
 import { Field, Vec3, Domain, Elem } from "./core";
 import { Geometry } from "./geometry";
+import { MatrixValue } from "./matrix";
 import type { DataRef, DumpObject, FontAtlas, RawNode } from "./dump-schema";
 
 export type {
@@ -13,7 +14,71 @@ export type {
   RawOutput,
   RawSocket,
 } from "./dump-schema";
-export type SockVal = Geometry | Field | string | DataRef | null | undefined;
+
+/** Typed null value for an unconnected NodeSocketClosure boundary. */
+export class EmptyClosureValue {
+  readonly kind = "empty-closure";
+}
+
+export const EMPTY_CLOSURE = Object.freeze(new EmptyClosureValue());
+
+/**
+ * A Geometry Nodes closure is a deferred subgraph with a dynamic signature.
+ *
+ * Keep the boundary deliberately small: the evaluator owns zone execution,
+ * while ordinary node handlers can invoke the captured callable without
+ * depending on Invocation internals.
+ */
+export class ClosureValue {
+  readonly kind = "closure";
+
+  constructor(
+    private readonly evaluateFn: (
+      inputs: Record<string, SockVal>,
+    ) => Record<string, SockVal>,
+  ) {}
+
+  evaluate(inputs: Record<string, SockVal>): Record<string, SockVal> {
+    return this.evaluateFn(inputs);
+  }
+}
+
+/**
+ * Dense browser representation of a Blender volume/grid socket.
+ *
+ * This value contract lives beside SockVal instead of in the volume handlers,
+ * so evaluators and handlers can exchange grids without an import cycle or an
+ * unsafe cast.
+ */
+export interface VolumeGrid {
+  kind: "GNVM_VOLUME_GRID";
+  background: number;
+  min: Vec3;
+  max: Vec3;
+  resolution: Vec3;
+  origin: Vec3;
+  voxelSize: Vec3;
+  values: Float32Array;
+  /** Spacing requested by the graph before the dense-browser safety budget. */
+  requestedVoxelSize: number;
+  /** Sample count the requested spacing/resolution would have allocated. */
+  requestedSampleCount: number;
+  /** True when the dense fallback coarsened the requested lattice. */
+  budgetAdjusted: boolean;
+  sampleBudget: number;
+}
+
+export type SockVal =
+  | Geometry
+  | Field
+  | MatrixValue
+  | EmptyClosureValue
+  | ClosureValue
+  | VolumeGrid
+  | string
+  | DataRef
+  | null
+  | undefined;
 
 export interface EvalAPI {
   node: RawNode;
@@ -41,6 +106,9 @@ export type Handler = (api: EvalAPI) => Record<string, SockVal>;
 export const REGISTRY = new Map<string, Handler>();
 // Tracks node types that were requested but had no handler (coverage reporting).
 export const MISSING = new Map<string, number>();
+// Tracks executed handlers that intentionally provide a bounded approximation
+// instead of claiming Blender-exact semantics.
+export const APPROXIMATIONS = new Map<string, number>();
 
 // Dump-level context (scene objects) so nodes like Object Info can materialize
 // referenced objects. Set by runGenerator before evaluation.
@@ -59,4 +127,8 @@ export const DUMP_CONTEXT: {
 
 export function reg(types: string | string[], handler: Handler): void {
   for (const t of Array.isArray(types) ? types : [types]) REGISTRY.set(t, handler);
+}
+
+export function recordApproximation(type: string): void {
+  APPROXIMATIONS.set(type, (APPROXIMATIONS.get(type) ?? 0) + 1);
 }

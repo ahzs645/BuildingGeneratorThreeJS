@@ -3,6 +3,7 @@ import test from "node:test";
 import type { Dump, DumpNodeGroup, RawNode } from "./dump-schema";
 import { Geometry } from "./geometry";
 import { createPrimitiveGeometry, runNodeGroup } from "./group-runner";
+import { runGeometryTarget } from "./index";
 
 const geometryInput = {
   item_type: "SOCKET",
@@ -166,4 +167,94 @@ test("worker-safe curve seeds create curve components", () => {
   assert.equal(circle.curves[0].points.length, 8);
   assert.equal(line.curves.length, 1);
   assert.deepEqual(line.curves[0].points, [[-1, 0, 0], [1, 0, 0]]);
+});
+
+test("unified target runner can apply a saved object modifier to replacement geometry", async () => {
+  const dump = fixture([{
+    name: "Authored",
+    type: "MESH",
+    mesh: {
+      verts: [[0, 0, 0], [1, 0, 0], [0, 1, 0]],
+      edges: [[0, 1], [1, 2], [2, 0]],
+      faces: [[0, 1, 2]],
+    },
+    modifiers: [{
+      name: "GeometryNodes",
+      type: "NODES",
+      node_group: "Asset Group",
+      input_values: { InputOffset: [0, 0, 2] },
+    }],
+  }]);
+
+  const authored = await runGeometryTarget(dump, {
+    kind: "object",
+    object: "Authored",
+  });
+  assert.deepEqual(authored.soup.stats, { verts: 3, faces: 1, tris: 1 });
+
+  const replacement = await runGeometryTarget(dump, {
+    kind: "object",
+    object: "Authored",
+    seed: { kind: "cube", size: 2 },
+  });
+  assert.deepEqual(replacement.soup.stats, { verts: 8, faces: 6, tris: 12 });
+  assert.equal(Math.min(...replacement.geometry.mesh!.positions.map((point) => point[2])), 1);
+});
+
+test("object targets evaluate earlier Geometry Nodes modifiers in stack order", async () => {
+  const dump: Dump = {
+    node_groups: { "Asset Group": transformGroup() },
+    objects: [{
+      name: "Stacked",
+      type: "MESH",
+      mesh: {
+        verts: [[0, 0, 0], [1, 0, 0], [0, 1, 0]],
+        edges: [[0, 1], [1, 2], [2, 0]],
+        faces: [[0, 1, 2]],
+      },
+      modifiers: [
+        {
+          name: "Move X",
+          type: "NODES",
+          node_group: "Asset Group",
+          input_values: { InputOffset: [1, 0, 0] },
+        },
+        { name: "Non-GN placeholder", type: "BEVEL" },
+        {
+          name: "Move Y",
+          type: "NODES",
+          node_group: "Asset Group",
+          input_values: { InputOffset: [0, 2, 0] },
+        },
+      ],
+    }],
+  };
+
+  const stacked = await runGeometryTarget(dump, {
+    kind: "object",
+    object: "Stacked",
+    group: "Asset Group",
+    modifierIndex: 2,
+  });
+  assert.deepEqual(stacked.geometry.mesh!.positions[0], [1, 2, 0]);
+
+  const overridden = await runGeometryTarget(dump, {
+    kind: "object",
+    object: "Stacked",
+    group: "Asset Group",
+    modifierIndex: 2,
+    overrides: { Offset: [0, 0, 3] },
+  });
+  assert.deepEqual(overridden.geometry.mesh!.positions[0], [1, 0, 3]);
+
+  const replacement = await runGeometryTarget(dump, {
+    kind: "object",
+    object: "Stacked",
+    group: "Asset Group",
+    modifierIndex: 2,
+    seed: { kind: "cube", size: 2 },
+  });
+  assert.deepEqual(replacement.soup.stats, { verts: 8, faces: 6, tris: 12 });
+  assert.equal(Math.min(...replacement.geometry.mesh!.positions.map((point) => point[0])), -1);
+  assert.equal(Math.min(...replacement.geometry.mesh!.positions.map((point) => point[1])), 1);
 });
