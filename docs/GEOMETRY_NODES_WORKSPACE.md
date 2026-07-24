@@ -10,11 +10,18 @@ The slice supports:
 - a readable Blender-style initial camera framed around the Group Output dependency chain, plus pan, zoom, box/multi-selection, minimap, explicit Frame All, and a full-screen workspace;
 - F3/Cmd/Ctrl-F search across the complete group closure and selected-node metadata;
 - nested group entry by double-click and a path-preserving breadcrumb bar;
-- existing unlinked-socket editing, link creation/removal, undo/redo, JSON open/save, and debounced GN-VM reevaluation;
+- unlinked-socket editing, compatible link creation/removal/reconnection, persistent node movement, undo/redo, JSON open/save, and debounced GN-VM reevaluation;
+- an authored-node palette opened from the pane or a dropped wire, conservative socket compatibility, context actions, copy/cut/paste/duplicate, disconnect, preview, and set-as-output operations;
+- a reusable preset library that cleanly forks the checked-in graph, curated topology studies, or the latest browser-local draft;
+- a reusable studio shell with collapsible side docks and a persisted, draggable, resizable, maximizable graph window;
 - exposed modifier controls evaluated by the existing Web Worker GN-VM;
 - selected geometry-output probes evaluated inside GN-VM and rendered in amber in the Three.js viewport.
 
-`src/geometry-nodes/graph-model.ts` is the deterministic adapter. Editor node IDs are namespaced by group and source node name. Socket handles retain the exact extracted identifier plus a deterministic duplicate occurrence. Links retain endpoint identifiers, source order, socket type, muted state, and multi-input ordering. Conversion never mutates or repairs the dump.
+`src/geometry-nodes/graph-model.ts` is the deterministic adapter. Editor node IDs are namespaced by group and source node name. Socket handles retain the exact extracted identifier plus a deterministic duplicate occurrence. Links retain endpoint identifiers, source order, socket type, muted state, and multi-input ordering. Projection never mutates or repairs the dump; authoring operations explicitly clone the portable payload and make targeted node/socket/link/UI changes.
+
+`src/react/crayon/useCrayonRuntime.ts` is the typed React/runtime boundary. React owns controls, graph state, layout choice, shader choice, and status presentation. The controller in `src/crayon-compare.ts` owns Three.js and worker evaluation. Graph changes enter an explicit queued state, debounce for 250 ms, and replace viewport geometry only after a complete successful worker result. Failures leave the last-known-good mesh visible and report that state to React.
+
+`/blendbridge` now applies the same contract to imported files. `GeometryNodesEditor` can mount an explicit controlled dump/root source, while `src/blend-studio/runtime.ts` owns worker replacement and last-valid rendering. Modifier objects use `runGenerator`; top-level asset groups without modifier objects use `runNodeGroup` with an explicit seed/input/output contract. See [NO3D_TOOLS_PIPELINE.md](NO3D_TOOLS_PIPELINE.md) for the real-file audit and remaining node gaps.
 
 ## Current extraction schema
 
@@ -25,7 +32,7 @@ The current `tools/dump_blend.py` pipeline already records the editor-critical s
 - exact link endpoint names/identifiers/types, muted state, and `multi_input_sort_id`;
 - group interfaces (including panels), group references, and paired zone metadata.
 
-That payload is also GN-VM's runtime input and has extensive parity fixtures. This slice therefore adds a one-way editor adapter rather than changing extraction or writing XYFlow state back into the payload. Headless Blender commonly exports `ui.dimensions: [0, 0]` and placeholder heights, so the editor preserves authoritative width/location/frame data and derives content height from visible rows where necessary.
+That payload is also GN-VM's runtime input and has extensive parity fixtures. This slice therefore keeps extraction unchanged and writes explicit authoring operations back into a structured clone of the portable payload rather than treating XYFlow state as a second graph format. Headless Blender commonly exports `ui.dimensions: [0, 0]` and placeholder heights, so the editor preserves authoritative width/location/frame data and derives content height from visible rows where necessary.
 
 ## Reference and license review
 
@@ -35,6 +42,7 @@ Reviewed against authoritative repository state on 2026-07-14. No implementation
 - [Algebraic-UG/tree_clipper v0.1.8](https://github.com/Algebraic-UG/tree_clipper/tree/v0.1.8) informed the migration notes below: versioned envelopes, canonical numeric IDs, explicit external references, ordered links, hierarchy/interface records, reroute identity, and phased node/link import. The package declares [GPL-3.0-or-later](https://github.com/Algebraic-UG/tree_clipper/blob/v0.1.8/packages/tree_clipper/pyproject.toml); no code or fixtures were copied or ported. Relevant compatibility observations are documented by its [specific handlers](https://github.com/Algebraic-UG/tree_clipper/blob/v0.1.8/packages/tree_clipper/src/tree_clipper/specific_handlers.py), [export traversal](https://github.com/Algebraic-UG/tree_clipper/blob/v0.1.8/packages/tree_clipper/src/tree_clipper/export_nodes.py), and [multi-input test](https://github.com/Algebraic-UG/tree_clipper/blob/v0.1.8/packages/tree_clipper/tests/test_multi_input_order.py).
 - [whoisryosuke/geometry-node-graph](https://github.com/whoisryosuke/geometry-node-graph/tree/8155eceaff215df50d3ae2a65db99b7338f57c8f) validates React Flow as a practical canvas for Blender-like custom nodes. It has no tracked license or package license declaration, so default copyright applies. Only high-level UI observations were used; its random/time-based IDs and type-only socket handles were avoided.
 - [polygonjs/polygonjs](https://github.com/polygonjs/polygonjs/tree/23def6118446acd4209361b272e0041b1060c6a6) informed architecture/UX ideas such as separating dependency state from editor state, dirty propagation, cached cooking, contextual networks, and direct Three.js viewport integration. It does not define Geometry Nodes semantics here. Its repository [LICENSE is MIT](https://github.com/polygonjs/polygonjs/blob/23def6118446acd4209361b272e0041b1060c6a6/LICENSE), while the same commit's [package metadata says PolyForm Shield](https://github.com/polygonjs/polygonjs/blob/23def6118446acd4209361b272e0041b1060c6a6/package.json); because that is inconsistent, this work treats it as conceptual reference only.
+- [AmyangXYZ/reze-design](https://github.com/AmyangXYZ/reze-design) informed high-level interaction ideas: an immersive viewport shell, collapsible docks, a movable graph surface, wire-drop creation, last-valid live compilation, and a preset library. The reviewed source declares AGPL-3.0-or-later. No Reze implementation, styling, assets, engine code, or MMD-specific behavior was copied; the features here are independent implementations over the existing MIT-licensed dump/GN-VM architecture.
 
 ## Migration path toward richer dependency metadata
 
@@ -57,15 +65,15 @@ GN-VM resolves dependencies from reachable typed descriptors, preserves `depende
 6. Introduce a versioned inverse adapter only after round-trip fixtures prove lossless node/socket/link/interface reconstruction in Blender. Import should be phased: allocate trees/nodes and register IDs; resolve parents/dynamic properties and externals; create links; then restore multi-input order.
 7. Keep old dump fixtures readable and test migrations in both directions. A richer schema must not silently reinterpret current values or change modifier identifier-first binding. Any Tree Clipper converter remains a separately reviewed interoperability boundary; GPL handlers are not copied into this app.
 
-Until step 6 is proven, editor-only XYFlow position changes and JSON exports are explicitly not claimed as Blender-round-trippable.
+Until step 6 is proven, edited positions, cloned nodes, links, and JSON exports are portable GN-VM payloads but are explicitly not claimed as Blender-round-trippable.
 
 ## Remaining work
 
 - Extend the asset-driven editor beyond Chrome Crayon and Type Pixel Brush, retaining explicit object/root configuration for every mounted asset.
-- Add a cancellable evaluation manager with explicit queued/running/error state. Selection should be immediate; expensive intermediate preview should be an explicit target, and obsolete workers should be terminated.
+- Add per-group evaluation caching after real profiling demonstrates that full worker cancellation and replacement is still too expensive.
 - Add structured per-node diagnostics and timing before attempting dependency-aware caching or incremental cooking.
 - Frame-relative dragging/resizing and moving a frame with all children need compound editor operations.
-- Node creation, dynamic socket declarations, interface panels, socket ranges, and Blender subtypes need more extractor metadata before they can round-trip safely.
+- The authored-template node palette can safely clone schemas already present in a dump. Truly new node declarations, dynamic sockets, interface panels, socket ranges, and Blender subtypes still need more extractor metadata before they can round-trip safely.
 - Extend the new typed object-dependency records to full material/image/font resolution and versioned inverse import.
 - Camera and selection history are stack-based but not persisted per group across reloads.
 

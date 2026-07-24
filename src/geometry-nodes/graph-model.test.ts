@@ -3,7 +3,14 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import type { Dump } from "../gnvm";
-import { dumpGroupToEditorGraph, graphGroupPath, graphWorkingSetNodeIds, searchEditorGraphs } from "./graph-model";
+import {
+  areSocketTypesCompatible,
+  dumpGroupToEditorGraph,
+  graphGroupPath,
+  graphNodeTemplates,
+  graphWorkingSetNodeIds,
+  searchEditorGraphs,
+} from "./graph-model";
 
 const dumpPath = fileURLToPath(new URL("../../public/dojo/chrome-assets/type-pixel-brush/dump.json", import.meta.url));
 const dump = JSON.parse(await readFile(dumpPath, "utf8")) as Dump;
@@ -72,4 +79,22 @@ test("initial working set is deterministic and walks upstream from Group Output"
   assert.ok(first.every((id) => graph.nodes.some((node) => node.id === id && node.kind !== "frame")));
   assert.ok(first.slice(1).every((id) => graph.links.some((link) => link.source === id && first.includes(link.target))));
   assert.deepEqual(graphWorkingSetNodeIds(graph, 0), []);
+});
+
+test("socket compatibility is conservative across Blender socket families", () => {
+  assert.equal(areSocketTypesCompatible("NodeSocketGeometry", "NodeSocketGeometry"), true);
+  assert.equal(areSocketTypesCompatible("NodeSocketFloat", "NodeSocketInt"), true);
+  assert.equal(areSocketTypesCompatible("NodeSocketVectorTranslation", "NodeSocketVector"), true);
+  assert.equal(areSocketTypesCompatible("NodeSocketColor", "NodeSocketFloat"), false);
+  assert.equal(areSocketTypesCompatible("NodeSocketGeometry", "NodeSocketFloat"), false);
+  assert.equal(areSocketTypesCompatible("NodeSocketVirtual", "NodeSocketMaterial"), true);
+});
+
+test("add-node templates are deterministic and omit structural group endpoints", () => {
+  const first = graphNodeTemplates(dump);
+  const second = graphNodeTemplates(dump);
+  assert.deepEqual(first, second);
+  assert.ok(first.length > 0);
+  assert.ok(first.every((template) => template.type !== "NodeFrame" && template.type !== "NodeGroupInput" && template.type !== "NodeGroupOutput"));
+  assert.ok(first.some((template) => template.inputTypes.length > 0 || template.outputTypes.length > 0));
 });

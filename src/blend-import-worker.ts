@@ -1,10 +1,23 @@
-import { GEOMETRY_PROBE, runGenerator, toTriSoup, type Dump, type TriSoup } from "./gnvm/index";
+import {
+  GEOMETRY_PROBE,
+  runGenerator,
+  runNodeGroup,
+  toTriSoup,
+  type Dump,
+  type RunNodeGroupOptions,
+  type TriSoup,
+} from "./gnvm/index";
 
 type Request = {
   id: number;
   dump: Dump;
-  object: string;
+  object?: string;
+  group?: string;
+  targetKind?: "object" | "group";
   overrides: Record<string, number | boolean>;
+  seed?: RunNodeGroupOptions["seed"];
+  geometryInput?: string;
+  output?: string;
   curves?: { points: number[][]; cyclic: boolean; tilts?: number[] }[];
   probe?: { group: string; node: string; socket?: string };
 };
@@ -16,9 +29,22 @@ type WorkerScope = {
 const scope = self as unknown as WorkerScope;
 
 scope.onmessage = async (event: MessageEvent<Request>) => {
-  const { id, dump, object, overrides, curves, probe } = event.data;
+  const {
+    id,
+    dump,
+    object,
+    group,
+    targetKind,
+    overrides,
+    seed,
+    geometryInput,
+    output,
+    curves,
+    probe,
+  } = event.data;
   try {
     if (curves) {
+      if (!object) throw new Error("curve overrides require an object target");
       const target = dump.objects?.find((candidate) => candidate.name === object);
       if (!target) throw new Error(`curve target object not found: ${object}`);
       target.curves = curves;
@@ -27,7 +53,15 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
     GEOMETRY_PROBE.node = probe?.node ?? null;
     GEOMETRY_PROBE.socket = probe?.socket ?? null;
     GEOMETRY_PROBE.geometry = null;
-    const result = await runGenerator(dump, { object, overrides });
+    const result = targetKind === "group"
+      ? await runNodeGroup(dump, {
+          group: group ?? "",
+          overrides,
+          seed,
+          geometryInput,
+          output,
+        })
+      : await runGenerator(dump, { object, group, overrides });
     const probeSoup = GEOMETRY_PROBE.geometry ? toTriSoup(GEOMETRY_PROBE.geometry) : undefined;
     const payload = {
       id,

@@ -355,3 +355,75 @@ reg("FunctionNodeRotateRotation", (api) => {
     }),
   };
 });
+
+// Rotation sockets are quaternion-backed in Blender. Negating displayed Euler
+// components is not a valid inverse once multiple axes are involved, so retain
+// the native quaternion tag through this operation.
+reg("FunctionNodeInvertRotation", (api) => ({
+  Rotation: fieldMap([api.field("Rotation")], (rotation) => {
+    const quaternion = taggedQuaternion(rotation) ?? quatFromEulerXYZ(asVec3(rotation));
+    return tagQuaternion([-quaternion[0], -quaternion[1], -quaternion[2], quaternion[3]]);
+  }),
+}));
+
+reg("GeometryNodeFieldMinAndMax", (api) => {
+  const domainProp = api.prop<string>("domain", "POINT");
+  const domain: Domain = DOMAINS.has(domainProp as Domain) ? domainProp as Domain : "POINT";
+  const vector = api.prop<string>("data_type", "FLOAT").includes("VECTOR");
+  const value = api.field("Value");
+  const groupId = api.field("Group Index");
+
+  const aggregate = (ctx: Parameters<Field["array"]>[0]) => {
+    const source = ctx.domain === domain ? ctx : ctx.fork?.(domain) ?? ctx;
+    const values = value.array(source);
+    const groups = groupId.array(source);
+    const minima = new Map<number, Elem>();
+    const maxima = new Map<number, Elem>();
+
+    for (let index = 0; index < source.size; index++) {
+      const group = Math.trunc(asNum(groups[index] ?? 0));
+      const item = values[index] ?? (vector ? [0, 0, 0] : 0);
+      const currentMin = minima.get(group);
+      const currentMax = maxima.get(group);
+      if (vector) {
+        const candidate = asVec3(item);
+        const min = currentMin === undefined ? candidate : asVec3(currentMin);
+        const max = currentMax === undefined ? candidate : asVec3(currentMax);
+        minima.set(group, [
+          Math.min(min[0], candidate[0]),
+          Math.min(min[1], candidate[1]),
+          Math.min(min[2], candidate[2]),
+        ]);
+        maxima.set(group, [
+          Math.max(max[0], candidate[0]),
+          Math.max(max[1], candidate[1]),
+          Math.max(max[2], candidate[2]),
+        ]);
+      } else {
+        const candidate = asNum(item);
+        minima.set(group, currentMin === undefined ? candidate : Math.min(asNum(currentMin), candidate));
+        maxima.set(group, currentMax === undefined ? candidate : Math.max(asNum(currentMax), candidate));
+      }
+    }
+
+    return {
+      source,
+      groups,
+      minima,
+      maxima,
+      zero: vector ? [0, 0, 0] as Vec3 : 0,
+    };
+  };
+  const output = (kind: "minima" | "maxima") => Field.make((ctx) => {
+    const result = aggregate(ctx);
+    const sourceValues = Array.from({ length: result.source.size }, (_, index) => {
+      const group = Math.trunc(asNum(result.groups[index] ?? 0));
+      return result[kind].get(group) ?? result.zero;
+    });
+    if (ctx.domain === domain || !ctx.toDomain) return sourceValues;
+    return Array.from({ length: ctx.size }, (_, index) =>
+      ctx.toDomain!(domain, sourceValues, index) ?? result.zero);
+  }).tagged(domain);
+
+  return { Min: output("minima"), Max: output("maxima") };
+});

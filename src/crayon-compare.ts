@@ -5,24 +5,61 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { publicUrl } from "./base-url";
 import type { Dump, TriSoup } from "./gnvm/index";
 
-type WorkerReply =
+export type CrayonWorkerReply =
   | { id: number; ok: true; soup: TriSoup; probeSoup?: TriSoup; coverage: { handled: number; missingTypes: { type: string; count: number }[] } }
   | { id: number; ok: false; error: string };
 type Baseline = { results: { verts: number; faces: number; bbox: { min: number[]; max: number[] } }[] };
 
-const canvas = document.querySelector<HTMLCanvasElement>("#crayon-canvas")!;
-const statusEl = document.querySelector<HTMLElement>("#crayon-status")!;
-const updateButton = document.querySelector<HTMLButtonElement>("#crayon-update")!;
-const splitButton = document.querySelector<HTMLButtonElement>("#crayon-split")!;
-const overlayButton = document.querySelector<HTMLButtonElement>("#crayon-overlay")!;
-const debugShaderButton = document.querySelector<HTMLButtonElement>("#crayon-shader-debug")!;
-const chromeShaderButton = document.querySelector<HTMLButtonElement>("#crayon-shader-chrome")!;
-const truthCount = document.querySelector<HTMLElement>("#crayon-truth-count")!;
-const vmCount = document.querySelector<HTMLElement>("#crayon-vm-count")!;
-const runtimeEl = document.querySelector<HTMLElement>("#crayon-runtime")!;
-const gapEl = document.querySelector<HTMLElement>("#crayon-gap")!;
-const coverageEl = document.querySelector<HTMLElement>("#crayon-coverage")!;
-const selectionEl = document.querySelector<HTMLElement>("#crayon-selection")!;
+export type CrayonProbeSelection = { group: string; node: string; socket?: string; type: string };
+export type CrayonEvaluationState = "loading" | "queued" | "evaluating" | "ready" | "error";
+
+export type CrayonRuntimeSnapshot = {
+  state: CrayonEvaluationState;
+  message: string;
+  selectionMessage: string;
+  truthStats?: { verts: number; faces: number };
+  vmStats?: { verts: number; faces: number };
+  faceDelta?: number;
+  runtimeSeconds?: number;
+  coverageMessage?: string;
+  lastValid: boolean;
+};
+
+export type CrayonRuntimeController = {
+  setDump: (dump: Dump) => void;
+  setProbe: (selection?: CrayonProbeSelection) => void;
+  setLayout: (layout: "split" | "overlay") => void;
+  setShader: (shader: "diagnostic" | "chrome") => void;
+  evaluate: (overrides: Record<string, number>) => Promise<void>;
+  dispose: () => void;
+};
+
+type MountCrayonRuntimeOptions = {
+  canvas: HTMLCanvasElement;
+  initialOverrides: Record<string, number>;
+  onState: (snapshot: CrayonRuntimeSnapshot) => void;
+};
+
+/**
+ * Typed React/Three.js boundary for the Crayon workspace. React owns controls,
+ * graph state, and status presentation; this controller owns WebGL and GN-VM.
+ * Geometry is swapped only after a successful worker reply, so a failed edit
+ * leaves the last valid result visible.
+ */
+export function mountCrayonRuntime({ canvas, initialOverrides, onState }: MountCrayonRuntimeOptions): CrayonRuntimeController {
+let disposed = false;
+let queuedEvaluation = 0;
+let currentOverrides = { ...initialOverrides };
+let snapshot: CrayonRuntimeSnapshot = {
+  state: "loading",
+  message: "Loading portable graph…",
+  selectionMessage: "Output preview · final geometry",
+  lastValid: false,
+};
+const emit = (patch: Partial<CrayonRuntimeSnapshot>): void => {
+  snapshot = { ...snapshot, ...patch };
+  onState({ ...snapshot });
+};
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -45,12 +82,14 @@ const truthGroup = new THREE.Group(), vmGroup = new THREE.Group(), probeGroup = 
 scene.add(truthGroup, vmGroup, probeGroup);
 let split = true;
 let dump: Dump;
+let pendingDump: Dump | undefined;
 let baseline: Baseline;
 let runId = 0;
 let updateVersion = 0;
+let activeEvaluation: { worker: Worker; reject: (reason?: unknown) => void } | null = null;
 let runtimeReady = false;
 let shaderMode: "diagnostic" | "chrome" = "diagnostic";
-let probeSelection: { group: string; node: string; socket?: string; type: string } | undefined;
+let probeSelection: CrayonProbeSelection | undefined;
 
 const truthDiagnostic = new THREE.MeshStandardMaterial({ color: 0xe74f4c, metalness: .28, roughness: .32, transparent: true, opacity: .36, side: THREE.DoubleSide });
 const vmDiagnostic = new THREE.MeshStandardMaterial({ color: 0x39aef5, metalness: .25, roughness: .3, transparent: true, opacity: .34, side: THREE.DoubleSide });
@@ -106,13 +145,6 @@ function applyShaderMode(): void {
     if (mesh.userData.crayonWire) mesh.visible = shaderMode === "diagnostic";
   });
   apply(truthGroup, "truth"); apply(vmGroup, "vm");
-  debugShaderButton.classList.toggle("active", shaderMode === "diagnostic");
-  chromeShaderButton.classList.toggle("active", shaderMode === "chrome");
-}
-
-function setStatus(message: string, ready = false): void {
-  statusEl.classList.toggle("ready", ready);
-  statusEl.lastChild!.textContent = message;
 }
 
 function soupObject(soup: TriSoup): THREE.Object3D {
@@ -183,56 +215,69 @@ function layoutAndFrame(): void {
   camera.position.set(center.x + radius * .8, center.y + radius * .7, center.z + radius * 1.35);
   camera.near = radius / 200; camera.far = radius * 100; camera.updateProjectionMatrix();
   controls.target.copy(center); controls.update();
-  splitButton.classList.toggle("active", split); overlayButton.classList.toggle("active", !split);
 }
 
-function evaluate(overrides: Record<string, number>): Promise<WorkerReply & { ok: true }> {
+function evaluateWorker(overrides: Record<string, number>): Promise<CrayonWorkerReply & { ok: true }> {
   const id = ++runId;
   return new Promise((resolve, reject) => {
+    if (activeEvaluation) {
+      activeEvaluation.worker.terminate();
+      activeEvaluation.reject(new DOMException("Evaluation superseded", "AbortError"));
+    }
     const worker = new Worker(new URL("./blend-import-worker.ts", import.meta.url), { type: "module", name: "crayon-gnvm" });
-    worker.onmessage = (event: MessageEvent<WorkerReply>) => {
+    activeEvaluation = { worker, reject };
+    worker.onmessage = (event: MessageEvent<CrayonWorkerReply>) => {
       worker.terminate();
+      if (activeEvaluation?.worker === worker) activeEvaluation = null;
       if (event.data.id !== id) return;
       if (!event.data.ok) reject(new Error(event.data.error)); else resolve(event.data);
     };
-    worker.onerror = (event) => { worker.terminate(); reject(new Error(event.message)); };
+    worker.onerror = (event) => {
+      worker.terminate();
+      if (activeEvaluation?.worker === worker) activeEvaluation = null;
+      reject(new Error(event.message));
+    };
     worker.postMessage({ id, dump, object: "CHROME CRAYON OBJECT", overrides, probe: probeSelection });
   });
 }
 
-function readOverrides(): Record<string, number> {
-  const result: Record<string, number> = {};
-  document.querySelectorAll<HTMLInputElement>("[data-crayon-param]").forEach((input) => result[input.dataset.crayonParam!] = Number(input.value));
-  return result;
-}
-
-async function update(): Promise<void> {
+async function update(overrides = currentOverrides): Promise<void> {
+  currentOverrides = { ...overrides };
   const version = ++updateVersion;
-  setStatus("Evaluating 22 nested node groups in the Web Worker…");
-  updateButton.disabled = true;
+  emit({ state: "evaluating", message: "Evaluating 22 nested node groups in the Web Worker…" });
   const started = performance.now();
   try {
-    const result = await evaluate(readOverrides());
-    if (version !== updateVersion) return;
+    const result = await evaluateWorker(currentOverrides);
+    if (disposed || version !== updateVersion) return;
+    // Commit only after the complete graph succeeds. Until here vmGroup still
+    // contains the previous last-known-good object.
     vmGroup.clear(); vmGroup.add(soupObject(result.soup));
     probeGroup.clear();
     if (result.probeSoup?.indices.length) probeGroup.add(probeObject(result.probeSoup));
     applyShaderMode();
     const truth = baseline.results[0];
-    truthCount.textContent = `${truth.verts.toLocaleString()} verts · ${truth.faces.toLocaleString()} faces`;
-    vmCount.textContent = `${result.soup.stats.verts.toLocaleString()} verts · ${result.soup.stats.faces.toLocaleString()} faces`;
-    runtimeEl.textContent = `${((performance.now() - started) / 1000).toFixed(2)}s · Web Worker`;
     const faceDelta = result.soup.stats.faces - truth.faces;
-    gapEl.textContent = `${faceDelta >= 0 ? "+" : ""}${faceDelta.toLocaleString()} faces`;
-    coverageEl.textContent = result.coverage.missingTypes.length ? `${result.coverage.missingTypes.length} missing node types` : `${result.coverage.handled} node types handled · none missing`;
     layoutAndFrame();
-    setStatus("Both results loaded · graph executed end-to-end", true);
-    selectionEl.textContent = probeSelection
+    emit({
+      state: "ready",
+      message: "Both results loaded · graph executed end-to-end",
+      truthStats: { verts: truth.verts, faces: truth.faces },
+      vmStats: { verts: result.soup.stats.verts, faces: result.soup.stats.faces },
+      runtimeSeconds: (performance.now() - started) / 1000,
+      faceDelta,
+      coverageMessage: result.coverage.missingTypes.length ? `${result.coverage.missingTypes.length} missing node types` : `${result.coverage.handled} node types handled · none missing`,
+      lastValid: true,
+      selectionMessage: probeSelection
       ? result.probeSoup?.indices.length ? `Output preview · ${probeSelection.node} · ${result.probeSoup.stats.faces.toLocaleString()} faces` : `Selected · ${probeSelection.node} · no evaluated geometry output`
-      : "Output preview · final geometry";
-    (window as typeof window & { __CRAYON_COMPARE__?: unknown }).__CRAYON_COMPARE__ = { ready: true, stats: result.soup.stats, missing: result.coverage.missingTypes, overrides: readOverrides() };
-  } catch (error) { if (version === updateVersion) setStatus(`Evaluation failed · ${error instanceof Error ? error.message : String(error)}`); }
-  finally { if (version === updateVersion) updateButton.disabled = false; }
+      : "Output preview · final geometry",
+    });
+    (window as typeof window & { __CRAYON_COMPARE__?: unknown }).__CRAYON_COMPARE__ = { ready: true, stats: result.soup.stats, missing: result.coverage.missingTypes, overrides: currentOverrides };
+  } catch (error) {
+    if (!disposed && version === updateVersion) emit({
+      state: "error",
+      message: `Evaluation failed · ${error instanceof Error ? error.message : String(error)}${snapshot.lastValid ? " · previous valid result kept" : ""}`,
+    });
+  }
 }
 
 async function main(): Promise<void> {
@@ -241,33 +286,68 @@ async function main(): Promise<void> {
     fetch(publicUrl("dojo/crayon/blender-baseline.json")),
     new GLTFLoader().loadAsync(publicUrl("dojo/crayon/00-browser-baseline.glb")),
   ]);
-  dump = await dumpResponse.json() as Dump;
+  const loadedDump = await dumpResponse.json() as Dump;
+  if (disposed) return;
+  dump = pendingDump ?? loadedDump;
   baseline = await baselineResponse.json() as Baseline;
   truthGroup.add(truthObject(glb.scene));
   runtimeReady = true;
   await update();
 }
 
-document.querySelectorAll<HTMLInputElement>("[data-crayon-param]").forEach((input) => input.addEventListener("input", () => {
-  const output = document.querySelector<HTMLOutputElement>(`[data-crayon-output="${input.dataset.crayonParam}"]`);
-  if (output) output.value = Number(input.value).toFixed(input.step === "1" ? 0 : 2);
-}));
-updateButton.addEventListener("click", () => void update());
-splitButton.addEventListener("click", () => { split = true; layoutAndFrame(); });
-overlayButton.addEventListener("click", () => { split = false; layoutAndFrame(); });
-debugShaderButton.addEventListener("click", () => { shaderMode = "diagnostic"; applyShaderMode(); });
-chromeShaderButton.addEventListener("click", () => { shaderMode = "chrome"; applyShaderMode(); });
-window.addEventListener("crayon-graph-change", (event) => {
-  const next = (event as CustomEvent<{ dump?: Dump }>).detail?.dump;
-  if (!next) return;
-  dump = next;
-  if (runtimeReady) void update();
-});
-window.addEventListener("crayon-node-select", (event) => {
-  probeSelection = (event as CustomEvent<typeof probeSelection>).detail;
-  selectionEl.textContent = `Evaluating output · ${probeSelection?.node ?? "selection"}…`;
-  if (runtimeReady) void update();
-});
-addEventListener("resize", () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+const resize = (): void => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); };
+addEventListener("resize", resize);
 renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
-void main();
+void main().catch((error) => emit({ state: "error", message: `Runtime failed · ${error instanceof Error ? error.message : String(error)}` }));
+
+return {
+  setDump(next: Dump): void {
+    pendingDump = next;
+    dump = next;
+    window.clearTimeout(queuedEvaluation);
+    emit({ state: "queued", message: "Graph changed · waiting to evaluate…" });
+    queuedEvaluation = window.setTimeout(() => {
+      if (runtimeReady && !disposed) void update();
+    }, 250);
+  },
+  setProbe(selection?: CrayonProbeSelection): void {
+    probeSelection = selection;
+    emit({ selectionMessage: `Evaluating output · ${selection?.node ?? "final geometry"}…` });
+    if (runtimeReady && !disposed) void update();
+  },
+  setLayout(layout: "split" | "overlay"): void {
+    split = layout === "split";
+    if (runtimeReady) layoutAndFrame();
+  },
+  setShader(shader: "diagnostic" | "chrome"): void {
+    shaderMode = shader;
+    applyShaderMode();
+  },
+  evaluate(overrides: Record<string, number>): Promise<void> {
+    window.clearTimeout(queuedEvaluation);
+    return runtimeReady ? update(overrides) : Promise.resolve();
+  },
+  dispose(): void {
+    disposed = true;
+    updateVersion += 1;
+    activeEvaluation?.worker.terminate();
+    activeEvaluation?.reject(new DOMException("Runtime disposed", "AbortError"));
+    activeEvaluation = null;
+    window.clearTimeout(queuedEvaluation);
+    removeEventListener("resize", resize);
+    renderer.setAnimationLoop(null);
+    controls.dispose();
+    renderer.dispose();
+    truthGroup.clear();
+    vmGroup.clear();
+    probeGroup.clear();
+    reconstructedChrome.dispose();
+    truthDiagnostic.dispose();
+    vmDiagnostic.dispose();
+    truthWireMaterial.dispose();
+    vmWireMaterial.dispose();
+    probeMaterial.dispose();
+    probeWireMaterial.dispose();
+  },
+};
+}

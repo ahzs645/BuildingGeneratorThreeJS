@@ -68,6 +68,73 @@ export interface EditorGraphSearchResult {
   node: GraphNode;
 }
 
+export interface GraphNodeTemplate {
+  key: string;
+  groupName: string;
+  nodeName: string;
+  type: string;
+  label: string;
+  inputTypes: string[];
+  outputTypes: string[];
+}
+
+const numericSocketTypes = new Set([
+  "NodeSocketBool",
+  "NodeSocketFloat",
+  "NodeSocketFloatAngle",
+  "NodeSocketFloatDistance",
+  "NodeSocketFloatFactor",
+  "NodeSocketFloatPercentage",
+  "NodeSocketFloatTime",
+  "NodeSocketInt",
+  "NodeSocketIntFactor",
+  "NodeSocketIntPercentage",
+]);
+
+function socketFamily(type: string): string {
+  if (numericSocketTypes.has(type)) return "numeric";
+  if (type.startsWith("NodeSocketVector")) return "vector";
+  return type;
+}
+
+/** Conservative Blender-style compatibility used during interactive wiring. */
+export function areSocketTypesCompatible(sourceType: string, targetType: string): boolean {
+  if (sourceType === "NodeSocketVirtual" || targetType === "NodeSocketVirtual") return true;
+  if (sourceType === targetType) return true;
+  const sourceFamily = socketFamily(sourceType);
+  const targetFamily = socketFamily(targetType);
+  return sourceFamily === targetFamily && (sourceFamily === "numeric" || sourceFamily === "vector");
+}
+
+/**
+ * Build an add-node catalog from authored nodes already present in the portable
+ * dump. This keeps socket definitions and evaluator support aligned without a
+ * parallel hand-maintained registry.
+ */
+export function graphNodeTemplates(dump: Dump): GraphNodeTemplate[] {
+  const seen = new Set<string>();
+  const templates: GraphNodeTemplate[] = [];
+  for (const groupName of Object.keys(dump.node_groups).sort()) {
+    for (const node of dump.node_groups[groupName].nodes) {
+      if (node.type === "NodeFrame" || node.type === "NodeGroupInput" || node.type === "NodeGroupOutput") continue;
+      const nested = nestedGroupName(node) ?? "";
+      const signature = `${node.type}:${nested}:${node.inputs.map((socket) => socket.type).join(",")}:${node.outputs.map((socket) => socket.type ?? "NodeSocketUndefined").join(",")}`;
+      if (seen.has(signature)) continue;
+      seen.add(signature);
+      templates.push({
+        key: `${groupName}::${node.name}`,
+        groupName,
+        nodeName: node.name,
+        type: node.type,
+        label: node.label?.trim() || String(node.props?.bl_label ?? node.name),
+        inputTypes: node.inputs.filter((socket) => socket.enabled !== false && socket.identifier !== "__extend__").map((socket) => socket.type),
+        outputTypes: node.outputs.filter((socket) => socket.enabled !== false && socket.identifier !== "__extend__").map((socket) => socket.type ?? "NodeSocketUndefined"),
+      });
+    }
+  }
+  return templates.sort((a, b) => a.label.localeCompare(b.label) || a.type.localeCompare(b.type));
+}
+
 /**
  * Return a stable, useful neighborhood for the editor's initial camera.
  * Blender opens node trees at a working scale rather than shrinking the entire

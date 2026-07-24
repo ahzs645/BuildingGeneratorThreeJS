@@ -1420,3 +1420,21 @@ reg("GeometryNodeStoreNamedAttribute", (api) => {
   });
   return { Geometry: g };
 });
+reg("GeometryNodeRemoveAttribute", (api) => {
+  const name = api.str("Name");
+  const patternMode = api.str("Pattern Mode").toUpperCase();
+  const wildcard = patternMode === "WILDCARD" || patternMode === "WILDCARD PATTERN";
+  const escaped = name.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  const matcher = wildcard
+    ? new RegExp(`^${escaped.replaceAll("*", ".*").replaceAll("?", ".")}$`)
+    : null;
+  const matches = (candidate: string) => wildcard ? matcher!.test(candidate) : candidate === name;
+  const g = mapInstancePayloadMeshes(api.geo("Geometry"), (geometry) => {
+    if (!name) return;
+    for (const candidate of geometry.mesh?.attributes.keys() ?? [])
+      if (matches(candidate)) geometry.mesh!.attributes.delete(candidate);
+    for (const candidate of geometry.curveAttributes.keys())
+      if (matches(candidate)) geometry.curveAttributes.delete(candidate);
+  });
+  return { Geometry: g };
+});

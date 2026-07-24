@@ -3,6 +3,8 @@ import { appHref } from "../../base-url";
 import "./index.css";
 
 const cards = [
+  { href: "/vegetation-generator", tag: "Growth Painter · WebGPU", title: "Vegetation Generator", badge: "ivy + tree", copy: "Paint wind-reactive ivy onto a surface or grow an interactive banyan tree, then brush flowers and figs into bloom with live procedural controls.", action: "Open generator" },
+  { href: "/geometry-painter", tag: "Surface Painter · WebGPU", title: "Geometry Painter", badge: "4 modes", copy: "Paint crystal veins, molten fissures, aurora silk, and bioluminescent reef colonies directly onto a floating sphere, with live growth and lighting controls.", action: "Open painter" },
   { href: "/materialx", tag: "Shader Lab · Isolated", title: "MaterialX Parity Lab", badge: "prototype", copy: "A capability-gated Blender 5.1 → MaterialX shader experiment. Unsupported graph semantics fall back explicitly without changing the production WebGL asset viewers.", action: "Open shader lab" },
   { href: "/surface-draw", tag: "Surface Lab · Upload", title: "Draw on a Model", badge: "new", copy: "Upload a GLB, OBJ, or STL, raycast an editable stroke onto its surface, and evaluate a Blender-authored brush through the browser GN-VM.", action: "Open surface lab" },
   { href: "/blendbridge", tag: "Importer · Local", title: "BlendBridge", badge: "new", copy: "Drop in a Blender file. Extract its Geometry Nodes graph, inspect browser coverage, generate controls, run a worker-isolated preview, and export reusable graph JSON.", action: "Import a .blend" },

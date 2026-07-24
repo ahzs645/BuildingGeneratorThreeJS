@@ -15,9 +15,28 @@ export type GeometryNodesEditorConfig = {
   downloadFileName: string;
 };
 
+/**
+ * A parent-owned Geometry Nodes document.
+ *
+ * `sourceKey` is the document identity: change it when `dump` should replace the
+ * editor's working copy. Changes to `dump` with the same key are intentionally
+ * ignored so `onDumpChange` can feed a live runtime without resetting undo state.
+ */
+export type GeometryNodesEditorSource = {
+  sourceKey: string;
+  dump: Dump;
+  objectName?: string;
+  rootGroupName?: string;
+};
+
+export type GeometryNodesEditorSelection = Pick<
+  GeometryNodesEditorConfig,
+  "objectName" | "rootGroupName"
+>;
+
 export function resolveEditorRootGroup(
   dump: Dump,
-  selection: Pick<GeometryNodesEditorConfig, "objectName" | "rootGroupName">,
+  selection: GeometryNodesEditorSelection,
 ): string {
   const objects = dump.objects ?? [];
   const object = selection.objectName

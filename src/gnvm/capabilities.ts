@@ -28,6 +28,8 @@ export const EVALUATOR_NATIVE_NODE_TYPES = new Set([
 export const EDITOR_ONLY_NODE_TYPES = new Set([
   "GeometryNodeViewer",
   "GeometryNodeGizmoTransform",
+  "GeometryNodeGizmoLinear",
+  "GeometryNodeGizmoDial",
 ]);
 
 export type NodeSupport = "native" | "handler" | "editor-only" | "muted-passthrough" | "unsupported";

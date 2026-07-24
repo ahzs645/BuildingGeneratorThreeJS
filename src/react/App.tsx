@@ -17,6 +17,8 @@ const PeriodicBrushPage = lazy(() => import("./pages/PeriodicBrushPage"));
 const ChromeAssetsPage = lazy(() => import("./pages/ChromeAssetsPage"));
 const SurfaceDrawPage = lazy(() => import("./pages/SurfaceDrawPage"));
 const MaterialXLabPage = lazy(() => import("./pages/MaterialXLabPage"));
+const GeometryPainterPage = lazy(() => import("./pages/GeometryPainterPage"));
+const VegetationGeneratorPage = lazy(() => import("./pages/VegetationGeneratorPage"));
 
 function LegacyRedirect({ to }: { to: string }): React.JSX.Element {
   const { search } = useLocation();
@@ -47,6 +49,8 @@ export default function App(): React.JSX.Element {
           <Route path="/chrome-assets" element={<ChromeAssetsPage />} />
           <Route path="/surface-draw" element={<SurfaceDrawPage />} />
           <Route path="/materialx" element={<MaterialXLabPage />} />
+          <Route path="/geometry-painter" element={<GeometryPainterPage />} />
+          <Route path="/vegetation-generator" element={<VegetationGeneratorPage />} />
 
           <Route path="/blend-import.html" element={<LegacyRedirect to="/blendbridge" />} />
           <Route path="/building.html" element={<LegacyRedirect to="/building" />} />
@@ -56,6 +60,8 @@ export default function App(): React.JSX.Element {
           <Route path="/bin-live.html" element={<LegacyRedirect to="/bin/live" />} />
           <Route path="/gnvm-viewer.html" element={<LegacyRedirect to="/bin" />} />
           <Route path="/vase-compare.html" element={<LegacyRedirect to="/vase" />} />
+          <Route path="/geometry-painter.html" element={<LegacyRedirect to="/geometry-painter" />} />
+          <Route path="/vegetation-generator.html" element={<LegacyRedirect to="/vegetation-generator" />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

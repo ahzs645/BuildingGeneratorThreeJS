@@ -132,6 +132,37 @@ reg("GeometryNodeSetCurveRadius", (api) => {
   return { Curve: applyRadius(source) };
 });
 
+reg("GeometryNodeSetPointRadius", (api) => {
+  const source = api.geo("Points");
+  const selectionField = api.field("Selection");
+  const radiusField = api.field("Radius");
+  const converted = new WeakMap<import("../geometry").Geometry, import("../geometry").Geometry>();
+  const applyRadius = (input: import("../geometry").Geometry): import("../geometry").Geometry => {
+    const cached = converted.get(input);
+    if (cached) return cached;
+    const geometry = input.clone();
+    converted.set(input, geometry);
+    geometry.instances = geometry.instances.map((instance, index) => ({
+      ...instance,
+      geometry: applyRadius(input.instances[index].geometry),
+    }));
+    const mesh = geometry.mesh;
+    if (!mesh?.attributes.has("__gnvm_point_cloud")) return geometry;
+    const ctx = makeFieldCtx(geometry, "POINT");
+    const selection = selectionField.array(ctx);
+    const radius = radiusField.array(ctx);
+    const current = mesh.attributes.get("radius")?.data ?? new Array(ctx.size).fill(0.05);
+    mesh.attributes.set("radius", {
+      domain: "POINT",
+      data: Array.from({ length: ctx.size }, (_, index) => (
+        asNum(selection[index] ?? 1) > 0 ? asNum(radius[index] ?? 0) : current[index] ?? 0.05
+      )),
+    });
+    return geometry;
+  };
+  return { Points: applyRadius(source) };
+});
+
 type Quaternion = [number, number, number, number];
 function quaternionFromEuler(euler: Vec3): Quaternion {
   const sx = Math.sin(euler[0] / 2), cx = Math.cos(euler[0] / 2);

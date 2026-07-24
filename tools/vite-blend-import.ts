@@ -11,6 +11,17 @@ import type { Plugin } from "vite";
 const MAX_UPLOAD_BYTES = 1024 * 1024 * 1024;
 const BLENDER_TIMEOUT_MS = 10 * 60 * 1000;
 
+export function isRecognizedBlendHeader(header: Uint8Array): boolean {
+  const ascii = String.fromCharCode(...header.slice(0, 7));
+  const isPlainBlend = ascii === "BLENDER";
+  const isGzipBlend = header[0] === 0x1f && header[1] === 0x8b;
+  const isZstdBlend = header[0] === 0x28
+    && header[1] === 0xb5
+    && header[2] === 0x2f
+    && header[3] === 0xfd;
+  return isPlainBlend || isGzipBlend || isZstdBlend;
+}
+
 function blenderBinary(): string {
   if (process.env.BLENDER_BIN) return process.env.BLENDER_BIN;
   const mac = "/Applications/Blender.app/Contents/MacOS/Blender";
@@ -73,7 +84,9 @@ async function receiveBlend(req: IncomingMessage, path: string): Promise<number>
   try {
     const header = Buffer.alloc(7);
     await file.read(header, 0, header.length, 0);
-    if (header.toString("ascii") !== "BLENDER") throw new Error("This file does not have a valid Blender header.");
+    if (!isRecognizedBlendHeader(header)) {
+      throw new Error("This file does not have a recognized Blender or compressed Blender header.");
+    }
   } finally {
     await file.close();
   }

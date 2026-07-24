@@ -1,6 +1,27 @@
 // Field-producing input nodes (resolved lazily against the consuming geometry's domain).
 import { Field, Vec3 } from "../core";
+import { Geometry } from "../geometry";
 import { DUMP_CONTEXT, reg } from "../registry";
+
+// Gizmos only contribute viewport interaction metadata. Blender represents
+// their transform chain with a geometry-typed socket so it can be joined to a
+// group's output, but the socket does not contain renderable geometry.
+reg(["GeometryNodeGizmoLinear", "GeometryNodeGizmoDial"], () => ({
+  Transform: Geometry.empty(),
+}));
+
+// Warning is an editor diagnostic sink. Its Show output is intentionally a
+// pass-through so reusable "info label" groups can expose the condition while
+// the runtime ignores presentation-only warning text.
+reg("GeometryNodeWarning", (api) => ({
+  Show: api.input("Show"),
+}));
+
+reg("GeometryNodeSelfObject", () => ({
+  "Self Object": DUMP_CONTEXT.activeObject
+    ? { datablock: "Object", name: DUMP_CONTEXT.activeObject.name }
+    : null,
+}));
 
 reg("GeometryNodeInputPosition", () => ({
   Position: Field.perElem((i, ctx) => (ctx.position ? ctx.position(i) : [0, 0, 0])),

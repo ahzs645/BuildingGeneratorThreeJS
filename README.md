@@ -26,23 +26,43 @@ toggle…) are exposed as live sliders.
 ## BlendBridge Geometry Nodes studio
 
 Open `http://127.0.0.1:5173/blendbridge` while the dev server is running. You
-can drop in a `.blend` file, choose a Geometry Nodes modifier, edit its exposed
-inputs, build a Three.js preview, and export either the extracted graph JSON or the
-evaluated mesh JSON. The bundled bin graph is available from **Try the bin sample**.
+can drop in a `.blend` file, choose either a Geometry Nodes modifier or a reusable
+asset-only node group, edit its graph and exposed inputs, preview it in Three.js,
+and export the edited portable graph JSON. Asset groups can be seeded with a cube,
+plane, curve, or an extracted object and can expose multiple geometry inputs and
+outputs. The bundled bin graph is available from **Try included bin sample**.
 
 Extraction is intentionally local-first: the Vite middleware opens Blender in
 background mode, returns the node/material dump, then removes the temporary `.blend`
-copy. Set `BLENDER_BIN` if Blender is not installed at the standard macOS path.
-Evaluation runs in a killable Web Worker with a three-minute timeout, so a slow or
-unsupported graph cannot lock the interface. Extracted graph JSON is portable and
-can be re-imported without opening Blender again.
+copy. Plain, Gzip-compressed, and Zstandard-compressed Blender files are accepted.
+Set `BLENDER_BIN` if Blender is not installed at the standard macOS path. Evaluation
+runs in a replaceable Web Worker, debounces graph changes for 250 ms, reports
+queued/running/error/ready state, and keeps the previous valid geometry visible if
+an edit fails. Extracted graph JSON is portable and can be re-imported without
+opening Blender again.
+
+The No3d Tools import/evaluation contract and current compatibility gaps are tracked
+in [docs/NO3D_TOOLS_PIPELINE.md](docs/NO3D_TOOLS_PIPELINE.md).
 
 The static production bundle contains the studio UI and runtime, but direct `.blend`
 extraction still needs the local Vite middleware (or a future hosted Blender worker).
 
 The interface is a single Vite + React application. Routes such as `/building`,
-`/gallery`, `/bin`, and `/vase` lazy-load their Three.js runtimes from one HTML
+`/geometry-painter`, `/vegetation-generator`, `/gallery`, `/bin`, and `/vase`
+lazy-load their Three.js runtimes from one HTML
 bootstrap. Previous `.html` URLs redirect to the corresponding React route.
+
+`/vegetation-generator` contains the integrated Three.js WebGPU Vegetation
+Generator. It supports surface-painted, wind-reactive ivy; interactive banyan
+trees; flower and fig brushes; procedural growth controls; local GLB uploads;
+and the original bark texture set. Its source and MIT license live under
+`src/vegetation-generator`, with runtime assets under `public/vegetation`.
+
+`/geometry-painter` contains the integrated Three.js WebGPU Geometry Painter.
+Drag across its floating sphere to grow crystal veins, molten fissures, aurora
+silk, or bioluminescent reef colonies. Its renderer, painting runtime, four mode
+implementations, live controls, and original MIT license live together under
+`src/geometry-painter`.
 
 `/bin` is the synchronized Dojo Bin parity workspace: one Bin Select control
 drives a baked Blender-truth variant and a fresh GN-VM evaluation, with overlay,

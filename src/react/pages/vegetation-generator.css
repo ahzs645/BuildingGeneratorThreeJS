@@ -1,0 +1,246 @@
+.vegetation-generator-page,
+#vegetation-generator-app {
+  position: fixed;
+  inset: 0;
+}
+
+.vegetation-generator-page {
+  overflow: hidden;
+  background: #14181d;
+  color: #eceff1;
+  font-family: system-ui, sans-serif;
+}
+
+#vegetation-generator-app canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+body.draw #vegetation-generator-app,
+body.flower #vegetation-generator-app {
+  cursor: crosshair;
+}
+
+body.orbit #vegetation-generator-app {
+  cursor: grab;
+}
+
+body.orbit #vegetation-generator-app:active {
+  cursor: grabbing;
+}
+
+#vegetation-generator-title {
+  position: fixed;
+  left: 96px;
+  top: 14px;
+  z-index: 3;
+  color: #eceff1;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  opacity: 0.92;
+}
+
+#vegetation-generator-title small {
+  margin-left: 5px;
+  opacity: 0.55;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.vegetation-generator-page #drawFrame {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  border: 2px solid rgba(174, 255, 94, 0.9);
+  box-shadow:
+    inset 0 0 60px rgba(150, 230, 70, 0.3),
+    inset 0 0 12px rgba(174, 255, 94, 0.45);
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+body.draw .vegetation-generator-page #drawFrame {
+  opacity: 1;
+  animation: vegetation-frame-pulse 2.4s ease-in-out infinite;
+}
+
+body.flower .vegetation-generator-page #drawFrame {
+  opacity: 1;
+  border-color: rgba(242, 255, 205, 0.85);
+  box-shadow:
+    inset 0 0 60px rgba(235, 250, 185, 0.25),
+    inset 0 0 12px rgba(242, 255, 205, 0.4);
+  animation: vegetation-frame-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes vegetation-frame-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.vegetation-generator-page #modeBtn {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px 9px 12px;
+  transform: translateX(-50%);
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #cdff6a, #a6e84a);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.35),
+    0 0 0 4px rgba(174, 255, 94, 0.14);
+  color: #0e1206;
+  font: 600 13.5px/1 system-ui, sans-serif;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.2s ease;
+}
+
+.vegetation-generator-page #modeBtn:hover {
+  transform: translateX(-50%) translateY(-1px);
+}
+
+.vegetation-generator-page #modeBtn:active {
+  transform: translateX(-50%) translateY(1px);
+}
+
+.vegetation-generator-page #modeBtn .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #16240a;
+  box-shadow: 0 0 8px #16240a;
+}
+
+.vegetation-generator-page #modeBtn .key {
+  margin-left: 2px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(14, 18, 6, 0.22);
+  color: #16240a;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+body.flower .vegetation-generator-page #modeBtn {
+  background: linear-gradient(180deg, #f6ffd6, #dff0ab);
+  color: #2a3110;
+}
+
+body.flower .vegetation-generator-page #modeBtn .dot {
+  background: #4a5a18;
+  box-shadow: 0 0 8px #4a5a18;
+}
+
+body.flower .vegetation-generator-page #modeBtn .key {
+  background: rgba(40, 50, 12, 0.2);
+  color: #2a3110;
+}
+
+body.orbit .vegetation-generator-page #modeBtn {
+  background: rgba(24, 30, 40, 0.85);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(120, 150, 190, 0.25);
+  color: #dbe7f5;
+}
+
+body.orbit .vegetation-generator-page #modeBtn .dot {
+  background: #6ea8ff;
+  box-shadow: 0 0 8px #6ea8ff;
+}
+
+body.orbit .vegetation-generator-page #modeBtn .key {
+  background: rgba(255, 255, 255, 0.1);
+  color: #dbe7f5;
+}
+
+.vegetation-generator-page #hud {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 3;
+  max-width: 340px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(10, 14, 18, 0.55);
+  color: #cfd8dc;
+  font-size: 13px;
+  line-height: 1.5;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+}
+
+.vegetation-generator-page #hud b {
+  color: #b6f56a;
+}
+
+.vegetation-generator-page #hud .sub {
+  margin-top: 6px;
+  opacity: 0.5;
+  font-size: 12px;
+}
+
+.vegetation-generator-page #toast {
+  position: fixed;
+  left: 50%;
+  top: 64px;
+  z-index: 5;
+  padding: 8px 16px;
+  transform: translateX(-50%) translateY(-8px);
+  border-radius: 999px;
+  background: rgba(24, 40, 12, 0.9);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  color: #eaffd0;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.vegetation-generator-page #toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.vegetation-generator-page .studio-link {
+  left: 16px;
+  top: 14px;
+}
+
+@media (max-width: 720px) {
+  #vegetation-generator-title {
+    display: none;
+  }
+
+  .vegetation-generator-page #hud {
+    right: 12px;
+    bottom: 70px;
+    left: 12px;
+    max-width: none;
+  }
+
+  .vegetation-generator-page #modeBtn {
+    bottom: 16px;
+  }
+}

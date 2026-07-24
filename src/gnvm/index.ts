@@ -1,14 +1,14 @@
 // Public entry point for the geometry-nodes VM.
 import { Evaluator } from "./evaluator";
-import { Geometry, Mesh, toTriSoup, TriSoup } from "./geometry";
+import { Geometry, toTriSoup } from "./geometry";
 import { DUMP_CONTEXT, MISSING, REGISTRY, type DumpObject } from "./registry";
 import { ensureManifold } from "./boolean";
 import { ensureBulletHull } from "./bullet-hull";
-import { evaluateBezierSpline } from "./bezier";
-import type { Vec3 } from "./core";
 import { matchLegacyCurvePassthrough } from "./nodes/geometry";
 import { resolveObjectDependencyOrder } from "./dependency-metadata";
 import type { Dump } from "./dump-schema";
+import { baseGeometryOf } from "./dump-object-geometry";
+import type { RunResult } from "./run-result";
 
 // Registering the handler modules populates the REGISTRY.
 import "./nodes/math";
@@ -63,183 +63,33 @@ export type {
 } from "./capabilities";
 export { ensureManifold, isManifoldReady } from "./boolean";
 export { ensureBulletHull, isBulletHullReady } from "./bullet-hull";
-
-export interface RunResult {
-  geometry: Geometry;
-  soup: TriSoup;
-  coverage: {
-    handled: number;
-    missingTypes: { type: string; count: number }[];
-  };
-}
+export { baseGeometryOf } from "./dump-object-geometry";
+export { createPrimitiveGeometry, runNodeGroup } from "./group-runner";
+export type {
+  GroupGeometrySeed,
+  PrimitiveGeometrySeed,
+  RunNodeGroupOptions,
+} from "./group-runner";
+export type { RunCoverage, RunResult } from "./run-result";
 
 // Find the modifier group name for an object (or the first NODES modifier in the file).
-export function findModifierGroup(dump: Dump, objectName?: string): { group: string; inputs: Record<string, any>; objectName: string } | null {
+export function findModifierGroup(
+  dump: Dump,
+  objectName?: string,
+  groupName?: string,
+): { group: string; inputs: Record<string, any>; objectName: string } | null {
   const objs = dump.objects ?? [];
   for (const o of objs) {
     if (objectName && o.name !== objectName) continue;
     for (const m of o.modifiers ?? []) {
-      if (m.type === "NODES" && m.node_group) return { group: m.node_group, inputs: m.input_values ?? {}, objectName: o.name };
+      if (
+        m.type === "NODES"
+        && m.node_group
+        && (!groupName || m.node_group === groupName)
+      ) return { group: m.node_group, inputs: m.input_values ?? {}, objectName: o.name };
     }
   }
   return null;
-}
-
-// Build a Geometry from a dump object's embedded base mesh (pre-modifier obj.data).
-function transformByMatrix(point: [number, number, number], matrix: number[][]): [number, number, number] {
-  return [
-    matrix[0][0] * point[0] + matrix[0][1] * point[1] + matrix[0][2] * point[2] + matrix[0][3],
-    matrix[1][0] * point[0] + matrix[1][1] * point[1] + matrix[1][2] * point[2] + matrix[1][3],
-    matrix[2][0] * point[0] + matrix[2][1] * point[1] + matrix[2][2] * point[2] + matrix[2][3],
-  ];
-}
-
-function inverseTransformByMatrix(point: [number, number, number], matrix: number[][]): [number, number, number] {
-  const x = point[0] - matrix[0][3], y = point[1] - matrix[1][3], z = point[2] - matrix[2][3];
-  const a = matrix[0][0], b = matrix[0][1], c = matrix[0][2];
-  const d = matrix[1][0], e = matrix[1][1], f = matrix[1][2];
-  const g = matrix[2][0], h = matrix[2][1], i = matrix[2][2];
-  const determinant = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
-  if (Math.abs(determinant) < 1e-12) return [0, 0, 0];
-  const inverse = 1 / determinant;
-  return [
-    ((e * i - f * h) * x + (c * h - b * i) * y + (b * f - c * e) * z) * inverse,
-    ((f * g - d * i) * x + (a * i - c * g) * y + (c * d - a * f) * z) * inverse,
-    ((d * h - e * g) * x + (b * g - a * h) * y + (a * e - b * d) * z) * inverse,
-  ];
-}
-
-function applyPreNodesHooks(dump: Dump, object: NonNullable<Dump["objects"]>[number], geometry: Geometry): void {
-  const objectMatrix = object.matrix_world;
-  if (!objectMatrix || (!geometry.mesh && !geometry.curves.length)) return;
-  const modifiers = object.modifiers ?? [];
-  let deformedCurve = false;
-  for (const modifier of modifiers) {
-    if (modifier.type === "NODES") break;
-    if (modifier.type !== "HOOK" || !modifier.object || !modifier.matrix_inverse) continue;
-    const hookObject = dump.objects?.find((candidate) => candidate.name === modifier.object);
-    if (!hookObject?.matrix_world) continue;
-    const selected = new Set(modifier.vertex_indices ?? []);
-    const strength = Math.max(0, Math.min(1, Number(modifier.strength ?? 1)));
-    if (object.type === "MESH" && geometry.mesh) {
-      for (const vertexIndex of selected) {
-        const point = geometry.mesh.positions[vertexIndex];
-        if (!point) continue;
-        const hookLocal = transformByMatrix(point, modifier.matrix_inverse);
-        const world = transformByMatrix(hookLocal, hookObject.matrix_world);
-        const deformed = inverseTransformByMatrix(world, objectMatrix);
-        point[0] = Math.fround(point[0] + (deformed[0] - point[0]) * strength);
-        point[1] = Math.fround(point[1] + (deformed[1] - point[1]) * strength);
-        point[2] = Math.fround(point[2] + (deformed[2] - point[2]) * strength);
-      }
-      continue;
-    }
-    let dataIndex = 0;
-    for (const spline of geometry.curves) {
-      const controlPoints = spline.controlPoints?.length ? spline.controlPoints : spline.points;
-      const isBezier = Boolean(spline.bezierLeft?.length && spline.bezierRight?.length && spline.controlPoints?.length);
-      for (let pointIndex = 0; pointIndex < controlPoints.length; pointIndex++) {
-        const slots = isBezier
-          ? [spline.bezierLeft![pointIndex], controlPoints[pointIndex], spline.bezierRight![pointIndex]]
-          : [controlPoints[pointIndex]];
-        for (const point of slots) {
-          if (selected.has(dataIndex)) {
-            const hookLocal = transformByMatrix(point, modifier.matrix_inverse);
-            const world = transformByMatrix(hookLocal, hookObject.matrix_world);
-            const deformed = inverseTransformByMatrix(world, objectMatrix);
-            deformedCurve ||= strength > 0 && deformed.some((value, axis) => value !== point[axis]);
-            point[0] += (deformed[0] - point[0]) * strength;
-            point[1] += (deformed[1] - point[1]) * strength;
-            point[2] += (deformed[2] - point[2]) * strength;
-          }
-          dataIndex++;
-        }
-      }
-      if (isBezier)
-        spline.points = evaluateBezierSpline(controlPoints, spline.cyclic, spline.bezierLeft!, spline.bezierRight!, spline.resolution);
-    }
-  }
-  if (deformedCurve) {
-    // Imported frames describe the pre-modifier curve. Blender rebuilds the
-    // evaluated frame after a Hook moves controls/handles, so downstream Curve
-    // to Mesh must derive it from the hooked spline rather than reuse stale data.
-    geometry.curveAttributes.delete("__curve_tangent");
-    geometry.curveAttributes.delete("__curve_imported_tangent");
-    geometry.curveAttributes.delete("__curve_normal");
-  }
-}
-
-function baseGeometryOf(dump: Dump, objectName: string): Geometry | null {
-  const obj: any = (dump.objects ?? []).find((o) => o.name === objectName);
-  const g = new Geometry();
-  if (obj?.mesh) {
-    const m = new Mesh();
-    m.positions = obj.mesh.verts.map((p: number[]) => [p[0], p[1], p[2]] as [number, number, number]);
-    m.faces = obj.mesh.faces.map((f: number[]) => [...f]);
-    m.faceMaterial = obj.mesh.face_materials ? [...obj.mesh.face_materials] : m.faces.map(() => 0);
-    m.materialSlots = obj.materials?.length ? [...obj.materials] : [null];
-    const highestMaterialSlot = m.faceMaterial.reduce((highest, slot) => Math.max(highest, slot), -1);
-    while (m.materialSlots.length <= highestMaterialSlot) m.materialSlots.push(null);
-    m.edges = (obj.mesh.edges ?? []).map((e: number[]) => [e[0], e[1]] as [number, number]);
-    if (m.edges.length) m.attributes.set("__gnvm_stored_edge_order", { domain: "CORNER", data: [] });
-    // authored custom attributes (e.g. the vase's 'bottom' vertex tag)
-    for (const [name, a] of Object.entries<any>(obj.mesh.attributes ?? {})) {
-      m.attributes.set(name, { domain: a.domain ?? "POINT", data: [...a.data] });
-    }
-    g.mesh = m;
-  }
-  if (obj?.curves) {
-    g.curves = obj.curves.map((s: any) => {
-      const copy = (points: number[][] | undefined): Vec3[] | undefined =>
-        points?.map((point) => [point[0], point[1], point[2]] as Vec3);
-      const controlPoints = copy(s.control_points);
-      const bezierLeft = copy(s.bezier_left);
-      const bezierRight = copy(s.bezier_right);
-      const evaluatedPoints = copy(s.points) ?? [];
-      const authoredBezier = Boolean(
-        controlPoints?.length
-          && bezierLeft?.length === controlPoints.length
-          && bezierRight?.length === controlPoints.length,
-      );
-      const evaluatedPointsAreFloat32 = evaluatedPoints.length > 0 && evaluatedPoints.every((point) =>
-        point.every((component) => Object.is(component, Math.fround(component))));
-      return {
-        cyclic: Boolean(s.cyclic),
-        resolution: s.resolution,
-        // Full-precision dumps already contain Blender's authoritative
-        // evaluated float coordinates and may encode handle behavior that the
-        // portable evaluator cannot infer. Older dumps rounded those values to
-        // six/eight decimal places; rebuild only that lossy representation from
-        // its controls. This keeps Blunt Metal Marker's extracted curve exact
-        // while recovering Chrome Crayon and Hat sampling precision.
-        points: authoredBezier && !evaluatedPointsAreFloat32
-          ? evaluateBezierSpline(controlPoints!, Boolean(s.cyclic), bezierLeft!, bezierRight!, s.resolution)
-          : evaluatedPoints,
-        controlPoints,
-        bezierLeft,
-        bezierRight,
-      };
-    });
-    const tilts = obj.curves.flatMap((s: any) => s.tilts ?? s.points.map(() => 0));
-    if (tilts.some((value: number) => value !== 0)) g.curveAttributes.set("tilt", { domain: "POINT", data: tilts });
-    const radii = obj.curves.flatMap((s: any) => s.radii ?? s.points.map(() => 1));
-    if (radii.some((value: number) => value !== 1)) g.curveAttributes.set("radius", { domain: "POINT", data: radii });
-    const tangents = obj.curves.flatMap((s: any) => s.tangents ?? []);
-    if (tangents.length === g.curvePointCount()) {
-      g.curveAttributes.set("__curve_tangent", { domain: "POINT", data: tangents });
-      // The evaluated Tangent field is not always the frame Blender uses for
-      // Curve to Mesh. In particular, open planar legacy curves are swept from
-      // neighboring evaluated points while Input Tangent still exposes this
-      // stored value. Keep the provenance so those semantics can diverge.
-      g.curveAttributes.set("__curve_imported_tangent", { domain: "CURVE", data: g.curves.map(() => 1) });
-    }
-    const normals = obj.curves.flatMap((s: any) => s.normals ?? []);
-    if (normals.length === g.curvePointCount()) {
-      g.curveAttributes.set("__curve_normal", { domain: "POINT", data: normals });
-    }
-  }
-  applyPreNodesHooks(dump, obj, g);
-  return g.mesh || g.curves.length ? g : null;
 }
 
 function isGeometryPassthroughGroup(group: any): boolean {
@@ -279,7 +129,10 @@ function hasPortableRuntimeMeshAttributes(geometry: Geometry): boolean {
   return Boolean(geometry.mesh && [...geometry.mesh.attributes.keys()].some((name) => !name.startsWith("__")));
 }
 
-export async function runGenerator(dump: Dump, opts: { object?: string; overrides?: Record<string, any> } = {}): Promise<RunResult> {
+export async function runGenerator(
+  dump: Dump,
+  opts: { object?: string; group?: string; overrides?: Record<string, any> } = {},
+): Promise<RunResult> {
   // Mesh boolean and Blender-compatible convex hull need WASM; load both once.
   await Promise.all([ensureManifold(), ensureBulletHull()]);
   MISSING.clear();
@@ -297,8 +150,11 @@ export async function runGenerator(dump: Dump, opts: { object?: string; override
   }
   DUMP_CONTEXT.frame = Number(opts.overrides?.__frame ?? dump.scene?.frame_current ?? 0);
   DUMP_CONTEXT.fps = Number(dump.scene?.fps ?? 24) / Math.max(Number(dump.scene?.fps_base ?? 1), 1e-9);
-  const found = findModifierGroup(dump, opts.object);
-  if (!found) throw new Error("no geometry-nodes modifier found in dump");
+  const found = findModifierGroup(dump, opts.object, opts.group);
+  if (!found) {
+    const selection = [opts.object, opts.group].filter(Boolean).join(" / ");
+    throw new Error(`no matching geometry-nodes modifier found in dump${selection ? `: ${selection}` : ""}`);
+  }
   DUMP_CONTEXT.activeObject = DUMP_CONTEXT.objects.find((object) => object.name === found.objectName);
   // Note: Solidify N++ Thickness in this dump is intentionally ~0.1 (unlinked).
   // "Wall thiccness" drives bubble displacement, NOT solidify depth — do not
