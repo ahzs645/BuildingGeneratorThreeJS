@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-24T23:29:50.032Z",
+  "source": {
+    "directory": "/Users/ahmadjalil/Documents/No3d Tools",
+    "blendFiles": 47,
+    "blenderVersion": "5.1.2",
+    "extractor": "tools/dump_blend.py 1.4",
+    "dumpSetSha256": "b5d9f5b99819f1d274e96e6f639c0cf1681aa697e950354288db41ef1e503b95"
+  },
+  "runtimeAudit": {
+    "timeoutMs": 30000,
+    "concurrency": 3,
+    "reportSha256": "545a54a47e3bb2f773ac4f46652ece1c5c53905718035e383e2ee3d6d6465385",
+    "summary": {
+      "files": 47,
+      "targets": 108,
+      "exact": 93,
+      "portable": 107,
+      "nonportable": 1,
+      "geometry": 94,
+      "empty": 9,
+      "errors": 0,
+      "timeouts": 4,
+      "notRun": 1
+    },
+    "timeouts": [
+      {
+        "file": "apple-magsafe-charger.json",
+        "target": "Apple Magsafe Charger"
+      },
+      {
+        "file": "apple-watch-charger.json",
+        "target": "Apple Watch Charger"
+      },
+      {
+        "file": "putty-flange-generator.json",
+        "target": "Putty Flange Generator"
+      },
+      {
+        "file": "spike-putty-1.json",
+        "target": "Spike Putty 1"
+      }
+    ],
+    "notRun": [
+      {
+        "file": "corner-mounted-skadis.json",
+        "target": "Corner Mounted Skaddis",
+        "reason": "Four GeometryNodeImportSTL nodes reference unavailable authored STL files."
+      }
+    ]
+  },
+  "staticClassification": {
+    "filesWithOnlyExactTargets": 35,
+    "approximatedTargets": 15,
+    "portableApproximatedTargets": 14,
+    "approximatedFiles": [
+      "apple-magsafe-charger.json",
+      "apple-watch-charger.json",
+      "bic-lighter.json",
+      "bubble-putty-generator.json",
+      "corner-mounted-skadis.json",
+      "cylinder-from-crv-lathe.json",
+      "dojo-bolt-gen-v05-obj.json",
+      "dojo-bolt-gen-v05.json",
+      "gabor-pattern-airpod-case.json",
+      "putty-flange-generator.json",
+      "spike-putty-1.json",
+      "voronoi-putty-1.json"
+    ],
+    "boundedNodeTargets": [
+      {
+        "type": "GeometryNodeGridToMesh",
+        "targets": 6,
+        "instances": 8
+      },
+      {
+        "type": "GeometryNodeMeshToSDFGrid",
+        "targets": 5,
+        "instances": 5
+      },
+      {
+        "type": "GeometryNodePointsToSDFGrid",
+        "targets": 3,
+        "instances": 3
+      },
+      {
+        "type": "GeometryNodeUVPackIslands",
+        "targets": 3,
+        "instances": 3
+      },
+      {
+        "type": "GeometryNodeUVUnwrap",
+        "targets": 3,
+        "instances": 14
+      },
+      {
+        "type": "GeometryNodeVolumeCube",
+        "targets": 4,
+        "instances": 4
+      },
+      {
+        "type": "GeometryNodeVolumeToMesh",
+        "targets": 4,
+        "instances": 4
+      }
+    ]
+  },
+  "sourcePackaging": {
+    "warnings": [
+      {
+        "code": "EXTERNAL_FONT_UNAVAILABLE",
+        "count": 23,
+        "files": 8
+      },
+      {
+        "code": "EXTERNAL_IMAGE_UNAVAILABLE",
+        "count": 19,
+        "files": 12
+      },
+      {
+        "code": "EXTERNAL_STL_UNAVAILABLE",
+        "count": 4,
+        "files": 1
+      }
+    ]
+  }
+}

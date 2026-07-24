@@ -120,6 +120,11 @@ type NodeCapability = {
 };
 ```
 
+The runtime now has the first concrete form of this distinction:
+`GeometryNodeUVUnwrap` is reported as `bounded-approximation`, both statically
+and when its handler executes. A program can therefore be runnable (`portable`)
+without being claimed exact (`exact`).
+
 Examples of current ambiguity:
 
 - An unknown `ShaderNodeMath.operation` silently falls back to `ADD`.
