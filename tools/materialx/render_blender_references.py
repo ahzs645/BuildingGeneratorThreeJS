@@ -360,7 +360,7 @@ def physical_conductor(name, ior, extinction, roughness=0.35):
     return material
 
 
-def artistic_f82(name, base_color, edge_tint, roughness=0.35):
+def artistic_f82(name, base_color, edge_tint, roughness=0.35, anisotropy=0.0, rotation=0.0):
     """Build a rights-safe constant-input Blender Metallic BSDF F82 probe."""
     material = bpy.data.materials.new(f"Artistic F82 Probe · {name}")
     material.use_nodes = True
@@ -372,8 +372,13 @@ def artistic_f82(name, base_color, edge_tint, roughness=0.35):
     metallic.inputs["Base Color"].default_value = base_color
     metallic.inputs["Edge Tint"].default_value = edge_tint
     metallic.inputs["Roughness"].default_value = roughness
-    metallic.inputs["Anisotropy"].default_value = 0.0
-    metallic.inputs["Rotation"].default_value = 0.0
+    metallic.inputs["Anisotropy"].default_value = anisotropy
+    metallic.inputs["Rotation"].default_value = rotation
+    if anisotropy > 0.0:
+        tangent = tree.nodes.new("ShaderNodeTangent")
+        tangent.direction_type = "RADIAL"
+        tangent.axis = "Y"
+        tree.links.new(tangent.outputs["Tangent"], metallic.inputs["Tangent"])
     if metallic.inputs.get("Weight") is not None:
         metallic.inputs["Weight"].default_value = 1.0
     if metallic.inputs.get("Thin Film Thickness") is not None:
@@ -477,6 +482,12 @@ def render_physical_conductor_matrix(output: Path, probe, floor, lights):
     """Render representative constant-input presets without the source add-on graph."""
     original_energies = {light.name: light.data.energy for light in lights}
     original_floor_visibility = floor.hide_render
+    scene = bpy.context.scene
+    original_engine = scene.render.engine
+    original_cycles_samples = scene.cycles.samples
+    original_cycles_denoising = scene.cycles.use_denoising
+    background = bpy.context.scene.world.node_tree.nodes["MaterialXReflectedEnvironment"]
+    original_environment_strength = background.inputs["Strength"].default_value
     for light in lights:
         light.data.energy = 0.0
     floor.hide_render = True
@@ -498,7 +509,28 @@ def render_physical_conductor_matrix(output: Path, probe, floor, lights):
         )
         bpy.context.scene.render.filepath = str(output / "metal-f82-gold-blender.png")
         bpy.ops.render.render(write_still=True)
+        background.inputs["Strength"].default_value = 0.0
+        lights[0].data.energy = original_energies[lights[0].name]
+        scene.render.engine = "CYCLES"
+        scene.cycles.samples = 128
+        scene.cycles.use_denoising = False
+        for rotation, slug in ((0.0, "r0"), (0.25, "r90")):
+            probe.data.materials[0] = artistic_f82(
+                f"Gold Anisotropy {slug}",
+                F82_GOLD["base_color"],
+                F82_GOLD["edge_tint"],
+                anisotropy=0.8,
+                rotation=rotation,
+            )
+            bpy.context.scene.render.filepath = str(
+                output / f"metal-anisotropy-gold-{slug}-blender.png"
+            )
+            bpy.ops.render.render(write_still=True)
     finally:
+        scene.cycles.use_denoising = original_cycles_denoising
+        scene.cycles.samples = original_cycles_samples
+        scene.render.engine = original_engine
+        background.inputs["Strength"].default_value = original_environment_strength
         floor.hide_render = original_floor_visibility
         for light in lights:
             light.data.energy = original_energies[light.name]

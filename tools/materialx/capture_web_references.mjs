@@ -139,6 +139,27 @@ try {
   if (!f82Canvas) throw new Error("MaterialX F82 Gold canvas missing");
   await f82Canvas.screenshot({ path: path.join(outputDir, "metal-f82-gold-web.png") });
   console.log("MATERIALX_WEB_REFERENCE metal-f82-gold-web.png");
+  for (const [rotation, slug] of [[0, "r0"], [0.25, "r90"]]) {
+    await page.goto(
+      `${baseUrl}/materialx?capture=1&diagnostic=metal-anisotropy&rotation=${rotation}`,
+      { waitUntil: "domcontentloaded" },
+    );
+    await page.waitForFunction(
+      (selectedRotation) => (
+        document.documentElement.dataset.materialxImplementation === "official-essl-prefilter"
+        && document.documentElement.dataset.materialxPreset === "anisotropy-gold"
+        && document.documentElement.dataset.materialxRotation === String(selectedRotation)
+      ),
+      { timeout: 360_000 },
+      rotation,
+    );
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const anisotropyCanvas = await page.$("#materialx-canvas");
+    if (!anisotropyCanvas) throw new Error(`MaterialX anisotropy ${slug} canvas missing`);
+    const filename = `metal-anisotropy-gold-${slug}-web.png`;
+    await anisotropyCanvas.screenshot({ path: path.join(outputDir, filename) });
+    console.log(`MATERIALX_WEB_REFERENCE ${filename}`);
+  }
 } finally {
   await browser.close();
 }

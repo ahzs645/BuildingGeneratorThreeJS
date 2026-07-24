@@ -86,7 +86,7 @@ def main():
         return format(value, ".7g").replace(".", "p")
 
     output = {
-        "comparisonVersion": 8,
+        "comparisonVersion": 9,
         "renderContract": {
             "geometry": "shared outward-wound 64 x 32 UV sphere algorithm and 96-segment floor disc",
             "camera": "scene-contract.json schema 1; Blender evaluated matrix_world and 50 degree vertical FOV",
@@ -102,6 +102,7 @@ def main():
             "uiNormalBandDiagnostic": "ui-normal-band-{blender,web}.png; identity-transform Normal/Mapping/CONSTANT-ramp/typed-col branch with explicit normal-space and emission surface substitutes",
             "metalPresetMatrix": "metal-preset-{aluminum,copper,gold,stainless-steel,titanium}-{blender,web}.png; constant PHYSICAL_CONDUCTOR n/k values, Blender perceptual roughness 0.35 mapped to MaterialX microfacet alpha 0.1225, no direct lights or floor",
             "metalF82Probe": "metal-f82-gold-{blender,web}.png; Blender Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, exact linear color0/color82 values, roughness 0.35 mapped to alpha 0.1225, no direct lights or floor",
+            "metalAnisotropyProbe": "metal-anisotropy-gold-{r0,r90}-{blender,web}.png; Blender Cycles versus MaterialX, anisotropy 0.8, radial-Y/Tworld tangent, rotations 0 and 0.25 turns, Blender alpha/aspect mapping, key light only, no environment or floor",
         },
         "sourceLowering": {
             **metrics(directory / "chrome-source-blender.png", directory / "chrome-source-web.png"),
@@ -169,6 +170,20 @@ def main():
                 directory / "metal-f82-gold-web.png",
             ),
             "claim": "constant-input F82 semantics only; not the complete Metallic BSDF+ Gold graph",
+        },
+        "metalAnisotropyProbe": {
+            rotation: {
+                **metrics(
+                    directory / f"metal-anisotropy-gold-{rotation}-blender.png",
+                    directory / f"metal-anisotropy-gold-{rotation}-web.png",
+                ),
+                "sphereRegion": sphere_metrics(
+                    directory / f"metal-anisotropy-gold-{rotation}-blender.png",
+                    directory / f"metal-anisotropy-gold-{rotation}-web.png",
+                ),
+                "claim": "constant-input anisotropy/tangent semantics only; no brushed texture branch",
+            }
+            for rotation in ("r0", "r90")
         },
         "interpretation": "Image metrics include expected Eevee/Three BRDF, shadow, and light-unit differences. Graph-semantic support is reported separately in manifest.json and is not inferred from these pixels.",
     }

@@ -37,6 +37,20 @@ type MetalPresetProbeIndex = {
     color90: number[];
     exponent: number;
   };
+  anisotropyProbe: {
+    baseProbe: string;
+    shaderRotation0: string;
+    shaderRotationQuarterTurn: string;
+    blenderPerceptualRoughness: number;
+    blenderAnisotropy: number;
+    blenderRotationQuarterTurns: number[];
+    mapping: {
+      aspect: number;
+      alphaX: number;
+      alphaY: number;
+      formula: string;
+    };
+  };
   presets: Array<{
     id: string;
     label: string;
@@ -72,7 +86,8 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   const requestedDiagnostic = query.get("diagnostic");
   const metalPresetDiagnostic = requestedDiagnostic === "metal-preset";
   const metalF82Diagnostic = requestedDiagnostic === "metal-f82";
-  const metalProbeDiagnostic = metalPresetDiagnostic || metalF82Diagnostic;
+  const metalAnisotropyDiagnostic = requestedDiagnostic === "metal-anisotropy";
+  const metalProbeDiagnostic = metalPresetDiagnostic || metalF82Diagnostic || metalAnisotropyDiagnostic;
   const dependencyImplementation = import.meta.env.VITE_MATERIALX_THREE_IMPLEMENTATION || "r185";
   const environmentMode = metalProbeDiagnostic || query.get("environment") === "prefilter"
     ? "prefilter"
@@ -88,6 +103,10 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   const threeLightDiagnostic = requestedDiagnostic?.match(/^three-light-(key|fill|rim)$/)?.[1] ?? null;
   const roughnessDiagnostic = requestedDiagnostic === "roughness-sweep";
   const requestedMetalPreset = query.get("preset") ?? "aluminum";
+  const requestedMetalRotation = Number(query.get("rotation") ?? "0");
+  if (metalAnisotropyDiagnostic && ![0, 0.25].includes(requestedMetalRotation)) {
+    throw new Error(`MaterialX anisotropy diagnostic supports rotation 0 or 0.25; received ${query.get("rotation")}`);
+  }
   const requestedRoughness = Number(query.get("roughness") ?? "0.32");
   if (roughnessDiagnostic && (!Number.isFinite(requestedRoughness) || requestedRoughness < 0 || requestedRoughness > 1)) {
     throw new Error(`MaterialX roughness diagnostic requires a finite value from 0 to 1; received ${query.get("roughness")}`);
@@ -110,6 +129,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     implementation: ownerDocument.documentElement.dataset.materialxImplementation,
     roughness: ownerDocument.documentElement.dataset.materialxRoughness,
     preset: ownerDocument.documentElement.dataset.materialxPreset,
+    rotation: ownerDocument.documentElement.dataset.materialxRotation,
   };
 
   function ownMaterial<T extends THREE.Material>(material: T): T {
@@ -328,9 +348,17 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
           return response.json() as Promise<MetalPresetProbeIndex>;
         }),
       ]);
-      const preset = metalF82Diagnostic
-        ? presetIndex.f82Probe
-        : presetIndex.presets.find((candidate) => candidate.id === requestedMetalPreset);
+      const preset = metalAnisotropyDiagnostic
+        ? {
+            id: "anisotropy-gold",
+            label: `Gold anisotropy · rotation ${requestedMetalRotation}`,
+            shader: requestedMetalRotation === 0
+              ? presetIndex.anisotropyProbe.shaderRotation0
+              : presetIndex.anisotropyProbe.shaderRotationQuarterTurn,
+          }
+        : metalF82Diagnostic
+          ? presetIndex.f82Probe
+          : presetIndex.presets.find((candidate) => candidate.id === requestedMetalPreset);
       if (!preset) throw new Error(`Unknown MaterialX metal preset ${requestedMetalPreset}`);
       const material = ownMaterial(await createMaterialXEsslMaterial({
         baseUrl: generatedBase,
@@ -345,10 +373,19 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       }));
       material.uniforms.u_numActiveLightSources.value = 0;
       for (const light of [key, fill, rim]) light.intensity = 0;
+      if (metalAnisotropyDiagnostic) {
+        material.uniforms.u_numActiveLightSources.value = 1;
+        material.uniforms.u_envLightIntensity.value = 0;
+      }
       floor.visible = false;
       probe.material = material;
       status.textContent = `materialx · PREFILTER · ${preset.label}`;
-      if (metalF82Diagnostic) {
+      if (metalAnisotropyDiagnostic) {
+        const anisotropy = presetIndex.anisotropyProbe;
+        rendererStatus.textContent += " · anisotropic generalized Schlick";
+        graphStatus.textContent = `${preset.shader} · αx=${anisotropy.mapping.alphaX} · αy=${anisotropy.mapping.alphaY}`;
+        fallbackStatus.textContent = `Constant-input anisotropy ${anisotropy.blenderAnisotropy} · tangent rotation ${requestedMetalRotation} turns`;
+      } else if (metalF82Diagnostic) {
         const f82 = presetIndex.f82Probe;
         rendererStatus.textContent += " · generalized Schlick F82";
         graphStatus.textContent = `${f82.shader} · color0=${f82.baseColor.join(", ")} · color82=${f82.edgeTint.join(", ")}`;
@@ -362,7 +399,14 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       ownerDocument.documentElement.dataset.materialxReady = "true";
       ownerDocument.documentElement.dataset.materialBackend = "materialx";
       ownerDocument.documentElement.dataset.materialxImplementation = implementation;
-      ownerDocument.documentElement.dataset.materialxPreset = metalF82Diagnostic ? "f82-gold" : preset.id;
+      ownerDocument.documentElement.dataset.materialxPreset = metalAnisotropyDiagnostic
+        ? "anisotropy-gold"
+        : metalF82Diagnostic
+          ? "f82-gold"
+          : preset.id;
+      if (metalAnisotropyDiagnostic) {
+        ownerDocument.documentElement.dataset.materialxRotation = String(requestedMetalRotation);
+      }
       renderer.setAnimationLoop(() => renderer.render(scene, camera));
       return;
     }
@@ -620,5 +664,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     else dataset.materialxRoughness = previousDataset.roughness;
     if (previousDataset.preset === undefined) delete dataset.materialxPreset;
     else dataset.materialxPreset = previousDataset.preset;
+    if (previousDataset.rotation === undefined) delete dataset.materialxRotation;
+    else dataset.materialxRotation = previousDataset.rotation;
   };
 }

@@ -198,7 +198,38 @@ for Blender/web. This validates constant-input F82 behavior without converting
 the artistic controls to n/k values.
 
 The source file remains the local oracle for the still-open layered roughness,
-roughness-Fresnel, anisotropy/tangent, scratches, and thin-film gates.
+roughness-Fresnel, scratches, and thin-film gates.
+
+The constant-input anisotropy/tangent gate is now complete for Cycles. Blender
+maps perceptual roughness `r` and anisotropy `a` to the microfacet axes:
+
+```text
+alpha = r²
+aspect = sqrt(1 - 0.9a)
+alphaX = alpha / aspect
+alphaY = alpha * aspect
+tangentRotationDegrees = rotation * 360
+```
+
+At `r=0.35` and `a=0.8`, the exact MaterialX inputs are
+`alphaX=0.23150323971815168` and `alphaY=0.06482090712108245`. Blender uses a
+radial-Y tangent; the matched web sphere uses its UV-derived `Tworld` tangent,
+which is the same azimuthal axis up to an irrelevant sign. Direct key-light
+captures with the environment disabled prove both orientations:
+
+| Rotation | Sphere RMSE | Sphere luminance correlation | Mean luminance Blender / web |
+| ---: | ---: | ---: | ---: |
+| `0` turns | 0.119664 | 0.893565 | 0.231747 / 0.226942 |
+| `0.25` turns | 0.083424 | 0.945596 | 0.216373 / 0.216979 |
+
+The isotropic GGX PREFILTER backend cannot validate this branch: it collapses
+the two alphas to their geometric mean and therefore produces the same
+environment response as the isotropic `0.1225` probe. Anisotropic assets must
+retain direct/FIS evaluation or gain a dedicated anisotropic environment
+filter; they must not silently use the isotropic mip chain as parity evidence.
+Eevee 5.1 also rendered this native node isotropically in the diagnostic, so
+the authoritative Blender anisotropy references use Cycles and say so in the
+render contract.
 
 ## Required regression evidence
 

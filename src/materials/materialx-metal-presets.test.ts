@@ -54,13 +54,25 @@ test("rights-safe metal probe index preserves the physical constants and roughne
     exponent: 5,
     scope: "Constant-input Blender Metallic BSDF F82 semantics only; no source node group or texture branch is embedded.",
   });
+  assert.equal(index.anisotropyProbe.blenderPerceptualRoughness, 0.35);
+  assert.equal(index.anisotropyProbe.blenderAnisotropy, 0.8);
+  assert.deepEqual(index.anisotropyProbe.blenderRotationQuarterTurns, [0, 0.25]);
+  assert.ok(Math.abs(index.anisotropyProbe.mapping.aspect - Math.sqrt(0.28)) < 1e-15);
+  assert.ok(Math.abs(
+    index.anisotropyProbe.mapping.alphaX
+      - 0.35 ** 2 / index.anisotropyProbe.mapping.aspect,
+  ) < 1e-15);
+  assert.ok(Math.abs(
+    index.anisotropyProbe.mapping.alphaY
+      - 0.35 ** 2 * index.anisotropyProbe.mapping.aspect,
+  ) < 1e-15);
 });
 
 test("metal preset MaterialX and official ESSL bundle carry microfacet alpha without third-party assets", () => {
   const source = publicAsset("metal-preset-probes.mtlx");
   const audit = auditMaterialXDocument(source, { implementation: "official-essl" });
   assert.deepEqual(audit.unsupportedElements, []);
-  assert.equal(audit.materialCount, 6);
+  assert.equal(audit.materialCount, 8);
   assert.equal((source.match(/value="0\.1225, 0\.1225"/g) ?? []).length, 6);
   assert.doesNotMatch(source, /<(?:image|tiledimage|triplanarprojection)\b|type="filename"/);
 
@@ -70,6 +82,8 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
   assert.deepEqual(Object.keys(manifest.shaders).sort(), [
     ...Object.values(expectedPresets).map(({ shader }) => shader),
     "MetalF82GoldProbe",
+    "MetalF82GoldAnisotropicR0",
+    "MetalF82GoldAnisotropicR90",
   ].sort());
   for (const { shader } of Object.values(expectedPresets)) {
     const uniforms = manifest.shaders[shader].fragmentInterface.uniforms.PublicUniforms;
@@ -86,11 +100,23 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
   assert.match(f82Fragment, /mx_init_fresnel_schlick/);
   assert.match(f82Fragment, /mx_latlong_alpha_to_lod\(avgAlpha\)/);
   assert.doesNotMatch(f82Fragment, /for \(int i = 0; i < envRadianceSamples; i\+\+\)/);
+  for (const shader of ["MetalF82GoldAnisotropicR0", "MetalF82GoldAnisotropicR90"]) {
+    const uniforms = manifest.shaders[shader].fragmentInterface.uniforms.PublicUniforms;
+    const roughness = uniforms.find((uniform: { name: string }) => uniform.name === "f82_roughness");
+    assert.ok(Math.abs(roughness.value[0] - 0.23150323971815168) < 1e-6, shader);
+    assert.ok(Math.abs(roughness.value[1] - 0.06482090712108245) < 1e-6, shader);
+    const fragment = publicAsset(`generated/metal-presets/${shader}.frag`);
+    assert.match(fragment, /mx_generalized_schlick_bsdf\(/);
+  }
+  assert.match(
+    publicAsset("generated/metal-presets/MetalF82GoldAnisotropicR90.frag"),
+    /mx_rotate_vector3\(/,
+  );
 });
 
 test("matched Blender and browser metal probes pass the constant-input similarity gate", () => {
   const comparison = JSON.parse(fs.readFileSync(evidenceUrl("comparison.json"), "utf8"));
-  assert.equal(comparison.comparisonVersion, 8);
+  assert.equal(comparison.comparisonVersion, 9);
   assert.match(comparison.renderContract.metalPresetMatrix, /0\.35.*0\.1225/);
   assert.deepEqual(Object.keys(comparison.metalPresetMatrix), Object.keys(expectedPresets));
   for (const id of Object.keys(expectedPresets)) {
@@ -109,5 +135,28 @@ test("matched Blender and browser metal probes pass the constant-input similarit
   assert.match(f82.claim, /constant-input F82 semantics only/);
   for (const renderer of ["blender", "web"]) {
     assert.ok(fs.statSync(evidenceUrl(`metal-f82-gold-${renderer}.png`)).size > 10_000, renderer);
+  }
+  assert.match(comparison.renderContract.metalAnisotropyProbe, /Blender Cycles/);
+  const anisotropy = comparison.metalAnisotropyProbe;
+  assert.ok(anisotropy.r0.sphereRegion.rgbRootMeanSquareError < 0.13);
+  assert.ok(anisotropy.r0.sphereRegion.luminanceCorrelation > 0.88);
+  assert.ok(anisotropy.r90.sphereRegion.rgbRootMeanSquareError < 0.09);
+  assert.ok(anisotropy.r90.sphereRegion.luminanceCorrelation > 0.94);
+  assert.ok(Math.abs(
+    anisotropy.r0.sphereRegion.meanLuminance.blender
+      - anisotropy.r0.sphereRegion.meanLuminance.web,
+  ) < 0.01);
+  assert.ok(Math.abs(
+    anisotropy.r90.sphereRegion.meanLuminance.blender
+      - anisotropy.r90.sphereRegion.meanLuminance.web,
+  ) < 0.01);
+  for (const rotation of ["r0", "r90"]) {
+    assert.match(anisotropy[rotation].claim, /anisotropy\/tangent semantics only/);
+    for (const renderer of ["blender", "web"]) {
+      assert.ok(
+        fs.statSync(evidenceUrl(`metal-anisotropy-gold-${rotation}-${renderer}.png`)).size > 10_000,
+        `${rotation} ${renderer}`,
+      );
+    }
   }
 });

@@ -102,4 +102,53 @@
   <surfacematerial name="MetalF82GoldProbe" type="material">
     <input name="surfaceshader" type="surfaceshader" nodename="surface_f82_gold" />
   </surfacematerial>
+
+  <nodegraph name="NG_metal_f82_gold_anisotropic_r0">
+    <tangent name="tangent_world" type="vector3" space="world" />
+    <generalized_schlick_bsdf name="f82" type="BSDF">
+      <input name="color0" type="color3" value="1, 0.7758224606513977, 0.3049874007701874" />
+      <input name="color82" type="color3" value="0.9734454154968262, 1, 0.9911020398139954" />
+      <input name="color90" type="color3" value="1, 1, 1" />
+      <input name="exponent" type="float" value="5" />
+      <input name="roughness" type="vector2" value="0.23150323971815168, 0.06482090712108245" />
+      <input name="tangent" type="vector3" nodename="tangent_world" />
+      <input name="scatter_mode" type="string" value="R" />
+    </generalized_schlick_bsdf>
+    <output name="out" type="BSDF" nodename="f82" />
+  </nodegraph>
+  <surface name="surface_f82_gold_anisotropic_r0" type="surfaceshader">
+    <input name="bsdf" type="BSDF" nodegraph="NG_metal_f82_gold_anisotropic_r0" output="out" />
+  </surface>
+  <surfacematerial name="MetalF82GoldAnisotropicR0" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_f82_gold_anisotropic_r0" />
+  </surfacematerial>
+
+  <nodegraph name="NG_metal_f82_gold_anisotropic_r90">
+    <tangent name="tangent_world" type="vector3" space="world" />
+    <normal name="normal_world" type="vector3" space="world" />
+    <rotate3d name="rotated_tangent" type="vector3">
+      <input name="in" type="vector3" nodename="tangent_world" />
+      <input name="amount" type="float" value="90" />
+      <input name="axis" type="vector3" nodename="normal_world" />
+    </rotate3d>
+    <normalize name="normalized_tangent" type="vector3">
+      <input name="in" type="vector3" nodename="rotated_tangent" />
+    </normalize>
+    <generalized_schlick_bsdf name="f82" type="BSDF">
+      <input name="color0" type="color3" value="1, 0.7758224606513977, 0.3049874007701874" />
+      <input name="color82" type="color3" value="0.9734454154968262, 1, 0.9911020398139954" />
+      <input name="color90" type="color3" value="1, 1, 1" />
+      <input name="exponent" type="float" value="5" />
+      <input name="roughness" type="vector2" value="0.23150323971815168, 0.06482090712108245" />
+      <input name="tangent" type="vector3" nodename="normalized_tangent" />
+      <input name="scatter_mode" type="string" value="R" />
+    </generalized_schlick_bsdf>
+    <output name="out" type="BSDF" nodename="f82" />
+  </nodegraph>
+  <surface name="surface_f82_gold_anisotropic_r90" type="surfaceshader">
+    <input name="bsdf" type="BSDF" nodegraph="NG_metal_f82_gold_anisotropic_r90" output="out" />
+  </surface>
+  <surfacematerial name="MetalF82GoldAnisotropicR90" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_f82_gold_anisotropic_r90" />
+  </surfacematerial>
 </materialx>

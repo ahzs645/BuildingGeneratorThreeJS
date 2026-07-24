@@ -37,6 +37,23 @@
     "exponent": 5,
     "scope": "Constant-input Blender Metallic BSDF F82 semantics only; no source node group or texture branch is embedded."
   },
+  "anisotropyProbe": {
+    "baseProbe": "gold",
+    "shaderRotation0": "MetalF82GoldAnisotropicR0",
+    "shaderRotationQuarterTurn": "MetalF82GoldAnisotropicR90",
+    "blenderPerceptualRoughness": 0.35,
+    "blenderAnisotropy": 0.8,
+    "blenderRotationQuarterTurns": [0, 0.25],
+    "tangentContract": "Blender radial Y tangent matches the probe mesh's UV-derived Tworld tangent up to sign.",
+    "mapping": {
+      "aspect": 0.529150262212918,
+      "alphaX": 0.23150323971815168,
+      "alphaY": 0.06482090712108245,
+      "formula": "alpha=roughness^2; aspect=sqrt(1-anisotropy*0.9); alphaX=alpha/aspect; alphaY=alpha*aspect; tangentRotation=rotation*360 degrees"
+    },
+    "source": "Blender Cycles intern/cycles/kernel/svm/closure.h Metallic BSDF setup; behavior is re-expressed as constants and MaterialX graph nodes.",
+    "scope": "Constant-input anisotropy and tangent rotation only; no brushed texture or source add-on graph is embedded."
+  },
   "presets": [
     {
       "id": "aluminum",

@@ -29,6 +29,7 @@ Direct lights now follow one explicit contract:
 | UI normal-band branch | 0.012820 | 0.992491 | typed `col` passes; two substitutions remain |
 | five physical-conductor presets | 0.024220–0.029240 | 0.977153–0.981634 | constant n/k inputs pass |
 | Gold F82 artistic tint | 0.026614 | 0.979207 | `color0/color82` mapping passes |
+| Gold anisotropy, 0 / 0.25-turn | 0.119664 / 0.083424 | 0.893565 / 0.945596 | Cycles tangent directions pass |
 | native source lowering sphere | 0.440571 | 0.104222 | historical substituted capture; superseded by the recovered live 2.5D comparison |
 
 The recovered live 2.5D result is measured separately because it uses an orthographic asset frame rather than the sphere mask: full-frame RMSE `0.057457`, full-frame correlation `0.681123`, and visible-region IoU `0.926767`. The visible-region threshold is reflection-dependent and is not a geometry silhouette claim; topology and bounds are validated independently.
@@ -133,15 +134,24 @@ and tested: MaterialX conductor roughness is microfacet alpha, so Blender's
 perceptual roughness must be squared (`0.35 → 0.1225`). With that conversion,
 all five sphere-region correlations exceed `0.977` and RMSE remains below
 `0.030`. This closes the constant-input `PHYSICAL_CONDUCTOR` gate, not the
-complete add-on graph or its anisotropy, scratch, and thin-film branches.
+complete add-on graph or its scratch and thin-film branches.
 
 The companion Gold F82 probe now closes the constant artistic-tint gate.
 Blender Base Color and Edge Tint map directly to MaterialX generalized Schlick
 `color0` and `color82`, with white `color90`, exponent `5`, and the same squared
 roughness conversion. The matched sphere reaches RMSE `0.026614` and
 correlation `0.979207`. Remaining Metallic BSDF+ gates are layered
-roughness/roughness-Fresnel, anisotropy and tangent rotation, scratches, and
-thin film.
+roughness/roughness-Fresnel, scratches, and thin film.
+
+The constant anisotropy/tangent gate is also complete for Cycles. The browser
+uses Blender's exact aspect conversion (`alphaX=alpha/aspect`,
+`alphaY=alpha*aspect`) and rotates `Tworld` by `rotation*360°`. Key-light-only
+captures prove both the horizontal and quarter-turn vertical lobes. Sphere
+correlations are `0.893565` and `0.945596`; mean luminance differs by less than
+`0.005` in both. Isotropic PREFILTER is not valid evidence for this branch
+because it reduces the two axes to their geometric mean. Production
+anisotropic materials must keep direct/FIS evaluation or use a future
+anisotropic environment filter.
 
 Remaining work for this item is to:
 
