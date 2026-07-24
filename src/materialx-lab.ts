@@ -173,6 +173,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   const rendererStatus = required<HTMLElement>(root, "#materialx-renderer");
   const graphStatus = required<HTMLElement>(root, "#materialx-graph");
   const fallbackStatus = required<HTMLElement>(root, "#materialx-fallback");
+  const sourceFinding = required<HTMLElement>(root, "#materialx-source-finding");
 
   const query = new URLSearchParams(options.search ?? location.search);
   const capture = query.get("capture") === "1";
@@ -199,6 +200,11 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     || metalBrushedRoughnessDiagnostic
     || metalThinFilmStreakScalarDiagnostic
     || metalThinFilmStreakDiagnostic;
+  if (metalThinFilmStreakScalarDiagnostic || metalThinFilmStreakDiagnostic) {
+    sourceFinding.textContent = "Material.011 leaves Gold Socket_27 unlinked, so the supplied active material evaluates this branch to exactly 0 nm. This diagnostic explicitly binds that socket to Generated coordinates to exercise the otherwise-zero procedural streak.";
+  } else if (metalProbeDiagnostic) {
+    sourceFinding.textContent = "Metallic_BSDF+.blend is used only as a local Blender oracle. This page reconstructs an isolated, rights-safe material branch and does not claim parity for the complete source add-on graph or its unlicensed texture assets.";
+  }
   const dependencyImplementation = import.meta.env.VITE_MATERIALX_THREE_IMPLEMENTATION || "r185";
   const environmentMode = metalProbeDiagnostic || query.get("environment") === "prefilter"
     ? "prefilter"

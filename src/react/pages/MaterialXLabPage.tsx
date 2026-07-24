@@ -49,7 +49,10 @@ export default function MaterialXLabPage(): React.JSX.Element {
         <div><dt>Graph preflight</dt><dd id="materialx-graph">Loading portable graph…</dd></div>
         <div><dt>Resolution</dt><dd id="materialx-fallback">Pending…</dd></div>
       </dl>
-      <div className="materialx-warning"><b>Source finding</b><span>The supplied <code>chrome.003</code> graph contains Noise but no Wave or Bump. The bump view is a general pipeline probe, clearly separated from source-parity claims.</span></div>
+      <div className="materialx-warning">
+        <b>Source finding</b>
+        <span id="materialx-source-finding">The supplied <code>chrome.003</code> graph contains Noise but no Wave or Bump. The bump view is a general pipeline probe, clearly separated from source-parity claims.</span>
+      </div>
       <a href="https://github.com/mrdoob/three.js/pull/31439" target="_blank" rel="noreferrer">Three MaterialX / Blender alignment provenance ↗</a>
     </aside>
   </main>;
