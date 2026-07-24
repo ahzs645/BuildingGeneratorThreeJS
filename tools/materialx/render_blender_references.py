@@ -84,6 +84,7 @@ def floor_mesh():
     principled.inputs["Base Color"].default_value = (0.0185, 0.0232, 0.0267, 1.0)
     principled.inputs["Roughness"].default_value = 0.82
     mesh.materials.append(material)
+    return obj
 
 
 def add_sun(name, position, color, energy):
@@ -297,13 +298,13 @@ def write_scene_contract(path: Path, camera, lights, probe):
     path.write_text(json.dumps(contract, indent=2) + "\n", encoding="utf-8")
 
 
-def smooth_chrome():
+def smooth_chrome(roughness=0.32):
     material = bpy.data.materials.new("MaterialX Smooth Chrome Diagnostic")
     material.use_nodes = True
     principled = material.node_tree.nodes.get("Principled BSDF")
     principled.inputs["Base Color"].default_value = (0.8, 0.8, 0.8, 1.0)
     principled.inputs["Metallic"].default_value = 1.0
-    principled.inputs["Roughness"].default_value = 0.32
+    principled.inputs["Roughness"].default_value = roughness
     return material
 
 
@@ -373,6 +374,30 @@ def render_light_diagnostics(output: Path, probe, lights):
         light.data.angle = original_angles[light.name]
 
 
+def roughness_slug(value: float) -> str:
+    return format(value, ".7g").replace(".", "p")
+
+
+def render_environment_roughness_sweep(output: Path, probe, floor, lights):
+    """Render the shared environment without direct lights or floor occlusion."""
+    original_energies = {light.name: light.data.energy for light in lights}
+    original_floor_visibility = floor.hide_render
+    for light in lights:
+        light.data.energy = 0.0
+    floor.hide_render = True
+    try:
+        for roughness in (0.0, 2.0 / 15.0, 0.2610441):
+            probe.data.materials[0] = smooth_chrome(roughness)
+            bpy.context.scene.render.filepath = str(
+                output / f"roughness-{roughness_slug(roughness)}-blender.png"
+            )
+            bpy.ops.render.render(write_still=True)
+    finally:
+        floor.hide_render = original_floor_visibility
+        for light in lights:
+            light.data.energy = original_energies[light.name]
+
+
 def bump_copy(_source):
     material = bpy.data.materials.new("MaterialX Noise Bump Probe")
     material.use_nodes = True
@@ -418,7 +443,7 @@ def main():
     camera, lights = configure_scene(environment_path)
     probe = probe_mesh()
     write_scene_contract(runtime / "scene-contract.json", camera, lights, probe)
-    floor_mesh()
+    floor = floor_mesh()
     source.use_nodes = True
     probe.data.materials.append(source)
     bpy.context.scene.render.filepath = str(evidence / "chrome-source-blender.png")
@@ -437,6 +462,7 @@ def main():
     probe.rotation_euler[1] = -0.38
     bpy.context.view_layer.update()
     render_light_diagnostics(evidence, probe, lights)
+    render_environment_roughness_sweep(evidence, probe, floor, lights)
     print(f"MATERIALX_BLENDER_REFERENCES {evidence}")
 
 

@@ -1,5 +1,5 @@
 {
-  "comparisonVersion": 5,
+  "comparisonVersion": 6,
   "renderContract": {
     "geometry": "shared outward-wound 64 x 32 UV sphere algorithm and 96-segment floor disc",
     "camera": "scene-contract.json schema 1; Blender evaluated matrix_world and 50 degree vertical FOV",
@@ -8,7 +8,7 @@
     "exposure": 0,
     "colorTransform": "Standard/sRGB, no tone mapping",
     "webBackend": "WebGLRenderer with offline-generated official MaterialX 1.39.4 ESSL",
-    "webEnvironment": "MaterialX FIS over a trilinear lat-long radiance mip chain at 16 samples per pixel plus a separate third-order SH irradiance EXR",
+    "webEnvironment": "MaterialX FIS at 16 samples per pixel and official 1024-sample GGX PREFILTER mip lookup are compared over the same linear lat-long radiance plus separate third-order SH irradiance EXR",
     "directLights": "scene-contract.json evaluated Sun local -Z propagation vectors; generated directional NodeDef negates LightData.direction to surface-to-light L",
     "directionalDiagnostics": "light-{key,fill,rim}-{blender,web}.png; one light at a time, zero environment strength, zero Sun angular radius",
     "coordinateDiagnostic": "coordinate-cardinals-web.png; columns +X, +Z, -X, -Z; radiance top and direct lights bottom",
@@ -17,44 +17,44 @@
   "sourceLowering": {
     "width": 768,
     "height": 768,
-    "rgbMeanAbsoluteError": 0.05813,
-    "rgbRootMeanSquareError": 0.165673,
-    "luminanceCorrelation": 0.663904,
+    "rgbMeanAbsoluteError": 0.054522,
+    "rgbRootMeanSquareError": 0.160169,
+    "luminanceCorrelation": 0.693731,
     "meanLuminance": {
       "blender": 0.173586,
-      "web": 0.219542
+      "web": 0.2194
     },
     "sphereRegion": {
       "normalizedCircleRadius": 0.212,
       "sampleCount": 83300,
-      "rgbMeanAbsoluteError": 0.386454,
-      "rgbRootMeanSquareError": 0.440571,
-      "luminanceCorrelation": 0.104222,
+      "rgbMeanAbsoluteError": 0.360911,
+      "rgbRootMeanSquareError": 0.425916,
+      "luminanceCorrelation": 0.219521,
       "meanLuminance": {
         "blender": 0.316947,
-        "web": 0.660919
+        "web": 0.659918
       }
     }
   },
   "noiseBumpProbe": {
     "width": 768,
     "height": 768,
-    "rgbMeanAbsoluteError": 0.019253,
-    "rgbRootMeanSquareError": 0.05541,
-    "luminanceCorrelation": 0.935745,
+    "rgbMeanAbsoluteError": 0.011159,
+    "rgbRootMeanSquareError": 0.028039,
+    "luminanceCorrelation": 0.984012,
     "meanLuminance": {
       "blender": 0.192252,
-      "web": 0.190748
+      "web": 0.192183
     },
     "sphereRegion": {
       "normalizedCircleRadius": 0.212,
       "sampleCount": 83300,
-      "rgbMeanAbsoluteError": 0.111161,
-      "rgbRootMeanSquareError": 0.146605,
-      "luminanceCorrelation": 0.804343,
+      "rgbMeanAbsoluteError": 0.05385,
+      "rgbRootMeanSquareError": 0.072938,
+      "luminanceCorrelation": 0.959128,
       "meanLuminance": {
         "blender": 0.449082,
-        "web": 0.457048
+        "web": 0.467206
       }
     }
   },
@@ -145,6 +145,146 @@
         "meanLuminance": {
           "blender": 0.060578,
           "web": 0.065201
+        }
+      }
+    }
+  },
+  "roughnessEnvironmentSweep": {
+    "0": {
+      "fis": {
+        "width": 768,
+        "height": 768,
+        "rgbMeanAbsoluteError": 0.002066,
+        "rgbRootMeanSquareError": 0.007961,
+        "luminanceCorrelation": 0.996446,
+        "meanLuminance": {
+          "blender": 0.104708,
+          "web": 0.105331
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.009549,
+          "rgbRootMeanSquareError": 0.020569,
+          "luminanceCorrelation": 0.991816,
+          "meanLuminance": {
+            "blender": 0.274795,
+            "web": 0.278934
+          }
+        }
+      },
+      "prefilter": {
+        "width": 768,
+        "height": 768,
+        "rgbMeanAbsoluteError": 0.002066,
+        "rgbRootMeanSquareError": 0.007955,
+        "luminanceCorrelation": 0.996451,
+        "meanLuminance": {
+          "blender": 0.104708,
+          "web": 0.105332
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.009545,
+          "rgbRootMeanSquareError": 0.020553,
+          "luminanceCorrelation": 0.991828,
+          "meanLuminance": {
+            "blender": 0.274795,
+            "web": 0.278935
+          }
+        }
+      }
+    },
+    "0.1333333": {
+      "fis": {
+        "width": 768,
+        "height": 768,
+        "rgbMeanAbsoluteError": 0.002839,
+        "rgbRootMeanSquareError": 0.007869,
+        "luminanceCorrelation": 0.99645,
+        "meanLuminance": {
+          "blender": 0.104991,
+          "web": 0.106193
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.015014,
+          "rgbRootMeanSquareError": 0.020306,
+          "luminanceCorrelation": 0.992846,
+          "meanLuminance": {
+            "blender": 0.276793,
+            "web": 0.285034
+          }
+        }
+      },
+      "prefilter": {
+        "width": 768,
+        "height": 768,
+        "rgbMeanAbsoluteError": 0.002345,
+        "rgbRootMeanSquareError": 0.006971,
+        "luminanceCorrelation": 0.997339,
+        "meanLuminance": {
+          "blender": 0.104991,
+          "web": 0.105982
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.011519,
+          "rgbRootMeanSquareError": 0.01783,
+          "luminanceCorrelation": 0.993967,
+          "meanLuminance": {
+            "blender": 0.276793,
+            "web": 0.283546
+          }
+        }
+      }
+    },
+    "0.2610441": {
+      "fis": {
+        "width": 768,
+        "height": 768,
+        "rgbMeanAbsoluteError": 0.005226,
+        "rgbRootMeanSquareError": 0.014333,
+        "luminanceCorrelation": 0.98728,
+        "meanLuminance": {
+          "blender": 0.105776,
+          "web": 0.107483
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.031904,
+          "rgbRootMeanSquareError": 0.037781,
+          "luminanceCorrelation": 0.978904,
+          "meanLuminance": {
+            "blender": 0.282336,
+            "web": 0.294164
+          }
+        }
+      },
+      "prefilter": {
+        "width": 768,
+        "height": 768,
+        "rgbMeanAbsoluteError": 0.003741,
+        "rgbRootMeanSquareError": 0.010145,
+        "luminanceCorrelation": 0.994097,
+        "meanLuminance": {
+          "blender": 0.105776,
+          "web": 0.107728
+        },
+        "sphereRegion": {
+          "normalizedCircleRadius": 0.212,
+          "sampleCount": 83300,
+          "rgbMeanAbsoluteError": 0.021384,
+          "rgbRootMeanSquareError": 0.02648,
+          "luminanceCorrelation": 0.988384,
+          "meanLuminance": {
+            "blender": 0.282336,
+            "web": 0.29591
+          }
         }
       }
     }

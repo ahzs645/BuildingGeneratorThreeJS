@@ -168,11 +168,11 @@ test("official MaterialX shader-generator experiment is pinned and license-scope
 
 test("comparison evidence separates pixels from graph-semantic claims", () => {
   const comparison = JSON.parse(evidence("current/comparison.json"));
-  assert.equal(comparison.comparisonVersion, 5);
+  assert.equal(comparison.comparisonVersion, 6);
   assert.equal(comparison.renderContract.colorTransform, "Standard/sRGB, no tone mapping");
   assert.match(comparison.renderContract.environment, /studio-environment\.exr/);
   assert.match(comparison.renderContract.webBackend, /official MaterialX 1\.39\.4 ESSL/);
-  assert.match(comparison.renderContract.webEnvironment, /FIS/);
+  assert.match(comparison.renderContract.webEnvironment, /FIS.*PREFILTER/);
   assert.ok(fs.statSync(assetUrl("references/studio-environment.exr")).size > 100_000);
   assert.ok(fs.statSync(assetUrl("references/studio-irradiance.exr")).size > 1_000);
   assert.ok(fs.statSync(evidenceUrl("current/coordinate-cardinals-web.png")).size > 1_000);
@@ -180,12 +180,12 @@ test("comparison evidence separates pixels from graph-semantic claims", () => {
   assert.ok(comparison.sourceLowering.luminanceCorrelation > 0);
   assert.ok(comparison.noiseBumpProbe.rgbRootMeanSquareError < 0.1);
   assert.ok(comparison.noiseBumpProbe.luminanceCorrelation > 0.8);
-  assert.ok(comparison.noiseBumpProbe.sphereRegion.rgbRootMeanSquareError < 0.25);
-  assert.ok(comparison.noiseBumpProbe.sphereRegion.luminanceCorrelation > 0.34);
+  assert.ok(comparison.noiseBumpProbe.sphereRegion.rgbRootMeanSquareError < 0.08);
+  assert.ok(comparison.noiseBumpProbe.sphereRegion.luminanceCorrelation > 0.95);
   assert.ok(Math.abs(
     comparison.noiseBumpProbe.sphereRegion.meanLuminance.blender
       - comparison.noiseBumpProbe.sphereRegion.meanLuminance.web,
-  ) < 0.01);
+  ) < 0.02);
   assert.ok(comparison.uiNormalBandDiagnostic.rgbRootMeanSquareError < 0.02);
   assert.ok(comparison.uiNormalBandDiagnostic.luminanceCorrelation > 0.99);
   assert.ok(comparison.uiNormalBandDiagnostic.sphereRegion.rgbRootMeanSquareError < 0.02);
@@ -200,6 +200,11 @@ test("comparison evidence separates pixels from graph-semantic claims", () => {
     assert.ok(diagnostic.luminanceCorrelation > 0.96, light);
     assert.ok(fs.statSync(evidenceUrl(`current/light-${light}-blender.png`)).size > 10_000, light);
     assert.ok(fs.statSync(evidenceUrl(`current/light-${light}-web.png`)).size > 10_000, light);
+  }
+  for (const roughness of ["0", "0.1333333", "0.2610441"]) {
+    const sweep = comparison.roughnessEnvironmentSweep[roughness];
+    assert.ok(sweep.fis.sphereRegion.luminanceCorrelation > 0.97, roughness);
+    assert.ok(sweep.prefilter.sphereRegion.luminanceCorrelation > 0.98, roughness);
   }
   assert.match(comparison.interpretation, /Graph-semantic support is reported separately/);
 

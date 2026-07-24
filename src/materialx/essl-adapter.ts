@@ -1,7 +1,25 @@
 import * as THREE from "three";
 
 export const MATERIALX_COORDINATE_ROTATION_Y = Math.PI / 2;
-export const MATERIALX_DIRECTION_TRANSFORM = new THREE.Matrix4().makeRotationY(MATERIALX_COORDINATE_ROTATION_Y);
+/**
+ * Convert Blender's Environment Texture direction convention (Z-up) to the
+ * Y-up lat-long convention used by MaterialX ESSL:
+ *
+ *   Blender +X -> MaterialX -Z
+ *   Blender +Y -> MaterialX -X
+ *   Blender +Z -> MaterialX -Y
+ *
+ * This follows the two renderer projection formulas exactly:
+ * Blender uses (-atan(y, x), +asin(z)); MaterialX uses
+ * (+atan(x, -z), -asin(y)). A longitude-only +90° Y rotation happens to map
+ * +X correctly, but visibly rotates the other studio panels on metal.
+ */
+export const MATERIALX_DIRECTION_TRANSFORM = new THREE.Matrix4().set(
+  0, -1, 0, 0,
+  0, 0, -1, 0,
+  -1, 0, 0, 0,
+  0, 0, 0, 1,
+);
 
 type ManifestPort = {
   name: string;
@@ -124,6 +142,13 @@ export type MaterialXEsslMaterialOptions = {
   environmentIntensity: number;
   geometry: THREE.BufferGeometry;
   geometryContract: MaterialXGeometryContract;
+  /**
+   * Override generated public uniforms by their stable shader-interface name.
+   * This is intentionally name-addressed at the compiled ESSL boundary so
+   * diagnostics and imported material controls do not depend on Blender
+   * material or node display names.
+   */
+  uniformOverrides?: Readonly<Record<string, unknown>>;
   textures?: Readonly<Record<string, THREE.Texture>>;
   signal?: AbortSignal;
 };
@@ -371,6 +396,12 @@ export async function createMaterialXEsslMaterial(
   const uniforms = generatedUniforms(shader);
   for (const binding of textureBindings) {
     uniforms[binding.uniform] = { value: options.textures![binding.uniform] };
+  }
+  for (const [name, value] of Object.entries(options.uniformOverrides ?? {})) {
+    if (!uniforms[name]) {
+      throw new Error(`MaterialX uniform override ${name} is not declared by ${options.shaderName}`);
+    }
+    uniforms[name].value = value;
   }
   bindMaterialXGeometry(options.geometry, shader, options.geometryContract, uniforms);
   Object.assign(uniforms, {

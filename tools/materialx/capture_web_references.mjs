@@ -79,6 +79,30 @@ try {
   if (!uiCanvas) throw new Error("MaterialX UI normal-band diagnostic canvas missing");
   await uiCanvas.screenshot({ path: path.join(outputDir, "ui-normal-band-web.png") });
   console.log("MATERIALX_WEB_REFERENCE ui-normal-band-web.png");
+  for (const environment of ["fis", "prefilter"]) {
+    for (const roughness of [0, 2 / 15, 0.2610441]) {
+      const slug = Number(roughness.toPrecision(7)).toString().replace(".", "p");
+      await page.goto(
+        `${baseUrl}/materialx?capture=1&diagnostic=roughness-sweep&environment=${environment}&roughness=${roughness}`,
+        { waitUntil: "domcontentloaded" },
+      );
+      await page.waitForFunction(
+        (selectedEnvironment, selectedRoughness) => (
+          document.documentElement.dataset.materialxImplementation === `official-essl-${selectedEnvironment}`
+          && document.documentElement.dataset.materialxRoughness === String(selectedRoughness)
+        ),
+        { timeout: 360_000 },
+        environment,
+        roughness,
+      );
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const roughnessCanvas = await page.$("#materialx-canvas");
+      if (!roughnessCanvas) throw new Error(`MaterialX ${environment} roughness ${roughness} canvas missing`);
+      const filename = `roughness-${slug}-${environment}-web.png`;
+      await roughnessCanvas.screenshot({ path: path.join(outputDir, filename) });
+      console.log(`MATERIALX_WEB_REFERENCE ${filename}`);
+    }
+  }
 } finally {
   await browser.close();
 }

@@ -83,7 +83,11 @@ test("generated bump shader contains FIS, irradiance, light binding, and output 
 
 test("environment rotation and Blender light contracts remain separate", () => {
   const environmentX = materialXDirection(new THREE.Vector3(1, 0, 0), MATERIALX_DIRECTION_TRANSFORM);
+  const environmentY = materialXDirection(new THREE.Vector3(0, 1, 0), MATERIALX_DIRECTION_TRANSFORM);
+  const environmentZ = materialXDirection(new THREE.Vector3(0, 0, 1), MATERIALX_DIRECTION_TRANSFORM);
   assert.ok(environmentX.distanceTo(new THREE.Vector3(0, 0, -1)) < 1e-7);
+  assert.ok(environmentY.distanceTo(new THREE.Vector3(-1, 0, 0)) < 1e-7);
+  assert.ok(environmentZ.distanceTo(new THREE.Vector3(0, -1, 0)) < 1e-7);
 
   const contract = JSON.parse(fs.readFileSync(
     new URL("../../public/materialx/references/scene-contract.json", import.meta.url),

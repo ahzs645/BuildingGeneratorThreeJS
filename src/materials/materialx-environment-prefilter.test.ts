@@ -52,6 +52,27 @@ test("native PREFILTER shader performs one mip lookup instead of per-fragment FI
   assert.doesNotMatch(shader, /for \(int i = 0; i < envRadianceSamples; i\+\+\)/);
 });
 
+test("smooth-conductor comparison bundle uses the same PREFILTER backend", () => {
+  const manifest = JSON.parse(fs.readFileSync(
+    generated("prefilter", "manifest.json"),
+    "utf8",
+  )) as EsslManifest;
+  assert.equal(manifest.generator.specularEnvironment, "PREFILTER");
+  assert.deepEqual(Object.keys(manifest.shaders).sort(), [
+    "ChromeCrayonNoiseBumpProbe",
+    "ChromeCrayonSourceLowering",
+    "MaterialXGeompropColorDiagnostic",
+    "MaterialXSmoothChromeDiagnostic",
+  ]);
+  const shader = fs.readFileSync(
+    generated("prefilter", "MaterialXSmoothChromeDiagnostic.frag"),
+    "utf8",
+  );
+  assert.match(shader, /mx_latlong_alpha_to_lod\(avgAlpha\)/);
+  assert.match(shader, /uniform float SS_smooth_chrome_diagnostic_specular_roughness;/);
+  assert.doesNotMatch(shader, /for \(int i = 0; i < envRadianceSamples; i\+\+\)/);
+});
+
 test("prefilter mip dimensions preserve the 2:1 lat-long layout to the final level", () => {
   assert.deepEqual(materialXPrefilterDimensions(256, 128), [
     { width: 256, height: 128 },
@@ -91,5 +112,27 @@ test("committed browser evidence contains nine finite non-empty radiance levels"
   for (const level of report.levels) {
     assert.ok(Number.isFinite(level.meanRadiance) && level.meanRadiance > 0);
     assert.ok(Number.isFinite(level.maximumRadiance) && level.maximumRadiance > 0);
+  }
+});
+
+test("matched roughness evidence validates the Blender environment basis and PREFILTER gain", () => {
+  const report = JSON.parse(fs.readFileSync(
+    new URL("../../docs/materialx-evidence/current/comparison.json", import.meta.url),
+    "utf8",
+  ));
+  assert.equal(report.comparisonVersion, 6);
+  const sweep = report.roughnessEnvironmentSweep;
+  assert.deepEqual(Object.keys(sweep), ["0", "0.1333333", "0.2610441"]);
+  for (const entry of Object.values(sweep) as Array<Record<"fis" | "prefilter", {
+    sphereRegion: { luminanceCorrelation: number; rgbRootMeanSquareError: number };
+  }>>) {
+    assert.ok(entry.fis.sphereRegion.luminanceCorrelation > 0.97);
+    assert.ok(entry.prefilter.sphereRegion.luminanceCorrelation > 0.98);
+  }
+  for (const roughness of ["0.1333333", "0.2610441"]) {
+    assert.ok(
+      sweep[roughness].prefilter.sphereRegion.rgbRootMeanSquareError
+      < sweep[roughness].fis.sphereRegion.rgbRootMeanSquareError,
+    );
   }
 });

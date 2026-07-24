@@ -5,6 +5,7 @@ import { MaterialXLoader } from "three/addons/loaders/MaterialXLoader.js";
 import { publicUrl } from "./base-url";
 import { resolveMaterialBackend, type MaterialBackend } from "./material-backend";
 import { auditMaterialXDocument } from "./materialx/capabilities";
+import { createMaterialXPrefilteredEnvironment } from "./materialx/environment-prefilter";
 import { applyProceduralHeightNormals } from "./materialx/procedural-height";
 import {
   type BlenderSceneContract,
@@ -45,15 +46,21 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   const query = new URLSearchParams(options.search ?? location.search);
   const capture = query.get("capture") === "1";
   const dependencyImplementation = import.meta.env.VITE_MATERIALX_THREE_IMPLEMENTATION || "r185";
+  const environmentMode = query.get("environment") === "prefilter" ? "prefilter" : "fis";
   const implementation = query.get("implementation") === "tsl" || dependencyImplementation !== "r185"
     ? dependencyImplementation
-    : "official-essl-fis";
-  const officialEssl = implementation === "official-essl-fis";
+    : `official-essl-${environmentMode}`;
+  const officialEssl = implementation.startsWith("official-essl-");
   const coordinateDiagnostic = query.get("diagnostic") === "coordinates";
   const geompropColorDiagnostic = query.get("diagnostic") === "geomprop-col";
   const uiNormalBandDiagnostic = query.get("diagnostic") === "ui-normal-band";
   const lightDiagnostic = query.get("diagnostic")?.match(/^light-(key|fill|rim)$/)?.[1] ?? null;
   const threeLightDiagnostic = query.get("diagnostic")?.match(/^three-light-(key|fill|rim)$/)?.[1] ?? null;
+  const roughnessDiagnostic = query.get("diagnostic") === "roughness-sweep";
+  const requestedRoughness = Number(query.get("roughness") ?? "0.32");
+  if (roughnessDiagnostic && (!Number.isFinite(requestedRoughness) || requestedRoughness < 0 || requestedRoughness > 1)) {
+    throw new Error(`MaterialX roughness diagnostic requires a finite value from 0 to 1; received ${query.get("roughness")}`);
+  }
   const requestedVariant = query.get("variant");
   if (requestedVariant === "source" || requestedVariant === "bump") variantSelect.value = requestedVariant;
   const requestedBackend = query.get("backend") as MaterialBackend | null;
@@ -70,6 +77,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     ready: ownerDocument.documentElement.dataset.materialxReady,
     backend: ownerDocument.documentElement.dataset.materialBackend,
     implementation: ownerDocument.documentElement.dataset.materialxImplementation,
+    roughness: ownerDocument.documentElement.dataset.materialxRoughness,
   };
 
   function ownMaterial<T extends THREE.Material>(material: T): T {
@@ -217,13 +225,36 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       ? "WebGLRenderer · RawShaderMaterial"
       : (renderer as unknown as { backend?: { constructor?: { name?: string } } }).backend?.constructor?.name ?? "initialized node backend";
     rendererStatus.textContent = officialEssl
-      ? `${backendName} · official ESSL/FIS`
+      ? `${backendName} · official ESSL/${environmentMode.toUpperCase()}`
       : `${backendName}${query.get("forceWebGL") === "1" ? " · forced WebGL2" : " · WebGPU with automatic WebGL2 fallback"}`;
 
-    const radiance = ownTexture(prepareMaterialXRadiance(
+    const sourceRadiance = ownTexture(prepareMaterialXRadiance(
       environment as THREE.DataTexture,
       renderer instanceof THREE.WebGLRenderer ? renderer.capabilities.getMaxAnisotropy() : 1,
     ));
+    let radiance = sourceRadiance;
+    if (officialEssl && environmentMode === "prefilter") {
+      const prefilterBase = publicUrl("materialx/generated/environment-prefilter").replace(/\/$/, "");
+      const prefilterManifest = await fetch(`${prefilterBase}/manifest.json`, {
+        cache: "no-store",
+        signal: abortController.signal,
+      }).then((response) => {
+        if (!response.ok) throw new Error(`MaterialX environment-prefilter manifest fetch failed: ${response.status}`);
+        return response.json() as Promise<EsslManifest>;
+      });
+      const prefiltered = await createMaterialXPrefilteredEnvironment(renderer as THREE.WebGLRenderer, {
+        baseUrl: prefilterBase,
+        manifest: prefilterManifest,
+        shaderName: "MaterialXEnvironmentPrefilter",
+        source: sourceRadiance,
+        signal: abortController.signal,
+        onProgress: (completed, total) => {
+          status.textContent = `Prefiltering studio environment · mip ${completed}/${total}`;
+        },
+      });
+      radiance = ownTexture(prefiltered.radiance);
+      rendererStatus.textContent += ` · ${prefiltered.mipCount} GGX mips`;
+    }
     const irradiance = prepareMaterialXIrradiance(irradianceSource as THREE.DataTexture);
     const lightData = sceneContract.lights.map((light) => materialXLightFromBlenderContract(light));
 
@@ -284,7 +315,9 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     if (audit.unsupportedElements.length) throw new Error(`Unsupported MaterialX elements: ${audit.unsupportedElements.join(", ")}`);
 
     if (officialEssl) {
-      const generatedBase = publicUrl("materialx/generated").replace(/\/$/, "");
+      const generatedBase = publicUrl(
+        environmentMode === "prefilter" ? "materialx/generated/prefilter" : "materialx/generated",
+      ).replace(/\/$/, "");
       const manifest = await fetch(`${generatedBase}/manifest.json`, {
         cache: "no-store",
         signal: abortController.signal,
@@ -310,6 +343,9 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
           environmentIntensity: 0.18,
           geometry: probe.geometry,
           geometryContract: sceneContract.probe,
+          uniformOverrides: shaderName === "MaterialXSmoothChromeDiagnostic" && roughnessDiagnostic
+            ? { SS_smooth_chrome_diagnostic_specular_roughness: requestedRoughness }
+            : undefined,
         })),
       ] as const));
       if (!active) return;
@@ -355,7 +391,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
         if (!active) return;
         materialXMaterials.UiNormalBandSemanticRecovery.userData.capability = uiReport.capability;
       }
-      graphStatus.textContent += ` · official MaterialX ${manifest.generator.materialx} ESSL · FIS ${manifest.generator.radianceSamples} spp · ${lightData.length} bound lights`;
+      graphStatus.textContent += ` · official MaterialX ${manifest.generator.materialx} ESSL · ${manifest.generator.specularEnvironment}${manifest.generator.specularEnvironment === "FIS" ? ` ${manifest.generator.radianceSamples} spp` : " GGX mip lookup"} · ${lightData.length} bound lights`;
     } else {
       const loader = new MaterialXLoader() as unknown as {
         parse(source: string): { materials: Record<string, MeshPhysicalNodeMaterial> };
@@ -395,6 +431,22 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       ownerDocument.documentElement.dataset.materialxReady = "true";
       ownerDocument.documentElement.dataset.materialBackend = "materialx";
       ownerDocument.documentElement.dataset.materialxImplementation = implementation;
+      renderer.setAnimationLoop(() => renderer.render(scene, camera));
+      return;
+    }
+    if (roughnessDiagnostic && officialEssl) {
+      const rawDiagnosticMaterial = materialXMaterials.MaterialXSmoothChromeDiagnostic as THREE.RawShaderMaterial;
+      rawDiagnosticMaterial.uniforms.u_numActiveLightSources.value = 0;
+      for (const light of [key, fill, rim]) light.intensity = 0;
+      floor.visible = false;
+      probe.material = rawDiagnosticMaterial;
+      status.textContent = `materialx · ${environmentMode.toUpperCase()} · roughness ${requestedRoughness}`;
+      graphStatus.textContent += " · environment-only smooth-conductor diagnostic";
+      fallbackStatus.textContent = "No direct lights or floor; exact public-uniform roughness override";
+      ownerDocument.documentElement.dataset.materialxReady = "true";
+      ownerDocument.documentElement.dataset.materialBackend = "materialx";
+      ownerDocument.documentElement.dataset.materialxImplementation = implementation;
+      ownerDocument.documentElement.dataset.materialxRoughness = String(requestedRoughness);
       renderer.setAnimationLoop(() => renderer.render(scene, camera));
       return;
     }
@@ -475,5 +527,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     else dataset.materialBackend = previousDataset.backend;
     if (previousDataset.implementation === undefined) delete dataset.materialxImplementation;
     else dataset.materialxImplementation = previousDataset.implementation;
+    if (previousDataset.roughness === undefined) delete dataset.materialxRoughness;
+    else dataset.materialxRoughness = previousDataset.roughness;
   };
 }

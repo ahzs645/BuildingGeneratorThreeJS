@@ -38,6 +38,26 @@ The repeated metal presets use the same broad 150–180-node structure with
 different physical or artistic constants. This makes them a better regression
 matrix than thirty unrelated one-off materials.
 
+## What it tells the browser shader to expose
+
+The file confirms that a useful Blender-compatible metal control cannot be
+reduced to a single `metalness` checkbox. The portable control surface needs:
+
+- a conductor mode with either physical IOR/extinction data or artistic
+  base/edge tint (`F82`);
+- scalar or layered roughness, including the view-dependent roughness-Fresnel
+  branch;
+- anisotropy, rotation, and an explicit tangent contract;
+- normal input plus optional brushed/scratch texture layers;
+- thin-film thickness and IOR for anodized finishes; and
+- one shared, correctly oriented HDR environment response across every preset.
+
+The current `/materialx` lab implements the last item and the direct-conductor
+foundation. It does not yet expose the complete Blender group as editable web
+controls, so a plausible shiny sphere must not be labeled as a recovered
+Aluminum, Copper, Gold, Stainless Steel, or Titanium preset until its conductor
+constants and reachable branches are extracted and validated.
+
 ## Current compatibility boundary
 
 `tools/dump_blend.py` already preserves the materials and all 36 nested shader
@@ -125,6 +145,22 @@ The rights-safe runtime checkpoint is now present:
 - `src/materials/materialx-essl-bundle.test.ts` covers capability gating,
   one-to-one sampler binding, path traversal, integrity failures, abort cleanup,
   and idempotent disposal.
+
+The shared environment checkpoint is also complete:
+
+- the MaterialX lab can select FIS or the official 1,024-sample GGX PREFILTER
+  backend while binding exact roughness through the generated shader interface;
+- Blender's Z-up Environment Texture basis is converted exactly to MaterialX's
+  Y-up basis as `(x,y,z) -> (-y,-z,-x)`;
+- matched environment-only sphere captures cover roughness `0`, `2/15`, and
+  `0.2610441`; and
+- PREFILTER reaches sphere luminance correlation `0.991828`, `0.993967`, and
+  `0.988384` respectively. At `0.2610441`, sphere RMSE improves from FIS
+  `0.037781` to PREFILTER `0.026480`.
+
+This closes the shared studio-lighting prerequisite for the five-preset matrix.
+It does not close `ShaderNodeBsdfMetallic`, RGB Curves, anisotropy, thin film,
+or the rights status of the source textures.
 
 ## Required regression evidence
 

@@ -80,8 +80,13 @@ def sphere_metrics(reference: Path, candidate: Path):
 
 def main():
     directory = Path(sys.argv[sys.argv.index("--") + 1] if "--" in sys.argv else "docs/materialx-evidence/current").resolve()
+    roughness_values = (0.0, 2.0 / 15.0, 0.2610441)
+
+    def roughness_slug(value: float):
+        return format(value, ".7g").replace(".", "p")
+
     output = {
-        "comparisonVersion": 5,
+        "comparisonVersion": 6,
         "renderContract": {
             "geometry": "shared outward-wound 64 x 32 UV sphere algorithm and 96-segment floor disc",
             "camera": "scene-contract.json schema 1; Blender evaluated matrix_world and 50 degree vertical FOV",
@@ -90,7 +95,7 @@ def main():
             "exposure": 0,
             "colorTransform": "Standard/sRGB, no tone mapping",
             "webBackend": "WebGLRenderer with offline-generated official MaterialX 1.39.4 ESSL",
-            "webEnvironment": "MaterialX FIS over a trilinear lat-long radiance mip chain at 16 samples per pixel plus a separate third-order SH irradiance EXR",
+            "webEnvironment": "MaterialX FIS at 16 samples per pixel and official 1024-sample GGX PREFILTER mip lookup are compared over the same linear lat-long radiance plus separate third-order SH irradiance EXR",
             "directLights": "scene-contract.json evaluated Sun local -Z propagation vectors; generated directional NodeDef negates LightData.direction to surface-to-light L",
             "directionalDiagnostics": "light-{key,fill,rim}-{blender,web}.png; one light at a time, zero environment strength, zero Sun angular radius",
             "coordinateDiagnostic": "coordinate-cardinals-web.png; columns +X, +Z, -X, -Z; radiance top and direct lights bottom",
@@ -115,6 +120,22 @@ def main():
                 "sphereRegion": sphere_metrics(directory / f"light-{light}-blender.png", directory / f"light-{light}-web.png"),
             }
             for light in ("key", "fill", "rim")
+        },
+        "roughnessEnvironmentSweep": {
+            format(roughness, ".7g"): {
+                environment: {
+                    **metrics(
+                        directory / f"roughness-{roughness_slug(roughness)}-blender.png",
+                        directory / f"roughness-{roughness_slug(roughness)}-{environment}-web.png",
+                    ),
+                    "sphereRegion": sphere_metrics(
+                        directory / f"roughness-{roughness_slug(roughness)}-blender.png",
+                        directory / f"roughness-{roughness_slug(roughness)}-{environment}-web.png",
+                    ),
+                }
+                for environment in ("fis", "prefilter")
+            }
+            for roughness in roughness_values
         },
         "interpretation": "Image metrics include expected Eevee/Three BRDF, shadow, and light-unit differences. Graph-semantic support is reported separately in manifest.json and is not inferred from these pixels.",
     }

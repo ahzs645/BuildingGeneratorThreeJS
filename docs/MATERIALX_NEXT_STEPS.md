@@ -14,7 +14,9 @@ Direct lights now follow one explicit contract:
 2. Evaluated Sun local `-Z` is stored as the world-space propagation direction.
 3. The ESSL adapter uploads that vector unchanged as `LightData.direction`.
 4. MaterialX `ND_directional_light` negates it to produce the surface-to-light vector used by the BSDF.
-5. The `+90°` MaterialX transform remains environment-only; there is no fitted direct-light transform.
+5. The environment-only transform follows the projection formulas rather than
+   a fitted angle: Blender Z-up `(x,y,z)` maps to MaterialX Y-up
+   `(-y,-z,-x)`. Direct lights remain in Blender world space.
 
 ## Current evidence
 
@@ -23,13 +25,16 @@ Direct lights now follow one explicit contract:
 | key light, environment disabled | 0.068691 | 0.991038 | direction passes |
 | fill light, environment disabled | 0.029614 | 0.988250 | direction passes |
 | rim light, environment disabled | 0.038945 | 0.975296 | direction passes |
-| canonical Noise bump | 0.146605 | 0.804343 | useful parity prototype |
+| canonical Noise bump | 0.072938 | 0.959128 | useful parity prototype |
 | UI normal-band branch | 0.012820 | 0.992491 | typed `col` passes; two substitutions remain |
 | native source lowering sphere | 0.440571 | 0.104222 | historical substituted capture; superseded by the recovered live 2.5D comparison |
 
 The recovered live 2.5D result is measured separately because it uses an orthographic asset frame rather than the sphere mask: full-frame RMSE `0.057457`, full-frame correlation `0.681123`, and visible-region IoU `0.926767`. The visible-region threshold is reflection-dependent and is not a geometry silhouette claim; topology and bounds are validated independently.
 
-The Noise bump full-frame result is RMSE `0.055410` with correlation `0.935745`. Its Blender/browser sphere mean luminance is `0.449082` versus `0.457048`. Highlight width and fine noise remain different because Eevee, MaterialX FIS, and the two noise implementations are not identical.
+The Noise bump full-frame result is RMSE `0.028039` with correlation `0.984012`.
+Its Blender/browser sphere mean luminance is `0.449082` versus `0.467206`.
+Highlight width and fine noise remain different because Eevee, MaterialX FIS,
+and the two noise implementations are not identical.
 
 The UI result is a branch diagnostic, not a source-material parity claim. Its matched identity-transform fixture neutralizes an official-ESSL world/object normal-space discrepancy, and an emission wrapper substitutes Blender's implicit color-to-Surface coercion. The supplied metadata has no corresponding source `.blend`, so native extraction cannot yet be audited.
 
@@ -73,7 +78,7 @@ Steps 1 and 2 now carry through the full live path:
 
 The capability audit has no unsupported or substituted source semantics, and no required attribute uses its default. Default-material promotion remains withheld because the measured zero-roughness reflection response is still renderer-dependent. A visually similar image alone is not sufficient.
 
-### 4. Replace per-fragment FIS with the official prefilter path — runtime checkpoint complete
+### 4. Replace per-fragment FIS with the official prefilter path — matched roughness sweep complete
 
 The isolated lab now exercises MaterialX's Apache-2.0 environment prefilter
 shader directly:
@@ -92,18 +97,39 @@ shader directly:
 - a matched Blender/browser capture and comparison are stored separately from
   the prior FIS evidence.
 
-The zero-roughness checkpoint correctly produces almost the same image as FIS:
-full-frame RMSE changes from `0.057457` to `0.057455`, and foreground luminance
-correlation from `0.033654` to `0.033667`. At roughness zero both implementations
-sample level zero, so this is a runtime-equivalence check rather than evidence
-that prefiltering closes the Eevee residual.
+The lab now exposes an environment-only smooth-conductor diagnostic and binds
+roughness through the generated public-uniform interface. It does not select a
+material or Blender node-group display name. Blender and the browser render the
+same outward-wound sphere, camera, linear studio EXR, Standard/sRGB transform,
+and `0.18` environment intensity with direct lights and floor disabled.
 
-Remaining work for this item:
+The sweep also found and closed the dominant orientation error. Blender's
+Environment Texture projects `(-atan(y,x), +asin(z))`, while MaterialX projects
+`(+atan(x,-z), -asin(y))`. The exact environment basis is therefore
+`(x,y,z) -> (-y,-z,-x)`, not the previous longitude-only `+90°` rotation.
 
-- compare environment-only smooth-metal renders at roughness `0`, `2/15`, and
-  `0.2610441`, covering `chrome.003`, `chrome.002`, and the Chrome Grill;
+| Roughness | Backend | Sphere RMSE | Sphere luminance correlation | Mean luminance Blender / web |
+| ---: | --- | ---: | ---: | ---: |
+| `0` | FIS | 0.020569 | 0.991816 | 0.274795 / 0.278934 |
+| `0` | PREFILTER | 0.020553 | 0.991828 | 0.274795 / 0.278935 |
+| `2/15` | FIS | 0.020306 | 0.992846 | 0.276793 / 0.285034 |
+| `2/15` | PREFILTER | 0.017830 | 0.993967 | 0.276793 / 0.283546 |
+| `0.2610441` | FIS | 0.037781 | 0.978904 | 0.282336 / 0.294164 |
+| `0.2610441` | PREFILTER | 0.026480 | 0.988384 | 0.282336 / 0.295910 |
+
+At roughness zero both implementations sample level zero and correctly remain
+nearly identical. PREFILTER improves the two nonzero checkpoints, with the
+largest gain at Chrome Grill's `0.2610441`. This establishes the shared
+environment backend; it does not by itself prove parity for every asset's
+complete authored shader.
+
+Remaining work for this item is to:
+
+- apply the shared basis and PREFILTER backend to Chrome Grill, Chain and Mace,
+  Text Soup, and the topology-exact 2.5D asset without asset-specific brightness
+  fitting;
 - record hardware startup cost and the radiance-chain memory footprint; and
-- keep FIS as the reference fallback until the prefilter path passes.
+- retain FIS as a measured fallback while production promotion remains opt-in.
 
 Do not copy Blender's GPL Eevee convolution shader. Blender remains external comparison evidence only.
 
@@ -155,7 +181,9 @@ Promote one material from `legacy-authored` only when all of the following are t
 ```bash
 npm run materialx:extract
 npm run materialx:generate:essl
+npm run materialx:generate:essl-prefilter
 npm run materialx:generate:native
+npm run materialx:generate:prefilter
 npm run materialx:generate:ui-normal-band
 npm run materialx:smoke:essl
 npm run materialx:render:blender
