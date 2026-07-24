@@ -32,20 +32,20 @@
     "mean_luminance": 0.5145514710189965
   },
   "webgl": {
-    "surface_pixels": 54034,
+    "surface_pixels": 53818,
     "black_pixels": 0,
     "white_pixels": 0,
-    "gray_pixels": 54034,
+    "gray_pixels": 53818,
     "black_fraction": 0,
     "white_fraction": 0,
     "gray_fraction": 1,
-    "mean_luminance": 0.634015194940506
+    "mean_luminance": 0.6358277532743213
   },
   "comparison": {
-    "surface_mask_iou": 0.9179924175318003,
-    "surface_mask_iou_dilated_1px": 0.9251262583466088,
-    "blender_surface_covered_within_1px_fraction": 0.9699054011691162,
-    "webgl_surface_covered_within_1px_fraction": 0.9724617833216124,
+    "surface_mask_iou": 0.9435360566977857,
+    "surface_mask_iou_dilated_1px": 0.9496259351620948,
+    "blender_surface_covered_within_1px_fraction": 0.981965369082963,
+    "webgl_surface_covered_within_1px_fraction": 0.9866773198558103,
     "surface_corners": {
       "blender": {
         "left": [
@@ -103,22 +103,22 @@
       ]
     },
     "surface_corner_rmse_pixels": 4.033121947183761,
-    "intersection_pixels": 51817,
-    "pixel_rgb_mae": 0.14355400431442222,
+    "intersection_pixels": 52454,
+    "pixel_rgb_mae": 0.1433383020708797,
     "mean_rgb_delta": [
-      0.12402314522411412,
-      0.12169821967912743,
-      0.11864436572987987
+      0.12387418426127386,
+      0.12101655850883453,
+      0.11853313264669853
     ],
-    "pixel_luminance_mae": 0.14197361911894524,
-    "pixel_luminance_correlation": 0.45091374868435036,
-    "binary_mask_disagreement_fraction": 0.3642433950247988,
+    "pixel_luminance_mae": 0.14277655510214138,
+    "pixel_luminance_correlation": 0.3761603522597041,
+    "binary_mask_disagreement_fraction": 0.36046821977351584,
     "macro_block_size": 32,
     "macro_block_count": 91,
-    "macro_luminance_mae": 0.11524500665254699,
-    "macro_luminance_correlation": 0.027640910914469227,
+    "macro_luminance_mae": 0.11604179976279283,
+    "macro_luminance_correlation": -0.08563905167806284,
     "black_fraction_delta": -0.0006822917627099892,
-    "mean_luminance_delta": 0.1194637239215095
+    "mean_luminance_delta": 0.12127628225532483
   },
   "interpretation": "The transparent Blender capture is composited over the same segmentation key as WebGL before applying one shared key-distance threshold. This compares equivalent antialiased coverage instead of an alpha>0.5 Blender mask against a looser WebGL color-key mask. The aligned silhouette validates the capture context, but luminance occupancy, correlation, and pixel disagreement determine whether the authored WebGL material is visually equivalent. Renderer lighting, environment, tone mapping, texture filtering, and procedural implementations may remain as residuals."
 }

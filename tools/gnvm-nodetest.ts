@@ -504,7 +504,18 @@ function meshSignedAreaXY(m: Mesh): number {
     "Detail Scale": 1, "Detail Roughness": 0.5, "Phase Offset": 0,
   }, { wave_type: "BANDS", bands_direction: "X", wave_profile: "SIN" }, ["Vector"]).Fac as Field;
   const waveValue = Number(wave.array({ size: 1, domain: "POINT" })[0]);
-  check("Wave Texture SIN matches Blender's fixed-20 phase", Math.abs(waveValue - 0.91953576) < 1e-6, `got ${waveValue}`);
+  check("Wave Texture SIN matches Blender's nudged fixed-20 coordinate",
+    Math.abs(waveValue - 0.9195330739021301) < 1e-7, `got ${waveValue}`);
+
+  const finaleWave = runNode("ShaderNodeTexWave", {
+    Vector: [-0.9399999976158142, -0.8299999833106995, 1.9199999570846558],
+    Scale: 0.7299999594688416, Distortion: 3.7300000190734863,
+    Detail: 2, "Detail Scale": 1, "Detail Roughness": 0.5,
+    "Phase Offset": 1026.5479736328125,
+  }, { wave_type: "BANDS", bands_direction: "X", wave_profile: "SIN" }, ["Vector"]).Color as Field;
+  const finaleWaveValue = (finaleWave.array({ size: 1, domain: "POINT" })[0] as number[])[0];
+  check("Wave Texture distortion and phase match Blender's DOJO Finale sample",
+    Math.abs(finaleWaveValue - 0.3477915644163943) < 3e-6, `got ${finaleWaveValue}`);
 
   const noiseGeometry = new Geometry();
   noiseGeometry.instances = [{ geometry: new Geometry(), position: [-2.9740545749664307, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }];

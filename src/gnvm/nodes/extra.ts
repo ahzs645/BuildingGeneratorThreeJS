@@ -542,9 +542,9 @@ reg("ShaderNodeTexNoise", (api) => {
   };
 });
 
-// Blender's Wave Texture uses a fixed factor of 20 before applying its
-// periodic profile. At Scale=1 the SIN profile is therefore
-// 0.5 - 0.5*cos(coordinate*20), not a one-cycle-per-unit sine wave.
+// Mirrors Cycles' svm_wave. Scale is applied to the vector before both the
+// directional wave and distortion noise, while Phase Offset is already in
+// radians and must not be multiplied by the fixed band/ring frequency.
 reg("ShaderNodeTexWave", (api) => {
   const linkedVector = api.node.inputs.find((socket) => socket.identifier === "Vector")?.linked ?? false;
   const vector = api.field("Vector");
@@ -561,29 +561,59 @@ reg("ShaderNodeTexWave", (api) => {
     const vectors = vector.array(ctx), scales = scale.array(ctx), phases = phase.array(ctx), distortions = distortion.array(ctx);
     const details = detail.array(ctx), detailScales = detailScale.array(ctx), roughnesses = detailRoughness.array(ctx);
     return Array.from({ length: ctx.size }, (_, i) => {
-      const p = linkedVector ? asVec3(vectors[i] ?? 0) : ctx.position?.(i) ?? [0, 0, 0];
-      let coordinate: number;
+      const source = linkedVector ? asVec3(vectors[i] ?? 0) : ctx.position?.(i) ?? [0, 0, 0];
+      const frequency = f32(asNum(scales[i] ?? 5));
+      const p = source.map((component) =>
+        f32(f32(component) * frequency)) as Vec3;
+      // Cycles nudges unit coordinates before evaluating the profile to avoid
+      // precision discontinuities at exact integer boundaries.
+      for (let axis = 0; axis < 3; axis++) {
+        p[axis] = f32(f32(p[axis] + f32(.000001)) * f32(.999999));
+      }
+      let wave: number;
       if (waveType === "RINGS") {
-        coordinate = direction === "X" ? Math.hypot(p[1], p[2])
-          : direction === "Y" ? Math.hypot(p[0], p[2])
-            : direction === "Z" ? Math.hypot(p[0], p[1]) : vlen(p);
+        const ringPoint: Vec3 = direction === "X" ? [0, p[1], p[2]]
+          : direction === "Y" ? [p[0], 0, p[2]]
+            : direction === "Z" ? [p[0], p[1], 0] : p;
+        const squared = f32(
+          f32(f32(ringPoint[0] * ringPoint[0]) + f32(ringPoint[1] * ringPoint[1]))
+          + f32(ringPoint[2] * ringPoint[2]),
+        );
+        wave = f32(f32(Math.sqrt(squared)) * f32(20));
       } else {
-        coordinate = direction === "Y" ? p[1] : direction === "Z" ? p[2]
-          : direction === "DIAGONAL" ? p[0] + p[1] + p[2] : p[0];
+        wave = direction === "Y" ? f32(p[1] * f32(20))
+          : direction === "Z" ? f32(p[2] * f32(20))
+            : direction === "DIAGONAL"
+              ? f32(f32(f32(p[0] + p[1]) + p[2]) * f32(10))
+              : f32(p[0] * f32(20));
       }
-      const frequency = asNum(scales[i] ?? 5);
-      let wave = (coordinate * frequency + asNum(phases[i] ?? 0)) * 20;
-      const warp = asNum(distortions[i] ?? 0);
-      if (Math.abs(warp) > EPS) {
-        const noiseScale = Math.max(EPS, asNum(detailScales[i] ?? 1));
-        wave += warp * blenderFbm3(vscale(p, noiseScale), asNum(details[i] ?? 2), asNum(roughnesses[i] ?? .5), 2, false);
+      wave = f32(wave + f32(asNum(phases[i] ?? 0)));
+      const warp = f32(asNum(distortions[i] ?? 0));
+      if (warp !== 0) {
+        const noiseScale = f32(asNum(detailScales[i] ?? 1));
+        const noisePoint = p.map((component) =>
+          f32(component * noiseScale)) as Vec3;
+        const noise = blenderFbm3(
+          noisePoint,
+          f32(asNum(details[i] ?? 2)),
+          f32(asNum(roughnesses[i] ?? .5)),
+          f32(2),
+          true,
+        );
+        const centeredNoise = f32(f32(noise * f32(2)) - f32(1));
+        wave = f32(wave + f32(warp * centeredNoise));
       }
-      if (profile === "SAW") return wave / (2 * Math.PI) - Math.floor(wave / (2 * Math.PI));
+      const twoPi = f32(f32(2) * f32(Math.PI));
+      if (profile === "SAW") {
+        const cycle = f32(wave / twoPi);
+        return f32(cycle - Math.floor(cycle));
+      }
       if (profile === "TRI") {
-        const saw = wave / (2 * Math.PI) - Math.floor(wave / (2 * Math.PI));
-        return 1 - Math.abs(2 * saw - 1);
+        const cycle = f32(wave / twoPi);
+        return f32(Math.abs(f32(cycle - Math.floor(f32(cycle + f32(.5))))) * f32(2));
       }
-      return .5 - .5 * Math.cos(wave);
+      const sine = f32(Math.sin(f32(wave - f32(Math.PI / 2))));
+      return f32(f32(.5) + f32(f32(.5) * sine));
     });
   });
   return { Fac: factor, Factor: factor, Color: Field.make((ctx) => factor.array(ctx).map((value) => [asNum(value), asNum(value), asNum(value)])) };
