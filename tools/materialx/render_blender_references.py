@@ -48,6 +48,7 @@ def args() -> argparse.Namespace:
     parser.add_argument("--evidence-dir", default="docs/materialx-evidence/current")
     parser.add_argument("--material", default="chrome.003")
     parser.add_argument("--ui-report", default="public/materialx/ui-normal-band.report.json")
+    parser.add_argument("--ui-normal-band-only", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -741,6 +742,12 @@ def main():
     probe = probe_mesh()
     write_scene_contract(runtime / "scene-contract.json", camera, lights, probe)
     floor = floor_mesh()
+    if options.ui_normal_band_only:
+        probe.data.materials.append(ui_normal_band_diagnostic(Path(options.ui_report).resolve()))
+        bpy.context.scene.render.filepath = str(evidence / "ui-normal-band-blender.png")
+        bpy.ops.render.render(write_still=True)
+        print(f"MATERIALX_BLENDER_REFERENCE ui-normal-band-blender.png -> {evidence}")
+        return
     source.use_nodes = True
     probe.data.materials.append(source)
     bpy.context.scene.render.filepath = str(evidence / "chrome-source-blender.png")
@@ -748,16 +755,12 @@ def main():
     probe.data.materials[0] = bump_copy(source)
     bpy.context.scene.render.filepath = str(evidence / "noise-bump-blender.png")
     bpy.ops.render.render(write_still=True)
-    # Keep this branch diagnostic on an identity-transformed probe. The browser
-    # capability report records the world-to-object normal substitution, and at
-    # identity the coordinate spaces are equivalent for an honest branch check.
-    probe.rotation_euler[1] = 0.0
+    # Preserve the probe's non-identity rotation so the portable branch must
+    # reproduce Blender Texture Coordinate Normal in world space.
     bpy.context.view_layer.update()
     probe.data.materials[0] = ui_normal_band_diagnostic(Path(options.ui_report).resolve())
     bpy.context.scene.render.filepath = str(evidence / "ui-normal-band-blender.png")
     bpy.ops.render.render(write_still=True)
-    probe.rotation_euler[1] = -0.38
-    bpy.context.view_layer.update()
     render_light_diagnostics(evidence, probe, lights)
     render_environment_roughness_sweep(evidence, probe, floor, lights)
     render_physical_conductor_matrix(evidence, probe, floor, lights)

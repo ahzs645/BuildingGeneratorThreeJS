@@ -668,15 +668,13 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     }
     materialXReady = Boolean(materialXMaterials.ChromeCrayonSourceLowering && materialXMaterials.ChromeCrayonNoiseBumpProbe);
     if (uiNormalBandDiagnostic && officialEssl) {
-      // The capability report records that the standalone ESSL graph resolves this
-      // source's world normal as object space. Identity makes the two spaces equal
-      // for the branch diagnostic without claiming transformed-asset parity.
-      probe.rotation.y = 0;
+      // Keep the authored probe rotation: transformnormal must carry Blender's
+      // Texture Coordinate Normal from object to world space before Mapping.
       probe.updateMatrixWorld(true);
       probe.material = materialXMaterials.UiNormalBandSemanticRecovery;
       status.textContent = "materialx · UI normal-band semantic diagnostic";
-      graphStatus.textContent = "Normal/Mapping/CONSTANT ramp + typed col passed · normal space and surface coercion substituted · parity gated";
-      fallbackStatus.textContent = "Diagnostic emission wrapper only; production authored material remains active elsewhere";
+      graphStatus.textContent = "World Normal/Mapping/CONSTANT ramp + typed col + unlit surface passed on rotated geometry";
+      fallbackStatus.textContent = "Topology-derived portable branch; source .blend remains unavailable for native export audit";
       ownerDocument.documentElement.dataset.materialxReady = "true";
       ownerDocument.documentElement.dataset.materialBackend = "materialx";
       ownerDocument.documentElement.dataset.materialxImplementation = implementation;

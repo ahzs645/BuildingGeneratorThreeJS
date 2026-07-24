@@ -110,7 +110,7 @@ def main():
         return format(value, ".7g").replace(".", "p")
 
     output = {
-        "comparisonVersion": 12,
+        "comparisonVersion": 13,
         "renderContract": {
             "geometry": "shared outward-wound 64 x 32 UV sphere algorithm and 96-segment floor disc",
             "camera": "scene-contract.json schema 1; Blender evaluated matrix_world and 50 degree vertical FOV",
@@ -123,7 +123,7 @@ def main():
             "directLights": "scene-contract.json evaluated Sun local -Z propagation vectors; generated directional NodeDef negates LightData.direction to surface-to-light L",
             "directionalDiagnostics": "light-{key,fill,rim}-{blender,web}.png; one light at a time, zero environment strength, zero Sun angular radius",
             "coordinateDiagnostic": "coordinate-cardinals-web.png; columns +X, +Z, -X, -Z; radiance top and direct lights bottom",
-            "uiNormalBandDiagnostic": "ui-normal-band-{blender,web}.png; identity-transform Normal/Mapping/CONSTANT-ramp/typed-col branch with explicit normal-space and emission surface substitutes",
+            "uiNormalBandDiagnostic": "ui-normal-band-{blender,web}.png; rotated probe with explicit object-to-world Normal, Mapping, CONSTANT ramp, typed col, and unlit surface",
             "metalPresetMatrix": "metal-preset-{aluminum,copper,gold,stainless-steel,titanium}-{blender,web}.png; constant PHYSICAL_CONDUCTOR n/k values, Blender perceptual roughness 0.35 mapped to MaterialX microfacet alpha 0.1225, no direct lights or floor",
             "metalF82Probe": "metal-f82-gold-{blender,web}.png; Blender Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, exact linear color0/color82 values, roughness 0.35 mapped to alpha 0.1225, no direct lights or floor",
             "metalLayeredRoughnessProbe": "metal-layered-roughness-gold-{blender,web}.png; exact four-closure Gold F82 chain with Blender perceptual roughness scales 0.25/0.5/0.75/1.0, sequential mix factors 0.4/0.2/0.1, no direct lights or floor",
@@ -142,7 +142,7 @@ def main():
         "uiNormalBandDiagnostic": {
             **metrics(directory / "ui-normal-band-blender.png", directory / "ui-normal-band-web.png"),
             "sphereRegion": sphere_metrics(directory / "ui-normal-band-blender.png", directory / "ui-normal-band-web.png"),
-            "claim": "branch-semantic diagnostic only; transformed world-normal semantics, source color-to-Surface coercion, and native USD extraction remain parity blockers",
+            "claim": "topology-derived branch-semantic parity on rotated geometry; native USD extraction remains unavailable because the source .blend was not supplied",
         },
         "directionalLightDiagnostics": {
             light: {

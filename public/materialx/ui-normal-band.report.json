@@ -31,7 +31,7 @@
     ]
   },
   "diagnosticLowering": {
-    "coordinateFixture": "identity-transformed probe makes object and world normals equivalent for this diagnostic",
+    "coordinateFixture": "rotated probe validates the explicit object-to-world normal transform",
     "rotationRadians": [
       0.06943511962890625,
       1.6045360565185547,
@@ -81,39 +81,28 @@
     "materialX": "public/materialx/ui-normal-band-prototype.mtlx",
     "portableNodes": [
       "normal",
+      "transformnormal",
       "rotate3d",
       "dotproduct",
       "ifgreatereq",
       "geompropvalue",
       "mix",
-      "standard_surface"
+      "surface_unlit"
     ]
   },
   "capability": {
     "supportedSemantics": [
-      "normal-coordinate branch on an identity-transformed probe",
+      "Texture Coordinate Normal lowered from object to world space on a rotated probe",
       "XYZ Euler Mapping rotation",
       "CONSTANT color ramp",
       "typed point geometry property col:color3",
-      "RGBA MIX factor"
+      "RGBA MIX factor",
+      "implicit color-to-Surface coercion lowered to an unlit emission surface"
     ],
-    "substitutedSemantics": [
-      {
-        "kind": "texture-coordinate-normal-space",
-        "source": "ShaderNodeTexCoord.Normal (Blender native USD export declares world space)",
-        "diagnosticSubstitute": "object-space normal on an identity-transformed probe",
-        "reason": "The official standalone ESSL graph path did not preserve the requested world-space normal; transformed-geometry parity remains gated"
-      },
-      {
-        "kind": "surface-coercion",
-        "source": "NodeSocketColor -> ShaderNodeOutputMaterial.Surface",
-        "diagnosticSubstitute": "standard_surface emission",
-        "reason": "Blender's implicit color-to-surface coercion has no portable MaterialX source NodeDef in the extracted metadata"
-      }
-    ],
+    "substitutedSemantics": [],
     "extractionBlockers": [
       "The source .blend is not supplied, so Blender native USD/MaterialX export cannot be audited"
     ],
-    "parityReady": false
+    "parityReady": true
   }
 }

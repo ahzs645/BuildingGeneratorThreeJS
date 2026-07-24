@@ -87,12 +87,17 @@ const lastBand = `normal_band_${match.ramp.length - 1}`;
 const xml = `<?xml version="1.0"?>
 <materialx version="1.39" colorspace="lin_rec709">
   <!-- Generated from a topology match in portable Blender shader metadata.
-       The standard_surface emission wrapper is an explicit diagnostic
-       substitute for Blender's non-portable color-to-Surface coercion. -->
+       Blender Texture Coordinate Normal is world-space, so the portable graph
+       transforms the object normal before applying the authored Mapping node. -->
   <nodegraph name="NG_ui_normal_band">
     <normal name="object_normal" type="vector3" space="object" />
-    <rotate3d name="normal_rotate_x" type="vector3">
+    <transformnormal name="world_normal" type="vector3">
       <input name="in" type="vector3" nodename="object_normal" />
+      <input name="fromspace" type="string" value="object" />
+      <input name="tospace" type="string" value="world" />
+    </transformnormal>
+    <rotate3d name="normal_rotate_x" type="vector3">
+      <input name="in" type="vector3" nodename="world_normal" />
       <input name="amount" type="float" value="${number(degrees[0])}" />
       <input name="axis" type="vector3" value="1, 0, 0" />
     </rotate3d>
@@ -121,14 +126,12 @@ const xml = `<?xml version="1.0"?>
     </mix>
     <output name="color" type="color3" nodename="band_color_mix" />
   </nodegraph>
-  <standard_surface name="SS_ui_normal_band_diagnostic" type="surfaceshader">
-    <input name="base" type="float" value="0" />
-    <input name="specular" type="float" value="0" />
+  <surface_unlit name="surface_ui_normal_band" type="surfaceshader">
     <input name="emission" type="float" value="1" />
     <input name="emission_color" type="color3" nodegraph="NG_ui_normal_band" output="color" />
-  </standard_surface>
+  </surface_unlit>
   <surfacematerial name="UiNormalBandSemanticRecovery" type="material">
-    <input name="surfaceshader" type="surfaceshader" nodename="SS_ui_normal_band_diagnostic" />
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_ui_normal_band" />
   </surfacematerial>
 </materialx>
 `;
@@ -149,39 +152,27 @@ const report = {
     geometryProperties: [{ name: match.property, type: "color3", domain: "point", required: true }],
   },
   diagnosticLowering: {
-    coordinateFixture: "identity-transformed probe makes object and world normals equivalent for this diagnostic",
+    coordinateFixture: "rotated probe validates the explicit object-to-world normal transform",
     rotationRadians: match.rotation,
     esslRotationDegrees: degrees,
     rotationConvention: "Blender Mapping XYZ radians lowered to official ESSL rotate3d by negating each axis amount",
     constantRamp: match.ramp,
     mixFactor: match.factor,
     materialX: path.relative(process.cwd(), outputPath),
-    portableNodes: ["normal", "rotate3d", "dotproduct", "ifgreatereq", "geompropvalue", "mix", "standard_surface"],
+    portableNodes: ["normal", "transformnormal", "rotate3d", "dotproduct", "ifgreatereq", "geompropvalue", "mix", "surface_unlit"],
   },
   capability: {
     supportedSemantics: [
-      "normal-coordinate branch on an identity-transformed probe",
+      "Texture Coordinate Normal lowered from object to world space on a rotated probe",
       "XYZ Euler Mapping rotation",
       "CONSTANT color ramp",
       `typed point geometry property ${match.property}:color3`,
       "RGBA MIX factor",
+      "implicit color-to-Surface coercion lowered to an unlit emission surface",
     ],
-    substitutedSemantics: [
-      {
-        kind: "texture-coordinate-normal-space",
-        source: "ShaderNodeTexCoord.Normal (Blender native USD export declares world space)",
-        diagnosticSubstitute: "object-space normal on an identity-transformed probe",
-        reason: "The official standalone ESSL graph path did not preserve the requested world-space normal; transformed-geometry parity remains gated",
-      },
-      {
-        kind: "surface-coercion",
-        source: "NodeSocketColor -> ShaderNodeOutputMaterial.Surface",
-        diagnosticSubstitute: "standard_surface emission",
-        reason: "Blender's implicit color-to-surface coercion has no portable MaterialX source NodeDef in the extracted metadata",
-      },
-    ],
+    substitutedSemantics: [],
     extractionBlockers: ["The source .blend is not supplied, so Blender native USD/MaterialX export cannot be audited"],
-    parityReady: false,
+    parityReady: true,
   },
 };
 

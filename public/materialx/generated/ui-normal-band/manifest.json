@@ -22,18 +22,6 @@
         "inputs": {
           "VertexData": [
             {
-              "name": "normalWorld",
-              "path": "",
-              "type": "vector3",
-              "value": null
-            },
-            {
-              "name": "tangentWorld",
-              "path": "",
-              "type": "vector3",
-              "value": null
-            },
-            {
               "name": "normalObject",
               "path": "",
               "type": "vector3",
@@ -43,12 +31,6 @@
               "name": "i_geomprop_col",
               "path": "",
               "type": "color3",
-              "value": null
-            },
-            {
-              "name": "positionWorld",
-              "path": "",
-              "type": "vector3",
               "value": null
             }
           ]
@@ -124,9 +106,9 @@
               "value": null
             },
             {
-              "name": "u_viewPosition",
+              "name": "u_worldInverseTransposeMatrix",
               "path": "",
-              "type": "vector3",
+              "type": "matrix44",
               "value": null
             },
             {
@@ -148,6 +130,18 @@
               "path": "",
               "type": "displacementshader",
               "value": null
+            },
+            {
+              "name": "world_normal_fromspace",
+              "path": "NG_ui_normal_band/world_normal/fromspace",
+              "type": "string",
+              "value": "object"
+            },
+            {
+              "name": "world_normal_tospace",
+              "path": "NG_ui_normal_band/world_normal/tospace",
+              "type": "string",
+              "value": "world"
             },
             {
               "name": "normal_rotate_x_amount",
@@ -272,170 +266,20 @@
               "value": 0.6647727489471436
             },
             {
-              "name": "SS_ui_normal_band_diagnostic_base",
-              "path": "SS_ui_normal_band_diagnostic/base",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_base_color",
-              "path": "SS_ui_normal_band_diagnostic/base_color",
-              "type": "color3",
-              "value": [
-                0.800000011920929,
-                0.800000011920929,
-                0.800000011920929
-              ]
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_diffuse_roughness",
-              "path": "SS_ui_normal_band_diagnostic/diffuse_roughness",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_metalness",
-              "path": "SS_ui_normal_band_diagnostic/metalness",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_specular",
-              "path": "SS_ui_normal_band_diagnostic/specular",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_specular_color",
-              "path": "SS_ui_normal_band_diagnostic/specular_color",
-              "type": "color3",
-              "value": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_specular_roughness",
-              "path": "SS_ui_normal_band_diagnostic/specular_roughness",
-              "type": "float",
-              "value": 0.20000000298023224
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_specular_IOR",
-              "path": "SS_ui_normal_band_diagnostic/specular_IOR",
-              "type": "float",
-              "value": 1.5
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_specular_anisotropy",
-              "path": "SS_ui_normal_band_diagnostic/specular_anisotropy",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_specular_rotation",
-              "path": "SS_ui_normal_band_diagnostic/specular_rotation",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_transmission",
-              "path": "SS_ui_normal_band_diagnostic/transmission",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_transmission_color",
-              "path": "SS_ui_normal_band_diagnostic/transmission_color",
-              "type": "color3",
-              "value": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_transmission_depth",
-              "path": "SS_ui_normal_band_diagnostic/transmission_depth",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_transmission_scatter",
-              "path": "SS_ui_normal_band_diagnostic/transmission_scatter",
-              "type": "color3",
-              "value": [
-                0.0,
-                0.0,
-                0.0
-              ]
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_transmission_scatter_anisotropy",
-              "path": "SS_ui_normal_band_diagnostic/transmission_scatter_anisotropy",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_transmission_dispersion",
-              "path": "SS_ui_normal_band_diagnostic/transmission_dispersion",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_transmission_extra_roughness",
-              "path": "SS_ui_normal_band_diagnostic/transmission_extra_roughness",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_subsurface",
-              "path": "SS_ui_normal_band_diagnostic/subsurface",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_subsurface_color",
-              "path": "SS_ui_normal_band_diagnostic/subsurface_color",
-              "type": "color3",
-              "value": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_subsurface_radius",
-              "path": "SS_ui_normal_band_diagnostic/subsurface_radius",
-              "type": "color3",
-              "value": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_subsurface_scale",
-              "path": "SS_ui_normal_band_diagnostic/subsurface_scale",
+              "name": "surface_ui_normal_band_emission",
+              "path": "surface_ui_normal_band/emission",
               "type": "float",
               "value": 1.0
             },
             {
-              "name": "SS_ui_normal_band_diagnostic_subsurface_anisotropy",
-              "path": "SS_ui_normal_band_diagnostic/subsurface_anisotropy",
+              "name": "surface_ui_normal_band_transmission",
+              "path": "surface_ui_normal_band/transmission",
               "type": "float",
               "value": 0.0
             },
             {
-              "name": "SS_ui_normal_band_diagnostic_sheen",
-              "path": "SS_ui_normal_band_diagnostic/sheen",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_sheen_color",
-              "path": "SS_ui_normal_band_diagnostic/sheen_color",
+              "name": "surface_ui_normal_band_transmission_color",
+              "path": "surface_ui_normal_band/transmission_color",
               "type": "color3",
               "value": [
                 1.0,
@@ -444,96 +288,10 @@
               ]
             },
             {
-              "name": "SS_ui_normal_band_diagnostic_sheen_roughness",
-              "path": "SS_ui_normal_band_diagnostic/sheen_roughness",
-              "type": "float",
-              "value": 0.30000001192092896
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_coat",
-              "path": "SS_ui_normal_band_diagnostic/coat",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_coat_color",
-              "path": "SS_ui_normal_band_diagnostic/coat_color",
-              "type": "color3",
-              "value": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_coat_roughness",
-              "path": "SS_ui_normal_band_diagnostic/coat_roughness",
-              "type": "float",
-              "value": 0.10000000149011612
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_coat_anisotropy",
-              "path": "SS_ui_normal_band_diagnostic/coat_anisotropy",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_coat_rotation",
-              "path": "SS_ui_normal_band_diagnostic/coat_rotation",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_coat_IOR",
-              "path": "SS_ui_normal_band_diagnostic/coat_IOR",
-              "type": "float",
-              "value": 1.5
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_coat_affect_color",
-              "path": "SS_ui_normal_band_diagnostic/coat_affect_color",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_coat_affect_roughness",
-              "path": "SS_ui_normal_band_diagnostic/coat_affect_roughness",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_thin_film_thickness",
-              "path": "SS_ui_normal_band_diagnostic/thin_film_thickness",
-              "type": "float",
-              "value": 0.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_thin_film_IOR",
-              "path": "SS_ui_normal_band_diagnostic/thin_film_IOR",
-              "type": "float",
-              "value": 1.5
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_emission",
-              "path": "SS_ui_normal_band_diagnostic/emission",
+              "name": "surface_ui_normal_band_opacity",
+              "path": "surface_ui_normal_band/opacity",
               "type": "float",
               "value": 1.0
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_opacity",
-              "path": "SS_ui_normal_band_diagnostic/opacity",
-              "type": "color3",
-              "value": [
-                1.0,
-                1.0,
-                1.0
-              ]
-            },
-            {
-              "name": "SS_ui_normal_band_diagnostic_thin_walled",
-              "path": "SS_ui_normal_band_diagnostic/thin_walled",
-              "type": "boolean",
-              "value": false
             }
           ]
         }
@@ -566,12 +324,6 @@
               "value": null
             },
             {
-              "name": "i_tangent",
-              "path": "",
-              "type": "vector3",
-              "value": null
-            },
-            {
               "name": "a_geomprop_col",
               "path": "",
               "type": "color3",
@@ -589,12 +341,6 @@
             },
             {
               "name": "u_viewProjectionMatrix",
-              "path": "",
-              "type": "matrix44",
-              "value": null
-            },
-            {
-              "name": "u_worldInverseTransposeMatrix",
               "path": "",
               "type": "matrix44",
               "value": null

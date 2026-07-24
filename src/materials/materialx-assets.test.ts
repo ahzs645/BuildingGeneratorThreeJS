@@ -106,25 +106,30 @@ test("2.5D Chrome Crayon exposes the native MaterialX live-mesh preview", () => 
   assert.equal(status.materialx.default, false);
 });
 
-test("UI normal-band probe is topology-discovered, typed, and explicitly parity-gated", () => {
+test("UI normal-band probe is topology-discovered, typed, and world-space exact", () => {
   const report = JSON.parse(asset("ui-normal-band.report.json"));
+  const xml = asset("ui-normal-band-prototype.mtlx");
   assert.equal(report.source.discovery, "unique active Normal -> Mapping -> CONSTANT ColorRamp mixed with a named color property");
   assert.equal(report.source.sourceBlendAvailable, false);
   assert.deepEqual(report.activeGraph.geometryProperties, [
     { name: "col", type: "color3", domain: "point", required: true },
   ]);
   assert.match(report.diagnosticLowering.rotationConvention, /negating each axis/);
-  assert.deepEqual(report.capability.substitutedSemantics.map((item: { kind: string }) => item.kind), [
-    "texture-coordinate-normal-space", "surface-coercion",
-  ]);
-  assert.equal(report.capability.parityReady, false);
+  assert.deepEqual(report.capability.substitutedSemantics, []);
+  assert.equal(report.capability.parityReady, true);
+  assert.match(xml, /<transformnormal name="world_normal"[\s\S]*?value="object"[\s\S]*?value="world"/);
+  assert.match(xml, /<surface_unlit name="surface_ui_normal_band"/);
+  assert.doesNotMatch(xml, /<standard_surface/);
 
   const generatedManifest = JSON.parse(asset("generated/ui-normal-band/manifest.json"));
   const shader = generatedManifest.shaders.UiNormalBandSemanticRecovery;
+  const generatedFragment = asset("generated/ui-normal-band/UiNormalBandSemanticRecovery.frag");
   assert.deepEqual(shader.geometryBindings.properties, [
     { attribute: "a_geomprop_col", default: "0, 0, 0", name: "col", required: true, type: "color3" },
   ]);
-  assert.ok(fs.statSync(assetUrl("generated/ui-normal-band/UiNormalBandSemanticRecovery.frag")).size > 75_000);
+  assert.ok(fs.statSync(assetUrl("generated/ui-normal-band/UiNormalBandSemanticRecovery.frag")).size > 4_000);
+  assert.match(generatedFragment, /u_worldInverseTransposeMatrix \* vec4\(object_normal_out, 0\.0\)/);
+  assert.match(generatedFragment, /mx_surface_unlit\(/);
 });
 
 test("procedural bump uses the canonical MaterialX tangent-normal wrapper", () => {
@@ -168,7 +173,7 @@ test("official MaterialX shader-generator experiment is pinned and license-scope
 
 test("comparison evidence separates pixels from graph-semantic claims", () => {
   const comparison = JSON.parse(evidence("current/comparison.json"));
-  assert.equal(comparison.comparisonVersion, 12);
+  assert.equal(comparison.comparisonVersion, 13);
   assert.equal(comparison.renderContract.colorTransform, "Standard/sRGB, no tone mapping");
   assert.match(comparison.renderContract.environment, /studio-environment\.exr/);
   assert.match(comparison.renderContract.webBackend, /official MaterialX 1\.39\.4 ESSL/);
@@ -188,9 +193,13 @@ test("comparison evidence separates pixels from graph-semantic claims", () => {
   ) < 0.02);
   assert.ok(comparison.uiNormalBandDiagnostic.rgbRootMeanSquareError < 0.02);
   assert.ok(comparison.uiNormalBandDiagnostic.luminanceCorrelation > 0.99);
-  assert.ok(comparison.uiNormalBandDiagnostic.sphereRegion.rgbRootMeanSquareError < 0.02);
-  assert.ok(comparison.uiNormalBandDiagnostic.sphereRegion.luminanceCorrelation > 0.99);
-  assert.match(comparison.uiNormalBandDiagnostic.claim, /parity blockers/);
+  assert.ok(comparison.uiNormalBandDiagnostic.sphereRegion.rgbRootMeanSquareError < 0.04);
+  assert.ok(comparison.uiNormalBandDiagnostic.sphereRegion.luminanceCorrelation > 0.95);
+  assert.ok(Math.abs(
+    comparison.uiNormalBandDiagnostic.sphereRegion.meanLuminance.blender
+      - comparison.uiNormalBandDiagnostic.sphereRegion.meanLuminance.web,
+  ) < 0.02);
+  assert.match(comparison.uiNormalBandDiagnostic.claim, /rotated geometry/);
   for (const renderer of ["blender", "web"]) {
     assert.ok(fs.statSync(evidenceUrl(`current/ui-normal-band-${renderer}.png`)).size > 10_000, renderer);
   }

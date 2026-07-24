@@ -7,6 +7,7 @@ const outputDir = path.resolve(process.argv[3] ?? "docs/materialx-evidence/curre
 const expectedImplementation = process.argv[4];
 const thinFilmSweep = process.argv.includes("--thin-film-sweep");
 const roughnessFresnelOnly = process.argv.includes("--roughness-fresnel-only");
+const uiNormalBandOnly = process.argv.includes("--ui-normal-band-only");
 const executablePath = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   "/Applications/Chromium.app/Contents/MacOS/Chromium",
@@ -22,6 +23,24 @@ const browser = await puppeteer.launch({
 try {
   const page = await browser.newPage();
   await page.setViewport({ width: 768, height: 768, deviceScaleFactor: 1 });
+  const captureUiNormalBand = async () => {
+    await page.goto(`${baseUrl}/materialx?capture=1&diagnostic=ui-normal-band`, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(
+      () => document.documentElement.dataset.materialxImplementation === "official-essl-fis"
+        && document.querySelector("#materialx-status")?.textContent?.includes("UI normal-band semantic diagnostic"),
+      { timeout: 30_000 },
+    );
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const uiCanvas = await page.$("#materialx-canvas");
+    if (!uiCanvas) throw new Error("MaterialX UI normal-band diagnostic canvas missing");
+    await uiCanvas.screenshot({ path: path.join(outputDir, "ui-normal-band-web.png") });
+    console.log("MATERIALX_WEB_REFERENCE ui-normal-band-web.png");
+  };
+  if (uiNormalBandOnly) {
+    await captureUiNormalBand();
+    await browser.close();
+    process.exit(0);
+  }
   const captureRoughnessFresnel = async () => {
     for (const [diagnostic, preset, filename] of [
       [
@@ -135,17 +154,7 @@ try {
     { timeout: 30_000 },
   );
   console.log("MATERIALX_WEB_SMOKE typed-col-geomprop");
-  await page.goto(`${baseUrl}/materialx?capture=1&diagnostic=ui-normal-band`, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(
-    () => document.documentElement.dataset.materialxImplementation === "official-essl-fis"
-      && document.querySelector("#materialx-status")?.textContent?.includes("UI normal-band semantic diagnostic"),
-    { timeout: 30_000 },
-  );
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  const uiCanvas = await page.$("#materialx-canvas");
-  if (!uiCanvas) throw new Error("MaterialX UI normal-band diagnostic canvas missing");
-  await uiCanvas.screenshot({ path: path.join(outputDir, "ui-normal-band-web.png") });
-  console.log("MATERIALX_WEB_REFERENCE ui-normal-band-web.png");
+  await captureUiNormalBand();
   for (const environment of ["fis", "prefilter"]) {
     for (const roughness of [0, 2 / 15, 0.2610441]) {
       const slug = Number(roughness.toPrecision(7)).toString().replace(".", "p");

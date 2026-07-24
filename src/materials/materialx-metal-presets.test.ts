@@ -220,7 +220,7 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
 
 test("matched Blender and browser metal probes pass the constant-input similarity gate", () => {
   const comparison = JSON.parse(fs.readFileSync(evidenceUrl("comparison.json"), "utf8"));
-  assert.equal(comparison.comparisonVersion, 12);
+  assert.equal(comparison.comparisonVersion, 13);
   assert.match(comparison.renderContract.metalPresetMatrix, /0\.35.*0\.1225/);
   assert.deepEqual(Object.keys(comparison.metalPresetMatrix), Object.keys(expectedPresets));
   for (const id of Object.keys(expectedPresets)) {
