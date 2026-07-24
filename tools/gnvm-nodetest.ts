@@ -299,6 +299,31 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Subdivided Cube uses Blender face order", JSON.stringify(cube.mesh?.faces.slice(0, 3)) === JSON.stringify([
     [0, 4, 5, 1], [1, 5, 6, 2], [2, 6, 7, 3],
   ]));
+
+  const minimalCube = runNode("GeometryNodeMeshCube", {
+    Size: [2, 4, 6],
+    "Vertices X": 2,
+    "Vertices Y": 2,
+    "Vertices Z": 2,
+  }).Mesh as Geometry;
+  const minimalFaceCenters = minimalCube.mesh!.faces.map((face) => face.reduce(
+    (sum, vertex) => {
+      const point = minimalCube.mesh!.positions[vertex];
+      return [sum[0] + point[0] / face.length, sum[1] + point[1] / face.length, sum[2] + point[2] / face.length];
+    },
+    [0, 0, 0],
+  ));
+  check(
+    "Minimal Cube keeps Blender Geometry Nodes face order",
+    approx(minimalFaceCenters.flat(), [
+      0, 0, -3,
+      0, -2, 0,
+      0, 0, 3,
+      0, 2, 0,
+      -1, 0, 0,
+      1, 0, 0,
+    ]),
+  );
 }
 
 {

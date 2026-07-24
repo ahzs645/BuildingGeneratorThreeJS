@@ -4,7 +4,7 @@ Audit date: 2026-07-24
 
 Source: `/Users/ahmadjalil/Documents/No3d Tools`
 
-Current extractor/runtime: Blender 5.1.2, `tools/dump_blend.py` 1.4, GN-VM
+Current extractor/runtime: Blender 5.1.2, `tools/dump_blend.py` 1.5, GN-VM
 
 Runtime probe: one isolated process per target, 30-second limit
 
@@ -53,6 +53,7 @@ The compatibility pass added or completed:
 - Menu Switch named item masks used by `separate-half`, including raw string
   and datablock selection values;
 - sequential Geometry Nodes modifier-stack execution;
+- viewport/render enablement metadata for every Blender modifier;
 - bounded, validated embedding and execution of available constant-path STL
   files.
 
@@ -141,7 +142,7 @@ Empty output is not one category:
   `view-crv-points` now exports and renders its two loose point-cloud points
   without inflating mesh topology.
 - Arduino Nano and Benchy previously lost their 99,022- and 112,569-vertex
-  bases to the generic 10k extraction rule. Extractor 1.4 embeds direct
+  bases to the generic 10k extraction rule. Extractor 1.5 embeds direct
   modifier bases up to 250k vertices within a 1M-vertex total budget. Real
   refreshed probes reproduce 99,022/74,781 and 112,569/225,154
   vertices/faces with no runtime gaps.
@@ -154,11 +155,15 @@ Empty output is not one category:
   empty with refreshed embedded bases. Their closures are portable, but they
   need intermediate-output parity probes before they can be called usable.
 
-Sequential modifier evaluation fixes the empty-input failure for the later
-`nylon-bolt` modifier. It now consumes modifier 0 and runs without missing
-nodes. Its GN-VM result is 280,548 vertices / 255,600 faces, while Blender's
-reference is 8,735 / 10,070. That is a known geometry-parity gap, not a
-modifier-stack plumbing gap, and must remain labeled as such.
+The visible `nylon-bolt` modifier now matches Blender exactly at **8,735
+vertices / 10,070 faces / 17,390 triangles** with identical local bounds.
+Blender Face-domain Index uses Geometry Nodes' `-Z, -Y, +Z, +Y, -X, +X`
+minimal-cube order, and FLOAT intersection leaves the thread's one cut contour
+open before the authored `ETK_Fill Holes` helper closes it. The following
+`cl_thumbs` Geometry Nodes modifier is authored with `show_viewport=false`.
+Extractor 1.5 preserves that state, so default browser evaluation no longer
+adds its hidden thumbnail-line geometry. It remains addressable as an explicit
+diagnostic target.
 
 ## Source packaging audit
 
@@ -174,7 +179,7 @@ Node implementation cannot repair missing source data:
 - `corner-mounted-skadis` references four unavailable absolute Dropbox STL
   paths, plus a missing font and two missing images.
 - The two putty files previously took several minutes to extract because
-  Blender attempted to rasterize every glyph from missing fonts. Extractor 1.4
+  Blender attempted to rasterize every glyph from missing fonts. Extractor 1.5
   now skips an unavailable atlas, retains an explicit empty/unavailable font
   contract, and emits one packaging warning instead.
 
@@ -194,8 +199,8 @@ retained; STL also carries no authoritative unit or material metadata.
 1. Continue reducing face-proximity and deep-field costs in the four
    budget-sensitive targets before enabling live edit; the manual-preview
    policy remains intentional.
-2. Isolate the first `nylon-bolt` modifier parity divergence with intermediate
-   geometry probes.
+2. Reconcile the Print Test Mesh's omitted post-GN Bevel stack and the legacy
+   Chrome Crayon's one-loose-vertex alternate-width residual.
 3. Pack or license-replace the eight missing fonts, restore required images,
    and supply the four McMaster STLs if those exact screws are intended to ship.
 4. Expand beyond the new seam, non-manifold, adaptivity, and budget fixtures

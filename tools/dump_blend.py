@@ -775,9 +775,16 @@ for obj in bpy.data.objects:
         finally:
             evaluated.to_mesh_clear()
     for mod in obj.modifiers:
-        m = {"name": mod.name, "type": mod.type}
+        # Modifier enablement is part of Blender's evaluated viewport contract,
+        # not merely UI state. Keep it for every modifier type so the browser
+        # does not execute authored-but-disabled Geometry Nodes helpers.
+        m = {
+            "name": mod.name,
+            "type": mod.type,
+            "show_viewport": bool(getattr(mod, "show_viewport", True)),
+            "show_render": bool(getattr(mod, "show_render", True)),
+        }
         if mod.type == "HOOK":
-            m["show_viewport"] = bool(getattr(mod, "show_viewport", True))
             m["vertex_indices"] = list(mod.vertex_indices)
             m["strength"] = float(mod.strength)
             m["falloff_type"] = str(mod.falloff_type)
@@ -1339,7 +1346,7 @@ def build_extraction_metadata(payload):
 
     return {
         "schema_version": 1,
-        "extractor": {"name": "tools/dump_blend.py", "version": "1.4", "blender_version": bpy.app.version_string},
+        "extractor": {"name": "tools/dump_blend.py", "version": "1.5", "blender_version": bpy.app.version_string},
         "source": source,
         "roots": {"objects": roots, "node_groups": root_groups},
         "provenance": {

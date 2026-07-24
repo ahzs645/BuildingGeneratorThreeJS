@@ -102,7 +102,11 @@ export function executedGeometryNodeRootsForBlendStudioTarget(
   return (object.modifiers ?? [])
     .slice(0, target.modifierIndex + 1)
     .flatMap((modifier) =>
-      modifier.type === "NODES" && modifier.node_group ? [modifier.node_group] : []);
+      modifier.type === "NODES"
+        && modifier.node_group
+        && (modifier.show_viewport !== false || modifier === object.modifiers?.[target.modifierIndex])
+        ? [modifier.node_group]
+        : []);
 }
 
 /**
@@ -127,6 +131,7 @@ export function modifierStackIssuesForBlendStudioTarget(
   let encounteredNodes = false;
   for (const [modifierIndex, modifier] of (object.modifiers ?? []).entries()) {
     if (modifierIndex >= target.modifierIndex) break;
+    if (modifier.show_viewport === false) continue;
     if (modifier.type === "NODES") {
       encounteredNodes = true;
       if (!modifier.node_group) {
@@ -147,7 +152,6 @@ export function modifierStackIssuesForBlendStudioTarget(
       continue;
     }
     if (modifier.type === "HOOK" && !encounteredNodes) {
-      if (modifier.show_viewport === false) continue;
       if (!modifier.object) continue;
       const hookObject = dump.objects?.find((candidate) => candidate.name === modifier.object);
       const strength = Number(modifier.strength ?? 1);

@@ -7,7 +7,15 @@ import { Dump, runGenerator } from "../src/gnvm/index";
 const [, , dumpPath, objectName, outPath, spec, mode = "direct", overridesPath] = process.argv;
 if (!dumpPath || !objectName || !outPath || !spec) throw new Error("missing dump/object/output/spec");
 const dump = JSON.parse(readFileSync(dumpPath, "utf8")) as Dump;
-const source = dump.objects?.find((object) => object.name === objectName)?.modifiers?.find((modifier) => modifier.type === "NODES");
+const requestedModifierIndex = process.env.GNVM_PROBE_MODIFIER_INDEX === undefined
+  ? undefined
+  : Number(process.env.GNVM_PROBE_MODIFIER_INDEX);
+const modifiers = dump.objects?.find((object) => object.name === objectName)?.modifiers ?? [];
+const source = requestedModifierIndex === undefined
+  ? modifiers.find((modifier) => modifier.type === "NODES")
+  : modifiers[requestedModifierIndex]?.type === "NODES"
+    ? modifiers[requestedModifierIndex]
+    : undefined;
 if (!source?.node_group) throw new Error(`no Geometry Nodes modifier on ${objectName}`);
 const root = (dump.node_groups as any)[source.node_group];
 const split = spec.lastIndexOf(":");
@@ -62,7 +70,11 @@ const overrides = process.env.GNVM_PROBE_OVERRIDES
   : overridesPath
   ? JSON.parse(readFileSync(overridesPath, "utf8"))[0]?.overrides ?? {}
   : undefined;
-const result = await runGenerator(dump, { object: objectName, overrides });
+const result = await runGenerator(dump, {
+  object: objectName,
+  overrides,
+  modifierIndex: requestedModifierIndex,
+});
 const geometry = result.geometry;
 writeFileSync(outPath, JSON.stringify({
   positions: geometry.mesh?.positions ?? [],

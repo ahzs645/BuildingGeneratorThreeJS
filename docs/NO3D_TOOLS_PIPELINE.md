@@ -16,9 +16,10 @@ describes the pipeline contract.
 1. The local Vite endpoint accepts plain, Gzip-compressed, or
    Zstandard-compressed `.blend` envelopes, validates the header and 1 GiB
    upload limit, and runs `tools/dump_blend.py` in background Blender.
-2. Extractor 1.4 records node groups, stable interface/socket identifiers,
-   modifier bindings, object/collection dependencies, materials, curves,
-   bounded base meshes, and source-packaging warnings.
+2. Extractor 1.5 records node groups, stable interface/socket identifiers,
+   modifier bindings and viewport/render enablement, object/collection
+   dependencies, materials, curves, bounded base meshes, and source-packaging
+   warnings.
 3. Small base meshes are embedded as before. Direct Geometry Nodes modifier
    objects may additionally embed bases up to 250,000 vertices within a
    1,000,000-vertex per-dump budget. Referenced Object/Collection Info geometry
@@ -58,9 +59,11 @@ the `.blend`.
 
 Studio and API callers share the typed `runGeometryTarget` contract.
 
-- Object targets evaluate all earlier valid Geometry Nodes modifiers in order.
-  Each modifier retains its own saved inputs. UI overrides and explicit
-  replacement seeds apply only to the selected modifier.
+- Object targets evaluate all earlier viewport-enabled Geometry Nodes modifiers
+  in order. Each modifier retains its own saved inputs. UI overrides and
+  explicit replacement seeds apply only to the selected modifier. A disabled
+  modifier can still be selected explicitly for diagnostics without causing it
+  to run implicitly in later viewport targets.
 - Reusable groups bind their exposed interface directly and accept cube, plane,
   curve-line, curve-circle, or extracted-object seeds.
 - Object and group targets select Geometry sockets by stable identifier rather
@@ -121,9 +124,9 @@ entire corpus.
   Gabor volume modifier completed the corrected concurrent audit in 27.4
   seconds after edge-BVH and field-allocation optimizations, while Apple
   Magsafe and Putty Flange still exceed a 60-second isolated budget.
-- The later `nylon-bolt` modifier now receives the earlier modifier output, but
-  its final topology still differs from Blender and requires intermediate
-  parity probes.
+- Nylon Bolt's visible modifier is exact at 8,735 / 10,070. Its later
+  `cl_thumbs` modifier is authored viewport-disabled and remains an explicit
+  diagnostic target rather than part of the default evaluated stack.
 - Menu Switch supports Geometry/Field selection, named item masks, raw strings,
   and opaque datablock identity values.
 - Empty closure identity, callable Closure zones, and exact Blender-derived 2D

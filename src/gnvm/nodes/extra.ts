@@ -2786,9 +2786,15 @@ export function clipToSingleBoxPlaneIntersection(
     const desired = cut.keepGreater ? -1 : 1;
     return Math.sign(area) === desired ? face : [...face].reverse();
   };
+  const sourceHasBoundary = buildTopology(source).edges.some((edge) => edge.faces.length === 1);
   const capFaces: number[][] = [];
   if (loops.length === 1) {
-    capFaces.push(orientCap(loops[0]));
+    // A single cut contour on an already-open surface stays open in Blender's
+    // FLOAT solver.  Treating every contour as a solid cap added a 37-gon to
+    // Nylon Bolt's clipped thread and hid those 37 boundary edges.  A closed
+    // source still receives the ordinary solid cap; the two-loop annular-shell
+    // case below remains cap-able even though its source has open ends.
+    if (!sourceHasBoundary) capFaces.push(orientCap(loops[0]));
   } else if (loops.length === 2) {
     const ordered = [...loops].sort((a, b) => Math.abs(signedArea(b)) - Math.abs(signedArea(a)));
     const outer = ordered[0], inner = ordered[1];

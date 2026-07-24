@@ -123,6 +123,7 @@ export function findModifierGroup(
       if (
         m.type === "NODES"
         && m.node_group
+        && (modifierIndex !== undefined || m.show_viewport !== false)
         && (!groupName || m.node_group === groupName)
       ) return { group: m.node_group, inputs: m.input_values ?? {}, objectName: o.name };
     }
@@ -217,7 +218,10 @@ export async function runGenerator(
   DUMP_CONTEXT.evaluatingObjects.clear();
   DUMP_CONTEXT.legacyCurvePassthroughObjects.clear();
   for (const object of DUMP_CONTEXT.objects) {
-    const modifier = object.modifiers?.find((candidate) => candidate.type === "NODES" && candidate.node_group);
+    const modifier = object.modifiers?.find((candidate) =>
+      candidate.type === "NODES"
+      && candidate.node_group
+      && candidate.show_viewport !== false);
     if (object.type === "CURVE" && modifier?.node_group && isGeometryPassthroughGroup(dump.node_groups[modifier.node_group]))
       DUMP_CONTEXT.legacyCurvePassthroughObjects.add(object.name);
   }
@@ -247,6 +251,7 @@ export async function runGenerator(
       index <= targetModifierIndex
       && modifier.type === "NODES"
       && Boolean(modifier.node_group)
+      && (index === targetModifierIndex || modifier.show_viewport !== false)
       && Boolean(dump.node_groups[modifier.node_group!]));
   DUMP_CONTEXT.activeObject = activeObject;
   // Note: Solidify N++ Thickness in this dump is intentionally ~0.1 (unlinked).
@@ -267,7 +272,11 @@ export async function runGenerator(
     for (const dependencyName of dependencyNames) {
       const object = objectsByName.get(dependencyName);
       if (!object) continue;
-      const modifier = object.modifiers?.find((candidate) => candidate.type === "NODES" && candidate.node_group && dump.node_groups[candidate.node_group]);
+      const modifier = object.modifiers?.find((candidate) =>
+        candidate.type === "NODES"
+        && candidate.node_group
+        && candidate.show_viewport !== false
+        && dump.node_groups[candidate.node_group]);
       if (!modifier?.node_group) continue;
       const dependencyGroup: any = dump.node_groups[modifier.node_group];
       const dependencyInputs: Record<string, any> = { ...(modifier.input_values ?? {}) };

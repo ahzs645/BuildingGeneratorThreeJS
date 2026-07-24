@@ -125,6 +125,29 @@ test("single-plane FLOAT intersection preserves shell panels and caps an annulus
   assert.equal(clipped.attributes.get("panel")?.data.length, 10);
 });
 
+test("single-plane FLOAT intersection leaves one contour open on an open surface", () => {
+  const source = new Mesh();
+  source.positions = [
+    [-1, -1, 0], [1, -1, 0], [1, 1, 0], [-1, 1, 0],
+    [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1],
+  ];
+  for (let edge = 0; edge < 4; edge++) {
+    const next = (edge + 1) % 4;
+    source.faces.push([edge, next, 4 + next, 4 + edge]);
+  }
+  source.faceMaterial = source.faces.map(() => 0);
+
+  const clipped = clipToSingleBoxPlaneIntersection(source, {
+    min: [-2, -2, -1],
+    max: [2, 2, .5],
+  });
+
+  assert.ok(clipped);
+  assert.equal(clipped.positions.length, 8);
+  assert.equal(clipped.faces.length, 4);
+  assert.ok(clipped.faces.every((face) => face.length === 4));
+});
+
 test("FLOAT intersection preserves topology inside an enclosing box", () => {
   const source = new Geometry();
   source.mesh = box([0, 0, 0], [1, 1, 1], .2, "source");

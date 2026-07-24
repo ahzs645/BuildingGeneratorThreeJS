@@ -151,6 +151,7 @@ export interface DumpModifier {
   name?: string;
   type: string;
   show_viewport?: boolean;
+  show_render?: boolean;
   node_group?: string;
   input_values?: Record<string, any>;
   object?: string;

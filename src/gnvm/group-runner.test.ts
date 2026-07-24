@@ -258,3 +258,47 @@ test("object targets evaluate earlier Geometry Nodes modifiers in stack order", 
   assert.equal(Math.min(...replacement.geometry.mesh!.positions.map((point) => point[0])), -1);
   assert.equal(Math.min(...replacement.geometry.mesh!.positions.map((point) => point[1])), 1);
 });
+
+test("object targets skip viewport-disabled Geometry Nodes modifiers", async () => {
+  const dump: Dump = {
+    node_groups: { "Asset Group": transformGroup() },
+    objects: [{
+      name: "Stacked",
+      type: "MESH",
+      mesh: {
+        verts: [[0, 0, 0], [1, 0, 0], [0, 1, 0]],
+        edges: [[0, 1], [1, 2], [2, 0]],
+        faces: [[0, 1, 2]],
+      },
+      modifiers: [
+        {
+          name: "Hidden Move",
+          type: "NODES",
+          show_viewport: false,
+          node_group: "Asset Group",
+          input_values: { InputOffset: [100, 0, 0] },
+        },
+        {
+          name: "Visible Move",
+          type: "NODES",
+          node_group: "Asset Group",
+          input_values: { InputOffset: [0, 2, 0] },
+        },
+      ],
+    }],
+  };
+
+  const visible = await runGeometryTarget(dump, {
+    kind: "object",
+    object: "Stacked",
+    modifierIndex: 1,
+  });
+  assert.deepEqual(visible.geometry.mesh!.positions[0], [0, 2, 0]);
+
+  const explicitHidden = await runGeometryTarget(dump, {
+    kind: "object",
+    object: "Stacked",
+    modifierIndex: 0,
+  });
+  assert.deepEqual(explicitHidden.geometry.mesh!.positions[0], [100, 0, 0]);
+});

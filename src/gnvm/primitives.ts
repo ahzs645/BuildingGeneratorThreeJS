@@ -28,13 +28,18 @@ export function meshCube(size: Vec3, vx = 2, vy = 2, vz = 2): Geometry {
       [-sx, -sy, -sz], [sx, -sy, -sz], [sx, sy, -sz], [-sx, sy, -sz],
       [-sx, -sy, sz], [sx, -sy, sz], [sx, sy, sz], [-sx, sy, sz],
     ];
+    // Geometry Nodes' Cube primitive keeps the same directional face order as
+    // the subdivided builder below even at the 2 × 2 × 2 minimum:
+    // -Z, -Y, +Z, +Y, -X, +X.  This differs from the ordinary object-mode
+    // cube's polygon order.  Graphs can observe it through Face-domain Index;
+    // Nylon Bolt selects face 5 of a Bounding Box to identify its +X end.
     m.faces = [
       [0, 3, 2, 1], // -z
-      [4, 5, 6, 7], // +z
       [0, 1, 5, 4], // -y
-      [1, 2, 6, 5], // +x
+      [4, 5, 6, 7], // +z
       [2, 3, 7, 6], // +y
       [3, 0, 4, 7], // -x
+      [1, 2, 6, 5], // +x
     ];
   } else {
     // Blender stores a subdivided Cube as a bottom grid, perimeter rings for

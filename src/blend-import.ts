@@ -19,7 +19,13 @@ type ImportedDump = Omit<Dump, "objects" | "node_groups" | "materials"> & {
   objects?: Array<{
     name: string;
     type?: string;
-    modifiers?: Array<{ type: string; node_group?: string; input_values?: Record<string, unknown> }>;
+    modifiers?: Array<{
+      type: string;
+      show_viewport?: boolean;
+      show_render?: boolean;
+      node_group?: string;
+      input_values?: Record<string, unknown>;
+    }>;
   }>;
   node_groups: Record<string, RawGroup>;
   materials?: Record<string, RawMaterial>;
