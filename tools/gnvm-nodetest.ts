@@ -2465,6 +2465,13 @@ function meshSignedAreaXY(m: Mesh): number {
   }, { operation: "ARCCOSINE" }).Value as Field;
   check("Math Arccosine matches Blender's float libm path",
     Object.is(arccosine.value, 1.1856637001037598), `value=${arccosine.value}`);
+  const pingPong = runNode("ShaderNodeMath", {
+    Value: 1405,
+    Value_001: 78.16999816894531,
+    Value_002: 0,
+  }, { operation: "PINGPONG" }).Value as Field;
+  check("Math Ping-Pong matches Blender float32 wrapping",
+    Object.is(pingPong.value, 2.0600814819335938), `value=${pingPong.value}`);
   const multiply = runNode("ShaderNodeVectorMath", {
     Vector: [-0.32352685928344727, -0.1122373640537262, 0.9395387768745422],
     Vector_001: [0.2080218493938446, 0.2080218493938446, 0.2080218493938446],

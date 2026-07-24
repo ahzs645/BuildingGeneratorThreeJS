@@ -82,6 +82,17 @@ function blenderVectorDistanceFloat(a: Vec3, b: Vec3): number {
   ]);
 }
 
+function blenderPingPongFloat(value: number, scale: number): number {
+  const f = Math.fround;
+  const x = f(value);
+  const width = f(scale);
+  if (width === 0) return 0;
+  const period = f(f(2) * width);
+  const normalized = f(f(x - width) / period);
+  const fraction = f(normalized - Math.floor(normalized));
+  return f(Math.abs(f(f(fraction * period) - width)));
+}
+
 // ---- Math (scalar) --------------------------------------------------------
 const MATH: Record<string, (a: number, b: number, c: number) => number> = {
   ADD: (a, b) => a + b,
@@ -116,7 +127,7 @@ const MATH: Record<string, (a: number, b: number, c: number) => number> = {
   FLOORED_MODULO: (a, b) => (b === 0 ? 0 : a - b * Math.floor(a / b)),
   WRAP: (a, b, c) => (b - c === 0 ? c : a - (b - c) * Math.floor((a - c) / (b - c))),
   SNAP: (a, b) => (b === 0 ? 0 : Math.floor(a / b) * b),
-  PINGPONG: (a, b) => (b === 0 ? 0 : b - Math.abs(((((a - b) % (2 * b)) + 2 * b) % (2 * b)) - b)),
+  PINGPONG: blenderPingPongFloat,
   SINE: (a) => Math.sin(a),
   COSINE: (a) => Math.cos(a),
   TANGENT: (a) => Math.tan(a),

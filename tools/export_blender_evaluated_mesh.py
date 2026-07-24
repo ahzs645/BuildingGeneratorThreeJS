@@ -48,6 +48,10 @@ original_scene = bpy.context.window.scene
 export_scene = bpy.data.scenes.new("__NODE_DOJO_EVALUATED_MESH_SCENE")
 export_scene.collection.objects.link(obj)
 bpy.context.window.scene = export_scene
+frame_override = os.environ.get("NODE_DOJO_FRAME")
+if frame_override is not None:
+    export_scene.frame_set(int(frame_override))
+    print(f"NODE_DOJO_FRAME_OK {export_scene.frame_current}")
 obj.hide_render = False
 obj.hide_viewport = False
 obj.hide_set(False)

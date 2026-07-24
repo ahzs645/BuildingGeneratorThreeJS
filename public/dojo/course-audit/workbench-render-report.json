@@ -369,6 +369,14 @@
       "object": "Plane.017",
       "status": "measured-workbench-renderer-residual",
       "valid": true,
+      "validation": {
+        "topologyReady": true,
+        "countMatch": true,
+        "alphaBackedReference": true,
+        "comparableSurfaceMask": true,
+        "minimumSurfaceMaskIoU": 0.5,
+        "surfacePlacementAligned": true
+      },
       "blenderReference": "public/dojo/references/course-modules/intro-room-material-stage.png",
       "browserReference": "public/dojo/references/course-modules/intro-room-material-stage-workbench-webgl.png",
       "comparisonReport": "public/dojo/course-modules/intro-room-material-stage/workbench-comparison.json",
@@ -386,18 +394,18 @@
         "blenderAlphaSurfacePixels": 160541
       },
       "comparison": {
-        "surfaceMaskIoU": 0.7743500611440736,
-        "surfaceMaskIoUDilated1px": 0.7725344881467923,
-        "surfaceCornerRmsePixels": 134.2010242403547,
-        "blenderSurfaceCoveredWithin1px": 0.8542363416374523,
-        "browserSurfaceCoveredWithin1px": 0.9032133051326178,
-        "pixelRgbMae": 0.12914737069273707,
-        "pixelLuminanceMae": 0.12808435354687248,
-        "pixelLuminanceCorrelation": -0.06418112282038002,
-        "binaryMaskDisagreementFraction": 0.6660793273624566,
-        "macroLuminanceMae": 0.10532363982180104,
-        "macroLuminanceCorrelation": -0.05474402154733468,
-        "meanLuminanceDelta": 0.09827495074282988
+        "surfaceMaskIoU": 0.9991189809960478,
+        "surfaceMaskIoUDilated1px": 0.9991604311829341,
+        "surfaceCornerRmsePixels": 1.9404563269628732,
+        "blenderSurfaceCoveredWithin1px": 1,
+        "browserSurfaceCoveredWithin1px": 1,
+        "pixelRgbMae": 0.06171539000923545,
+        "pixelLuminanceMae": 0.0599061303178486,
+        "pixelLuminanceCorrelation": 0.06197328724468788,
+        "binaryMaskDisagreementFraction": 0.1785450367932437,
+        "macroLuminanceMae": 0.04112749660712552,
+        "macroLuminanceCorrelation": 0.12945912320282396,
+        "meanLuminanceDelta": 0.036001307366473945
       },
       "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
     },
