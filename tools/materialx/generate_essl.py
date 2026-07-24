@@ -30,6 +30,17 @@ def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument(
+        "--environment-mode",
+        choices=("fis", "prefilter"),
+        default="fis",
+        help="MaterialX specular environment implementation used by generated material shaders.",
+    )
+    parser.add_argument(
+        "--write-environment-prefilter",
+        action="store_true",
+        help="Generate the official MaterialX environment-prefilter pass instead of a material pass.",
+    )
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else sys.argv[1:]
     return parser.parse_args(argv)
 
@@ -104,6 +115,16 @@ def rewrite_geomprop_vertex_inputs(source: str) -> str:
         )
         source = source.replace(f"{name} = {name};", f"{name} = {attribute};")
     return source
+
+
+def rewrite_environment_prefilter_essl(source: str) -> str:
+    """Repair MaterialX 1.39.4's WebGL-invalid float/int pow overload."""
+    needle = "pow(2.0, u_envPrefilterMip)"
+    if source.count(needle) != 1:
+        raise RuntimeError(
+            "Expected exactly one MaterialX environment-prefilter mip exponent expression"
+        )
+    return source.replace(needle, "exp2(float(u_envPrefilterMip))")
 
 
 def geomprop_definitions(source: Path) -> dict[str, dict]:
@@ -189,7 +210,12 @@ def main() -> None:
     context.registerSourceCodeSearchPath(str(source.parent))
     generation = context.getOptions()
     generation.shaderInterfaceType = mx_gen_shader.ShaderInterfaceType.SHADER_INTERFACE_COMPLETE
-    generation.hwSpecularEnvironmentMethod = mx_gen_shader.SPECULAR_ENVIRONMENT_FIS
+    generation.hwSpecularEnvironmentMethod = (
+        mx_gen_shader.SPECULAR_ENVIRONMENT_FIS
+        if options.environment_mode == "fis"
+        else mx_gen_shader.SPECULAR_ENVIRONMENT_PREFILTER
+    )
+    generation.hwWriteEnvPrefilter = options.write_environment_prefilter
     generation.hwMaxActiveLightSources = MAX_LIGHTS
     generation.fileTextureVerticalFlip = False
     generation.hwSrgbEncodeOutput = True
@@ -209,7 +235,7 @@ def main() -> None:
         "generator": {
             "materialx": mx.__version__,
             "target": generator.getTarget(),
-            "specularEnvironment": "FIS",
+            "specularEnvironment": options.environment_mode.upper(),
             "radianceSamples": 16,
             "maxLights": MAX_LIGHTS,
             "lightNodeDef": LIGHT_NODEDEF,
@@ -222,18 +248,31 @@ def main() -> None:
         },
         "shaders": {},
     }
+    if options.write_environment_prefilter:
+        manifest["generator"]["writesEnvironmentPrefilter"] = True
+        manifest["generator"]["compatibilityRewrites"] = [
+            "pow(2.0, u_envPrefilterMip) -> exp2(float(u_envPrefilterMip))"
+        ]
     property_definitions = geomprop_definitions(source)
 
     renderables = mx_gen_shader.findRenderableElements(document)
     if not renderables:
         raise RuntimeError("MaterialX document has no renderable elements")
+    if options.write_environment_prefilter:
+        renderables = renderables[:1]
     for element in renderables:
-        shader_name = mx.createValidName(element.getName())
+        shader_name = (
+            "MaterialXEnvironmentPrefilter"
+            if options.write_environment_prefilter
+            else mx.createValidName(element.getName())
+        )
         shader = generator.generate(shader_name, element, context)
         if shader is None:
             raise RuntimeError(f"Generation failed for {element.getNamePath()}")
         vertex = rewrite_geomprop_vertex_inputs(shader.getSourceCode(mx_gen_shader.VERTEX_STAGE))
         fragment = shader.getSourceCode(mx_gen_shader.PIXEL_STAGE)
+        if options.write_environment_prefilter:
+            fragment = rewrite_environment_prefilter_essl(fragment)
         vertex_name = f"{shader.getName()}.vert"
         fragment_name = f"{shader.getName()}.frag"
         (output / vertex_name).write_text(canonical_source(vertex), encoding="utf-8")

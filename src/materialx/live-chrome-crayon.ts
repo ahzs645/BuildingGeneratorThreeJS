@@ -9,16 +9,31 @@ import {
   type BlenderSceneContract,
   type EsslManifest,
 } from "./essl-adapter";
+import { createMaterialXPrefilteredEnvironment } from "./environment-prefilter";
 import { prepareLiveChromeCrayonGeometry } from "./live-chrome-geometry";
+
+export type MaterialXEnvironmentMode = "fis" | "prefilter";
 
 type NativeResources = {
   manifest: EsslManifest;
+  radianceSource: THREE.DataTexture;
   radiance: THREE.DataTexture;
   irradiance: THREE.DataTexture;
   sceneContract: BlenderSceneContract;
 };
 
 let resourcesPromise: Promise<NativeResources> | null = null;
+const prefilteredResources = new WeakMap<THREE.WebGLRenderer, Promise<{
+  manifest: EsslManifest;
+  radiance: THREE.DataTexture;
+  elapsedMilliseconds: number;
+  levels: ReadonlyArray<Readonly<{
+    width: number;
+    height: number;
+    meanRadiance: number;
+    maximumRadiance: number;
+  }>>;
+}>>();
 
 function nativeResources(renderer: THREE.WebGLRenderer): Promise<NativeResources> {
   resourcesPromise ??= Promise.all([
@@ -34,6 +49,7 @@ function nativeResources(renderer: THREE.WebGLRenderer): Promise<NativeResources
     }),
   ]).then(([manifest, radianceSource, irradianceSource, sceneContract]) => ({
     manifest,
+    radianceSource: radianceSource as THREE.DataTexture,
     radiance: prepareMaterialXRadiance(
       radianceSource as THREE.DataTexture,
       renderer.capabilities.getMaxAnisotropy(),
@@ -44,25 +60,91 @@ function nativeResources(renderer: THREE.WebGLRenderer): Promise<NativeResources
   return resourcesPromise;
 }
 
+async function nativePrefilteredResources(
+  renderer: THREE.WebGLRenderer,
+  resources: NativeResources,
+): Promise<{
+  manifest: EsslManifest;
+  radiance: THREE.DataTexture;
+  elapsedMilliseconds: number;
+  levels: ReadonlyArray<Readonly<{
+    width: number;
+    height: number;
+    meanRadiance: number;
+    maximumRadiance: number;
+  }>>;
+}> {
+  const existing = prefilteredResources.get(renderer);
+  if (existing) return existing;
+  const loading = Promise.all([
+    fetch(publicUrl("materialx/generated/native-prefilter/manifest.json"), { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Prefiltered MaterialX manifest fetch failed: ${response.status}`);
+        return response.json() as Promise<EsslManifest>;
+      }),
+    fetch(publicUrl("materialx/generated/environment-prefilter/manifest.json"), { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error(`MaterialX environment-prefilter manifest fetch failed: ${response.status}`);
+        return response.json() as Promise<EsslManifest>;
+      }),
+  ]).then(async ([manifest, writerManifest]) => {
+    const source = prepareMaterialXRadiance(
+      resources.radianceSource,
+      renderer.capabilities.getMaxAnisotropy(),
+    );
+    try {
+      const generated = await createMaterialXPrefilteredEnvironment(renderer, {
+        baseUrl: publicUrl("materialx/generated/environment-prefilter").replace(/\/$/, ""),
+        manifest: writerManifest,
+        shaderName: "MaterialXEnvironmentPrefilter",
+        source,
+      });
+      return {
+        manifest,
+        radiance: generated.radiance,
+        elapsedMilliseconds: generated.elapsedMilliseconds,
+        levels: generated.levels,
+      };
+    } finally {
+      source.dispose();
+    }
+  });
+  prefilteredResources.set(renderer, loading);
+  try {
+    return await loading;
+  } catch (error) {
+    prefilteredResources.delete(renderer);
+    throw error;
+  }
+}
+
 /** Compile the recovered native graph against the live 2.5D GN-VM mesh. */
 export async function makeLiveChromeCrayonMaterial(
   renderer: THREE.WebGLRenderer,
   geometry: THREE.BufferGeometry,
+  environmentMode: MaterialXEnvironmentMode = "fis",
 ): Promise<THREE.RawShaderMaterial> {
   const contract = prepareLiveChromeCrayonGeometry(geometry);
   const resources = await nativeResources(renderer);
+  const prefiltered = environmentMode === "prefilter"
+    ? await nativePrefilteredResources(renderer, resources)
+    : null;
   const material = await createMaterialXEsslMaterial({
-    baseUrl: publicUrl("materialx/generated/native").replace(/\/$/, ""),
-    manifest: resources.manifest,
+    baseUrl: publicUrl(prefiltered
+      ? "materialx/generated/native-prefilter"
+      : "materialx/generated/native").replace(/\/$/, ""),
+    manifest: prefiltered?.manifest ?? resources.manifest,
     shaderName: "chrome_003",
-    radiance: resources.radiance,
+    radiance: prefiltered?.radiance ?? resources.radiance,
     irradiance: resources.irradiance,
     lights: resources.sceneContract.lights.map((light) => materialXLightFromBlenderContract(light)),
     environmentIntensity: 0.18,
     geometry,
     geometryContract: contract,
   });
-  material.name = "chrome.003 · native MaterialX ESSL/FIS";
+  material.name = `chrome.003 · native MaterialX ESSL/${environmentMode === "prefilter" ? "PREFILTER" : "FIS"}`;
   material.userData.geometryContract = contract;
+  material.userData.environmentPrefilterMilliseconds = prefiltered?.elapsedMilliseconds ?? null;
+  material.userData.environmentPrefilterLevels = prefiltered?.levels ?? null;
   return material;
 }

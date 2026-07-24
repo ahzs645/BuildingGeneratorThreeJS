@@ -73,15 +73,36 @@ Steps 1 and 2 now carry through the full live path:
 
 The capability audit has no unsupported or substituted source semantics, and no required attribute uses its default. Default-material promotion remains withheld because the measured zero-roughness reflection response is still renderer-dependent. A visually similar image alone is not sufficient.
 
-### 4. Replace per-fragment FIS with the official prefilter path
+### 4. Replace per-fragment FIS with the official prefilter path — runtime checkpoint complete
 
-Exercise MaterialX's Apache-2.0 environment prefilter shader inside the isolated lab:
+The isolated lab now exercises MaterialX's Apache-2.0 environment prefilter
+shader directly:
 
-- generate the GGX radiance mip chain once per environment;
-- retain the separate irradiance binding;
+- `generate_essl.py` emits both PREFILTER material shaders and the official
+  1,024-sample environment-writer pass;
+- one documented ESSL compatibility rewrite changes MaterialX 1.39.4's invalid
+  `pow(float, int)` overload to the equivalent
+  `exp2(float(u_envPrefilterMip))`;
+- the browser renders and validates all nine float radiance levels from
+  `256×128` through `1×1`, retaining the separate irradiance binding;
+- isolated SwiftShader runs take approximately `0.7–3.1 s` across warm and
+  cold captures, with finite, non-empty radiance at every level;
+- the live topology-exact 2.5D asset exposes PREFILTER as an opt-in preview
+  while FIS remains available; and
+- a matched Blender/browser capture and comparison are stored separately from
+  the prior FIS evidence.
+
+The zero-roughness checkpoint correctly produces almost the same image as FIS:
+full-frame RMSE changes from `0.057457` to `0.057455`, and foreground luminance
+correlation from `0.033654` to `0.033667`. At roughness zero both implementations
+sample level zero, so this is a runtime-equivalence check rather than evidence
+that prefiltering closes the Eevee residual.
+
+Remaining work for this item:
+
 - compare environment-only smooth-metal renders at roughness `0`, `2/15`, and
   `0.2610441`, covering `chrome.003`, `chrome.002`, and the Chrome Grill;
-- measure startup cost, memory, and captured-image changes; and
+- record hardware startup cost and the radiance-chain memory footprint; and
 - keep FIS as the reference fallback until the prefilter path passes.
 
 Do not copy Blender's GPL Eevee convolution shader. Blender remains external comparison evidence only.

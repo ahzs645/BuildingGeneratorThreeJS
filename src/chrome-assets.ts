@@ -37,8 +37,9 @@ const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
 const query = new URLSearchParams(location.search);
 const requestedAsset = query.get("asset");
 const captureMode = query.get("capture");
-const nativeMaterialXCapture = requestedAsset === "25d-chrome-crayon" && captureMode === "materialx-native";
-const requestedPreview = nativeMaterialXCapture ? "materialx-native" : query.get("preview");
+const nativeMaterialXCapture = requestedAsset === "25d-chrome-crayon"
+  && (captureMode === "materialx-native" || captureMode === "materialx-prefilter");
+const requestedPreview = nativeMaterialXCapture ? captureMode : query.get("preview");
 const stipplerCapture = requestedAsset === "img-pixel-stippler"
   && (captureMode === "authored" || captureMode === "stippler-shader");
 const authoredCapture = captureMode === "authored" || stipplerCapture;
@@ -229,11 +230,15 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
   return mesh;
 }
 
-async function applyNativeChromeMaterial(mesh: THREE.Mesh, soup: TriSoup): Promise<void> {
+async function applyNativeChromeMaterial(
+  mesh: THREE.Mesh,
+  soup: TriSoup,
+  environmentMode: "fis" | "prefilter",
+): Promise<void> {
   if (current.id !== "25d-chrome-crayon") {
     throw new Error("Native chrome.003 MaterialX is scoped to the exact 2.5D Chrome Crayon geometry contract");
   }
-  const native = await makeLiveChromeCrayonMaterial(renderer, mesh.geometry);
+  const native = await makeLiveChromeCrayonMaterial(renderer, mesh.geometry, environmentMode);
   const existing = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
   const groups = soup.groups.length
     ? soup.groups
@@ -320,9 +325,12 @@ async function evaluate(): Promise<void> {
   const mesh = makeMesh(result.soup);
   const previewMode = document.querySelector<HTMLSelectElement>('[data-control="__materialPreview"]')?.value;
   reference.src = publicUrl(previewMode === "diagnostic" ? current.reference : current.authoredReference ?? current.reference);
-  if (previewMode === "materialx-native") {
-    status.textContent = "Binding recovered chrome.003 MaterialX graph to live GN-VM geometry…";
-    await applyNativeChromeMaterial(mesh, result.soup);
+  if (previewMode === "materialx-native" || previewMode === "materialx-prefilter") {
+    const prefiltered = previewMode === "materialx-prefilter";
+    status.textContent = prefiltered
+      ? "Generating the shared MaterialX GGX environment mip chain…"
+      : "Binding recovered chrome.003 MaterialX graph to live GN-VM geometry…";
+    await applyNativeChromeMaterial(mesh, result.soup, prefiltered ? "prefilter" : "fis");
   }
   if (id !== requestId) {
     disposeObject(mesh);
@@ -350,12 +358,16 @@ async function evaluate(): Promise<void> {
       && result.soup.stats.faces === (current.blenderStats.triangles ?? current.blenderStats.faces);
   status.classList.toggle("ready", exact);
   status.textContent = exact
-    ? previewMode === "materialx-native"
-      ? "Topology matches Blender · recovered chrome.003 native MaterialX bound"
+    ? previewMode === "materialx-native" || previewMode === "materialx-prefilter"
+      ? previewMode === "materialx-prefilter"
+        ? "Topology matches Blender · native chrome.003 with MaterialX GGX prefilter bound"
+        : "Topology matches Blender · recovered chrome.003 native MaterialX bound"
       : current.curveStats ? "Curve control points match Blender" : "Topology counts match Blender"
     : current.note ?? "Geometry differs from Blender reference";
-  document.documentElement.dataset.chromeAssetsReady = previewMode === "materialx-native" && exact
-    ? "materialx-native"
+  document.documentElement.dataset.chromeAssetsReady = previewMode === "materialx-prefilter" && exact
+    ? "materialx-prefilter"
+    : previewMode === "materialx-native" && exact
+      ? "materialx-native"
     : exact ? "exact" : "inexact";
 }
 function queue(): void { clearTimeout(timer);timer=window.setTimeout(()=>void evaluate().catch((error)=>status.textContent=String(error)),100); }

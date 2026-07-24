@@ -97,6 +97,7 @@ test("2.5D Chrome Crayon exposes the native MaterialX live-mesh preview", () => 
   const assetEntry = catalog.find((entry: { id: string }) => entry.id === "25d-chrome-crayon");
   const preview = assetEntry.controls.find((control: { name: string }) => control.name === "__materialPreview");
   assert.ok(preview.options.some((option: { value: string }) => option.value === "materialx-native"));
+  assert.ok(preview.options.some((option: { value: string }) => option.value === "materialx-prefilter"));
   const status = JSON.parse(fs.readFileSync(
     new URL("../../public/dojo/chrome-assets/25d-chrome-crayon/status.json", import.meta.url),
     "utf8",

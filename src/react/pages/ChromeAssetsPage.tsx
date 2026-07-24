@@ -29,6 +29,7 @@ export default function ChromeAssetsPage(): React.JSX.Element {
   const captureMode = query.get("capture");
   const shaderCapture = captureMode === "authored"
     || captureMode === "materialx-native"
+    || captureMode === "materialx-prefilter"
     || (captureMode === "stippler-shader" && activeAssetId === "img-pixel-stippler");
 
   useEffect(() => {

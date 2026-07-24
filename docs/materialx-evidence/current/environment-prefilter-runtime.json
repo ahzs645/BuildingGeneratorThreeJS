@@ -1,0 +1,68 @@
+{
+  "reportVersion": 1,
+  "generated": "2026-07-24T00:13:31.232Z",
+  "sourceEnvironment": "public/materialx/references/studio-environment.exr",
+  "writerManifest": "public/materialx/generated/environment-prefilter/manifest.json",
+  "materialManifest": "public/materialx/generated/native-prefilter/manifest.json",
+  "implementation": "official MaterialX 1.39.4 ESSL/PREFILTER with a documented pow(float,int) compatibility rewrite",
+  "renderer": "WebKit WebGL",
+  "extension": true,
+  "mipCount": 9,
+  "elapsedMilliseconds": 3096.7000000029802,
+  "levels": [
+    {
+      "width": 256,
+      "height": 128,
+      "meanRadiance": 0.47204277842547526,
+      "maximumRadiance": 2.45703125
+    },
+    {
+      "width": 128,
+      "height": 64,
+      "meanRadiance": 0.4731094821296817,
+      "maximumRadiance": 2.4414515495300293
+    },
+    {
+      "width": 64,
+      "height": 32,
+      "meanRadiance": 0.4804336860397598,
+      "maximumRadiance": 2.3258414268493652
+    },
+    {
+      "width": 32,
+      "height": 16,
+      "meanRadiance": 0.49931137219148997,
+      "maximumRadiance": 1.9668035507202148
+    },
+    {
+      "width": 16,
+      "height": 8,
+      "meanRadiance": 0.5234238195310658,
+      "maximumRadiance": 1.4314607381820679
+    },
+    {
+      "width": 8,
+      "height": 4,
+      "meanRadiance": 0.5542329133798679,
+      "maximumRadiance": 0.9917627573013306
+    },
+    {
+      "width": 4,
+      "height": 2,
+      "meanRadiance": 0.5622863794366518,
+      "maximumRadiance": 0.92867511510849
+    },
+    {
+      "width": 2,
+      "height": 1,
+      "meanRadiance": 0.6410675148169199,
+      "maximumRadiance": 0.7344202399253845
+    },
+    {
+      "width": 1,
+      "height": 1,
+      "meanRadiance": 0.3000251849492391,
+      "maximumRadiance": 0.3026871383190155
+    }
+  ]
+}

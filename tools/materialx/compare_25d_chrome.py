@@ -75,8 +75,14 @@ def main() -> None:
         if "--" in sys.argv
         else "docs/materialx-evidence/current"
     ).resolve()
+    args = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
+    mode = args[1] if len(args) > 1 else "fis"
+    if mode not in {"fis", "prefilter"}:
+        raise RuntimeError(f"Unsupported 2.5D MaterialX comparison mode: {mode}")
     blender = directory / "25d-native-blender.png"
-    web = directory / "25d-native-web.png"
+    web = directory / (
+        "25d-prefilter-web.png" if mode == "prefilter" else "25d-native-web.png"
+    )
     output = {
         "comparisonVersion": 1,
         "asset": "25d-chrome-crayon",
@@ -93,13 +99,25 @@ def main() -> None:
             "lighting": "shared studio-environment.exr at 0.18 plus scene-contract.json directional lights",
             "colorTransform": "Standard/sRGB, no tone mapping",
             "blenderBackend": "Blender 5.1.2 Eevee with the authored chrome.003 node graph",
-            "webBackend": "WebGL2 with official MaterialX 1.39.4 generated ESSL/FIS",
+            "webBackend": (
+                "WebGL2 with official MaterialX 1.39.4 generated ESSL/PREFILTER"
+                if mode == "prefilter"
+                else "WebGL2 with official MaterialX 1.39.4 generated ESSL/FIS"
+            ),
         },
         "fullFrame": metrics(blender, web),
         "foreground": foreground_metrics(blender, web),
-        "claim": "Native graph semantics and live geometry bindings are recovered. Pixel differences remain expected across Eevee and MaterialX FIS BRDF/environment sampling and do not establish renderer identity.",
+        "claim": (
+            "Native graph semantics and live geometry bindings are recovered. The web render uses MaterialX's official 1024-sample GGX environment prefilter and roughness-selected mip lookup; pixel differences versus Eevee remain renderer residuals."
+            if mode == "prefilter"
+            else "Native graph semantics and live geometry bindings are recovered. Pixel differences remain expected across Eevee and MaterialX FIS BRDF/environment sampling and do not establish renderer identity."
+        ),
     }
-    path = directory / "25d-native-comparison.json"
+    path = directory / (
+        "25d-prefilter-comparison.json"
+        if mode == "prefilter"
+        else "25d-native-comparison.json"
+    )
     path.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(output, indent=2))
 

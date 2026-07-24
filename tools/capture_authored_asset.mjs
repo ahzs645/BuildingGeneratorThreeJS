@@ -13,6 +13,7 @@ const sampleCount = process.env.NODE_DOJO_CAPTURE_SAMPLES;
 const environmentIntensity = process.env.NODE_DOJO_CAPTURE_ENVIRONMENT_INTENSITY;
 const environmentRotation = process.env.NODE_DOJO_CAPTURE_ENVIRONMENT_ROTATION;
 const specularIntensity = process.env.NODE_DOJO_CAPTURE_SPECULAR_INTENSITY;
+const captureTimeout = Number(process.env.NODE_DOJO_CAPTURE_TIMEOUT_MS ?? 240_000);
 
 if (!asset || !output) {
   throw new Error(
@@ -22,7 +23,7 @@ if (!asset || !output) {
 if (lightScale !== undefined && (!Number.isFinite(Number(lightScale)) || Number(lightScale) <= 0)) {
   throw new Error(`invalid light scale: ${lightScale}`);
 }
-if (previewMode !== undefined && !["authored", "diagnostic", "workbench", "materialx-native"].includes(previewMode)) {
+if (previewMode !== undefined && !["authored", "diagnostic", "workbench", "materialx-native", "materialx-prefilter"].includes(previewMode)) {
   throw new Error(`invalid preview mode: ${previewMode}`);
 }
 const overrides = overridesPayload === undefined ? null : JSON.parse(overridesPayload);
@@ -45,6 +46,9 @@ if (environmentRotation !== undefined && !Number.isFinite(Number(environmentRota
 if (specularIntensity !== undefined
   && (!Number.isFinite(Number(specularIntensity)) || Number(specularIntensity) < 0)) {
   throw new Error(`NODE_DOJO_CAPTURE_SPECULAR_INTENSITY must be a non-negative number: ${specularIntensity}`);
+}
+if (!Number.isFinite(captureTimeout) || captureTimeout < 1_000) {
+  throw new Error(`NODE_DOJO_CAPTURE_TIMEOUT_MS must be at least 1000: ${captureTimeout}`);
 }
 
 const executablePath = [
@@ -71,7 +75,7 @@ const browser = await puppeteer.launch({
   // Some exact GN-VM assets occupy the renderer thread for longer than
   // Puppeteer's default CDP call timeout while their Web Worker finishes.
   // Keep the protocol ceiling above the explicit readiness timeout below.
-  protocolTimeout: 300_000,
+  protocolTimeout: Math.max(300_000, captureTimeout + 60_000),
   args: ["--no-sandbox", "--enable-unsafe-swiftshader", "--use-angle=swiftshader"],
 });
 try {
@@ -93,7 +97,7 @@ try {
   await page.goto(route.href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(
     () => document.documentElement.dataset.chromeAssetsReady !== undefined,
-    { timeout: 240_000 },
+    { timeout: captureTimeout },
   );
   if (previewMode === "workbench") {
     const switched = await page.evaluate(() => {
@@ -116,7 +120,7 @@ try {
     if (switched) {
       await page.waitForFunction(
         () => document.documentElement.dataset.chromeAssetsReady !== undefined,
-        { timeout: 240_000 },
+        { timeout: captureTimeout },
       );
     }
   }
@@ -153,7 +157,7 @@ try {
     }, overrides);
     await page.waitForFunction(
       () => document.documentElement.dataset.chromeAssetsReady !== undefined,
-      { timeout: 240_000 },
+      { timeout: captureTimeout },
     );
   }
   await page.evaluate(() => new Promise((resolve) => (
@@ -162,7 +166,7 @@ try {
   if (sampleCount !== undefined) {
     await page.waitForFunction(
       () => document.querySelector("#assets-canvas")?.dataset.captureReady === "true",
-      { timeout: 240_000 },
+      { timeout: captureTimeout },
     );
   }
   if (errors.length) throw new Error(`authored-material browser errors:\n${errors.join("\n")}`);

@@ -59,7 +59,9 @@ export type EsslManifest = {
   schemaVersion?: number;
   generator: {
     materialx: string;
-    specularEnvironment: "FIS";
+    specularEnvironment: "FIS" | "PREFILTER";
+    writesEnvironmentPrefilter?: boolean;
+    compatibilityRewrites?: string[];
     radianceSamples: number;
     maxLights: number;
     lightTypeId: number;
@@ -387,7 +389,7 @@ export async function createMaterialXEsslMaterial(
     u_lightData: { value: options.lights.slice(0, options.manifest.generator.maxLights) },
   });
   const material = new THREE.RawShaderMaterial({
-    name: `${options.shaderName} · official MaterialX ESSL/FIS`,
+    name: `${options.shaderName} · official MaterialX ESSL/${options.manifest.generator.specularEnvironment}`,
     vertexShader: stripVersion(vertexShader),
     fragmentShader: stripVersion(fragmentShader),
     glslVersion: THREE.GLSL3,
@@ -395,7 +397,7 @@ export async function createMaterialXEsslMaterial(
     toneMapped: false,
   });
   material.userData.materialBackend = "materialx";
-  material.userData.materialXImplementation = "official-essl-fis";
+  material.userData.materialXImplementation = `official-essl-${options.manifest.generator.specularEnvironment.toLowerCase()}`;
   material.onBeforeRender = (_renderer, _scene, camera, _geometry, object) => {
     const perspective = camera as THREE.PerspectiveCamera;
     uniforms.u_worldMatrix.value.copy(object.matrixWorld);

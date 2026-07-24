@@ -3,7 +3,18 @@ import path from "node:path";
 import puppeteer from "puppeteer-core";
 
 const baseUrl = process.argv[2] ?? "http://127.0.0.1:4173";
-const output = path.resolve(process.argv[3] ?? "docs/materialx-evidence/current/25d-native-web.png");
+const mode = process.argv[4] ?? "fis";
+if (!["fis", "prefilter"].includes(mode)) throw new Error(`invalid 2.5D MaterialX mode: ${mode}`);
+const output = path.resolve(process.argv[3] ?? (
+  mode === "prefilter"
+    ? "docs/materialx-evidence/current/25d-prefilter-web.png"
+    : "docs/materialx-evidence/current/25d-native-web.png"
+));
+const readiness = mode === "prefilter" ? "materialx-prefilter" : "materialx-native";
+const captureTimeout = Number(process.env.NODE_DOJO_CAPTURE_TIMEOUT_MS ?? 240_000);
+if (!Number.isFinite(captureTimeout) || captureTimeout < 1_000) {
+  throw new Error(`NODE_DOJO_CAPTURE_TIMEOUT_MS must be at least 1000: ${captureTimeout}`);
+}
 const executablePath = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   "/Applications/Chromium.app/Contents/MacOS/Chromium",
@@ -14,6 +25,7 @@ fs.mkdirSync(path.dirname(output), { recursive: true });
 const browser = await puppeteer.launch({
   headless: true,
   executablePath,
+  protocolTimeout: Math.max(300_000, captureTimeout + 60_000),
   args: ["--no-sandbox", "--enable-unsafe-swiftshader", "--use-angle=swiftshader"],
 });
 try {
@@ -32,19 +44,20 @@ try {
     }
   });
   await page.goto(
-    `${baseUrl}/chrome-assets?asset=25d-chrome-crayon&capture=materialx-native`,
+    `${baseUrl}/chrome-assets?asset=25d-chrome-crayon&capture=${readiness}`,
     { waitUntil: "domcontentloaded" },
   );
   await page.waitForFunction(
-    () => document.documentElement.dataset.chromeAssetsReady === "materialx-native",
-    { timeout: 240_000 },
+    (expected) => document.documentElement.dataset.chromeAssetsReady === expected,
+    { timeout: captureTimeout },
+    readiness,
   );
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   if (errors.length) throw new Error(`2.5D MaterialX browser errors:\n${errors.join("\n")}`);
   const canvas = await page.$("#assets-canvas");
   if (!canvas) throw new Error("2.5D MaterialX capture canvas missing");
   await canvas.screenshot({ path: output });
-  console.log(`MATERIALX_25D_WEB_REFERENCE ${output}`);
+  console.log(`MATERIALX_25D_WEB_REFERENCE ${JSON.stringify({ output, mode, readiness })}`);
 } finally {
   await browser.close();
 }

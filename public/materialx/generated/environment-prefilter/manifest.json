@@ -1,0 +1,421 @@
+{
+  "generator": {
+    "compatibilityRewrites": [
+      "pow(2.0, u_envPrefilterMip) -> exp2(float(u_envPrefilterMip))"
+    ],
+    "lightNodeDef": "ND_directional_light",
+    "lightTypeId": 1,
+    "materialx": "1.39.4",
+    "maxLights": 3,
+    "radianceSamples": 16,
+    "source": "materialx-direct-conductor.mtlx",
+    "specularEnvironment": "PREFILTER",
+    "target": "essl",
+    "writesEnvironmentPrefilter": true
+  },
+  "licenses": {
+    "materialx": "../licenses/LICENSE",
+    "thirdPartyNotices": "../licenses/THIRD-PARTY.md"
+  },
+  "schemaVersion": 1,
+  "shaders": {
+    "MaterialXEnvironmentPrefilter": {
+      "element": "SyntheticDirectConductor",
+      "fragment": "MaterialXEnvironmentPrefilter.frag",
+      "fragmentInterface": {
+        "inputs": {
+          "VertexData": [
+            {
+              "name": "normalWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "tangentWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "texcoord_0",
+              "path": "",
+              "type": "vector2",
+              "value": null
+            },
+            {
+              "name": "positionWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "LightData": [
+            {
+              "name": "type",
+              "path": "",
+              "type": "integer",
+              "value": null
+            },
+            {
+              "name": "direction",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "color",
+              "path": "",
+              "type": "color3",
+              "value": null
+            },
+            {
+              "name": "intensity",
+              "path": "",
+              "type": "float",
+              "value": null
+            }
+          ],
+          "PrivateUniforms": [
+            {
+              "name": "u_envMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": "-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1"
+            },
+            {
+              "name": "u_envRadiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_envLightIntensity",
+              "path": "",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "u_envRadianceMips",
+              "path": "",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "u_envRadianceSamples",
+              "path": "",
+              "type": "integer",
+              "value": 16
+            },
+            {
+              "name": "u_envIrradiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_refractionTwoSided",
+              "path": "",
+              "type": "boolean",
+              "value": null
+            },
+            {
+              "name": "u_envPrefilterMip",
+              "path": "",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "u_viewPosition",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "u_numActiveLightSources",
+              "path": "",
+              "type": "integer",
+              "value": 0
+            }
+          ],
+          "PublicUniforms": [
+            {
+              "name": "backsurfaceshader",
+              "path": "",
+              "type": "surfaceshader",
+              "value": null
+            },
+            {
+              "name": "displacementshader1",
+              "path": "",
+              "type": "displacementshader",
+              "value": null
+            },
+            {
+              "name": "uv_index",
+              "path": "NG_synthetic_conductor/uv/index",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "base_metal_weight",
+              "path": "NG_synthetic_conductor/base_metal/weight",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "base_metal_ior",
+              "path": "NG_synthetic_conductor/base_metal/ior",
+              "type": "color3",
+              "value": [
+                0.18000000715255737,
+                0.41999998688697815,
+                1.3600000143051147
+              ]
+            },
+            {
+              "name": "base_metal_extinction",
+              "path": "NG_synthetic_conductor/base_metal/extinction",
+              "type": "color3",
+              "value": [
+                3.4200000762939453,
+                2.3499999046325684,
+                1.7699999809265137
+              ]
+            },
+            {
+              "name": "base_metal_roughness",
+              "path": "NG_synthetic_conductor/base_metal/roughness",
+              "type": "vector2",
+              "value": [
+                0.18000000715255737,
+                0.36000001430511475
+              ]
+            },
+            {
+              "name": "base_metal_thinfilm_thickness",
+              "path": "NG_synthetic_conductor/base_metal/thinfilm_thickness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "base_metal_thinfilm_ior",
+              "path": "NG_synthetic_conductor/base_metal/thinfilm_ior",
+              "type": "float",
+              "value": 1.5
+            },
+            {
+              "name": "base_metal_distribution",
+              "path": "NG_synthetic_conductor/base_metal/distribution",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "detail_metal_weight",
+              "path": "NG_synthetic_conductor/detail_metal/weight",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "detail_metal_ior",
+              "path": "NG_synthetic_conductor/detail_metal/ior",
+              "type": "color3",
+              "value": [
+                1.350000023841858,
+                0.9599999785423279,
+                0.6200000047683716
+              ]
+            },
+            {
+              "name": "detail_metal_extinction",
+              "path": "NG_synthetic_conductor/detail_metal/extinction",
+              "type": "color3",
+              "value": [
+                7.46999979019165,
+                6.400000095367432,
+                5.309999942779541
+              ]
+            },
+            {
+              "name": "detail_metal_roughness",
+              "path": "NG_synthetic_conductor/detail_metal/roughness",
+              "type": "vector2",
+              "value": [
+                0.03999999910593033,
+                0.11999999731779099
+              ]
+            },
+            {
+              "name": "detail_metal_thinfilm_thickness",
+              "path": "NG_synthetic_conductor/detail_metal/thinfilm_thickness",
+              "type": "float",
+              "value": 240.0
+            },
+            {
+              "name": "detail_metal_thinfilm_ior",
+              "path": "NG_synthetic_conductor/detail_metal/thinfilm_ior",
+              "type": "float",
+              "value": 1.4500000476837158
+            },
+            {
+              "name": "detail_metal_distribution",
+              "path": "NG_synthetic_conductor/detail_metal/distribution",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "layer_mask_file",
+              "path": "NG_synthetic_conductor/layer_mask/file",
+              "type": "filename",
+              "value": "textures/synthetic-checker.png"
+            },
+            {
+              "name": "layer_mask_layer",
+              "path": "NG_synthetic_conductor/layer_mask/layer",
+              "type": "string",
+              "value": null
+            },
+            {
+              "name": "layer_mask_default",
+              "path": "NG_synthetic_conductor/layer_mask/default",
+              "type": "color3",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "name": "layer_mask_uaddressmode",
+              "path": "NG_synthetic_conductor/layer_mask/uaddressmode",
+              "type": "integer",
+              "value": 2
+            },
+            {
+              "name": "layer_mask_vaddressmode",
+              "path": "NG_synthetic_conductor/layer_mask/vaddressmode",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "layer_mask_filtertype",
+              "path": "NG_synthetic_conductor/layer_mask/filtertype",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "layer_mask_framerange",
+              "path": "NG_synthetic_conductor/layer_mask/framerange",
+              "type": "string",
+              "value": null
+            },
+            {
+              "name": "layer_mask_frameoffset",
+              "path": "NG_synthetic_conductor/layer_mask/frameoffset",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "layer_mask_frameendaction",
+              "path": "NG_synthetic_conductor/layer_mask/frameendaction",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "layer_mask_uv_scale",
+              "path": "",
+              "type": "vector2",
+              "value": [
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "layer_mask_uv_offset",
+              "path": "",
+              "type": "vector2",
+              "value": [
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "name": "layer_factor_index",
+              "path": "NG_synthetic_conductor/layer_factor/index",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "synthetic_surface_opacity",
+              "path": "synthetic_surface/opacity",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "synthetic_surface_thin_walled",
+              "path": "synthetic_surface/thin_walled",
+              "type": "boolean",
+              "value": false
+            }
+          ]
+        }
+      },
+      "geometryBindings": {},
+      "vertex": "MaterialXEnvironmentPrefilter.vert",
+      "vertexInterface": {
+        "inputs": {
+          "VertexInputs": [
+            {
+              "name": "i_position",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_normal",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_tangent",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_texcoord_0",
+              "path": "",
+              "type": "vector2",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "PrivateUniforms": [
+            {
+              "name": "u_worldMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_viewProjectionMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_worldInverseTransposeMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            }
+          ]
+        }
+      }
+    }
+  }
+}

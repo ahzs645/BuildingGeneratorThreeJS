@@ -1113,7 +1113,7 @@
     "material": "chrome-crayon",
     "note": "Exact Blender counts and four-decimal bounds across all three authored branches: 97,784 / 97,776 for the solid and curve preview, and 48,896 / 46,866 when flattened. The authored WebGL mode reconstructs chrome.003 as a linear-0.8 silver Principled surface with Metallic 1. Its Noise/Map Range roughness branch is preserved, but the supplied graph writes rough=0 on every face, so the authored result is intentionally a nearly perfect mirror with no emission or bump. The opt-in native MaterialX preview binds the recovered Blender graph, Generated bounds, and rough attribute to this same live GN-VM mesh; authored remains the default while Eevee/FIS reflection pixels differ.",
     "controls": [
-      { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored chrome.003", "value": "authored" }, { "label": "Recovered chrome.003 · native MaterialX", "value": "materialx-native" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },
+      { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored chrome.003", "value": "authored" }, { "label": "Recovered chrome.003 · native MaterialX", "value": "materialx-native" }, { "label": "Recovered chrome.003 · MaterialX GGX prefilter", "value": "materialx-prefilter" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },
       { "type": "checkbox", "name": "FLATTEN", "label": "Flatten surface", "value": false }
     ]
   },
