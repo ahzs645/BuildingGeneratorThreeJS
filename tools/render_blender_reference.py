@@ -11,6 +11,9 @@ Geometry Nodes modifier before adding the temporary realization pass.
 whose authored output is already a realized mesh.
 ``NODE_DOJO_EVALUATE_LOCAL_SPACE=1`` evaluates the generator at an identity
 transform so Relative Object Info matches the browser's local-space preview.
+``NODE_DOJO_ZERO_LOCATION=1`` removes presentation translation while retaining
+the authored rotation and scale, matching catalog assets that are centered at
+the origin in the browser but still use their source orientation.
 ``NODE_DOJO_FREEZE_EVALUATED_MESH=1`` renders a detached copy of the evaluated
 mesh with the authored world transform. This prevents dependency-sensitive
 graphs from changing between the topology probe and the render.
@@ -120,6 +123,12 @@ frozen_mesh_local = os.environ.get("NODE_DOJO_FROZEN_MESH_SPACE", "WORLD").upper
 obj = bpy.data.objects.get(object_name)
 if obj is None:
     raise RuntimeError(f'object not found: "{object_name}"')
+
+if os.environ.get("NODE_DOJO_ZERO_LOCATION") == "1":
+    obj.location = (0, 0, 0)
+    obj.update_tag()
+    bpy.context.view_layer.update()
+    print("NODE_DOJO_ZERO_LOCATION_OK")
 
 if os.environ.get("NODE_DOJO_EVALUATE_LOCAL_SPACE") == "1":
     # Relative Object Info is evaluated against the modifier object's
@@ -527,6 +536,7 @@ if meta_path:
         "source_blend": file_fingerprint(bpy.data.filepath),
         "blender_version": bpy.app.version_string,
         "local_presentation": local_space,
+        "zero_location": os.environ.get("NODE_DOJO_ZERO_LOCATION") == "1",
         "evaluate_local_space": os.environ.get("NODE_DOJO_EVALUATE_LOCAL_SPACE") == "1",
         "font_override": font_override,
     }

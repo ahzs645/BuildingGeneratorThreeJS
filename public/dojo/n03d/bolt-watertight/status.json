@@ -4,7 +4,17 @@
   "root": "BOLT GEN DHTS v03_Thru Head_1JUL2024.005",
   "status": "visual-near-parity",
   "blender": { "verts": 16570, "faces": 16572 },
-  "gnvm": { "verts": 16226, "faces": 16228 },
+  "gnvm": { "verts": 16284, "faces": 16286 },
+  "gnvmObserved": {
+    "priorCheckpoint": { "verts": 16226, "faces": 16228 },
+    "cleanHead": {
+      "commit": "6e7ebd1",
+      "verts": 16284,
+      "faces": 16286,
+      "matchingBrowserRuns": 2,
+      "cliEvaluationMs": 384412
+    }
+  },
   "coverage": "100% of reachable node types across the 43-group watertight Bolt closure.",
-  "validation": "The authored 13-pass heal branch is manifold in both Blender and GN-VM. Blender's native OpenVDB result varied from 16,526-16,598 vertices across ten sequential runs; the stored 16,570 / 16,572 reference is one valid schedule result. Passing zero-level thresholds verbatim advances the deterministic browser result to 16,226 / 16,228 (2.08% below that reference) with 100% node coverage. Raycast follows Blender's float32 normalization, watertight triangle test, BLI_kdopbvh construction, and direction-dependent traversal. Re-importing the current pass-one browser mesh into Blender and sampling the same 43 x 43 x 71 SDF lattice matches Blender's inside/outside classification at 131,278 of 131,279 samples (99.9992%). Blender emits both 21,636 / 21,810 and 21,642 / 21,818 for the one-pass graph; GN-VM remains exactly 21,642 / 21,818 with bounds within 9.6e-7 after the threshold correction. At two passes Blender emitted 15,572 / 15,678 in a serial run and 15,470 / 15,560 in five concurrent runs, versus deterministic GN-VM 15,324 / 15,434. The remaining full-chain gap is therefore a compounded OpenVDB scheduling/determinism boundary, not evidence that the browser's one-pass surface-net table is structurally wrong. Full 13-pass validation takes about 178 seconds on the current validation machine."
+  "validation": "The authored 13-pass heal branch is manifold in both Blender and GN-VM. Blender's native OpenVDB result varied from 16,526-16,598 vertices across ten sequential runs; the stored 16,570 / 16,572 reference and the final authored-material capture's 16,566 / 16,568 are valid schedule results. Two isolated browser runs and one clean CLI evaluation at commit 6e7ebd1 agree at 16,284 / 16,286, 1.73% below the stored reference; the earlier 16,226 / 16,228 checkpoint is retained as prior evidence instead of silently overwritten. Raycast follows Blender's float32 normalization, watertight triangle test, BLI_kdopbvh construction, and direction-dependent traversal. Re-importing the pass-one browser mesh into Blender and sampling the same 43 x 43 x 71 SDF lattice matches Blender's inside/outside classification at 131,278 of 131,279 samples (99.9992%). Blender emits both 21,636 / 21,810 and 21,642 / 21,818 for the one-pass graph; GN-VM remains exactly 21,642 / 21,818 with bounds within 9.6e-7 after the threshold correction. At two passes Blender emitted 15,572 / 15,678 in a serial run and 15,470 / 15,560 in five concurrent runs, versus GN-VM 15,324 / 15,434. The remaining full-chain gap is therefore a compounded OpenVDB scheduling/determinism boundary, not evidence that the browser's one-pass surface-net table is structurally wrong."
 }

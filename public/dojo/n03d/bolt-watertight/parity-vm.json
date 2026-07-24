@@ -2,13 +2,16 @@
   "source": "gnvm",
   "object": "Bolt Gen_DHTS_Thru Head v03.003",
   "node_group": "BOLT GEN DHTS v03_Thru Head_1JUL2024.005",
-  "evaluation_ms": 178389,
+  "evaluation_ms": 384412,
+  "commit": "6e7ebd1",
+  "validation": "One clean CLI run; two isolated browser runs produced the same counts.",
   "result": {
-    "verts": 16226,
-    "faces": 16228,
+    "verts": 16284,
+    "faces": 16286,
     "bbox": {
-      "min": [-7.965978145599365, -7.9692230224609375, 0.0],
-      "max": [7.978952884674072, 7.969223499298096, 27.215957641601562]
+      "min": [-7.966, -7.9692, 0.0],
+      "max": [7.979, 7.9692, 27.1718],
+      "precision": 4
     }
   }
 }

@@ -1,0 +1,56 @@
+{
+  "asset": "n03d-bolt-watertight",
+  "source": {
+    "project": "N03D TOOLS - 3D printing Utilities.blend",
+    "object": "Bolt Gen_DHTS_Thru Head v03.003",
+    "root": "BOLT GEN DHTS v03_Thru Head_1JUL2024.005",
+    "material": null
+  },
+  "scope": "Authored Blender viewport appearance for the distinct 13-pass watertight root. The evaluated output has no material slots; it does not inherit the ordinary bolt generator's Filament PLA shader.",
+  "geometry": {
+    "storedBlenderReference": { "verts": 16570, "faces": 16572 },
+    "materialCaptureBlenderRun": { "verts": 16566, "faces": 16568 },
+    "blenderObservedVertexRange": [16526, 16598],
+    "cleanGnvm": {
+      "commit": "6e7ebd1",
+      "verts": 16284,
+      "faces": 16286,
+      "matchingBrowserRuns": 2,
+      "cliEvaluationMs": 384412
+    },
+    "interpretation": "Blender's OpenVDB output is scheduling-dependent. The fixed stored reference, the Blender material capture, and the browser capture are separate valid evaluations of the same authored closure."
+  },
+  "surface": {
+    "blender": "neutral unassigned surface",
+    "browser": "Blender-compatible neutral default surface",
+    "baseColor": [0.8, 0.8, 0.8],
+    "metallic": 0,
+    "roughness": 0.5,
+    "borrowedFilamentShader": false
+  },
+  "capture": {
+    "resolution": [768, 768],
+    "camera": "square orthographic, direction [1,-1.25,0.85], frame scale 1.45",
+    "presentation": "source rotation and scale preserved; source translation removed in both renderers",
+    "blenderReference": "../../references/n03d/bolt-watertight-shader.png",
+    "blenderMetadata": "../../references/n03d/bolt-watertight-shader.json",
+    "browserReference": "../../references/n03d/bolt-watertight-shader-webgl.png",
+    "comparisonReport": "material-comparison.json",
+    "browserRoute": "/chrome-assets?asset=n03d-bolt-watertight&capture=authored",
+    "blenderAuthoredLightScale": 3,
+    "browserAuthoredLightScale": 7.5,
+    "studioEnvironmentIntensity": 0.8,
+    "lightScaleInterpretation": "Blender Area energy and Three.js RectAreaLight intensity use renderer-specific units. The selected scales align exposure without claiming equal physical power."
+  },
+  "comparison": {
+    "surfaceMaskIou": 0.964322437731725,
+    "surfaceMaskIouDilated1px": 0.964454481069094,
+    "pixelRgbMae": 0.15518968826180998,
+    "pixelLuminanceMae": 0.15547181024683934,
+    "pixelLuminanceCorrelation": 0.7853054021667195,
+    "macroLuminanceMae": 0.13762858437578362,
+    "macroLuminanceCorrelation": 0.8606175592806729,
+    "meanLuminanceDelta": -0.018869029582798347
+  },
+  "interpretation": "The comparison proves the neutral material assignment and broadly aligned lighting on the authored watertight form. It does not claim identical OpenVDB topology or renderer pixels; the remaining silhouette difference includes the documented 13-pass scheduling cascade."
+}

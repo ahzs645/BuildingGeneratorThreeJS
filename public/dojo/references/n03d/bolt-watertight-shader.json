@@ -1,0 +1,44 @@
+{
+  "object": "Bolt Gen_DHTS_Thru Head v03.003",
+  "type": "MESH",
+  "bbox": {
+    "min": [
+      -27.215959548950195,
+      -7.969223499298096,
+      -6.996997356414795
+    ],
+    "max": [
+      1.0653313893271843e-06,
+      7.969223499298096,
+      8.9479341506958
+    ]
+  },
+  "verts": 16566,
+  "faces": 16568,
+  "materials": [],
+  "evaluated_materials": [],
+  "evaluated_material_faces": {
+    "<none>": 16568
+  },
+  "engine": "BLENDER_EEVEE",
+  "authored_material": true,
+  "geometry_nodes_only": true,
+  "frozen_evaluated_mesh": true,
+  "overrides": {},
+  "authored_light_scale": 3.0,
+  "authored_look": "Medium High Contrast",
+  "studio_environment": true,
+  "studio_environment_strength": 0.8,
+  "workbench_shadows": null,
+  "workbench_cavity": null,
+  "debug_material_output": null,
+  "source_blend": {
+    "basename": "N03D TOOLS - 3D printing Utilities.blend",
+    "sha256": "6a0ede9dc9f8f097740716bffba6781acaca71caabd1591614f4a74863d304ca"
+  },
+  "blender_version": "5.1.2",
+  "local_presentation": false,
+  "zero_location": true,
+  "evaluate_local_space": false,
+  "font_override": null
+}
