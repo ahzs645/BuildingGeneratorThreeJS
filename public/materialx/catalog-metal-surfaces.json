@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "kind": "rights-safe-node-dojo-catalog-metal-surfaces",
+  "environment": {
+    "source": "Blender 5.1 CC0 studio.exr",
+    "sourceAsset": "dojo/blender-studio.exr.b64",
+    "basis": "Blender Z-up Environment Texture to MaterialX Y-up lat-long through MATERIALX_DIRECTION_TRANSFORM",
+    "filter": "official MaterialX 1.39.4 1024-sample GGX PREFILTER"
+  },
+  "assets": {
+    "geometry-nodes-001": {
+      "label": "3D Chrome Grill Crayon",
+      "sourceMaterial": "chrome",
+      "shader": "CatalogChromeGrill",
+      "baseColor": [0.2508697211742401, 0.2508697211742401, 0.2508697211742401],
+      "metalness": 1,
+      "perceptualRoughness": 0.26104414463043213,
+      "geometryProperties": []
+    },
+    "chain-and-mace": {
+      "label": "Chain and Mace",
+      "sourceMaterial": "chrome.002",
+      "shader": "CatalogChrome002RoughAttribute",
+      "baseColor": [0.800000011920929, 0.800000011920929, 0.800000011920929],
+      "metalness": 1,
+      "perceptualRoughness": "rough / 15",
+      "geometryProperties": [
+        { "name": "rough", "type": "float", "domain": "vertex" }
+      ]
+    },
+    "text-soup": {
+      "label": "Text Soup",
+      "sourceMaterial": "chrome.002",
+      "shader": "CatalogChrome002MissingRough",
+      "baseColor": [0.800000011920929, 0.800000011920929, 0.800000011920929],
+      "metalness": 1,
+      "perceptualRoughness": 0,
+      "geometryProperties": [],
+      "missingPropertyResolution": "Blender Attribute node returns zero when rough is absent."
+    }
+  },
+  "scope": "Only constants and geometry-property contracts independently extracted from committed dumps are included; source .blend binaries and complete shader graphs are not redistributed."
+}

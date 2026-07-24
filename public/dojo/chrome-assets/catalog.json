@@ -8,10 +8,10 @@
     "reference": "dojo/references/chrome-assets/chain-and-mace-shader.png",
     "authoredReference": "dojo/references/chrome-assets/chain-and-mace-shader.png",
     "blenderStats": { "verts": 120727, "faces": 214718 },
-    "note": "All five Blender/browser sweeps have exact topology and local bounds within 0.0001 units. Blender's realized surface assigns chrome.002 to every face; authored mode restores the ball's rough=2 shader input and the chain's polished rough=0 metal. The authored comparison capture also uses the exact CC0 studio.exr fixture: pixel/macro luminance correlations are now positive, while Eevee versus Three.js rendering remains approximate.",
+    "note": "All five Blender/browser sweeps have exact topology and local bounds within 0.0001 units. Blender's realized surface assigns chrome.002 to every face; authored mode restores the ball's rough=2 shader input and the chain's polished rough=0 metal. The opt-in MaterialX preview binds the same rough/15 perceptual-roughness field and exact CC0 studio environment through the shared GGX prefilter; authored remains the default.",
     "material": "chain-mace",
     "controls": [
-      { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored chrome.002", "value": "authored" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },
+      { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored chrome.002", "value": "authored" }, { "label": "Recovered constants · MaterialX GGX prefilter", "value": "materialx-prefilter" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },
       { "name": "ball size", "label": "Ball size", "min": 0.5, "max": 5, "step": 0.000001, "value": 2.3904571533203125 },
       { "name": "chain twist", "label": "Chain twist", "min": 0, "max": 20, "step": 0.000001, "value": 7.980133056640625 },
       { "name": "link size", "label": "Link size", "min": 0.75, "max": 3, "step": 0.000001, "value": 2.0686683654785156 },
@@ -384,7 +384,7 @@
     "surfaceBounds": true,
     "authoredHideLines": true,
     "authoredEnvironmentIntensity": 0.8,
-    "note": "All five supplied Pixels Medium comparisons match Blender exactly in vertices, faces, and rounded bounds, including the authored 11,971 / 11,199 result, edited NODE DOJO at 13,242 / 12,432, peak height, line thickness, and subdivision controls. Authored mode restores the polished chrome.002 graph with Blender's bundled studio environment and frames only the exact mesh surface. Its surface-only capture hides the non-rendering guide by default and reaches 0.962625 silhouette IoU with 0.386-pixel corner RMSE; the interactive control can restore all 156 exact guide segments. The original nine 1CamBam Stick fonts are missing from the pack, so both Blender and the browser use the supplied Pixels Medium TTF.",
+    "note": "All five supplied Pixels Medium comparisons match Blender exactly in vertices, faces, and rounded bounds, including the authored 11,971 / 11,199 result, edited NODE DOJO at 13,242 / 12,432, peak height, line thickness, and subdivision controls. Authored mode restores the polished chrome.002 graph with Blender's bundled studio environment and frames only the exact mesh surface. The opt-in MaterialX preview preserves Blender's missing-rough-property zero and uses the shared GGX prefilter; authored remains the default. The original nine 1CamBam Stick fonts are missing from the pack, so both Blender and the browser use the supplied Pixels Medium TTF.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",
@@ -392,6 +392,7 @@
       "fallback": "using the embedded Blender-extracted outline fallback"
     },
     "controls": [
+      { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored chrome.002", "value": "authored" }, { "label": "Recovered constants · MaterialX GGX prefilter", "value": "materialx-prefilter" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },
       { "type": "text", "name": "TEXT INPUT", "label": "Text", "value": "YOUR TEXT HERE" },
       { "name": "Line Thiccness", "label": "Line thickness", "min": 4, "max": 24, "step": 0.000001, "value": 14.72320556640625 },
       { "name": "Peak Height", "label": "Peak height", "min": 0, "max": 4, "step": 0.000001, "value": 1.6194915771484375 },
@@ -534,7 +535,7 @@
     "surfaceBounds": true,
     "authoredEnvironmentIntensity": 2,
     "blenderStats": { "verts": 61812, "faces": 53892 },
-    "note": "The complete 1,007-node root matches Blender in vertex count, face count, and four-decimal local bounds across all four authored, wrapper-switch, thickness, and wrapper-size cases. Authored output is exactly 61,812 / 53,892, thickness 6 is 42,031 / 33,434, and wrapper 60 by 45 is 38,301 / 33,678. Float32 field arithmetic makes the marching, shrink, merge, and three-pass sharpen geometry bit-exact; Blender's pinched-polygon weld splitting and radial Split Edges traversal then reproduce the final Auto Smooth positions and faces. Authored mode reconstructs the direct chrome Principled graph with linear 0.25087 base color, Metallic 1, and Roughness 0.26104. A calibrated studio intensity reduces mean luminance error to -0.0017; aligned captures reach 0.9726 silhouette IoU and 0.5859 macro luminance correlation, with residual Eevee/Three.js reflection placement.",
+    "note": "The complete 1,007-node root matches Blender in vertex count, face count, and four-decimal local bounds across all four authored, wrapper-switch, thickness, and wrapper-size cases. Authored output is exactly 61,812 / 53,892, thickness 6 is 42,031 / 33,434, and wrapper 60 by 45 is 38,301 / 33,678. Float32 field arithmetic makes the marching, shrink, merge, and three-pass sharpen geometry bit-exact; Blender's pinched-polygon weld splitting and radial Split Edges traversal then reproduce the final Auto Smooth positions and faces. Authored mode reconstructs the direct chrome Principled graph with linear 0.25087 base color, Metallic 1, and Roughness 0.26104. The opt-in MaterialX preview binds those same constants and the exact CC0 studio environment through the shared GGX prefilter; authored remains the default.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",
@@ -542,6 +543,7 @@
       "fallback": "using the embedded Blender-extracted outline fallback"
     },
     "controls": [
+      { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored Blender Principled", "value": "authored" }, { "label": "Recovered constants · MaterialX GGX prefilter", "value": "materialx-prefilter" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },
       { "name": "SIGILIZE", "label": "Surface smoothing", "min": 32, "max": 444, "step": 1, "value": 444 },
       { "name": "wrap resolution", "label": "Wrap resolution", "min": 1, "max": 5, "step": 0.25, "value": 3 },
       { "name": "soften", "label": "Final soften", "min": 0, "max": 8, "step": 1, "value": 0 },

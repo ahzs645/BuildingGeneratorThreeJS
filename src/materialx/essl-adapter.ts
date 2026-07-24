@@ -267,6 +267,18 @@ export function prepareMaterialXIrradiance(source: THREE.DataTexture): THREE.Dat
 }
 
 function uniformValue(port: ManifestPort): unknown {
+  if (port.type === "surfaceshader") {
+    return {
+      color: new THREE.Vector3(),
+      transparency: new THREE.Vector3(),
+    };
+  }
+  if (port.type === "displacementshader") {
+    return {
+      offset: new THREE.Vector3(),
+      scale: 0,
+    };
+  }
   if (port.value === null) {
     if (port.type === "boolean") return false;
     if (port.type === "vector2") return new THREE.Vector2();
@@ -288,7 +300,7 @@ function generatedUniforms(shader: ShaderRecord): Record<string, THREE.IUniform>
   const uniforms: Record<string, THREE.IUniform> = {};
   for (const block of Object.values(shader.fragmentInterface.uniforms)) {
     for (const port of block) {
-      if (port.type === "surfaceshader" || port.type === "displacementshader" || port.type === "filename") continue;
+      if (port.type === "filename") continue;
       // LightData describes a struct layout; its values are uploaded through u_lightData.
       if (["type", "direction", "color", "intensity"].includes(port.name)) continue;
       uniforms[port.name] = { value: uniformValue(port) };
@@ -404,6 +416,16 @@ export async function createMaterialXEsslMaterial(
     uniforms[name].value = value;
   }
   bindMaterialXGeometry(options.geometry, shader, options.geometryContract, uniforms);
+  const activeLights = options.lights.slice(0, options.manifest.generator.maxLights);
+  const lightSlots = [...activeLights];
+  while (lightSlots.length < options.manifest.generator.maxLights) {
+    lightSlots.push({
+      type: 0,
+      direction: new THREE.Vector3(),
+      color: new THREE.Vector3(),
+      intensity: 0,
+    });
+  }
   Object.assign(uniforms, {
     u_worldMatrix: { value: new THREE.Matrix4() },
     u_viewProjectionMatrix: { value: new THREE.Matrix4() },
@@ -416,8 +438,11 @@ export async function createMaterialXEsslMaterial(
     u_envIrradiance: { value: options.irradiance },
     u_envLightIntensity: { value: options.environmentIntensity },
     u_refractionTwoSided: { value: false },
-    u_numActiveLightSources: { value: Math.min(options.lights.length, options.manifest.generator.maxLights) },
-    u_lightData: { value: options.lights.slice(0, options.manifest.generator.maxLights) },
+    u_numActiveLightSources: { value: activeLights.length },
+    // ESSL declares a fixed-size LightData array even when the active count is
+    // zero. Three uploads every active struct field, so pad inactive slots
+    // instead of leaving array elements undefined.
+    u_lightData: { value: lightSlots },
   });
   const material = new THREE.RawShaderMaterial({
     name: `${options.shaderName} · official MaterialX ESSL/${options.manifest.generator.specularEnvironment}`,

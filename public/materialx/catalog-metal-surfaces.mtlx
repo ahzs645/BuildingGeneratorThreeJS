@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<materialx version="1.39" colorspace="lin_rec709">
+  <!--
+    Repository-authored MaterialX surfaces derived from independently extracted
+    scalar/color inputs in the committed Node Dojo dumps. The source .blend
+    binaries and complete source node graphs are not embedded.
+  -->
+  <standard_surface name="SS_catalog_chrome_grill" type="surfaceshader">
+    <input name="base" type="float" value="1" />
+    <input name="base_color" type="color3" value="0.2508697211742401, 0.2508697211742401, 0.2508697211742401" />
+    <input name="metalness" type="float" value="1" />
+    <input name="specular" type="float" value="1" />
+    <input name="specular_color" type="color3" value="1, 1, 1" />
+    <input name="specular_roughness" type="float" value="0.26104414463043213" />
+    <input name="specular_IOR" type="float" value="1.5" />
+    <input name="opacity" type="color3" value="1, 1, 1" />
+  </standard_surface>
+  <surfacematerial name="CatalogChromeGrill" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SS_catalog_chrome_grill" />
+  </surfacematerial>
+
+  <!--
+    chrome.002 maps the evaluated face property `rough` through a constant 1/15
+    multiplier. The GN-VM adapter expands the source face ownership to one
+    float per GPU vertex before this graph is bound.
+  -->
+  <nodegraph name="NG_catalog_chrome_002_roughness">
+    <geompropvalue name="rough_property" type="float">
+      <input name="geomprop" type="string" value="rough" />
+      <input name="default" type="float" value="0" />
+    </geompropvalue>
+    <multiply name="perceptual_roughness" type="float">
+      <input name="in1" type="float" nodename="rough_property" />
+      <input name="in2" type="float" value="0.06666666666666667" />
+    </multiply>
+    <output name="out" type="float" nodename="perceptual_roughness" />
+  </nodegraph>
+  <standard_surface name="SS_catalog_chrome_002" type="surfaceshader">
+    <input name="base" type="float" value="1" />
+    <input name="base_color" type="color3" value="0.800000011920929, 0.800000011920929, 0.800000011920929" />
+    <input name="metalness" type="float" value="1" />
+    <input name="specular" type="float" value="1" />
+    <input name="specular_color" type="color3" value="1, 1, 1" />
+    <input name="specular_roughness" type="float" nodegraph="NG_catalog_chrome_002_roughness" output="out" />
+    <input name="specular_IOR" type="float" value="1.5" />
+    <input name="opacity" type="color3" value="1, 1, 1" />
+  </standard_surface>
+  <surfacematerial name="CatalogChrome002RoughAttribute" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SS_catalog_chrome_002" />
+  </surfacematerial>
+
+  <!-- Text Soup has no evaluated `rough` property, so Blender resolves it to zero. -->
+  <standard_surface name="SS_catalog_chrome_002_missing_rough" type="surfaceshader">
+    <input name="base" type="float" value="1" />
+    <input name="base_color" type="color3" value="0.800000011920929, 0.800000011920929, 0.800000011920929" />
+    <input name="metalness" type="float" value="1" />
+    <input name="specular" type="float" value="1" />
+    <input name="specular_color" type="color3" value="1, 1, 1" />
+    <input name="specular_roughness" type="float" value="0" />
+    <input name="specular_IOR" type="float" value="1.5" />
+    <input name="opacity" type="color3" value="1, 1, 1" />
+  </standard_surface>
+  <surfacematerial name="CatalogChrome002MissingRough" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SS_catalog_chrome_002_missing_rough" />
+  </surfacematerial>
+</materialx>

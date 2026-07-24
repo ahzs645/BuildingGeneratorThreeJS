@@ -13,6 +13,7 @@ import { makeWorkbenchApproximationMaterial, shouldUseWorkbenchApproximation } f
 import { loadBlenderStudioEnvironment } from "./blender-studio-environment";
 import { EeveeTemporalCapture } from "./eevee-temporal-capture";
 import { makeLiveChromeCrayonMaterial } from "./materialx/live-chrome-crayon";
+import { makeLiveCatalogMetalMaterial } from "./materialx/live-catalog-metal";
 import { expandCornerDomainUv } from "./corner-domain-attributes";
 import { preloadLightbulbTextures } from "./lightbulb-material";
 import { preciseObjectBounds, type ObjectBoundsMode } from "./precise-object-bounds";
@@ -37,9 +38,14 @@ const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
 const query = new URLSearchParams(location.search);
 const requestedAsset = query.get("asset");
 const captureMode = query.get("capture");
+const catalogMaterialXAssets = new Set(["geometry-nodes-001", "chain-and-mace", "text-soup"]);
 const nativeMaterialXCapture = requestedAsset === "25d-chrome-crayon"
   && (captureMode === "materialx-native" || captureMode === "materialx-prefilter");
-const requestedPreview = nativeMaterialXCapture ? captureMode : query.get("preview");
+const catalogMaterialXCapture = catalogMaterialXAssets.has(requestedAsset ?? "")
+  && captureMode === "materialx-prefilter";
+const requestedPreview = nativeMaterialXCapture || catalogMaterialXCapture
+  ? captureMode
+  : query.get("preview");
 const stipplerCapture = requestedAsset === "img-pixel-stippler"
   && (captureMode === "authored" || captureMode === "stippler-shader");
 const authoredCapture = captureMode === "authored" || stipplerCapture;
@@ -79,7 +85,7 @@ const note = document.querySelector<HTMLElement>("#assets-note")!;
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(temporalCaptureRequested ? 1 : Math.min(devicePixelRatio, 2)); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
-if (nativeMaterialXCapture) renderer.setClearColor(0x111417, 1);
+if (nativeMaterialXCapture || catalogMaterialXCapture) renderer.setClearColor(0x111417, 1);
 const scene = new THREE.Scene();
 let authoredKey: THREE.RectAreaLight | null = null;
 let authoredFill: THREE.RectAreaLight | null = null;
@@ -256,6 +262,28 @@ async function applyNativeChromeMaterial(
   mesh.material = replacements.length === 1 ? replacements[0] : replacements;
 }
 
+async function applyMaterialXPreview(
+  mesh: THREE.Mesh,
+  soup: TriSoup,
+  previewMode: "materialx-native" | "materialx-prefilter",
+): Promise<void> {
+  if (current.id === "25d-chrome-crayon") {
+    await applyNativeChromeMaterial(
+      mesh,
+      soup,
+      previewMode === "materialx-prefilter" ? "prefilter" : "fis",
+    );
+    return;
+  }
+  if (previewMode !== "materialx-prefilter") {
+    throw new Error(`${current.title} exposes only the catalog MaterialX PREFILTER path`);
+  }
+  const material = await makeLiveCatalogMetalMaterial(renderer, mesh.geometry, current.id);
+  const existing = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  for (const oldMaterial of existing) oldMaterial.dispose();
+  mesh.material = material;
+}
+
 function disposeObject(root: THREE.Object3D): void {
   root.traverse((child) => {
     if (!(child instanceof THREE.Mesh || child instanceof THREE.LineSegments)) return;
@@ -330,7 +358,7 @@ async function evaluate(): Promise<void> {
     status.textContent = prefiltered
       ? "Generating the shared MaterialX GGX environment mip chain…"
       : "Binding recovered chrome.003 MaterialX graph to live GN-VM geometry…";
-    await applyNativeChromeMaterial(mesh, result.soup, prefiltered ? "prefilter" : "fis");
+    await applyMaterialXPreview(mesh, result.soup, previewMode);
   }
   if (id !== requestId) {
     disposeObject(mesh);
@@ -360,7 +388,7 @@ async function evaluate(): Promise<void> {
   status.textContent = exact
     ? previewMode === "materialx-native" || previewMode === "materialx-prefilter"
       ? previewMode === "materialx-prefilter"
-        ? "Topology matches Blender · native chrome.003 with MaterialX GGX prefilter bound"
+        ? `Topology matches Blender · ${current.id === "25d-chrome-crayon" ? "native chrome.003" : "catalog metal"} with MaterialX GGX prefilter bound`
         : "Topology matches Blender · recovered chrome.003 native MaterialX bound"
       : current.curveStats ? "Curve control points match Blender" : "Topology counts match Blender"
     : current.note ?? "Geometry differs from Blender reference";
