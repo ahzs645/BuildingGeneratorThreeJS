@@ -88,6 +88,35 @@ type MetalPresetProbeIndex = {
     };
     mapping: string;
   };
+  brushedRoughnessProbe: {
+    scalarShader: string;
+    beautyShader: string;
+    blenderPerceptualRoughness: number;
+    roughnessFresnelFactor: number;
+    anisotropy: number;
+    brushedMetalFactor: number;
+    vectorLength: number;
+    mappingScale: number[];
+    mappingRotation: number[];
+    noise: {
+      dimensions: number;
+      normalized: boolean;
+      scale: number;
+      detail: number;
+      octaves: number;
+      roughness: number;
+      lacunarity: number;
+      distortion: number;
+    };
+    mapRange: {
+      fromMin: number;
+      fromMax: number;
+      toMin: number;
+      toMax: number;
+      clamp: boolean;
+    };
+    semanticAdapter: string;
+  };
   presets: Array<{
     id: string;
     label: string;
@@ -128,13 +157,17 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   const metalLayeredRoughnessDiagnostic = requestedDiagnostic === "metal-layered-roughness";
   const metalRoughnessFresnelScalarDiagnostic = requestedDiagnostic === "metal-roughness-fresnel-scalar";
   const metalRoughnessFresnelDiagnostic = requestedDiagnostic === "metal-roughness-fresnel";
+  const metalBrushedRoughnessScalarDiagnostic = requestedDiagnostic === "metal-brushed-roughness-scalar";
+  const metalBrushedRoughnessDiagnostic = requestedDiagnostic === "metal-brushed-roughness";
   const metalProbeDiagnostic = metalPresetDiagnostic
     || metalF82Diagnostic
     || metalAnisotropyDiagnostic
     || metalThinFilmDiagnostic
     || metalLayeredRoughnessDiagnostic
     || metalRoughnessFresnelScalarDiagnostic
-    || metalRoughnessFresnelDiagnostic;
+    || metalRoughnessFresnelDiagnostic
+    || metalBrushedRoughnessScalarDiagnostic
+    || metalBrushedRoughnessDiagnostic;
   const dependencyImplementation = import.meta.env.VITE_MATERIALX_THREE_IMPLEMENTATION || "r185";
   const environmentMode = metalProbeDiagnostic || query.get("environment") === "prefilter"
     ? "prefilter"
@@ -405,7 +438,19 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
           return response.json() as Promise<MetalPresetProbeIndex>;
         }),
       ]);
-      const preset = metalRoughnessFresnelScalarDiagnostic
+      const preset = metalBrushedRoughnessScalarDiagnostic
+        ? {
+            id: "brushed-roughness-scalar-gold",
+            label: "Gold brushed roughness · scalar",
+            shader: presetIndex.brushedRoughnessProbe.scalarShader,
+          }
+        : metalBrushedRoughnessDiagnostic
+        ? {
+            id: "brushed-roughness-gold",
+            label: "Gold brushed roughness",
+            shader: presetIndex.brushedRoughnessProbe.beautyShader,
+          }
+        : metalRoughnessFresnelScalarDiagnostic
         ? {
             id: "roughness-fresnel-scalar-gold",
             label: "Gold roughness Fresnel · scalar",
@@ -470,13 +515,20 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
         material.uniforms.u_numActiveLightSources.value = 1;
         material.uniforms.u_envLightIntensity.value = 0;
       }
-      if (metalRoughnessFresnelScalarDiagnostic) {
+      if (metalRoughnessFresnelScalarDiagnostic || metalBrushedRoughnessScalarDiagnostic) {
         material.uniforms.u_envLightIntensity.value = 0;
       }
       floor.visible = false;
       probe.material = material;
       status.textContent = `materialx · PREFILTER · ${preset.label}`;
-      if (metalRoughnessFresnelScalarDiagnostic || metalRoughnessFresnelDiagnostic) {
+      if (metalBrushedRoughnessScalarDiagnostic || metalBrushedRoughnessDiagnostic) {
+        const brushed = presetIndex.brushedRoughnessProbe;
+        rendererStatus.textContent += metalBrushedRoughnessScalarDiagnostic
+          ? " · unlit scalar field"
+          : " · generalized Schlick variable roughness";
+        graphStatus.textContent = `${preset.shader} · ${brushed.noise.dimensions} FBM ${brushed.noise.octaves} octaves · factor ${brushed.brushedMetalFactor}`;
+        fallbackStatus.textContent = `${brushed.semanticAdapter} · Generated × ${brushed.mappingScale.join(", ")} · length ${brushed.vectorLength}`;
+      } else if (metalRoughnessFresnelScalarDiagnostic || metalRoughnessFresnelDiagnostic) {
         const roughnessFresnel = presetIndex.roughnessFresnelProbe;
         rendererStatus.textContent += metalRoughnessFresnelScalarDiagnostic
           ? " · unlit scalar field"
@@ -512,7 +564,11 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       ownerDocument.documentElement.dataset.materialxReady = "true";
       ownerDocument.documentElement.dataset.materialBackend = "materialx";
       ownerDocument.documentElement.dataset.materialxImplementation = implementation;
-      ownerDocument.documentElement.dataset.materialxPreset = metalRoughnessFresnelScalarDiagnostic
+      ownerDocument.documentElement.dataset.materialxPreset = metalBrushedRoughnessScalarDiagnostic
+        ? "brushed-roughness-scalar-gold"
+        : metalBrushedRoughnessDiagnostic
+        ? "brushed-roughness-gold"
+        : metalRoughnessFresnelScalarDiagnostic
         ? "roughness-fresnel-scalar-gold"
         : metalRoughnessFresnelDiagnostic
         ? "roughness-fresnel-gold"

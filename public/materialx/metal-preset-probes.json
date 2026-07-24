@@ -108,6 +108,52 @@
     "mapping": "Blender Layer Weight Fresnel uses eta=1/(1-blend) on front faces. The authored RGB Curve and B-spline Color Ramp are sampled into a raw scalar LUT. Mix.108 MULTIPLY computes roughness*(1-F+F*response), then the result is squared for MaterialX microfacet alpha.",
     "scope": "View-dependent roughness-Fresnel semantics only; scratch, brushed, anisotropy, thin-film streak, and source add-on graphs are not embedded."
   },
+  "brushedRoughnessProbe": {
+    "baseProbe": "gold",
+    "scalarShader": "MetalGoldBrushedRoughnessScalar",
+    "beautyShader": "MetalF82GoldBrushedRoughness",
+    "sourceGroup": "Gold",
+    "sourceMaterial": "Material.011",
+    "sourceObject": "Sphere.010",
+    "sourceSockets": {
+      "rotation": "Socket_5",
+      "vectorLength": "Socket_6",
+      "anisotropy": "Socket_8",
+      "mappingScale": "Socket_19",
+      "vector": "Socket_20",
+      "brushedMetalFactor": "Socket_21",
+      "roughnessFresnel": "Socket_23",
+      "roughness": "Socket_24"
+    },
+    "blenderPerceptualRoughness": 0.44999995827674866,
+    "roughnessFresnelFactor": 0.10000000149011612,
+    "anisotropy": 0,
+    "brushedMetalFactor": 0.27300000190734863,
+    "vectorLength": 0.9549999833106995,
+    "mappingScale": [100, 100, 100],
+    "mappingRotation": [0, 0, 0],
+    "coordinate": "Blender Generated coordinates normalized from per-object bounds.",
+    "noise": {
+      "dimensions": 3,
+      "normalized": true,
+      "scale": 20,
+      "detail": 2,
+      "octaves": 3,
+      "roughness": 0.5,
+      "lacunarity": 2,
+      "distortion": 0
+    },
+    "mapRange": {
+      "fromMin": 0.3999999761581421,
+      "fromMax": 1,
+      "toMin": 0,
+      "toMax": 0.27300000190734863,
+      "clamp": true
+    },
+    "semanticAdapter": "blender-normalized-fbm3",
+    "mapping": "q=100*Generated; u=mix(q,vec3(length(q)),0.9549999833); N=normalized Blender FBM3(u*20, Detail 2 inclusive); gate=clamp((N-0.399999976)/(1-0.399999976),0,1)*0.2730000019; brush=anisotropy+gate*N; roughness=1-(1-baseRoughnessFresnel)*(1-brush); alpha=roughness^2.",
+    "scope": "Active Gold brushed-roughness branch with its validated roughness-Fresnel base; dense and sparse scratches, layered closure mixing, anisotropic closure shape, procedural thin-film streaks, and the source add-on graph are excluded."
+  },
   "presets": [
     {
       "id": "aluminum",

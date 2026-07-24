@@ -49,6 +49,7 @@ def args() -> argparse.Namespace:
     parser.add_argument("--material", default="chrome.003")
     parser.add_argument("--ui-report", default="public/materialx/ui-normal-band.report.json")
     parser.add_argument("--ui-normal-band-only", action="store_true")
+    parser.add_argument("--brushed-roughness-only", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -520,6 +521,111 @@ def artistic_f82_roughness_fresnel(name, base_color, edge_tint, roughness=0.35):
     return material
 
 
+def gold_brushed_roughness_field(tree):
+    """Reconstruct Gold's active procedural brushed-roughness branch.
+
+    The supplied Gold material drives this branch with Generated coordinates.
+    Its packed scratch-image branches are intentionally absent so this
+    rights-safe probe isolates only the authored procedural noise contribution.
+    """
+    base = gold_roughness_fresnel_field(tree, roughness=0.44999995827674866)
+
+    coordinates = tree.nodes.new("ShaderNodeTexCoord")
+    mapping = tree.nodes.new("ShaderNodeMapping")
+    mapping.vector_type = "POINT"
+    mapping.inputs["Location"].default_value = (0.0, 0.0, 0.0)
+    mapping.inputs["Rotation"].default_value = (0.0, 0.0, 0.0)
+    mapping.inputs["Scale"].default_value = (100.0, 100.0, 100.0)
+
+    length = tree.nodes.new("ShaderNodeVectorMath")
+    length.operation = "LENGTH"
+    length_vector = tree.nodes.new("ShaderNodeCombineXYZ")
+    coordinate_mix = tree.nodes.new("ShaderNodeMix")
+    coordinate_mix.data_type = "VECTOR"
+    input_by_identifier(coordinate_mix, "Factor_Float").default_value = 0.9549999833106995
+
+    noise = tree.nodes.new("ShaderNodeTexNoise")
+    noise.noise_dimensions = "3D"
+    noise.noise_type = "FBM"
+    noise.normalize = True
+    noise.inputs["Scale"].default_value = 20.0
+    noise.inputs["Detail"].default_value = 2.0
+    noise.inputs["Roughness"].default_value = 0.5
+    noise.inputs["Lacunarity"].default_value = 2.0
+    noise.inputs["Distortion"].default_value = 0.0
+
+    brush_mask = tree.nodes.new("ShaderNodeMapRange")
+    brush_mask.data_type = "FLOAT"
+    brush_mask.interpolation_type = "LINEAR"
+    brush_mask.clamp = True
+    brush_mask.inputs["From Min"].default_value = 0.3999999761581421
+    brush_mask.inputs["From Max"].default_value = 1.0
+    brush_mask.inputs["To Min"].default_value = 0.0
+    brush_mask.inputs["To Max"].default_value = 0.27300000190734863
+
+    # Gold's Mix.111 ADD stage has zero anisotropy as A, the noise as B, and
+    # the remapped noise as its factor.
+    brushed_add = tree.nodes.new("ShaderNodeMix")
+    brushed_add.data_type = "RGBA"
+    brushed_add.blend_type = "ADD"
+    input_by_identifier(brushed_add, "A_Color").default_value = (0.0, 0.0, 0.0, 1.0)
+
+    # Mix.113 applies the brushed contribution to the already-validated
+    # roughness-Fresnel field with a full-strength SCREEN blend.
+    screen = tree.nodes.new("ShaderNodeMix")
+    screen.data_type = "RGBA"
+    screen.blend_type = "SCREEN"
+    input_by_identifier(screen, "Factor_Float").default_value = 1.0
+
+    tree.links.new(coordinates.outputs["Generated"], mapping.inputs["Vector"])
+    tree.links.new(mapping.outputs["Vector"], length.inputs[0])
+    for axis in ("X", "Y", "Z"):
+        tree.links.new(length.outputs["Value"], length_vector.inputs[axis])
+    tree.links.new(mapping.outputs["Vector"], input_by_identifier(coordinate_mix, "A_Vector"))
+    tree.links.new(length_vector.outputs["Vector"], input_by_identifier(coordinate_mix, "B_Vector"))
+    tree.links.new(output_by_identifier(coordinate_mix, "Result_Vector"), noise.inputs["Vector"])
+    tree.links.new(noise.outputs["Fac"], brush_mask.inputs["Value"])
+    tree.links.new(brush_mask.outputs["Result"], input_by_identifier(brushed_add, "Factor_Float"))
+    tree.links.new(noise.outputs["Fac"], input_by_identifier(brushed_add, "B_Color"))
+    tree.links.new(base, input_by_identifier(screen, "A_Color"))
+    tree.links.new(output_by_identifier(brushed_add, "Result_Color"), input_by_identifier(screen, "B_Color"))
+    return output_by_identifier(screen, "Result_Color")
+
+
+def brushed_roughness_scalar(name):
+    material = bpy.data.materials.new(f"Brushed Roughness Scalar · {name}")
+    material.use_nodes = True
+    tree = material.node_tree
+    tree.nodes.clear()
+    field = gold_brushed_roughness_field(tree)
+    emission = tree.nodes.new("ShaderNodeEmission")
+    output = tree.nodes.new("ShaderNodeOutputMaterial")
+    tree.links.new(field, emission.inputs["Color"])
+    tree.links.new(emission.outputs["Emission"], output.inputs["Surface"])
+    return material
+
+
+def artistic_f82_brushed_roughness(name, base_color, edge_tint):
+    material = bpy.data.materials.new(f"Artistic F82 Brushed Roughness · {name}")
+    material.use_nodes = True
+    tree = material.node_tree
+    tree.nodes.clear()
+    field = gold_brushed_roughness_field(tree)
+    metallic = tree.nodes.new("ShaderNodeBsdfMetallic")
+    metallic.distribution = "MULTI_GGX"
+    metallic.fresnel_type = "F82"
+    metallic.inputs["Base Color"].default_value = base_color
+    metallic.inputs["Edge Tint"].default_value = edge_tint
+    if metallic.inputs.get("Weight") is not None:
+        metallic.inputs["Weight"].default_value = 1.0
+    if metallic.inputs.get("Thin Film Thickness") is not None:
+        metallic.inputs["Thin Film Thickness"].default_value = 0.0
+    output = tree.nodes.new("ShaderNodeOutputMaterial")
+    tree.links.new(field, metallic.inputs["Roughness"])
+    tree.links.new(metallic.outputs["BSDF"], output.inputs["Surface"])
+    return material
+
+
 def ui_normal_band_diagnostic(report_path: Path):
     report = json.loads(report_path.read_text(encoding="utf-8"))
     lowering = report["diagnosticLowering"]
@@ -696,6 +802,44 @@ def render_physical_conductor_matrix(output: Path, probe, floor, lights):
             light.data.energy = original_energies[light.name]
 
 
+def render_gold_brushed_roughness(output: Path, probe, floor, lights):
+    """Render the isolated active Gold brush branch under the shared contract."""
+    original_energies = {light.name: light.data.energy for light in lights}
+    original_floor_visibility = floor.hide_render
+    background = bpy.context.scene.world.node_tree.nodes["MaterialXReflectedEnvironment"]
+    original_environment_strength = background.inputs["Strength"].default_value
+    for light in lights:
+        light.data.energy = 0.0
+    floor.hide_render = True
+    try:
+        background.inputs["Strength"].default_value = 0.18
+        beauty = artistic_f82_brushed_roughness(
+            "Gold",
+            F82_GOLD["base_color"],
+            F82_GOLD["edge_tint"],
+        )
+        if probe.data.materials:
+            probe.data.materials[0] = beauty
+        else:
+            probe.data.materials.append(beauty)
+        bpy.context.scene.render.filepath = str(
+            output / "metal-brushed-roughness-gold-blender.png"
+        )
+        bpy.ops.render.render(write_still=True)
+
+        background.inputs["Strength"].default_value = 0.0
+        probe.data.materials[0] = brushed_roughness_scalar("Gold")
+        bpy.context.scene.render.filepath = str(
+            output / "metal-brushed-roughness-scalar-gold-blender.png"
+        )
+        bpy.ops.render.render(write_still=True)
+    finally:
+        background.inputs["Strength"].default_value = original_environment_strength
+        floor.hide_render = original_floor_visibility
+        for light in lights:
+            light.data.energy = original_energies[light.name]
+
+
 def bump_copy(_source):
     material = bpy.data.materials.new("MaterialX Noise Bump Probe")
     material.use_nodes = True
@@ -748,6 +892,10 @@ def main():
         bpy.ops.render.render(write_still=True)
         print(f"MATERIALX_BLENDER_REFERENCE ui-normal-band-blender.png -> {evidence}")
         return
+    if options.brushed_roughness_only:
+        render_gold_brushed_roughness(evidence, probe, floor, lights)
+        print(f"MATERIALX_BLENDER_REFERENCE metal-brushed-roughness-{{scalar-,}}gold-blender.png -> {evidence}")
+        return
     source.use_nodes = True
     probe.data.materials.append(source)
     bpy.context.scene.render.filepath = str(evidence / "chrome-source-blender.png")
@@ -764,6 +912,7 @@ def main():
     render_light_diagnostics(evidence, probe, lights)
     render_environment_roughness_sweep(evidence, probe, floor, lights)
     render_physical_conductor_matrix(evidence, probe, floor, lights)
+    render_gold_brushed_roughness(evidence, probe, floor, lights)
     print(f"MATERIALX_BLENDER_REFERENCES {evidence}")
 
 

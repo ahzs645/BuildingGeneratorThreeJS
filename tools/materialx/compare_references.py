@@ -110,7 +110,7 @@ def main():
         return format(value, ".7g").replace(".", "p")
 
     output = {
-        "comparisonVersion": 13,
+        "comparisonVersion": 14,
         "renderContract": {
             "geometry": "shared outward-wound 64 x 32 UV sphere algorithm and 96-segment floor disc",
             "camera": "scene-contract.json schema 1; Blender evaluated matrix_world and 50 degree vertical FOV",
@@ -128,6 +128,7 @@ def main():
             "metalF82Probe": "metal-f82-gold-{blender,web}.png; Blender Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, exact linear color0/color82 values, roughness 0.35 mapped to alpha 0.1225, no direct lights or floor",
             "metalLayeredRoughnessProbe": "metal-layered-roughness-gold-{blender,web}.png; exact four-closure Gold F82 chain with Blender perceptual roughness scales 0.25/0.5/0.75/1.0, sequential mix factors 0.4/0.2/0.1, no direct lights or floor",
             "metalRoughnessFresnelProbe": "metal-roughness-fresnel-{scalar-,}gold-{blender,web}.png; exact Blender Layer Weight Blend 0.1 dielectric Fresnel, sampled Gold RGB Curve/B-spline ramp response, MULTIPLY Mix field, roughness 0.35, no direct lights or floor",
+            "metalBrushedRoughnessProbe": "metal-brushed-roughness-{scalar-,}gold-{blender,web}.png; active Gold controls roughness 0.4499999583, Generated-coordinate scale 100, length mix 0.9549999833, normalized Blender 3D FBM scale 20/detail 2/roughness 0.5/lacunarity 2, brush factor 0.2730000019, no source scratch images, direct lights, or floor",
             "metalAnisotropyProbe": "metal-anisotropy-gold-{r0,r90}-{blender,web}.png; Blender Cycles versus MaterialX, anisotropy 0.8, radial-Y/Tworld tangent, rotations 0 and 0.25 turns, Blender alpha/aspect mapping, key light only, no environment or floor",
             "metalThinFilmProbe": "metal-thin-film-gold-{0,243}nm-{blender,web}.png; Blender Cycles Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, source Gold-group mapping 150 V x 1.62 nm/V = 243 nm, thin-film IOR 2.46, key light only, no environment or floor",
         },
@@ -232,6 +233,31 @@ def main():
                 ),
                 "claim": "Gold F82 with the validated view-dependent roughness field; no scratch, brushed, anisotropy, thin-film streak, or source add-on graph",
             },
+        },
+        "metalBrushedRoughnessProbe": {
+            "scalar": {
+                **metrics(
+                    directory / "metal-brushed-roughness-scalar-gold-blender.png",
+                    directory / "metal-brushed-roughness-scalar-gold-web.png",
+                ),
+                "sphereRegion": sphere_metrics(
+                    directory / "metal-brushed-roughness-scalar-gold-blender.png",
+                    directory / "metal-brushed-roughness-scalar-gold-web.png",
+                ),
+                "claim": "active Gold Generated-coordinate/normalized-3D-FBM/remap/ADD/SCREEN perceptual-roughness field with both source scratch-image branches omitted",
+            },
+            "beauty": {
+                **metrics(
+                    directory / "metal-brushed-roughness-gold-blender.png",
+                    directory / "metal-brushed-roughness-gold-web.png",
+                ),
+                "sphereRegion": sphere_metrics(
+                    directory / "metal-brushed-roughness-gold-blender.png",
+                    directory / "metal-brushed-roughness-gold-web.png",
+                ),
+                "claim": "Gold F82 with the isolated active procedural brushed-roughness field; no source scratch images, anisotropy, layered closure, or thin film",
+            },
+            "noiseResidual": "Native MaterialX fractal3d is not value-identical to Blender Noise Texture. These marked shaders therefore use the declared blender-normalized-fbm3 ESSL semantic adapter; remaining high-frequency image error is raster filtering and renderer integration, not a native-fractal3d parity claim.",
         },
         "metalAnisotropyProbe": {
             rotation: {

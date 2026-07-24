@@ -137,6 +137,58 @@ def rewrite_environment_prefilter_essl(source: str) -> str:
     return source.replace(needle, "exp2(float(u_envPrefilterMip))")
 
 
+BLENDER_FBM3_MARKER = "blender_fbm3_"
+BLENDER_FBM3_ESSL = Path(__file__).with_name("blender_fbm3_essl.glsl")
+
+
+def rewrite_blender_fbm3_essl(source: str) -> tuple[str, list[str]]:
+    """Replace explicitly marked fractal3d calls with Blender's normalized FBM.
+
+    MaterialX and Blender use different gradient hashes, so an ordinary
+    fractal3d node cannot substantiate Blender Noise Texture parity. Keeping the
+    marker in the portable graph makes this semantic adapter opt-in, auditable,
+    and reusable without changing unmarked MaterialX nodes.
+    """
+    pattern = re.compile(
+        rf"(?P<indent>^[ \t]*)mx_fractal3d_float\("
+        rf"(?P<arguments>[^;\n]+), "
+        rf"(?P<output>{BLENDER_FBM3_MARKER}[A-Za-z0-9_]*_out)\);$",
+        re.MULTILINE,
+    )
+    matches = list(pattern.finditer(source))
+    if not matches:
+        return source, []
+    if not BLENDER_FBM3_ESSL.is_file():
+        raise RuntimeError(f"Missing Blender FBM3 ESSL adapter: {BLENDER_FBM3_ESSL}")
+    adapter = BLENDER_FBM3_ESSL.read_text(encoding="utf-8").strip()
+    rewritten = pattern.sub(
+        lambda match: (
+            f"{match.group('indent')}mx_blender_fbm3_float("
+            f"{match.group('arguments')}, {match.group('output')});"
+        ),
+        source,
+    )
+    main_marker = "\nvoid main()\n"
+    if rewritten.count(main_marker) != 1:
+        raise RuntimeError("Expected exactly one ESSL main function for Blender FBM3 injection")
+    rewritten = rewritten.replace(main_marker, f"\n{adapter}\n{main_marker}", 1)
+    if rewritten.count("precision mediump float;") != 1:
+        raise RuntimeError("Expected one MaterialX ESSL float precision declaration")
+    rewritten = rewritten.replace(
+        "precision mediump float;",
+        "precision highp float;\nprecision highp int;",
+        1,
+    )
+    return rewritten, ["blender-normalized-fbm3"]
+
+
+def upgrade_vertex_precision_for_semantic_adapters(source: str) -> str:
+    """Keep cross-stage uniform precision consistent with adapted fragments."""
+    if source.count("precision mediump float;") != 1:
+        raise RuntimeError("Expected one MaterialX ESSL vertex float precision declaration")
+    return source.replace("precision mediump float;", "precision highp float;", 1)
+
+
 def geomprop_definitions(source: Path) -> dict[str, dict]:
     definitions = {}
     for node in ET.parse(source).getroot().iter("geompropvalue"):
@@ -420,6 +472,9 @@ def main() -> None:
         fragment = shader.getSourceCode(mx_gen_shader.PIXEL_STAGE)
         if options.write_environment_prefilter:
             fragment = rewrite_environment_prefilter_essl(fragment)
+        fragment, semantic_adapters = rewrite_blender_fbm3_essl(fragment)
+        if semantic_adapters:
+            vertex = upgrade_vertex_precision_for_semantic_adapters(vertex)
         vertex_name = f"{shader.getName()}.vert"
         fragment_name = f"{shader.getName()}.frag"
         (output / vertex_name).write_text(canonical_source(vertex), encoding="utf-8")
@@ -434,6 +489,8 @@ def main() -> None:
             "fragmentInterface": fragment_interface,
             "geometryBindings": geometry_bindings(vertex_interface, fragment_interface, property_definitions),
         }
+        if semantic_adapters:
+            shader_record["semanticAdapters"] = semantic_adapters
         if options.bundle_textures:
             shader_record["textureBindings"] = bundle_texture_bindings(
                 output,
