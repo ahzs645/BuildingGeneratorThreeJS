@@ -2,6 +2,20 @@ import * as THREE from "three";
 
 export type ObjectBoundsMode = "all" | "mesh" | "surface";
 
+export function resolveObjectBoundsMode(options: {
+  boundsMode?: ObjectBoundsMode;
+  surfaceBounds?: boolean;
+  looseLinesVisible?: boolean;
+}): ObjectBoundsMode {
+  const configured = options.boundsMode ?? (options.surfaceBounds ? "surface" : "all");
+  // Hidden guide curves are retained in the scene so toggling them does not
+  // rebuild geometry. They must not move a matched surface-only camera,
+  // especially when their curve-space preview differs from the realized mesh.
+  return configured === "all" && options.looseLinesVisible === false
+    ? "mesh"
+    : configured;
+}
+
 /**
  * Expand a world-space box from transformed buffer vertices rather than from
  * transformed local AABB corners. The latter can substantially over-frame a

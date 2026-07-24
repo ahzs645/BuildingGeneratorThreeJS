@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as THREE from "three";
-import { preciseObjectBounds } from "../precise-object-bounds";
+import {
+  preciseObjectBounds,
+  resolveObjectBoundsMode,
+} from "../precise-object-bounds";
 
 test("frames rotated geometry from transformed vertices instead of inflated AABB corners", () => {
   const geometry = new THREE.BufferGeometry();
@@ -68,4 +71,17 @@ test("can frame hidden loose curves while surface-only bounds ignore them", () =
 
   guideGeometry.dispose();
   surfaceGeometry.dispose();
+});
+
+test("matched captures exclude hidden loose-line previews without changing interactive framing", () => {
+  assert.equal(resolveObjectBoundsMode({ looseLinesVisible: true }), "all");
+  assert.equal(resolveObjectBoundsMode({ looseLinesVisible: false }), "mesh");
+  assert.equal(resolveObjectBoundsMode({
+    boundsMode: "surface",
+    looseLinesVisible: false,
+  }), "surface");
+  assert.equal(resolveObjectBoundsMode({
+    boundsMode: "mesh",
+    looseLinesVisible: true,
+  }), "mesh");
 });

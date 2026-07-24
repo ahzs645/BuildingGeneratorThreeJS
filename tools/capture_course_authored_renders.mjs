@@ -200,6 +200,40 @@ export function upsertLastTopLevelProperty(source, key, value) {
   return `${prefix},\n${serialized}\n}\n`;
 }
 
+export function reconcileCourseRenderState(manifestAssets, priorReport, attempts) {
+  const manifestIds = manifestAssets.map((entry) => entry.id);
+  const allowed = new Set(manifestIds);
+  const variants = new Map(
+    (priorReport.variants ?? [])
+      .filter((entry) => allowed.has(entry.id))
+      .map((entry) => [entry.id, entry]),
+  );
+  const failures = new Map(
+    (priorReport.failures ?? [])
+      .filter((entry) => allowed.has(entry.id))
+      .map((entry) => [entry.id, entry]),
+  );
+
+  for (const attempt of attempts) {
+    variants.delete(attempt.id);
+    failures.delete(attempt.id);
+    if (attempt.variant) variants.set(attempt.id, attempt.variant);
+    if (attempt.failure) failures.set(attempt.id, attempt.failure);
+  }
+
+  const orderedVariants = manifestIds.map((id) => variants.get(id)).filter(Boolean);
+  const orderedFailures = manifestIds.map((id) => failures.get(id)).filter(Boolean);
+  const missing = manifestIds.filter((id) => !variants.has(id) && !failures.has(id));
+  return {
+    variants: orderedVariants,
+    failures: orderedFailures,
+    missing,
+    complete: orderedVariants.length === manifestIds.length
+      && orderedFailures.length === 0
+      && missing.length === 0,
+  };
+}
+
 function run(root, command, args, env = {}) {
   const result = spawnSync(command, args, {
     cwd: root,
@@ -247,8 +281,7 @@ export async function main(argv = process.argv.slice(2)) {
   const priorReport = fs.existsSync(reportPath)
     ? JSON.parse(fs.readFileSync(reportPath, "utf8"))
     : { variants: [] };
-  const variants = new Map((priorReport.variants ?? []).map((variant) => [variant.id, variant]));
-  const failures = [];
+  const attempts = [];
 
   for (const entry of entries) {
     const { asset } = entry;
@@ -331,7 +364,10 @@ export async function main(argv = process.argv.slice(2)) {
         statusPath,
         upsertLastTopLevelProperty(statusSource, "workbenchRender", evidence),
       );
-      variants.set(asset.id, { id: asset.id, object: asset.object, ...evidence });
+      attempts.push({
+        id: asset.id,
+        variant: { id: asset.id, object: asset.object, ...evidence },
+      });
       console.log(`COURSE_AUTHORED_RENDER_OK ${JSON.stringify({
         id: asset.id,
         surfaceMaskIoU: evidence.comparison.surfaceMaskIoU,
@@ -344,25 +380,27 @@ export async function main(argv = process.argv.slice(2)) {
         error: error instanceof Error ? error.message : String(error),
         ...(candidateEvidence ? { candidateEvidence } : {}),
       };
-      failures.push(failure);
+      attempts.push({ id: asset.id, failure });
       console.error(`COURSE_AUTHORED_RENDER_FAILED ${JSON.stringify(failure)}`);
     }
   }
 
+  const reconciled = reconcileCourseRenderState(manifest.assets, priorReport, attempts);
   const report = {
     updated: today(),
-    status: failures.length ? "partial" : "complete",
+    status: reconciled.complete ? "complete" : "partial",
     scope: "Matched cataloged Blender Workbench references versus live GN-VM Workbench-approximation browser canvases for all thirteen course presentation entries.",
     manifest: "tools/course-authored-render-manifest.json",
     capture,
-    variants: manifest.assets.map((entry) => variants.get(entry.id)).filter(Boolean),
-    failures,
+    variants: reconciled.variants,
+    failures: reconciled.failures,
+    missing: reconciled.missing,
     interpretation: "This batch preserves the current Blender Workbench references and browser Workbench approximation without per-asset appearance fitting. Geometry readiness, alpha-backed reference validity, silhouette alignment, and renderer metrics are independently recorded.",
   };
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
   console.log(`COURSE_AUTHORED_RENDER_REPORT ${reportPath}`);
-  if (failures.length) process.exitCode = 1;
+  if (!reconciled.complete) process.exitCode = 1;
 }
 
 const invoked = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : "";

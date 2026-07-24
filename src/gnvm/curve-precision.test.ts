@@ -209,6 +209,44 @@ test("String to Curves keeps an explicitly unassigned Blender font empty", () =>
   assert.equal(outputs.Remainder, "MAT");
 });
 
+test("String to Curves aligns text inside a nonzero text box", () => {
+  const handler = REGISTRY.get("GeometryNodeStringToCurves");
+  assert.ok(handler);
+  const evaluate = (alignX: string) => {
+    const values: Record<string, string | number> = {
+      String: "AB",
+      Size: 1,
+      "Character Spacing": 1,
+      "Word Spacing": 1,
+      "Line Spacing": 1,
+      "Text Box Width": 0.6,
+      "Align X": alignX,
+      "Align Y": "Top Baseline",
+    };
+    const outputs = handler({
+      node: {
+        name: "String to Curves",
+        type: "GeometryNodeStringToCurves",
+        label: null,
+        inputs: [],
+        outputs: [],
+      },
+      str: (name: string) => typeof values[name] === "string" ? values[name] as string : "",
+      num: (name: string) => typeof values[name] === "number" ? values[name] as number : 0,
+      ref: () => null,
+      prop: (_name: string, fallback: unknown) => fallback,
+    } as unknown as EvalAPI);
+    return (outputs["Curve Instances"] as Geometry).instances.map((instance) => instance.position[0]);
+  };
+
+  // Portable fallback glyphs advance by 0.7, so "AB" has width 1.4.
+  const approximately = (actual: number[], expected: number[]) =>
+    assert.ok(actual.every((value, index) => Math.abs(value - expected[index]) < 1e-12));
+  approximately(evaluate("LEFT"), [0, 0.7]);
+  approximately(evaluate("CENTER"), [-0.4, 0.3]);
+  approximately(evaluate("RIGHT"), [-0.8, -0.1]);
+});
+
 test("Bounding Box uses positions for font curves beside a mesh component", () => {
   const geometry = new Geometry();
   geometry.mesh = new Mesh();

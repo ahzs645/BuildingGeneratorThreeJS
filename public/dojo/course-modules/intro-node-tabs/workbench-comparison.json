@@ -32,20 +32,20 @@
     "mean_luminance": 0.5166975163746681
   },
   "webgl": {
-    "surface_pixels": 10273,
+    "surface_pixels": 10219,
     "black_pixels": 0,
     "white_pixels": 0,
-    "gray_pixels": 10273,
+    "gray_pixels": 10219,
     "black_fraction": 0,
     "white_fraction": 0,
     "gray_fraction": 1,
-    "mean_luminance": 0.4863530347666071
+    "mean_luminance": 0.4867577406073774
   },
   "comparison": {
-    "surface_mask_iou": 0.4051184317996188,
-    "surface_mask_iou_dilated_1px": 0.4161312140683125,
-    "blender_surface_covered_within_1px_fraction": 0.63571497444798,
-    "webgl_surface_covered_within_1px_fraction": 0.6407086537525553,
+    "surface_mask_iou": 0.9741131351869607,
+    "surface_mask_iou_dilated_1px": 0.9800427655024947,
+    "blender_surface_covered_within_1px_fraction": 1,
+    "webgl_surface_covered_within_1px_fraction": 1,
     "surface_corners": {
       "blender": {
         "left": [
@@ -68,57 +68,57 @@
       "webgl": {
         "left": [
           158.58823529411765,
-          445.70588235294116
+          447.70588235294116
         ],
         "right": [
           583.25,
-          308.75
+          298
         ],
         "bottom": [
-          558.7027027027027,
-          296.5945945945946
+          559.1724137931035,
+          285.6551724137931
         ],
         "top": [
-          213.20754716981133,
-          473.41509433962267
+          213,
+          475.40384615384613
         ]
       }
     },
     "surface_corner_deltas_webgl_minus_blender": {
       "left": [
         -0.022875816993462195,
-        -2.2941176470588402
+        -0.29411764705884025
       ],
       "right": [
         0.8214285714285552,
-        10.464285714285722
+        -0.2857142857142776
       ],
       "bottom": [
-        -0.46971109040077863,
-        10.9394221808015
+        0,
+        0
       ],
       "top": [
-        1.1334730957372585,
-        -2.733053808525483
+        0.9259259259259238,
+        -0.7443019943020204
       ]
     },
-    "surface_corner_rmse_pixels": 5.523647459186576,
-    "intersection_pixels": 5952,
-    "pixel_rgb_mae": 0.05909065702015215,
+    "surface_corner_rmse_pixels": 0.5308872671479637,
+    "intersection_pixels": 10160,
+    "pixel_rgb_mae": 0.044312923751653535,
     "mean_rgb_delta": [
-      -0.03040702413756897,
-      -0.024518881190726167,
-      -0.036714476307373366
+      -0.034838536594203,
+      -0.03045010353535643,
+      -0.04080381011763139
     ],
-    "pixel_luminance_mae": 0.04213009700688245,
-    "pixel_luminance_correlation": -0.032346198035733936,
-    "binary_mask_disagreement_fraction": 0.7547043010752689,
+    "pixel_luminance_mae": 0.03728578260154564,
+    "pixel_luminance_correlation": 0.8261698128604025,
+    "binary_mask_disagreement_fraction": 0.47588582677165353,
     "macro_block_size": 32,
-    "macro_block_count": 21,
-    "macro_luminance_mae": 0.032348131205934993,
-    "macro_luminance_correlation": 0.09935809379228151,
+    "macro_block_count": 30,
+    "macro_luminance_mae": 0.03559348147926496,
+    "macro_luminance_correlation": 0.41410189210105885,
     "black_fraction_delta": 0,
-    "mean_luminance_delta": -0.030344481608061025
+    "mean_luminance_delta": -0.029939775767290677
   },
   "interpretation": "The transparent Blender capture is composited over the same segmentation key as WebGL before applying one shared key-distance threshold. This compares equivalent antialiased coverage instead of an alpha>0.5 Blender mask against a looser WebGL color-key mask. The aligned silhouette validates the capture context, but luminance occupancy, correlation, and pixel disagreement determine whether the authored WebGL material is visually equivalent. Renderer lighting, environment, tone mapping, texture filtering, and procedural implementations may remain as residuals."
 }

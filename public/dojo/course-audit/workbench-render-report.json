@@ -1,6 +1,6 @@
 {
-  "updated": "2026-07-23",
-  "status": "partial",
+  "updated": "2026-07-24",
+  "status": "complete",
   "scope": "Matched cataloged Blender Workbench references versus live GN-VM Workbench-approximation browser canvases for all thirteen course presentation entries.",
   "manifest": "tools/course-authored-render-manifest.json",
   "capture": {
@@ -90,6 +90,51 @@
       "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
     },
     {
+      "id": "course-intro-challenge",
+      "object": "Plane.023",
+      "status": "measured-workbench-renderer-residual",
+      "valid": true,
+      "validation": {
+        "topologyReady": true,
+        "countMatch": true,
+        "alphaBackedReference": true,
+        "comparableSurfaceMask": true,
+        "minimumSurfaceMaskIoU": 0.5,
+        "surfacePlacementAligned": true
+      },
+      "blenderReference": "public/dojo/references/course-modules/intro-challenge.png",
+      "browserReference": "public/dojo/references/course-modules/intro-challenge-workbench-webgl.png",
+      "comparisonReport": "public/dojo/course-modules/intro-challenge/workbench-comparison.json",
+      "capture": {
+        "resolution": [
+          768,
+          768
+        ],
+        "previewMode": "workbench",
+        "lightScale": 1,
+        "temporalSamples": null,
+        "backgroundHex": "ff00ff",
+        "browserReadiness": "exact",
+        "browserCount": "2,331 verts · 16 faces · 2,331 curve points · 2,331 wire segments",
+        "blenderAlphaSurfacePixels": 11258
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9730956239870341,
+        "surfaceMaskIoUDilated1px": 0.9784740965045092,
+        "surfaceCornerRmsePixels": 0.21041186123586714,
+        "blenderSurfaceCoveredWithin1px": 1,
+        "browserSurfaceCoveredWithin1px": 1,
+        "pixelRgbMae": 0.05631493707194812,
+        "pixelLuminanceMae": 0.04855106557279943,
+        "pixelLuminanceCorrelation": 0.8105615207133862,
+        "binaryMaskDisagreementFraction": 0.3468520986009327,
+        "macroLuminanceMae": 0.0449624004045068,
+        "macroLuminanceCorrelation": 0.3306541810018952,
+        "meanLuminanceDelta": -0.03771856501086729
+      },
+      "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
+    },
+    {
       "id": "course-intro-node-dojo",
       "object": "Plane.019",
       "status": "measured-workbench-renderer-residual",
@@ -160,6 +205,51 @@
         "macroLuminanceMae": 0.01923647244834515,
         "macroLuminanceCorrelation": 0.8014508200272972,
         "meanLuminanceDelta": -0.0022762223505625734
+      },
+      "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
+    },
+    {
+      "id": "course-intro-node-tabs",
+      "object": "Plane.035",
+      "status": "measured-workbench-renderer-residual",
+      "valid": true,
+      "validation": {
+        "topologyReady": true,
+        "countMatch": true,
+        "alphaBackedReference": true,
+        "comparableSurfaceMask": true,
+        "minimumSurfaceMaskIoU": 0.5,
+        "surfacePlacementAligned": true
+      },
+      "blenderReference": "public/dojo/references/course-modules/intro-node-tabs.png",
+      "browserReference": "public/dojo/references/course-modules/intro-node-tabs-workbench-webgl.png",
+      "comparisonReport": "public/dojo/course-modules/intro-node-tabs/workbench-comparison.json",
+      "capture": {
+        "resolution": [
+          768,
+          768
+        ],
+        "previewMode": "workbench",
+        "lightScale": 1,
+        "temporalSamples": null,
+        "backgroundHex": "ff00ff",
+        "browserReadiness": "exact",
+        "browserCount": "2,411 verts · 81 faces · 2,340 curve points · 2,340 wire segments",
+        "blenderAlphaSurfacePixels": 9589
+      },
+      "comparison": {
+        "surfaceMaskIoU": 0.9741131351869607,
+        "surfaceMaskIoUDilated1px": 0.9800427655024947,
+        "surfaceCornerRmsePixels": 0.5308872671479637,
+        "blenderSurfaceCoveredWithin1px": 1,
+        "browserSurfaceCoveredWithin1px": 1,
+        "pixelRgbMae": 0.044312923751653535,
+        "pixelLuminanceMae": 0.03728578260154564,
+        "pixelLuminanceCorrelation": 0.8261698128604025,
+        "binaryMaskDisagreementFraction": 0.47588582677165353,
+        "macroLuminanceMae": 0.03559348147926496,
+        "macroLuminanceCorrelation": 0.41410189210105885,
+        "meanLuminanceDelta": -0.029939775767290677
       },
       "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
     },
@@ -423,101 +513,7 @@
       "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
     }
   ],
-  "failures": [
-    {
-      "id": "course-intro-challenge",
-      "error": "matched capture validation failed: {\"resolution\":[768,768],\"previewMode\":\"workbench\",\"lightScale\":1,\"temporalSamples\":null,\"backgroundHex\":\"ff00ff\",\"browserReadiness\":\"exact\",\"browserCount\":\"2,331 verts · 16 faces · 2,331 curve points · 2,331 wire segments\",\"blenderAlphaSurfacePixels\":11258}",
-      "candidateEvidence": {
-        "status": "invalid-matched-capture",
-        "valid": false,
-        "validation": {
-          "topologyReady": true,
-          "countMatch": true,
-          "alphaBackedReference": true,
-          "comparableSurfaceMask": true,
-          "minimumSurfaceMaskIoU": 0.5,
-          "surfacePlacementAligned": false
-        },
-        "blenderReference": "public/dojo/references/course-modules/intro-challenge.png",
-        "browserReference": "public/dojo/references/course-modules/intro-challenge-workbench-webgl.png",
-        "comparisonReport": "public/dojo/course-modules/intro-challenge/workbench-comparison.json",
-        "capture": {
-          "resolution": [
-            768,
-            768
-          ],
-          "previewMode": "workbench",
-          "lightScale": 1,
-          "temporalSamples": null,
-          "backgroundHex": "ff00ff",
-          "browserReadiness": "exact",
-          "browserCount": "2,331 verts · 16 faces · 2,331 curve points · 2,331 wire segments",
-          "blenderAlphaSurfacePixels": 11258
-        },
-        "comparison": {
-          "surfaceMaskIoU": 0.21464583437328408,
-          "surfaceMaskIoUDilated1px": 0.27344776435685525,
-          "surfaceCornerRmsePixels": 17.515046979579463,
-          "blenderSurfaceCoveredWithin1px": 0.4234872546624318,
-          "browserSurfaceCoveredWithin1px": 0.44756927161108345,
-          "pixelRgbMae": 0.10989943650930743,
-          "pixelLuminanceMae": 0.07340809413221028,
-          "pixelLuminanceCorrelation": -0.012595889694232787,
-          "binaryMaskDisagreementFraction": 0.48023255813953486,
-          "macroLuminanceMae": 0.04050514324284103,
-          "macroLuminanceCorrelation": 0.2596278192622792,
-          "meanLuminanceDelta": -0.03674497356265238
-        },
-        "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
-      }
-    },
-    {
-      "id": "course-intro-node-tabs",
-      "error": "matched capture validation failed: {\"resolution\":[768,768],\"previewMode\":\"workbench\",\"lightScale\":1,\"temporalSamples\":null,\"backgroundHex\":\"ff00ff\",\"browserReadiness\":\"exact\",\"browserCount\":\"2,411 verts · 81 faces · 2,340 curve points · 2,340 wire segments\",\"blenderAlphaSurfacePixels\":9589}",
-      "candidateEvidence": {
-        "status": "invalid-matched-capture",
-        "valid": false,
-        "validation": {
-          "topologyReady": true,
-          "countMatch": true,
-          "alphaBackedReference": true,
-          "comparableSurfaceMask": true,
-          "minimumSurfaceMaskIoU": 0.5,
-          "surfacePlacementAligned": false
-        },
-        "blenderReference": "public/dojo/references/course-modules/intro-node-tabs.png",
-        "browserReference": "public/dojo/references/course-modules/intro-node-tabs-workbench-webgl.png",
-        "comparisonReport": "public/dojo/course-modules/intro-node-tabs/workbench-comparison.json",
-        "capture": {
-          "resolution": [
-            768,
-            768
-          ],
-          "previewMode": "workbench",
-          "lightScale": 1,
-          "temporalSamples": null,
-          "backgroundHex": "ff00ff",
-          "browserReadiness": "exact",
-          "browserCount": "2,411 verts · 81 faces · 2,340 curve points · 2,340 wire segments",
-          "blenderAlphaSurfacePixels": 9589
-        },
-        "comparison": {
-          "surfaceMaskIoU": 0.4051184317996188,
-          "surfaceMaskIoUDilated1px": 0.4161312140683125,
-          "surfaceCornerRmsePixels": 5.523647459186576,
-          "blenderSurfaceCoveredWithin1px": 0.63571497444798,
-          "browserSurfaceCoveredWithin1px": 0.6407086537525553,
-          "pixelRgbMae": 0.05909065702015215,
-          "pixelLuminanceMae": 0.04213009700688245,
-          "pixelLuminanceCorrelation": -0.032346198035733936,
-          "binaryMaskDisagreementFraction": 0.7547043010752689,
-          "macroLuminanceMae": 0.032348131205934993,
-          "macroLuminanceCorrelation": 0.09935809379228151,
-          "meanLuminanceDelta": -0.030344481608061025
-        },
-        "interpretation": "The cataloged Blender Workbench reference and live GN-VM Workbench-approximation canvas use the same square orthographic framing. Matching topology and silhouette validate the comparison context; Blender Workbench versus Three.js lighting, cavity, shadows, color management, and raster differences remain measured rather than normalized away."
-      }
-    }
-  ],
+  "failures": [],
+  "missing": [],
   "interpretation": "This batch preserves the current Blender Workbench references and browser Workbench approximation without per-asset appearance fitting. Geometry readiness, alpha-backed reference validity, silhouette alignment, and renderer metrics are independently recorded."
 }

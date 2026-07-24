@@ -1312,10 +1312,16 @@ reg("GeometryNodeStringToCurves", (api) => {
     let x = 0;
     if (alignX === "CENTER") x = -lineWidth / 2;
     else if (alignX === "RIGHT") x = -lineWidth;
-    // Blender's Bottom Left pivot keeps the first glyph at the local origin;
-    // Text Box Width constrains wrapping/overflow but does not translate the
-    // emitted paragraph by half the box width. The old offset made the Nodes
-    // Node panel titles drift right by exactly Text Box Width / 2.
+    // A bounded text box establishes the alignment region: centered text is
+    // offset by half its width and right-aligned text by the full width. Left
+    // alignment stays at the origin. This is independent of the per-glyph
+    // pivot; treating Bottom Left as a blanket half-width offset shifted the
+    // Nodes Node panel titles, while omitting the region offset made the Intro
+    // Node Tabs noise sample every glyph at the wrong implicit Position.
+    if (textBoxWidth > 0) {
+      if (alignX === "CENTER") x += textBoxWidth / 2;
+      else if (alignX === "RIGHT") x += textBoxWidth;
+    }
     const y = alignYOffset + blockOffset - lineIdx * cellH;
     for (const ch of chars) {
       // Blender keeps whitespace as an empty instance. It has no visible

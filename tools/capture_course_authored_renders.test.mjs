@@ -7,6 +7,7 @@ import {
   parseArguments,
   parseBrowserCapture,
   parseCountLabel,
+  reconcileCourseRenderState,
   selectEntries,
   upsertLastTopLevelProperty,
   validateManifest,
@@ -127,4 +128,34 @@ test("updates only the owned final status property without reformatting existing
   const second = upsertLastTopLevelProperty(first, "workbenchRender", { valid: false });
   assert.deepEqual(JSON.parse(second).workbenchRender, { valid: false });
   assert.equal(second.match(/"workbenchRender"/g)?.length, 1);
+});
+
+test("single-asset reruns preserve untouched course failures and evidence", () => {
+  const state = reconcileCourseRenderState(
+    [{ id: "course-a" }, { id: "course-b" }, { id: "course-c" }],
+    {
+      variants: [{ id: "course-a", valid: true }],
+      failures: [{ id: "course-b", error: "existing failure" }],
+    },
+    [{ id: "course-c", variant: { id: "course-c", valid: true } }],
+  );
+
+  assert.deepEqual(state.variants.map((entry) => entry.id), ["course-a", "course-c"]);
+  assert.deepEqual(state.failures, [{ id: "course-b", error: "existing failure" }]);
+  assert.deepEqual(state.missing, []);
+  assert.equal(state.complete, false);
+
+  const completed = reconcileCourseRenderState(
+    [{ id: "course-a" }, { id: "course-b" }, { id: "course-c" }],
+    { variants: state.variants, failures: state.failures },
+    [{ id: "course-b", variant: { id: "course-b", valid: true } }],
+  );
+  assert.deepEqual(completed.variants.map((entry) => entry.id), [
+    "course-a",
+    "course-b",
+    "course-c",
+  ]);
+  assert.deepEqual(completed.failures, []);
+  assert.deepEqual(completed.missing, []);
+  assert.equal(completed.complete, true);
 });

@@ -2229,22 +2229,22 @@ function meshSignedAreaXY(m: Mesh): number {
     "Align X": "Center", "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": .5,
     "Text Box Width": 2,
   })["Curve Instances"] as Geometry;
-  check("StringToCurves center alignment ignores trailing wrap space", Math.abs(centeredWrap.instances[0].position[0] + .8) < 1e-9, `x=${centeredWrap.instances[0].position[0]}`);
+  check("StringToCurves centers wrapped text inside the bounded box", Math.abs(centeredWrap.instances[0].position[0] - .2) < 1e-9, `x=${centeredWrap.instances[0].position[0]}`);
   const compressedCenteredWrap = runNode("GeometryNodeStringToCurves", {
     String: "A B", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
     "Align X": "Center", "Character Spacing": .7, "Word Spacing": 1, "Line Spacing": .5,
     "Text Box Width": 2,
   })["Curve Instances"] as Geometry;
-  check("StringToCurves keeps compressed wrap-separator centering residual",
-    Math.abs(compressedCenteredWrap.instances[0].position[0] + .77) < 1e-9,
+  check("StringToCurves keeps compressed wrap-separator centering residual inside the box",
+    Math.abs(compressedCenteredWrap.instances[0].position[0] - .23) < 1e-9,
     `x=${compressedCenteredWrap.instances[0].position[0]}`);
   const leftPivotWrap = runNode("GeometryNodeStringToCurves", {
     String: "A B", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
     "Align X": "Center", "Pivot Point": "Bottom Left", "Character Spacing": 1, "Word Spacing": 1, "Line Spacing": .5,
     "Text Box Width": 2,
   })["Curve Instances"] as Geometry;
-  check("StringToCurves Bottom Left pivot does not translate by half the text box",
-    Math.abs(leftPivotWrap.instances[0].position[0] + .8) < 1e-9,
+  check("StringToCurves Bottom Left pivot does not override box alignment",
+    Math.abs(leftPivotWrap.instances[0].position[0] - .2) < 1e-9,
     `x=${leftPivotWrap.instances[0].position[0]}`);
   const centeredWrappedAtlas = runNode("GeometryNodeStringToCurves", {
     String: "A B", Size: 2, Font: { datablock: "VectorFont", name: "TestFont" },
