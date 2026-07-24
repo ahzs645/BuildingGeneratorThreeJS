@@ -123,6 +123,22 @@ try {
     await presetCanvas.screenshot({ path: path.join(outputDir, filename) });
     console.log(`MATERIALX_WEB_REFERENCE ${filename}`);
   }
+  await page.goto(
+    `${baseUrl}/materialx?capture=1&diagnostic=metal-f82`,
+    { waitUntil: "domcontentloaded" },
+  );
+  await page.waitForFunction(
+    () => (
+      document.documentElement.dataset.materialxImplementation === "official-essl-prefilter"
+      && document.documentElement.dataset.materialxPreset === "f82-gold"
+    ),
+    { timeout: 360_000 },
+  );
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const f82Canvas = await page.$("#materialx-canvas");
+  if (!f82Canvas) throw new Error("MaterialX F82 Gold canvas missing");
+  await f82Canvas.screenshot({ path: path.join(outputDir, "metal-f82-gold-web.png") });
+  console.log("MATERIALX_WEB_REFERENCE metal-f82-gold-web.png");
 } finally {
   await browser.close();
 }

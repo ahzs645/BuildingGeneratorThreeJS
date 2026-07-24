@@ -182,15 +182,29 @@ to `0.768–0.818`; the squared mapping restores the studio-light shapes:
 | Stainless Steel | 0.024428 | 0.981634 | 0.254473 / 0.263739 |
 | Titanium | 0.024220 | 0.977153 | 0.200332 / 0.214242 |
 
-This validates only constant-input `PHYSICAL_CONDUCTOR` behavior. The source
-file remains the local oracle for the still-open F82 artistic-tint, layered
-roughness, roughness-Fresnel, anisotropy/tangent, scratches, and thin-film gates.
+The constant-input F82 gate is now complete as well. Blender's Metallic BSDF
+maps directly to MaterialX `generalized_schlick_bsdf`:
+
+- Blender Base Color → MaterialX `color0`;
+- Blender Edge Tint (F82) → MaterialX `color82`;
+- grazing color → white `color90`;
+- exponent → `5`; and
+- Blender perceptual roughness `0.35` → MaterialX alpha `0.1225`.
+
+The Gold control point uses the exact linear values stored in source sockets
+`Socket_887` and `Socket_888`. Its matched sphere reaches RMSE `0.026614`,
+luminance correlation `0.979207`, and mean luminance `0.286450 / 0.295235`
+for Blender/web. This validates constant-input F82 behavior without converting
+the artistic controls to n/k values.
+
+The source file remains the local oracle for the still-open layered roughness,
+roughness-Fresnel, anisotropy/tangent, scratches, and thin-film gates.
 
 ## Required regression evidence
 
 - extraction determinism and source fingerprint;
 - reachable node-type and nested-group inventory;
-- constant-input unit probes for both `F82` and `PHYSICAL_CONDUCTOR`;
+- constant-input unit probes for both `F82` and `PHYSICAL_CONDUCTOR` — complete;
 - anisotropy rotation and tangent-direction probes;
 - thin-film thickness/IOR probes;
 - Blender and browser renders using one shared studio environment;

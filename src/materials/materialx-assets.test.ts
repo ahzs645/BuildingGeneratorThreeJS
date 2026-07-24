@@ -168,7 +168,7 @@ test("official MaterialX shader-generator experiment is pinned and license-scope
 
 test("comparison evidence separates pixels from graph-semantic claims", () => {
   const comparison = JSON.parse(evidence("current/comparison.json"));
-  assert.equal(comparison.comparisonVersion, 7);
+  assert.equal(comparison.comparisonVersion, 8);
   assert.equal(comparison.renderContract.colorTransform, "Standard/sRGB, no tone mapping");
   assert.match(comparison.renderContract.environment, /studio-environment\.exr/);
   assert.match(comparison.renderContract.webBackend, /official MaterialX 1\.39\.4 ESSL/);

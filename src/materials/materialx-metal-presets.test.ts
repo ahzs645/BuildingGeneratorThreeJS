@@ -41,20 +41,36 @@ test("rights-safe metal probe index preserves the physical constants and roughne
       expectedPresets[preset.id as keyof typeof expectedPresets],
     );
   }
+  assert.deepEqual(index.f82Probe, {
+    id: "gold",
+    label: "Gold F82",
+    shader: "MetalF82GoldProbe",
+    fresnelMode: "F82",
+    sourceGroup: "Metallic BSDF+",
+    sourceSockets: { baseColor: "Socket_887", edgeTint: "Socket_888" },
+    baseColor: [1, 0.7758224606513977, 0.3049874007701874],
+    edgeTint: [0.9734454154968262, 1, 0.9911020398139954],
+    color90: [1, 1, 1],
+    exponent: 5,
+    scope: "Constant-input Blender Metallic BSDF F82 semantics only; no source node group or texture branch is embedded.",
+  });
 });
 
 test("metal preset MaterialX and official ESSL bundle carry microfacet alpha without third-party assets", () => {
   const source = publicAsset("metal-preset-probes.mtlx");
   const audit = auditMaterialXDocument(source, { implementation: "official-essl" });
   assert.deepEqual(audit.unsupportedElements, []);
-  assert.equal(audit.materialCount, 5);
-  assert.equal((source.match(/value="0\.1225, 0\.1225"/g) ?? []).length, 5);
+  assert.equal(audit.materialCount, 6);
+  assert.equal((source.match(/value="0\.1225, 0\.1225"/g) ?? []).length, 6);
   assert.doesNotMatch(source, /<(?:image|tiledimage|triplanarprojection)\b|type="filename"/);
 
   const manifest = JSON.parse(publicAsset("generated/metal-presets/manifest.json"));
   assert.equal(manifest.generator.materialx, "1.39.4");
   assert.equal(manifest.generator.specularEnvironment, "PREFILTER");
-  assert.deepEqual(Object.keys(manifest.shaders).sort(), Object.values(expectedPresets).map(({ shader }) => shader).sort());
+  assert.deepEqual(Object.keys(manifest.shaders).sort(), [
+    ...Object.values(expectedPresets).map(({ shader }) => shader),
+    "MetalF82GoldProbe",
+  ].sort());
   for (const { shader } of Object.values(expectedPresets)) {
     const uniforms = manifest.shaders[shader].fragmentInterface.uniforms.PublicUniforms;
     const roughness = uniforms.find((uniform: { name: string }) => uniform.name === "conductor_roughness");
@@ -65,11 +81,16 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
     assert.match(fragment, /mx_latlong_alpha_to_lod\(avgAlpha\)/);
     assert.doesNotMatch(fragment, /for \(int i = 0; i < envRadianceSamples; i\+\+\)/);
   }
+  const f82Fragment = publicAsset("generated/metal-presets/MetalF82GoldProbe.frag");
+  assert.match(f82Fragment, /void mx_generalized_schlick_bsdf\(/);
+  assert.match(f82Fragment, /mx_init_fresnel_schlick/);
+  assert.match(f82Fragment, /mx_latlong_alpha_to_lod\(avgAlpha\)/);
+  assert.doesNotMatch(f82Fragment, /for \(int i = 0; i < envRadianceSamples; i\+\+\)/);
 });
 
 test("matched Blender and browser metal probes pass the constant-input similarity gate", () => {
   const comparison = JSON.parse(fs.readFileSync(evidenceUrl("comparison.json"), "utf8"));
-  assert.equal(comparison.comparisonVersion, 7);
+  assert.equal(comparison.comparisonVersion, 8);
   assert.match(comparison.renderContract.metalPresetMatrix, /0\.35.*0\.1225/);
   assert.deepEqual(Object.keys(comparison.metalPresetMatrix), Object.keys(expectedPresets));
   for (const id of Object.keys(expectedPresets)) {
@@ -80,5 +101,13 @@ test("matched Blender and browser metal probes pass the constant-input similarit
     for (const renderer of ["blender", "web"]) {
       assert.ok(fs.statSync(evidenceUrl(`metal-preset-${id}-${renderer}.png`)).size > 10_000, `${id} ${renderer}`);
     }
+  }
+  const f82 = comparison.metalF82Probe;
+  assert.match(comparison.renderContract.metalF82Probe, /generalized_schlick_bsdf/);
+  assert.ok(f82.sphereRegion.rgbRootMeanSquareError < 0.04);
+  assert.ok(f82.sphereRegion.luminanceCorrelation > 0.95);
+  assert.match(f82.claim, /constant-input F82 semantics only/);
+  for (const renderer of ["blender", "web"]) {
+    assert.ok(fs.statSync(evidenceUrl(`metal-f82-gold-${renderer}.png`)).size > 10_000, renderer);
   }
 });

@@ -28,6 +28,15 @@ type MetalPresetProbeIndex = {
     materialxMicrofacetAlpha: number;
     roughnessMapping: string;
   };
+  f82Probe: {
+    id: string;
+    label: string;
+    shader: string;
+    baseColor: number[];
+    edgeTint: number[];
+    color90: number[];
+    exponent: number;
+  };
   presets: Array<{
     id: string;
     label: string;
@@ -62,8 +71,10 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   const capture = query.get("capture") === "1";
   const requestedDiagnostic = query.get("diagnostic");
   const metalPresetDiagnostic = requestedDiagnostic === "metal-preset";
+  const metalF82Diagnostic = requestedDiagnostic === "metal-f82";
+  const metalProbeDiagnostic = metalPresetDiagnostic || metalF82Diagnostic;
   const dependencyImplementation = import.meta.env.VITE_MATERIALX_THREE_IMPLEMENTATION || "r185";
-  const environmentMode = metalPresetDiagnostic || query.get("environment") === "prefilter"
+  const environmentMode = metalProbeDiagnostic || query.get("environment") === "prefilter"
     ? "prefilter"
     : "fis";
   const implementation = query.get("implementation") === "tsl" || dependencyImplementation !== "r185"
@@ -299,7 +310,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       return;
     }
 
-    if (metalPresetDiagnostic && officialEssl) {
+    if (metalProbeDiagnostic && officialEssl) {
       const generatedBase = publicUrl("materialx/generated/metal-presets").replace(/\/$/, "");
       const [manifest, presetIndex] = await Promise.all([
         fetch(`${generatedBase}/manifest.json`, {
@@ -317,7 +328,9 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
           return response.json() as Promise<MetalPresetProbeIndex>;
         }),
       ]);
-      const preset = presetIndex.presets.find((candidate) => candidate.id === requestedMetalPreset);
+      const preset = metalF82Diagnostic
+        ? presetIndex.f82Probe
+        : presetIndex.presets.find((candidate) => candidate.id === requestedMetalPreset);
       if (!preset) throw new Error(`Unknown MaterialX metal preset ${requestedMetalPreset}`);
       const material = ownMaterial(await createMaterialXEsslMaterial({
         baseUrl: generatedBase,
@@ -335,13 +348,21 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       floor.visible = false;
       probe.material = material;
       status.textContent = `materialx · PREFILTER · ${preset.label}`;
-      rendererStatus.textContent += " · physical conductor";
-      graphStatus.textContent = `${preset.shader} · n=${preset.ior.join(", ")} · k=${preset.extinction.join(", ")}`;
-      fallbackStatus.textContent = `Constant-input PHYSICAL_CONDUCTOR probe · Blender roughness ${presetIndex.probeContract.blenderPerceptualRoughness} → MaterialX α ${presetIndex.probeContract.materialxMicrofacetAlpha}`;
+      if (metalF82Diagnostic) {
+        const f82 = presetIndex.f82Probe;
+        rendererStatus.textContent += " · generalized Schlick F82";
+        graphStatus.textContent = `${f82.shader} · color0=${f82.baseColor.join(", ")} · color82=${f82.edgeTint.join(", ")}`;
+        fallbackStatus.textContent = `Constant-input F82 probe · color90=${f82.color90.join(", ")} · exponent ${f82.exponent} · Blender roughness ${presetIndex.probeContract.blenderPerceptualRoughness} → MaterialX α ${presetIndex.probeContract.materialxMicrofacetAlpha}`;
+      } else {
+        const physical = preset as MetalPresetProbeIndex["presets"][number];
+        rendererStatus.textContent += " · physical conductor";
+        graphStatus.textContent = `${physical.shader} · n=${physical.ior.join(", ")} · k=${physical.extinction.join(", ")}`;
+        fallbackStatus.textContent = `Constant-input PHYSICAL_CONDUCTOR probe · Blender roughness ${presetIndex.probeContract.blenderPerceptualRoughness} → MaterialX α ${presetIndex.probeContract.materialxMicrofacetAlpha}`;
+      }
       ownerDocument.documentElement.dataset.materialxReady = "true";
       ownerDocument.documentElement.dataset.materialBackend = "materialx";
       ownerDocument.documentElement.dataset.materialxImplementation = implementation;
-      ownerDocument.documentElement.dataset.materialxPreset = preset.id;
+      ownerDocument.documentElement.dataset.materialxPreset = metalF82Diagnostic ? "f82-gold" : preset.id;
       renderer.setAnimationLoop(() => renderer.render(scene, camera));
       return;
     }

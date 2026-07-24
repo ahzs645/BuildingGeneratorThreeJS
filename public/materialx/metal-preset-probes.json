@@ -21,6 +21,22 @@
     "thinFilmIor": 1.33,
     "scope": "Constant-input conductor semantics only; layered roughness, roughness Fresnel, textures, scratches, anisotropy, and thin film are separate gates."
   },
+  "f82Probe": {
+    "id": "gold",
+    "label": "Gold F82",
+    "shader": "MetalF82GoldProbe",
+    "fresnelMode": "F82",
+    "sourceGroup": "Metallic BSDF+",
+    "sourceSockets": {
+      "baseColor": "Socket_887",
+      "edgeTint": "Socket_888"
+    },
+    "baseColor": [1, 0.7758224606513977, 0.3049874007701874],
+    "edgeTint": [0.9734454154968262, 1, 0.9911020398139954],
+    "color90": [1, 1, 1],
+    "exponent": 5,
+    "scope": "Constant-input Blender Metallic BSDF F82 semantics only; no source node group or texture branch is embedded."
+  },
   "presets": [
     {
       "id": "aluminum",

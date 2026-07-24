@@ -19,7 +19,7 @@ export const THREE_MATERIALX_ELEMENTS = new Set([
 /** Additional node categories supported by the official MaterialX ESSL generator. */
 export const OFFICIAL_ESSL_MATERIALX_ELEMENTS = new Set([
   ...THREE_MATERIALX_ELEMENTS,
-  "geompropvalue", "surface", "conductor_bsdf",
+  "geompropvalue", "surface", "conductor_bsdf", "generalized_schlick_bsdf",
 ]);
 
 const PROCEDURAL_HEIGHT_ELEMENTS = new Set([

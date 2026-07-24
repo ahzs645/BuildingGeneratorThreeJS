@@ -35,6 +35,11 @@ METAL_PRESETS = {
     },
 }
 
+F82_GOLD = {
+    "base_color": (1.0, 0.7758224606513977, 0.3049874007701874, 1.0),
+    "edge_tint": (0.9734454154968262, 1.0, 0.9911020398139954, 1.0),
+}
+
 
 def args() -> argparse.Namespace:
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
@@ -355,6 +360,29 @@ def physical_conductor(name, ior, extinction, roughness=0.35):
     return material
 
 
+def artistic_f82(name, base_color, edge_tint, roughness=0.35):
+    """Build a rights-safe constant-input Blender Metallic BSDF F82 probe."""
+    material = bpy.data.materials.new(f"Artistic F82 Probe · {name}")
+    material.use_nodes = True
+    tree = material.node_tree
+    tree.nodes.clear()
+    metallic = tree.nodes.new("ShaderNodeBsdfMetallic")
+    metallic.distribution = "MULTI_GGX"
+    metallic.fresnel_type = "F82"
+    metallic.inputs["Base Color"].default_value = base_color
+    metallic.inputs["Edge Tint"].default_value = edge_tint
+    metallic.inputs["Roughness"].default_value = roughness
+    metallic.inputs["Anisotropy"].default_value = 0.0
+    metallic.inputs["Rotation"].default_value = 0.0
+    if metallic.inputs.get("Weight") is not None:
+        metallic.inputs["Weight"].default_value = 1.0
+    if metallic.inputs.get("Thin Film Thickness") is not None:
+        metallic.inputs["Thin Film Thickness"].default_value = 0.0
+    output = tree.nodes.new("ShaderNodeOutputMaterial")
+    tree.links.new(metallic.outputs["BSDF"], output.inputs["Surface"])
+    return material
+
+
 def input_by_identifier(node, identifier):
     return next(socket for socket in node.inputs if socket.identifier == identifier)
 
@@ -463,6 +491,13 @@ def render_physical_conductor_matrix(output: Path, probe, floor, lights):
                 output / f"metal-preset-{name}-blender.png"
             )
             bpy.ops.render.render(write_still=True)
+        probe.data.materials[0] = artistic_f82(
+            "Gold",
+            F82_GOLD["base_color"],
+            F82_GOLD["edge_tint"],
+        )
+        bpy.context.scene.render.filepath = str(output / "metal-f82-gold-blender.png")
+        bpy.ops.render.render(write_still=True)
     finally:
         floor.hide_render = original_floor_visibility
         for light in lights:
