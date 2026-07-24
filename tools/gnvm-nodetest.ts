@@ -1019,9 +1019,9 @@ function meshSignedAreaXY(m: Mesh): number {
 }
 
 // Portable dumps may carry Blender's evaluated CDT ordering. The cached
-// topology is only accepted when its faces describe the same vertex partition;
-// downstream edge extrusion and representative-sensitive welds can then use
-// Blender's hidden boundary-edge order without storing evaluated coordinates.
+// topology is only accepted when its faces describe the same outer boundary;
+// downstream triangulation, edge extrusion, and representative-sensitive welds
+// can then use Blender's hidden CDT/edge order without storing coordinates.
 {
   const disjoint = curves([
     { points: [[0, 0, 0], [1, 0, 0], [0, 1, 0]], cyclic: true },
@@ -1042,6 +1042,17 @@ function meshSignedAreaXY(m: Mesh): number {
     points: [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]],
     cyclic: true,
   }]);
+  const alternateTriangles = [[0, 1, 2], [0, 2, 3]];
+  const alternateEdges: [number, number][] = [[0, 1], [1, 2], [2, 3], [3, 0], [0, 2]];
+  const retessellated = runNode("GeometryNodeFillCurve", { Curve: square }, {
+    mode: "TRIANGLES",
+    evaluated_topology: { position_count: 4, edges: alternateEdges, faces: alternateTriangles },
+  }).Mesh as Geometry;
+  check("Fill Curve restores cached CDT diagonals with the same boundary",
+    JSON.stringify(retessellated.mesh?.faces) === JSON.stringify(alternateTriangles)
+      && JSON.stringify(retessellated.mesh?.edges) === JSON.stringify(alternateEdges),
+    JSON.stringify({ edges: retessellated.mesh?.edges, faces: retessellated.mesh?.faces }));
+
   const crossedFace = [[0, 2, 1, 3]];
   const crossedEdges: [number, number][] = [[0, 2], [2, 1], [1, 3], [3, 0]];
   const rejected = runNode("GeometryNodeFillCurve", { Curve: square }, {

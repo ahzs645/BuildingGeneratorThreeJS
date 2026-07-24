@@ -18,7 +18,13 @@
     "materialTriangles": {
       "flat.b.001": 2240,
       "flat.w": 33
-    }
+    },
+    "triangleArea": {
+      "blender": 110.2403040779392,
+      "gnvm": 110.24030344807238,
+      "absoluteDelta": 6.298668182580514e-7
+    },
+    "bidirectionalSurfaceError": 0
   },
   "capture": {
     "resolution": [768, 768],
@@ -30,15 +36,19 @@
     "comparisonReport": "material-comparison.json",
     "browserRoute": "/chrome-assets?asset=n03d-arrow&capture=authored",
     "browserToneMapping": "none",
-    "presentationRotationOrder": "YZX",
+    "presentationRotationOrder": "ZYX",
     "rotationSweep": {
       "originalXyz": {
         "surfaceMaskIou": 0.8292158792650919,
         "surfaceCornerRmsePixels": 7.304938195168307
       },
-      "selectedYzx": {
+      "intermediateYzx": {
         "surfaceMaskIou": 0.8600383825460423,
         "surfaceCornerRmsePixels": 2.204459212801503
+      },
+      "blenderEquivalentZyx": {
+        "surfaceMaskIou": 0.9946281147510084,
+        "surfaceCornerRmsePixels": 0.31537204407686276
       }
     }
   },
@@ -57,16 +67,19 @@
     }
   },
   "comparison": {
-    "surfaceMaskIou": 0.8600383825460423,
-    "surfaceCornerRmsePixels": 2.204459212801503,
-    "pixelRgbMae": 0.10793716914800908,
-    "pixelLuminanceMae": 0.10581774065243495,
-    "pixelLuminanceCorrelation": 0.8661177870839291,
-    "macroLuminanceMae": 0.0953074578081383,
-    "macroLuminanceCorrelation": 0.9666990843544305,
-    "blenderMeanLuminance": 0.8043852972904769,
-    "browserMeanLuminance": 0.7630949575680188,
-    "meanLuminanceDelta": -0.0412903397224581
+    "surfaceMaskIou": 0.9946281147510084,
+    "surfaceMaskIouDilated1px": 0.9948107671996479,
+    "surfaceCornerRmsePixels": 0.31537204407686276,
+    "blenderSurfaceCoveredWithin1px": 1,
+    "browserSurfaceCoveredWithin1px": 1,
+    "pixelRgbMae": 0.06765158787255585,
+    "pixelLuminanceMae": 0.06676913315294342,
+    "pixelLuminanceCorrelation": 0.9946791292873564,
+    "macroLuminanceMae": 0.058919271863273344,
+    "macroLuminanceCorrelation": 0.9998606715383475,
+    "blenderMeanLuminance": 0.7976488087400291,
+    "browserMeanLuminance": 0.7342003286880107,
+    "meanLuminanceDelta": -0.06344848005201842
   },
-  "interpretation": "The browser now renders the exact black outline and linear-0.8 fill Background graphs rather than a normalized geometry material. Disabling browser tone mapping restores Blender's bright fill occupancy, while the measured presentation rotation compensation reduces corner error from 7.30 to 2.20 pixels. Large-scale black/white structure correlates at 0.9667; the remaining silhouette-area and raster residual comes from the evaluated curve-frame/outline projection and Eevee/WebGL coverage rather than missing shader nodes."
+  "interpretation": "The browser renders the exact black outline and linear-0.8 fill Background graphs rather than a normalized geometry material. Restoring Blender's evaluated 33-triangle Fill Curve CDT topology removes the former oversized white fill, while Three.js ZYX reproduces Blender's stored XYZ Euler matrix convention for this object. The final surface mask reaches 0.9946 IoU, both masks are fully covered within one pixel, and macro luminance correlation reaches 0.99986. The remaining subpixel edge and luminance differences are Eevee/WebGL raster and color-management residuals rather than missing geometry or shader nodes."
 }

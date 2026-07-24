@@ -758,9 +758,9 @@
     "reference": "dojo/references/n03d/arrow.png",
     "authoredReference": "dojo/references/n03d/arrow-authored.png",
     "authoredToneMapping": "none",
-    "rotationOrder": "YZX",
+    "rotationOrder": "ZYX",
     "blenderStats": { "verts": 1155, "faces": 1153 },
-    "note": "Exact Blender topology and four-decimal bounds across five validation cases. Restoring the seven-point seed mesh at source float32 precision, its authored edge order, and original edge-domain tail masks keeps tail length and width editable in-browser. Authored mode reproduces the 1,120-face black outline and 33-face linear-0.8 fill as their literal lighting-independent Background graphs—not a filament or G-code surface. A measured presentation-rotation correction reduces aligned corner RMSE from 7.30 to 2.20 pixels; the committed comparison records 0.9667 macro luminance correlation and the remaining curve-frame/coverage residual.",
+    "note": "Exact Blender topology, triangle area within 0.000001, and zero bidirectional surface error across the authored case, with five tail-length/width topology-and-bounds validations. Restoring the seven-point seed mesh, authored edge order, edge-domain masks, and Blender's evaluated Fill Curve CDT topology keeps both controls live in-browser. Authored mode reproduces the 1,120-face black outline and 33-face linear-0.8 fill as literal lighting-independent Background graphs—not a filament or G-code surface. Three.js ZYX matches Blender's stored XYZ object matrix convention here; the committed comparison reaches 0.9946 silhouette IoU, 0.315 px corner RMSE, and 0.99986 macro luminance correlation.",
     "controls": [
       { "name": "tail length", "label": "Tail length", "min": 0, "max": 18, "step": 0.1, "value": 6.960296630859375 },
       { "name": "tail width", "label": "Tail width", "min": 0, "max": 40, "step": 0.1, "value": 26.007339477539062 }

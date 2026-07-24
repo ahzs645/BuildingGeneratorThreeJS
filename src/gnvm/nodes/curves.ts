@@ -832,25 +832,35 @@ reg("GeometryNodeFillCurve", (api) => {
     if (edges.some(([a, b]) => a === b) || new Set(cachedEdgeKeys).size !== cachedEdgeKeys.length) return;
 
     // The hint stores no coordinates, but CDT ordering still depends on them.
-    // Reuse it only while every filled polygon has the same undirected boundary
-    // adjacency. Comparing vertex membership alone would accept a crossed quad
-    // such as 0-2-1-3 in place of 0-1-2-3.
+    // Reuse it only while the emitted fill has the same undirected boundary
+    // adjacency. Interior CDT diagonals are intentionally allowed to differ:
+    // restoring those Blender-selected diagonals is the purpose of the hint.
+    // Comparing vertex membership alone would still accept a crossed quad such
+    // as 0-2-1-3 in place of 0-1-2-3.
     const signature = (face: number[]) => face
       .map((vertex, index) => edgeKey(vertex, face[(index + 1) % face.length]))
       .sort()
       .join(",");
-    const currentSignatures = mesh.faces.map(signature).sort();
-    const cachedSignatures = faces.map(signature).sort();
-    if (currentSignatures.length !== cachedSignatures.length
-      || currentSignatures.some((value, index) => value !== cachedSignatures[index])) return;
+    const boundaryKeys = (sourceFaces: number[][]) => {
+      const counts = new Map<string, number>();
+      for (const face of sourceFaces) for (let index = 0; index < face.length; index++) {
+        const key = edgeKey(face[index], face[(index + 1) % face.length]);
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+      return [...counts].filter(([, count]) => count === 1).map(([key]) => key).sort();
+    };
+    const currentBoundaryKeys = boundaryKeys(mesh.faces);
+    const cachedBoundaryKeys = boundaryKeys(faces);
+    if (currentBoundaryKeys.length !== cachedBoundaryKeys.length
+      || currentBoundaryKeys.some((value, index) => value !== cachedBoundaryKeys[index])) return;
 
     // Blender's mesh edge table contains each unique N-gon boundary edge once;
     // a hole bridge can occur twice in a face loop but remains one mesh edge.
-    const cachedBoundaryKeys = new Set(faces.flatMap((face) => face.map(
+    const cachedFaceEdgeKeys = new Set(faces.flatMap((face) => face.map(
       (vertex, index) => edgeKey(vertex, face[(index + 1) % face.length]),
     )));
-    if (cachedBoundaryKeys.size !== cachedEdgeKeys.length
-      || cachedEdgeKeys.some((key) => !cachedBoundaryKeys.has(key))) return;
+    if (cachedFaceEdgeKeys.size !== cachedEdgeKeys.length
+      || cachedEdgeKeys.some((key) => !cachedFaceEdgeKeys.has(key))) return;
 
     const materialByFace = new Map(mesh.faces.map((face, index) => [signature(face), mesh.faceMaterial[index] ?? 0]));
     mesh.edges = edges.map((edge) => [...edge] as [number, number]);
