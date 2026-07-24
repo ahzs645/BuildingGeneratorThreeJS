@@ -21,6 +21,21 @@ import { makeProbeGeometry } from "./materialx/probe-geometry";
 
 type Variant = "source" | "bump";
 type LabMaterial = THREE.Material & { userData: Record<string, unknown> };
+type MetalPresetProbeIndex = {
+  schemaVersion: number;
+  probeContract: {
+    blenderPerceptualRoughness: number;
+    materialxMicrofacetAlpha: number;
+    roughnessMapping: string;
+  };
+  presets: Array<{
+    id: string;
+    label: string;
+    shader: string;
+    ior: number[];
+    extinction: number[];
+  }>;
+};
 
 export interface MaterialXLabOptions {
   search?: string;
@@ -45,18 +60,23 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
 
   const query = new URLSearchParams(options.search ?? location.search);
   const capture = query.get("capture") === "1";
+  const requestedDiagnostic = query.get("diagnostic");
+  const metalPresetDiagnostic = requestedDiagnostic === "metal-preset";
   const dependencyImplementation = import.meta.env.VITE_MATERIALX_THREE_IMPLEMENTATION || "r185";
-  const environmentMode = query.get("environment") === "prefilter" ? "prefilter" : "fis";
+  const environmentMode = metalPresetDiagnostic || query.get("environment") === "prefilter"
+    ? "prefilter"
+    : "fis";
   const implementation = query.get("implementation") === "tsl" || dependencyImplementation !== "r185"
     ? dependencyImplementation
     : `official-essl-${environmentMode}`;
   const officialEssl = implementation.startsWith("official-essl-");
-  const coordinateDiagnostic = query.get("diagnostic") === "coordinates";
-  const geompropColorDiagnostic = query.get("diagnostic") === "geomprop-col";
-  const uiNormalBandDiagnostic = query.get("diagnostic") === "ui-normal-band";
-  const lightDiagnostic = query.get("diagnostic")?.match(/^light-(key|fill|rim)$/)?.[1] ?? null;
-  const threeLightDiagnostic = query.get("diagnostic")?.match(/^three-light-(key|fill|rim)$/)?.[1] ?? null;
-  const roughnessDiagnostic = query.get("diagnostic") === "roughness-sweep";
+  const coordinateDiagnostic = requestedDiagnostic === "coordinates";
+  const geompropColorDiagnostic = requestedDiagnostic === "geomprop-col";
+  const uiNormalBandDiagnostic = requestedDiagnostic === "ui-normal-band";
+  const lightDiagnostic = requestedDiagnostic?.match(/^light-(key|fill|rim)$/)?.[1] ?? null;
+  const threeLightDiagnostic = requestedDiagnostic?.match(/^three-light-(key|fill|rim)$/)?.[1] ?? null;
+  const roughnessDiagnostic = requestedDiagnostic === "roughness-sweep";
+  const requestedMetalPreset = query.get("preset") ?? "aluminum";
   const requestedRoughness = Number(query.get("roughness") ?? "0.32");
   if (roughnessDiagnostic && (!Number.isFinite(requestedRoughness) || requestedRoughness < 0 || requestedRoughness > 1)) {
     throw new Error(`MaterialX roughness diagnostic requires a finite value from 0 to 1; received ${query.get("roughness")}`);
@@ -78,6 +98,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     backend: ownerDocument.documentElement.dataset.materialBackend,
     implementation: ownerDocument.documentElement.dataset.materialxImplementation,
     roughness: ownerDocument.documentElement.dataset.materialxRoughness,
+    preset: ownerDocument.documentElement.dataset.materialxPreset,
   };
 
   function ownMaterial<T extends THREE.Material>(material: T): T {
@@ -275,6 +296,53 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       ownerDocument.documentElement.dataset.materialBackend = "materialx";
       ownerDocument.documentElement.dataset.materialxImplementation = implementation;
       renderer.setAnimationLoop(() => renderer.render(diagnosticScene, diagnosticCamera));
+      return;
+    }
+
+    if (metalPresetDiagnostic && officialEssl) {
+      const generatedBase = publicUrl("materialx/generated/metal-presets").replace(/\/$/, "");
+      const [manifest, presetIndex] = await Promise.all([
+        fetch(`${generatedBase}/manifest.json`, {
+          cache: "no-store",
+          signal: abortController.signal,
+        }).then((response) => {
+          if (!response.ok) throw new Error(`Metal preset ESSL manifest fetch failed: ${response.status}`);
+          return response.json() as Promise<EsslManifest>;
+        }),
+        fetch(publicUrl("materialx/metal-preset-probes.json"), {
+          cache: "no-store",
+          signal: abortController.signal,
+        }).then((response) => {
+          if (!response.ok) throw new Error(`Metal preset index fetch failed: ${response.status}`);
+          return response.json() as Promise<MetalPresetProbeIndex>;
+        }),
+      ]);
+      const preset = presetIndex.presets.find((candidate) => candidate.id === requestedMetalPreset);
+      if (!preset) throw new Error(`Unknown MaterialX metal preset ${requestedMetalPreset}`);
+      const material = ownMaterial(await createMaterialXEsslMaterial({
+        baseUrl: generatedBase,
+        manifest,
+        shaderName: preset.shader,
+        radiance,
+        irradiance,
+        lights: lightData,
+        environmentIntensity: 0.18,
+        geometry: probe.geometry,
+        geometryContract: sceneContract.probe,
+      }));
+      material.uniforms.u_numActiveLightSources.value = 0;
+      for (const light of [key, fill, rim]) light.intensity = 0;
+      floor.visible = false;
+      probe.material = material;
+      status.textContent = `materialx · PREFILTER · ${preset.label}`;
+      rendererStatus.textContent += " · physical conductor";
+      graphStatus.textContent = `${preset.shader} · n=${preset.ior.join(", ")} · k=${preset.extinction.join(", ")}`;
+      fallbackStatus.textContent = `Constant-input PHYSICAL_CONDUCTOR probe · Blender roughness ${presetIndex.probeContract.blenderPerceptualRoughness} → MaterialX α ${presetIndex.probeContract.materialxMicrofacetAlpha}`;
+      ownerDocument.documentElement.dataset.materialxReady = "true";
+      ownerDocument.documentElement.dataset.materialBackend = "materialx";
+      ownerDocument.documentElement.dataset.materialxImplementation = implementation;
+      ownerDocument.documentElement.dataset.materialxPreset = preset.id;
+      renderer.setAnimationLoop(() => renderer.render(scene, camera));
       return;
     }
 
@@ -529,5 +597,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     else dataset.materialxImplementation = previousDataset.implementation;
     if (previousDataset.roughness === undefined) delete dataset.materialxRoughness;
     else dataset.materialxRoughness = previousDataset.roughness;
+    if (previousDataset.preset === undefined) delete dataset.materialxPreset;
+    else dataset.materialxPreset = previousDataset.preset;
   };
 }

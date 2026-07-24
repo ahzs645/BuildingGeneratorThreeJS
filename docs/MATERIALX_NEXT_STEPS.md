@@ -27,6 +27,7 @@ Direct lights now follow one explicit contract:
 | rim light, environment disabled | 0.038945 | 0.975296 | direction passes |
 | canonical Noise bump | 0.072938 | 0.959128 | useful parity prototype |
 | UI normal-band branch | 0.012820 | 0.992491 | typed `col` passes; two substitutions remain |
+| five physical-conductor presets | 0.024220–0.029240 | 0.977153–0.981634 | constant n/k inputs pass |
 | native source lowering sphere | 0.440571 | 0.104222 | historical substituted capture; superseded by the recovered live 2.5D comparison |
 
 The recovered live 2.5D result is measured separately because it uses an orthographic asset frame rather than the sphere mask: full-frame RMSE `0.057457`, full-frame correlation `0.681123`, and visible-region IoU `0.926767`. The visible-region threshold is reflection-dependent and is not a geometry silhouette claim; topology and bounds are validated independently.
@@ -122,6 +123,16 @@ nearly identical. PREFILTER improves the two nonzero checkpoints, with the
 largest gain at Chrome Grill's `0.2610441`. This establishes the shared
 environment backend; it does not by itself prove parity for every asset's
 complete authored shader.
+
+The same PREFILTER path now validates a rights-safe five-metal matrix derived
+from `Metallic_BSDF+.blend`: Aluminum, Copper, Gold, Stainless Steel, and
+Titanium. The source contributes only independently extracted n/k constants and
+remains outside the repository. A critical cross-runtime rule is now explicit
+and tested: MaterialX conductor roughness is microfacet alpha, so Blender's
+perceptual roughness must be squared (`0.35 → 0.1225`). With that conversion,
+all five sphere-region correlations exceed `0.977` and RMSE remains below
+`0.030`. This closes the constant-input `PHYSICAL_CONDUCTOR` gate, not the
+complete add-on graph or its F82, anisotropy, scratch, and thin-film branches.
 
 Remaining work for this item is to:
 

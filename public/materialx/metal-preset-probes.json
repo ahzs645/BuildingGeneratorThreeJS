@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "kind": "rights-safe-physical-conductor-probe-matrix",
+  "sourceOracle": {
+    "filename": "Metallic_BSDF+.blend",
+    "sha256": "608e5bae814fba45cfa5d6c6934aae54312128cb72ed940a5aa1a03dd10d8a7d",
+    "writtenByBlender": "5.2.31",
+    "inspectedWithBlender": "5.1.2",
+    "extraction": "Blender native USD/MaterialX export through tools/materialx/extract_blender_material.py",
+    "redistribution": "The source binary, complete node graphs, packed images, and generated derivatives are not redistributed."
+  },
+  "probeContract": {
+    "fresnelMode": "PHYSICAL_CONDUCTOR",
+    "distribution": "MULTI_GGX",
+    "blenderPerceptualRoughness": 0.35,
+    "materialxMicrofacetAlpha": 0.1225,
+    "roughnessMapping": "MaterialX conductor_bsdf roughness is microfacet alpha; square Blender's perceptual roughness.",
+    "anisotropy": 0,
+    "rotation": 0,
+    "thinFilmThickness": 0,
+    "thinFilmIor": 1.33,
+    "scope": "Constant-input conductor semantics only; layered roughness, roughness Fresnel, textures, scratches, anisotropy, and thin film are separate gates."
+  },
+  "presets": [
+    {
+      "id": "aluminum",
+      "label": "Aluminum",
+      "sourceMaterial": "Material.001",
+      "shader": "MetalPresetAluminum",
+      "ior": [0.729, 0.588, 0.784],
+      "extinction": [6.46, 5.196, 4.377]
+    },
+    {
+      "id": "copper",
+      "label": "Copper",
+      "sourceMaterial": "Material.009",
+      "shader": "MetalPresetCopper",
+      "ior": [0.134, 1.057, 1.686],
+      "extinction": [3.106, 2.631, 2.427]
+    },
+    {
+      "id": "gold",
+      "label": "Gold",
+      "sourceMaterial": "Material.011",
+      "shader": "MetalPresetGold",
+      "ior": [0, 0.352, 1.859],
+      "extinction": [6.594, 2.081, 1.496]
+    },
+    {
+      "id": "stainless-steel",
+      "label": "Stainless Steel",
+      "sourceMaterial": "Material.028",
+      "shader": "MetalPresetStainlessSteel",
+      "ior": [2.23, 2.041, 2.157],
+      "extinction": [4.219, 3.641, 3.074]
+    },
+    {
+      "id": "titanium",
+      "label": "Titanium",
+      "sourceMaterial": "Material.029",
+      "shader": "MetalPresetTitanium",
+      "ior": [1.935, 1.868, 2.059],
+      "extinction": [2.34, 2.053, 1.745]
+    }
+  ]
+}

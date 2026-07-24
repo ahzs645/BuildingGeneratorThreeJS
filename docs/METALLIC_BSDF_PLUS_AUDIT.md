@@ -1,6 +1,6 @@
 # Metallic BSDF+ reference audit
 
-Audit date: 2026-07-23
+Audit date: 2026-07-24
 
 ## Scope and provenance
 
@@ -161,6 +161,30 @@ The shared environment checkpoint is also complete:
 This closes the shared studio-lighting prerequisite for the five-preset matrix.
 It does not close `ShaderNodeBsdfMetallic`, RGB Curves, anisotropy, thin film,
 or the rights status of the source textures.
+
+The first rights-safe physical-conductor matrix is now complete. Blender builds
+fresh `ShaderNodeBsdfMetallic` probes from the extracted n/k constants, while
+the browser compiles five repository-authored `conductor_bsdf` surfaces through
+official MaterialX ESSL. No source node graph, image, or source material is
+included in the web fixture.
+
+A semantic conversion was required: Blender exposes perceptual roughness, but
+MaterialX `conductor_bsdf` consumes microfacet alpha. The matched probe therefore
+maps Blender roughness `0.35` to MaterialX alpha `0.35² = 0.1225`. Passing
+`0.35` directly over-blurred the web reflections and reduced sphere correlation
+to `0.768–0.818`; the squared mapping restores the studio-light shapes:
+
+| Preset | Sphere RMSE | Sphere luminance correlation | Mean luminance Blender / web |
+| --- | ---: | ---: | ---: |
+| Aluminum | 0.029240 | 0.978617 | 0.309113 / 0.317926 |
+| Copper | 0.026639 | 0.980994 | 0.263398 / 0.274114 |
+| Gold | 0.028653 | 0.980098 | 0.283675 / 0.294926 |
+| Stainless Steel | 0.024428 | 0.981634 | 0.254473 / 0.263739 |
+| Titanium | 0.024220 | 0.977153 | 0.200332 / 0.214242 |
+
+This validates only constant-input `PHYSICAL_CONDUCTOR` behavior. The source
+file remains the local oracle for the still-open F82 artistic-tint, layered
+roughness, roughness-Fresnel, anisotropy/tangent, scratches, and thin-film gates.
 
 ## Required regression evidence
 

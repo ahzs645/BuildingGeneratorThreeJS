@@ -12,6 +12,30 @@ import bpy
 from mathutils import Matrix, Vector
 
 
+METAL_PRESETS = {
+    "aluminum": {
+        "ior": (0.729, 0.588, 0.784),
+        "extinction": (6.46, 5.196, 4.377),
+    },
+    "copper": {
+        "ior": (0.134, 1.057, 1.686),
+        "extinction": (3.106, 2.631, 2.427),
+    },
+    "gold": {
+        "ior": (0.0, 0.352, 1.859),
+        "extinction": (6.594, 2.081, 1.496),
+    },
+    "stainless-steel": {
+        "ior": (2.23, 2.041, 2.157),
+        "extinction": (4.219, 3.641, 3.074),
+    },
+    "titanium": {
+        "ior": (1.935, 1.868, 2.059),
+        "extinction": (2.34, 2.053, 1.745),
+    },
+}
+
+
 def args() -> argparse.Namespace:
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     parser = argparse.ArgumentParser()
@@ -308,6 +332,29 @@ def smooth_chrome(roughness=0.32):
     return material
 
 
+def physical_conductor(name, ior, extinction, roughness=0.35):
+    """Build a rights-safe constant-input Blender Metallic BSDF probe."""
+    material = bpy.data.materials.new(f"Physical Conductor Probe · {name}")
+    material.use_nodes = True
+    tree = material.node_tree
+    tree.nodes.clear()
+    conductor = tree.nodes.new("ShaderNodeBsdfMetallic")
+    conductor.distribution = "MULTI_GGX"
+    conductor.fresnel_type = "PHYSICAL_CONDUCTOR"
+    conductor.inputs["IOR"].default_value = ior
+    conductor.inputs["Extinction"].default_value = extinction
+    conductor.inputs["Roughness"].default_value = roughness
+    if conductor.inputs.get("Weight") is not None:
+        conductor.inputs["Weight"].default_value = 1.0
+    if conductor.inputs.get("Thin Film Thickness") is not None:
+        conductor.inputs["Thin Film Thickness"].default_value = 0.0
+    if conductor.inputs.get("Thin Film IOR") is not None:
+        conductor.inputs["Thin Film IOR"].default_value = 1.33
+    output = tree.nodes.new("ShaderNodeOutputMaterial")
+    tree.links.new(conductor.outputs["BSDF"], output.inputs["Surface"])
+    return material
+
+
 def input_by_identifier(node, identifier):
     return next(socket for socket in node.inputs if socket.identifier == identifier)
 
@@ -398,6 +445,30 @@ def render_environment_roughness_sweep(output: Path, probe, floor, lights):
             light.data.energy = original_energies[light.name]
 
 
+def render_physical_conductor_matrix(output: Path, probe, floor, lights):
+    """Render representative constant-input presets without the source add-on graph."""
+    original_energies = {light.name: light.data.energy for light in lights}
+    original_floor_visibility = floor.hide_render
+    for light in lights:
+        light.data.energy = 0.0
+    floor.hide_render = True
+    try:
+        for name, preset in METAL_PRESETS.items():
+            probe.data.materials[0] = physical_conductor(
+                name,
+                preset["ior"],
+                preset["extinction"],
+            )
+            bpy.context.scene.render.filepath = str(
+                output / f"metal-preset-{name}-blender.png"
+            )
+            bpy.ops.render.render(write_still=True)
+    finally:
+        floor.hide_render = original_floor_visibility
+        for light in lights:
+            light.data.energy = original_energies[light.name]
+
+
 def bump_copy(_source):
     material = bpy.data.materials.new("MaterialX Noise Bump Probe")
     material.use_nodes = True
@@ -463,6 +534,7 @@ def main():
     bpy.context.view_layer.update()
     render_light_diagnostics(evidence, probe, lights)
     render_environment_roughness_sweep(evidence, probe, floor, lights)
+    render_physical_conductor_matrix(evidence, probe, floor, lights)
     print(f"MATERIALX_BLENDER_REFERENCES {evidence}")
 
 

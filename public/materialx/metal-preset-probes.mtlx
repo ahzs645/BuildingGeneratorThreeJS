@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<materialx version="1.39" colorspace="lin_rec709">
+  <!--
+    Repository-authored constant-input regression probes.
+    These contain independently extracted physical conductor constants only;
+    no third-party node graph, image, or source material is embedded.
+  -->
+  <nodegraph name="NG_metal_preset_aluminum">
+    <conductor_bsdf name="conductor" type="BSDF">
+      <input name="ior" type="color3" value="0.729, 0.588, 0.784" />
+      <input name="extinction" type="color3" value="6.46, 5.196, 4.377" />
+      <!-- MaterialX conductor_bsdf consumes microfacet alpha; Blender exposes perceptual roughness. -->
+      <input name="roughness" type="vector2" value="0.1225, 0.1225" />
+    </conductor_bsdf>
+    <output name="out" type="BSDF" nodename="conductor" />
+  </nodegraph>
+  <surface name="surface_aluminum" type="surfaceshader">
+    <input name="bsdf" type="BSDF" nodegraph="NG_metal_preset_aluminum" output="out" />
+  </surface>
+  <surfacematerial name="MetalPresetAluminum" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_aluminum" />
+  </surfacematerial>
+
+  <nodegraph name="NG_metal_preset_copper">
+    <conductor_bsdf name="conductor" type="BSDF">
+      <input name="ior" type="color3" value="0.134, 1.057, 1.686" />
+      <input name="extinction" type="color3" value="3.106, 2.631, 2.427" />
+      <input name="roughness" type="vector2" value="0.1225, 0.1225" />
+    </conductor_bsdf>
+    <output name="out" type="BSDF" nodename="conductor" />
+  </nodegraph>
+  <surface name="surface_copper" type="surfaceshader">
+    <input name="bsdf" type="BSDF" nodegraph="NG_metal_preset_copper" output="out" />
+  </surface>
+  <surfacematerial name="MetalPresetCopper" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_copper" />
+  </surfacematerial>
+
+  <nodegraph name="NG_metal_preset_gold">
+    <conductor_bsdf name="conductor" type="BSDF">
+      <input name="ior" type="color3" value="0, 0.352, 1.859" />
+      <input name="extinction" type="color3" value="6.594, 2.081, 1.496" />
+      <input name="roughness" type="vector2" value="0.1225, 0.1225" />
+    </conductor_bsdf>
+    <output name="out" type="BSDF" nodename="conductor" />
+  </nodegraph>
+  <surface name="surface_gold" type="surfaceshader">
+    <input name="bsdf" type="BSDF" nodegraph="NG_metal_preset_gold" output="out" />
+  </surface>
+  <surfacematerial name="MetalPresetGold" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_gold" />
+  </surfacematerial>
+
+  <nodegraph name="NG_metal_preset_stainless_steel">
+    <conductor_bsdf name="conductor" type="BSDF">
+      <input name="ior" type="color3" value="2.23, 2.041, 2.157" />
+      <input name="extinction" type="color3" value="4.219, 3.641, 3.074" />
+      <input name="roughness" type="vector2" value="0.1225, 0.1225" />
+    </conductor_bsdf>
+    <output name="out" type="BSDF" nodename="conductor" />
+  </nodegraph>
+  <surface name="surface_stainless_steel" type="surfaceshader">
+    <input name="bsdf" type="BSDF" nodegraph="NG_metal_preset_stainless_steel" output="out" />
+  </surface>
+  <surfacematerial name="MetalPresetStainlessSteel" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_stainless_steel" />
+  </surfacematerial>
+
+  <nodegraph name="NG_metal_preset_titanium">
+    <conductor_bsdf name="conductor" type="BSDF">
+      <input name="ior" type="color3" value="1.935, 1.868, 2.059" />
+      <input name="extinction" type="color3" value="2.34, 2.053, 1.745" />
+      <input name="roughness" type="vector2" value="0.1225, 0.1225" />
+    </conductor_bsdf>
+    <output name="out" type="BSDF" nodename="conductor" />
+  </nodegraph>
+  <surface name="surface_titanium" type="surfaceshader">
+    <input name="bsdf" type="BSDF" nodegraph="NG_metal_preset_titanium" output="out" />
+  </surface>
+  <surfacematerial name="MetalPresetTitanium" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_titanium" />
+  </surfacematerial>
+</materialx>

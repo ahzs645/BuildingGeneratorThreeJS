@@ -86,7 +86,7 @@ def main():
         return format(value, ".7g").replace(".", "p")
 
     output = {
-        "comparisonVersion": 6,
+        "comparisonVersion": 7,
         "renderContract": {
             "geometry": "shared outward-wound 64 x 32 UV sphere algorithm and 96-segment floor disc",
             "camera": "scene-contract.json schema 1; Blender evaluated matrix_world and 50 degree vertical FOV",
@@ -100,6 +100,7 @@ def main():
             "directionalDiagnostics": "light-{key,fill,rim}-{blender,web}.png; one light at a time, zero environment strength, zero Sun angular radius",
             "coordinateDiagnostic": "coordinate-cardinals-web.png; columns +X, +Z, -X, -Z; radiance top and direct lights bottom",
             "uiNormalBandDiagnostic": "ui-normal-band-{blender,web}.png; identity-transform Normal/Mapping/CONSTANT-ramp/typed-col branch with explicit normal-space and emission surface substitutes",
+            "metalPresetMatrix": "metal-preset-{aluminum,copper,gold,stainless-steel,titanium}-{blender,web}.png; constant PHYSICAL_CONDUCTOR n/k values, Blender perceptual roughness 0.35 mapped to MaterialX microfacet alpha 0.1225, no direct lights or floor",
         },
         "sourceLowering": {
             **metrics(directory / "chrome-source-blender.png", directory / "chrome-source-web.png"),
@@ -136,6 +137,26 @@ def main():
                 for environment in ("fis", "prefilter")
             }
             for roughness in roughness_values
+        },
+        "metalPresetMatrix": {
+            preset: {
+                **metrics(
+                    directory / f"metal-preset-{preset}-blender.png",
+                    directory / f"metal-preset-{preset}-web.png",
+                ),
+                "sphereRegion": sphere_metrics(
+                    directory / f"metal-preset-{preset}-blender.png",
+                    directory / f"metal-preset-{preset}-web.png",
+                ),
+                "claim": "constant-input PHYSICAL_CONDUCTOR semantics only; not the complete Metallic BSDF+ preset graph",
+            }
+            for preset in (
+                "aluminum",
+                "copper",
+                "gold",
+                "stainless-steel",
+                "titanium",
+            )
         },
         "interpretation": "Image metrics include expected Eevee/Three BRDF, shadow, and light-unit differences. Graph-semantic support is reported separately in manifest.json and is not inferred from these pixels.",
     }

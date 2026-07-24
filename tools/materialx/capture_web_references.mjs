@@ -103,6 +103,26 @@ try {
       console.log(`MATERIALX_WEB_REFERENCE ${filename}`);
     }
   }
+  for (const preset of ["aluminum", "copper", "gold", "stainless-steel", "titanium"]) {
+    await page.goto(
+      `${baseUrl}/materialx?capture=1&diagnostic=metal-preset&preset=${preset}`,
+      { waitUntil: "domcontentloaded" },
+    );
+    await page.waitForFunction(
+      (selectedPreset) => (
+        document.documentElement.dataset.materialxImplementation === "official-essl-prefilter"
+        && document.documentElement.dataset.materialxPreset === selectedPreset
+      ),
+      { timeout: 360_000 },
+      preset,
+    );
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const presetCanvas = await page.$("#materialx-canvas");
+    if (!presetCanvas) throw new Error(`MaterialX metal preset ${preset} canvas missing`);
+    const filename = `metal-preset-${preset}-web.png`;
+    await presetCanvas.screenshot({ path: path.join(outputDir, filename) });
+    console.log(`MATERIALX_WEB_REFERENCE ${filename}`);
+  }
 } finally {
   await browser.close();
 }
