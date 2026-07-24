@@ -5,11 +5,11 @@
   "status": "exact-topology-and-authored-chrome-verified",
   "blender": { "verts": 71755, "faces": 71104, "bbox_size": [0.6543445, 0.5509799, 0.0388659] },
   "gnvm": { "verts": 71755, "faces": 71104, "bbox_size": [0.6543445, 0.5509799, 0.0388659] },
-  "parameter_case": { "overrides": { "Line Thiccness": 0.8 }, "blender": { "verts": 51434, "faces": 50810 }, "gnvm": { "verts": 51433, "faces": 50810 } },
+  "parameter_case": { "overrides": { "Line Thiccness": 0.8 }, "blender": { "verts": 51434, "faces": 50810 }, "gnvm": { "verts": 51434, "faces": 50810 } },
   "coverage": "100% of all reachable node types across 9 groups and 250 nodes.",
   "reference": "dojo/references/n03d/old-chrome-crayon.png",
   "authored_reference": "dojo/references/n03d/old-chrome-crayon-shader.png",
-  "validation": "The authored case matches Blender's 71,755 / 71,104 topology and four-decimal local bounds exactly after running all 1,111 authored Blur Attribute iterations. Blender and GN-VM also share all 142,203 triangle indices in the same order; indexed positions differ by at most 0.000000581 units. A second line-thickness case matches Blender's four-decimal bounds and every face, with one fewer browser vertex.",
+  "validation": "The authored case matches Blender's 71,755 / 71,104 topology and four-decimal local bounds exactly after running all 1,111 authored Blur Attribute iterations. Blender and GN-VM also share all 142,203 triangle indices in the same order; indexed positions differ by at most 0.000000581 units. The Line Thiccness 0.8 parameter case is also topology-exact at 51,434 / 50,810 and matches Blender's four-decimal local bounds.",
   "surface_validation": {
     "blender": { "verts": 71755, "faces": 71104, "triangles": 142203 },
     "gnvm": { "verts": 71755, "faces": 71104, "triangles": 142203 },
