@@ -120,7 +120,7 @@ test("matched roughness evidence validates the Blender environment basis and PRE
     new URL("../../docs/materialx-evidence/current/comparison.json", import.meta.url),
     "utf8",
   ));
-  assert.equal(report.comparisonVersion, 14);
+  assert.equal(report.comparisonVersion, 15);
   const sweep = report.roughnessEnvironmentSweep;
   assert.deepEqual(Object.keys(sweep), ["0", "0.1333333", "0.2610441"]);
   for (const entry of Object.values(sweep) as Array<Record<"fis" | "prefilter", {

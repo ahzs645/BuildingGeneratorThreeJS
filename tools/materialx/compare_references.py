@@ -110,7 +110,7 @@ def main():
         return format(value, ".7g").replace(".", "p")
 
     output = {
-        "comparisonVersion": 14,
+        "comparisonVersion": 15,
         "renderContract": {
             "geometry": "shared outward-wound 64 x 32 UV sphere algorithm and 96-segment floor disc",
             "camera": "scene-contract.json schema 1; Blender evaluated matrix_world and 50 degree vertical FOV",
@@ -129,6 +129,7 @@ def main():
             "metalLayeredRoughnessProbe": "metal-layered-roughness-gold-{blender,web}.png; exact four-closure Gold F82 chain with Blender perceptual roughness scales 0.25/0.5/0.75/1.0, sequential mix factors 0.4/0.2/0.1, no direct lights or floor",
             "metalRoughnessFresnelProbe": "metal-roughness-fresnel-{scalar-,}gold-{blender,web}.png; exact Blender Layer Weight Blend 0.1 dielectric Fresnel, sampled Gold RGB Curve/B-spline ramp response, MULTIPLY Mix field, roughness 0.35, no direct lights or floor",
             "metalBrushedRoughnessProbe": "metal-brushed-roughness-{scalar-,}gold-{blender,web}.png; active Gold controls roughness 0.4499999583, Generated-coordinate scale 100, length mix 0.9549999833, normalized Blender 3D FBM scale 20/detail 2/roughness 0.5/lacunarity 2, brush factor 0.2730000019, no source scratch images, direct lights, or floor",
+            "metalThinFilmStreakProbe": "metal-thin-film-streak-{scalar-,}gold-{blender,web}.png; explicit diagnostic override binds the otherwise-unlinked Gold Socket_27 to Generated coordinates, combines normalized scale-20 and raw scale-10 Blender FBM fields into T/1390 scalar and T nm beauty outputs, scalar uses one sample per pixel in both renderers without Eevee temporal averaging, beauty uses roughness 0.45, thin-film IOR 2.46, key light only, no environment or floor; the supplied active Material.011 remains exactly 0 nm",
             "metalAnisotropyProbe": "metal-anisotropy-gold-{r0,r90}-{blender,web}.png; Blender Cycles versus MaterialX, anisotropy 0.8, radial-Y/Tworld tangent, rotations 0 and 0.25 turns, Blender alpha/aspect mapping, key light only, no environment or floor",
             "metalThinFilmProbe": "metal-thin-film-gold-{0,243}nm-{blender,web}.png; Blender Cycles Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, source Gold-group mapping 150 V x 1.62 nm/V = 243 nm, thin-film IOR 2.46, key light only, no environment or floor",
         },
@@ -258,6 +259,43 @@ def main():
                 "claim": "Gold F82 with the isolated active procedural brushed-roughness field; no source scratch images, anisotropy, layered closure, or thin film",
             },
             "noiseResidual": "Native MaterialX fractal3d is not value-identical to Blender Noise Texture. These marked shaders therefore use the declared blender-normalized-fbm3 ESSL semantic adapter; remaining high-frequency image error is raster filtering and renderer integration, not a native-fractal3d parity claim.",
+        },
+        "metalThinFilmStreakProbe": {
+            "activeSourceResultNanometers": 0,
+            "activeSourceReason": "Gold Socket_27 is unlinked at (0,0,0), so its raw FBM and B-spline ramp are black; anodization voltage is also 0.",
+            "diagnosticOverride": "Gold Socket_27 / outer Socket_919 is explicitly rebound to Blender Generated coordinates in both renderers to exercise the otherwise-zero procedural branch.",
+            "scalar": {
+                **metrics(
+                    directory / "metal-thin-film-streak-scalar-gold-blender.png",
+                    directory / "metal-thin-film-streak-scalar-gold-web.png",
+                ),
+                "sphereRegion": sphere_metrics(
+                    directory / "metal-thin-film-streak-scalar-gold-blender.png",
+                    directory / "metal-thin-film-streak-scalar-gold-web.png",
+                ),
+                "claim": "activated Gold normalized-FBM/remap times raw-FBM/B-spline streak mask, displayed as T/1390 unlit grayscale with one sample per pixel and no temporal averaging; this is an explicit Generated-coordinate diagnostic override, not the supplied active material result",
+            },
+            "beauty": {
+                **metrics(
+                    directory / "metal-thin-film-streak-gold-blender.png",
+                    directory / "metal-thin-film-streak-gold-web.png",
+                ),
+                "sphereRegion": sphere_metrics(
+                    directory / "metal-thin-film-streak-gold-blender.png",
+                    directory / "metal-thin-film-streak-gold-web.png",
+                ),
+                "sphereMeanRgb": sphere_mean_rgb(
+                    directory / "metal-thin-film-streak-gold-blender.png",
+                    directory / "metal-thin-film-streak-gold-web.png",
+                ),
+                "claim": "Gold F82 at perceptual roughness 0.45 with the activated procedural mask mapped to 0..1390 nm and thin-film IOR 2.46; no roughness Fresnel, brushed roughness, scratches, anisotropy, layered closure, or source add-on graph",
+                "residual": "MaterialX and Blender use different spectral thin-film approximations; matching spatial thickness preserves streak placement and lobe structure but not exact interference hue.",
+            },
+            "semanticAdapters": [
+                "blender-normalized-fbm3",
+                "blender-raw-fbm3",
+            ],
+            "noiseResidual": "The explicit adapters preserve Blender's normalized and raw FBM semantics. Remaining high-frequency error includes raster filtering and renderer integration across coordinate frequencies up to 2000 and 900.",
         },
         "metalAnisotropyProbe": {
             rotation: {

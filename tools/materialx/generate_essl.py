@@ -138,21 +138,22 @@ def rewrite_environment_prefilter_essl(source: str) -> str:
 
 
 BLENDER_FBM3_MARKER = "blender_fbm3_"
+BLENDER_RAW_FBM3_MARKER = "blender_raw_fbm3_"
 BLENDER_FBM3_ESSL = Path(__file__).with_name("blender_fbm3_essl.glsl")
 
 
 def rewrite_blender_fbm3_essl(source: str) -> tuple[str, list[str]]:
-    """Replace explicitly marked fractal3d calls with Blender's normalized FBM.
+    """Replace explicitly marked fractal3d calls with Blender FBM semantics.
 
     MaterialX and Blender use different gradient hashes, so an ordinary
     fractal3d node cannot substantiate Blender Noise Texture parity. Keeping the
-    marker in the portable graph makes this semantic adapter opt-in, auditable,
-    and reusable without changing unmarked MaterialX nodes.
+    normalized/raw markers in the portable graph makes these adapters opt-in,
+    auditable, and reusable without changing unmarked MaterialX nodes.
     """
     pattern = re.compile(
         rf"(?P<indent>^[ \t]*)mx_fractal3d_float\("
         rf"(?P<arguments>[^;\n]+), "
-        rf"(?P<output>{BLENDER_FBM3_MARKER}[A-Za-z0-9_]*_out)\);$",
+        rf"(?P<output>(?:{BLENDER_FBM3_MARKER}|{BLENDER_RAW_FBM3_MARKER})[A-Za-z0-9_]*_out)\);$",
         re.MULTILINE,
     )
     matches = list(pattern.finditer(source))
@@ -161,13 +162,18 @@ def rewrite_blender_fbm3_essl(source: str) -> tuple[str, list[str]]:
     if not BLENDER_FBM3_ESSL.is_file():
         raise RuntimeError(f"Missing Blender FBM3 ESSL adapter: {BLENDER_FBM3_ESSL}")
     adapter = BLENDER_FBM3_ESSL.read_text(encoding="utf-8").strip()
-    rewritten = pattern.sub(
-        lambda match: (
-            f"{match.group('indent')}mx_blender_fbm3_float("
+    def replacement(match: re.Match[str]) -> str:
+        function = (
+            "mx_blender_raw_fbm3_float"
+            if match.group("output").startswith(BLENDER_RAW_FBM3_MARKER)
+            else "mx_blender_fbm3_float"
+        )
+        return (
+            f"{match.group('indent')}{function}("
             f"{match.group('arguments')}, {match.group('output')});"
-        ),
-        source,
-    )
+        )
+
+    rewritten = pattern.sub(replacement, source)
     main_marker = "\nvoid main()\n"
     if rewritten.count(main_marker) != 1:
         raise RuntimeError("Expected exactly one ESSL main function for Blender FBM3 injection")
@@ -179,7 +185,12 @@ def rewrite_blender_fbm3_essl(source: str) -> tuple[str, list[str]]:
         "precision highp float;\nprecision highp int;",
         1,
     )
-    return rewritten, ["blender-normalized-fbm3"]
+    adapters = []
+    if any(match.group("output").startswith(BLENDER_FBM3_MARKER) for match in matches):
+        adapters.append("blender-normalized-fbm3")
+    if any(match.group("output").startswith(BLENDER_RAW_FBM3_MARKER) for match in matches):
+        adapters.append("blender-raw-fbm3")
+    return rewritten, adapters
 
 
 def upgrade_vertex_precision_for_semantic_adapters(source: str) -> str:

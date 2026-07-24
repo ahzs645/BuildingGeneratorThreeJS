@@ -50,6 +50,7 @@ def args() -> argparse.Namespace:
     parser.add_argument("--ui-report", default="public/materialx/ui-normal-band.report.json")
     parser.add_argument("--ui-normal-band-only", action="store_true")
     parser.add_argument("--brushed-roughness-only", action="store_true")
+    parser.add_argument("--thin-film-streak-only", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -626,6 +627,138 @@ def artistic_f82_brushed_roughness(name, base_color, edge_tint):
     return material
 
 
+def gold_thin_film_streak_field(tree):
+    """Reconstruct the activated Gold procedural thin-film thickness field.
+
+    Material.011 leaves Gold Socket_27 unlinked at zero, which makes the
+    authored branch exactly 0 nm. This diagnostic deliberately binds that
+    socket to Generated coordinates so the recoverable spatial semantics can
+    be compared without claiming that the supplied instance is nonzero.
+    """
+
+    coordinates = tree.nodes.new("ShaderNodeTexCoord")
+
+    shared_mapping = tree.nodes.new("ShaderNodeMapping")
+    shared_mapping.vector_type = "POINT"
+    shared_mapping.inputs["Location"].default_value = (0.0, 0.0, 0.0)
+    shared_mapping.inputs["Rotation"].default_value = (0.0, 0.0, 0.0)
+    shared_mapping.inputs["Scale"].default_value = (100.0, 100.0, 100.0)
+    shared_length = tree.nodes.new("ShaderNodeVectorMath")
+    shared_length.operation = "LENGTH"
+    shared_length_vector = tree.nodes.new("ShaderNodeCombineXYZ")
+    shared_mix = tree.nodes.new("ShaderNodeMix")
+    shared_mix.data_type = "VECTOR"
+    input_by_identifier(shared_mix, "Factor_Float").default_value = 0.9549999833106995
+    shared_noise = tree.nodes.new("ShaderNodeTexNoise")
+    shared_noise.noise_dimensions = "3D"
+    shared_noise.noise_type = "FBM"
+    shared_noise.normalize = True
+    shared_noise.inputs["Scale"].default_value = 20.0
+    shared_noise.inputs["Detail"].default_value = 2.0
+    shared_noise.inputs["Roughness"].default_value = 0.5
+    shared_noise.inputs["Lacunarity"].default_value = 2.0
+    shared_noise.inputs["Distortion"].default_value = 0.0
+    shared_gate = tree.nodes.new("ShaderNodeMapRange")
+    shared_gate.data_type = "FLOAT"
+    shared_gate.interpolation_type = "LINEAR"
+    shared_gate.clamp = True
+    shared_gate.inputs["From Min"].default_value = 0.29999998211860657
+    shared_gate.inputs["From Max"].default_value = 0.5999999046325684
+    shared_gate.inputs["To Min"].default_value = 0.0
+    shared_gate.inputs["To Max"].default_value = 0.5999999046325684
+
+    thin_film_mapping = tree.nodes.new("ShaderNodeMapping")
+    thin_film_mapping.vector_type = "POINT"
+    thin_film_mapping.inputs["Location"].default_value = (0.0, 0.0, 0.0)
+    thin_film_mapping.inputs["Rotation"].default_value = (0.0, 0.0, 0.0)
+    thin_film_mapping.inputs["Scale"].default_value = (90.0, 90.0, 90.0)
+    thin_film_length = tree.nodes.new("ShaderNodeVectorMath")
+    thin_film_length.operation = "LENGTH"
+    thin_film_length_vector = tree.nodes.new("ShaderNodeCombineXYZ")
+    thin_film_mix = tree.nodes.new("ShaderNodeMix")
+    thin_film_mix.data_type = "VECTOR"
+    input_by_identifier(thin_film_mix, "Factor_Float").default_value = 0.7501863837242126
+    thin_film_noise = tree.nodes.new("ShaderNodeTexNoise")
+    thin_film_noise.noise_dimensions = "3D"
+    thin_film_noise.noise_type = "FBM"
+    thin_film_noise.normalize = False
+    thin_film_noise.inputs["Scale"].default_value = 10.0
+    thin_film_noise.inputs["Detail"].default_value = 2.0
+    thin_film_noise.inputs["Roughness"].default_value = 0.5
+    thin_film_noise.inputs["Lacunarity"].default_value = 2.0
+    thin_film_noise.inputs["Distortion"].default_value = 0.0
+    thin_film_ramp = tree.nodes.new("ShaderNodeValToRGB")
+    thin_film_ramp.color_ramp.interpolation = "B_SPLINE"
+    thin_film_ramp.color_ramp.color_mode = "RGB"
+    thin_film_ramp.color_ramp.hue_interpolation = "NEAR"
+    thin_film_ramp.color_ramp.elements[0].position = 0.10647183656692505
+    thin_film_ramp.color_ramp.elements[0].color = (0.0, 0.0, 0.0, 1.0)
+    thin_film_ramp.color_ramp.elements[1].position = 1.0
+    thin_film_ramp.color_ramp.elements[1].color = (1.0, 1.0, 1.0, 1.0)
+
+    mask = tree.nodes.new("ShaderNodeMix")
+    mask.data_type = "RGBA"
+    mask.blend_type = "MULTIPLY"
+    input_by_identifier(mask, "Factor_Float").default_value = 1.0
+    thickness = tree.nodes.new("ShaderNodeMath")
+    thickness.operation = "MULTIPLY"
+    thickness.inputs[1].default_value = 1390.0
+
+    for mapping, length, length_vector, coordinate_mix in (
+        (shared_mapping, shared_length, shared_length_vector, shared_mix),
+        (thin_film_mapping, thin_film_length, thin_film_length_vector, thin_film_mix),
+    ):
+        tree.links.new(coordinates.outputs["Generated"], mapping.inputs["Vector"])
+        tree.links.new(mapping.outputs["Vector"], length.inputs[0])
+        for axis in ("X", "Y", "Z"):
+            tree.links.new(length.outputs["Value"], length_vector.inputs[axis])
+        tree.links.new(mapping.outputs["Vector"], input_by_identifier(coordinate_mix, "A_Vector"))
+        tree.links.new(length_vector.outputs["Vector"], input_by_identifier(coordinate_mix, "B_Vector"))
+
+    tree.links.new(output_by_identifier(shared_mix, "Result_Vector"), shared_noise.inputs["Vector"])
+    tree.links.new(shared_noise.outputs["Fac"], shared_gate.inputs["Value"])
+    tree.links.new(output_by_identifier(thin_film_mix, "Result_Vector"), thin_film_noise.inputs["Vector"])
+    tree.links.new(thin_film_noise.outputs["Fac"], thin_film_ramp.inputs["Fac"])
+    tree.links.new(thin_film_ramp.outputs["Color"], input_by_identifier(mask, "A_Color"))
+    tree.links.new(shared_gate.outputs["Result"], input_by_identifier(mask, "B_Color"))
+    tree.links.new(output_by_identifier(mask, "Result_Color"), thickness.inputs[0])
+    return output_by_identifier(mask, "Result_Color"), thickness.outputs["Value"]
+
+
+def thin_film_streak_scalar(name):
+    material = bpy.data.materials.new(f"Thin Film Streak Scalar · {name}")
+    material.use_nodes = True
+    tree = material.node_tree
+    tree.nodes.clear()
+    mask, _thickness = gold_thin_film_streak_field(tree)
+    emission = tree.nodes.new("ShaderNodeEmission")
+    output = tree.nodes.new("ShaderNodeOutputMaterial")
+    tree.links.new(mask, emission.inputs["Color"])
+    tree.links.new(emission.outputs["Emission"], output.inputs["Surface"])
+    return material
+
+
+def artistic_f82_thin_film_streak(name, base_color, edge_tint):
+    material = bpy.data.materials.new(f"Artistic F82 Thin Film Streak · {name}")
+    material.use_nodes = True
+    tree = material.node_tree
+    tree.nodes.clear()
+    _mask, thickness = gold_thin_film_streak_field(tree)
+    metallic = tree.nodes.new("ShaderNodeBsdfMetallic")
+    metallic.distribution = "MULTI_GGX"
+    metallic.fresnel_type = "F82"
+    metallic.inputs["Base Color"].default_value = base_color
+    metallic.inputs["Edge Tint"].default_value = edge_tint
+    metallic.inputs["Roughness"].default_value = 0.44999995827674866
+    if metallic.inputs.get("Weight") is not None:
+        metallic.inputs["Weight"].default_value = 1.0
+    tree.links.new(thickness, metallic.inputs["Thin Film Thickness"])
+    metallic.inputs["Thin Film IOR"].default_value = 2.4600000381469727
+    output = tree.nodes.new("ShaderNodeOutputMaterial")
+    tree.links.new(metallic.outputs["BSDF"], output.inputs["Surface"])
+    return material
+
+
 def ui_normal_band_diagnostic(report_path: Path):
     report = json.loads(report_path.read_text(encoding="utf-8"))
     lowering = report["diagnosticLowering"]
@@ -840,6 +973,62 @@ def render_gold_brushed_roughness(output: Path, probe, floor, lights):
             light.data.energy = original_energies[light.name]
 
 
+def render_gold_thin_film_streak(output: Path, probe, floor, lights):
+    """Render the explicit Generated-coordinate activation of Gold's streak."""
+    scene = bpy.context.scene
+    original_engine = scene.render.engine
+    original_cycles_samples = scene.cycles.samples
+    original_cycles_denoising = scene.cycles.use_denoising
+    original_eevee_samples = scene.eevee.taa_render_samples
+    original_energies = {light.name: light.data.energy for light in lights}
+    original_floor_visibility = floor.hide_render
+    background = scene.world.node_tree.nodes["MaterialXReflectedEnvironment"]
+    original_environment_strength = background.inputs["Strength"].default_value
+    for light in lights:
+        light.data.energy = 0.0
+    floor.hide_render = True
+    background.inputs["Strength"].default_value = 0.0
+    try:
+        lights[0].data.energy = original_energies[lights[0].name]
+        scene.render.engine = "CYCLES"
+        scene.cycles.samples = 128
+        scene.cycles.use_denoising = False
+        beauty = artistic_f82_thin_film_streak(
+            "Gold",
+            F82_GOLD["base_color"],
+            F82_GOLD["edge_tint"],
+        )
+        if probe.data.materials:
+            probe.data.materials[0] = beauty
+        else:
+            probe.data.materials.append(beauty)
+        scene.render.filepath = str(
+            output / "metal-thin-film-streak-gold-blender.png"
+        )
+        bpy.ops.render.render(write_still=True)
+
+        lights[0].data.energy = 0.0
+        scene.render.engine = original_engine
+        # The browser evaluates this high-frequency scalar once per pixel.
+        # Disable Eevee's 64-sample temporal averaging for the semantic field
+        # comparison; the Cycles beauty retains its independent 128 samples.
+        scene.eevee.taa_render_samples = 1
+        probe.data.materials[0] = thin_film_streak_scalar("Gold")
+        scene.render.filepath = str(
+            output / "metal-thin-film-streak-scalar-gold-blender.png"
+        )
+        bpy.ops.render.render(write_still=True)
+    finally:
+        scene.cycles.use_denoising = original_cycles_denoising
+        scene.cycles.samples = original_cycles_samples
+        scene.eevee.taa_render_samples = original_eevee_samples
+        scene.render.engine = original_engine
+        background.inputs["Strength"].default_value = original_environment_strength
+        floor.hide_render = original_floor_visibility
+        for light in lights:
+            light.data.energy = original_energies[light.name]
+
+
 def bump_copy(_source):
     material = bpy.data.materials.new("MaterialX Noise Bump Probe")
     material.use_nodes = True
@@ -896,6 +1085,10 @@ def main():
         render_gold_brushed_roughness(evidence, probe, floor, lights)
         print(f"MATERIALX_BLENDER_REFERENCE metal-brushed-roughness-{{scalar-,}}gold-blender.png -> {evidence}")
         return
+    if options.thin_film_streak_only:
+        render_gold_thin_film_streak(evidence, probe, floor, lights)
+        print(f"MATERIALX_BLENDER_REFERENCE metal-thin-film-streak-{{scalar-,}}gold-blender.png -> {evidence}")
+        return
     source.use_nodes = True
     probe.data.materials.append(source)
     bpy.context.scene.render.filepath = str(evidence / "chrome-source-blender.png")
@@ -913,6 +1106,7 @@ def main():
     render_environment_roughness_sweep(evidence, probe, floor, lights)
     render_physical_conductor_matrix(evidence, probe, floor, lights)
     render_gold_brushed_roughness(evidence, probe, floor, lights)
+    render_gold_thin_film_streak(evidence, probe, floor, lights)
     print(f"MATERIALX_BLENDER_REFERENCES {evidence}")
 
 

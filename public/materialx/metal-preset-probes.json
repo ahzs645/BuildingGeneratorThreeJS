@@ -154,6 +154,65 @@
     "mapping": "q=100*Generated; u=mix(q,vec3(length(q)),0.9549999833); N=normalized Blender FBM3(u*20, Detail 2 inclusive); gate=clamp((N-0.399999976)/(1-0.399999976),0,1)*0.2730000019; brush=anisotropy+gate*N; roughness=1-(1-baseRoughnessFresnel)*(1-brush); alpha=roughness^2.",
     "scope": "Active Gold brushed-roughness branch with its validated roughness-Fresnel base; dense and sparse scratches, layered closure mixing, anisotropic closure shape, procedural thin-film streaks, and the source add-on graph are excluded."
   },
+  "thinFilmStreakProbe": {
+    "baseProbe": "gold",
+    "scalarShader": "MetalGoldThinFilmStreakScalar",
+    "beautyShader": "MetalF82GoldThinFilmStreak",
+    "sourceGroup": "Gold",
+    "sourceMaterial": "Material.011",
+    "sourceObject": "Sphere.010",
+    "activeSourceResultNanometers": 0,
+    "activeSourceReason": "Socket_27 is unlinked at (0,0,0), so the raw FBM evaluates to 0, the B-spline ramp evaluates to black, and voltage is also 0.",
+    "diagnosticOverride": "Gold Socket_27 / outer Socket_919 is explicitly bound to Blender Generated coordinates to exercise the intended spatial branch.",
+    "sourceSockets": {
+      "thinFilmIor": "Socket_14",
+      "thinFilmRotation": "Socket_12",
+      "thinFilmLength": "Socket_13",
+      "thinFilmScale": "Socket_26",
+      "thinFilmVector": "Socket_27",
+      "proceduralFactor": "Socket_29",
+      "anodizationVoltage": "Socket_30",
+      "sharedBrushedVector": "Socket_20"
+    },
+    "thinFilmIor": 2.4600000381469727,
+    "anodizationVoltage": 0,
+    "nanometersPerVolt": 1.6200000047683716,
+    "proceduralFactor": 1,
+    "thinFilmLength": 0.7501863837242126,
+    "thinFilmScale": [90, 90, 90],
+    "thinFilmRotation": [0, 0, 0],
+    "thicknessScaleNanometers": 1390,
+    "sharedNoiseMapRange": {
+      "fromMin": 0.29999998211860657,
+      "fromMax": 0.5999999046325684,
+      "toMin": 0,
+      "toMax": 0.5999999046325684,
+      "clamp": true
+    },
+    "thinFilmNoise": {
+      "dimensions": 3,
+      "normalized": false,
+      "scale": 10,
+      "detail": 2,
+      "octaves": 3,
+      "roughness": 0.5,
+      "lacunarity": 2,
+      "distortion": 0
+    },
+    "rampLut": {
+      "report": "gold-thin-film-streak-ramp-lut.json",
+      "image": "gold-thin-film-streak-ramp-lut.png",
+      "samples": 256,
+      "sha256": "4580f557a83ccdf8485250b813a321a941f2d8a8d93e4a0798df2f84a5aa2113",
+      "coordinate": "u=clamp(rawNoise,0,1)*(255/256)+(0.5/256)"
+    },
+    "semanticAdapters": [
+      "blender-normalized-fbm3",
+      "blender-raw-fbm3"
+    ],
+    "mapping": "mask=BSplineRamp(rawBlenderFBM3(mix(90*Generated,vec3(length(90*Generated)),0.7501863837)*10))*clampRemap(normalizedBlenderFBM3(sharedBrushedCoordinates),0.2999999821,0.5999999046,0,0.5999999046); thickness=1.62*voltage+round(factor)*1390*mask.",
+    "scope": "Activated semantic diagnostic with Socket_27 explicitly rebound to Generated; the supplied active Material.011 remains exactly 0 nm. Roughness Fresnel, brushed roughness, scratch images, anisotropy, layered closure mixing, and source add-on graph are excluded."
+  },
   "presets": [
     {
       "id": "aluminum",

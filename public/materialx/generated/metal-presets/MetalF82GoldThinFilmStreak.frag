@@ -21,73 +21,72 @@ uniform int u_envRadianceSamples;
 uniform sampler2D u_envIrradiance;
 uniform bool u_refractionTwoSided;
 uniform vec3 u_viewPosition;
-uniform mat4 u_worldInverseTransposeMatrix;
 uniform int u_numActiveLightSources;
 
 // Uniform block: PublicUniforms
 uniform surfaceshader backsurfaceshader;
 uniform displacementshader displacementshader1;
+uniform vec3 thin_film_generated_extent_in1;
+uniform vec3 thin_film_generated_extent_in2;
 uniform vec3 generated_extent_in1;
 uniform vec3 generated_extent_in2;
-uniform int normal_world_fromspace;
-uniform int normal_world_tospace;
+uniform vec3 thin_film_generated_offset_in2;
+uniform vec3 thin_film_generated_safe_extent_in2;
 uniform vec3 generated_offset_in2;
 uniform vec3 generated_safe_extent_in2;
+uniform vec3 thin_film_mapping_scale_in2;
 uniform vec3 mapping_scale_in2;
-uniform float g_squared_in2;
+uniform float thin_film_length_mix_mix;
 uniform float length_mix_mix;
+uniform float thin_film_noise_position_in2;
 uniform float noise_position_in2;
+uniform float blender_raw_fbm3_gold_thin_film_noise_amplitude;
+uniform int blender_raw_fbm3_gold_thin_film_noise_octaves;
+uniform float blender_raw_fbm3_gold_thin_film_noise_lacunarity;
+uniform float blender_raw_fbm3_gold_thin_film_noise_diminish;
 uniform float blender_fbm3_gold_brushed_noise_amplitude;
 uniform int blender_fbm3_gold_brushed_noise_octaves;
 uniform float blender_fbm3_gold_brushed_noise_lacunarity;
 uniform float blender_fbm3_gold_brushed_noise_diminish;
-uniform float b_denominator_in2;
-uniform float b_numerator_in2;
-uniform float brushed_gate_unclamped_inlow;
-uniform float brushed_gate_unclamped_inhigh;
-uniform float brushed_gate_unclamped_outlow;
-uniform float brushed_gate_unclamped_outhigh;
-uniform float half_a_squared_in1;
-uniform float brushed_gate_low;
-uniform float brushed_gate_high;
-uniform float one_plus_b_squared_in1;
-uniform float brushed_add_in1;
-uniform float one_minus_brushed_add_in1;
-uniform float one_minus_fresnel_in1;
-uniform float lut_scaled_factor_in2;
-uniform float lut_centered_factor_in2;
-uniform float lut_uv_in2;
-uniform sampler2D curve_ramp_response_file;
-uniform int curve_ramp_response_layer;
-uniform float curve_ramp_response_default;
-uniform int curve_ramp_response_uaddressmode;
-uniform int curve_ramp_response_vaddressmode;
-uniform int curve_ramp_response_filtertype;
-uniform int curve_ramp_response_framerange;
-uniform int curve_ramp_response_frameoffset;
-uniform int curve_ramp_response_frameendaction;
-uniform vec2 curve_ramp_response_uv_scale;
-uniform vec2 curve_ramp_response_uv_offset;
-uniform float authored_base_roughness_in1;
-uniform float one_minus_base_roughness_in1;
-uniform float perceptual_roughness_in1;
+uniform float thin_film_noise_lut_factor_low;
+uniform float thin_film_noise_lut_factor_high;
+uniform float shared_noise_gate_unclamped_inlow;
+uniform float shared_noise_gate_unclamped_inhigh;
+uniform float shared_noise_gate_unclamped_outlow;
+uniform float shared_noise_gate_unclamped_outhigh;
+uniform float thin_film_lut_scaled_factor_in2;
+uniform float shared_noise_gate_low;
+uniform float shared_noise_gate_high;
+uniform float thin_film_lut_centered_factor_in2;
+uniform float thin_film_lut_uv_in2;
+uniform sampler2D thin_film_bspline_response_file;
+uniform int thin_film_bspline_response_layer;
+uniform float thin_film_bspline_response_default;
+uniform int thin_film_bspline_response_uaddressmode;
+uniform int thin_film_bspline_response_vaddressmode;
+uniform int thin_film_bspline_response_filtertype;
+uniform int thin_film_bspline_response_framerange;
+uniform int thin_film_bspline_response_frameoffset;
+uniform int thin_film_bspline_response_frameendaction;
+uniform vec2 thin_film_bspline_response_uv_scale;
+uniform vec2 thin_film_bspline_response_uv_offset;
+uniform float thin_film_thickness_in2;
 uniform float f82_weight;
 uniform vec3 f82_color0;
 uniform vec3 f82_color82;
 uniform vec3 f82_color90;
 uniform float f82_exponent;
-uniform float f82_thinfilm_thickness;
+uniform vec2 f82_roughness;
 uniform float f82_thinfilm_ior;
 uniform int f82_distribution;
 uniform int f82_scatter_mode;
-uniform float surface_f82_gold_brushed_roughness_opacity;
-uniform bool surface_f82_gold_brushed_roughness_thin_walled;
+uniform float surface_f82_gold_thin_film_streak_opacity;
+uniform bool surface_f82_gold_thin_film_streak_thin_walled;
 
 in vec3 normalWorld;
 in vec3 tangentWorld;
-in vec3 normalObject;
-in vec3 positionWorld;
 in vec3 positionObject;
+in vec3 positionWorld;
 
 // Pixel shader outputs
 out vec4 out1;
@@ -1808,61 +1807,43 @@ void main()
 {
     vec3 geomprop_Nworld_out1 = normalize(normalWorld);
     vec3 geomprop_Tworld_out1 = normalize(tangentWorld);
-    vec3 normal_object_out = normalize(normalObject);
-    vec3 view_world_out = normalize(positionWorld - u_viewPosition);
+    vec3 thin_film_generated_object_position_out = positionObject;
+    vec3 thin_film_generated_extent_out = thin_film_generated_extent_in1 - thin_film_generated_extent_in2;
     vec3 generated_object_position_out = positionObject;
     vec3 generated_extent_out = generated_extent_in1 - generated_extent_in2;
-    vec3 normal_world_out = (u_worldInverseTransposeMatrix * vec4(normal_object_out, 0.0)).xyz;
-    normal_world_out = normalize(normal_world_out);
+    vec3 thin_film_generated_offset_out = thin_film_generated_object_position_out - thin_film_generated_offset_in2;
+    vec3 thin_film_generated_safe_extent_out = max(thin_film_generated_extent_out, thin_film_generated_safe_extent_in2);
     vec3 generated_offset_out = generated_object_position_out - generated_offset_in2;
     vec3 generated_safe_extent_out = max(generated_extent_out, generated_safe_extent_in2);
-    float normal_dot_view_out = dot(normal_world_out, view_world_out);
+    vec3 thin_film_generated_coordinate_out = thin_film_generated_offset_out / thin_film_generated_safe_extent_out;
     vec3 generated_coordinate_out = generated_offset_out / generated_safe_extent_out;
-    float cosine_out = abs(normal_dot_view_out);
+    vec3 thin_film_mapping_scale_out = thin_film_generated_coordinate_out * thin_film_mapping_scale_in2;
     vec3 mapping_scale_out = generated_coordinate_out * mapping_scale_in2;
-    float cosine_squared_out = cosine_out * cosine_out;
+    float thin_film_mapping_length_out = length(thin_film_mapping_scale_out);
     float mapping_length_out = length(mapping_scale_out);
-    float g_squared_out = cosine_squared_out + g_squared_in2;
+    vec3 thin_film_mapping_length_vector_out = vec3(0.0);
+    NG_convert_float_vector3(thin_film_mapping_length_out, thin_film_mapping_length_vector_out);
     vec3 mapping_length_vector_out = vec3(0.0);
     NG_convert_float_vector3(mapping_length_out, mapping_length_vector_out);
-    float g_out = sqrt(g_squared_out);
+    vec3 thin_film_length_mix_out = mix(thin_film_mapping_scale_out, thin_film_mapping_length_vector_out, thin_film_length_mix_mix);
     vec3 length_mix_out = mix(mapping_scale_out, mapping_length_vector_out, length_mix_mix);
-    float g_minus_cosine_out = g_out - cosine_out;
-    float g_plus_cosine_out = g_out + cosine_out;
+    vec3 thin_film_noise_position_out = thin_film_length_mix_out * thin_film_noise_position_in2;
     vec3 noise_position_out = length_mix_out * noise_position_in2;
-    float cosine_g_minus_out = cosine_out * g_minus_cosine_out;
-    float a_out = g_minus_cosine_out / g_plus_cosine_out;
-    float cosine_g_plus_out = cosine_out * g_plus_cosine_out;
+    float blender_raw_fbm3_gold_thin_film_noise_out = 0.0;
+    mx_blender_raw_fbm3_float(blender_raw_fbm3_gold_thin_film_noise_amplitude, blender_raw_fbm3_gold_thin_film_noise_octaves, blender_raw_fbm3_gold_thin_film_noise_lacunarity, blender_raw_fbm3_gold_thin_film_noise_diminish, thin_film_noise_position_out, blender_raw_fbm3_gold_thin_film_noise_out);
     float blender_fbm3_gold_brushed_noise_out = 0.0;
     mx_blender_fbm3_float(blender_fbm3_gold_brushed_noise_amplitude, blender_fbm3_gold_brushed_noise_octaves, blender_fbm3_gold_brushed_noise_lacunarity, blender_fbm3_gold_brushed_noise_diminish, noise_position_out, blender_fbm3_gold_brushed_noise_out);
-    float b_denominator_out = cosine_g_minus_out + b_denominator_in2;
-    float a_squared_out = a_out * a_out;
-    float b_numerator_out = cosine_g_plus_out - b_numerator_in2;
-    float brushed_gate_unclamped_out = brushed_gate_unclamped_outlow + (blender_fbm3_gold_brushed_noise_out - brushed_gate_unclamped_inlow) * (brushed_gate_unclamped_outhigh - brushed_gate_unclamped_outlow) / (brushed_gate_unclamped_inhigh - brushed_gate_unclamped_inlow);
-    float half_a_squared_out = half_a_squared_in1 * a_squared_out;
-    float b_out = b_numerator_out / b_denominator_out;
-    float brushed_gate_out = clamp(brushed_gate_unclamped_out, brushed_gate_low, brushed_gate_high);
-    float b_squared_out = b_out * b_out;
-    float brushed_noise_contribution_out = brushed_gate_out * blender_fbm3_gold_brushed_noise_out;
-    float one_plus_b_squared_out = one_plus_b_squared_in1 + b_squared_out;
-    float brushed_add_out = brushed_add_in1 + brushed_noise_contribution_out;
-    float layer_weight_fresnel_out = half_a_squared_out * one_plus_b_squared_out;
-    float one_minus_brushed_add_out = one_minus_brushed_add_in1 - brushed_add_out;
-    float one_minus_fresnel_out = one_minus_fresnel_in1 - layer_weight_fresnel_out;
-    float lut_scaled_factor_out = layer_weight_fresnel_out * lut_scaled_factor_in2;
-    float lut_centered_factor_out = lut_scaled_factor_out + lut_centered_factor_in2;
-    vec2 lut_uv_out = vec2(lut_centered_factor_out,lut_uv_in2);
-    float curve_ramp_response_out = 0.0;
-    mx_image_float(curve_ramp_response_file, curve_ramp_response_layer, curve_ramp_response_default, lut_uv_out, curve_ramp_response_uaddressmode, curve_ramp_response_vaddressmode, curve_ramp_response_filtertype, curve_ramp_response_framerange, curve_ramp_response_frameoffset, curve_ramp_response_frameendaction, curve_ramp_response_uv_scale, curve_ramp_response_uv_offset, curve_ramp_response_out);
-    float fresnel_response_out = layer_weight_fresnel_out * curve_ramp_response_out;
-    float roughness_factor_out = one_minus_fresnel_out + fresnel_response_out;
-    float authored_base_roughness_out = authored_base_roughness_in1 * roughness_factor_out;
-    float one_minus_base_roughness_out = one_minus_base_roughness_in1 - authored_base_roughness_out;
-    float screen_complement_out = one_minus_base_roughness_out * one_minus_brushed_add_out;
-    float perceptual_roughness_out = perceptual_roughness_in1 - screen_complement_out;
-    float microfacet_alpha_out = perceptual_roughness_out * perceptual_roughness_out;
-    vec2 microfacet_alpha_xy_out = vec2(microfacet_alpha_out,microfacet_alpha_out);
-    surfaceshader surface_f82_gold_brushed_roughness_out = surfaceshader(vec3(0.0),vec3(0.0));
+    float thin_film_noise_lut_factor_out = clamp(blender_raw_fbm3_gold_thin_film_noise_out, thin_film_noise_lut_factor_low, thin_film_noise_lut_factor_high);
+    float shared_noise_gate_unclamped_out = shared_noise_gate_unclamped_outlow + (blender_fbm3_gold_brushed_noise_out - shared_noise_gate_unclamped_inlow) * (shared_noise_gate_unclamped_outhigh - shared_noise_gate_unclamped_outlow) / (shared_noise_gate_unclamped_inhigh - shared_noise_gate_unclamped_inlow);
+    float thin_film_lut_scaled_factor_out = thin_film_noise_lut_factor_out * thin_film_lut_scaled_factor_in2;
+    float shared_noise_gate_out = clamp(shared_noise_gate_unclamped_out, shared_noise_gate_low, shared_noise_gate_high);
+    float thin_film_lut_centered_factor_out = thin_film_lut_scaled_factor_out + thin_film_lut_centered_factor_in2;
+    vec2 thin_film_lut_uv_out = vec2(thin_film_lut_centered_factor_out,thin_film_lut_uv_in2);
+    float thin_film_bspline_response_out = 0.0;
+    mx_image_float(thin_film_bspline_response_file, thin_film_bspline_response_layer, thin_film_bspline_response_default, thin_film_lut_uv_out, thin_film_bspline_response_uaddressmode, thin_film_bspline_response_vaddressmode, thin_film_bspline_response_filtertype, thin_film_bspline_response_framerange, thin_film_bspline_response_frameoffset, thin_film_bspline_response_frameendaction, thin_film_bspline_response_uv_scale, thin_film_bspline_response_uv_offset, thin_film_bspline_response_out);
+    float thin_film_streak_mask_out = thin_film_bspline_response_out * shared_noise_gate_out;
+    float thin_film_thickness_out = thin_film_streak_mask_out * thin_film_thickness_in2;
+    surfaceshader surface_f82_gold_thin_film_streak_out = surfaceshader(vec3(0.0),vec3(0.0));
     {
         vec3 N = normalize(normalWorld);
         vec3 V = normalize(u_viewPosition - positionWorld);
@@ -1870,7 +1851,7 @@ void main()
         vec3 L = vec3(0,0,0);;
         float occlusion = 1.0;
 
-        float surfaceOpacity = surface_f82_gold_brushed_roughness_opacity;
+        float surfaceOpacity = surface_f82_gold_thin_film_streak_opacity;
 
         // Shadow occlusion
 
@@ -1885,10 +1866,10 @@ void main()
             // Calculate the BSDF response for this light source
             ClosureData closureData = ClosureData(CLOSURE_TYPE_REFLECTION, L, V, N, P, occlusion);
             BSDF f82_out = BSDF(vec3(0.0),vec3(1.0));
-            mx_generalized_schlick_bsdf(closureData, f82_weight, f82_color0, f82_color82, f82_color90, f82_exponent, microfacet_alpha_xy_out, f82_thinfilm_thickness, f82_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, f82_distribution, f82_scatter_mode, f82_out);
+            mx_generalized_schlick_bsdf(closureData, f82_weight, f82_color0, f82_color82, f82_color90, f82_exponent, f82_roughness, thin_film_thickness_out, f82_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, f82_distribution, f82_scatter_mode, f82_out);
 
             // Accumulate the light's contribution
-            surface_f82_gold_brushed_roughness_out.color += lightShader.intensity * f82_out.response;
+            surface_f82_gold_thin_film_streak_out.color += lightShader.intensity * f82_out.response;
         }
 
         // Ambient occlusion
@@ -1898,24 +1879,24 @@ void main()
         {
             ClosureData closureData = ClosureData(CLOSURE_TYPE_INDIRECT, L, V, N, P, occlusion);
             BSDF f82_out = BSDF(vec3(0.0),vec3(1.0));
-            mx_generalized_schlick_bsdf(closureData, f82_weight, f82_color0, f82_color82, f82_color90, f82_exponent, microfacet_alpha_xy_out, f82_thinfilm_thickness, f82_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, f82_distribution, f82_scatter_mode, f82_out);
+            mx_generalized_schlick_bsdf(closureData, f82_weight, f82_color0, f82_color82, f82_color90, f82_exponent, f82_roughness, thin_film_thickness_out, f82_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, f82_distribution, f82_scatter_mode, f82_out);
 
-            surface_f82_gold_brushed_roughness_out.color += occlusion * f82_out.response;
+            surface_f82_gold_thin_film_streak_out.color += occlusion * f82_out.response;
         }
 
         // Calculate the BSDF transmission for viewing direction
         ClosureData closureData = ClosureData(CLOSURE_TYPE_TRANSMISSION, L, V, N, P, occlusion);
         BSDF f82_out = BSDF(vec3(0.0),vec3(1.0));
-        mx_generalized_schlick_bsdf(closureData, f82_weight, f82_color0, f82_color82, f82_color90, f82_exponent, microfacet_alpha_xy_out, f82_thinfilm_thickness, f82_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, f82_distribution, f82_scatter_mode, f82_out);
-        surface_f82_gold_brushed_roughness_out.color += f82_out.response;
+        mx_generalized_schlick_bsdf(closureData, f82_weight, f82_color0, f82_color82, f82_color90, f82_exponent, f82_roughness, thin_film_thickness_out, f82_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, f82_distribution, f82_scatter_mode, f82_out);
+        surface_f82_gold_thin_film_streak_out.color += f82_out.response;
 
         // Compute and apply surface opacity
         {
-            surface_f82_gold_brushed_roughness_out.color *= surfaceOpacity;
-            surface_f82_gold_brushed_roughness_out.transparency = mix(vec3(1.0), surface_f82_gold_brushed_roughness_out.transparency, surfaceOpacity);
+            surface_f82_gold_thin_film_streak_out.color *= surfaceOpacity;
+            surface_f82_gold_thin_film_streak_out.transparency = mix(vec3(1.0), surface_f82_gold_thin_film_streak_out.transparency, surfaceOpacity);
         }
     }
 
-    material MetalF82GoldBrushedRoughness_out = surface_f82_gold_brushed_roughness_out;
-    out1 = vec4(mx_srgb_encode(MetalF82GoldBrushedRoughness_out.color), 1.0);
+    material MetalF82GoldThinFilmStreak_out = surface_f82_gold_thin_film_streak_out;
+    out1 = vec4(mx_srgb_encode(MetalF82GoldThinFilmStreak_out.color), 1.0);
 }

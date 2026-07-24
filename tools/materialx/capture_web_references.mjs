@@ -8,6 +8,7 @@ const expectedImplementation = process.argv[4];
 const thinFilmSweep = process.argv.includes("--thin-film-sweep");
 const roughnessFresnelOnly = process.argv.includes("--roughness-fresnel-only");
 const brushedRoughnessOnly = process.argv.includes("--brushed-roughness-only");
+const thinFilmStreakOnly = process.argv.includes("--thin-film-streak-only");
 const uiNormalBandOnly = process.argv.includes("--ui-normal-band-only");
 const executablePath = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -113,6 +114,43 @@ try {
   };
   if (brushedRoughnessOnly) {
     await captureBrushedRoughness();
+    await browser.close();
+    process.exit(0);
+  }
+  const captureThinFilmStreak = async () => {
+    for (const [diagnostic, preset, filename] of [
+      [
+        "metal-thin-film-streak-scalar",
+        "thin-film-streak-scalar-gold",
+        "metal-thin-film-streak-scalar-gold-web.png",
+      ],
+      [
+        "metal-thin-film-streak",
+        "thin-film-streak-gold",
+        "metal-thin-film-streak-gold-web.png",
+      ],
+    ]) {
+      await page.goto(
+        `${baseUrl}/materialx?capture=1&diagnostic=${diagnostic}`,
+        { waitUntil: "domcontentloaded" },
+      );
+      await page.waitForFunction(
+        (selectedPreset) => (
+          document.documentElement.dataset.materialxImplementation === "official-essl-prefilter"
+          && document.documentElement.dataset.materialxPreset === selectedPreset
+        ),
+        { timeout: 360_000 },
+        preset,
+      );
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const thinFilmStreakCanvas = await page.$("#materialx-canvas");
+      if (!thinFilmStreakCanvas) throw new Error(`MaterialX ${preset} canvas missing`);
+      await thinFilmStreakCanvas.screenshot({ path: path.join(outputDir, filename) });
+      console.log(`MATERIALX_WEB_REFERENCE ${filename}`);
+    }
+  };
+  if (thinFilmStreakOnly) {
+    await captureThinFilmStreak();
     await browser.close();
     process.exit(0);
   }
@@ -271,6 +309,7 @@ try {
   console.log("MATERIALX_WEB_REFERENCE metal-layered-roughness-gold-web.png");
   await captureRoughnessFresnel();
   await captureBrushedRoughness();
+  await captureThinFilmStreak();
   for (const [rotation, slug] of [[0, "r0"], [0.25, "r90"]]) {
     await page.goto(
       `${baseUrl}/materialx?capture=1&diagnostic=metal-anisotropy&rotation=${rotation}`,

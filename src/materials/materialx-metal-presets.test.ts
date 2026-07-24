@@ -131,16 +131,80 @@ test("rights-safe metal probe index preserves the physical constants and roughne
   });
   assert.equal(brushedRoughness.semanticAdapter, "blender-normalized-fbm3");
   assert.match(brushedRoughness.coordinate, /Blender Generated.*bounds/);
+
+  const thinFilmStreak = index.thinFilmStreakProbe;
+  assert.equal(thinFilmStreak.scalarShader, "MetalGoldThinFilmStreakScalar");
+  assert.equal(thinFilmStreak.beautyShader, "MetalF82GoldThinFilmStreak");
+  assert.equal(thinFilmStreak.sourceMaterial, "Material.011");
+  assert.equal(thinFilmStreak.sourceObject, "Sphere.010");
+  assert.equal(thinFilmStreak.activeSourceResultNanometers, 0);
+  assert.match(thinFilmStreak.activeSourceReason, /unlinked.*raw FBM.*0.*B-spline.*black/i);
+  assert.match(thinFilmStreak.diagnosticOverride, /Socket_27.*Socket_919.*Generated/);
+  assert.equal(thinFilmStreak.thinFilmIor, 2.4600000381469727);
+  assert.equal(thinFilmStreak.anodizationVoltage, 0);
+  assert.equal(thinFilmStreak.nanometersPerVolt, 1.6200000047683716);
+  assert.equal(thinFilmStreak.proceduralFactor, 1);
+  assert.equal(thinFilmStreak.thinFilmLength, 0.7501863837242126);
+  assert.deepEqual(thinFilmStreak.thinFilmScale, [90, 90, 90]);
+  assert.deepEqual(thinFilmStreak.thinFilmRotation, [0, 0, 0]);
+  assert.equal(thinFilmStreak.thicknessScaleNanometers, 1390);
+  assert.deepEqual(thinFilmStreak.sharedNoiseMapRange, {
+    fromMin: 0.29999998211860657,
+    fromMax: 0.5999999046325684,
+    toMin: 0,
+    toMax: 0.5999999046325684,
+    clamp: true,
+  });
+  assert.deepEqual(thinFilmStreak.thinFilmNoise, {
+    dimensions: 3,
+    normalized: false,
+    scale: 10,
+    detail: 2,
+    octaves: 3,
+    roughness: 0.5,
+    lacunarity: 2,
+    distortion: 0,
+  });
+  assert.deepEqual(thinFilmStreak.semanticAdapters, [
+    "blender-normalized-fbm3",
+    "blender-raw-fbm3",
+  ]);
+  assert.match(thinFilmStreak.scope, /Generated.*active Material\.011 remains exactly 0 nm/);
+
+  const thinFilmRamp = JSON.parse(publicAsset("gold-thin-film-streak-ramp-lut.json"));
+  assert.equal(thinFilmRamp.schemaVersion, 1);
+  assert.equal(thinFilmRamp.kind, "rights-safe-blender-scalar-response-lut");
+  assert.deepEqual(thinFilmRamp.ramp, {
+    interpolation: "B_SPLINE",
+    colorMode: "RGB",
+    hueInterpolation: "NEAR",
+    elements: [
+      { position: 0.10647183656692505, color: [0, 0, 0, 1] },
+      { position: 1, color: [1, 1, 1, 1] },
+    ],
+  });
+  assert.equal(thinFilmRamp.sampling.count, 256);
+  assert.equal(thinFilmRamp.sampling.bytes, 756);
+  assert.equal(
+    thinFilmRamp.sampling.sha256,
+    "4580f557a83ccdf8485250b813a321a941f2d8a8d93e4a0798df2f84a5aa2113",
+  );
+  assert.match(thinFilmRamp.sampling.encoding, /RGBA8 raw grayscale.*linear.*clamped/);
+  assert.match(thinFilmRamp.sampling.coordinate, /count - 1.*0\.5 \/ count/);
+  assert.equal(thinFilmRamp.samples.length, 256);
+  assert.deepEqual(thinFilmRamp.samples[0], { factor: 0, response: 0 });
+  assert.deepEqual(thinFilmRamp.samples.at(-1), { factor: 1, response: 0.8333333134651184 });
 });
 
 test("metal preset MaterialX and official ESSL bundle carry microfacet alpha with a verified rights-safe LUT", () => {
   const source = publicAsset("metal-preset-probes.mtlx");
   const audit = auditMaterialXDocument(source, { implementation: "official-essl" });
   assert.deepEqual(audit.unsupportedElements, []);
-  assert.equal(audit.materialCount, 14);
+  assert.equal(audit.materialCount, 16);
   assert.equal((source.match(/value="0\.1225, 0\.1225"/g) ?? []).length, 8);
-  assert.equal((source.match(/<image\b/g) ?? []).length, 1);
+  assert.equal((source.match(/<image\b/g) ?? []).length, 2);
   assert.match(source, /value="gold-roughness-fresnel-lut\.png" colorspace="raw"/);
+  assert.match(source, /value="gold-thin-film-streak-ramp-lut\.png" colorspace="raw"/);
   assert.doesNotMatch(source, /<(?:tiledimage|triplanarprojection)\b/);
 
   const manifest = JSON.parse(publicAsset("generated/metal-presets/manifest.json"));
@@ -158,6 +222,8 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
     "MetalF82GoldRoughnessFresnel",
     "MetalGoldBrushedRoughnessScalar",
     "MetalF82GoldBrushedRoughness",
+    "MetalGoldThinFilmStreakScalar",
+    "MetalF82GoldThinFilmStreak",
   ].sort());
   for (const { shader } of Object.values(expectedPresets)) {
     const uniforms = manifest.shaders[shader].fragmentInterface.uniforms.PublicUniforms;
@@ -273,15 +339,80 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
     publicAsset("generated/metal-presets/MetalF82GoldBrushedRoughness.frag"),
     /void mx_generalized_schlick_bsdf\(/,
   );
+  const thinFilmTextureBinding = {
+    bytes: 756,
+    flipY: false,
+    magFilter: "linear",
+    mimeType: "image/png",
+    minFilter: "linear",
+    path: "textures/gold-thin-film-streak-ramp-lut.png",
+    sha256: "4580f557a83ccdf8485250b813a321a941f2d8a8d93e4a0798df2f84a5aa2113",
+    sourceColorSpace: "raw",
+    uniform: "thin_film_bspline_response_file",
+    uploadColorSpace: "none",
+    wrapS: "clamp",
+    wrapT: "clamp",
+  };
+  for (const shader of ["MetalGoldThinFilmStreakScalar", "MetalF82GoldThinFilmStreak"]) {
+    const record = manifest.shaders[shader];
+    assert.deepEqual(record.semanticAdapters, [
+      "blender-normalized-fbm3",
+      "blender-raw-fbm3",
+    ], shader);
+    assert.deepEqual(record.textureBindings, [thinFilmTextureBinding], shader);
+    assert.equal(record.geometryBindings.generatedCoordinates.space, "object", shader);
+    assert.deepEqual(record.geometryBindings.generatedCoordinates.boundsMaxUniforms, [
+      "thin_film_generated_extent_in1",
+      "generated_extent_in1",
+    ], shader);
+    assert.deepEqual(record.geometryBindings.generatedCoordinates.boundsMinUniforms, [
+      "thin_film_generated_extent_in2",
+      "generated_extent_in2",
+      "thin_film_generated_offset_in2",
+      "generated_offset_in2",
+    ], shader);
+    const fragment = publicAsset(`generated/metal-presets/${shader}.frag`);
+    assert.match(fragment, /void mx_blender_fbm3_float\(/, shader);
+    assert.match(fragment, /void mx_blender_raw_fbm3_float\(/, shader);
+    assert.match(
+      fragment,
+      /mx_blender_fbm3_float\([^;]+blender_fbm3_[A-Za-z0-9_]*_out\);/,
+      shader,
+    );
+    assert.match(
+      fragment,
+      /mx_blender_raw_fbm3_float\([^;]+blender_raw_fbm3_[A-Za-z0-9_]*_out\);/,
+      shader,
+    );
+    assert.match(fragment, /uniform sampler2D thin_film_bspline_response_file;/, shader);
+    assert.match(fragment, /mx_image_float\(thin_film_bspline_response_file,/, shader);
+  }
+  assert.match(
+    publicAsset("generated/metal-presets/MetalF82GoldThinFilmStreak.frag"),
+    /void mx_generalized_schlick_bsdf\(/,
+  );
   assert.equal(
     fs.statSync(new URL("../../public/materialx/generated/metal-presets/textures/gold-roughness-fresnel-lut.png", import.meta.url)).size,
     313,
+  );
+  assert.equal(
+    fs.statSync(new URL("../../public/materialx/gold-thin-film-streak-ramp-lut.png", import.meta.url)).size,
+    756,
+  );
+  assert.equal(
+    fs.statSync(
+      new URL(
+        "../../public/materialx/generated/metal-presets/textures/gold-thin-film-streak-ramp-lut.png",
+        import.meta.url,
+      ),
+    ).size,
+    756,
   );
 });
 
 test("matched Blender and browser metal probes pass the constant-input similarity gate", () => {
   const comparison = JSON.parse(fs.readFileSync(evidenceUrl("comparison.json"), "utf8"));
-  assert.equal(comparison.comparisonVersion, 14);
+  assert.equal(comparison.comparisonVersion, 15);
   assert.match(comparison.renderContract.metalPresetMatrix, /0\.35.*0\.1225/);
   assert.deepEqual(Object.keys(comparison.metalPresetMatrix), Object.keys(expectedPresets));
   for (const id of Object.keys(expectedPresets)) {
@@ -367,6 +498,50 @@ test("matched Blender and browser metal probes pass the constant-input similarit
     for (const renderer of ["blender", "web"]) {
       assert.ok(
         fs.statSync(evidenceUrl(`metal-brushed-roughness-${kind}gold-${renderer}.png`)).size > 10_000,
+        `${kind || "beauty"} ${renderer}`,
+      );
+    }
+  }
+  assert.match(
+    comparison.renderContract.metalThinFilmStreakProbe,
+    /explicit diagnostic override.*one sample per pixel.*active Material\.011 remains exactly 0 nm/,
+  );
+  const thinFilmStreak = comparison.metalThinFilmStreakProbe;
+  assert.equal(thinFilmStreak.activeSourceResultNanometers, 0);
+  assert.match(thinFilmStreak.activeSourceReason, /unlinked.*raw FBM.*black.*voltage.*0/i);
+  assert.match(thinFilmStreak.diagnosticOverride, /Socket_27.*Socket_919.*Generated/);
+  assert.deepEqual(thinFilmStreak.semanticAdapters, [
+    "blender-normalized-fbm3",
+    "blender-raw-fbm3",
+  ]);
+  assert.ok(thinFilmStreak.scalar.rgbRootMeanSquareError < 0.03);
+  assert.ok(thinFilmStreak.scalar.luminanceCorrelation > 0.94);
+  assert.ok(thinFilmStreak.scalar.sphereRegion.rgbRootMeanSquareError < 0.07);
+  assert.ok(thinFilmStreak.scalar.sphereRegion.luminanceCorrelation > 0.93);
+  assert.ok(Math.abs(
+    thinFilmStreak.scalar.sphereRegion.meanLuminance.blender
+      - thinFilmStreak.scalar.sphereRegion.meanLuminance.web,
+  ) < 0.001);
+  assert.ok(thinFilmStreak.beauty.sphereRegion.rgbRootMeanSquareError < 0.075);
+  assert.ok(thinFilmStreak.beauty.sphereRegion.luminanceCorrelation > 0.96);
+  assert.ok(Math.abs(
+    thinFilmStreak.beauty.sphereRegion.meanLuminance.blender
+      - thinFilmStreak.beauty.sphereRegion.meanLuminance.web,
+  ) < 0.035);
+  assert.ok(Math.max(...thinFilmStreak.beauty.sphereMeanRgb.blender.map(
+    (value: number, index: number) => Math.abs(
+      value - thinFilmStreak.beauty.sphereMeanRgb.web[index],
+    ),
+  )) < 0.04);
+  assert.match(thinFilmStreak.scalar.claim, /one sample per pixel.*diagnostic override/);
+  assert.doesNotMatch(thinFilmStreak.scalar.claim, /active material parity/i);
+  assert.match(thinFilmStreak.beauty.claim, /activated procedural mask/);
+  assert.match(thinFilmStreak.beauty.residual, /different spectral thin-film approximations/);
+  assert.match(thinFilmStreak.noiseResidual, /normalized and raw FBM semantics/);
+  for (const kind of ["scalar-", ""]) {
+    for (const renderer of ["blender", "web"]) {
+      assert.ok(
+        fs.statSync(evidenceUrl(`metal-thin-film-streak-${kind}gold-${renderer}.png`)).size > 10_000,
         `${kind || "beauty"} ${renderer}`,
       );
     }

@@ -532,4 +532,137 @@
   <surfacematerial name="MetalF82GoldBrushedRoughness" type="material">
     <input name="surfaceshader" type="surfaceshader" nodename="surface_f82_gold_brushed_roughness" />
   </surfacematerial>
+
+  <!--
+    Activated semantic probe for Gold's procedural thin-film streak branch.
+    The supplied Material.011 leaves this branch's dedicated Vector unlinked,
+    so its authored thickness is exactly zero. This diagnostic explicitly
+    supplies Generated coordinates to exercise the recoverable branch.
+  -->
+  <nodegraph name="NG_gold_thin_film_streak_fields">
+    <input name="gold_thin_film_generated_bounds_min" type="vector3" value="-1, -1, -1" />
+    <input name="gold_thin_film_generated_bounds_max" type="vector3" value="1, 1, 1" />
+    <remap name="shared_noise_gate_unclamped" type="float">
+      <input name="in" type="float" nodegraph="NG_gold_brushed_roughness_fields" output="noise" />
+      <input name="inlow" type="float" value="0.29999998211860657" />
+      <input name="inhigh" type="float" value="0.5999999046325684" />
+      <input name="outlow" type="float" value="0" />
+      <input name="outhigh" type="float" value="0.5999999046325684" />
+    </remap>
+    <clamp name="shared_noise_gate" type="float">
+      <input name="in" type="float" nodename="shared_noise_gate_unclamped" />
+      <input name="low" type="float" value="0" />
+      <input name="high" type="float" value="0.5999999046325684" />
+    </clamp>
+    <position name="thin_film_generated_object_position" type="vector3" space="object" />
+    <subtract name="thin_film_generated_offset" type="vector3">
+      <input name="in1" type="vector3" nodename="thin_film_generated_object_position" />
+      <input name="in2" type="vector3" interfacename="gold_thin_film_generated_bounds_min" />
+    </subtract>
+    <subtract name="thin_film_generated_extent" type="vector3">
+      <input name="in1" type="vector3" interfacename="gold_thin_film_generated_bounds_max" />
+      <input name="in2" type="vector3" interfacename="gold_thin_film_generated_bounds_min" />
+    </subtract>
+    <max name="thin_film_generated_safe_extent" type="vector3">
+      <input name="in1" type="vector3" nodename="thin_film_generated_extent" />
+      <input name="in2" type="vector3" value="0.000001, 0.000001, 0.000001" />
+    </max>
+    <divide name="thin_film_generated_coordinate" type="vector3">
+      <input name="in1" type="vector3" nodename="thin_film_generated_offset" />
+      <input name="in2" type="vector3" nodename="thin_film_generated_safe_extent" />
+    </divide>
+    <multiply name="thin_film_mapping_scale" type="vector3">
+      <input name="in1" type="vector3" nodename="thin_film_generated_coordinate" />
+      <input name="in2" type="vector3" value="90, 90, 90" />
+    </multiply>
+    <magnitude name="thin_film_mapping_length" type="float">
+      <input name="in" type="vector3" nodename="thin_film_mapping_scale" />
+    </magnitude>
+    <convert name="thin_film_mapping_length_vector" type="vector3">
+      <input name="in" type="float" nodename="thin_film_mapping_length" />
+    </convert>
+    <mix name="thin_film_length_mix" type="vector3">
+      <input name="bg" type="vector3" nodename="thin_film_mapping_scale" />
+      <input name="fg" type="vector3" nodename="thin_film_mapping_length_vector" />
+      <input name="mix" type="float" value="0.7501863837242126" />
+    </mix>
+    <multiply name="thin_film_noise_position" type="vector3">
+      <input name="in1" type="vector3" nodename="thin_film_length_mix" />
+      <input name="in2" type="float" value="10" />
+    </multiply>
+    <fractal3d name="blender_raw_fbm3_gold_thin_film_noise" type="float">
+      <input name="amplitude" type="float" value="1" />
+      <input name="octaves" type="integer" value="3" />
+      <input name="lacunarity" type="float" value="2" />
+      <input name="diminish" type="float" value="0.5" />
+      <input name="position" type="vector3" nodename="thin_film_noise_position" />
+    </fractal3d>
+    <clamp name="thin_film_noise_lut_factor" type="float">
+      <input name="in" type="float" nodename="blender_raw_fbm3_gold_thin_film_noise" />
+      <input name="low" type="float" value="0" />
+      <input name="high" type="float" value="1" />
+    </clamp>
+    <multiply name="thin_film_lut_scaled_factor" type="float">
+      <input name="in1" type="float" nodename="thin_film_noise_lut_factor" />
+      <input name="in2" type="float" value="0.99609375" />
+    </multiply>
+    <add name="thin_film_lut_centered_factor" type="float">
+      <input name="in1" type="float" nodename="thin_film_lut_scaled_factor" />
+      <input name="in2" type="float" value="0.001953125" />
+    </add>
+    <combine2 name="thin_film_lut_uv" type="vector2">
+      <input name="in1" type="float" nodename="thin_film_lut_centered_factor" />
+      <input name="in2" type="float" value="0.5" />
+    </combine2>
+    <image name="thin_film_bspline_response" type="float">
+      <input name="file" type="filename" value="gold-thin-film-streak-ramp-lut.png" colorspace="raw" />
+      <input name="texcoord" type="vector2" nodename="thin_film_lut_uv" />
+      <input name="uaddressmode" type="string" value="clamp" />
+      <input name="vaddressmode" type="string" value="clamp" />
+      <input name="filtertype" type="string" value="linear" />
+    </image>
+    <multiply name="thin_film_streak_mask" type="float">
+      <input name="in1" type="float" nodename="thin_film_bspline_response" />
+      <input name="in2" type="float" nodename="shared_noise_gate" />
+    </multiply>
+    <multiply name="thin_film_thickness" type="float">
+      <input name="in1" type="float" nodename="thin_film_streak_mask" />
+      <input name="in2" type="float" value="1390" />
+    </multiply>
+    <output name="rawNoise" type="float" nodename="blender_raw_fbm3_gold_thin_film_noise" />
+    <output name="ramp" type="float" nodename="thin_film_bspline_response" />
+    <output name="mask" type="float" nodename="thin_film_streak_mask" />
+    <output name="thickness" type="float" nodename="thin_film_thickness" />
+  </nodegraph>
+
+  <convert name="gold_thin_film_streak_scalar_color" type="color3">
+    <input name="in" type="float" nodegraph="NG_gold_thin_film_streak_fields" output="mask" />
+  </convert>
+  <surface_unlit name="surface_gold_thin_film_streak_scalar" type="surfaceshader">
+    <input name="emission" type="float" value="1" />
+    <input name="emission_color" type="color3" nodename="gold_thin_film_streak_scalar_color" />
+  </surface_unlit>
+  <surfacematerial name="MetalGoldThinFilmStreakScalar" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_gold_thin_film_streak_scalar" />
+  </surfacematerial>
+
+  <nodegraph name="NG_metal_f82_gold_thin_film_streak">
+    <generalized_schlick_bsdf name="f82" type="BSDF">
+      <input name="color0" type="color3" value="1, 0.7758224606513977, 0.3049874007701874" />
+      <input name="color82" type="color3" value="0.9734454154968262, 1, 0.9911020398139954" />
+      <input name="color90" type="color3" value="1, 1, 1" />
+      <input name="exponent" type="float" value="5" />
+      <input name="roughness" type="vector2" value="0.20249996244907553, 0.20249996244907553" />
+      <input name="thinfilm_thickness" type="float" nodegraph="NG_gold_thin_film_streak_fields" output="thickness" />
+      <input name="thinfilm_ior" type="float" value="2.4600000381469727" />
+      <input name="scatter_mode" type="string" value="R" />
+    </generalized_schlick_bsdf>
+    <output name="out" type="BSDF" nodename="f82" />
+  </nodegraph>
+  <surface name="surface_f82_gold_thin_film_streak" type="surfaceshader">
+    <input name="bsdf" type="BSDF" nodegraph="NG_metal_f82_gold_thin_film_streak" output="out" />
+  </surface>
+  <surfacematerial name="MetalF82GoldThinFilmStreak" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_f82_gold_thin_film_streak" />
+  </surfacematerial>
 </materialx>

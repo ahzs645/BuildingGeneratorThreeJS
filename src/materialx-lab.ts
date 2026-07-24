@@ -117,6 +117,33 @@ type MetalPresetProbeIndex = {
     };
     semanticAdapter: string;
   };
+  thinFilmStreakProbe: {
+    scalarShader: string;
+    beautyShader: string;
+    activeSourceResultNanometers: number;
+    activeSourceReason: string;
+    diagnosticOverride: string;
+    thinFilmIor: number;
+    thicknessScaleNanometers: number;
+    thinFilmNoise: {
+      dimensions: number;
+      normalized: boolean;
+      scale: number;
+      detail: number;
+      octaves: number;
+      roughness: number;
+      lacunarity: number;
+      distortion: number;
+    };
+    rampLut: {
+      report: string;
+      image: string;
+      samples: number;
+      sha256: string;
+      coordinate: string;
+    };
+    semanticAdapters: string[];
+  };
   presets: Array<{
     id: string;
     label: string;
@@ -159,6 +186,8 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   const metalRoughnessFresnelDiagnostic = requestedDiagnostic === "metal-roughness-fresnel";
   const metalBrushedRoughnessScalarDiagnostic = requestedDiagnostic === "metal-brushed-roughness-scalar";
   const metalBrushedRoughnessDiagnostic = requestedDiagnostic === "metal-brushed-roughness";
+  const metalThinFilmStreakScalarDiagnostic = requestedDiagnostic === "metal-thin-film-streak-scalar";
+  const metalThinFilmStreakDiagnostic = requestedDiagnostic === "metal-thin-film-streak";
   const metalProbeDiagnostic = metalPresetDiagnostic
     || metalF82Diagnostic
     || metalAnisotropyDiagnostic
@@ -167,7 +196,9 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     || metalRoughnessFresnelScalarDiagnostic
     || metalRoughnessFresnelDiagnostic
     || metalBrushedRoughnessScalarDiagnostic
-    || metalBrushedRoughnessDiagnostic;
+    || metalBrushedRoughnessDiagnostic
+    || metalThinFilmStreakScalarDiagnostic
+    || metalThinFilmStreakDiagnostic;
   const dependencyImplementation = import.meta.env.VITE_MATERIALX_THREE_IMPLEMENTATION || "r185";
   const environmentMode = metalProbeDiagnostic || query.get("environment") === "prefilter"
     ? "prefilter"
@@ -438,7 +469,19 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
           return response.json() as Promise<MetalPresetProbeIndex>;
         }),
       ]);
-      const preset = metalBrushedRoughnessScalarDiagnostic
+      const preset = metalThinFilmStreakScalarDiagnostic
+        ? {
+            id: "thin-film-streak-scalar-gold",
+            label: "Gold thin-film streak · scalar",
+            shader: presetIndex.thinFilmStreakProbe.scalarShader,
+          }
+        : metalThinFilmStreakDiagnostic
+        ? {
+            id: "thin-film-streak-gold",
+            label: "Gold thin-film streak",
+            shader: presetIndex.thinFilmStreakProbe.beautyShader,
+          }
+        : metalBrushedRoughnessScalarDiagnostic
         ? {
             id: "brushed-roughness-scalar-gold",
             label: "Gold brushed roughness · scalar",
@@ -511,17 +554,33 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       }));
       material.uniforms.u_numActiveLightSources.value = 0;
       for (const light of [key, fill, rim]) light.intensity = 0;
-      if (metalAnisotropyDiagnostic || metalThinFilmDiagnostic) {
+      if (metalAnisotropyDiagnostic || metalThinFilmDiagnostic || metalThinFilmStreakDiagnostic) {
         material.uniforms.u_numActiveLightSources.value = 1;
         material.uniforms.u_envLightIntensity.value = 0;
       }
-      if (metalRoughnessFresnelScalarDiagnostic || metalBrushedRoughnessScalarDiagnostic) {
+      if (
+        metalRoughnessFresnelScalarDiagnostic
+        || metalBrushedRoughnessScalarDiagnostic
+        || metalThinFilmStreakScalarDiagnostic
+      ) {
         material.uniforms.u_envLightIntensity.value = 0;
       }
       floor.visible = false;
       probe.material = material;
-      status.textContent = `materialx · PREFILTER · ${preset.label}`;
-      if (metalBrushedRoughnessScalarDiagnostic || metalBrushedRoughnessDiagnostic) {
+      const metalRenderMode = metalThinFilmStreakScalarDiagnostic
+        ? "UNLIT"
+        : metalThinFilmStreakDiagnostic
+          ? "DIRECT"
+          : "PREFILTER";
+      status.textContent = `materialx · ${metalRenderMode} · ${preset.label}`;
+      if (metalThinFilmStreakScalarDiagnostic || metalThinFilmStreakDiagnostic) {
+        const streak = presetIndex.thinFilmStreakProbe;
+        rendererStatus.textContent += metalThinFilmStreakScalarDiagnostic
+          ? " · unlit scalar field"
+          : " · generalized Schlick procedural thin film";
+        graphStatus.textContent = `${preset.shader} · activated diagnostic override Socket_27 <- Generated · ${streak.thinFilmNoise.dimensions}D raw FBM ${streak.thinFilmNoise.octaves} octaves`;
+        fallbackStatus.textContent = `Active source result ${streak.activeSourceResultNanometers} nm · ${streak.activeSourceReason}`;
+      } else if (metalBrushedRoughnessScalarDiagnostic || metalBrushedRoughnessDiagnostic) {
         const brushed = presetIndex.brushedRoughnessProbe;
         rendererStatus.textContent += metalBrushedRoughnessScalarDiagnostic
           ? " · unlit scalar field"
@@ -564,7 +623,11 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       ownerDocument.documentElement.dataset.materialxReady = "true";
       ownerDocument.documentElement.dataset.materialBackend = "materialx";
       ownerDocument.documentElement.dataset.materialxImplementation = implementation;
-      ownerDocument.documentElement.dataset.materialxPreset = metalBrushedRoughnessScalarDiagnostic
+      ownerDocument.documentElement.dataset.materialxPreset = metalThinFilmStreakScalarDiagnostic
+        ? "thin-film-streak-scalar-gold"
+        : metalThinFilmStreakDiagnostic
+        ? "thin-film-streak-gold"
+        : metalBrushedRoughnessScalarDiagnostic
         ? "brushed-roughness-scalar-gold"
         : metalBrushedRoughnessDiagnostic
         ? "brushed-roughness-gold"

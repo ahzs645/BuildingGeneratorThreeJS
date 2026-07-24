@@ -1,10 +1,10 @@
-// Clean-room ESSL implementation of Blender's normalized 3D FBM Noise Texture.
+// Clean-room ESSL implementation of Blender's 3D FBM Noise Texture.
 //
 // The integer lookup3 hash, 3D gradient selection, 0.982 scale, inclusive
-// Detail octave count, and normalized 0.5-centered output mirror the portable
-// CPU/GLSL oracle already used by the authored WebGL material adapters.
-// This source is injected only for MaterialX fractal3d nodes whose names begin
-// with `blender_fbm3_`; ordinary MaterialX fractal3d semantics are untouched.
+// Detail octave count, and normalized/raw output modes mirror the portable
+// CPU/GLSL oracle already used by the authored WebGL material adapters. This
+// source is injected only for explicitly marked MaterialX fractal3d nodes;
+// ordinary MaterialX fractal3d semantics are untouched.
 
 uint mx_blender_rotl(uint value, uint amount)
 {
@@ -89,4 +89,27 @@ void mx_blender_fbm3_float(
         frequency *= lacunarity;
     }
     result = maximum > 0.0 ? 0.5 * sum / maximum + 0.5 : 0.5;
+}
+
+void mx_blender_raw_fbm3_float(
+    float amplitude,
+    int octaves,
+    float lacunarity,
+    float diminish,
+    vec3 position,
+    out float result)
+{
+    result = 0.0;
+    float current_amplitude = amplitude;
+    float frequency = 1.0;
+    for (int octave = 0; octave < 16; ++octave)
+    {
+        if (octave >= octaves)
+        {
+            break;
+        }
+        result += current_amplitude * mx_blender_signed_noise3(position * frequency);
+        current_amplitude *= max(diminish, 0.0);
+        frequency *= lacunarity;
+    }
 }
