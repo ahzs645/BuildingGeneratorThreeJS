@@ -29,7 +29,13 @@ Direct lights now follow one explicit contract:
 | UI normal-band branch | 0.012820 | 0.992491 | typed `col` passes; two substitutions remain |
 | five physical-conductor presets | 0.024220–0.029240 | 0.977153–0.981634 | constant n/k inputs pass |
 | Gold F82 artistic tint | 0.026614 | 0.979207 | `color0/color82` mapping passes |
+| Gold layered roughness | 0.015789 | 0.994633 | four-closure scales and sequential mixes pass |
+| Gold roughness Fresnel | 0.024804 | 0.984648 | Layer Weight/RGB Curve/B-spline response passes |
+| Gold procedural brushed roughness | 0.032220 | 0.961876 | normalized Blender FBM adapter passes |
 | Gold anisotropy, 0 / 0.25-turn | 0.119664 / 0.083424 | 0.893565 / 0.945596 | Cycles tangent directions pass |
+| Gold thin film, 0 / 243 nm | 0.009443 / 0.061831 | 0.999186 / 0.998885 | exact inputs pass; 243 nm hue residual recorded |
+| Gold activated thin-film streak | 0.066369 | 0.964480 | diagnostic override passes; active source remains 0 nm |
+| active Gold non-image core | 0.020777 | 0.993585 | Physical Conductor composition passes; two scratch maps omitted |
 | native source lowering sphere | 0.440571 | 0.104222 | historical substituted capture; superseded by the recovered live 2.5D comparison |
 
 The recovered live 2.5D result is measured separately because it uses an orthographic asset frame rather than the sphere mask: full-frame RMSE `0.057457`, full-frame correlation `0.681123`, and visible-region IoU `0.926767`. The visible-region threshold is reflection-dependent and is not a geometry silhouette claim; topology and bounds are validated independently.
@@ -140,8 +146,14 @@ The companion Gold F82 probe now closes the constant artistic-tint gate.
 Blender Base Color and Edge Tint map directly to MaterialX generalized Schlick
 `color0` and `color82`, with white `color90`, exponent `5`, and the same squared
 roughness conversion. The matched sphere reaches RMSE `0.026614` and
-correlation `0.979207`. Remaining Metallic BSDF+ gates are layered
-roughness/roughness-Fresnel, scratches, and thin film.
+correlation `0.979207`.
+
+The layered-roughness, view-dependent roughness-Fresnel, and active procedural
+brushed-roughness gates are now complete independently. Their matched beauty
+spheres reach correlations `0.994633`, `0.984648`, and `0.961876`
+respectively. The marked brushed graph uses a clean-room normalized Blender
+FBM ESSL adapter rather than claiming that native MaterialX `fractal3d` has
+Blender Noise Texture semantics.
 
 The constant anisotropy/tangent gate is also complete for Cycles. The browser
 uses Blender's exact aspect conversion (`alphaX=alpha/aspect`,
@@ -159,18 +171,73 @@ IOR of `2.46`. A 150 V checkpoint therefore compares Blender and MaterialX at
 exactly `243 nm`. Its Cycles/direct-light sphere reaches RGB RMSE `0.061831`
 and luminance correlation `0.998885`.
 
-This result does not cover the source's separate procedural discoloration
-branch. That branch is enabled by default and adds noise-driven thin-film
-streaks, so it remains a texture-semantic gate rather than part of the uniform
-anodization checkpoint.
+A zero-thickness control reaches RMSE `0.009443` and correlation `0.999186`, so
+the 243 nm residual is isolated to interference rather than base F82 or light
+direction. Matching inputs preserve the highlight structure and luminance, but
+not the exact interference hue: mean sphere blue is `0.209001` in Blender and
+`0.124979` in MaterialX. A measured web sweep can fit this one view with a
+different thickness, but that would break the source's nanometer contract and
+is not used. The evidence records the spectral-approximation difference
+explicitly.
+
+The procedural discoloration branch has also been traced. In the supplied
+`Material.011`, Gold `Socket_27` is unlinked at `(0,0,0)`: raw FBM evaluates to
+zero, its B-spline ramp is black, voltage is zero, and the active result is
+exactly `0 nm`. A separate diagnostic explicitly binds that socket to Generated
+coordinates and validates the intended normalized/raw Blender FBM, ramp, and
+`0..1390 nm` mapping. It reaches sphere correlation `0.964480`, but remains
+labeled as an activated diagnostic—not active-source parity.
+
+The active rights-safe Gold composition is now validated in one
+PHYSICAL_CONDUCTOR graph. It combines roughness `0.4499999583`, Roughness
+Fresnel `0.1`, Generated-coordinate brush factor `0.2730000019`, Layered
+Roughness `1`, Gold n/k, anisotropy `0`, and thin film `0 nm`. With only the
+two scratch inputs forced to zero, the beauty sphere reaches RMSE `0.020777`
+and correlation `0.993585`.
+
+Those scratch inputs are the remaining exact saved-appearance blocker. Both
+are active packed `4096×4096` sRGB maps, with dense factor `0.5334029198` and
+sparse factor `1`. No standalone redistribution license accompanies their
+bytes, so the repository records their hashes and dependency contracts without
+shipping the pixels or a reversible bake.
 
 Remaining work for this item is to:
 
-- apply the shared basis and PREFILTER backend to Chrome Grill, Chain and Mace,
-  Text Soup, and the topology-exact 2.5D asset without asset-specific brightness
-  fitting;
+- add matched evidence for the remaining catalog registrations and continue
+  applying the loader beyond the current six assets and topology-exact 2.5D
+  asset;
 - record hardware startup cost and the radiance-chain memory footprint; and
 - retain FIS as a measured fallback while production promotion remains opt-in.
+
+The first catalog rollout is now modular rather than another asset-specific
+`MeshPhysicalMaterial`. `catalog-metal-surfaces.mtlx` registers three reusable
+rights-safe shader contracts across six catalog assets:
+
+- Chrome Grill's constant Principled metal (`0.2508697` linear base,
+  Metallic `1`, Roughness `0.2610441`);
+- Chain and Mace's vertex-bound `rough / 15` perceptual roughness; and
+- Text Soup's Blender-compatible missing-`rough` resolution to zero.
+
+Chrome Grill, Chain and Mace, Soft Pixel Marker, Type Pixel Brush, Blunt Metal
+Marker, and Text Soup run through one live catalog loader, the exact
+Blender-to-MaterialX environment basis, the bundled CC0 `studio.exr`, and the
+official 1,024-sample GGX prefilter. Their authored Three.js modes remain the
+defaults.
+
+The three distinct evidence checkpoints currently have matched Blender/web
+captures. They preserve exact topology at `61,812 / 53,892` (Chrome Grill),
+`120,727 / 214,718` (Chain and Mace), and `11,971 / 11,199` (Text Soup).
+Full-frame luminance correlations
+are `0.571404`, `0.655573`, and `0.596573`, respectively. Chrome Grill's
+foreground correlation is only `0.216802`; the other two reach `0.382174` and
+`0.523057`. These are useful measured results, not renderer-identity claims:
+the MaterialX path carries portable shader semantics and a correct environment
+contract, but it is not promoted merely because its highlights look plausible.
+
+The rollout also closed two general adapter gaps exposed by standard-surface
+graphs: active `surfaceshader`/`displacementshader` struct uniforms now receive
+typed defaults, and fixed-size ESSL light arrays are padded with inactive
+records when a material intentionally uses zero direct lights.
 
 Do not copy Blender's GPL Eevee convolution shader. Blender remains external comparison evidence only.
 

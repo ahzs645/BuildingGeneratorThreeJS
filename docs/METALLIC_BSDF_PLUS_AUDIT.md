@@ -159,8 +159,11 @@ The shared environment checkpoint is also complete:
   `0.037781` to PREFILTER `0.026480`.
 
 This closes the shared studio-lighting prerequisite for the five-preset matrix.
-It does not close `ShaderNodeBsdfMetallic`, RGB Curves, anisotropy, thin film,
-or the rights status of the source textures.
+It does not close generic `ShaderNodeBsdfMetallic` graph evaluation, RGB
+Curves, or the rights status of the source textures. Focused portable
+reconstructions now cover the reachable RGB Curve/ramp and procedural
+thin-film semantics, but they are not a generic nested Blender shader-group
+evaluator.
 
 The first rights-safe physical-conductor matrix is now complete. Blender builds
 fresh `ShaderNodeBsdfMetallic` probes from the extracted n/k constants, while
@@ -197,8 +200,10 @@ luminance correlation `0.979207`, and mean luminance `0.286450 / 0.295235`
 for Blender/web. This validates constant-input F82 behavior without converting
 the artistic controls to n/k values.
 
-The source file remains the local oracle for the still-open layered roughness,
-roughness-Fresnel, scratches, and thin-film gates.
+The source file remains the local oracle. Focused regression gates now cover
+layered roughness, roughness-Fresnel, procedural brushed roughness, and the
+thin-film streak semantics. Exact scratch-image appearance and generic
+whole-group evaluation remain open.
 
 The constant-input anisotropy/tangent gate is now complete for Cycles. Blender
 maps perceptual roughness `r` and anisotropy `a` to the microfacet axes:
@@ -248,19 +253,93 @@ The browser expresses those same constants through MaterialX
 Cycles/direct-light sphere reaches RGB RMSE `0.061831`, luminance correlation
 `0.998885`, and mean luminance `0.231857 / 0.219482` for Blender/web.
 
+A zero-thickness control isolates the renderer before interference is enabled:
+its sphere RMSE is `0.009443`, correlation is `0.999186`, and mean luminance is
+`0.261286 / 0.259490`. The 243 nm result therefore is not hiding a base-F82 or
+light-direction error.
+
+The interference hue is not pixel-identical even though the lobe and luminance
+track closely. At 243 nm, sphere mean RGB is
+`[0.291331, 0.216485, 0.209001]` in Blender and
+`[0.289478, 0.208215, 0.124979]` in MaterialX. A measured 0–600 nm web sweep
+shows that changing thickness can fit this one view, but doing so would violate
+the authored nanometer contract and would not establish angle-independent
+equivalence. The compatibility layer therefore preserves the exact thickness
+and IOR, records the residual as a Blender-versus-MaterialX spectral
+approximation difference, and does not silently fit the hue.
+
 This is deliberately a uniform probe. The Gold group defaults `Socket_29` to
-`1.0`, enabling a second branch that adds noise-driven film streaks scaled up
-to 1,390 nm. That spatial discoloration branch remains open and is not hidden
-inside the constant-input parity claim.
+`1.0`, enabling a second branch that can add noise-driven film streaks scaled
+up to 1,390 nm. However, the saved outer `Socket_919` / Gold `Socket_27` vector
+is unlinked at `(0,0,0)`. Its raw FBM is zero, the B-spline ramp is black, and
+the supplied active `Material.011` result is therefore exactly `0 nm`.
+
+An activated diagnostic explicitly substitutes Generated coordinates for that
+unlinked vector and validates the intended spatial branch. Its scalar field
+uses clean-room normalized and raw Blender FBM adapters plus a 256-sample
+B-spline response LUT. The beauty sphere reaches RMSE `0.066369` and
+correlation `0.964480`. This proves the recoverable semantics without claiming
+that the supplied active material contains nonzero streak thickness.
+
+The committed active-Gold non-image core then composes every shippable nonzero
+source branch in one PHYSICAL_CONDUCTOR material:
+
+- Gold n/k `[0, 0.352, 1.859]` / `[6.594, 2.081, 1.496]`;
+- perceptual roughness `0.4499999583`;
+- Roughness Fresnel `0.1000000015`;
+- Generated-coordinate brushed factor `0.2730000019`;
+- four Layered Roughness scales `0.25/0.5/0.75/1` and mix factors
+  `0.4/0.2/0.1`;
+- anisotropy and rotation `0`; and
+- thin-film thickness `0 nm`.
+
+With only the two scratch layers explicitly forced to zero, the scalar sphere
+reaches RMSE `0.013520` / correlation `0.971368`, and the beauty sphere reaches
+RMSE `0.020777` / correlation `0.993585`. This is the active Gold non-image
+core, not complete `Material.011` appearance.
+
+The remaining exact appearance inputs are two packed `4096×4096` sRGB maps:
+
+- dense `SwirlyScratch_Natural_Dens100_72Dir.png`, factor
+  `0.5334029198`, SHA-256
+  `4c6f4f1fe37184827fd96b0d0da57f1ed4b534b076dea35d9d57516022209442`;
+- sparse `SwirlyScratch_Sparse_Dens25_72Dir.png`, factor `1`, SHA-256
+  `564343924c47d45aab476b2fceab6091e3fca7cf3389d6756ea0273ec8c51869`.
+
+Both use UV coordinates at scale `2`, linear/repeat sampling, and only the blue
+channel. The blend contains no license document covering those packed image
+bytes. The browser contract therefore records their metadata and requires a
+licensed user-supplied override; it does not redistribute the maps or a
+reversible bake.
+
+The validated infrastructure is now applied to real catalog geometry as an
+opt-in preview rather than replacing the authored default. A separate
+`catalog-metal-surfaces.mtlx` bundle covers six registrations—Chrome Grill,
+Chain and Mace, Soft Pixel Marker, Type Pixel Brush, Blunt Metal Marker, and
+Text Soup—with three reusable shader contracts. It preserves constant
+Principled inputs, the `rough / 15` geometry-property contract, and Blender's
+missing-property zero independently of asset or material display names.
+
+Matched evidence now covers all three catalog checkpoints. Their live geometry
+remains exact at `61,812 / 53,892` (Chrome Grill), `120,727 / 214,718` (Chain
+and Mace), and `11,971 / 11,199` (Text Soup). Full-frame luminance correlations
+are `0.571404`, `0.655573`, and `0.596573`; foreground correlations are
+`0.216802`, `0.382174`, and `0.523057`. The results correctly remain opt-in:
+portable graph and environment semantics do not imply Eevee raster identity or
+justify silently replacing the existing authored previews.
 
 ## Required regression evidence
 
 - extraction determinism and source fingerprint;
 - reachable node-type and nested-group inventory;
 - constant-input unit probes for both `F82` and `PHYSICAL_CONDUCTOR` — complete;
+- layered roughness, roughness-Fresnel, and procedural brushed roughness —
+  complete as focused gates;
 - anisotropy rotation and tangent-direction probes — complete;
 - uniform thin-film thickness/IOR probe — complete;
-- procedural thin-film streak/discoloration branch;
+- activated procedural thin-film streak/discoloration diagnostic — complete;
+- active Gold non-image PHYSICAL_CONDUCTOR composition — complete;
+- licensed dense/sparse scratch texture inputs — blocked on asset rights;
 - Blender and browser renders using one shared studio environment;
 - explicit capability reports when the MaterialX or portable backend cannot
   represent a branch;
