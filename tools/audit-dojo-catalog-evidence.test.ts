@@ -20,6 +20,16 @@ test("audits catalog counts, shared status records, and durable evidence without
       { id: "example", status: "exact", blender: { verts: 8, faces: 6 }, gnvm: { verts: 7, faces: 6 }, scoreDelta: 0.25 },
       { id: "sibling", status: "exact", blender: { verts: 100, faces: 100 }, gnvm: { verts: 100, faces: 100 } },
       { id: "triangulated", status: "surface-export-parity", blender: { verts: 8, faces: 6 }, gnvm: { verts: 8, faces: 12 } },
+      {
+        id: "native-variance",
+        status: "native-equivalent-openvdb-race",
+        blender: { verts: 12, faces: 12 },
+        gnvm: { verts: 10, faces: 10 },
+        blender51Observed: {
+          min: { verts: 10, faces: 10 },
+          max: { verts: 12, faces: 12 },
+        },
+      },
     ],
   });
   await json(join(assetDir, "material-parity.json"), {
@@ -49,11 +59,17 @@ test("audits catalog counts, shared status records, and durable evidence without
       reference: "dojo/example/reference.png",
       blenderStats: { verts: 8, faces: 6, triangles: 12 },
     },
+    {
+      id: "native-variance",
+      dump: "dojo/example/dump.json",
+      reference: "dojo/example/reference.png",
+      blenderStats: { verts: 12, faces: 12 },
+    },
   ]);
 
   const report = await auditCatalogEvidence({ workspaceRoot: root, catalogPath });
   const codes = report.findings.map((finding) => finding.code);
-  assert.equal(report.assets, 3);
+  assert.equal(report.assets, 4);
   assert.equal(report.statusFiles, 1);
   assert.equal(report.evidenceFiles, 1);
   assert.ok(codes.includes("MISSING_CATALOG_FILE"));
@@ -62,6 +78,11 @@ test("audits catalog counts, shared status records, and durable evidence without
   assert.ok(codes.includes("EVIDENCE_VERTS_MISMATCH"));
   assert.ok(codes.includes("NON_DURABLE_EVIDENCE"));
   assert.ok(codes.includes("MISSING_REFERENCED_EVIDENCE"));
+  assert.ok(codes.includes("WITHIN_OBSERVED_BLENDER_VARIANCE"));
   assert.equal(report.findings.some((finding) => finding.asset === "sibling" && finding.code.startsWith("EVIDENCE_")), false);
   assert.equal(report.findings.some((finding) => finding.asset === "triangulated"), false);
+  assert.equal(
+    report.findings.some((finding) => finding.asset === "native-variance" && finding.code === "GNVM_DIFFERS_FROM_CATALOG_TRUTH"),
+    false,
+  );
 });

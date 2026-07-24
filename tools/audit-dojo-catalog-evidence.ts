@@ -54,6 +54,26 @@ function exactWithoutQualifier(label: string): boolean {
   return lower.includes("exact") && !/(?:near|visual|surface|bounds-near|submillimeter)/.test(lower);
 }
 
+function withinObservedBlenderRange(
+  record: JsonObject,
+  gnvmVerts: number | null,
+  gnvmFaces: number | null,
+): boolean {
+  if (gnvmVerts === null || gnvmFaces === null) return false;
+  const observed = object(record.blender51Observed);
+  const min = object(observed?.min);
+  const max = object(observed?.max);
+  const minVerts = numberAt(min, "verts");
+  const minFaces = numberAt(min, "faces");
+  const maxVerts = numberAt(max, "verts");
+  const maxFaces = numberAt(max, "faces");
+  if ([minVerts, minFaces, maxVerts, maxFaces].some((value) => value === null)) return false;
+  return gnvmVerts >= minVerts!
+    && gnvmVerts <= maxVerts!
+    && gnvmFaces >= minFaces!
+    && gnvmFaces <= maxFaces!;
+}
+
 function compareCounts(
   findings: AuditFinding[],
   asset: CatalogAsset,
@@ -80,14 +100,22 @@ function compareCounts(
 
   const countMismatch = (blenderVerts !== null && gnvmVerts !== null && blenderVerts !== gnvmVerts)
     || (gnvmFaces !== null && gnvmFaces !== expectedGnvmFaces);
-  if (countMismatch && exactWithoutQualifier(label))
+  const nativeVarianceEquivalent = countMismatch
+    && withinObservedBlenderRange(record, gnvmVerts, gnvmFaces);
+  if (nativeVarianceEquivalent)
+    add(
+      "info",
+      "WITHIN_OBSERVED_BLENDER_VARIANCE",
+      `GN-VM ${gnvmVerts}/${gnvmFaces} is inside the recorded identical-run Blender range`,
+    );
+  else if (countMismatch && exactWithoutQualifier(label))
     add("error", "EXACT_COUNT_CONTRADICTION", `status '${label}' records Blender ${blenderVerts}/${blenderFaces} but GNVM ${gnvmVerts}/${gnvmFaces}`);
   else if (countMismatch)
     add("info", "RECORDED_COUNT_DELTA", `status '${label}' records Blender ${blenderVerts}/${blenderFaces} and GNVM ${gnvmVerts}/${gnvmFaces}`);
 
-  if (gnvmVerts !== null && gnvmVerts !== expected.verts)
+  if (!nativeVarianceEquivalent && gnvmVerts !== null && gnvmVerts !== expected.verts)
     add("info", "GNVM_DIFFERS_FROM_CATALOG_TRUTH", `catalog Blender verts=${expected.verts}, status GNVM verts=${gnvmVerts}`);
-  if (gnvmFaces !== null && gnvmFaces !== expectedGnvmFaces)
+  if (!nativeVarianceEquivalent && gnvmFaces !== null && gnvmFaces !== expectedGnvmFaces)
     add("info", "GNVM_DIFFERS_FROM_CATALOG_TRUTH", `catalog expected GNVM faces=${expectedGnvmFaces}, status GNVM faces=${gnvmFaces}`);
 
   if (label.toLowerCase() === "exact") {
