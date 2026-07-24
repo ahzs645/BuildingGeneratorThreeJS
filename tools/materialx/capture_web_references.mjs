@@ -22,7 +22,10 @@ try {
   const page = await browser.newPage();
   await page.setViewport({ width: 768, height: 768, deviceScaleFactor: 1 });
   if (thinFilmSweep) {
-    for (const thickness of [120, 150, 180, 200, 220, 243, 260, 280, 300, 340, 380]) {
+    const thicknesses = Array.from({ length: 61 }, (_, index) => index * 10);
+    if (!thicknesses.includes(243)) thicknesses.push(243);
+    thicknesses.sort((a, b) => a - b);
+    for (const thickness of thicknesses) {
       await page.goto(
         `${baseUrl}/materialx?capture=1&diagnostic=metal-thin-film&thickness=${thickness}`,
         { waitUntil: "domcontentloaded" },
@@ -186,23 +189,27 @@ try {
     await anisotropyCanvas.screenshot({ path: path.join(outputDir, filename) });
     console.log(`MATERIALX_WEB_REFERENCE ${filename}`);
   }
-  await page.goto(
-    `${baseUrl}/materialx?capture=1&diagnostic=metal-thin-film`,
-    { waitUntil: "domcontentloaded" },
-  );
-  await page.waitForFunction(
-    () => (
-      document.documentElement.dataset.materialxImplementation === "official-essl-prefilter"
-      && document.documentElement.dataset.materialxPreset === "thin-film-gold"
-      && document.documentElement.dataset.materialxThinFilm === "243"
-    ),
-    { timeout: 360_000 },
-  );
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  const thinFilmCanvas = await page.$("#materialx-canvas");
-  if (!thinFilmCanvas) throw new Error("MaterialX Gold thin-film canvas missing");
-  await thinFilmCanvas.screenshot({ path: path.join(outputDir, "metal-thin-film-gold-243nm-web.png") });
-  console.log("MATERIALX_WEB_REFERENCE metal-thin-film-gold-243nm-web.png");
+  for (const thickness of [0, 243]) {
+    await page.goto(
+      `${baseUrl}/materialx?capture=1&diagnostic=metal-thin-film&thickness=${thickness}`,
+      { waitUntil: "domcontentloaded" },
+    );
+    await page.waitForFunction(
+      (selectedThickness) => (
+        document.documentElement.dataset.materialxImplementation === "official-essl-prefilter"
+        && document.documentElement.dataset.materialxPreset === "thin-film-gold"
+        && document.documentElement.dataset.materialxThinFilm === String(selectedThickness)
+      ),
+      { timeout: 360_000 },
+      thickness,
+    );
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const thinFilmCanvas = await page.$("#materialx-canvas");
+    if (!thinFilmCanvas) throw new Error(`MaterialX Gold thin-film ${thickness} nm canvas missing`);
+    const filename = `metal-thin-film-gold-${thickness}nm-web.png`;
+    await thinFilmCanvas.screenshot({ path: path.join(outputDir, filename) });
+    console.log(`MATERIALX_WEB_REFERENCE ${filename}`);
+  }
 } finally {
   await browser.close();
 }

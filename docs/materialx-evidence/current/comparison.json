@@ -16,7 +16,7 @@
     "metalPresetMatrix": "metal-preset-{aluminum,copper,gold,stainless-steel,titanium}-{blender,web}.png; constant PHYSICAL_CONDUCTOR n/k values, Blender perceptual roughness 0.35 mapped to MaterialX microfacet alpha 0.1225, no direct lights or floor",
     "metalF82Probe": "metal-f82-gold-{blender,web}.png; Blender Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, exact linear color0/color82 values, roughness 0.35 mapped to alpha 0.1225, no direct lights or floor",
     "metalAnisotropyProbe": "metal-anisotropy-gold-{r0,r90}-{blender,web}.png; Blender Cycles versus MaterialX, anisotropy 0.8, radial-Y/Tworld tangent, rotations 0 and 0.25 turns, Blender alpha/aspect mapping, key light only, no environment or floor",
-    "metalThinFilmProbe": "metal-thin-film-gold-243nm-{blender,web}.png; Blender Cycles Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, source Gold-group mapping 150 V x 1.62 nm/V = 243 nm, thin-film IOR 2.46, key light only, no environment or floor"
+    "metalThinFilmProbe": "metal-thin-film-gold-{0,243}nm-{blender,web}.png; Blender Cycles Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, source Gold-group mapping 150 V x 1.62 nm/V = 243 nm, thin-film IOR 2.46, key light only, no environment or floor"
   },
   "sourceLowering": {
     "width": 768,
@@ -482,27 +482,78 @@
     }
   },
   "metalThinFilmProbe": {
-    "width": 768,
-    "height": 768,
-    "rgbMeanAbsoluteError": 0.005269,
-    "rgbRootMeanSquareError": 0.023304,
-    "luminanceCorrelation": 0.998819,
-    "meanLuminance": {
-      "blender": 0.098631,
-      "web": 0.096933
-    },
-    "sphereRegion": {
-      "normalizedCircleRadius": 0.212,
-      "sampleCount": 83300,
-      "rgbMeanAbsoluteError": 0.032269,
-      "rgbRootMeanSquareError": 0.061831,
-      "luminanceCorrelation": 0.998885,
+    "0nm": {
+      "width": 768,
+      "height": 768,
+      "rgbMeanAbsoluteError": 0.001208,
+      "rgbRootMeanSquareError": 0.003972,
+      "luminanceCorrelation": 0.999365,
       "meanLuminance": {
-        "blender": 0.231857,
-        "web": 0.219482
-      }
+        "blender": 0.102791,
+        "web": 0.102584
+      },
+      "sphereRegion": {
+        "normalizedCircleRadius": 0.212,
+        "sampleCount": 83300,
+        "rgbMeanAbsoluteError": 0.003509,
+        "rgbRootMeanSquareError": 0.009443,
+        "luminanceCorrelation": 0.999186,
+        "meanLuminance": {
+          "blender": 0.261286,
+          "web": 0.25949
+        }
+      },
+      "sphereMeanRgb": {
+        "blender": [
+          0.291388,
+          0.261527,
+          0.170269
+        ],
+        "web": [
+          0.289478,
+          0.259726,
+          0.168858
+        ]
+      },
+      "claim": "constant-input thin-film thickness and IOR semantics only; no procedural streak branch",
+      "residual": "MaterialX and Blender use different spectral approximations; matching inputs preserve lobe structure and luminance but not exact interference hue."
     },
-    "claim": "constant-input thin-film thickness and IOR semantics only; no procedural streak branch"
+    "243nm": {
+      "width": 768,
+      "height": 768,
+      "rgbMeanAbsoluteError": 0.005269,
+      "rgbRootMeanSquareError": 0.023304,
+      "luminanceCorrelation": 0.998819,
+      "meanLuminance": {
+        "blender": 0.098631,
+        "web": 0.096933
+      },
+      "sphereRegion": {
+        "normalizedCircleRadius": 0.212,
+        "sampleCount": 83300,
+        "rgbMeanAbsoluteError": 0.032269,
+        "rgbRootMeanSquareError": 0.061831,
+        "luminanceCorrelation": 0.998885,
+        "meanLuminance": {
+          "blender": 0.231857,
+          "web": 0.219482
+        }
+      },
+      "sphereMeanRgb": {
+        "blender": [
+          0.291331,
+          0.216485,
+          0.209001
+        ],
+        "web": [
+          0.289478,
+          0.208215,
+          0.124979
+        ]
+      },
+      "claim": "constant-input thin-film thickness and IOR semantics only; no procedural streak branch",
+      "residual": "MaterialX and Blender use different spectral approximations; matching inputs preserve lobe structure and luminance but not exact interference hue."
+    }
   },
   "interpretation": "Image metrics include expected Eevee/Three BRDF, shadow, and light-unit differences. Graph-semantic support is reported separately in manifest.json and is not inferred from these pixels."
 }

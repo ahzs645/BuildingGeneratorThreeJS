@@ -78,6 +78,30 @@ def sphere_metrics(reference: Path, candidate: Path):
     }
 
 
+def sphere_mean_rgb(reference: Path, candidate: Path):
+    """Expose channel means so thin-film hue drift cannot hide behind luminance correlation."""
+    width_a, height_a, a = pixels(reference)
+    width_b, height_b, b = pixels(candidate)
+    if (width_a, height_a) != (width_b, height_b):
+        raise RuntimeError(f"Image dimensions differ: {reference} vs {candidate}")
+    radius = 0.212
+    selected = []
+    for source in (a, b):
+        sums = [0.0, 0.0, 0.0]
+        count = 0
+        for y in range(height_a):
+            normalized_y = (y + 0.5) / height_a - 0.5
+            for x in range(width_a):
+                normalized_x = (x + 0.5) / width_a - 0.5
+                if normalized_x * normalized_x + normalized_y * normalized_y <= radius * radius:
+                    pixel = source[y * width_a + x]
+                    for channel in range(3):
+                        sums[channel] += pixel[channel]
+                    count += 1
+        selected.append([round(value / count, 6) for value in sums])
+    return {"blender": selected[0], "web": selected[1]}
+
+
 def main():
     directory = Path(sys.argv[sys.argv.index("--") + 1] if "--" in sys.argv else "docs/materialx-evidence/current").resolve()
     roughness_values = (0.0, 2.0 / 15.0, 0.2610441)
@@ -103,7 +127,7 @@ def main():
             "metalPresetMatrix": "metal-preset-{aluminum,copper,gold,stainless-steel,titanium}-{blender,web}.png; constant PHYSICAL_CONDUCTOR n/k values, Blender perceptual roughness 0.35 mapped to MaterialX microfacet alpha 0.1225, no direct lights or floor",
             "metalF82Probe": "metal-f82-gold-{blender,web}.png; Blender Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, exact linear color0/color82 values, roughness 0.35 mapped to alpha 0.1225, no direct lights or floor",
             "metalAnisotropyProbe": "metal-anisotropy-gold-{r0,r90}-{blender,web}.png; Blender Cycles versus MaterialX, anisotropy 0.8, radial-Y/Tworld tangent, rotations 0 and 0.25 turns, Blender alpha/aspect mapping, key light only, no environment or floor",
-            "metalThinFilmProbe": "metal-thin-film-gold-243nm-{blender,web}.png; Blender Cycles Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, source Gold-group mapping 150 V x 1.62 nm/V = 243 nm, thin-film IOR 2.46, key light only, no environment or floor",
+            "metalThinFilmProbe": "metal-thin-film-gold-{0,243}nm-{blender,web}.png; Blender Cycles Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, source Gold-group mapping 150 V x 1.62 nm/V = 243 nm, thin-film IOR 2.46, key light only, no environment or floor",
         },
         "sourceLowering": {
             **metrics(directory / "chrome-source-blender.png", directory / "chrome-source-web.png"),
@@ -187,15 +211,23 @@ def main():
             for rotation in ("r0", "r90")
         },
         "metalThinFilmProbe": {
-            **metrics(
-                directory / "metal-thin-film-gold-243nm-blender.png",
-                directory / "metal-thin-film-gold-243nm-web.png",
-            ),
-            "sphereRegion": sphere_metrics(
-                directory / "metal-thin-film-gold-243nm-blender.png",
-                directory / "metal-thin-film-gold-243nm-web.png",
-            ),
-            "claim": "constant-input thin-film thickness and IOR semantics only; no procedural streak branch",
+            f"{thickness}nm": {
+                **metrics(
+                    directory / f"metal-thin-film-gold-{thickness}nm-blender.png",
+                    directory / f"metal-thin-film-gold-{thickness}nm-web.png",
+                ),
+                "sphereRegion": sphere_metrics(
+                    directory / f"metal-thin-film-gold-{thickness}nm-blender.png",
+                    directory / f"metal-thin-film-gold-{thickness}nm-web.png",
+                ),
+                "sphereMeanRgb": sphere_mean_rgb(
+                    directory / f"metal-thin-film-gold-{thickness}nm-blender.png",
+                    directory / f"metal-thin-film-gold-{thickness}nm-web.png",
+                ),
+                "claim": "constant-input thin-film thickness and IOR semantics only; no procedural streak branch",
+                "residual": "MaterialX and Blender use different spectral approximations; matching inputs preserve lobe structure and luminance but not exact interference hue.",
+            }
+            for thickness in (0, 243)
         },
         "interpretation": "Image metrics include expected Eevee/Three BRDF, shadow, and light-unit differences. Graph-semantic support is reported separately in manifest.json and is not inferred from these pixels.",
     }

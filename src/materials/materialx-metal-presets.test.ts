@@ -188,18 +188,30 @@ test("matched Blender and browser metal probes pass the constant-input similarit
     }
   }
   assert.match(comparison.renderContract.metalThinFilmProbe, /150 V x 1\.62 nm\/V = 243 nm/);
-  const thinFilm = comparison.metalThinFilmProbe;
+  const thinFilmBaseline = comparison.metalThinFilmProbe["0nm"];
+  assert.ok(thinFilmBaseline.sphereRegion.rgbRootMeanSquareError < 0.012);
+  assert.ok(thinFilmBaseline.sphereRegion.luminanceCorrelation > 0.999);
+  const thinFilm = comparison.metalThinFilmProbe["243nm"];
   assert.ok(thinFilm.sphereRegion.rgbRootMeanSquareError < 0.07);
   assert.ok(thinFilm.sphereRegion.luminanceCorrelation > 0.99);
   assert.ok(Math.abs(
     thinFilm.sphereRegion.meanLuminance.blender
       - thinFilm.sphereRegion.meanLuminance.web,
   ) < 0.02);
+  assert.ok(Math.max(...thinFilm.sphereMeanRgb.blender.map(
+    (value: number, index: number) => Math.abs(value - thinFilm.sphereMeanRgb.web[index]),
+  )) < 0.1);
+  assert.ok(Math.max(...thinFilm.sphereMeanRgb.web.map(
+    (value: number, index: number) => Math.abs(value - thinFilmBaseline.sphereMeanRgb.web[index]),
+  )) > 0.03);
   assert.match(thinFilm.claim, /thin-film thickness and IOR semantics only/);
-  for (const renderer of ["blender", "web"]) {
-    assert.ok(
-      fs.statSync(evidenceUrl(`metal-thin-film-gold-243nm-${renderer}.png`)).size > 10_000,
-      renderer,
-    );
+  assert.match(thinFilm.residual, /different spectral approximations/);
+  for (const thickness of [0, 243]) {
+    for (const renderer of ["blender", "web"]) {
+      assert.ok(
+        fs.statSync(evidenceUrl(`metal-thin-film-gold-${thickness}nm-${renderer}.png`)).size > 10_000,
+        `${thickness}nm ${renderer}`,
+      );
+    }
   }
 });

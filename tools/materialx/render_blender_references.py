@@ -537,17 +537,18 @@ def render_physical_conductor_matrix(output: Path, probe, floor, lights):
                 output / f"metal-anisotropy-gold-{slug}-blender.png"
             )
             bpy.ops.render.render(write_still=True)
-        probe.data.materials[0] = artistic_f82(
-            "Gold Thin Film 243nm",
-            F82_GOLD["base_color"],
-            F82_GOLD["edge_tint"],
-            thin_film_thickness=243.0,
-            thin_film_ior=2.46,
-        )
-        bpy.context.scene.render.filepath = str(
-            output / "metal-thin-film-gold-243nm-blender.png"
-        )
-        bpy.ops.render.render(write_still=True)
+        for thickness in (0.0, 243.0):
+            probe.data.materials[0] = artistic_f82(
+                f"Gold Thin Film {thickness:g}nm",
+                F82_GOLD["base_color"],
+                F82_GOLD["edge_tint"],
+                thin_film_thickness=thickness,
+                thin_film_ior=2.46,
+            )
+            bpy.context.scene.render.filepath = str(
+                output / f"metal-thin-film-gold-{thickness:g}nm-blender.png"
+            )
+            bpy.ops.render.render(write_still=True)
     finally:
         scene.cycles.use_denoising = original_cycles_denoising
         scene.cycles.samples = original_cycles_samples
