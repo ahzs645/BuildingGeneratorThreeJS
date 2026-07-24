@@ -38,7 +38,14 @@ const canvas = document.querySelector<HTMLCanvasElement>("#assets-canvas")!;
 const query = new URLSearchParams(location.search);
 const requestedAsset = query.get("asset");
 const captureMode = query.get("capture");
-const catalogMaterialXAssets = new Set(["geometry-nodes-001", "chain-and-mace", "text-soup"]);
+const catalogMaterialXAssets = new Set([
+  "geometry-nodes-001",
+  "chain-and-mace",
+  "soft-pixel-marker",
+  "type-pixel-brush",
+  "blunt-metal-marker",
+  "text-soup",
+]);
 const nativeMaterialXCapture = requestedAsset === "25d-chrome-crayon"
   && (captureMode === "materialx-native" || captureMode === "materialx-prefilter");
 const catalogMaterialXCapture = catalogMaterialXAssets.has(requestedAsset ?? "")

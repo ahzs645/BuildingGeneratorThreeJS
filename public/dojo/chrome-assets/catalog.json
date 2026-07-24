@@ -71,8 +71,9 @@
     "localSpace": true,
     "material": "chrome-crayon",
     "blenderStats": { "verts": 8455, "faces": 5664 },
-    "note": "All six Blender/browser cases have exact topology after reproducing OpenSubdiv's non-manifold seams and Blender's evaluated-curve sweep tangents; local bounds differ by at most 0.0001 units. The authored object selects chrome.002 with rough=0 on every face, so the procedural roughness branch collapses to polished metal. Controlled studio captures reach 0.9957 silhouette IoU with a disclosed Eevee/Three.js reflection residual.",
+    "note": "All six Blender/browser cases have exact topology after reproducing OpenSubdiv's non-manifold seams and Blender's evaluated-curve sweep tangents; local bounds differ by at most 0.0001 units. The authored object selects chrome.002 with rough=0 on every face, so the procedural roughness branch collapses to polished metal. The opt-in MaterialX preview binds that exact field and the shared GGX-prefiltered studio environment; authored remains the default.",
     "controls": [
+      { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored chrome.002", "value": "authored" }, { "label": "Recovered constants · MaterialX GGX prefilter", "value": "materialx-prefilter" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },
       { "name": "line weight", "label": "Line weight", "min": 5, "max": 40, "step": 0.000001, "value": 22.796825408935547 },
       { "name": "Resolution", "label": "Resolution", "min": 16, "max": 180, "step": 1, "value": 120 },
       { "name": "Smooth", "label": "Smooth", "min": 0, "max": 100, "step": 1, "value": 85 },
@@ -422,7 +423,7 @@
     "surfaceBounds": true,
     "authoredEnvironmentIntensity": 0.8,
     "blenderStats": { "verts": 17860, "faces": 11296 },
-    "note": "Exact Blender topology across all six validation cases, with local bounds within 0.0001 units. Authored mode preserves chrome.002, its zero rough field, and the fully metallic polished surface. The aligned studio comparison reaches 0.9867 silhouette IoU and 0.0486 macro luminance MAE; the remaining highlight-placement difference comes from Eevee and Three.js environment filtering. The supplied file's Budokan font is missing, so both Blender and the browser use the supplied Pixels Medium TTF; Blender-compatible global N-gon filling preserves its self-touching and overlapping pixel outlines.",
+    "note": "Exact Blender topology across all six validation cases, with local bounds within 0.0001 units. Authored mode preserves chrome.002, its zero rough field, and the fully metallic polished surface. The opt-in MaterialX preview binds that exact field and the shared GGX-prefiltered studio environment; authored remains the default. The supplied file's Budokan font is missing, so both Blender and the browser use the supplied Pixels Medium TTF; Blender-compatible global N-gon filling preserves its self-touching and overlapping pixel outlines.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",
@@ -430,6 +431,7 @@
       "fallback": "using the embedded Blender-extracted outline fallback"
     },
     "controls": [
+      { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored chrome.002", "value": "authored" }, { "label": "Recovered constants · MaterialX GGX prefilter", "value": "materialx-prefilter" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },
       { "type": "text", "name": "String", "label": "Text", "value": "YOUR TEXT HERE" },
       { "name": "height", "label": "Height", "min": 2, "max": 50, "step": 0.000001, "value": 29.554641723632812 },
       { "name": "resolution subdivid", "label": "Subdivision level", "min": 0, "max": 3, "step": 1, "value": 2 },
@@ -483,7 +485,7 @@
     "authoredHideLines": true,
     "authoredEnvironmentIntensity": 0.8,
     "blenderStats": { "verts": 97691, "faces": 97669 },
-    "note": "Exact Blender geometry across all six parameter-sweep cases, including the 189,335-vertex FLATTEN-off branch. Region Extrude Mesh now preserves Blender's unnormalized FACE-to-POINT average normal, bringing every case to matching topology and bounds within 0.0001 units. Authored mode preserves the fully metallic chrome.002 graph and Blender's missing rough attribute as a polished zero-roughness surface. Its surface-only studio comparison reaches 0.992849 silhouette IoU and 0.658674 macro luminance correlation; the interactive control can restore the exact 288-segment guide. Remaining differences are Eevee/Three.js reflection filtering.",
+    "note": "Exact Blender geometry across all six parameter-sweep cases, including the 189,335-vertex FLATTEN-off branch. Region Extrude Mesh now preserves Blender's unnormalized FACE-to-POINT average normal, bringing every case to matching topology and bounds within 0.0001 units. Authored mode preserves the fully metallic chrome.002 graph and Blender's missing rough attribute as a polished zero-roughness surface. The opt-in MaterialX preview preserves that missing-property result and the shared GGX-prefiltered studio environment; authored remains the default. The interactive control can restore the exact 288-segment guide.",
     "font": {
       "url": "dojo/fonts/pixels.ttf",
       "family": "Pixels Medium",
@@ -491,6 +493,7 @@
       "fallback": "using the embedded Blender-extracted outline fallback"
     },
     "controls": [
+      { "type": "select", "name": "__materialPreview", "label": "Shader preview", "value": "authored", "options": [{ "label": "Authored chrome.002", "value": "authored" }, { "label": "Recovered constants · MaterialX GGX prefilter", "value": "materialx-prefilter" }, { "label": "Normalized geometry diagnostic", "value": "diagnostic" }] },
       { "type": "checkbox", "name": "crv preview", "label": "Curve preview", "value": true },
       { "name": "extrude distance", "label": "Extrude distance", "min": 0, "max": 30, "step": 0.000001, "value": 14.88629150390625 },
       { "name": "Line Thiccness", "label": "Line thickness", "min": 40, "max": 120, "step": 0.000001, "value": 82.40730285644531 },

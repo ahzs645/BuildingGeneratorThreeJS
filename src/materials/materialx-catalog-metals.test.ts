@@ -16,6 +16,9 @@ test("catalog metal index preserves source constants and geometry-property contr
   assert.deepEqual(Object.keys(index.assets), [
     "geometry-nodes-001",
     "chain-and-mace",
+    "soft-pixel-marker",
+    "type-pixel-brush",
+    "blunt-metal-marker",
     "text-soup",
   ]);
   assert.deepEqual(index.assets["geometry-nodes-001"], {
@@ -31,6 +34,12 @@ test("catalog metal index preserves source constants and geometry-property contr
     { name: "rough", type: "float", domain: "vertex" },
   ]);
   assert.equal(index.assets["chain-and-mace"].perceptualRoughness, "rough / 15");
+  assert.deepEqual(index.assets["soft-pixel-marker"].geometryProperties, [
+    { name: "rough", type: "float", domain: "vertex" },
+  ]);
+  assert.equal(index.assets["type-pixel-brush"].shader, "CatalogChrome002RoughAttribute");
+  assert.equal(index.assets["blunt-metal-marker"].shader, "CatalogChrome002MissingRough");
+  assert.match(index.assets["blunt-metal-marker"].missingPropertyResolution, /returns zero/);
   assert.equal(index.assets["text-soup"].perceptualRoughness, 0);
   assert.match(index.assets["text-soup"].missingPropertyResolution, /returns zero/);
   assert.match(index.scope, /complete shader graphs are not redistributed/);
@@ -69,7 +78,14 @@ test("catalog entries are opt-in previews on exact live assets", () => {
     new URL("../../public/dojo/chrome-assets/catalog.json", import.meta.url),
     "utf8",
   ));
-  for (const id of ["geometry-nodes-001", "chain-and-mace", "text-soup"]) {
+  for (const id of [
+    "geometry-nodes-001",
+    "chain-and-mace",
+    "soft-pixel-marker",
+    "type-pixel-brush",
+    "blunt-metal-marker",
+    "text-soup",
+  ]) {
     const asset = catalog.find((entry: { id: string }) => entry.id === id);
     const preview = asset.controls.find((control: { name: string }) => control.name === "__materialPreview");
     assert.equal(preview.value, "authored", id);
@@ -125,6 +141,21 @@ test("catalog evidence preserves exact topology without asserting renderer ident
       asset: "chain-and-mace",
       slug: "chain-and-mace",
       geometry: { vertices: 120_727, faces: 214_718 },
+    },
+    {
+      asset: "soft-pixel-marker",
+      slug: "soft-pixel-marker",
+      geometry: { vertices: 8_455, faces: 5_664 },
+    },
+    {
+      asset: "type-pixel-brush",
+      slug: "type-pixel-brush",
+      geometry: { vertices: 17_860, faces: 11_296 },
+    },
+    {
+      asset: "blunt-metal-marker",
+      slug: "blunt-metal-marker",
+      geometry: { vertices: 97_691, faces: 97_669 },
     },
     {
       asset: "text-soup",

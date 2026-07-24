@@ -28,6 +28,38 @@
         { "name": "rough", "type": "float", "domain": "vertex" }
       ]
     },
+    "soft-pixel-marker": {
+      "label": "Soft Pixel Marker",
+      "sourceMaterial": "chrome.002",
+      "shader": "CatalogChrome002RoughAttribute",
+      "baseColor": [0.800000011920929, 0.800000011920929, 0.800000011920929],
+      "metalness": 1,
+      "perceptualRoughness": "rough / 15",
+      "geometryProperties": [
+        { "name": "rough", "type": "float", "domain": "vertex" }
+      ]
+    },
+    "type-pixel-brush": {
+      "label": "Type Pixel Brush Chrome",
+      "sourceMaterial": "chrome.002",
+      "shader": "CatalogChrome002RoughAttribute",
+      "baseColor": [0.800000011920929, 0.800000011920929, 0.800000011920929],
+      "metalness": 1,
+      "perceptualRoughness": "rough / 15",
+      "geometryProperties": [
+        { "name": "rough", "type": "float", "domain": "vertex" }
+      ]
+    },
+    "blunt-metal-marker": {
+      "label": "Blunt Metal Marker",
+      "sourceMaterial": "chrome.002",
+      "shader": "CatalogChrome002MissingRough",
+      "baseColor": [0.800000011920929, 0.800000011920929, 0.800000011920929],
+      "metalness": 1,
+      "perceptualRoughness": 0,
+      "geometryProperties": [],
+      "missingPropertyResolution": "Blender Attribute node returns zero when rough is absent."
+    },
     "text-soup": {
       "label": "Text Soup",
       "sourceMaterial": "chrome.002",
