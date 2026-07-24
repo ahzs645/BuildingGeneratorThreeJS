@@ -168,6 +168,22 @@ try {
   if (!f82Canvas) throw new Error("MaterialX F82 Gold canvas missing");
   await f82Canvas.screenshot({ path: path.join(outputDir, "metal-f82-gold-web.png") });
   console.log("MATERIALX_WEB_REFERENCE metal-f82-gold-web.png");
+  await page.goto(
+    `${baseUrl}/materialx?capture=1&diagnostic=metal-layered-roughness`,
+    { waitUntil: "domcontentloaded" },
+  );
+  await page.waitForFunction(
+    () => (
+      document.documentElement.dataset.materialxImplementation === "official-essl-prefilter"
+      && document.documentElement.dataset.materialxPreset === "layered-roughness-gold"
+    ),
+    { timeout: 360_000 },
+  );
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const layeredRoughnessCanvas = await page.$("#materialx-canvas");
+  if (!layeredRoughnessCanvas) throw new Error("MaterialX Gold layered-roughness canvas missing");
+  await layeredRoughnessCanvas.screenshot({ path: path.join(outputDir, "metal-layered-roughness-gold-web.png") });
+  console.log("MATERIALX_WEB_REFERENCE metal-layered-roughness-gold-web.png");
   for (const [rotation, slug] of [[0, "r0"], [0.25, "r90"]]) {
     await page.goto(
       `${baseUrl}/materialx?capture=1&diagnostic=metal-anisotropy&rotation=${rotation}`,

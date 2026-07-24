@@ -60,6 +60,16 @@ type MetalPresetProbeIndex = {
     thinFilmIor: number;
     mapping: string;
   };
+  layeredRoughnessProbe: {
+    baseProbe: string;
+    shader: string;
+    blenderPerceptualRoughness: number;
+    layeredRoughnessFactor: number;
+    layers: Array<{ roughnessScale: number; microfacetAlpha: number }>;
+    mixFactors: number[];
+    effectiveWeights: number[];
+    mapping: string;
+  };
   presets: Array<{
     id: string;
     label: string;
@@ -97,10 +107,12 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   const metalF82Diagnostic = requestedDiagnostic === "metal-f82";
   const metalAnisotropyDiagnostic = requestedDiagnostic === "metal-anisotropy";
   const metalThinFilmDiagnostic = requestedDiagnostic === "metal-thin-film";
+  const metalLayeredRoughnessDiagnostic = requestedDiagnostic === "metal-layered-roughness";
   const metalProbeDiagnostic = metalPresetDiagnostic
     || metalF82Diagnostic
     || metalAnisotropyDiagnostic
-    || metalThinFilmDiagnostic;
+    || metalThinFilmDiagnostic
+    || metalLayeredRoughnessDiagnostic;
   const dependencyImplementation = import.meta.env.VITE_MATERIALX_THREE_IMPLEMENTATION || "r185";
   const environmentMode = metalProbeDiagnostic || query.get("environment") === "prefilter"
     ? "prefilter"
@@ -371,7 +383,13 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
           return response.json() as Promise<MetalPresetProbeIndex>;
         }),
       ]);
-      const preset = metalThinFilmDiagnostic
+      const preset = metalLayeredRoughnessDiagnostic
+        ? {
+            id: "layered-roughness-gold",
+            label: "Gold layered roughness",
+            shader: presetIndex.layeredRoughnessProbe.shader,
+          }
+        : metalThinFilmDiagnostic
         ? {
             id: "thin-film-gold",
             label: `Gold thin film · ${requestedThinFilmThickness} nm`,
@@ -412,7 +430,12 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       floor.visible = false;
       probe.material = material;
       status.textContent = `materialx · PREFILTER · ${preset.label}`;
-      if (metalThinFilmDiagnostic) {
+      if (metalLayeredRoughnessDiagnostic) {
+        const layered = presetIndex.layeredRoughnessProbe;
+        rendererStatus.textContent += " · generalized Schlick closure mix";
+        graphStatus.textContent = `${layered.shader} · α=${layered.layers.map((layer) => layer.microfacetAlpha).join(", ")}`;
+        fallbackStatus.textContent = `Layered roughness ${layered.layeredRoughnessFactor} · weights ${layered.effectiveWeights.join(", ")}`;
+      } else if (metalThinFilmDiagnostic) {
         const thinFilm = presetIndex.thinFilmProbe;
         rendererStatus.textContent += " · generalized Schlick thin film";
         graphStatus.textContent = `${thinFilm.shader} · ${requestedThinFilmThickness} nm · IOR ${thinFilm.thinFilmIor}`;
@@ -436,8 +459,10 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       ownerDocument.documentElement.dataset.materialxReady = "true";
       ownerDocument.documentElement.dataset.materialBackend = "materialx";
       ownerDocument.documentElement.dataset.materialxImplementation = implementation;
-      ownerDocument.documentElement.dataset.materialxPreset = metalThinFilmDiagnostic
-        ? "thin-film-gold"
+      ownerDocument.documentElement.dataset.materialxPreset = metalLayeredRoughnessDiagnostic
+        ? "layered-roughness-gold"
+        : metalThinFilmDiagnostic
+          ? "thin-film-gold"
         : metalAnisotropyDiagnostic
           ? "anisotropy-gold"
         : metalF82Diagnostic

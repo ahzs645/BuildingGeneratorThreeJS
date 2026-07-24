@@ -399,6 +399,37 @@ def artistic_f82(
     return material
 
 
+def artistic_f82_layered(name, base_color, edge_tint, roughness=0.35):
+    """Reconstruct the supplied Gold F82 layered-roughness closure chain."""
+    material = bpy.data.materials.new(f"Artistic F82 Layered Roughness · {name}")
+    material.use_nodes = True
+    tree = material.node_tree
+    tree.nodes.clear()
+    closures = []
+    for scale in (0.25, 0.5, 0.75, 1.0):
+        metallic = tree.nodes.new("ShaderNodeBsdfMetallic")
+        metallic.distribution = "MULTI_GGX"
+        metallic.fresnel_type = "F82"
+        metallic.inputs["Base Color"].default_value = base_color
+        metallic.inputs["Edge Tint"].default_value = edge_tint
+        metallic.inputs["Roughness"].default_value = roughness * scale
+        if metallic.inputs.get("Weight") is not None:
+            metallic.inputs["Weight"].default_value = 1.0
+        if metallic.inputs.get("Thin Film Thickness") is not None:
+            metallic.inputs["Thin Film Thickness"].default_value = 0.0
+        closures.append(metallic)
+    current = closures[0].outputs["BSDF"]
+    for closure, factor in zip(closures[1:], (0.4, 0.2, 0.1)):
+        mix = tree.nodes.new("ShaderNodeMixShader")
+        mix.inputs["Fac"].default_value = factor
+        tree.links.new(current, mix.inputs[1])
+        tree.links.new(closure.outputs["BSDF"], mix.inputs[2])
+        current = mix.outputs["Shader"]
+    output = tree.nodes.new("ShaderNodeOutputMaterial")
+    tree.links.new(current, output.inputs["Surface"])
+    return material
+
+
 def input_by_identifier(node, identifier):
     return next(socket for socket in node.inputs if socket.identifier == identifier)
 
@@ -519,6 +550,15 @@ def render_physical_conductor_matrix(output: Path, probe, floor, lights):
             F82_GOLD["edge_tint"],
         )
         bpy.context.scene.render.filepath = str(output / "metal-f82-gold-blender.png")
+        bpy.ops.render.render(write_still=True)
+        probe.data.materials[0] = artistic_f82_layered(
+            "Gold",
+            F82_GOLD["base_color"],
+            F82_GOLD["edge_tint"],
+        )
+        bpy.context.scene.render.filepath = str(
+            output / "metal-layered-roughness-gold-blender.png"
+        )
         bpy.ops.render.render(write_still=True)
         background.inputs["Strength"].default_value = 0.0
         lights[0].data.energy = original_energies[lights[0].name]

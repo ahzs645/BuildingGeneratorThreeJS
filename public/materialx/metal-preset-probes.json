@@ -70,6 +70,22 @@
     "mapping": "The supplied Gold group multiplies voltage by 1.62 before the native Metallic BSDF Thin Film Thickness input; the source describes 146-152 V as a rose-gold range, and this 150 V control point therefore becomes 243 nm.",
     "scope": "Uniform constant-input thin-film thickness and IOR only; Socket_29's procedural streak/discoloration texture branch and the source add-on graph are not embedded."
   },
+  "layeredRoughnessProbe": {
+    "baseProbe": "gold",
+    "shader": "MetalF82GoldLayeredRoughness",
+    "blenderPerceptualRoughness": 0.35,
+    "layeredRoughnessFactor": 1,
+    "layers": [
+      { "roughnessScale": 0.25, "microfacetAlpha": 0.00765625 },
+      { "roughnessScale": 0.5, "microfacetAlpha": 0.030625 },
+      { "roughnessScale": 0.75, "microfacetAlpha": 0.06890625 },
+      { "roughnessScale": 1, "microfacetAlpha": 0.1225 }
+    ],
+    "mixFactors": [0.4, 0.2, 0.1],
+    "effectiveWeights": [0.432, 0.288, 0.18, 0.1],
+    "mapping": "The supplied Gold F82 branch mixes roughness scales 0.25, 0.5, 0.75, and 1.0 through sequential Mix Shader factors LayeredRoughness*0.4, *0.2, and *0.1; each scaled Blender roughness is squared for MaterialX microfacet alpha.",
+    "scope": "Constant-input layered-roughness closure mix only; roughness Fresnel, scratches, brushed texture, and source add-on graph are not embedded."
+  },
   "presets": [
     {
       "id": "aluminum",

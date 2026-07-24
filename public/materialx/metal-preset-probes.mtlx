@@ -176,4 +176,62 @@
   <surfacematerial name="MetalF82GoldThinFilm243nm" type="material">
     <input name="surfaceshader" type="surfaceshader" nodename="surface_f82_gold_thinfilm_243nm" />
   </surfacematerial>
+
+  <!-- Exact constant-input reconstruction of the supplied Gold F82 layered-roughness closure chain. -->
+  <nodegraph name="NG_metal_f82_gold_layered_roughness">
+    <generalized_schlick_bsdf name="roughness_025" type="BSDF">
+      <input name="color0" type="color3" value="1, 0.7758224606513977, 0.3049874007701874" />
+      <input name="color82" type="color3" value="0.9734454154968262, 1, 0.9911020398139954" />
+      <input name="color90" type="color3" value="1, 1, 1" />
+      <input name="exponent" type="float" value="5" />
+      <input name="roughness" type="vector2" value="0.00765625, 0.00765625" />
+      <input name="scatter_mode" type="string" value="R" />
+    </generalized_schlick_bsdf>
+    <generalized_schlick_bsdf name="roughness_050" type="BSDF">
+      <input name="color0" type="color3" value="1, 0.7758224606513977, 0.3049874007701874" />
+      <input name="color82" type="color3" value="0.9734454154968262, 1, 0.9911020398139954" />
+      <input name="color90" type="color3" value="1, 1, 1" />
+      <input name="exponent" type="float" value="5" />
+      <input name="roughness" type="vector2" value="0.030625, 0.030625" />
+      <input name="scatter_mode" type="string" value="R" />
+    </generalized_schlick_bsdf>
+    <generalized_schlick_bsdf name="roughness_075" type="BSDF">
+      <input name="color0" type="color3" value="1, 0.7758224606513977, 0.3049874007701874" />
+      <input name="color82" type="color3" value="0.9734454154968262, 1, 0.9911020398139954" />
+      <input name="color90" type="color3" value="1, 1, 1" />
+      <input name="exponent" type="float" value="5" />
+      <input name="roughness" type="vector2" value="0.06890625, 0.06890625" />
+      <input name="scatter_mode" type="string" value="R" />
+    </generalized_schlick_bsdf>
+    <generalized_schlick_bsdf name="roughness_100" type="BSDF">
+      <input name="color0" type="color3" value="1, 0.7758224606513977, 0.3049874007701874" />
+      <input name="color82" type="color3" value="0.9734454154968262, 1, 0.9911020398139954" />
+      <input name="color90" type="color3" value="1, 1, 1" />
+      <input name="exponent" type="float" value="5" />
+      <input name="roughness" type="vector2" value="0.1225, 0.1225" />
+      <input name="scatter_mode" type="string" value="R" />
+    </generalized_schlick_bsdf>
+    <mix name="mix_025_050" type="BSDF">
+      <input name="bg" type="BSDF" nodename="roughness_025" />
+      <input name="fg" type="BSDF" nodename="roughness_050" />
+      <input name="mix" type="float" value="0.4" />
+    </mix>
+    <mix name="mix_050_075" type="BSDF">
+      <input name="bg" type="BSDF" nodename="mix_025_050" />
+      <input name="fg" type="BSDF" nodename="roughness_075" />
+      <input name="mix" type="float" value="0.2" />
+    </mix>
+    <mix name="mix_075_100" type="BSDF">
+      <input name="bg" type="BSDF" nodename="mix_050_075" />
+      <input name="fg" type="BSDF" nodename="roughness_100" />
+      <input name="mix" type="float" value="0.1" />
+    </mix>
+    <output name="out" type="BSDF" nodename="mix_075_100" />
+  </nodegraph>
+  <surface name="surface_f82_gold_layered_roughness" type="surfaceshader">
+    <input name="bsdf" type="BSDF" nodegraph="NG_metal_f82_gold_layered_roughness" output="out" />
+  </surface>
+  <surfacematerial name="MetalF82GoldLayeredRoughness" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_f82_gold_layered_roughness" />
+  </surfacematerial>
 </materialx>

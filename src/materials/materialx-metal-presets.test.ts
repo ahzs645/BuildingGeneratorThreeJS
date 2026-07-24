@@ -80,14 +80,23 @@ test("rights-safe metal probe index preserves the physical constants and roughne
     index.thinFilmProbe.thinFilmThicknessNanometers
       - index.thinFilmProbe.anodizationVoltage * index.thinFilmProbe.nanometersPerVolt,
   ) < 1e-12);
+  assert.equal(index.layeredRoughnessProbe.shader, "MetalF82GoldLayeredRoughness");
+  assert.deepEqual(index.layeredRoughnessProbe.mixFactors, [0.4, 0.2, 0.1]);
+  assert.deepEqual(index.layeredRoughnessProbe.effectiveWeights, [0.432, 0.288, 0.18, 0.1]);
+  for (const layer of index.layeredRoughnessProbe.layers) {
+    assert.ok(Math.abs(
+      layer.microfacetAlpha
+        - (index.layeredRoughnessProbe.blenderPerceptualRoughness * layer.roughnessScale) ** 2,
+    ) < 1e-15);
+  }
 });
 
 test("metal preset MaterialX and official ESSL bundle carry microfacet alpha without third-party assets", () => {
   const source = publicAsset("metal-preset-probes.mtlx");
   const audit = auditMaterialXDocument(source, { implementation: "official-essl" });
   assert.deepEqual(audit.unsupportedElements, []);
-  assert.equal(audit.materialCount, 9);
-  assert.equal((source.match(/value="0\.1225, 0\.1225"/g) ?? []).length, 7);
+  assert.equal(audit.materialCount, 10);
+  assert.equal((source.match(/value="0\.1225, 0\.1225"/g) ?? []).length, 8);
   assert.doesNotMatch(source, /<(?:image|tiledimage|triplanarprojection)\b|type="filename"/);
 
   const manifest = JSON.parse(publicAsset("generated/metal-presets/manifest.json"));
@@ -99,6 +108,7 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
     "MetalF82GoldAnisotropicR0",
     "MetalF82GoldAnisotropicR90",
     "MetalF82GoldThinFilm243nm",
+    "MetalF82GoldLayeredRoughness",
   ].sort());
   for (const { shader } of Object.values(expectedPresets)) {
     const uniforms = manifest.shaders[shader].fragmentInterface.uniforms.PublicUniforms;
@@ -140,11 +150,34 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
   const thinFilmFragment = publicAsset("generated/metal-presets/MetalF82GoldThinFilm243nm.frag");
   assert.match(thinFilmFragment, /mx_generalized_schlick_bsdf\(/);
   assert.match(thinFilmFragment, /mx_init_fresnel_schlick\([^;]+thinfilm_thickness, thinfilm_ior\)/);
+  const layeredUniforms = manifest.shaders.MetalF82GoldLayeredRoughness
+    .fragmentInterface.uniforms.PublicUniforms;
+  for (const [suffix, alpha] of [
+    ["025", 0.00765625],
+    ["050", 0.030625],
+    ["075", 0.06890625],
+    ["100", 0.1225],
+  ] as const) {
+    const roughness = layeredUniforms.find(
+      (uniform: { name: string }) => uniform.name === `roughness_${suffix}_roughness`,
+    );
+    assert.ok(Math.abs(roughness.value[0] - alpha) < 1e-6, suffix);
+    assert.ok(Math.abs(roughness.value[1] - alpha) < 1e-6, suffix);
+  }
+  for (const [name, factor] of [
+    ["mix_025_050_mix", 0.4],
+    ["mix_050_075_mix", 0.2],
+    ["mix_075_100_mix", 0.1],
+  ] as const) {
+    assert.ok(Math.abs(
+      layeredUniforms.find((uniform: { name: string }) => uniform.name === name).value - factor,
+    ) < 1e-6);
+  }
 });
 
 test("matched Blender and browser metal probes pass the constant-input similarity gate", () => {
   const comparison = JSON.parse(fs.readFileSync(evidenceUrl("comparison.json"), "utf8"));
-  assert.equal(comparison.comparisonVersion, 10);
+  assert.equal(comparison.comparisonVersion, 11);
   assert.match(comparison.renderContract.metalPresetMatrix, /0\.35.*0\.1225/);
   assert.deepEqual(Object.keys(comparison.metalPresetMatrix), Object.keys(expectedPresets));
   for (const id of Object.keys(expectedPresets)) {
@@ -163,6 +196,21 @@ test("matched Blender and browser metal probes pass the constant-input similarit
   assert.match(f82.claim, /constant-input F82 semantics only/);
   for (const renderer of ["blender", "web"]) {
     assert.ok(fs.statSync(evidenceUrl(`metal-f82-gold-${renderer}.png`)).size > 10_000, renderer);
+  }
+  assert.match(comparison.renderContract.metalLayeredRoughnessProbe, /sequential mix factors 0\.4\/0\.2\/0\.1/);
+  const layeredRoughness = comparison.metalLayeredRoughnessProbe;
+  assert.ok(layeredRoughness.sphereRegion.rgbRootMeanSquareError < 0.02);
+  assert.ok(layeredRoughness.sphereRegion.luminanceCorrelation > 0.99);
+  assert.ok(Math.abs(
+    layeredRoughness.sphereRegion.meanLuminance.blender
+      - layeredRoughness.sphereRegion.meanLuminance.web,
+  ) < 0.01);
+  assert.match(layeredRoughness.claim, /layered-roughness closure semantics only/);
+  for (const renderer of ["blender", "web"]) {
+    assert.ok(
+      fs.statSync(evidenceUrl(`metal-layered-roughness-gold-${renderer}.png`)).size > 10_000,
+      renderer,
+    );
   }
   assert.match(comparison.renderContract.metalAnisotropyProbe, /Blender Cycles/);
   const anisotropy = comparison.metalAnisotropyProbe;
