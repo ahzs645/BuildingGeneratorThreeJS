@@ -8,8 +8,10 @@ MaterialX. No MaterialX runtime or Blender code is shipped with the web app.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
+import shutil
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -40,6 +42,14 @@ def arguments() -> argparse.Namespace:
         "--write-environment-prefilter",
         action="store_true",
         help="Generate the official MaterialX environment-prefilter pass instead of a material pass.",
+    )
+    parser.add_argument(
+        "--bundle-textures",
+        action="store_true",
+        help=(
+            "Copy authored image inputs into the generated bundle and emit the "
+            "verified schema-v2 texture contract required by the browser runtime."
+        ),
     )
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else sys.argv[1:]
     return parser.parse_args(argv)
@@ -150,6 +160,142 @@ def geomprop_definitions(source: Path) -> dict[str, dict]:
     return definitions
 
 
+MIME_TYPES = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".avif": "image/avif",
+}
+ADDRESS_MODES = {
+    "periodic": "repeat",
+    "clamp": "clamp",
+    "mirror": "mirror",
+}
+FILTERS = {
+    "closest": ("nearest", "nearest"),
+    "linear": ("linear", "linear"),
+}
+COLOR_SPACES = {"raw", "lin_rec709", "srgb_texture"}
+
+
+def plain_relative_texture_path(value: str) -> Path:
+    if (
+        not value
+        or value != value.strip()
+        or "\\" in value
+        or value.startswith("/")
+        or value.startswith("//")
+        or "?" in value
+        or "#" in value
+        or re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", value)
+    ):
+        raise RuntimeError(f"Texture path must be a plain relative path: {value!r}")
+    path = Path(value)
+    if any(part in ("", ".", "..") for part in path.parts):
+        raise RuntimeError(f"Texture path may not contain traversal or ambiguous segments: {value!r}")
+    return path
+
+
+def authored_texture_contracts(source: Path) -> dict[str, dict]:
+    """Index image files by authored filename value and preserve sampler intent."""
+    root = ET.parse(source).getroot()
+    contracts = {}
+    for image in root.iter("image"):
+        inputs = {child.get("name"): child for child in image.findall("input")}
+        file_input = inputs.get("file")
+        if file_input is None or not file_input.get("value"):
+            continue
+        value = file_input.get("value")
+        relative = plain_relative_texture_path(value)
+        path = (source.parent / relative).resolve()
+        if not path.is_file():
+            raise RuntimeError(f"MaterialX texture does not exist: {path}")
+        try:
+            path.relative_to(source.parent.resolve())
+        except ValueError as error:
+            raise RuntimeError(f"MaterialX texture escapes the source directory: {value!r}") from error
+
+        source_color_space = file_input.get("colorspace", "raw")
+        if source_color_space not in COLOR_SPACES:
+            raise RuntimeError(
+                f"Unsupported texture colorspace {source_color_space!r} for {value!r}"
+            )
+        uaddress = inputs.get("uaddressmode")
+        vaddress = inputs.get("vaddressmode")
+        filter_input = inputs.get("filtertype")
+        authored_uaddress = uaddress.get("value", "periodic") if uaddress is not None else "periodic"
+        authored_vaddress = vaddress.get("value", "periodic") if vaddress is not None else "periodic"
+        authored_filter = filter_input.get("value", "linear") if filter_input is not None else "linear"
+        if authored_uaddress not in ADDRESS_MODES or authored_vaddress not in ADDRESS_MODES:
+            raise RuntimeError(
+                f"Unsupported texture address mode for {value!r}: "
+                f"{authored_uaddress!r}, {authored_vaddress!r}"
+            )
+        if authored_filter not in FILTERS:
+            raise RuntimeError(f"Unsupported texture filter {authored_filter!r} for {value!r}")
+        mime_type = MIME_TYPES.get(path.suffix.lower())
+        if mime_type is None:
+            raise RuntimeError(f"Unsupported browser texture format for {value!r}")
+        min_filter, mag_filter = FILTERS[authored_filter]
+        contract = {
+            "source": path,
+            "relative": relative,
+            "sourceColorSpace": source_color_space,
+            "uploadColorSpace": "none",
+            "wrapS": ADDRESS_MODES[authored_uaddress],
+            "wrapT": ADDRESS_MODES[authored_vaddress],
+            "minFilter": min_filter,
+            "magFilter": mag_filter,
+            "flipY": False,
+            "mimeType": mime_type,
+        }
+        existing = contracts.get(value)
+        if existing is not None and existing != contract:
+            raise RuntimeError(f"Conflicting sampler contracts for texture {value!r}")
+        contracts[value] = contract
+    return contracts
+
+
+def bundle_texture_bindings(
+    output: Path,
+    fragment_interface: dict,
+    contracts: dict[str, dict],
+) -> list[dict]:
+    bindings = []
+    for block in fragment_interface["uniforms"].values():
+        for port in block:
+            if port["type"] != "filename" or not port["value"]:
+                continue
+            contract = contracts.get(port["value"])
+            if contract is None:
+                raise RuntimeError(
+                    f"Generated filename uniform {port['name']!r} has no authored image contract"
+                )
+            payload = contract["source"].read_bytes()
+            bundled_relative = Path("textures") / contract["relative"]
+            bundled_path = output / bundled_relative
+            bundled_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(contract["source"], bundled_path)
+            bindings.append(
+                {
+                    "uniform": port["name"],
+                    "path": bundled_relative.as_posix(),
+                    "sourceColorSpace": contract["sourceColorSpace"],
+                    "uploadColorSpace": contract["uploadColorSpace"],
+                    "wrapS": contract["wrapS"],
+                    "wrapT": contract["wrapT"],
+                    "minFilter": contract["minFilter"],
+                    "magFilter": contract["magFilter"],
+                    "flipY": contract["flipY"],
+                    "sha256": hashlib.sha256(payload).hexdigest(),
+                    "bytes": len(payload),
+                    "mimeType": contract["mimeType"],
+                }
+            )
+    return bindings
+
+
 def geometry_bindings(vertex_interface: dict, fragment_interface: dict, definitions: dict[str, dict]) -> dict:
     properties = []
     for block in vertex_interface["inputs"].values():
@@ -231,7 +377,7 @@ def main() -> None:
     mx_gen_shader.HwShaderGenerator.bindLightShader(light_nodedef, LIGHT_TYPE_ID, context)
 
     manifest = {
-        "schemaVersion": 1,
+        "schemaVersion": 2 if options.bundle_textures else 1,
         "generator": {
             "materialx": mx.__version__,
             "target": generator.getTarget(),
@@ -254,6 +400,7 @@ def main() -> None:
             "pow(2.0, u_envPrefilterMip) -> exp2(float(u_envPrefilterMip))"
         ]
     property_definitions = geomprop_definitions(source)
+    texture_contracts = authored_texture_contracts(source) if options.bundle_textures else {}
 
     renderables = mx_gen_shader.findRenderableElements(document)
     if not renderables:
@@ -279,7 +426,7 @@ def main() -> None:
         (output / fragment_name).write_text(canonical_source(fragment), encoding="utf-8")
         vertex_interface = stage_interface(shader.getStage(mx_gen_shader.VERTEX_STAGE), rename_geomprops=True)
         fragment_interface = stage_interface(shader.getStage(mx_gen_shader.PIXEL_STAGE))
-        manifest["shaders"][shader.getName()] = {
+        shader_record = {
             "element": element.getNamePath(),
             "vertex": vertex_name,
             "fragment": fragment_name,
@@ -287,6 +434,13 @@ def main() -> None:
             "fragmentInterface": fragment_interface,
             "geometryBindings": geometry_bindings(vertex_interface, fragment_interface, property_definitions),
         }
+        if options.bundle_textures:
+            shader_record["textureBindings"] = bundle_texture_bindings(
+                output,
+                fragment_interface,
+                texture_contracts,
+            )
+        manifest["shaders"][shader.getName()] = shader_record
 
     (output / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"

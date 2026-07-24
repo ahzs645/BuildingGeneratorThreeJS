@@ -6,6 +6,7 @@ import { publicUrl } from "./base-url";
 import { resolveMaterialBackend, type MaterialBackend } from "./material-backend";
 import { auditMaterialXDocument } from "./materialx/capabilities";
 import { createMaterialXPrefilteredEnvironment } from "./materialx/environment-prefilter";
+import { loadMaterialXTextures } from "./materialx/essl-bundle";
 import { applyProceduralHeightNormals } from "./materialx/procedural-height";
 import {
   type BlenderSceneContract,
@@ -70,6 +71,23 @@ type MetalPresetProbeIndex = {
     effectiveWeights: number[];
     mapping: string;
   };
+  roughnessFresnelProbe: {
+    baseProbe: string;
+    scalarShader: string;
+    beautyShader: string;
+    sourceGroup: string;
+    layerWeightBlend: number;
+    frontFaceEta: number;
+    blenderPerceptualRoughness: number;
+    lut: {
+      report: string;
+      image: string;
+      samples: number;
+      sha256: string;
+      coordinate: string;
+    };
+    mapping: string;
+  };
   presets: Array<{
     id: string;
     label: string;
@@ -108,11 +126,15 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   const metalAnisotropyDiagnostic = requestedDiagnostic === "metal-anisotropy";
   const metalThinFilmDiagnostic = requestedDiagnostic === "metal-thin-film";
   const metalLayeredRoughnessDiagnostic = requestedDiagnostic === "metal-layered-roughness";
+  const metalRoughnessFresnelScalarDiagnostic = requestedDiagnostic === "metal-roughness-fresnel-scalar";
+  const metalRoughnessFresnelDiagnostic = requestedDiagnostic === "metal-roughness-fresnel";
   const metalProbeDiagnostic = metalPresetDiagnostic
     || metalF82Diagnostic
     || metalAnisotropyDiagnostic
     || metalThinFilmDiagnostic
-    || metalLayeredRoughnessDiagnostic;
+    || metalLayeredRoughnessDiagnostic
+    || metalRoughnessFresnelScalarDiagnostic
+    || metalRoughnessFresnelDiagnostic;
   const dependencyImplementation = import.meta.env.VITE_MATERIALX_THREE_IMPLEMENTATION || "r185";
   const environmentMode = metalProbeDiagnostic || query.get("environment") === "prefilter"
     ? "prefilter"
@@ -383,7 +405,19 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
           return response.json() as Promise<MetalPresetProbeIndex>;
         }),
       ]);
-      const preset = metalLayeredRoughnessDiagnostic
+      const preset = metalRoughnessFresnelScalarDiagnostic
+        ? {
+            id: "roughness-fresnel-scalar-gold",
+            label: "Gold roughness Fresnel · scalar",
+            shader: presetIndex.roughnessFresnelProbe.scalarShader,
+          }
+        : metalRoughnessFresnelDiagnostic
+        ? {
+            id: "roughness-fresnel-gold",
+            label: "Gold roughness Fresnel",
+            shader: presetIndex.roughnessFresnelProbe.beautyShader,
+          }
+        : metalLayeredRoughnessDiagnostic
         ? {
             id: "layered-roughness-gold",
             label: "Gold layered roughness",
@@ -407,6 +441,14 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
           ? presetIndex.f82Probe
           : presetIndex.presets.find((candidate) => candidate.id === requestedMetalPreset);
       if (!preset) throw new Error(`Unknown MaterialX metal preset ${requestedMetalPreset}`);
+      const shaderRecord = manifest.shaders[preset.shader];
+      if (!shaderRecord) throw new Error(`Missing generated MaterialX shader ${preset.shader}`);
+      const textureSet = await loadMaterialXTextures({
+        baseUrl: generatedBase,
+        shader: shaderRecord,
+        signal: abortController.signal,
+      });
+      for (const texture of textureSet.textures) ownTexture(texture);
       const material = ownMaterial(await createMaterialXEsslMaterial({
         baseUrl: generatedBase,
         manifest,
@@ -417,6 +459,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
         environmentIntensity: 0.18,
         geometry: probe.geometry,
         geometryContract: sceneContract.probe,
+        textures: textureSet.uniforms,
         uniformOverrides: metalThinFilmDiagnostic
           ? { f82_thinfilm_thickness: requestedThinFilmThickness }
           : undefined,
@@ -427,10 +470,20 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
         material.uniforms.u_numActiveLightSources.value = 1;
         material.uniforms.u_envLightIntensity.value = 0;
       }
+      if (metalRoughnessFresnelScalarDiagnostic) {
+        material.uniforms.u_envLightIntensity.value = 0;
+      }
       floor.visible = false;
       probe.material = material;
       status.textContent = `materialx · PREFILTER · ${preset.label}`;
-      if (metalLayeredRoughnessDiagnostic) {
+      if (metalRoughnessFresnelScalarDiagnostic || metalRoughnessFresnelDiagnostic) {
+        const roughnessFresnel = presetIndex.roughnessFresnelProbe;
+        rendererStatus.textContent += metalRoughnessFresnelScalarDiagnostic
+          ? " · unlit scalar field"
+          : " · generalized Schlick variable roughness";
+        graphStatus.textContent = `${preset.shader} · Layer Weight ${roughnessFresnel.layerWeightBlend} · η ${roughnessFresnel.frontFaceEta}`;
+        fallbackStatus.textContent = `${roughnessFresnel.lut.samples}-sample verified raw LUT · Blender roughness ${roughnessFresnel.blenderPerceptualRoughness}`;
+      } else if (metalLayeredRoughnessDiagnostic) {
         const layered = presetIndex.layeredRoughnessProbe;
         rendererStatus.textContent += " · generalized Schlick closure mix";
         graphStatus.textContent = `${layered.shader} · α=${layered.layers.map((layer) => layer.microfacetAlpha).join(", ")}`;
@@ -459,7 +512,11 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       ownerDocument.documentElement.dataset.materialxReady = "true";
       ownerDocument.documentElement.dataset.materialBackend = "materialx";
       ownerDocument.documentElement.dataset.materialxImplementation = implementation;
-      ownerDocument.documentElement.dataset.materialxPreset = metalLayeredRoughnessDiagnostic
+      ownerDocument.documentElement.dataset.materialxPreset = metalRoughnessFresnelScalarDiagnostic
+        ? "roughness-fresnel-scalar-gold"
+        : metalRoughnessFresnelDiagnostic
+        ? "roughness-fresnel-gold"
+        : metalLayeredRoughnessDiagnostic
         ? "layered-roughness-gold"
         : metalThinFilmDiagnostic
           ? "thin-film-gold"

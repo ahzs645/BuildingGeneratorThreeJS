@@ -89,17 +89,32 @@ test("rights-safe metal probe index preserves the physical constants and roughne
         - (index.layeredRoughnessProbe.blenderPerceptualRoughness * layer.roughnessScale) ** 2,
     ) < 1e-15);
   }
+  assert.equal(index.roughnessFresnelProbe.scalarShader, "MetalGoldRoughnessFresnelScalar");
+  assert.equal(index.roughnessFresnelProbe.beautyShader, "MetalF82GoldRoughnessFresnel");
+  assert.equal(index.roughnessFresnelProbe.layerWeightBlend, 0.1);
+  assert.ok(Math.abs(index.roughnessFresnelProbe.frontFaceEta - 1 / 0.9) < 1e-15);
+  assert.equal(index.roughnessFresnelProbe.blenderPerceptualRoughness, 0.35);
+  assert.equal(index.roughnessFresnelProbe.lut.samples, 256);
+  assert.equal(
+    index.roughnessFresnelProbe.lut.sha256,
+    "a433ed2f2f3237c42c786029e759460bbd1ff1df6ceca3e0d78fb604299af270",
+  );
+  assert.match(index.roughnessFresnelProbe.mapping, /eta=1\/\(1-blend\)/);
+  assert.match(index.roughnessFresnelProbe.mapping, /roughness\*\(1-F\+F\*response\)/);
 });
 
-test("metal preset MaterialX and official ESSL bundle carry microfacet alpha without third-party assets", () => {
+test("metal preset MaterialX and official ESSL bundle carry microfacet alpha with a verified rights-safe LUT", () => {
   const source = publicAsset("metal-preset-probes.mtlx");
   const audit = auditMaterialXDocument(source, { implementation: "official-essl" });
   assert.deepEqual(audit.unsupportedElements, []);
-  assert.equal(audit.materialCount, 10);
+  assert.equal(audit.materialCount, 12);
   assert.equal((source.match(/value="0\.1225, 0\.1225"/g) ?? []).length, 8);
-  assert.doesNotMatch(source, /<(?:image|tiledimage|triplanarprojection)\b|type="filename"/);
+  assert.equal((source.match(/<image\b/g) ?? []).length, 1);
+  assert.match(source, /value="gold-roughness-fresnel-lut\.png" colorspace="raw"/);
+  assert.doesNotMatch(source, /<(?:tiledimage|triplanarprojection)\b/);
 
   const manifest = JSON.parse(publicAsset("generated/metal-presets/manifest.json"));
+  assert.equal(manifest.schemaVersion, 2);
   assert.equal(manifest.generator.materialx, "1.39.4");
   assert.equal(manifest.generator.specularEnvironment, "PREFILTER");
   assert.deepEqual(Object.keys(manifest.shaders).sort(), [
@@ -109,6 +124,8 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
     "MetalF82GoldAnisotropicR90",
     "MetalF82GoldThinFilm243nm",
     "MetalF82GoldLayeredRoughness",
+    "MetalGoldRoughnessFresnelScalar",
+    "MetalF82GoldRoughnessFresnel",
   ].sort());
   for (const { shader } of Object.values(expectedPresets)) {
     const uniforms = manifest.shaders[shader].fragmentInterface.uniforms.PublicUniforms;
@@ -173,11 +190,37 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
       layeredUniforms.find((uniform: { name: string }) => uniform.name === name).value - factor,
     ) < 1e-6);
   }
+  for (const shader of ["MetalGoldRoughnessFresnelScalar", "MetalF82GoldRoughnessFresnel"]) {
+    const record = manifest.shaders[shader];
+    assert.deepEqual(record.textureBindings, [{
+      bytes: 313,
+      flipY: false,
+      magFilter: "linear",
+      mimeType: "image/png",
+      minFilter: "linear",
+      path: "textures/gold-roughness-fresnel-lut.png",
+      sha256: "a433ed2f2f3237c42c786029e759460bbd1ff1df6ceca3e0d78fb604299af270",
+      sourceColorSpace: "raw",
+      uniform: "curve_ramp_response_file",
+      uploadColorSpace: "none",
+      wrapS: "clamp",
+      wrapT: "clamp",
+    }], shader);
+    const fragment = publicAsset(`generated/metal-presets/${shader}.frag`);
+    assert.match(fragment, /uniform sampler2D curve_ramp_response_file;/);
+    assert.match(fragment, /float layer_weight_fresnel_out = half_a_squared_out \* one_plus_b_squared_out;/);
+    assert.match(fragment, /mx_image_float\(curve_ramp_response_file,/);
+    assert.match(fragment, /float perceptual_roughness_out = perceptual_roughness_in1 \* roughness_factor_out;/);
+  }
+  assert.equal(
+    fs.statSync(new URL("../../public/materialx/generated/metal-presets/textures/gold-roughness-fresnel-lut.png", import.meta.url)).size,
+    313,
+  );
 });
 
 test("matched Blender and browser metal probes pass the constant-input similarity gate", () => {
   const comparison = JSON.parse(fs.readFileSync(evidenceUrl("comparison.json"), "utf8"));
-  assert.equal(comparison.comparisonVersion, 11);
+  assert.equal(comparison.comparisonVersion, 12);
   assert.match(comparison.renderContract.metalPresetMatrix, /0\.35.*0\.1225/);
   assert.deepEqual(Object.keys(comparison.metalPresetMatrix), Object.keys(expectedPresets));
   for (const id of Object.keys(expectedPresets)) {
@@ -211,6 +254,31 @@ test("matched Blender and browser metal probes pass the constant-input similarit
       fs.statSync(evidenceUrl(`metal-layered-roughness-gold-${renderer}.png`)).size > 10_000,
       renderer,
     );
+  }
+  assert.match(comparison.renderContract.metalRoughnessFresnelProbe, /Layer Weight Blend 0\.1/);
+  const roughnessFresnel = comparison.metalRoughnessFresnelProbe;
+  assert.ok(roughnessFresnel.scalar.rgbRootMeanSquareError < 0.005);
+  assert.ok(roughnessFresnel.scalar.luminanceCorrelation > 0.999);
+  assert.ok(roughnessFresnel.scalar.sphereRegion.rgbRootMeanSquareError < 0.012);
+  assert.ok(Math.abs(
+    roughnessFresnel.scalar.sphereRegion.meanLuminance.blender
+      - roughnessFresnel.scalar.sphereRegion.meanLuminance.web,
+  ) < 0.002);
+  assert.ok(roughnessFresnel.beauty.sphereRegion.rgbRootMeanSquareError < 0.03);
+  assert.ok(roughnessFresnel.beauty.sphereRegion.luminanceCorrelation > 0.98);
+  assert.ok(Math.abs(
+    roughnessFresnel.beauty.sphereRegion.meanLuminance.blender
+      - roughnessFresnel.beauty.sphereRegion.meanLuminance.web,
+  ) < 0.012);
+  assert.match(roughnessFresnel.scalar.claim, /view-dependent Layer Weight/);
+  assert.match(roughnessFresnel.beauty.claim, /validated view-dependent roughness field/);
+  for (const kind of ["scalar-", ""]) {
+    for (const renderer of ["blender", "web"]) {
+      assert.ok(
+        fs.statSync(evidenceUrl(`metal-roughness-fresnel-${kind}gold-${renderer}.png`)).size > 10_000,
+        `${kind || "beauty"} ${renderer}`,
+      );
+    }
   }
   assert.match(comparison.renderContract.metalAnisotropyProbe, /Blender Cycles/);
   const anisotropy = comparison.metalAnisotropyProbe;

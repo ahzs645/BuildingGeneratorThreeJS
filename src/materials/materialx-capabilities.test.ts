@@ -74,6 +74,32 @@ test("official ESSL accepts generalized Schlick F82 surfaces while Three TSL rej
   );
 });
 
+test("official ESSL accepts view-dependent unlit diagnostics while Three TSL rejects them", () => {
+  const xml = `<materialx version="1.39">
+    <nodegraph name="NG">
+      <viewdirection name="view" type="vector3" space="world"/>
+      <transformnormal name="normal" type="vector3">
+        <input name="in" type="vector3" value="0, 0, 1"/>
+        <input name="fromspace" type="string" value="object"/>
+        <input name="tospace" type="string" value="world"/>
+      </transformnormal>
+      <output name="view" type="vector3" nodename="view"/>
+    </nodegraph>
+    <surface_unlit name="SS" type="surfaceshader"/>
+    <surfacematerial name="M" type="material">
+      <input name="surfaceshader" type="surfaceshader" nodename="SS"/>
+    </surfacematerial>
+  </materialx>`;
+  assert.deepEqual(
+    auditMaterialXDocument(xml, { implementation: "official-essl" }).unsupportedElements,
+    [],
+  );
+  assert.deepEqual(
+    auditMaterialXDocument(xml, { implementation: "three-tsl" }).unsupportedElements,
+    ["surface_unlit", "transformnormal", "viewdirection"],
+  );
+});
+
 test("preflight identifies procedural height graphs that need the TSL derivative adapter", () => {
   const audit = auditMaterialXDocument(`<materialx version="1.39"><nodegraph name="NG"><noise3d name="height" type="float"/><heighttonormal name="bump" type="vector3"><input name="in" type="float" nodename="height"/></heighttonormal></nodegraph></materialx>`);
   assert.equal(audit.proceduralHeightNormalCount, 1);

@@ -6,6 +6,7 @@ const baseUrl = process.argv[2] ?? "http://127.0.0.1:4173";
 const outputDir = path.resolve(process.argv[3] ?? "docs/materialx-evidence/current");
 const expectedImplementation = process.argv[4];
 const thinFilmSweep = process.argv.includes("--thin-film-sweep");
+const roughnessFresnelOnly = process.argv.includes("--roughness-fresnel-only");
 const executablePath = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   "/Applications/Chromium.app/Contents/MacOS/Chromium",
@@ -21,6 +22,43 @@ const browser = await puppeteer.launch({
 try {
   const page = await browser.newPage();
   await page.setViewport({ width: 768, height: 768, deviceScaleFactor: 1 });
+  const captureRoughnessFresnel = async () => {
+    for (const [diagnostic, preset, filename] of [
+      [
+        "metal-roughness-fresnel-scalar",
+        "roughness-fresnel-scalar-gold",
+        "metal-roughness-fresnel-scalar-gold-web.png",
+      ],
+      [
+        "metal-roughness-fresnel",
+        "roughness-fresnel-gold",
+        "metal-roughness-fresnel-gold-web.png",
+      ],
+    ]) {
+      await page.goto(
+        `${baseUrl}/materialx?capture=1&diagnostic=${diagnostic}`,
+        { waitUntil: "domcontentloaded" },
+      );
+      await page.waitForFunction(
+        (selectedPreset) => (
+          document.documentElement.dataset.materialxImplementation === "official-essl-prefilter"
+          && document.documentElement.dataset.materialxPreset === selectedPreset
+        ),
+        { timeout: 360_000 },
+        preset,
+      );
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const roughnessFresnelCanvas = await page.$("#materialx-canvas");
+      if (!roughnessFresnelCanvas) throw new Error(`MaterialX ${preset} canvas missing`);
+      await roughnessFresnelCanvas.screenshot({ path: path.join(outputDir, filename) });
+      console.log(`MATERIALX_WEB_REFERENCE ${filename}`);
+    }
+  };
+  if (roughnessFresnelOnly) {
+    await captureRoughnessFresnel();
+    await browser.close();
+    process.exit(0);
+  }
   if (thinFilmSweep) {
     const thicknesses = Array.from({ length: 61 }, (_, index) => index * 10);
     if (!thicknesses.includes(243)) thicknesses.push(243);
@@ -184,6 +222,7 @@ try {
   if (!layeredRoughnessCanvas) throw new Error("MaterialX Gold layered-roughness canvas missing");
   await layeredRoughnessCanvas.screenshot({ path: path.join(outputDir, "metal-layered-roughness-gold-web.png") });
   console.log("MATERIALX_WEB_REFERENCE metal-layered-roughness-gold-web.png");
+  await captureRoughnessFresnel();
   for (const [rotation, slug] of [[0, "r0"], [0.25, "r90"]]) {
     await page.goto(
       `${baseUrl}/materialx?capture=1&diagnostic=metal-anisotropy&rotation=${rotation}`,

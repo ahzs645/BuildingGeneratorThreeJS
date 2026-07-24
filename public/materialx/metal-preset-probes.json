@@ -86,6 +86,28 @@
     "mapping": "The supplied Gold F82 branch mixes roughness scales 0.25, 0.5, 0.75, and 1.0 through sequential Mix Shader factors LayeredRoughness*0.4, *0.2, and *0.1; each scaled Blender roughness is squared for MaterialX microfacet alpha.",
     "scope": "Constant-input layered-roughness closure mix only; roughness Fresnel, scratches, brushed texture, and source add-on graph are not embedded."
   },
+  "roughnessFresnelProbe": {
+    "baseProbe": "gold",
+    "scalarShader": "MetalGoldRoughnessFresnelScalar",
+    "beautyShader": "MetalF82GoldRoughnessFresnel",
+    "sourceGroup": "Gold",
+    "sourceSockets": {
+      "factor": "Socket_23 · Roughness Fresnel",
+      "roughness": "Socket_24 · Roughness"
+    },
+    "layerWeightBlend": 0.1,
+    "frontFaceEta": 1.1111111111111112,
+    "blenderPerceptualRoughness": 0.35,
+    "lut": {
+      "report": "gold-roughness-fresnel-lut.json",
+      "image": "gold-roughness-fresnel-lut.png",
+      "samples": 256,
+      "sha256": "a433ed2f2f3237c42c786029e759460bbd1ff1df6ceca3e0d78fb604299af270",
+      "coordinate": "u=fresnel*(255/256)+(0.5/256)"
+    },
+    "mapping": "Blender Layer Weight Fresnel uses eta=1/(1-blend) on front faces. The authored RGB Curve and B-spline Color Ramp are sampled into a raw scalar LUT. Mix.108 MULTIPLY computes roughness*(1-F+F*response), then the result is squared for MaterialX microfacet alpha.",
+    "scope": "View-dependent roughness-Fresnel semantics only; scratch, brushed, anisotropy, thin-film streak, and source add-on graphs are not embedded."
+  },
   "presets": [
     {
       "id": "aluminum",

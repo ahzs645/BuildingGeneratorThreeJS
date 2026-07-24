@@ -438,6 +438,87 @@ def output_by_identifier(node, identifier):
     return next(socket for socket in node.outputs if socket.identifier == identifier)
 
 
+def gold_roughness_fresnel_field(tree, roughness=0.35):
+    """Reconstruct the Gold view-dependent roughness field from scalar settings."""
+    layer_weight = tree.nodes.new("ShaderNodeLayerWeight")
+    layer_weight.inputs["Blend"].default_value = 0.1
+
+    curve = tree.nodes.new("ShaderNodeRGBCurve")
+    mapping = curve.mapping
+    mapping.extend = "EXTRAPOLATED"
+    mapping.tone = "STANDARD"
+    mapping.use_clip = True
+    mapping.clip_min_x = 0.0
+    mapping.clip_min_y = 0.0
+    mapping.clip_max_x = 1.0
+    mapping.clip_max_y = 1.0
+    composite = mapping.curves[3]
+    composite.points[0].location = (0.0, 0.5000003576278687)
+    composite.points[-1].location = (1.0, 0.0)
+    middle = composite.points.new(0.20876851677894592, 0.20121952891349792)
+    for point in composite.points:
+        point.handle_type = "AUTO"
+    mapping.update()
+
+    ramp = tree.nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.interpolation = "B_SPLINE"
+    ramp.color_ramp.color_mode = "RGB"
+    ramp.color_ramp.hue_interpolation = "NEAR"
+    ramp.color_ramp.elements[0].position = 0.2985386550426483
+    ramp.color_ramp.elements[0].color = (0.0, 0.0, 0.0, 1.0)
+    ramp.color_ramp.elements[1].position = 0.4885174036026001
+    ramp.color_ramp.elements[1].color = (1.0, 1.0, 1.0, 1.0)
+
+    multiply_mix = tree.nodes.new("ShaderNodeMix")
+    multiply_mix.data_type = "RGBA"
+    multiply_mix.blend_type = "MULTIPLY"
+    input_by_identifier(multiply_mix, "A_Color").default_value = (
+        roughness,
+        roughness,
+        roughness,
+        1.0,
+    )
+    tree.links.new(layer_weight.outputs["Fresnel"], curve.inputs["Color"])
+    tree.links.new(curve.outputs["Color"], ramp.inputs["Fac"])
+    tree.links.new(layer_weight.outputs["Fresnel"], input_by_identifier(multiply_mix, "Factor_Float"))
+    tree.links.new(ramp.outputs["Color"], input_by_identifier(multiply_mix, "B_Color"))
+    return output_by_identifier(multiply_mix, "Result_Color")
+
+
+def roughness_fresnel_scalar(name, roughness=0.35):
+    material = bpy.data.materials.new(f"Roughness Fresnel Scalar · {name}")
+    material.use_nodes = True
+    tree = material.node_tree
+    tree.nodes.clear()
+    field = gold_roughness_fresnel_field(tree, roughness)
+    emission = tree.nodes.new("ShaderNodeEmission")
+    output = tree.nodes.new("ShaderNodeOutputMaterial")
+    tree.links.new(field, emission.inputs["Color"])
+    tree.links.new(emission.outputs["Emission"], output.inputs["Surface"])
+    return material
+
+
+def artistic_f82_roughness_fresnel(name, base_color, edge_tint, roughness=0.35):
+    material = bpy.data.materials.new(f"Artistic F82 Roughness Fresnel · {name}")
+    material.use_nodes = True
+    tree = material.node_tree
+    tree.nodes.clear()
+    field = gold_roughness_fresnel_field(tree, roughness)
+    metallic = tree.nodes.new("ShaderNodeBsdfMetallic")
+    metallic.distribution = "MULTI_GGX"
+    metallic.fresnel_type = "F82"
+    metallic.inputs["Base Color"].default_value = base_color
+    metallic.inputs["Edge Tint"].default_value = edge_tint
+    if metallic.inputs.get("Weight") is not None:
+        metallic.inputs["Weight"].default_value = 1.0
+    if metallic.inputs.get("Thin Film Thickness") is not None:
+        metallic.inputs["Thin Film Thickness"].default_value = 0.0
+    output = tree.nodes.new("ShaderNodeOutputMaterial")
+    tree.links.new(field, metallic.inputs["Roughness"])
+    tree.links.new(metallic.outputs["BSDF"], output.inputs["Surface"])
+    return material
+
+
 def ui_normal_band_diagnostic(report_path: Path):
     report = json.loads(report_path.read_text(encoding="utf-8"))
     lowering = report["diagnosticLowering"]
@@ -558,6 +639,21 @@ def render_physical_conductor_matrix(output: Path, probe, floor, lights):
         )
         bpy.context.scene.render.filepath = str(
             output / "metal-layered-roughness-gold-blender.png"
+        )
+        bpy.ops.render.render(write_still=True)
+        probe.data.materials[0] = artistic_f82_roughness_fresnel(
+            "Gold",
+            F82_GOLD["base_color"],
+            F82_GOLD["edge_tint"],
+        )
+        bpy.context.scene.render.filepath = str(
+            output / "metal-roughness-fresnel-gold-blender.png"
+        )
+        bpy.ops.render.render(write_still=True)
+        background.inputs["Strength"].default_value = 0.0
+        probe.data.materials[0] = roughness_fresnel_scalar("Gold")
+        bpy.context.scene.render.filepath = str(
+            output / "metal-roughness-fresnel-scalar-gold-blender.png"
         )
         bpy.ops.render.render(write_still=True)
         background.inputs["Strength"].default_value = 0.0

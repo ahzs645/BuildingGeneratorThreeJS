@@ -234,4 +234,166 @@
   <surfacematerial name="MetalF82GoldLayeredRoughness" type="material">
     <input name="surfaceshader" type="surfaceshader" nodename="surface_f82_gold_layered_roughness" />
   </surfacematerial>
+
+  <!--
+    Rights-safe reconstruction of the supplied Gold roughness-Fresnel field.
+    Blender Layer Weight at Blend 0.1 evaluates exact dielectric Fresnel with
+    eta=1/(1-0.1). The source RGB Curve + B-spline Color Ramp response is a
+    repo-owned 256-sample scalar LUT; the source graph is not embedded.
+  -->
+  <nodegraph name="NG_gold_roughness_fresnel_fields">
+    <normal name="normal_object" type="vector3" space="object" />
+    <transformnormal name="normal_world" type="vector3">
+      <input name="in" type="vector3" nodename="normal_object" />
+      <input name="fromspace" type="string" value="object" />
+      <input name="tospace" type="string" value="world" />
+    </transformnormal>
+    <viewdirection name="view_world" type="vector3" space="world" />
+    <dotproduct name="normal_dot_view" type="float">
+      <input name="in1" type="vector3" nodename="normal_world" />
+      <input name="in2" type="vector3" nodename="view_world" />
+    </dotproduct>
+    <absval name="cosine" type="float">
+      <input name="in" type="float" nodename="normal_dot_view" />
+    </absval>
+    <multiply name="cosine_squared" type="float">
+      <input name="in1" type="float" nodename="cosine" />
+      <input name="in2" type="float" nodename="cosine" />
+    </multiply>
+    <add name="g_squared" type="float">
+      <input name="in1" type="float" nodename="cosine_squared" />
+      <input name="in2" type="float" value="0.2345679012345679" />
+    </add>
+    <sqrt name="g" type="float">
+      <input name="in" type="float" nodename="g_squared" />
+    </sqrt>
+    <subtract name="g_minus_cosine" type="float">
+      <input name="in1" type="float" nodename="g" />
+      <input name="in2" type="float" nodename="cosine" />
+    </subtract>
+    <add name="g_plus_cosine" type="float">
+      <input name="in1" type="float" nodename="g" />
+      <input name="in2" type="float" nodename="cosine" />
+    </add>
+    <divide name="a" type="float">
+      <input name="in1" type="float" nodename="g_minus_cosine" />
+      <input name="in2" type="float" nodename="g_plus_cosine" />
+    </divide>
+    <multiply name="cosine_g_plus" type="float">
+      <input name="in1" type="float" nodename="cosine" />
+      <input name="in2" type="float" nodename="g_plus_cosine" />
+    </multiply>
+    <subtract name="b_numerator" type="float">
+      <input name="in1" type="float" nodename="cosine_g_plus" />
+      <input name="in2" type="float" value="1" />
+    </subtract>
+    <multiply name="cosine_g_minus" type="float">
+      <input name="in1" type="float" nodename="cosine" />
+      <input name="in2" type="float" nodename="g_minus_cosine" />
+    </multiply>
+    <add name="b_denominator" type="float">
+      <input name="in1" type="float" nodename="cosine_g_minus" />
+      <input name="in2" type="float" value="1" />
+    </add>
+    <divide name="b" type="float">
+      <input name="in1" type="float" nodename="b_numerator" />
+      <input name="in2" type="float" nodename="b_denominator" />
+    </divide>
+    <multiply name="a_squared" type="float">
+      <input name="in1" type="float" nodename="a" />
+      <input name="in2" type="float" nodename="a" />
+    </multiply>
+    <multiply name="b_squared" type="float">
+      <input name="in1" type="float" nodename="b" />
+      <input name="in2" type="float" nodename="b" />
+    </multiply>
+    <add name="one_plus_b_squared" type="float">
+      <input name="in1" type="float" value="1" />
+      <input name="in2" type="float" nodename="b_squared" />
+    </add>
+    <multiply name="half_a_squared" type="float">
+      <input name="in1" type="float" value="0.5" />
+      <input name="in2" type="float" nodename="a_squared" />
+    </multiply>
+    <multiply name="layer_weight_fresnel" type="float">
+      <input name="in1" type="float" nodename="half_a_squared" />
+      <input name="in2" type="float" nodename="one_plus_b_squared" />
+    </multiply>
+    <multiply name="lut_scaled_factor" type="float">
+      <input name="in1" type="float" nodename="layer_weight_fresnel" />
+      <input name="in2" type="float" value="0.99609375" />
+    </multiply>
+    <add name="lut_centered_factor" type="float">
+      <input name="in1" type="float" nodename="lut_scaled_factor" />
+      <input name="in2" type="float" value="0.001953125" />
+    </add>
+    <combine2 name="lut_uv" type="vector2">
+      <input name="in1" type="float" nodename="lut_centered_factor" />
+      <input name="in2" type="float" value="0.5" />
+    </combine2>
+    <image name="curve_ramp_response" type="float">
+      <input name="file" type="filename" value="gold-roughness-fresnel-lut.png" colorspace="raw" />
+      <input name="texcoord" type="vector2" nodename="lut_uv" />
+      <input name="uaddressmode" type="string" value="clamp" />
+      <input name="vaddressmode" type="string" value="clamp" />
+      <input name="filtertype" type="string" value="linear" />
+    </image>
+    <subtract name="one_minus_fresnel" type="float">
+      <input name="in1" type="float" value="1" />
+      <input name="in2" type="float" nodename="layer_weight_fresnel" />
+    </subtract>
+    <multiply name="fresnel_response" type="float">
+      <input name="in1" type="float" nodename="layer_weight_fresnel" />
+      <input name="in2" type="float" nodename="curve_ramp_response" />
+    </multiply>
+    <add name="roughness_factor" type="float">
+      <input name="in1" type="float" nodename="one_minus_fresnel" />
+      <input name="in2" type="float" nodename="fresnel_response" />
+    </add>
+    <multiply name="perceptual_roughness" type="float">
+      <input name="in1" type="float" value="0.35" />
+      <input name="in2" type="float" nodename="roughness_factor" />
+    </multiply>
+    <multiply name="microfacet_alpha" type="float">
+      <input name="in1" type="float" nodename="perceptual_roughness" />
+      <input name="in2" type="float" nodename="perceptual_roughness" />
+    </multiply>
+    <combine2 name="microfacet_alpha_xy" type="vector2">
+      <input name="in1" type="float" nodename="microfacet_alpha" />
+      <input name="in2" type="float" nodename="microfacet_alpha" />
+    </combine2>
+    <output name="fresnel" type="float" nodename="layer_weight_fresnel" />
+    <output name="response" type="float" nodename="curve_ramp_response" />
+    <output name="roughness" type="float" nodename="perceptual_roughness" />
+    <output name="alpha" type="vector2" nodename="microfacet_alpha_xy" />
+  </nodegraph>
+
+  <convert name="roughness_fresnel_scalar_color" type="color3">
+    <input name="in" type="float" nodegraph="NG_gold_roughness_fresnel_fields" output="roughness" />
+  </convert>
+  <surface_unlit name="surface_gold_roughness_fresnel_scalar" type="surfaceshader">
+    <input name="emission" type="float" value="1" />
+    <input name="emission_color" type="color3" nodename="roughness_fresnel_scalar_color" />
+  </surface_unlit>
+  <surfacematerial name="MetalGoldRoughnessFresnelScalar" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_gold_roughness_fresnel_scalar" />
+  </surfacematerial>
+
+  <nodegraph name="NG_metal_f82_gold_roughness_fresnel">
+    <generalized_schlick_bsdf name="f82" type="BSDF">
+      <input name="color0" type="color3" value="1, 0.7758224606513977, 0.3049874007701874" />
+      <input name="color82" type="color3" value="0.9734454154968262, 1, 0.9911020398139954" />
+      <input name="color90" type="color3" value="1, 1, 1" />
+      <input name="exponent" type="float" value="5" />
+      <input name="roughness" type="vector2" nodegraph="NG_gold_roughness_fresnel_fields" output="alpha" />
+      <input name="scatter_mode" type="string" value="R" />
+    </generalized_schlick_bsdf>
+    <output name="out" type="BSDF" nodename="f82" />
+  </nodegraph>
+  <surface name="surface_f82_gold_roughness_fresnel" type="surfaceshader">
+    <input name="bsdf" type="BSDF" nodegraph="NG_metal_f82_gold_roughness_fresnel" output="out" />
+  </surface>
+  <surfacematerial name="MetalF82GoldRoughnessFresnel" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_f82_gold_roughness_fresnel" />
+  </surfacematerial>
 </materialx>
