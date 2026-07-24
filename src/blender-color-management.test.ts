@@ -35,7 +35,7 @@ test("Blender Standard Medium High Contrast LUT preserves OCIO reference samples
   }
 });
 
-test("Blender color-profile LUT is monotonic and constructs a linear post-process pass", () => {
+test("Blender color-profile LUT is monotonic and constructs a final display pass", () => {
   for (let index = 1; index < lut.values.length; index++)
     assert.ok(lut.values[index] >= lut.values[index - 1]);
   const profile = createBlenderColorProfilePass(lut);
@@ -43,6 +43,7 @@ test("Blender color-profile LUT is monotonic and constructs a linear post-proces
     assert.equal(profile.pass.material.toneMapped, false);
     assert.equal(profile.pass.uniforms.profileLutSize.value, 256);
     assert.equal(profile.pass.uniforms.profileLut.value.colorSpace, "");
+    assert.match(profile.pass.material.fragmentShader, /linearToSrgb\(applyProfile\(source\.r\)\)/);
   } finally {
     profile.dispose();
   }

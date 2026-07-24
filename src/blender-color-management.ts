@@ -67,8 +67,10 @@ export interface BlenderColorProfilePass {
 }
 
 /**
- * Applies Blender's display look in linear display space. WebGLRenderer's
- * output stage performs the final sRGB transfer after this pass.
+ * Applies Blender's display look and the final sRGB transfer.
+ *
+ * This is a final display pass: do not place linear-light compositing or
+ * lighting passes after it.
  */
 export function createBlenderColorProfilePass(lutValue: unknown): BlenderColorProfilePass {
   const lut = validateBlenderColorProfileLut(lutValue);
@@ -123,12 +125,18 @@ export function createBlenderColorProfilePass(lutValue: unknown): BlenderColorPr
         return texture2D(profileLut, vec2(u, 0.5)).r;
       }
 
+      float linearToSrgb(float value) {
+        return value <= 0.0031308
+          ? value * 12.92
+          : 1.055 * pow(max(value, 0.0), 1.0 / 2.4) - 0.055;
+      }
+
       void main() {
         vec4 source = texture2D(tDiffuse, vUv);
         gl_FragColor = vec4(
-          applyProfile(source.r),
-          applyProfile(source.g),
-          applyProfile(source.b),
+          linearToSrgb(applyProfile(source.r)),
+          linearToSrgb(applyProfile(source.g)),
+          linearToSrgb(applyProfile(source.b)),
           source.a
         );
       }
