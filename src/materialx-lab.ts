@@ -144,6 +144,48 @@ type MetalPresetProbeIndex = {
     };
     semanticAdapters: string[];
   };
+  activeGoldNonImageCore: {
+    baseProbe: string;
+    scalarShader: string;
+    beautyShader: string;
+    sourceGroup: string;
+    sourceMaterial: string;
+    sourceObject: string;
+    renderingType: string;
+    ior: number[];
+    extinction: number[];
+    blenderPerceptualRoughness: number;
+    roughnessFresnelFactor: number;
+    brushedMetalFactor: number;
+    layeredRoughnessFactor: number;
+    anisotropy: number;
+    anisotropicRotation: number;
+    thinFilmThicknessNanometers: number;
+    thinFilmIor: number;
+    layerScales: number[];
+    mixFactors: number[];
+    effectiveWeights: number[];
+    semanticAdapters: string[];
+    omittedActiveScratchMaps: Array<{
+      role: string;
+      imageNode: string;
+      filename: string;
+      factorSocket: string;
+      factor: number;
+      vectorSocket: string;
+      coordinate: string;
+      mappingScale: number[];
+      mappingRotation: number[];
+      width: number;
+      height: number;
+      bytes: number;
+      sourceColorSpace: string;
+      sha256: string;
+      omissionReason: string;
+    }>;
+    mapping: string;
+    scope: string;
+  };
   presets: Array<{
     id: string;
     label: string;
@@ -189,6 +231,8 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   const metalBrushedRoughnessDiagnostic = requestedDiagnostic === "metal-brushed-roughness";
   const metalThinFilmStreakScalarDiagnostic = requestedDiagnostic === "metal-thin-film-streak-scalar";
   const metalThinFilmStreakDiagnostic = requestedDiagnostic === "metal-thin-film-streak";
+  const metalActiveNonImageScalarDiagnostic = requestedDiagnostic === "metal-active-gold-core-scalar";
+  const metalActiveNonImageDiagnostic = requestedDiagnostic === "metal-active-gold-core";
   const metalProbeDiagnostic = metalPresetDiagnostic
     || metalF82Diagnostic
     || metalAnisotropyDiagnostic
@@ -199,9 +243,13 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     || metalBrushedRoughnessScalarDiagnostic
     || metalBrushedRoughnessDiagnostic
     || metalThinFilmStreakScalarDiagnostic
-    || metalThinFilmStreakDiagnostic;
+    || metalThinFilmStreakDiagnostic
+    || metalActiveNonImageScalarDiagnostic
+    || metalActiveNonImageDiagnostic;
   if (metalThinFilmStreakScalarDiagnostic || metalThinFilmStreakDiagnostic) {
     sourceFinding.textContent = "Material.011 leaves Gold Socket_27 unlinked, so the supplied active material evaluates this branch to exactly 0 nm. This diagnostic explicitly binds that socket to Generated coordinates to exercise the otherwise-zero procedural streak.";
+  } else if (metalActiveNonImageScalarDiagnostic || metalActiveNonImageDiagnostic) {
+    sourceFinding.textContent = "Material.011 actively uses the Physical Conductor Gold core, but its packed dense and sparse scratch images are not redistributed. This diagnostic preserves the active non-image roughness-Fresnel, brushed, layered-roughness, and zero-thin-film semantics; it is not the complete saved material.";
   } else if (metalProbeDiagnostic) {
     sourceFinding.textContent = "Metallic_BSDF+.blend is used only as a local Blender oracle. This page reconstructs an isolated, rights-safe material branch and does not claim parity for the complete source add-on graph or its unlicensed texture assets.";
   }
@@ -475,7 +523,19 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
           return response.json() as Promise<MetalPresetProbeIndex>;
         }),
       ]);
-      const preset = metalThinFilmStreakScalarDiagnostic
+      const preset = metalActiveNonImageScalarDiagnostic
+        ? {
+            id: "active-gold-core-scalar-gold",
+            label: "Gold active non-image core · scalar",
+            shader: presetIndex.activeGoldNonImageCore.scalarShader,
+          }
+        : metalActiveNonImageDiagnostic
+        ? {
+            id: "active-gold-core-gold",
+            label: "Gold active non-image core",
+            shader: presetIndex.activeGoldNonImageCore.beautyShader,
+          }
+        : metalThinFilmStreakScalarDiagnostic
         ? {
             id: "thin-film-streak-scalar-gold",
             label: "Gold thin-film streak · scalar",
@@ -568,18 +628,26 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
         metalRoughnessFresnelScalarDiagnostic
         || metalBrushedRoughnessScalarDiagnostic
         || metalThinFilmStreakScalarDiagnostic
+        || metalActiveNonImageScalarDiagnostic
       ) {
         material.uniforms.u_envLightIntensity.value = 0;
       }
       floor.visible = false;
       probe.material = material;
-      const metalRenderMode = metalThinFilmStreakScalarDiagnostic
+      const metalRenderMode = metalThinFilmStreakScalarDiagnostic || metalActiveNonImageScalarDiagnostic
         ? "UNLIT"
         : metalThinFilmStreakDiagnostic
           ? "DIRECT"
           : "PREFILTER";
       status.textContent = `materialx · ${metalRenderMode} · ${preset.label}`;
-      if (metalThinFilmStreakScalarDiagnostic || metalThinFilmStreakDiagnostic) {
+      if (metalActiveNonImageScalarDiagnostic || metalActiveNonImageDiagnostic) {
+        const activeCore = presetIndex.activeGoldNonImageCore;
+        rendererStatus.textContent += metalActiveNonImageScalarDiagnostic
+          ? " · unlit scalar field"
+          : " · physical conductor layered closure";
+        graphStatus.textContent = `${preset.shader} · ${activeCore.renderingType} · ${activeCore.semanticAdapters.join(" + ")}`;
+        fallbackStatus.textContent = activeCore.scope;
+      } else if (metalThinFilmStreakScalarDiagnostic || metalThinFilmStreakDiagnostic) {
         const streak = presetIndex.thinFilmStreakProbe;
         rendererStatus.textContent += metalThinFilmStreakScalarDiagnostic
           ? " · unlit scalar field"
@@ -629,7 +697,11 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       ownerDocument.documentElement.dataset.materialxReady = "true";
       ownerDocument.documentElement.dataset.materialBackend = "materialx";
       ownerDocument.documentElement.dataset.materialxImplementation = implementation;
-      ownerDocument.documentElement.dataset.materialxPreset = metalThinFilmStreakScalarDiagnostic
+      ownerDocument.documentElement.dataset.materialxPreset = metalActiveNonImageScalarDiagnostic
+        ? "active-gold-core-scalar-gold"
+        : metalActiveNonImageDiagnostic
+        ? "active-gold-core-gold"
+        : metalThinFilmStreakScalarDiagnostic
         ? "thin-film-streak-scalar-gold"
         : metalThinFilmStreakDiagnostic
         ? "thin-film-streak-gold"

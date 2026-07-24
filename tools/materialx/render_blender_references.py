@@ -51,6 +51,7 @@ def args() -> argparse.Namespace:
     parser.add_argument("--ui-normal-band-only", action="store_true")
     parser.add_argument("--brushed-roughness-only", action="store_true")
     parser.add_argument("--thin-film-streak-only", action="store_true")
+    parser.add_argument("--active-gold-core-only", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -627,6 +628,82 @@ def artistic_f82_brushed_roughness(name, base_color, edge_tint):
     return material
 
 
+def gold_active_core_roughness_field(tree):
+    """Build active Gold roughness with both unlicensed scratch maps bypassed.
+
+    Material.011 drives the dense and sparse scratch factors at nonzero values,
+    but their packed source images do not carry a standalone redistribution
+    license.  This checkpoint forces both factors to zero while retaining the
+    active roughness-Fresnel and procedural brushed-metal branches.
+    """
+    field = gold_brushed_roughness_field(tree)
+    for _label in ("Dense Scratches = 0", "Sparse Scratches = 0"):
+        bypass = tree.nodes.new("ShaderNodeMix")
+        bypass.label = _label
+        bypass.data_type = "RGBA"
+        bypass.blend_type = "EXCLUSION"
+        input_by_identifier(bypass, "Factor_Float").default_value = 0.0
+        input_by_identifier(bypass, "B_Color").default_value = (0.0, 0.0, 0.0, 1.0)
+        tree.links.new(field, input_by_identifier(bypass, "A_Color"))
+        field = output_by_identifier(bypass, "Result_Color")
+    return field
+
+
+def active_gold_core_scalar(name):
+    material = bpy.data.materials.new(f"Active Gold Core Scalar · {name}")
+    material.use_nodes = True
+    tree = material.node_tree
+    tree.nodes.clear()
+    field = gold_active_core_roughness_field(tree)
+    emission = tree.nodes.new("ShaderNodeEmission")
+    output = tree.nodes.new("ShaderNodeOutputMaterial")
+    tree.links.new(field, emission.inputs["Color"])
+    tree.links.new(emission.outputs["Emission"], output.inputs["Surface"])
+    return material
+
+
+def physical_conductor_active_gold_core(name):
+    """Reconstruct active Gold's non-image PHYSICAL_CONDUCTOR closure chain."""
+    material = bpy.data.materials.new(f"Physical Conductor Active Gold Core · {name}")
+    material.use_nodes = True
+    tree = material.node_tree
+    tree.nodes.clear()
+    roughness = gold_active_core_roughness_field(tree)
+    closures = []
+    for index, scale in enumerate((0.25, 0.5, 0.75, 1.0)):
+        scaled = tree.nodes.new("ShaderNodeMath")
+        scaled.label = f"Active roughness × {scale:g}"
+        scaled.operation = "MULTIPLY"
+        scaled.inputs[1].default_value = scale
+        tree.links.new(roughness, scaled.inputs[0])
+
+        conductor = tree.nodes.new("ShaderNodeBsdfMetallic")
+        conductor.label = f"Gold PHYSICAL_CONDUCTOR layer {index + 1}"
+        conductor.distribution = "MULTI_GGX"
+        conductor.fresnel_type = "PHYSICAL_CONDUCTOR"
+        conductor.inputs["IOR"].default_value = METAL_PRESETS["gold"]["ior"]
+        conductor.inputs["Extinction"].default_value = METAL_PRESETS["gold"]["extinction"]
+        if conductor.inputs.get("Weight") is not None:
+            conductor.inputs["Weight"].default_value = 1.0
+        if conductor.inputs.get("Thin Film Thickness") is not None:
+            conductor.inputs["Thin Film Thickness"].default_value = 0.0
+        if conductor.inputs.get("Thin Film IOR") is not None:
+            conductor.inputs["Thin Film IOR"].default_value = 2.4600000381469727
+        tree.links.new(scaled.outputs["Value"], conductor.inputs["Roughness"])
+        closures.append(conductor)
+
+    current = closures[0].outputs["BSDF"]
+    for closure, factor in zip(closures[1:], (0.4, 0.2, 0.1)):
+        mix = tree.nodes.new("ShaderNodeMixShader")
+        mix.inputs["Fac"].default_value = factor
+        tree.links.new(current, mix.inputs[1])
+        tree.links.new(closure.outputs["BSDF"], mix.inputs[2])
+        current = mix.outputs["Shader"]
+    output = tree.nodes.new("ShaderNodeOutputMaterial")
+    tree.links.new(current, output.inputs["Surface"])
+    return material
+
+
 def gold_thin_film_streak_field(tree):
     """Reconstruct the activated Gold procedural thin-film thickness field.
 
@@ -1029,6 +1106,40 @@ def render_gold_thin_film_streak(output: Path, probe, floor, lights):
             light.data.energy = original_energies[light.name]
 
 
+def render_active_gold_core(output: Path, probe, floor, lights):
+    """Render active Gold with dense/sparse scratch factors forced to zero."""
+    original_energies = {light.name: light.data.energy for light in lights}
+    original_floor_visibility = floor.hide_render
+    background = bpy.context.scene.world.node_tree.nodes["MaterialXReflectedEnvironment"]
+    original_environment_strength = background.inputs["Strength"].default_value
+    for light in lights:
+        light.data.energy = 0.0
+    floor.hide_render = True
+    try:
+        background.inputs["Strength"].default_value = 0.18
+        beauty = physical_conductor_active_gold_core("Gold")
+        if probe.data.materials:
+            probe.data.materials[0] = beauty
+        else:
+            probe.data.materials.append(beauty)
+        bpy.context.scene.render.filepath = str(
+            output / "metal-active-gold-core-gold-blender.png"
+        )
+        bpy.ops.render.render(write_still=True)
+
+        background.inputs["Strength"].default_value = 0.0
+        probe.data.materials[0] = active_gold_core_scalar("Gold")
+        bpy.context.scene.render.filepath = str(
+            output / "metal-active-gold-core-scalar-gold-blender.png"
+        )
+        bpy.ops.render.render(write_still=True)
+    finally:
+        background.inputs["Strength"].default_value = original_environment_strength
+        floor.hide_render = original_floor_visibility
+        for light in lights:
+            light.data.energy = original_energies[light.name]
+
+
 def bump_copy(_source):
     material = bpy.data.materials.new("MaterialX Noise Bump Probe")
     material.use_nodes = True
@@ -1089,6 +1200,10 @@ def main():
         render_gold_thin_film_streak(evidence, probe, floor, lights)
         print(f"MATERIALX_BLENDER_REFERENCE metal-thin-film-streak-{{scalar-,}}gold-blender.png -> {evidence}")
         return
+    if options.active_gold_core_only:
+        render_active_gold_core(evidence, probe, floor, lights)
+        print(f"MATERIALX_BLENDER_REFERENCE metal-active-gold-core-{{scalar-,}}gold-blender.png -> {evidence}")
+        return
     source.use_nodes = True
     probe.data.materials.append(source)
     bpy.context.scene.render.filepath = str(evidence / "chrome-source-blender.png")
@@ -1107,6 +1222,7 @@ def main():
     render_physical_conductor_matrix(evidence, probe, floor, lights)
     render_gold_brushed_roughness(evidence, probe, floor, lights)
     render_gold_thin_film_streak(evidence, probe, floor, lights)
+    render_active_gold_core(evidence, probe, floor, lights)
     print(f"MATERIALX_BLENDER_REFERENCES {evidence}")
 
 

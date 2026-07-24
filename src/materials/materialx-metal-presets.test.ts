@@ -171,6 +171,68 @@ test("rights-safe metal probe index preserves the physical constants and roughne
   ]);
   assert.match(thinFilmStreak.scope, /Generated.*active Material\.011 remains exactly 0 nm/);
 
+  const activeCore = index.activeGoldNonImageCore;
+  assert.equal(activeCore.baseProbe, "gold");
+  assert.equal(activeCore.scalarShader, "MetalGoldActiveNonImageScalar");
+  assert.equal(activeCore.beautyShader, "MetalPhysicalGoldActiveNonImage");
+  assert.equal(activeCore.sourceGroup, "Gold");
+  assert.equal(activeCore.sourceMaterial, "Material.011");
+  assert.equal(activeCore.sourceObject, "Sphere.010");
+  assert.equal(activeCore.renderingType, "Physically Accurate (Physical Conductor)");
+  assert.deepEqual(activeCore.ior, [0, 0.352, 1.859]);
+  assert.deepEqual(activeCore.extinction, [6.594, 2.081, 1.496]);
+  assert.equal(activeCore.blenderPerceptualRoughness, 0.44999995827674866);
+  assert.equal(activeCore.roughnessFresnelFactor, 0.10000000149011612);
+  assert.equal(activeCore.brushedMetalFactor, 0.27300000190734863);
+  assert.equal(activeCore.layeredRoughnessFactor, 1);
+  assert.equal(activeCore.anisotropy, 0);
+  assert.equal(activeCore.anisotropicRotation, 0);
+  assert.equal(activeCore.thinFilmThicknessNanometers, 0);
+  assert.equal(activeCore.thinFilmIor, 2.4600000381469727);
+  assert.deepEqual(activeCore.layerScales, [0.25, 0.5, 0.75, 1]);
+  assert.deepEqual(activeCore.mixFactors, [0.4, 0.2, 0.1]);
+  assert.deepEqual(activeCore.effectiveWeights, [0.432, 0.288, 0.18, 0.1]);
+  assert.deepEqual(activeCore.semanticAdapters, ["blender-normalized-fbm3"]);
+  assert.deepEqual(activeCore.omittedActiveScratchMaps, [
+    {
+      role: "dense",
+      imageNode: "Image Texture.018",
+      filename: "SwirlyScratch_Natural_Dens100_72Dir.png",
+      factorSocket: "Gold Socket_4 / Metallic BSDF+ Socket_904",
+      factor: 0.5334029197692871,
+      vectorSocket: "Gold Socket_28 / Metallic BSDF+ Socket_905",
+      coordinate: "UV",
+      mappingScale: [2, 2, 2],
+      mappingRotation: [0, 0, 0],
+      width: 4096,
+      height: 4096,
+      bytes: 14784452,
+      sourceColorSpace: "sRGB",
+      sha256: "4c6f4f1fe37184827fd96b0d0da57f1ed4b534b076dea35d9d57516022209442",
+      omissionReason: "The packed source image has no accompanying redistribution license.",
+    },
+    {
+      role: "sparse",
+      imageNode: "Image Texture.019",
+      filename: "SwirlyScratch_Sparse_Dens25_72Dir.png",
+      factorSocket: "Gold Socket_2 / Metallic BSDF+ Socket_909",
+      factor: 1,
+      vectorSocket: "Gold Socket_16 / Metallic BSDF+ Socket_910",
+      coordinate: "UV",
+      mappingScale: [2, 2, 2],
+      mappingRotation: [0, 0, 0],
+      width: 4096,
+      height: 4096,
+      bytes: 1193452,
+      sourceColorSpace: "sRGB",
+      sha256: "564343924c47d45aab476b2fceab6091e3fca7cf3389d6756ea0273ec8c51869",
+      omissionReason: "The packed source image has no accompanying redistribution license.",
+    },
+  ]);
+  assert.match(activeCore.mapping, /scales that roughness by 0\.25\/0\.5\/0\.75\/1.*squares each value/i);
+  assert.match(activeCore.mapping, /four Gold PHYSICAL_CONDUCTOR closures.*0\.4\/0\.2\/0\.1/i);
+  assert.match(activeCore.scope, /non-image core only.*nonzero UV scratch-image branches.*not complete active Material\.011 parity/i);
+
   const thinFilmRamp = JSON.parse(publicAsset("gold-thin-film-streak-ramp-lut.json"));
   assert.equal(thinFilmRamp.schemaVersion, 1);
   assert.equal(thinFilmRamp.kind, "rights-safe-blender-scalar-response-lut");
@@ -200,7 +262,7 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
   const source = publicAsset("metal-preset-probes.mtlx");
   const audit = auditMaterialXDocument(source, { implementation: "official-essl" });
   assert.deepEqual(audit.unsupportedElements, []);
-  assert.equal(audit.materialCount, 16);
+  assert.equal(audit.materialCount, 18);
   assert.equal((source.match(/value="0\.1225, 0\.1225"/g) ?? []).length, 8);
   assert.equal((source.match(/<image\b/g) ?? []).length, 2);
   assert.match(source, /value="gold-roughness-fresnel-lut\.png" colorspace="raw"/);
@@ -224,6 +286,8 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
     "MetalF82GoldBrushedRoughness",
     "MetalGoldThinFilmStreakScalar",
     "MetalF82GoldThinFilmStreak",
+    "MetalGoldActiveNonImageScalar",
+    "MetalPhysicalGoldActiveNonImage",
   ].sort());
   for (const { shader } of Object.values(expectedPresets)) {
     const uniforms = manifest.shaders[shader].fragmentInterface.uniforms.PublicUniforms;
@@ -391,6 +455,73 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
     publicAsset("generated/metal-presets/MetalF82GoldThinFilmStreak.frag"),
     /void mx_generalized_schlick_bsdf\(/,
   );
+  for (const shader of ["MetalGoldActiveNonImageScalar", "MetalPhysicalGoldActiveNonImage"]) {
+    const record = manifest.shaders[shader];
+    assert.deepEqual(record.semanticAdapters, ["blender-normalized-fbm3"], shader);
+    assert.deepEqual(
+      record.textureBindings,
+      manifest.shaders.MetalGoldRoughnessFresnelScalar.textureBindings,
+      shader,
+    );
+    assert.deepEqual(record.geometryBindings.generatedCoordinates, {
+      boundsMaxUniforms: ["generated_extent_in1"],
+      boundsMinUniforms: ["generated_extent_in2", "generated_offset_in2"],
+      space: "object",
+    }, shader);
+    const fragment = publicAsset(`generated/metal-presets/${shader}.frag`);
+    assert.match(fragment, /void mx_blender_fbm3_float\(/, shader);
+    assert.match(fragment, /float active_perceptual_roughness_out = perceptual_roughness_out \* active_perceptual_roughness_in2;/, shader);
+    assert.doesNotMatch(fragment, /SwirlyScratch_/, shader);
+  }
+  const activeScalarFragment = publicAsset(
+    "generated/metal-presets/MetalGoldActiveNonImageScalar.frag",
+  );
+  assert.match(
+    activeScalarFragment,
+    /NG_convert_float_color3\(active_perceptual_roughness_out, gold_active_non_image_scalar_color_out\)/,
+  );
+  assert.doesNotMatch(activeScalarFragment, /void mx_conductor_bsdf\(/);
+
+  const activeBeautyRecord = manifest.shaders.MetalPhysicalGoldActiveNonImage;
+  const activeBeautyUniforms = activeBeautyRecord.fragmentInterface.uniforms.PublicUniforms;
+  const uniformValue = (name: string) => activeBeautyUniforms.find(
+    (uniform: { name: string }) => uniform.name === name,
+  )?.value;
+  for (const suffix of ["025", "050", "075", "100"]) {
+    assert.deepEqual(
+      uniformValue(`roughness_${suffix}_conductor_ior`).map((value: number) => Number(value.toFixed(3))),
+      [0, 0.352, 1.859],
+      suffix,
+    );
+    assert.deepEqual(
+      uniformValue(`roughness_${suffix}_conductor_extinction`).map((value: number) => Number(value.toFixed(3))),
+      [6.594, 2.081, 1.496],
+      suffix,
+    );
+    assert.equal(uniformValue(`roughness_${suffix}_conductor_thinfilm_thickness`), 0, suffix);
+    assert.ok(
+      Math.abs(uniformValue(`roughness_${suffix}_conductor_thinfilm_ior`) - 2.4600000381469727) < 1e-6,
+      suffix,
+    );
+  }
+  for (const [name, factor] of [
+    ["mix_025_050_mix", 0.4],
+    ["mix_050_075_mix", 0.2],
+    ["mix_075_100_mix", 0.1],
+  ] as const) {
+    assert.ok(Math.abs(uniformValue(name) - factor) < 1e-6, name);
+  }
+  const activeBeautyFragment = publicAsset(
+    "generated/metal-presets/MetalPhysicalGoldActiveNonImage.frag",
+  );
+  assert.match(activeBeautyFragment, /void mx_conductor_bsdf\(/);
+  assert.match(activeBeautyFragment, /float roughness_025_out = active_perceptual_roughness_out \* roughness_025_in2;/);
+  assert.match(activeBeautyFragment, /float alpha_100_scalar_out = active_perceptual_roughness_out \* active_perceptual_roughness_out;/);
+  assert.equal((activeBeautyFragment.match(/mx_conductor_bsdf\(/g) ?? []).length, 13);
+  assert.match(
+    activeBeautyFragment,
+    /mx_mix_bsdf\([^;]+mix_025_050_mix[^;]+\);[\s\S]+mx_mix_bsdf\([^;]+mix_050_075_mix[^;]+\);[\s\S]+mx_mix_bsdf\([^;]+mix_075_100_mix[^;]+\);/,
+  );
   assert.equal(
     fs.statSync(new URL("../../public/materialx/generated/metal-presets/textures/gold-roughness-fresnel-lut.png", import.meta.url)).size,
     313,
@@ -412,7 +543,7 @@ test("metal preset MaterialX and official ESSL bundle carry microfacet alpha wit
 
 test("matched Blender and browser metal probes pass the constant-input similarity gate", () => {
   const comparison = JSON.parse(fs.readFileSync(evidenceUrl("comparison.json"), "utf8"));
-  assert.equal(comparison.comparisonVersion, 15);
+  assert.equal(comparison.comparisonVersion, 16);
   assert.match(comparison.renderContract.metalPresetMatrix, /0\.35.*0\.1225/);
   assert.deepEqual(Object.keys(comparison.metalPresetMatrix), Object.keys(expectedPresets));
   for (const id of Object.keys(expectedPresets)) {
@@ -542,6 +673,56 @@ test("matched Blender and browser metal probes pass the constant-input similarit
     for (const renderer of ["blender", "web"]) {
       assert.ok(
         fs.statSync(evidenceUrl(`metal-thin-film-streak-${kind}gold-${renderer}.png`)).size > 10_000,
+        `${kind || "beauty"} ${renderer}`,
+      );
+    }
+  }
+  assert.match(
+    comparison.renderContract.metalActiveGoldCoreProbe,
+    /active Material\.011 Gold roughness 0\.4499999583.*PHYSICAL_CONDUCTOR.*scratch factors.*forced to zero/i,
+  );
+  const activeCore = comparison.metalActiveGoldCoreProbe;
+  assert.equal(activeCore.sourceMaterial, "Material.011");
+  assert.equal(activeCore.sourcePreset, "Gold");
+  assert.equal(activeCore.renderingType, "Physically Accurate (Physical Conductor)");
+  assert.deepEqual(activeCore.forcedOverrides, {
+    denseScratchFactor: 0,
+    sparseScratchFactor: 0,
+    reason: "The two packed scratch images are locally extractable but do not carry a verified standalone redistribution license.",
+  });
+  assert.deepEqual(activeCore.activeInputsRetained, {
+    roughness: 0.44999995827674866,
+    layeredRoughness: 1,
+    roughnessFresnel: 0.10000000149011612,
+    anisotropy: 0,
+    anisotropicRotation: 0,
+    brushedMetalFactor: 0.27300000190734863,
+    thinFilmThicknessNanometers: 0,
+    thinFilmIor: 2.4600000381469727,
+  });
+  assert.deepEqual(activeCore.semanticAdapters, ["blender-normalized-fbm3"]);
+  assert.ok(activeCore.scalar.rgbRootMeanSquareError < 0.007);
+  assert.ok(activeCore.scalar.luminanceCorrelation > 0.999);
+  assert.ok(activeCore.scalar.sphereRegion.rgbRootMeanSquareError < 0.016);
+  assert.ok(activeCore.scalar.sphereRegion.luminanceCorrelation > 0.965);
+  assert.ok(Math.abs(
+    activeCore.scalar.sphereRegion.meanLuminance.blender
+      - activeCore.scalar.sphereRegion.meanLuminance.web,
+  ) < 0.001);
+  assert.ok(activeCore.beauty.sphereRegion.rgbRootMeanSquareError < 0.03);
+  assert.ok(activeCore.beauty.sphereRegion.luminanceCorrelation > 0.99);
+  assert.ok(Math.abs(
+    activeCore.beauty.sphereRegion.meanLuminance.blender
+      - activeCore.beauty.sphereRegion.meanLuminance.web,
+  ) < 0.01);
+  assert.match(activeCore.scalar.claim, /dense\/sparse EXCLUSION stages at factor zero/);
+  assert.match(activeCore.beauty.claim, /PHYSICAL_CONDUCTOR core.*layered mix factors 0\.4\/0\.2\/0\.1/);
+  assert.match(activeCore.beauty.claim, /not the complete supplied appearance/);
+  assert.match(activeCore.rightsBoundary, /No source scratch pixels.*complete source graph.*source binary/);
+  for (const kind of ["scalar-", ""]) {
+    for (const renderer of ["blender", "web"]) {
+      assert.ok(
+        fs.statSync(evidenceUrl(`metal-active-gold-core-${kind}gold-${renderer}.png`)).size > 10_000,
         `${kind || "beauty"} ${renderer}`,
       );
     }

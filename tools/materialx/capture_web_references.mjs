@@ -9,6 +9,7 @@ const thinFilmSweep = process.argv.includes("--thin-film-sweep");
 const roughnessFresnelOnly = process.argv.includes("--roughness-fresnel-only");
 const brushedRoughnessOnly = process.argv.includes("--brushed-roughness-only");
 const thinFilmStreakOnly = process.argv.includes("--thin-film-streak-only");
+const activeGoldCoreOnly = process.argv.includes("--active-gold-core-only");
 const uiNormalBandOnly = process.argv.includes("--ui-normal-band-only");
 const executablePath = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -151,6 +152,43 @@ try {
   };
   if (thinFilmStreakOnly) {
     await captureThinFilmStreak();
+    await browser.close();
+    process.exit(0);
+  }
+  const captureActiveGoldCore = async () => {
+    for (const [diagnostic, preset, filename] of [
+      [
+        "metal-active-gold-core-scalar",
+        "active-gold-core-scalar-gold",
+        "metal-active-gold-core-scalar-gold-web.png",
+      ],
+      [
+        "metal-active-gold-core",
+        "active-gold-core-gold",
+        "metal-active-gold-core-gold-web.png",
+      ],
+    ]) {
+      await page.goto(
+        `${baseUrl}/materialx?capture=1&diagnostic=${diagnostic}`,
+        { waitUntil: "domcontentloaded" },
+      );
+      await page.waitForFunction(
+        (selectedPreset) => (
+          document.documentElement.dataset.materialxImplementation === "official-essl-prefilter"
+          && document.documentElement.dataset.materialxPreset === selectedPreset
+        ),
+        { timeout: 360_000 },
+        preset,
+      );
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const activeGoldCoreCanvas = await page.$("#materialx-canvas");
+      if (!activeGoldCoreCanvas) throw new Error(`MaterialX ${preset} canvas missing`);
+      await activeGoldCoreCanvas.screenshot({ path: path.join(outputDir, filename) });
+      console.log(`MATERIALX_WEB_REFERENCE ${filename}`);
+    }
+  };
+  if (activeGoldCoreOnly) {
+    await captureActiveGoldCore();
     await browser.close();
     process.exit(0);
   }
@@ -310,6 +348,7 @@ try {
   await captureRoughnessFresnel();
   await captureBrushedRoughness();
   await captureThinFilmStreak();
+  await captureActiveGoldCore();
   for (const [rotation, slug] of [[0, "r0"], [0.25, "r90"]]) {
     await page.goto(
       `${baseUrl}/materialx?capture=1&diagnostic=metal-anisotropy&rotation=${rotation}`,

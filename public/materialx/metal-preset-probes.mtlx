@@ -534,6 +534,139 @@
   </surfacematerial>
 
   <!--
+    Rights-safe composition of every non-image branch that contributes to the
+    active Material.011 Gold preset. The shared roughness field already carries
+    exact Roughness Fresnel and normalized Blender-FBM brushed semantics. This
+    graph applies the active Layered Roughness=1 closure scales and mix factors.
+    Anisotropy and thin-film thickness are both exactly zero in the source.
+
+    The two active UV scratch images are deliberately absent because no
+    redistribution license accompanies their packed source bytes. Their exact
+    filenames, factors, dimensions, and hashes are recorded in the companion
+    index. This material is therefore Gold minus those two image branches, not
+    a claim of complete active-source parity.
+  -->
+  <nodegraph name="NG_gold_active_non_image_core">
+    <multiply name="active_perceptual_roughness" type="float">
+      <input name="in1" type="float" nodegraph="NG_gold_brushed_roughness_fields" output="roughness" />
+      <input name="in2" type="float" value="1" />
+    </multiply>
+    <multiply name="roughness_025" type="float">
+      <input name="in1" type="float" nodename="active_perceptual_roughness" />
+      <input name="in2" type="float" value="0.25" />
+    </multiply>
+    <multiply name="roughness_050" type="float">
+      <input name="in1" type="float" nodename="active_perceptual_roughness" />
+      <input name="in2" type="float" value="0.5" />
+    </multiply>
+    <multiply name="roughness_075" type="float">
+      <input name="in1" type="float" nodename="active_perceptual_roughness" />
+      <input name="in2" type="float" value="0.75" />
+    </multiply>
+    <multiply name="alpha_025_scalar" type="float">
+      <input name="in1" type="float" nodename="roughness_025" />
+      <input name="in2" type="float" nodename="roughness_025" />
+    </multiply>
+    <multiply name="alpha_050_scalar" type="float">
+      <input name="in1" type="float" nodename="roughness_050" />
+      <input name="in2" type="float" nodename="roughness_050" />
+    </multiply>
+    <multiply name="alpha_075_scalar" type="float">
+      <input name="in1" type="float" nodename="roughness_075" />
+      <input name="in2" type="float" nodename="roughness_075" />
+    </multiply>
+    <multiply name="alpha_100_scalar" type="float">
+      <input name="in1" type="float" nodename="active_perceptual_roughness" />
+      <input name="in2" type="float" nodename="active_perceptual_roughness" />
+    </multiply>
+    <combine2 name="alpha_025" type="vector2">
+      <input name="in1" type="float" nodename="alpha_025_scalar" />
+      <input name="in2" type="float" nodename="alpha_025_scalar" />
+    </combine2>
+    <combine2 name="alpha_050" type="vector2">
+      <input name="in1" type="float" nodename="alpha_050_scalar" />
+      <input name="in2" type="float" nodename="alpha_050_scalar" />
+    </combine2>
+    <combine2 name="alpha_075" type="vector2">
+      <input name="in1" type="float" nodename="alpha_075_scalar" />
+      <input name="in2" type="float" nodename="alpha_075_scalar" />
+    </combine2>
+    <combine2 name="alpha_100" type="vector2">
+      <input name="in1" type="float" nodename="alpha_100_scalar" />
+      <input name="in2" type="float" nodename="alpha_100_scalar" />
+    </combine2>
+    <output name="roughness" type="float" nodename="active_perceptual_roughness" />
+    <output name="alpha025" type="vector2" nodename="alpha_025" />
+    <output name="alpha050" type="vector2" nodename="alpha_050" />
+    <output name="alpha075" type="vector2" nodename="alpha_075" />
+    <output name="alpha100" type="vector2" nodename="alpha_100" />
+  </nodegraph>
+
+  <convert name="gold_active_non_image_scalar_color" type="color3">
+    <input name="in" type="float" nodegraph="NG_gold_active_non_image_core" output="roughness" />
+  </convert>
+  <surface_unlit name="surface_gold_active_non_image_scalar" type="surfaceshader">
+    <input name="emission" type="float" value="1" />
+    <input name="emission_color" type="color3" nodename="gold_active_non_image_scalar_color" />
+  </surface_unlit>
+  <surfacematerial name="MetalGoldActiveNonImageScalar" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_gold_active_non_image_scalar" />
+  </surfacematerial>
+
+  <nodegraph name="NG_metal_physical_gold_active_non_image">
+    <conductor_bsdf name="roughness_025_conductor" type="BSDF">
+      <input name="ior" type="color3" value="0, 0.352, 1.859" />
+      <input name="extinction" type="color3" value="6.594, 2.081, 1.496" />
+      <input name="roughness" type="vector2" nodegraph="NG_gold_active_non_image_core" output="alpha025" />
+      <input name="thinfilm_thickness" type="float" value="0" />
+      <input name="thinfilm_ior" type="float" value="2.4600000381469727" />
+    </conductor_bsdf>
+    <conductor_bsdf name="roughness_050_conductor" type="BSDF">
+      <input name="ior" type="color3" value="0, 0.352, 1.859" />
+      <input name="extinction" type="color3" value="6.594, 2.081, 1.496" />
+      <input name="roughness" type="vector2" nodegraph="NG_gold_active_non_image_core" output="alpha050" />
+      <input name="thinfilm_thickness" type="float" value="0" />
+      <input name="thinfilm_ior" type="float" value="2.4600000381469727" />
+    </conductor_bsdf>
+    <conductor_bsdf name="roughness_075_conductor" type="BSDF">
+      <input name="ior" type="color3" value="0, 0.352, 1.859" />
+      <input name="extinction" type="color3" value="6.594, 2.081, 1.496" />
+      <input name="roughness" type="vector2" nodegraph="NG_gold_active_non_image_core" output="alpha075" />
+      <input name="thinfilm_thickness" type="float" value="0" />
+      <input name="thinfilm_ior" type="float" value="2.4600000381469727" />
+    </conductor_bsdf>
+    <conductor_bsdf name="roughness_100_conductor" type="BSDF">
+      <input name="ior" type="color3" value="0, 0.352, 1.859" />
+      <input name="extinction" type="color3" value="6.594, 2.081, 1.496" />
+      <input name="roughness" type="vector2" nodegraph="NG_gold_active_non_image_core" output="alpha100" />
+      <input name="thinfilm_thickness" type="float" value="0" />
+      <input name="thinfilm_ior" type="float" value="2.4600000381469727" />
+    </conductor_bsdf>
+    <mix name="mix_025_050" type="BSDF">
+      <input name="bg" type="BSDF" nodename="roughness_025_conductor" />
+      <input name="fg" type="BSDF" nodename="roughness_050_conductor" />
+      <input name="mix" type="float" value="0.4" />
+    </mix>
+    <mix name="mix_050_075" type="BSDF">
+      <input name="bg" type="BSDF" nodename="mix_025_050" />
+      <input name="fg" type="BSDF" nodename="roughness_075_conductor" />
+      <input name="mix" type="float" value="0.2" />
+    </mix>
+    <mix name="mix_075_100" type="BSDF">
+      <input name="bg" type="BSDF" nodename="mix_050_075" />
+      <input name="fg" type="BSDF" nodename="roughness_100_conductor" />
+      <input name="mix" type="float" value="0.1" />
+    </mix>
+    <output name="out" type="BSDF" nodename="mix_075_100" />
+  </nodegraph>
+  <surface name="surface_physical_gold_active_non_image" type="surfaceshader">
+    <input name="bsdf" type="BSDF" nodegraph="NG_metal_physical_gold_active_non_image" output="out" />
+  </surface>
+  <surfacematerial name="MetalPhysicalGoldActiveNonImage" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_physical_gold_active_non_image" />
+  </surfacematerial>
+
+  <!--
     Activated semantic probe for Gold's procedural thin-film streak branch.
     The supplied Material.011 leaves this branch's dedicated Vector unlinked,
     so its authored thickness is exactly zero. This diagnostic explicitly

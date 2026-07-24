@@ -110,7 +110,7 @@ def main():
         return format(value, ".7g").replace(".", "p")
 
     output = {
-        "comparisonVersion": 15,
+        "comparisonVersion": 16,
         "renderContract": {
             "geometry": "shared outward-wound 64 x 32 UV sphere algorithm and 96-segment floor disc",
             "camera": "scene-contract.json schema 1; Blender evaluated matrix_world and 50 degree vertical FOV",
@@ -130,6 +130,7 @@ def main():
             "metalRoughnessFresnelProbe": "metal-roughness-fresnel-{scalar-,}gold-{blender,web}.png; exact Blender Layer Weight Blend 0.1 dielectric Fresnel, sampled Gold RGB Curve/B-spline ramp response, MULTIPLY Mix field, roughness 0.35, no direct lights or floor",
             "metalBrushedRoughnessProbe": "metal-brushed-roughness-{scalar-,}gold-{blender,web}.png; active Gold controls roughness 0.4499999583, Generated-coordinate scale 100, length mix 0.9549999833, normalized Blender 3D FBM scale 20/detail 2/roughness 0.5/lacunarity 2, brush factor 0.2730000019, no source scratch images, direct lights, or floor",
             "metalThinFilmStreakProbe": "metal-thin-film-streak-{scalar-,}gold-{blender,web}.png; explicit diagnostic override binds the otherwise-unlinked Gold Socket_27 to Generated coordinates, combines normalized scale-20 and raw scale-10 Blender FBM fields into T/1390 scalar and T nm beauty outputs, scalar uses one sample per pixel in both renderers without Eevee temporal averaging, beauty uses roughness 0.45, thin-film IOR 2.46, key light only, no environment or floor; the supplied active Material.011 remains exactly 0 nm",
+            "metalActiveGoldCoreProbe": "metal-active-gold-core-{scalar-,}gold-{blender,web}.png; active Material.011 Gold roughness 0.4499999583, roughness Fresnel 0.1, Generated-coordinate brushed factor 0.2730000019, layered roughness 1, PHYSICAL_CONDUCTOR Gold n/k, thin film 0 nm, anisotropy 0; dense and sparse scratch factors are explicitly forced to zero because their packed image redistribution rights are unresolved; environment only, no direct lights or floor",
             "metalAnisotropyProbe": "metal-anisotropy-gold-{r0,r90}-{blender,web}.png; Blender Cycles versus MaterialX, anisotropy 0.8, radial-Y/Tworld tangent, rotations 0 and 0.25 turns, Blender alpha/aspect mapping, key light only, no environment or floor",
             "metalThinFilmProbe": "metal-thin-film-gold-{0,243}nm-{blender,web}.png; Blender Cycles Metallic BSDF F82 versus MaterialX generalized_schlick_bsdf, source Gold-group mapping 150 V x 1.62 nm/V = 243 nm, thin-film IOR 2.46, key light only, no environment or floor",
         },
@@ -296,6 +297,56 @@ def main():
                 "blender-raw-fbm3",
             ],
             "noiseResidual": "The explicit adapters preserve Blender's normalized and raw FBM semantics. Remaining high-frequency error includes raster filtering and renderer integration across coordinate frequencies up to 2000 and 900.",
+        },
+        "metalActiveGoldCoreProbe": {
+            "sourceMaterial": "Material.011",
+            "sourcePreset": "Gold",
+            "renderingType": "Physically Accurate (Physical Conductor)",
+            "forcedOverrides": {
+                "denseScratchFactor": 0,
+                "sparseScratchFactor": 0,
+                "reason": "The two packed scratch images are locally extractable but do not carry a verified standalone redistribution license.",
+            },
+            "activeInputsRetained": {
+                "roughness": 0.44999995827674866,
+                "layeredRoughness": 1.0,
+                "roughnessFresnel": 0.10000000149011612,
+                "anisotropy": 0.0,
+                "anisotropicRotation": 0.0,
+                "brushedMetalFactor": 0.27300000190734863,
+                "thinFilmThicknessNanometers": 0.0,
+                "thinFilmIor": 2.4600000381469727,
+            },
+            "scalar": {
+                **metrics(
+                    directory / "metal-active-gold-core-scalar-gold-blender.png",
+                    directory / "metal-active-gold-core-scalar-gold-web.png",
+                ),
+                "sphereRegion": sphere_metrics(
+                    directory / "metal-active-gold-core-scalar-gold-blender.png",
+                    directory / "metal-active-gold-core-scalar-gold-web.png",
+                ),
+                "claim": "active Gold roughness-Fresnel plus procedural brushed field followed by explicit dense/sparse EXCLUSION stages at factor zero; unlit scalar semantics only",
+            },
+            "beauty": {
+                **metrics(
+                    directory / "metal-active-gold-core-gold-blender.png",
+                    directory / "metal-active-gold-core-gold-web.png",
+                ),
+                "sphereRegion": sphere_metrics(
+                    directory / "metal-active-gold-core-gold-blender.png",
+                    directory / "metal-active-gold-core-gold-web.png",
+                ),
+                "sphereMeanRgb": sphere_mean_rgb(
+                    directory / "metal-active-gold-core-gold-blender.png",
+                    directory / "metal-active-gold-core-gold-web.png",
+                ),
+                "claim": "active non-image Gold PHYSICAL_CONDUCTOR core with the four roughness-scaled closures and layered mix factors 0.4/0.2/0.1; not the complete supplied appearance because both nonzero scratch-image controls are deliberately overridden to zero",
+            },
+            "semanticAdapters": [
+                "blender-normalized-fbm3",
+            ],
+            "rightsBoundary": "No source scratch pixels, reversible texture bake, complete source graph, or source binary is included in this checkpoint.",
         },
         "metalAnisotropyProbe": {
             rotation: {

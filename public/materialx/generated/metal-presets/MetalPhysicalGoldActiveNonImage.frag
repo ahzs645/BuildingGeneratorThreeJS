@@ -71,17 +71,39 @@ uniform vec2 curve_ramp_response_uv_offset;
 uniform float authored_base_roughness_in1;
 uniform float one_minus_base_roughness_in1;
 uniform float perceptual_roughness_in1;
-uniform float f82_weight;
-uniform vec3 f82_color0;
-uniform vec3 f82_color82;
-uniform vec3 f82_color90;
-uniform float f82_exponent;
-uniform float f82_thinfilm_thickness;
-uniform float f82_thinfilm_ior;
-uniform int f82_distribution;
-uniform int f82_scatter_mode;
-uniform float surface_f82_gold_brushed_roughness_opacity;
-uniform bool surface_f82_gold_brushed_roughness_thin_walled;
+uniform float active_perceptual_roughness_in2;
+uniform float roughness_025_in2;
+uniform float roughness_050_in2;
+uniform float roughness_075_in2;
+uniform float roughness_100_conductor_weight;
+uniform vec3 roughness_100_conductor_ior;
+uniform vec3 roughness_100_conductor_extinction;
+uniform float roughness_100_conductor_thinfilm_thickness;
+uniform float roughness_100_conductor_thinfilm_ior;
+uniform int roughness_100_conductor_distribution;
+uniform float roughness_025_conductor_weight;
+uniform vec3 roughness_025_conductor_ior;
+uniform vec3 roughness_025_conductor_extinction;
+uniform float roughness_025_conductor_thinfilm_thickness;
+uniform float roughness_025_conductor_thinfilm_ior;
+uniform int roughness_025_conductor_distribution;
+uniform float roughness_050_conductor_weight;
+uniform vec3 roughness_050_conductor_ior;
+uniform vec3 roughness_050_conductor_extinction;
+uniform float roughness_050_conductor_thinfilm_thickness;
+uniform float roughness_050_conductor_thinfilm_ior;
+uniform int roughness_050_conductor_distribution;
+uniform float roughness_075_conductor_weight;
+uniform vec3 roughness_075_conductor_ior;
+uniform vec3 roughness_075_conductor_extinction;
+uniform float roughness_075_conductor_thinfilm_thickness;
+uniform float roughness_075_conductor_thinfilm_ior;
+uniform int roughness_075_conductor_distribution;
+uniform float mix_025_050_mix;
+uniform float mix_050_075_mix;
+uniform float mix_075_100_mix;
+uniform float surface_physical_gold_active_non_image_opacity;
+uniform bool surface_physical_gold_active_non_image_thin_walled;
 
 in vec3 normalWorld;
 in vec3 tangentWorld;
@@ -1610,13 +1632,11 @@ struct ClosureData {
     float occlusion;
 };
 
-void mx_generalized_schlick_bsdf(ClosureData closureData, float weight, vec3 color0, vec3 color82, vec3 color90, float exponent, vec2 roughness, float thinfilm_thickness, float thinfilm_ior, vec3 N, vec3 X, int distribution, int scatter_mode, inout BSDF bsdf)
+void mx_conductor_bsdf(ClosureData closureData, float weight, vec3 ior_n, vec3 ior_k, vec2 roughness, float thinfilm_thickness, float thinfilm_ior, vec3 N, vec3 X, int distribution, inout BSDF bsdf)
 {
+    bsdf.throughput = vec3(0.0);
+
     if (weight < M_FLOAT_EPS)
-    {
-        return;
-    }
-    if (closureData.closureType != CLOSURE_TYPE_TRANSMISSION && scatter_mode == 1)
     {
         return;
     }
@@ -1627,10 +1647,7 @@ void mx_generalized_schlick_bsdf(ClosureData closureData, float weight, vec3 col
     N = mx_forward_facing_normal(N, V);
     float NdotV = clamp(dot(N, V), M_FLOAT_EPS, 1.0);
 
-    vec3 safeColor0 = max(color0, 0.0);
-    vec3 safeColor82 = max(color82, 0.0);
-    vec3 safeColor90 = max(color90, 0.0);
-    FresnelData fd = mx_init_fresnel_schlick(safeColor0, safeColor82, safeColor90, exponent, thinfilm_thickness, thinfilm_ior);
+    FresnelData fd = mx_init_fresnel_conductor(ior_n, ior_k, thinfilm_thickness, thinfilm_ior);
 
     vec2 safeAlpha = clamp(roughness, M_FLOAT_EPS, 1.0);
     float avgAlpha = mx_average_alpha(safeAlpha);
@@ -1646,46 +1663,29 @@ void mx_generalized_schlick_bsdf(ClosureData closureData, float weight, vec3 col
 
         vec3 Ht = vec3(dot(H, X), dot(H, Y), dot(H, N));
 
-        vec3  F = mx_compute_fresnel(VdotH, fd);
+        vec3 F = mx_compute_fresnel(VdotH, fd);
         float D = mx_ggx_NDF(Ht, safeAlpha);
         float G = mx_ggx_smith_G2(NdotL, NdotV, avgAlpha);
 
         vec3 comp = mx_ggx_energy_compensation(NdotV, avgAlpha, F);
-        vec3 dirAlbedo = mx_ggx_dir_albedo(NdotV, avgAlpha, safeColor0, safeColor90) * comp;
-        float avgDirAlbedo = dot(dirAlbedo, vec3(1.0 / 3.0));
-        bsdf.throughput = vec3(1.0 - avgDirAlbedo * weight);
 
         // Note: NdotL is cancelled out
         bsdf.response = D * F * G * comp * closureData.occlusion * weight / (4.0 * NdotV);
     }
-    else if (closureData.closureType == CLOSURE_TYPE_TRANSMISSION)
-    {
-        vec3 F = mx_compute_fresnel(NdotV, fd);
-
-        vec3 comp = mx_ggx_energy_compensation(NdotV, avgAlpha, F);
-        vec3 dirAlbedo = mx_ggx_dir_albedo(NdotV, avgAlpha, safeColor0, safeColor90) * comp;
-        float avgDirAlbedo = dot(dirAlbedo, vec3(1.0 / 3.0));
-        bsdf.throughput = vec3(1.0 - avgDirAlbedo * weight);
-
-        if (scatter_mode != 0)
-        {
-            float avgF0 = dot(safeColor0, vec3(1.0 / 3.0));
-            fd.ior = vec3(mx_f0_to_ior(avgF0));
-            bsdf.response = mx_surface_transmission(N, V, X, safeAlpha, distribution, fd, vec3(1.0)) * weight;
-        }
-    }
     else if (closureData.closureType == CLOSURE_TYPE_INDIRECT)
     {
         vec3 F = mx_compute_fresnel(NdotV, fd);
-
         vec3 comp = mx_ggx_energy_compensation(NdotV, avgAlpha, F);
-        vec3 dirAlbedo = mx_ggx_dir_albedo(NdotV, avgAlpha, safeColor0, safeColor90) * comp;
-        float avgDirAlbedo = dot(dirAlbedo, vec3(1.0 / 3.0));
-        bsdf.throughput = vec3(1.0 - avgDirAlbedo * weight);
-
         vec3 Li = mx_environment_radiance(N, V, X, safeAlpha, distribution, fd);
         bsdf.response = Li * comp * weight;
     }
+}
+
+
+void mx_mix_bsdf(ClosureData closureData, BSDF fg, BSDF bg, float mixValue, out BSDF result)
+{
+    result.response = mix(bg.response, fg.response, mixValue);
+    result.throughput = mix(bg.throughput, fg.throughput, mixValue);
 }
 
 // Clean-room ESSL implementation of Blender's 3D FBM Noise Texture.
@@ -1860,9 +1860,19 @@ void main()
     float one_minus_base_roughness_out = one_minus_base_roughness_in1 - authored_base_roughness_out;
     float screen_complement_out = one_minus_base_roughness_out * one_minus_brushed_add_out;
     float perceptual_roughness_out = perceptual_roughness_in1 - screen_complement_out;
-    float microfacet_alpha_out = perceptual_roughness_out * perceptual_roughness_out;
-    vec2 microfacet_alpha_xy_out = vec2(microfacet_alpha_out,microfacet_alpha_out);
-    surfaceshader surface_f82_gold_brushed_roughness_out = surfaceshader(vec3(0.0),vec3(0.0));
+    float active_perceptual_roughness_out = perceptual_roughness_out * active_perceptual_roughness_in2;
+    float roughness_025_out = active_perceptual_roughness_out * roughness_025_in2;
+    float roughness_050_out = active_perceptual_roughness_out * roughness_050_in2;
+    float roughness_075_out = active_perceptual_roughness_out * roughness_075_in2;
+    float alpha_100_scalar_out = active_perceptual_roughness_out * active_perceptual_roughness_out;
+    float alpha_025_scalar_out = roughness_025_out * roughness_025_out;
+    float alpha_050_scalar_out = roughness_050_out * roughness_050_out;
+    float alpha_075_scalar_out = roughness_075_out * roughness_075_out;
+    vec2 alpha_100_out = vec2(alpha_100_scalar_out,alpha_100_scalar_out);
+    vec2 alpha_025_out = vec2(alpha_025_scalar_out,alpha_025_scalar_out);
+    vec2 alpha_050_out = vec2(alpha_050_scalar_out,alpha_050_scalar_out);
+    vec2 alpha_075_out = vec2(alpha_075_scalar_out,alpha_075_scalar_out);
+    surfaceshader surface_physical_gold_active_non_image_out = surfaceshader(vec3(0.0),vec3(0.0));
     {
         vec3 N = normalize(normalWorld);
         vec3 V = normalize(u_viewPosition - positionWorld);
@@ -1870,7 +1880,7 @@ void main()
         vec3 L = vec3(0,0,0);;
         float occlusion = 1.0;
 
-        float surfaceOpacity = surface_f82_gold_brushed_roughness_opacity;
+        float surfaceOpacity = surface_physical_gold_active_non_image_opacity;
 
         // Shadow occlusion
 
@@ -1884,11 +1894,23 @@ void main()
 
             // Calculate the BSDF response for this light source
             ClosureData closureData = ClosureData(CLOSURE_TYPE_REFLECTION, L, V, N, P, occlusion);
-            BSDF f82_out = BSDF(vec3(0.0),vec3(1.0));
-            mx_generalized_schlick_bsdf(closureData, f82_weight, f82_color0, f82_color82, f82_color90, f82_exponent, microfacet_alpha_xy_out, f82_thinfilm_thickness, f82_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, f82_distribution, f82_scatter_mode, f82_out);
+            BSDF roughness_100_conductor_out = BSDF(vec3(0.0),vec3(1.0));
+            mx_conductor_bsdf(closureData, roughness_100_conductor_weight, roughness_100_conductor_ior, roughness_100_conductor_extinction, alpha_100_out, roughness_100_conductor_thinfilm_thickness, roughness_100_conductor_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, roughness_100_conductor_distribution, roughness_100_conductor_out);
+            BSDF roughness_075_conductor_out = BSDF(vec3(0.0),vec3(1.0));
+            mx_conductor_bsdf(closureData, roughness_075_conductor_weight, roughness_075_conductor_ior, roughness_075_conductor_extinction, alpha_075_out, roughness_075_conductor_thinfilm_thickness, roughness_075_conductor_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, roughness_075_conductor_distribution, roughness_075_conductor_out);
+            BSDF roughness_050_conductor_out = BSDF(vec3(0.0),vec3(1.0));
+            mx_conductor_bsdf(closureData, roughness_050_conductor_weight, roughness_050_conductor_ior, roughness_050_conductor_extinction, alpha_050_out, roughness_050_conductor_thinfilm_thickness, roughness_050_conductor_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, roughness_050_conductor_distribution, roughness_050_conductor_out);
+            BSDF roughness_025_conductor_out = BSDF(vec3(0.0),vec3(1.0));
+            mx_conductor_bsdf(closureData, roughness_025_conductor_weight, roughness_025_conductor_ior, roughness_025_conductor_extinction, alpha_025_out, roughness_025_conductor_thinfilm_thickness, roughness_025_conductor_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, roughness_025_conductor_distribution, roughness_025_conductor_out);
+            BSDF mix_025_050_out = BSDF(vec3(0.0),vec3(1.0));
+            mx_mix_bsdf(closureData, roughness_050_conductor_out, roughness_025_conductor_out, mix_025_050_mix, mix_025_050_out);
+            BSDF mix_050_075_out = BSDF(vec3(0.0),vec3(1.0));
+            mx_mix_bsdf(closureData, roughness_075_conductor_out, mix_025_050_out, mix_050_075_mix, mix_050_075_out);
+            BSDF mix_075_100_out = BSDF(vec3(0.0),vec3(1.0));
+            mx_mix_bsdf(closureData, roughness_100_conductor_out, mix_050_075_out, mix_075_100_mix, mix_075_100_out);
 
             // Accumulate the light's contribution
-            surface_f82_gold_brushed_roughness_out.color += lightShader.intensity * f82_out.response;
+            surface_physical_gold_active_non_image_out.color += lightShader.intensity * mix_075_100_out.response;
         }
 
         // Ambient occlusion
@@ -1897,25 +1919,49 @@ void main()
         // Add environment contribution
         {
             ClosureData closureData = ClosureData(CLOSURE_TYPE_INDIRECT, L, V, N, P, occlusion);
-            BSDF f82_out = BSDF(vec3(0.0),vec3(1.0));
-            mx_generalized_schlick_bsdf(closureData, f82_weight, f82_color0, f82_color82, f82_color90, f82_exponent, microfacet_alpha_xy_out, f82_thinfilm_thickness, f82_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, f82_distribution, f82_scatter_mode, f82_out);
+            BSDF roughness_100_conductor_out = BSDF(vec3(0.0),vec3(1.0));
+            mx_conductor_bsdf(closureData, roughness_100_conductor_weight, roughness_100_conductor_ior, roughness_100_conductor_extinction, alpha_100_out, roughness_100_conductor_thinfilm_thickness, roughness_100_conductor_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, roughness_100_conductor_distribution, roughness_100_conductor_out);
+            BSDF roughness_075_conductor_out = BSDF(vec3(0.0),vec3(1.0));
+            mx_conductor_bsdf(closureData, roughness_075_conductor_weight, roughness_075_conductor_ior, roughness_075_conductor_extinction, alpha_075_out, roughness_075_conductor_thinfilm_thickness, roughness_075_conductor_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, roughness_075_conductor_distribution, roughness_075_conductor_out);
+            BSDF roughness_050_conductor_out = BSDF(vec3(0.0),vec3(1.0));
+            mx_conductor_bsdf(closureData, roughness_050_conductor_weight, roughness_050_conductor_ior, roughness_050_conductor_extinction, alpha_050_out, roughness_050_conductor_thinfilm_thickness, roughness_050_conductor_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, roughness_050_conductor_distribution, roughness_050_conductor_out);
+            BSDF roughness_025_conductor_out = BSDF(vec3(0.0),vec3(1.0));
+            mx_conductor_bsdf(closureData, roughness_025_conductor_weight, roughness_025_conductor_ior, roughness_025_conductor_extinction, alpha_025_out, roughness_025_conductor_thinfilm_thickness, roughness_025_conductor_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, roughness_025_conductor_distribution, roughness_025_conductor_out);
+            BSDF mix_025_050_out = BSDF(vec3(0.0),vec3(1.0));
+            mx_mix_bsdf(closureData, roughness_050_conductor_out, roughness_025_conductor_out, mix_025_050_mix, mix_025_050_out);
+            BSDF mix_050_075_out = BSDF(vec3(0.0),vec3(1.0));
+            mx_mix_bsdf(closureData, roughness_075_conductor_out, mix_025_050_out, mix_050_075_mix, mix_050_075_out);
+            BSDF mix_075_100_out = BSDF(vec3(0.0),vec3(1.0));
+            mx_mix_bsdf(closureData, roughness_100_conductor_out, mix_050_075_out, mix_075_100_mix, mix_075_100_out);
 
-            surface_f82_gold_brushed_roughness_out.color += occlusion * f82_out.response;
+            surface_physical_gold_active_non_image_out.color += occlusion * mix_075_100_out.response;
         }
 
         // Calculate the BSDF transmission for viewing direction
         ClosureData closureData = ClosureData(CLOSURE_TYPE_TRANSMISSION, L, V, N, P, occlusion);
-        BSDF f82_out = BSDF(vec3(0.0),vec3(1.0));
-        mx_generalized_schlick_bsdf(closureData, f82_weight, f82_color0, f82_color82, f82_color90, f82_exponent, microfacet_alpha_xy_out, f82_thinfilm_thickness, f82_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, f82_distribution, f82_scatter_mode, f82_out);
-        surface_f82_gold_brushed_roughness_out.color += f82_out.response;
+        BSDF roughness_100_conductor_out = BSDF(vec3(0.0),vec3(1.0));
+        mx_conductor_bsdf(closureData, roughness_100_conductor_weight, roughness_100_conductor_ior, roughness_100_conductor_extinction, alpha_100_out, roughness_100_conductor_thinfilm_thickness, roughness_100_conductor_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, roughness_100_conductor_distribution, roughness_100_conductor_out);
+        BSDF roughness_075_conductor_out = BSDF(vec3(0.0),vec3(1.0));
+        mx_conductor_bsdf(closureData, roughness_075_conductor_weight, roughness_075_conductor_ior, roughness_075_conductor_extinction, alpha_075_out, roughness_075_conductor_thinfilm_thickness, roughness_075_conductor_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, roughness_075_conductor_distribution, roughness_075_conductor_out);
+        BSDF roughness_050_conductor_out = BSDF(vec3(0.0),vec3(1.0));
+        mx_conductor_bsdf(closureData, roughness_050_conductor_weight, roughness_050_conductor_ior, roughness_050_conductor_extinction, alpha_050_out, roughness_050_conductor_thinfilm_thickness, roughness_050_conductor_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, roughness_050_conductor_distribution, roughness_050_conductor_out);
+        BSDF roughness_025_conductor_out = BSDF(vec3(0.0),vec3(1.0));
+        mx_conductor_bsdf(closureData, roughness_025_conductor_weight, roughness_025_conductor_ior, roughness_025_conductor_extinction, alpha_025_out, roughness_025_conductor_thinfilm_thickness, roughness_025_conductor_thinfilm_ior, geomprop_Nworld_out1, geomprop_Tworld_out1, roughness_025_conductor_distribution, roughness_025_conductor_out);
+        BSDF mix_025_050_out = BSDF(vec3(0.0),vec3(1.0));
+        mx_mix_bsdf(closureData, roughness_050_conductor_out, roughness_025_conductor_out, mix_025_050_mix, mix_025_050_out);
+        BSDF mix_050_075_out = BSDF(vec3(0.0),vec3(1.0));
+        mx_mix_bsdf(closureData, roughness_075_conductor_out, mix_025_050_out, mix_050_075_mix, mix_050_075_out);
+        BSDF mix_075_100_out = BSDF(vec3(0.0),vec3(1.0));
+        mx_mix_bsdf(closureData, roughness_100_conductor_out, mix_050_075_out, mix_075_100_mix, mix_075_100_out);
+        surface_physical_gold_active_non_image_out.color += mix_075_100_out.response;
 
         // Compute and apply surface opacity
         {
-            surface_f82_gold_brushed_roughness_out.color *= surfaceOpacity;
-            surface_f82_gold_brushed_roughness_out.transparency = mix(vec3(1.0), surface_f82_gold_brushed_roughness_out.transparency, surfaceOpacity);
+            surface_physical_gold_active_non_image_out.color *= surfaceOpacity;
+            surface_physical_gold_active_non_image_out.transparency = mix(vec3(1.0), surface_physical_gold_active_non_image_out.transparency, surfaceOpacity);
         }
     }
 
-    material MetalF82GoldBrushedRoughness_out = surface_f82_gold_brushed_roughness_out;
-    out1 = vec4(mx_srgb_encode(MetalF82GoldBrushedRoughness_out.color), 1.0);
+    material MetalPhysicalGoldActiveNonImage_out = surface_physical_gold_active_non_image_out;
+    out1 = vec4(mx_srgb_encode(MetalPhysicalGoldActiveNonImage_out.color), 1.0);
 }

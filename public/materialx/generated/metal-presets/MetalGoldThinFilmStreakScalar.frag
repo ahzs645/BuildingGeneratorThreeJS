@@ -899,13 +899,13 @@ void mx_surface_unlit(float emission, vec3 emission_color, float transmission, v
     result.transparency = mix(vec3(1.0), transmission * transmission_color, opacity);
 }
 
-// Clean-room ESSL implementation of Blender's normalized 3D FBM Noise Texture.
+// Clean-room ESSL implementation of Blender's 3D FBM Noise Texture.
 //
 // The integer lookup3 hash, 3D gradient selection, 0.982 scale, inclusive
-// Detail octave count, and normalized 0.5-centered output mirror the portable
-// CPU/GLSL oracle already used by the authored WebGL material adapters.
-// This source is injected only for MaterialX fractal3d nodes whose names begin
-// with `blender_fbm3_`; ordinary MaterialX fractal3d semantics are untouched.
+// Detail octave count, and normalized/raw output modes mirror the portable
+// CPU/GLSL oracle already used by the authored WebGL material adapters. This
+// source is injected only for explicitly marked MaterialX fractal3d nodes;
+// ordinary MaterialX fractal3d semantics are untouched.
 
 uint mx_blender_rotl(uint value, uint amount)
 {

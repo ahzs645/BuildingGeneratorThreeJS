@@ -3205,6 +3205,528 @@
         }
       }
     },
+    "MetalGoldActiveNonImageScalar": {
+      "element": "MetalGoldActiveNonImageScalar",
+      "fragment": "MetalGoldActiveNonImageScalar.frag",
+      "fragmentInterface": {
+        "inputs": {
+          "VertexData": [
+            {
+              "name": "normalObject",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "positionWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "positionObject",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "LightData": [
+            {
+              "name": "type",
+              "path": "",
+              "type": "integer",
+              "value": null
+            },
+            {
+              "name": "direction",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "color",
+              "path": "",
+              "type": "color3",
+              "value": null
+            },
+            {
+              "name": "intensity",
+              "path": "",
+              "type": "float",
+              "value": null
+            }
+          ],
+          "PrivateUniforms": [
+            {
+              "name": "u_envMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": "-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1"
+            },
+            {
+              "name": "u_envRadiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_envLightIntensity",
+              "path": "",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "u_envRadianceMips",
+              "path": "",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "u_envRadianceSamples",
+              "path": "",
+              "type": "integer",
+              "value": 16
+            },
+            {
+              "name": "u_envIrradiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_refractionTwoSided",
+              "path": "",
+              "type": "boolean",
+              "value": null
+            },
+            {
+              "name": "u_viewPosition",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "u_worldInverseTransposeMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_numActiveLightSources",
+              "path": "",
+              "type": "integer",
+              "value": 0
+            }
+          ],
+          "PublicUniforms": [
+            {
+              "name": "backsurfaceshader",
+              "path": "",
+              "type": "surfaceshader",
+              "value": null
+            },
+            {
+              "name": "displacementshader1",
+              "path": "",
+              "type": "displacementshader",
+              "value": null
+            },
+            {
+              "name": "generated_extent_in1",
+              "path": "NG_gold_brushed_roughness_fields/gold_brushed_generated_bounds_max",
+              "type": "vector3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "generated_extent_in2",
+              "path": "NG_gold_brushed_roughness_fields/gold_brushed_generated_bounds_min",
+              "type": "vector3",
+              "value": [
+                -1.0,
+                -1.0,
+                -1.0
+              ]
+            },
+            {
+              "name": "normal_world_fromspace",
+              "path": "NG_gold_roughness_fresnel_fields/normal_world/fromspace",
+              "type": "string",
+              "value": "object"
+            },
+            {
+              "name": "normal_world_tospace",
+              "path": "NG_gold_roughness_fresnel_fields/normal_world/tospace",
+              "type": "string",
+              "value": "world"
+            },
+            {
+              "name": "generated_offset_in2",
+              "path": "NG_gold_brushed_roughness_fields/gold_brushed_generated_bounds_min",
+              "type": "vector3",
+              "value": [
+                -1.0,
+                -1.0,
+                -1.0
+              ]
+            },
+            {
+              "name": "generated_safe_extent_in2",
+              "path": "NG_gold_brushed_roughness_fields/generated_safe_extent/in2",
+              "type": "vector3",
+              "value": [
+                9.999999974752427e-07,
+                9.999999974752427e-07,
+                9.999999974752427e-07
+              ]
+            },
+            {
+              "name": "mapping_scale_in2",
+              "path": "NG_gold_brushed_roughness_fields/mapping_scale/in2",
+              "type": "vector3",
+              "value": [
+                100.0,
+                100.0,
+                100.0
+              ]
+            },
+            {
+              "name": "g_squared_in2",
+              "path": "NG_gold_roughness_fresnel_fields/g_squared/in2",
+              "type": "float",
+              "value": 0.23456789553165436
+            },
+            {
+              "name": "length_mix_mix",
+              "path": "NG_gold_brushed_roughness_fields/length_mix/mix",
+              "type": "float",
+              "value": 0.9549999833106995
+            },
+            {
+              "name": "noise_position_in2",
+              "path": "NG_gold_brushed_roughness_fields/noise_position/in2",
+              "type": "float",
+              "value": 20.0
+            },
+            {
+              "name": "blender_fbm3_gold_brushed_noise_amplitude",
+              "path": "NG_gold_brushed_roughness_fields/blender_fbm3_gold_brushed_noise/amplitude",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "blender_fbm3_gold_brushed_noise_octaves",
+              "path": "NG_gold_brushed_roughness_fields/blender_fbm3_gold_brushed_noise/octaves",
+              "type": "integer",
+              "value": 3
+            },
+            {
+              "name": "blender_fbm3_gold_brushed_noise_lacunarity",
+              "path": "NG_gold_brushed_roughness_fields/blender_fbm3_gold_brushed_noise/lacunarity",
+              "type": "float",
+              "value": 2.0
+            },
+            {
+              "name": "blender_fbm3_gold_brushed_noise_diminish",
+              "path": "NG_gold_brushed_roughness_fields/blender_fbm3_gold_brushed_noise/diminish",
+              "type": "float",
+              "value": 0.5
+            },
+            {
+              "name": "b_denominator_in2",
+              "path": "NG_gold_roughness_fresnel_fields/b_denominator/in2",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "b_numerator_in2",
+              "path": "NG_gold_roughness_fresnel_fields/b_numerator/in2",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "brushed_gate_unclamped_inlow",
+              "path": "NG_gold_brushed_roughness_fields/brushed_gate_unclamped/inlow",
+              "type": "float",
+              "value": 0.3999999761581421
+            },
+            {
+              "name": "brushed_gate_unclamped_inhigh",
+              "path": "NG_gold_brushed_roughness_fields/brushed_gate_unclamped/inhigh",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "brushed_gate_unclamped_outlow",
+              "path": "NG_gold_brushed_roughness_fields/brushed_gate_unclamped/outlow",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "brushed_gate_unclamped_outhigh",
+              "path": "NG_gold_brushed_roughness_fields/brushed_gate_unclamped/outhigh",
+              "type": "float",
+              "value": 0.27300000190734863
+            },
+            {
+              "name": "half_a_squared_in1",
+              "path": "NG_gold_roughness_fresnel_fields/half_a_squared/in1",
+              "type": "float",
+              "value": 0.5
+            },
+            {
+              "name": "brushed_gate_low",
+              "path": "NG_gold_brushed_roughness_fields/brushed_gate/low",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "brushed_gate_high",
+              "path": "NG_gold_brushed_roughness_fields/brushed_gate/high",
+              "type": "float",
+              "value": 0.27300000190734863
+            },
+            {
+              "name": "one_plus_b_squared_in1",
+              "path": "NG_gold_roughness_fresnel_fields/one_plus_b_squared/in1",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "brushed_add_in1",
+              "path": "NG_gold_brushed_roughness_fields/brushed_add/in1",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "one_minus_brushed_add_in1",
+              "path": "NG_gold_brushed_roughness_fields/one_minus_brushed_add/in1",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "one_minus_fresnel_in1",
+              "path": "NG_gold_roughness_fresnel_fields/one_minus_fresnel/in1",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "lut_scaled_factor_in2",
+              "path": "NG_gold_roughness_fresnel_fields/lut_scaled_factor/in2",
+              "type": "float",
+              "value": 0.99609375
+            },
+            {
+              "name": "lut_centered_factor_in2",
+              "path": "NG_gold_roughness_fresnel_fields/lut_centered_factor/in2",
+              "type": "float",
+              "value": 0.001953125
+            },
+            {
+              "name": "lut_uv_in2",
+              "path": "NG_gold_roughness_fresnel_fields/lut_uv/in2",
+              "type": "float",
+              "value": 0.5
+            },
+            {
+              "name": "curve_ramp_response_file",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/file",
+              "type": "filename",
+              "value": "gold-roughness-fresnel-lut.png"
+            },
+            {
+              "name": "curve_ramp_response_layer",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/layer",
+              "type": "string",
+              "value": null
+            },
+            {
+              "name": "curve_ramp_response_default",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/default",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "curve_ramp_response_uaddressmode",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/uaddressmode",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "curve_ramp_response_vaddressmode",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/vaddressmode",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "curve_ramp_response_filtertype",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/filtertype",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "curve_ramp_response_framerange",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/framerange",
+              "type": "string",
+              "value": null
+            },
+            {
+              "name": "curve_ramp_response_frameoffset",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/frameoffset",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "curve_ramp_response_frameendaction",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/frameendaction",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "curve_ramp_response_uv_scale",
+              "path": "",
+              "type": "vector2",
+              "value": [
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "curve_ramp_response_uv_offset",
+              "path": "",
+              "type": "vector2",
+              "value": [
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "name": "authored_base_roughness_in1",
+              "path": "NG_gold_brushed_roughness_fields/authored_base_roughness/in1",
+              "type": "float",
+              "value": 0.44999995827674866
+            },
+            {
+              "name": "one_minus_base_roughness_in1",
+              "path": "NG_gold_brushed_roughness_fields/one_minus_base_roughness/in1",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "perceptual_roughness_in1",
+              "path": "NG_gold_brushed_roughness_fields/perceptual_roughness/in1",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "active_perceptual_roughness_in2",
+              "path": "NG_gold_active_non_image_core/active_perceptual_roughness/in2",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "surface_gold_active_non_image_scalar_emission",
+              "path": "surface_gold_active_non_image_scalar/emission",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "surface_gold_active_non_image_scalar_transmission",
+              "path": "surface_gold_active_non_image_scalar/transmission",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "surface_gold_active_non_image_scalar_transmission_color",
+              "path": "surface_gold_active_non_image_scalar/transmission_color",
+              "type": "color3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "surface_gold_active_non_image_scalar_opacity",
+              "path": "surface_gold_active_non_image_scalar/opacity",
+              "type": "float",
+              "value": 1.0
+            }
+          ]
+        }
+      },
+      "geometryBindings": {
+        "generatedCoordinates": {
+          "boundsMaxUniforms": [
+            "generated_extent_in1"
+          ],
+          "boundsMinUniforms": [
+            "generated_extent_in2",
+            "generated_offset_in2"
+          ],
+          "space": "object"
+        }
+      },
+      "semanticAdapters": [
+        "blender-normalized-fbm3"
+      ],
+      "textureBindings": [
+        {
+          "bytes": 313,
+          "flipY": false,
+          "magFilter": "linear",
+          "mimeType": "image/png",
+          "minFilter": "linear",
+          "path": "textures/gold-roughness-fresnel-lut.png",
+          "sha256": "a433ed2f2f3237c42c786029e759460bbd1ff1df6ceca3e0d78fb604299af270",
+          "sourceColorSpace": "raw",
+          "uniform": "curve_ramp_response_file",
+          "uploadColorSpace": "none",
+          "wrapS": "clamp",
+          "wrapT": "clamp"
+        }
+      ],
+      "vertex": "MetalGoldActiveNonImageScalar.vert",
+      "vertexInterface": {
+        "inputs": {
+          "VertexInputs": [
+            {
+              "name": "i_position",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_normal",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "PrivateUniforms": [
+            {
+              "name": "u_worldMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_viewProjectionMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            }
+          ]
+        }
+      }
+    },
     "MetalGoldBrushedRoughnessScalar": {
       "element": "MetalGoldBrushedRoughnessScalar",
       "fragment": "MetalGoldBrushedRoughnessScalar.frag",
@@ -4573,6 +5095,748 @@
             },
             {
               "name": "u_viewProjectionMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            }
+          ]
+        }
+      }
+    },
+    "MetalPhysicalGoldActiveNonImage": {
+      "element": "MetalPhysicalGoldActiveNonImage",
+      "fragment": "MetalPhysicalGoldActiveNonImage.frag",
+      "fragmentInterface": {
+        "inputs": {
+          "VertexData": [
+            {
+              "name": "normalWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "tangentWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "normalObject",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "positionWorld",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "positionObject",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "LightData": [
+            {
+              "name": "type",
+              "path": "",
+              "type": "integer",
+              "value": null
+            },
+            {
+              "name": "direction",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "color",
+              "path": "",
+              "type": "color3",
+              "value": null
+            },
+            {
+              "name": "intensity",
+              "path": "",
+              "type": "float",
+              "value": null
+            }
+          ],
+          "PrivateUniforms": [
+            {
+              "name": "u_envMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": "-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1"
+            },
+            {
+              "name": "u_envRadiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_envLightIntensity",
+              "path": "",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "u_envRadianceMips",
+              "path": "",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "u_envRadianceSamples",
+              "path": "",
+              "type": "integer",
+              "value": 16
+            },
+            {
+              "name": "u_envIrradiance",
+              "path": "",
+              "type": "filename",
+              "value": null
+            },
+            {
+              "name": "u_refractionTwoSided",
+              "path": "",
+              "type": "boolean",
+              "value": null
+            },
+            {
+              "name": "u_viewPosition",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "u_worldInverseTransposeMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_numActiveLightSources",
+              "path": "",
+              "type": "integer",
+              "value": 0
+            }
+          ],
+          "PublicUniforms": [
+            {
+              "name": "backsurfaceshader",
+              "path": "",
+              "type": "surfaceshader",
+              "value": null
+            },
+            {
+              "name": "displacementshader1",
+              "path": "",
+              "type": "displacementshader",
+              "value": null
+            },
+            {
+              "name": "generated_extent_in1",
+              "path": "NG_gold_brushed_roughness_fields/gold_brushed_generated_bounds_max",
+              "type": "vector3",
+              "value": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "generated_extent_in2",
+              "path": "NG_gold_brushed_roughness_fields/gold_brushed_generated_bounds_min",
+              "type": "vector3",
+              "value": [
+                -1.0,
+                -1.0,
+                -1.0
+              ]
+            },
+            {
+              "name": "normal_world_fromspace",
+              "path": "NG_gold_roughness_fresnel_fields/normal_world/fromspace",
+              "type": "string",
+              "value": "object"
+            },
+            {
+              "name": "normal_world_tospace",
+              "path": "NG_gold_roughness_fresnel_fields/normal_world/tospace",
+              "type": "string",
+              "value": "world"
+            },
+            {
+              "name": "generated_offset_in2",
+              "path": "NG_gold_brushed_roughness_fields/gold_brushed_generated_bounds_min",
+              "type": "vector3",
+              "value": [
+                -1.0,
+                -1.0,
+                -1.0
+              ]
+            },
+            {
+              "name": "generated_safe_extent_in2",
+              "path": "NG_gold_brushed_roughness_fields/generated_safe_extent/in2",
+              "type": "vector3",
+              "value": [
+                9.999999974752427e-07,
+                9.999999974752427e-07,
+                9.999999974752427e-07
+              ]
+            },
+            {
+              "name": "mapping_scale_in2",
+              "path": "NG_gold_brushed_roughness_fields/mapping_scale/in2",
+              "type": "vector3",
+              "value": [
+                100.0,
+                100.0,
+                100.0
+              ]
+            },
+            {
+              "name": "g_squared_in2",
+              "path": "NG_gold_roughness_fresnel_fields/g_squared/in2",
+              "type": "float",
+              "value": 0.23456789553165436
+            },
+            {
+              "name": "length_mix_mix",
+              "path": "NG_gold_brushed_roughness_fields/length_mix/mix",
+              "type": "float",
+              "value": 0.9549999833106995
+            },
+            {
+              "name": "noise_position_in2",
+              "path": "NG_gold_brushed_roughness_fields/noise_position/in2",
+              "type": "float",
+              "value": 20.0
+            },
+            {
+              "name": "blender_fbm3_gold_brushed_noise_amplitude",
+              "path": "NG_gold_brushed_roughness_fields/blender_fbm3_gold_brushed_noise/amplitude",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "blender_fbm3_gold_brushed_noise_octaves",
+              "path": "NG_gold_brushed_roughness_fields/blender_fbm3_gold_brushed_noise/octaves",
+              "type": "integer",
+              "value": 3
+            },
+            {
+              "name": "blender_fbm3_gold_brushed_noise_lacunarity",
+              "path": "NG_gold_brushed_roughness_fields/blender_fbm3_gold_brushed_noise/lacunarity",
+              "type": "float",
+              "value": 2.0
+            },
+            {
+              "name": "blender_fbm3_gold_brushed_noise_diminish",
+              "path": "NG_gold_brushed_roughness_fields/blender_fbm3_gold_brushed_noise/diminish",
+              "type": "float",
+              "value": 0.5
+            },
+            {
+              "name": "b_denominator_in2",
+              "path": "NG_gold_roughness_fresnel_fields/b_denominator/in2",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "b_numerator_in2",
+              "path": "NG_gold_roughness_fresnel_fields/b_numerator/in2",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "brushed_gate_unclamped_inlow",
+              "path": "NG_gold_brushed_roughness_fields/brushed_gate_unclamped/inlow",
+              "type": "float",
+              "value": 0.3999999761581421
+            },
+            {
+              "name": "brushed_gate_unclamped_inhigh",
+              "path": "NG_gold_brushed_roughness_fields/brushed_gate_unclamped/inhigh",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "brushed_gate_unclamped_outlow",
+              "path": "NG_gold_brushed_roughness_fields/brushed_gate_unclamped/outlow",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "brushed_gate_unclamped_outhigh",
+              "path": "NG_gold_brushed_roughness_fields/brushed_gate_unclamped/outhigh",
+              "type": "float",
+              "value": 0.27300000190734863
+            },
+            {
+              "name": "half_a_squared_in1",
+              "path": "NG_gold_roughness_fresnel_fields/half_a_squared/in1",
+              "type": "float",
+              "value": 0.5
+            },
+            {
+              "name": "brushed_gate_low",
+              "path": "NG_gold_brushed_roughness_fields/brushed_gate/low",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "brushed_gate_high",
+              "path": "NG_gold_brushed_roughness_fields/brushed_gate/high",
+              "type": "float",
+              "value": 0.27300000190734863
+            },
+            {
+              "name": "one_plus_b_squared_in1",
+              "path": "NG_gold_roughness_fresnel_fields/one_plus_b_squared/in1",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "brushed_add_in1",
+              "path": "NG_gold_brushed_roughness_fields/brushed_add/in1",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "one_minus_brushed_add_in1",
+              "path": "NG_gold_brushed_roughness_fields/one_minus_brushed_add/in1",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "one_minus_fresnel_in1",
+              "path": "NG_gold_roughness_fresnel_fields/one_minus_fresnel/in1",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "lut_scaled_factor_in2",
+              "path": "NG_gold_roughness_fresnel_fields/lut_scaled_factor/in2",
+              "type": "float",
+              "value": 0.99609375
+            },
+            {
+              "name": "lut_centered_factor_in2",
+              "path": "NG_gold_roughness_fresnel_fields/lut_centered_factor/in2",
+              "type": "float",
+              "value": 0.001953125
+            },
+            {
+              "name": "lut_uv_in2",
+              "path": "NG_gold_roughness_fresnel_fields/lut_uv/in2",
+              "type": "float",
+              "value": 0.5
+            },
+            {
+              "name": "curve_ramp_response_file",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/file",
+              "type": "filename",
+              "value": "gold-roughness-fresnel-lut.png"
+            },
+            {
+              "name": "curve_ramp_response_layer",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/layer",
+              "type": "string",
+              "value": null
+            },
+            {
+              "name": "curve_ramp_response_default",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/default",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "curve_ramp_response_uaddressmode",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/uaddressmode",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "curve_ramp_response_vaddressmode",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/vaddressmode",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "curve_ramp_response_filtertype",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/filtertype",
+              "type": "integer",
+              "value": 1
+            },
+            {
+              "name": "curve_ramp_response_framerange",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/framerange",
+              "type": "string",
+              "value": null
+            },
+            {
+              "name": "curve_ramp_response_frameoffset",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/frameoffset",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "curve_ramp_response_frameendaction",
+              "path": "NG_gold_roughness_fresnel_fields/curve_ramp_response/frameendaction",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "curve_ramp_response_uv_scale",
+              "path": "",
+              "type": "vector2",
+              "value": [
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "name": "curve_ramp_response_uv_offset",
+              "path": "",
+              "type": "vector2",
+              "value": [
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "name": "authored_base_roughness_in1",
+              "path": "NG_gold_brushed_roughness_fields/authored_base_roughness/in1",
+              "type": "float",
+              "value": 0.44999995827674866
+            },
+            {
+              "name": "one_minus_base_roughness_in1",
+              "path": "NG_gold_brushed_roughness_fields/one_minus_base_roughness/in1",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "perceptual_roughness_in1",
+              "path": "NG_gold_brushed_roughness_fields/perceptual_roughness/in1",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "active_perceptual_roughness_in2",
+              "path": "NG_gold_active_non_image_core/active_perceptual_roughness/in2",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "roughness_025_in2",
+              "path": "NG_gold_active_non_image_core/roughness_025/in2",
+              "type": "float",
+              "value": 0.25
+            },
+            {
+              "name": "roughness_050_in2",
+              "path": "NG_gold_active_non_image_core/roughness_050/in2",
+              "type": "float",
+              "value": 0.5
+            },
+            {
+              "name": "roughness_075_in2",
+              "path": "NG_gold_active_non_image_core/roughness_075/in2",
+              "type": "float",
+              "value": 0.75
+            },
+            {
+              "name": "roughness_100_conductor_weight",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_100_conductor/weight",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "roughness_100_conductor_ior",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_100_conductor/ior",
+              "type": "color3",
+              "value": [
+                0.0,
+                0.35199999809265137,
+                1.8589999675750732
+              ]
+            },
+            {
+              "name": "roughness_100_conductor_extinction",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_100_conductor/extinction",
+              "type": "color3",
+              "value": [
+                6.593999862670898,
+                2.0810000896453857,
+                1.496000051498413
+              ]
+            },
+            {
+              "name": "roughness_100_conductor_thinfilm_thickness",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_100_conductor/thinfilm_thickness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "roughness_100_conductor_thinfilm_ior",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_100_conductor/thinfilm_ior",
+              "type": "float",
+              "value": 2.4600000381469727
+            },
+            {
+              "name": "roughness_100_conductor_distribution",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_100_conductor/distribution",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "roughness_025_conductor_weight",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_025_conductor/weight",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "roughness_025_conductor_ior",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_025_conductor/ior",
+              "type": "color3",
+              "value": [
+                0.0,
+                0.35199999809265137,
+                1.8589999675750732
+              ]
+            },
+            {
+              "name": "roughness_025_conductor_extinction",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_025_conductor/extinction",
+              "type": "color3",
+              "value": [
+                6.593999862670898,
+                2.0810000896453857,
+                1.496000051498413
+              ]
+            },
+            {
+              "name": "roughness_025_conductor_thinfilm_thickness",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_025_conductor/thinfilm_thickness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "roughness_025_conductor_thinfilm_ior",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_025_conductor/thinfilm_ior",
+              "type": "float",
+              "value": 2.4600000381469727
+            },
+            {
+              "name": "roughness_025_conductor_distribution",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_025_conductor/distribution",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "roughness_050_conductor_weight",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_050_conductor/weight",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "roughness_050_conductor_ior",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_050_conductor/ior",
+              "type": "color3",
+              "value": [
+                0.0,
+                0.35199999809265137,
+                1.8589999675750732
+              ]
+            },
+            {
+              "name": "roughness_050_conductor_extinction",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_050_conductor/extinction",
+              "type": "color3",
+              "value": [
+                6.593999862670898,
+                2.0810000896453857,
+                1.496000051498413
+              ]
+            },
+            {
+              "name": "roughness_050_conductor_thinfilm_thickness",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_050_conductor/thinfilm_thickness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "roughness_050_conductor_thinfilm_ior",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_050_conductor/thinfilm_ior",
+              "type": "float",
+              "value": 2.4600000381469727
+            },
+            {
+              "name": "roughness_050_conductor_distribution",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_050_conductor/distribution",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "roughness_075_conductor_weight",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_075_conductor/weight",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "roughness_075_conductor_ior",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_075_conductor/ior",
+              "type": "color3",
+              "value": [
+                0.0,
+                0.35199999809265137,
+                1.8589999675750732
+              ]
+            },
+            {
+              "name": "roughness_075_conductor_extinction",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_075_conductor/extinction",
+              "type": "color3",
+              "value": [
+                6.593999862670898,
+                2.0810000896453857,
+                1.496000051498413
+              ]
+            },
+            {
+              "name": "roughness_075_conductor_thinfilm_thickness",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_075_conductor/thinfilm_thickness",
+              "type": "float",
+              "value": 0.0
+            },
+            {
+              "name": "roughness_075_conductor_thinfilm_ior",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_075_conductor/thinfilm_ior",
+              "type": "float",
+              "value": 2.4600000381469727
+            },
+            {
+              "name": "roughness_075_conductor_distribution",
+              "path": "NG_metal_physical_gold_active_non_image/roughness_075_conductor/distribution",
+              "type": "integer",
+              "value": 0
+            },
+            {
+              "name": "mix_025_050_mix",
+              "path": "NG_metal_physical_gold_active_non_image/mix_025_050/mix",
+              "type": "float",
+              "value": 0.4000000059604645
+            },
+            {
+              "name": "mix_050_075_mix",
+              "path": "NG_metal_physical_gold_active_non_image/mix_050_075/mix",
+              "type": "float",
+              "value": 0.20000000298023224
+            },
+            {
+              "name": "mix_075_100_mix",
+              "path": "NG_metal_physical_gold_active_non_image/mix_075_100/mix",
+              "type": "float",
+              "value": 0.10000000149011612
+            },
+            {
+              "name": "surface_physical_gold_active_non_image_opacity",
+              "path": "surface_physical_gold_active_non_image/opacity",
+              "type": "float",
+              "value": 1.0
+            },
+            {
+              "name": "surface_physical_gold_active_non_image_thin_walled",
+              "path": "surface_physical_gold_active_non_image/thin_walled",
+              "type": "boolean",
+              "value": false
+            }
+          ]
+        }
+      },
+      "geometryBindings": {
+        "generatedCoordinates": {
+          "boundsMaxUniforms": [
+            "generated_extent_in1"
+          ],
+          "boundsMinUniforms": [
+            "generated_extent_in2",
+            "generated_offset_in2"
+          ],
+          "space": "object"
+        }
+      },
+      "semanticAdapters": [
+        "blender-normalized-fbm3"
+      ],
+      "textureBindings": [
+        {
+          "bytes": 313,
+          "flipY": false,
+          "magFilter": "linear",
+          "mimeType": "image/png",
+          "minFilter": "linear",
+          "path": "textures/gold-roughness-fresnel-lut.png",
+          "sha256": "a433ed2f2f3237c42c786029e759460bbd1ff1df6ceca3e0d78fb604299af270",
+          "sourceColorSpace": "raw",
+          "uniform": "curve_ramp_response_file",
+          "uploadColorSpace": "none",
+          "wrapS": "clamp",
+          "wrapT": "clamp"
+        }
+      ],
+      "vertex": "MetalPhysicalGoldActiveNonImage.vert",
+      "vertexInterface": {
+        "inputs": {
+          "VertexInputs": [
+            {
+              "name": "i_position",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_normal",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            },
+            {
+              "name": "i_tangent",
+              "path": "",
+              "type": "vector3",
+              "value": null
+            }
+          ]
+        },
+        "uniforms": {
+          "PrivateUniforms": [
+            {
+              "name": "u_worldMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_viewProjectionMatrix",
+              "path": "",
+              "type": "matrix44",
+              "value": null
+            },
+            {
+              "name": "u_worldInverseTransposeMatrix",
               "path": "",
               "type": "matrix44",
               "value": null
