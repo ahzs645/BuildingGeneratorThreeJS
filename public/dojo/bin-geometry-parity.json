@@ -1,0 +1,58 @@
+{
+  "updated": "2026-07-24",
+  "id": "dojo-bin",
+  "object": "Procedural Drawer",
+  "root": "bin generator.001",
+  "blenderVersion": "5.1.2",
+  "status": "authored-exact-and-surface-exact-sweep",
+  "fontOverrides": [
+    {
+      "source": "dogica.otf",
+      "sha256": "9fda16b1e7eb905d379579444f9f21ef7848f3ce64490b78176253bac9aeefec",
+      "policy": "Recovered source font used only for local Blender validation; browser uses extracted glyph-outline JSON."
+    },
+    {
+      "source": "Degular Text Semibold.ttf",
+      "sha256": "f83eeb8958d56adfa39ff58dd0186e9b0feccd0340fc5c38157580837dc60460",
+      "policy": "Recovered source font used only for local Blender validation; browser uses extracted glyph-outline JSON."
+    }
+  ],
+  "summary": {
+    "cases": 16,
+    "exactBoundsCases": 16,
+    "exactTopologyCases": 6,
+    "maxAbsoluteVertexDelta": 49,
+    "maxAbsoluteFaceDelta": 236,
+    "maxAbsoluteVertexDeltaPercent": 0.08757662955085699,
+    "authored": {
+      "blender": { "verts": 56985, "faces": 55000 },
+      "gnvm": { "verts": 56985, "faces": 55000 }
+    }
+  },
+  "surfaceComparison": {
+    "exportedControlCases": 15,
+    "blenderToGnvm": { "p99": 0, "max": 0 },
+    "gnvmToBlender": { "p99": 0, "max": 0 },
+    "distanceDisplayPrecision": 0.001,
+    "triangleAreaAgreementPrecision": 0.001,
+    "interpretation": "All exported cases report zero bidirectional sampled point-to-triangle distance at 0.001-unit precision and equal total surface area at 0.001-square-unit precision. Remaining nonzero vertex/face deltas are alternate polygon partitioning of the same surface."
+  },
+  "results": [
+    { "name": "authored default", "blender": [56985, 55000], "gnvm": [56985, 55000], "bboxMaxDiff": 0 },
+    { "name": "divide x=0.15, divide y=0.2", "blender": [55951, 54009], "gnvm": [56000, 53773], "bboxMaxDiff": 0 },
+    { "name": "divide x=0.15, divide y=0.633", "blender": [56504, 54582], "gnvm": [56507, 54536], "bboxMaxDiff": 0 },
+    { "name": "divide x=0.15, divide y=0.9", "blender": [59028, 57209], "gnvm": [59064, 56980], "bboxMaxDiff": 0 },
+    { "name": "divide x=0.417, divide y=0.2", "blender": [56159, 54197], "gnvm": [56158, 54171], "bboxMaxDiff": 0 },
+    { "name": "divide x=0.417, divide y=0.633", "blender": [56985, 55000], "gnvm": [56985, 55000], "bboxMaxDiff": 0 },
+    { "name": "divide x=0.417, divide y=0.9", "blender": [60029, 58174], "gnvm": [60025, 58078], "bboxMaxDiff": 0 },
+    { "name": "divide x=0.85, divide y=0.2", "blender": [58217, 56277], "gnvm": [58264, 56043], "bboxMaxDiff": 0 },
+    { "name": "divide x=0.85, divide y=0.633", "blender": [60028, 58132], "gnvm": [60025, 58087], "bboxMaxDiff": 0 },
+    { "name": "divide x=0.85, divide y=0.9", "blender": [58064, 56242], "gnvm": [58054, 56026], "bboxMaxDiff": 0 },
+    { "name": "fillet=0.3", "blender": [56132, 54265], "gnvm": [56132, 54257], "bboxMaxDiff": 0 },
+    { "name": "fillet=2.5", "blender": [58820, 56092], "gnvm": [58820, 56092], "bboxMaxDiff": 0 },
+    { "name": "Bin Select=0", "blender": [57624, 55641], "gnvm": [57624, 55641], "bboxMaxDiff": 0 },
+    { "name": "Bin Select=11", "blender": [56832, 54838], "gnvm": [56832, 54838], "bboxMaxDiff": 0 },
+    { "name": "bin wall thiccness=4", "blender": [56818, 54944], "gnvm": [56818, 54944], "bboxMaxDiff": 0 },
+    { "name": "Size X=1.2, Size Y=0.8", "blender": [56402, 54406], "gnvm": [56404, 54406], "bboxMaxDiff": 0 }
+  ]
+}

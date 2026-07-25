@@ -15,20 +15,54 @@ import bpy
 
 
 def apply_font_override():
+    specs = []
+    for key, path in json.loads(
+        os.environ.get("NODE_DOJO_FONT_OVERRIDE_MAP", "{}")
+    ).items():
+        specs.append((str(key).lower(), path))
+
     path = os.environ.get("NODE_DOJO_FONT_OVERRIDE")
-    if not path:
-        return
-    replacement = bpy.data.fonts.load(path, check_existing=True)
-    basename = os.path.basename(path).lower()
     replace_all = os.environ.get("NODE_DOJO_FONT_OVERRIDE_ALL") == "1"
+    if path:
+        specs.append(("*" if replace_all else os.path.basename(path).lower(), path))
+    if not specs:
+        return
+
+    replacements = [
+        (key, bpy.data.fonts.load(path, check_existing=True), path)
+        for key, path in specs
+    ]
+    applied = []
     for group in bpy.data.node_groups:
         for node in group.nodes:
             for socket in node.inputs:
                 current = getattr(socket, "default_value", None)
-                if getattr(socket, "type", "") == "FONT" and current is not None:
-                    if replace_all or os.path.basename(bpy.path.abspath(current.filepath)).lower() == basename:
+                is_font_socket = (
+                    getattr(socket, "type", "") == "FONT"
+                    or getattr(socket, "bl_socket_idname", "") == "NodeSocketFont"
+                    or socket.__class__.__name__ == "NodeSocketFont"
+                )
+                if is_font_socket and current is not None:
+                    current_keys = {
+                        current.name.lower(),
+                        os.path.basename(bpy.path.abspath(current.filepath)).lower(),
+                    }
+                    match = next(
+                        (
+                            (replacement, replacement_path)
+                            for key, replacement, replacement_path in replacements
+                            if key == "*" or key in current_keys
+                        ),
+                        None,
+                    )
+                    if match:
+                        replacement, replacement_path = match
                         socket.default_value = replacement
-    print(f"NODE_DOJO_FONT_OVERRIDE_OK {replacement.name} <- {path}")
+                        applied.append(
+                            f"{group.name}.{node.name}.{socket.name}="
+                            f"{replacement.name}<-{replacement_path}"
+                        )
+    print(f"NODE_DOJO_FONT_OVERRIDE_OK {len(applied)} sockets")
 
 
 apply_font_override()

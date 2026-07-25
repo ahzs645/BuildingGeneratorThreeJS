@@ -4,7 +4,7 @@ Inventory date: 2026-07-12; parity status reconciled 2026-07-23. The source pack
 
 ## Working or represented in the web app
 
-- Recursive Bin Generator — live GN-VM, Blender comparison, baked variants.
+- Recursive Bin Generator — live GN-VM, Blender comparison, and baked variants. A font-correct Blender 5.1.2 rebaseline now proves authored topology exactly at 56,985 / 55,000, exact four-decimal bounds across all sixteen cases, and zero bidirectional sampled surface distance at 0.001-unit precision across all fifteen exported controls. Non-default divider layouts may use alternate polygon partitions of the same measured surface, bounded to 49 vertices and 236 faces.
 - Chrome Crayon — live GN-VM, editable graph, reconstructed shader.
 - Simple Bubble Vessel — live GN-VM and Blender comparison.
 - Math Clay — all thirteen distinct surface roots run live from one portable scene dump; twelve are topology-exact and TPMS.016 is native-OpenVDB-equivalent within its observed scheduling range.

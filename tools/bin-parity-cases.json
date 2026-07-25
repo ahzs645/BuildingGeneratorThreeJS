@@ -1,0 +1,18 @@
+[
+  { "name": "authored default", "overrides": {} },
+  { "name": "divide x=0.15, divide y=0.2", "overrides": { "divide x": 0.15, "divide y": 0.2 } },
+  { "name": "divide x=0.15, divide y=0.633", "overrides": { "divide x": 0.15, "divide y": 0.633 } },
+  { "name": "divide x=0.15, divide y=0.9", "overrides": { "divide x": 0.15, "divide y": 0.9 } },
+  { "name": "divide x=0.417, divide y=0.2", "overrides": { "divide x": 0.417, "divide y": 0.2 } },
+  { "name": "divide x=0.417, divide y=0.633", "overrides": { "divide x": 0.417, "divide y": 0.633 } },
+  { "name": "divide x=0.417, divide y=0.9", "overrides": { "divide x": 0.417, "divide y": 0.9 } },
+  { "name": "divide x=0.85, divide y=0.2", "overrides": { "divide x": 0.85, "divide y": 0.2 } },
+  { "name": "divide x=0.85, divide y=0.633", "overrides": { "divide x": 0.85, "divide y": 0.633 } },
+  { "name": "divide x=0.85, divide y=0.9", "overrides": { "divide x": 0.85, "divide y": 0.9 } },
+  { "name": "fillet=0.3", "overrides": { "fillet": 0.3 } },
+  { "name": "fillet=2.5", "overrides": { "fillet": 2.5 } },
+  { "name": "Bin Select=0", "overrides": { "Bin Select": 0 } },
+  { "name": "Bin Select=11", "overrides": { "Bin Select": 11 } },
+  { "name": "bin wall thiccness=4", "overrides": { "bin wall thiccness": 4.0 } },
+  { "name": "Size X=1.2, Size Y=0.8", "overrides": { "Size X": 1.2, "Size Y": 0.8 } }
+]

@@ -402,6 +402,11 @@ match, and `NODE_DOJO_FONT_OVERRIDE_ALL=1` replaces every font socket. The
 reference sidecar records the source `.blend` and font fingerprints, Blender
 version, replacement mode/count, and local-space policy.
 
+When one Blender file uses several recovered fonts, `parity_sweep.py` also
+accepts `NODE_DOJO_FONT_OVERRIDE_MAP` as a JSON object keyed by the original
+font datablock name or source-file basename. This keeps each graph socket bound
+to its matching font instead of replacing every socket with one fallback.
+
 Build, serve, and capture the matching browser view:
 
 ```sh
@@ -637,13 +642,15 @@ bit-identical or every source dependency exists.
   four-decimal exact with 0.000003815 raw bound drift after restoring generated
   open-chain direction. Their status files define the accepted scope; do not
   upgrade those labels to bit-exact coordinates.
-- **Recursive Bin historical baseline:** the July audit records surface and
-  topology differences, while the newer
-  [`bin-material-parity.json`](../public/dojo/bin-material-parity.json) proves
-  matching total/highlight triangle counts across `Bin Select` 0–11. There is
-  no newer durable full parameter surface sweep that supersedes every old
-  geometry measurement. Re-baseline it before making a current exact-geometry
-  claim.
+- **Recursive Bin:** the current 16-case Blender/GN-VM sweep supersedes the
+  July geometry baseline. Authored output is topology-exact at 56,985 / 55,000;
+  all cases have exact four-decimal bounds, and all 15 exported control meshes
+  have zero bidirectional sampled surface distance at 0.001-unit precision and
+  matching area at 0.001-square-unit precision. Ten non-default divider cases
+  retain alternate polygon partitions, bounded to 49 vertices and 236 faces.
+  The Blender sweep must load the recovered Dogica and Degular fonts; comparing
+  against Blender's missing-font fallback creates a false ~500-vertex delta.
+  See [`bin-geometry-parity.json`](../public/dojo/bin-geometry-parity.json).
 - **Bubble Vase:** the former seam, cut, cap, and timeout findings are resolved
   at the current checkpoint: 100,514 vertices/polygons and 201,024 exported
   triangles on both sides, with p99 surface distance 0.001. See
