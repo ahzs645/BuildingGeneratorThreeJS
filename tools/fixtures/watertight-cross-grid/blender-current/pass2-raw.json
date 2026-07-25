@@ -1,0 +1,35 @@
+{
+  "mode": "sample",
+  "sourceMesh": "tools/fixtures/watertight-cross-grid/blender-current/pass1-mesh.json.gz",
+  "sourceMetadata": "tools/fixtures/watertight-cross-grid/gnvm-current/pass2-raw.json",
+  "resolution": [
+    43,
+    43,
+    71
+  ],
+  "origin": [
+    -8.399999618530273,
+    -8.399999618530273,
+    -0.4000000059604645
+  ],
+  "spacing": [
+    0.3999999818347749,
+    0.3999999818347749,
+    0.40000000553471704
+  ],
+  "background": 0.0,
+  "valueCount": 131279,
+  "fnv1a64": "81d4956a0cc90c60",
+  "sha256": "36d77901c17f3ee055d50369fcedfc96a9b08490c7e93c85b20d72fed857d473",
+  "minimum": -7.065610408782959,
+  "maximum": 5.310097694396973,
+  "negative": 76514,
+  "zero": 0,
+  "elapsedMs": 31,
+  "blenderVersion": "5.1.2",
+  "openvdbVersion": [
+    13,
+    0,
+    0
+  ]
+}

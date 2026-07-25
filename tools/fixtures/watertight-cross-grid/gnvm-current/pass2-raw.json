@@ -1,0 +1,52 @@
+{
+  "source": {
+    "dump": "public/dojo/n03d/bolt-watertight/dump.json",
+    "dumpSha256": "21f31c0fcb495606d930e46c9e03eb27ce7133d8a342a4121f39387562f6054b",
+    "object": "Bolt Gen_DHTS_Thru Head v03.003",
+    "repeatGroup": "hole patch",
+    "repeatNode": "Repeat Input",
+    "repeatIterations": 2,
+    "volumeCubeEvent": 2
+  },
+  "elapsedMs": 44327,
+  "finalStats": {
+    "verts": 15302,
+    "faces": 15400,
+    "tris": 30408
+  },
+  "stage": "volume-cube",
+  "background": 0,
+  "min": [
+    -8.399999618530273,
+    -8.399999618530273,
+    -0.4000000059604645
+  ],
+  "max": [
+    8.399999618530273,
+    8.399999618530273,
+    27.600000381469727
+  ],
+  "resolution": [
+    43,
+    43,
+    71
+  ],
+  "origin": [
+    -8.399999618530273,
+    -8.399999618530273,
+    -0.4000000059604645
+  ],
+  "spacing": [
+    0.3999999818347749,
+    0.3999999818347749,
+    0.40000000553471704
+  ],
+  "requestedSpacing": 0.40000000553471704,
+  "requestedSampleCount": 131279,
+  "sampleCount": 131279,
+  "sampleBudget": 1000000,
+  "budgetAdjusted": false,
+  "valueCount": 131279,
+  "fnv1a64": "c4c1dc6efca3377b",
+  "sha256": "53f944bb7be87258e641887bddf8f43c73bc95f7f7487784f4ca3f971f8d5f88"
+}

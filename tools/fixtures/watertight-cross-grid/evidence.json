@@ -1,0 +1,104 @@
+{
+  "asset": "n03d-bolt-watertight",
+  "object": "Bolt Gen_DHTS_Thru Head v03.003",
+  "capturedAtCommit": "75ffbc81e6adb8613c26c357bd0f3967f66ca80b",
+  "environment": {
+    "blender": "5.1.2",
+    "openvdb": "13.0.0",
+    "sourceBlend": "N03D TOOLS - 3D printing Utilities.blend",
+    "sourceBlendSha256": "6a0ede9dc9f8f097740716bffba6781acaca71caabd1591614f4a74863d304ca",
+    "dumpSha256": "21f31c0fcb495606d930e46c9e03eb27ce7133d8a342a4121f39387562f6054b"
+  },
+  "lattice": {
+    "resolution": [43, 43, 71],
+    "valueCount": 131279,
+    "origin": [
+      -8.399999618530273,
+      -8.399999618530273,
+      -0.4000000059604645
+    ],
+    "spacing": [
+      0.3999999818347749,
+      0.3999999818347749,
+      0.40000000553471704
+    ]
+  },
+  "gnvmFrozenSource": {
+    "passOne": {
+      "verts": 21642,
+      "faces": 21818,
+      "meshJsonSha256": "0a1f930f69cb271c75e46cd5b51a766d623d407b3ae58a854a2a51aae4832c5b",
+      "bounds": {
+        "min": [-7.965978145599365, -7.973889350891113, -3.725290298461914e-09],
+        "max": [7.97899055480957, 7.971832275390625, 27.216270446777344]
+      }
+    },
+    "crossSampler": {
+      "exactValues": 131279,
+      "signMatches": 131279,
+      "signMismatches": 0,
+      "fnv1a64": "c4c1dc6efca3377b",
+      "sha256": "53f944bb7be87258e641887bddf8f43c73bc95f7f7487784f4ca3f971f8d5f88"
+    },
+    "gnvmMesher": {
+      "verts": 15400,
+      "quads": 15302,
+      "resampledFNV1a64": "e62147101404c09b",
+      "ambiguousFaces": 78
+    },
+    "blenderOpenVdbMesher": {
+      "runs": 10,
+      "uniqueResults": 1,
+      "verts": 15400,
+      "quads": 15302,
+      "topologySha256": "7a4997bdad483cdbc72b5ba772cf299f2cd85eac1606c12b2fe2728f04fdc4c8"
+    }
+  },
+  "blenderFrozenSource": {
+    "passOne": {
+      "verts": 21642,
+      "faces": 21818,
+      "meshJsonSha256": "44269c129405fbd782fcb06f7ac03c1c936c863031100db7280911669ffe8e5e",
+      "bounds": {
+        "min": [-7.965978145599365, -7.9738898277282715, 0.0],
+        "max": [7.97899055480957, 7.971832275390625, 27.216270446777344]
+      }
+    },
+    "crossSampler": {
+      "exactValues": 131279,
+      "signMatches": 131279,
+      "signMismatches": 0,
+      "fnv1a64": "81d4956a0cc90c60",
+      "sha256": "36d77901c17f3ee055d50369fcedfc96a9b08490c7e93c85b20d72fed857d473"
+    },
+    "gnvmMesher": {
+      "verts": 15318,
+      "quads": 15220,
+      "resampledFNV1a64": "3bb3a692942ca740",
+      "ambiguousFaces": 62
+    },
+    "blenderOpenVdbMesher": {
+      "runs": 10,
+      "uniqueResults": 1,
+      "verts": 15318,
+      "quads": 15220,
+      "topologySha256": "60bc5533144ddbc518e4aa7d1c0283f1221bd15bc0ce47dee01aa68eb8013754"
+    }
+  },
+  "sourceSwap": {
+    "samePassOneCounts": true,
+    "sameBoundsWithin": 9.5367431640625e-07,
+    "exactGridValues": 23788,
+    "differentGridValues": 107491,
+    "signMatches": 131199,
+    "signMismatches": 80,
+    "maximumAbsoluteGridDifference": 6.922724008560181,
+    "meanAbsoluteGridDifference": 0.003203404562222665
+  },
+  "classification": {
+    "frozenSampling": "exact in both source directions",
+    "frozenResamplingAndMeshing": "exact topology counts in both source directions; Blender/OpenVDB deterministic in 10/10 runs",
+    "firstIsolatedDivergence": "the live repeat-one source mesh, despite equal vertex/face counts and near-identical bounds",
+    "historicalNote": "The earlier 131278/131279 sign comparison used a different historical source/harness checkpoint. It remains historical evidence, but the current reciprocal frozen-source harness yields 131279/131279 byte-exact values in both directions."
+  }
+}
