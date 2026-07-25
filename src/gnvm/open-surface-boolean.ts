@@ -1,8 +1,10 @@
 import type { Vec3 } from "./core";
 import { buildTopology, type Mesh, triangulateFaceIndices } from "./geometry";
 import {
+  capBoundaryLoops,
   countOpenEdges,
   intersectMeshPairTagged,
+  orientSolid,
   retriangulateWithSteinerPoints,
 } from "trimesh-boolean";
 
@@ -44,6 +46,10 @@ export interface OpenSurfaceCycleFilterReport {
   ownedSelectedCellCount?: number;
   ownedSelectedTriangleCount?: number;
   ownedSelectedArea?: number;
+  sourceAtomicCellCount?: number;
+  sourceAtomicTriangleCount?: number;
+  sourceAtomicConstraintCount?: number;
+  sourceAtomicArea?: number;
 }
 
 export interface OpenSurfaceAtomicRegion {
@@ -657,6 +663,24 @@ function cutterIslandClassifier(soup: OpenBooleanTriangle[]): CutterIslandClassi
   return { soup };
 }
 
+function cappedIslandClassifier(soup: OpenBooleanTriangle[]): CutterIslandClassifier | null {
+  const before = countOpenEdges(soup);
+  if (before.overShared) return null;
+  const caps = before.openEdges ? capBoundaryLoops(soup) : [];
+  if (before.openEdges && !caps.length) return null;
+  const oriented = orientSolid([...soup, ...caps], { outward: true });
+  const after = countOpenEdges(oriented.soup);
+  if (
+    after.openEdges
+    || after.overShared
+    || oriented.diagnostics.components !== 1
+    || oriented.diagnostics.closedComponents !== 1
+    || oriented.diagnostics.openComponents
+    || oriented.diagnostics.windingViolationsAfter
+  ) return null;
+  return { soup: oriented.soup };
+}
+
 function classifyPointBySolidAngle(
   point: OpenBooleanVertex,
   soup: OpenBooleanTriangle[],
@@ -726,6 +750,77 @@ export function selectOpenSurfaceOwnedShellCells(
     ];
     if (classifications.some((classification) => classification !== classifications[0])) return null;
     if (classifications[0] === 1) cells.push(cell);
+  }
+  return { cells, triangles: cells.flatMap((cell) => cell.triangles) };
+}
+
+/**
+ * Partition every island of a compound operand at its sibling-island
+ * intersection curves.
+ *
+ * This is the source-side counterpart to the retained-cutter partition. It is
+ * intentionally independent of Boolean classification so callers can inspect
+ * and validate the exact atomic cells before replacing any production group.
+ */
+export function partitionOpenSurfaceCompoundOperand(
+  mesh: Mesh,
+  tolerance = 1e-4,
+): OpenSurfaceAtomicPartition | null {
+  const islands = triangleIslands(mesh);
+  if (islands.soups.length < 2) return null;
+  return partitionOpenSurfaceAtomicCells(
+    mesh,
+    islands.soups.map((triangles, ownerCutterIsland) => ({
+      triangles,
+      ownerCutterIsland,
+    })),
+    tolerance,
+  );
+}
+
+/**
+ * Select the exterior material boundary of a compound open-shell union.
+ *
+ * Each source island is capped only for point classification; returned cells
+ * always contain the original/split open surface and never the synthetic caps.
+ * Stable two-distance samples on both sides reject boundary ambiguity.
+ */
+export function selectOpenSurfaceUnionBoundaryCells(
+  source: Mesh,
+  partition: OpenSurfaceAtomicPartition,
+): OpenSurfaceAtomicSelection | null {
+  const islands = triangleIslands(source);
+  const classifiers = islands.soups.map(cappedIslandClassifier);
+  if (classifiers.length < 2 || classifiers.some((entry) => !entry)) return null;
+  const scale = meshScale(source, source);
+  const cells: OpenSurfaceAtomicCell[] = [];
+  for (const cell of partition.cells) {
+    if (!classifiers[cell.ownerCutterIsland]) return null;
+    const representative = [...cell.triangles].sort((a, b) => triangleArea(b) - triangleArea(a))[0];
+    const frame = representative ? atomicTriangleFrame(representative) : null;
+    if (!frame) return null;
+    const epsilon = Math.max(scale * 1e-7, frame.minEdge * 1e-4);
+    const materialAt = (side: number, distance: number): boolean | null => {
+      const point = {
+        x: frame.centroid[0] + frame.normal[0] * side * distance,
+        y: frame.centroid[1] + frame.normal[1] * side * distance,
+        z: frame.centroid[2] + frame.normal[2] * side * distance,
+      };
+      let inside = false;
+      for (const classifier of classifiers) {
+        const classification = classifyPointBySolidAngle(point, classifier!.soup);
+        if (classification === null) return null;
+        if (classification === 1) inside = true;
+      }
+      return inside;
+    };
+    const plus = materialAt(1, epsilon);
+    const plusFar = materialAt(1, epsilon * 2);
+    const minus = materialAt(-1, epsilon);
+    const minusFar = materialAt(-1, epsilon * 2);
+    if (plus === null || plusFar === null || minus === null || minusFar === null) return null;
+    if (plus !== plusFar || minus !== minusFar) return null;
+    if (plus !== minus) cells.push(cell);
   }
   return { cells, triangles: cells.flatMap((cell) => cell.triangles) };
 }
@@ -874,6 +969,7 @@ export function filterOpenSurfaceCutterCycles(
   const ownedSelection = atomicPartition
     ? selectOpenSurfaceOwnedShellCells(cutter, atomicPartition)
     : null;
+  const sourceAtomicPartition = partitionOpenSurfaceCompoundOperand(source, tolerance);
   return {
     bInside,
     regionCount: regions.length,
@@ -891,6 +987,12 @@ export function filterOpenSurfaceCutterCycles(
       ownedSelectedCellCount: ownedSelection.cells.length,
       ownedSelectedTriangleCount: ownedSelection.triangles.length,
       ownedSelectedArea: ownedSelection.cells.reduce((sum, cell) => sum + cell.area, 0),
+    } : {}),
+    ...(sourceAtomicPartition ? {
+      sourceAtomicCellCount: sourceAtomicPartition.cells.length,
+      sourceAtomicTriangleCount: sourceAtomicPartition.triangles.length,
+      sourceAtomicConstraintCount: sourceAtomicPartition.constraintCount,
+      sourceAtomicArea: sourceAtomicPartition.cells.reduce((sum, cell) => sum + cell.area, 0),
     } : {}),
   };
 }

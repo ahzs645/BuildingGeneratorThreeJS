@@ -4,8 +4,10 @@ import { Mesh } from "./geometry";
 import {
   filterOpenSurfaceCutterCycles,
   partitionOpenSurfaceAtomicCells,
+  partitionOpenSurfaceCompoundOperand,
   selectOpenSurfaceMaterialBoundaryCells,
   selectOpenSurfaceOwnedShellCells,
+  selectOpenSurfaceUnionBoundaryCells,
   type OpenSurfaceAtomicPartition,
   type OpenBooleanSegment,
   type OpenBooleanTriangle,
@@ -122,6 +124,20 @@ function appendCube(mesh: Mesh, center: [number, number, number], size = 2): voi
   mesh.faceMaterial.push(0, 0, 0, 0, 0, 0);
 }
 
+function appendOpenCube(mesh: Mesh, center: [number, number, number], size = 2): void {
+  const offset = mesh.positions.length;
+  const half = size * 0.5;
+  for (const z of [-half, half]) for (const y of [-half, half]) for (const x of [-half, half])
+    mesh.positions.push([center[0] + x, center[1] + y, center[2] + z]);
+  mesh.faces.push(
+    [offset + 0, offset + 1, offset + 5, offset + 4],
+    [offset + 2, offset + 6, offset + 7, offset + 3],
+    [offset + 0, offset + 4, offset + 6, offset + 2],
+    [offset + 1, offset + 3, offset + 7, offset + 5],
+  );
+  mesh.faceMaterial.push(0, 0, 0, 0);
+}
+
 test("drops only the weakest reciprocal interface that closes an island cycle", () => {
   const source = islandMesh(3);
   const cutter = islandMesh(3);
@@ -141,6 +157,10 @@ test("drops only the weakest reciprocal interface that closes an island cycle", 
   assert.deepEqual(result.droppedInterfaces, [[0, 1]]);
   assert.equal(result.retainedTriangles, 4);
   assert.equal(result.droppedTriangles, 2);
+  assert.equal(result.sourceAtomicCellCount, 3);
+  assert.equal(result.sourceAtomicTriangleCount, 3);
+  assert.equal(result.sourceAtomicConstraintCount, 0);
+  assert.equal(result.sourceAtomicArea, 9);
 });
 
 test("retains every reciprocal bridge in an acyclic island graph", () => {
@@ -349,4 +369,42 @@ test("declines an owned shell cell whose representative lies on the occluder", (
   };
 
   assert.equal(selectOpenSurfaceOwnedShellCells(cutter, partition), null);
+});
+
+test("selects an open compound source union without returning synthetic caps", () => {
+  const source = new Mesh();
+  appendOpenCube(source, [0, 0, 0]);
+  appendOpenCube(source, [1, 0, 0]);
+  const visible = triangle([-1, -0.5, -0.5], [-1, 0.5, -0.5], [-1, -0.5, 0.5]);
+  const hidden = triangle([1, -0.5, -0.5], [1, -0.5, 0.5], [1, 0.5, -0.5]);
+  const partition: OpenSurfaceAtomicPartition = {
+    cells: [visible, hidden].map((entry) => ({
+      triangles: [entry],
+      ownerCutterIsland: 0,
+      boundaryCutterIslands: [1],
+      area: 0.5,
+    })),
+    triangles: [visible, hidden],
+    constraintCount: 1,
+  };
+
+  const selected = selectOpenSurfaceUnionBoundaryCells(source, partition);
+
+  assert.ok(selected);
+  assert.deepEqual(selected.triangles, [visible]);
+  assert.equal(selected.cells.length, 1);
+  assert.equal(selected.cells[0].area, 0.5);
+});
+
+test("partitions every island of a compound source operand", () => {
+  const source = disconnectedTrianglesMesh([
+    triangle([0, 0, 0], [1, 0, 0], [0, 1, 0]),
+    triangle([0.3, -1, -1], [0.3, 2, -1], [0.3, 0.5, 2]),
+  ]);
+
+  const partition = partitionOpenSurfaceCompoundOperand(source);
+
+  assert.ok(partition);
+  assert.ok(partition.constraintCount >= 2);
+  assert.ok(partition.triangles.length > source.faces.length);
 });
