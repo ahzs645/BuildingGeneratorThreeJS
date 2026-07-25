@@ -566,7 +566,7 @@ Two current examples:
   labeled `native-equivalent-openvdb-race`, not snapshot-exact. See
   [`public/dojo/math-clay/status.json`](../public/dojo/math-clay/status.json).
 - N03D Watertight Bolt: the deterministic 13-pass browser result is
-  16,226 / 16,228, while ten sequential Blender results ranged from 16,526 to
+  16,284 / 16,286, while ten sequential Blender results ranged from 16,526 to
   16,598 vertices. The one-pass browser topology exactly matches one observed
   Blender schedule and 131,278 of 131,279 controlled SDF signs match. See
   [`public/dojo/n03d/bolt-watertight/status.json`](../public/dojo/n03d/bolt-watertight/status.json).
@@ -622,7 +622,7 @@ bit-identical or every source dependency exists.
 ### Geometry and evaluation
 
 - **N03D Watertight Bolt:** deterministic browser topology differs from the
-  stored 13-pass Blender snapshot by about 2.08%; native Blender/OpenVDB itself
+  stored 13-pass Blender snapshot by about 1.73%; native Blender/OpenVDB itself
   varies. This remains quantified visual/native-equivalent near parity.
 - **Math Clay TPMS.016:** four vertices/faces below the stored reference, but
   inside repeated native OpenVDB ranges. Broader parameter validation remains
