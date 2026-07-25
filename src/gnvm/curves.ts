@@ -1593,6 +1593,7 @@ function meshEdgesToCurvesInternal(mesh: Mesh, selected?: (vi: number) => boolea
   const out: { spline: Spline; verts: number[] }[] = [];
   const visitedEdge = new Set<string>();
   const ek = (a: number, b: number) => (a < b ? `${a}_${b}` : `${b}_${a}`);
+  const authoredEdgeOrder = mesh.attributes.has("__gnvm_stored_edge_order");
   // Blender Mesh to Curve semantics: splines break at "poles" (valence != 2).
   // Walk pole-to-pole open chains first, then what remains are pure cycles.
   const isPole = (v: number) => (adj.get(v)?.size ?? 0) !== 2;
@@ -1625,7 +1626,19 @@ function meshEdgesToCurvesInternal(mesh: Mesh, selected?: (vi: number) => boolea
     if (!isPole(start)) continue;
     for (const nb of adj.get(start)!) {
       if (visitedEdge.has(ek(start, nb))) continue;
-      emit(walk(start, nb, true), false);
+      let chain = walk(start, nb, true);
+      // A generated mesh without a retained edge table has no portable source
+      // for Blender's open-chain direction. Prefer the endpoint whose first
+      // segment is more Z-aligned. This reproduces Blender's subdivision edge
+      // discovery for extruded corner chains and, importantly, gives its
+      // minimum-twist curve frame the same vertical starting normal. Two-point
+      // chains are left untouched because reversing them only changes winding.
+      if (!authoredEdgeOrder && mesh.edges.length === 0 && chain.length > 2 && chain[0] !== chain.at(-1)) {
+        const first = vnorm(vsub(mesh.positions[chain[1]], mesh.positions[chain[0]]));
+        const last = vnorm(vsub(mesh.positions[chain.at(-2)!], mesh.positions[chain.at(-1)!]));
+        if (Math.abs(last[2]) > Math.abs(first[2]) + 1e-7) chain = chain.reverse();
+      }
+      emit(chain, false);
     }
   }
   // remaining unvisited edges belong to valence-2 cycles
@@ -1633,7 +1646,6 @@ function meshEdgesToCurvesInternal(mesh: Mesh, selected?: (vi: number) => boolea
   // Topology-rebuilding nodes such as Merge by Distance stamp their result so
   // cycles instead follow Blender's newly canonicalized edge order.
   const canonicalizeCycles = mesh.attributes.has("__gnvm_canonical_curve_cycles");
-  const authoredEdgeOrder = mesh.attributes.has("__gnvm_stored_edge_order");
   const cycles: { spline: Spline; verts: number[] }[] = [];
   for (const [start] of adj) {
     for (const nb of adj.get(start)!) {

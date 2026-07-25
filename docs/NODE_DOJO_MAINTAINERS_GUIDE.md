@@ -628,10 +628,11 @@ bit-identical or every source dependency exists.
   open-shell cycles are filtered. Default and five non-cutter variants are
   exact.
 - **Accepted small bounds/float residuals:** examples include the Procedural Box
-  max-X difference of 0.000001907, Stackable Bin bounds within 0.0004, Course
-  Intro Room Stage B's 0.0017 legacy curve-frame bound residual, and the Node
-  Dojo emblem's 0.0000745 bound residual. Their status files define the accepted
-  scope; do not upgrade those labels to bit-exact coordinates.
+  max-X difference of 0.000001907, Stackable Bin bounds within 0.0004, and the
+  Node Dojo emblem's 0.0000745 bound residual. Intro Room Stage B is now
+  four-decimal exact with 0.000003815 raw bound drift after restoring generated
+  open-chain direction. Their status files define the accepted scope; do not
+  upgrade those labels to bit-exact coordinates.
 - **Recursive Bin historical baseline:** the July audit records surface and
   topology differences, while the newer
   [`bin-material-parity.json`](../public/dojo/bin-material-parity.json) proves

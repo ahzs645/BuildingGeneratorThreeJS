@@ -6,7 +6,7 @@
   "reachableGroups": 8,
   "reachableNodes": 167,
   "coverage": "100%",
-  "status": "topology-exact-bounds-near",
+  "status": "topology-and-rounded-bounds-exact",
   "blender": {
     "verts": 2860,
     "faces": 2398,
@@ -19,12 +19,12 @@
     "verts": 2860,
     "faces": 2398,
     "bbox": {
-      "min": [-34.0403, -34.4049, -1.39],
-      "max": [37.0448, 25.7366, 16.81]
+      "min": [-34.03913497924805, -34.40322494506836, -1.3899998664855957],
+      "max": [37.0447883605957, 25.736572265625, 16.809999465942383]
     }
   },
-  "bboxMaxDiff": 0.0017,
-  "validation": "This asymmetrical Room-family lesson stage has exact Blender topology. The 0.0017-unit bound residual comes from legacy curve-frame sampling on a roughly 71-unit composition and does not alter its visible wall, floor, or opening layout.",
+  "bboxMaxDiff": 0.000003814697265625,
+  "validation": "This asymmetrical Room-family lesson stage has exact Blender topology and four-decimal local bounds. When a generated mesh has no retained edge table, open kink chains now begin at the more Z-aligned endpoint; that reproduces Blender's subdivision edge discovery and minimum-twist frame at the lower-right room corner. The maximum raw bound difference is 0.000003814697265625 units across the roughly 71-unit composition.",
   "workbenchRender": {
     "status": "measured-workbench-renderer-residual",
     "valid": true,

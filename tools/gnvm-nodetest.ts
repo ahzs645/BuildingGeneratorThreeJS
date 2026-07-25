@@ -962,6 +962,14 @@ function meshSignedAreaXY(m: Mesh): number {
   check("MeshToCurve stores Blender cyclic minimum-twist normals",
     !!authoredNormal && Math.abs(authoredNormal[2]) > .01,
     JSON.stringify(authoredCurve.curveAttributes.get("__curve_normal")?.data));
+
+  const generated = new Mesh();
+  generated.positions = [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 1, 0]];
+  generated.faces = [[0, 1, 2, 3]];
+  const generatedChain = meshEdgesToChains(generated, (vertex) => vertex !== 3)[0];
+  check("MeshToCurve generated kink starts from its Z-aligned endpoint",
+    JSON.stringify(generatedChain?.verts) === JSON.stringify([2, 1, 0]),
+    JSON.stringify(generatedChain?.verts));
 }
 
 // A loop attached to a branch pole becomes an open spline whose first and
