@@ -474,9 +474,21 @@ function sampleSplineAt(
   const sourceNormalB = normals
     ? asVec3(normals[pointOffset + next] ?? sourceNormalA)
     : frames[next]?.normal ?? sourceNormalA;
-  const tilt = asNum(tilts?.[pointOffset + segment] ?? 0) * (1 - factor)
-    + asNum(tilts?.[pointOffset + next] ?? 0) * factor;
-  const baseNormal = vnorm(vadd(vscale(sourceNormalA, 1 - factor), vscale(sourceNormalB, factor)));
+  // Blender's evaluated curve normals already include the per-control-point
+  // tilt. Sample Curve interpolates those tilted normals and then normalizes
+  // the result; rotating an interpolated untilted normal by an interpolated
+  // tilt is only approximately equivalent on a curved spline.
+  const tiltedNormalA = rotateAroundAxis(
+    sourceNormalA,
+    sourceTangentA,
+    asNum(tilts?.[pointOffset + segment] ?? 0),
+  );
+  const tiltedNormalB = rotateAroundAxis(
+    sourceNormalB,
+    sourceTangentB,
+    asNum(tilts?.[pointOffset + next] ?? 0),
+  );
+  const normal = vnorm(vadd(vscale(tiltedNormalA, 1 - factor), vscale(tiltedNormalB, factor)));
   const valueA = values[pointOffset + segment] ?? 0;
   const valueB = values[pointOffset + next] ?? valueA;
   const value = Array.isArray(valueA) || Array.isArray(valueB)
@@ -486,7 +498,7 @@ function sampleSplineAt(
     value,
     position: vadd(a, vscale(vsub(b, a), factor)),
     tangent,
-    normal: vnorm(rotateAroundAxis(baseNormal, tangent, tilt)),
+    normal,
   };
 }
 

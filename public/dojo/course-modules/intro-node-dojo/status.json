@@ -27,10 +27,10 @@
     "triangles": 5514,
     "bbox": {
       "min": [-7.092875003814697, -5.352100849151611, -2.2800002098083496],
-      "max": [7.133110046386719, 10.613457679748535, 1.670235514640808]
+      "max": [7.133106708526611, 10.613457679748535, 1.6703096628189087]
     }
   },
-  "validation": "Exact topology and matching Node Dojo emblem composition, with maximum local-bounds difference 0.00007450580596923828 units. Blender's Invert Arc keeps the start point and uses the opposite signed sweep; reproducing that contract restores the yin-yang's inner S curve instead of its former mirror. The complete raw point clouds are then within 0.00007920952720588948 units symmetrically, with a mean nearest-point distance of 0.0000005521627707045178. Set Curve Tilt and Sample Curve reproduce the arced title, while extracted pixel-font contours, explicit line-break instances, half-em character spacing, and shared-corner Fill Curve welding reproduce the WELCOME/to the lettering.",
+  "validation": "Exact topology and matching Node Dojo emblem composition, with maximum local-bounds difference 0.000001430511474609375 units. Blender's Invert Arc keeps the start point and uses the opposite signed sweep; reproducing that contract restores the yin-yang's inner S curve instead of its former mirror. Sample Curve now tilts each evaluated endpoint normal before interpolating and normalizing it, matching Blender's evaluated-normal contract for the arced title. The complete raw point clouds are within 0.000004430032772079002 units symmetrically, with a mean nearest-point distance of 0.0000002740413239729671. Extracted pixel-font contours, explicit line-break instances, half-em character spacing, and shared-corner Fill Curve welding reproduce the WELCOME/to the lettering.",
   "workbenchRender": {
     "status": "measured-workbench-renderer-residual",
     "valid": true,

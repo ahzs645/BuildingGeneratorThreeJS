@@ -806,8 +806,32 @@ function meshSignedAreaXY(m: Mesh): number {
   check("Sample Curve interpolates by arc length",
     approx(positions.flat(), [0, 0, 0, 1, 0, 0, 2, 0, 0]) && approx(values, [0, 5, 10]),
     `${JSON.stringify(positions)} ${JSON.stringify(values)}`);
-  check("Sample Curve applies interpolated tilt to normals",
+  check("Sample Curve samples evaluated tilted normals",
     normals.every((normal) => approx(normal, [0, 0, 1])), JSON.stringify(normals));
+
+  const bent = curve([[0, 0, 0], [1, 0, 0]], false);
+  bent.curveAttributes.set("__curve_tangent", {
+    domain: "POINT",
+    data: [[1, 0, 0], [0, 1, 0]],
+  });
+  bent.curveAttributes.set("__curve_normal", {
+    domain: "POINT",
+    data: [[0, 1, 0], [-1, 0, 0]],
+  });
+  bent.curveAttributes.set("tilt", {
+    domain: "POINT",
+    data: [0, Math.PI / 2],
+  });
+  const bentSample = runNode("GeometryNodeSampleCurve", {
+    Curves: bent,
+    Value: 0,
+    Factor: 0,
+    Length: 0.5,
+    "Curve Index": 0,
+  }, { mode: "LENGTH", use_all_curves: true });
+  const bentNormal = (bentSample.Normal as Field).array(makeFieldCtx(curve([[0, 0, 0]], false), "POINT"))[0] as Vec3;
+  check("Sample Curve tilts endpoints before normal interpolation",
+    approx(bentNormal, [0, Math.SQRT1_2, Math.SQRT1_2], 1e-6), JSON.stringify(bentNormal));
 }
 
 // With an unchanged Count, Curve to Points still redistributes an irregular
