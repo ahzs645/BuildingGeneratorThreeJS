@@ -624,9 +624,12 @@ bit-identical or every source dependency exists.
   useful; there is no evidence of a default-field defect.
 - **Three-Way Pipe cutter mode:** exact bounds and zero sampled
   Blender-to-browser surface distance, but the browser open-surface Boolean
-  retains one small inner patch with 0.1911% area overhead after reciprocal
-  open-shell cycles are filtered. Default and five non-cutter variants are
-  exact.
+  retains one localized inner patch with 2.6260% area overhead after
+  scale-aware crack pairing and reciprocal open-shell cycle filtering remove
+  1,621 redundant triangles. Completing it requires cutter-cutter intersection
+  constraints and two-sided atomic material-cell classification; a broader
+  tolerance or whole-region deletion is unsafe. Default and five non-cutter
+  variants are exact.
 - **Accepted small bounds/float residuals:** examples include the Procedural Box
   max-X difference of 0.000001907, Stackable Bin bounds within 0.0004, and the
   Node Dojo emblem's 0.000001431 bound residual after restoring Blender's

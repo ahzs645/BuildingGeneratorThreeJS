@@ -25,31 +25,31 @@
     }
   },
   "openSurfaceBoolean": {
-    "backend": "trimesh-boolean BMS hybrid classifier plus reciprocal-island cycle filtering",
+    "backend": "trimesh-boolean BMS hybrid classifier plus scale-aware crack pairing and reciprocal-island cycle filtering",
     "blenderBooleanStage": {
-      "verts": 29704,
-      "polygons": 27433,
-      "triangles": 52609,
-      "surfaceArea": 14833.581826679256
+      "verts": 28786,
+      "polygons": 26893,
+      "triangles": 51979,
+      "surfaceArea": 15644.567731019853
     },
     "unfilteredGnvmBooleanStage": {
-      "verts": 27136,
-      "triangles": 53872,
-      "surfaceArea": 15297.275406194854
+      "verts": 27251,
+      "triangles": 54453,
+      "surfaceArea": 16364.490117841657
     },
     "gnvmBooleanStage": {
-      "verts": 26323,
-      "triangles": 51624,
-      "surfaceArea": 14861.923682820783
+      "verts": 26700,
+      "triangles": 52832,
+      "surfaceArea": 16055.391500169539
     },
-    "surfaceAreaOverhead": 0.0019106549229096195,
+    "surfaceAreaOverhead": 0.026259835120602926,
     "directionalSurfaceTest": {
       "blenderVerticesToGnvmP99": 0,
-      "blenderTriangleCentroidsToGnvmP99": 0,
-      "gnvmVerticesToBlenderP99": 0,
-      "gnvmTriangleCentroidsToBlenderP99": 0.031
+      "blenderVerticesToGnvmMax": 0,
+      "gnvmVerticesToBlenderP99": 0.822,
+      "gnvmVerticesToBlenderMax": 2.375
     },
-    "diagnosis": "The source and cutter operands match Blender in topology and bounds. BMS classifies six reciprocal bInside regions across the three source/cutter islands; Blender keeps a maximum-weight spanning forest and omits the weakest cycle-closing pair. A topology/provenance filter now removes that pair without asset names or count signatures. The remaining 0.1911% area delta is limited to splitter tessellation and partial-region semantics."
+    "diagnosis": "The source and cutter operands match Blender in topology and bounds. BMS classifies six reciprocal bInside regions across the three source/cutter islands. Blender-correct RELATIVE Object Info transforms expose four near-coincident splitter cracks whose endpoint deltas are 0.000507 to 0.001277 units. A scale-aware, unique one-to-one crack matcher restores the conservative reciprocal-cycle filter without asset names or count signatures, removing 1,621 redundant triangles and reducing surface-area overhead from 4.6017% to 2.6260%. The remaining 410.8238-square-unit inner patch requires cutter-cutter constraints and atomic partial-material-cell classification; it cannot be safely removed as a whole connected region."
   },
-  "validation": "Authored output and five non-cutter control variants have exact topology and bounds. The default's 97,008 serialized display triangles now also match Blender index-for-index and winding-for-winding after correcting Curve-to-Mesh endpoint cap orientation. The reconstructed Generated-coordinate noise/Wave bump and Window-coordinate diagonal Backfacing emission reach 0.9951 silhouette IoU, complete mutual one-pixel coverage, 0.00425 RGB MAE, and 0.9979 macro luminance correlation. PRINT VIZ 1OCT2024 stores the authored 0.22 mm layer-height value and includes an optional cross-section inspection branch, but that branch is disabled in the captured default and the supplied project contains no slicer toolpath or source G-code. Cutter mode uses a browser-native open-surface Boolean because Blender's FLOAT solver subtracts three overlapping closed pipes from three open shells, an operation a solid-only Manifold cannot represent. It retains exact bounds and the complete Blender surface: sampled Blender vertices and triangle centroids both measure zero p99 distance to the browser result. Reciprocal-island cycle filtering removes the former broad inner patch and reduces area overhead from 3.126% to 0.1911%; the remaining small local delta is splitter tessellation rather than a missing Blender surface."
+  "validation": "Authored output and five non-cutter control variants have exact topology and bounds. The default's 97,008 serialized display triangles now also match Blender index-for-index and winding-for-winding after correcting Curve-to-Mesh endpoint cap orientation. The reconstructed Generated-coordinate noise/Wave bump and Window-coordinate diagonal Backfacing emission reach 0.9951 silhouette IoU, complete mutual one-pixel coverage, 0.00425 RGB MAE, and 0.9979 macro luminance correlation. PRINT VIZ 1OCT2024 stores the authored 0.22 mm layer-height value and includes an optional cross-section inspection branch, but that branch is disabled in the captured default and the supplied project contains no slicer toolpath or source G-code. Cutter mode uses a browser-native open-surface Boolean because Blender's FLOAT solver subtracts three overlapping closed pipes from three open shells, an operation a solid-only Manifold cannot represent. It retains exact local bounds and contains the sampled Blender surface: Blender-to-browser vertex distance is zero through the sampled maximum. The transform-correct browser result is 26,700 vertices / 52,832 triangles, with a localized extra inner patch measured at 2.6260% additional surface area. Scale-aware crack pairing makes the cycle filter deterministic; atomic cutter-cutter material cells remain the next parity step."
 }

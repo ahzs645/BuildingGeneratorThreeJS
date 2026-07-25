@@ -37,7 +37,7 @@ export interface OpenSurfaceCycleFilterReport {
 
 interface Region {
   triangles: OpenBooleanTriangle[];
-  boundaryEdges: string[];
+  boundaryEdges: BoundaryEdge[];
   area: number;
   seamLength: number;
   ownerSourceIsland: number;
@@ -46,9 +46,15 @@ interface Region {
 
 interface UnlabelledRegion {
   triangles: OpenBooleanTriangle[];
-  boundaryEdges: string[];
+  boundaryEdges: BoundaryEdge[];
   area: number;
   seamLength: number;
+}
+
+interface BoundaryEdge {
+  key: string;
+  a: OpenBooleanVertex;
+  b: OpenBooleanVertex;
 }
 
 interface Interface {
@@ -85,24 +91,44 @@ function triangleArea(triangle: OpenBooleanTriangle): number {
   return Math.hypot(x, y, z) * 0.5;
 }
 
-function edgeLength(key: string, points: Map<string, OpenBooleanVertex>): number {
-  const [aKey, bKey] = key.split("|");
-  const a = points.get(aKey);
-  const b = points.get(bKey);
-  return a && b ? Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) : 0;
+function edgeLength(edge: BoundaryEdge): number {
+  return Math.hypot(edge.a.x - edge.b.x, edge.a.y - edge.b.y, edge.a.z - edge.b.z);
+}
+
+function pointsNear(a: OpenBooleanVertex, b: OpenBooleanVertex, tolerance: number): boolean {
+  return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) <= tolerance;
+}
+
+function edgesNear(a: BoundaryEdge, b: BoundaryEdge, tolerance: number): boolean {
+  return (
+    pointsNear(a.a, b.a, tolerance) && pointsNear(a.b, b.b, tolerance)
+  ) || (
+    pointsNear(a.a, b.b, tolerance) && pointsNear(a.b, b.a, tolerance)
+  );
+}
+
+/**
+ * Splitter cracks can expose both copies of a near-coincident edge while only
+ * the surrounding intersection contour carries provenance. Accept that narrow
+ * case only when the unlabelled edges form an unambiguous perfect matching.
+ */
+function haveUniqueNearCoincidentPartners(edges: BoundaryEdge[], tolerance: number): boolean {
+  if (edges.length % 2 !== 0) return false;
+  const partners = edges.map((edge, index) =>
+    edges.flatMap((candidate, candidateIndex) =>
+      candidateIndex !== index && edgesNear(edge, candidate, tolerance) ? [candidateIndex] : []));
+  if (partners.some((matches) => matches.length !== 1)) return false;
+  return partners.every((matches, index) => partners[matches[0]][0] === index);
 }
 
 function connectedRegions(triangles: OpenBooleanTriangle[], tolerance: number): UnlabelledRegion[] {
   const edgeTriangles = new Map<string, number[]>();
-  const points = new Map<string, OpenBooleanVertex>();
   for (let triangle = 0; triangle < triangles.length; triangle++) {
     for (const [a, b] of triangleEdges(triangles[triangle])) {
       const key = edgeKey(a, b, tolerance);
       const incident = edgeTriangles.get(key) ?? [];
       incident.push(triangle);
       edgeTriangles.set(key, incident);
-      points.set(pointKey(a, tolerance), a);
-      points.set(pointKey(b, tolerance), b);
     }
   }
 
@@ -133,19 +159,26 @@ function connectedRegions(triangles: OpenBooleanTriangle[], tolerance: number): 
       }
     }
     const component = indices.map((index) => triangles[index]);
-    const componentEdges = new Map<string, number>();
+    const componentEdges = new Map<string, { count: number; a: OpenBooleanVertex; b: OpenBooleanVertex }>();
     for (const triangle of component) {
       for (const [a, b] of triangleEdges(triangle)) {
         const key = edgeKey(a, b, tolerance);
-        componentEdges.set(key, (componentEdges.get(key) ?? 0) + 1);
+        const existing = componentEdges.get(key);
+        componentEdges.set(key, {
+          count: (existing?.count ?? 0) + 1,
+          a: existing?.a ?? a,
+          b: existing?.b ?? b,
+        });
       }
     }
-    const boundaryEdges = [...componentEdges].filter(([, count]) => count === 1).map(([key]) => key);
+    const boundaryEdges = [...componentEdges]
+      .filter(([, edge]) => edge.count === 1)
+      .map(([key, edge]) => ({ key, a: edge.a, b: edge.b }));
     regions.push({
       triangles: component,
       boundaryEdges,
       area: component.reduce((sum, triangle) => sum + triangleArea(triangle), 0),
-      seamLength: boundaryEdges.reduce((sum, key) => sum + edgeLength(key, points), 0),
+      seamLength: boundaryEdges.reduce((sum, edge) => sum + edgeLength(edge), 0),
     });
   }
   return regions;
@@ -253,10 +286,15 @@ export function filterOpenSurfaceCutterCycles(
   if (!split.groups.bInside.length || !split.segments.length) return null;
   const sourceIslands = triangleIslands(source);
   const cutterIslands = triangleIslands(cutter);
+  const scale = meshScale(source, cutter);
+  // Splitter duplicates can drift by just over 1e-5 of the operand diagonal
+  // (Three-Way Pipe's widest paired crack is 1.0303e-5). Keep a narrow margin
+  // while still requiring a unique endpoint-for-endpoint partner.
+  const crackTolerance = Math.max(tolerance, scale * 1.1e-5);
   const cutterToSource = matchCutterToSourceIslands(
     sourceIslands.centers,
     cutterIslands.centers,
-    meshScale(source, cutter) * 1e-5,
+    scale * 1e-5,
   );
   if (!cutterToSource) return null;
 
@@ -275,10 +313,12 @@ export function filterOpenSurfaceCutterCycles(
   const regions: Region[] = [];
   for (const region of rawRegions) {
     if (!region.boundaryEdges.length) return null;
-    const boundaryLabels = region.boundaryEdges.map((key) => segmentLabels.get(key));
-    if (boundaryLabels.some((labels) => !labels?.length)) return null;
+    const boundaryLabels = region.boundaryEdges.map((edge) => segmentLabels.get(edge.key));
+    const unlabelledEdges = region.boundaryEdges.filter((_, index) => !boundaryLabels[index]?.length);
+    if (unlabelledEdges.length && !haveUniqueNearCoincidentPartners(unlabelledEdges, crackTolerance)) return null;
     const labels = boundaryLabels.flatMap((entries) => entries ?? []);
     const first = labels[0];
+    if (!first) return null;
     if (labels.some((label) => label.source !== first.source || label.cutter !== first.cutter)) return null;
     const ownerSourceIsland = cutterToSource[first.cutter];
     if (ownerSourceIsland === undefined) return null;
