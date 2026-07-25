@@ -77,6 +77,17 @@ export interface OpenSurfaceAtomicSelection {
   triangles: OpenBooleanTriangle[];
 }
 
+export interface OpenSurfaceAtomicPartitionDiagnostics {
+  failure?: string;
+  region?: number;
+  triangle?: number;
+  parentArea?: number;
+  childArea?: number;
+  constraintCount?: number;
+  missingConstraintCount?: number;
+  maximumEdgeIncidence?: number;
+}
+
 interface Region {
   triangles: OpenBooleanTriangle[];
   boundaryEdges: BoundaryEdge[];
@@ -453,10 +464,18 @@ export function partitionOpenSurfaceAtomicCells(
   cutter: Mesh,
   regions: OpenSurfaceAtomicRegion[],
   tolerance = 1e-4,
+  diagnostics?: OpenSurfaceAtomicPartitionDiagnostics,
 ): OpenSurfaceAtomicPartition | null {
-  if (!regions.length) return null;
+  const fail = (
+    failure: string,
+    detail: Omit<OpenSurfaceAtomicPartitionDiagnostics, "failure"> = {},
+  ): null => {
+    if (diagnostics) Object.assign(diagnostics, { failure, ...detail });
+    return null;
+  };
+  if (!regions.length) return fail("empty-regions");
   const cutterIslands = triangleIslands(cutter);
-  if (cutterIslands.soups.length < 2) return null;
+  if (cutterIslands.soups.length < 2) return fail("single-cutter-island");
   const scale = meshScale(cutter, cutter);
   const keyTolerance = Math.max(tolerance * 0.1, scale * 1e-8);
   const islandBounds = cutterIslands.soups.map(soupBounds);
@@ -464,9 +483,11 @@ export function partitionOpenSurfaceAtomicCells(
   const allTriangles: OpenBooleanTriangle[] = [];
   let constraintCount = 0;
 
-  for (const region of regions) {
+  for (let regionIndex = 0; regionIndex < regions.length; regionIndex++) {
+    const region = regions[regionIndex];
     const regionBounds = soupBounds(region.triangles);
-    if (!regionBounds || !cutterIslands.soups[region.ownerCutterIsland]) return null;
+    if (!regionBounds || !cutterIslands.soups[region.ownerCutterIsland])
+      return fail("invalid-region-owner", { region: regionIndex });
     const constraintsByTriangle = region.triangles.map(() => [] as AtomicConstraint[]);
     for (let otherIsland = 0; otherIsland < cutterIslands.soups.length; otherIsland++) {
       if (otherIsland === region.ownerCutterIsland) continue;
@@ -488,7 +509,11 @@ export function partitionOpenSurfaceAtomicCells(
     for (let triangleIndex = 0; triangleIndex < region.triangles.length; triangleIndex++) {
       const parent = region.triangles[triangleIndex];
       const constraints = splitAtomicConstraints(parent, constraintsByTriangle[triangleIndex], keyTolerance);
-      if (!constraints) return null;
+      if (!constraints) return fail("overlapping-or-degenerate-constraints", {
+        region: regionIndex,
+        triangle: triangleIndex,
+        constraintCount: constraintsByTriangle[triangleIndex].length,
+      });
       for (const constraint of constraints) {
         const key = edgeKey(constraint.p0, constraint.p1, keyTolerance);
         barrierLabels.set(key, constraint.otherCutterIslands);
@@ -499,11 +524,26 @@ export function partitionOpenSurfaceAtomicCells(
       const parentArea = triangleArea(parent);
       const childArea = children.reduce((sum, child) => sum + triangleArea(child), 0);
       const areaTolerance = Math.max(parentArea * 1e-7, scale * scale * 1e-12);
-      if (!children.length || Math.abs(childArea - parentArea) > areaTolerance) return null;
+      if (!children.length || Math.abs(childArea - parentArea) > areaTolerance)
+        return fail("retriangulation-area-mismatch", {
+          region: regionIndex,
+          triangle: triangleIndex,
+          parentArea,
+          childArea,
+          constraintCount: constraints.length,
+        });
       const childEdges = new Set(children.flatMap((child) =>
         triangleEdges(child).map(([a, b]) => edgeKey(a, b, keyTolerance))));
-      if (constraints.some((constraint) => !childEdges.has(edgeKey(constraint.p0, constraint.p1, keyTolerance))))
-        return null;
+      const missingConstraintCount = constraints.filter(
+        (constraint) => !childEdges.has(edgeKey(constraint.p0, constraint.p1, keyTolerance)),
+      ).length;
+      if (missingConstraintCount)
+        return fail("missing-retriangulated-constraint", {
+          region: regionIndex,
+          triangle: triangleIndex,
+          constraintCount: constraints.length,
+          missingConstraintCount,
+        });
       atomicTriangles.push(...children);
       constraintCount += constraints.length;
     }
@@ -517,7 +557,9 @@ export function partitionOpenSurfaceAtomicCells(
         edgeTriangles.set(key, incident);
       }
     }
-    if ([...edgeTriangles.values()].some((incident) => incident.length > 2)) return null;
+    const maximumEdgeIncidence = Math.max(0, ...[...edgeTriangles.values()].map((incident) => incident.length));
+    if (maximumEdgeIncidence > 2)
+      return fail("over-shared-atomic-edge", { region: regionIndex, maximumEdgeIncidence });
     const neighbors = atomicTriangles.map(() => [] as number[]);
     for (const [key, incident] of edgeTriangles) {
       if (barrierLabels.has(key) || incident.length !== 2) continue;
@@ -776,6 +818,78 @@ export function partitionOpenSurfaceCompoundOperand(
     })),
     tolerance,
   );
+}
+
+/**
+ * Partition a BMS split group without assuming its connected-region order
+ * matches the original operand's island order.
+ *
+ * BMS may emit disconnected regions in traversal order, and a single operand
+ * island may contribute more than one region. Resolve each region from stable
+ * original-vertex provenance and decline ties or regions made entirely from
+ * synthetic split points. This keeps report/probe consumers from silently
+ * assigning sibling constraints to the wrong shell.
+ */
+export function partitionOpenSurfaceSplitGroup(
+  operand: Mesh,
+  triangles: OpenBooleanTriangle[],
+  tolerance = 1e-4,
+  diagnostics?: OpenSurfaceAtomicPartitionDiagnostics,
+): OpenSurfaceAtomicPartition | null {
+  const islands = triangleIslands(operand);
+  if (islands.soups.length < 2) {
+    if (diagnostics) diagnostics.failure = "single-cutter-island";
+    return null;
+  }
+  const originalKeys = islands.soups.map((soup) => new Set(
+    soup.flatMap((triangle) => [triangle.v0, triangle.v1, triangle.v2])
+      .map((point) => pointKey(point, tolerance)),
+  ));
+  const regions = connectedRegions(triangles, tolerance);
+  const partitions: OpenSurfaceAtomicPartition[] = [];
+  for (let regionIndex = 0; regionIndex < regions.length; regionIndex++) {
+    const region = regions[regionIndex];
+    const scores = originalKeys.map(() => 0);
+    for (const triangle of region.triangles) {
+      for (const point of [triangle.v0, triangle.v1, triangle.v2]) {
+        const key = pointKey(point, tolerance);
+        for (let island = 0; island < originalKeys.length; island++)
+          if (originalKeys[island].has(key)) scores[island]++;
+      }
+    }
+    const order = scores.map((score, island) => ({ score, island }))
+      .sort((a, b) => b.score - a.score || a.island - b.island);
+    if (!order[0]?.score || order[0].score === order[1]?.score) {
+      if (diagnostics) Object.assign(diagnostics, {
+        failure: "ambiguous-region-owner",
+        region: regionIndex,
+      });
+      return null;
+    }
+    const localDiagnostics: OpenSurfaceAtomicPartitionDiagnostics = {};
+    const partition = partitionOpenSurfaceAtomicCells(
+      operand,
+      [{
+        triangles: region.triangles,
+        ownerCutterIsland: order[0].island,
+      }],
+      tolerance,
+      localDiagnostics,
+    );
+    if (!partition) {
+      if (diagnostics) Object.assign(diagnostics, {
+        ...localDiagnostics,
+        region: regionIndex,
+      });
+      return null;
+    }
+    partitions.push(partition);
+  }
+  return {
+    cells: partitions.flatMap((partition) => partition.cells),
+    triangles: partitions.flatMap((partition) => partition.triangles),
+    constraintCount: partitions.reduce((sum, partition) => sum + partition.constraintCount, 0),
+  };
 }
 
 /**

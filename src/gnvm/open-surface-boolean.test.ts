@@ -5,6 +5,7 @@ import {
   filterOpenSurfaceCutterCycles,
   partitionOpenSurfaceAtomicCells,
   partitionOpenSurfaceCompoundOperand,
+  partitionOpenSurfaceSplitGroup,
   selectOpenSurfaceMaterialBoundaryCells,
   selectOpenSurfaceOwnedShellCells,
   selectOpenSurfaceUnionBoundaryCells,
@@ -295,10 +296,17 @@ test("declines overlapping cutter-cutter constraints conservatively", () => {
   ]);
   const region = triangle([0, 0, 0], [1, 0, 0], [0, 1, 0]);
 
+  const diagnostics = {};
   assert.equal(partitionOpenSurfaceAtomicCells(cutter, [{
     triangles: [region],
     ownerCutterIsland: 0,
-  }]), null);
+  }], 1e-4, diagnostics), null);
+  assert.deepEqual(diagnostics, {
+    failure: "overlapping-or-degenerate-constraints",
+    region: 0,
+    triangle: 0,
+    constraintCount: 2,
+  });
 });
 
 test("selects only stable two-sided material boundaries", () => {
@@ -407,4 +415,34 @@ test("partitions every island of a compound source operand", () => {
   assert.ok(partition);
   assert.ok(partition.constraintCount >= 2);
   assert.ok(partition.triangles.length > source.faces.length);
+});
+
+test("maps BMS split regions by vertex provenance instead of traversal order", () => {
+  const first = triangle([0, 0, 0], [1, 0, 0], [0, 1, 0]);
+  const second = triangle([10, 0, 0], [11, 0, 0], [10, 1, 0]);
+  const operand = disconnectedTrianglesMesh([first, second]);
+
+  const partition = partitionOpenSurfaceSplitGroup(operand, [second, first]);
+
+  assert.ok(partition);
+  assert.deepEqual(partition.cells.map((cell) => cell.ownerCutterIsland), [1, 0]);
+  assert.equal(partition.triangles.length, 2);
+});
+
+test("declines a synthetic BMS region with no stable operand provenance", () => {
+  const operand = disconnectedTrianglesMesh([
+    triangle([0, 0, 0], [1, 0, 0], [0, 1, 0]),
+    triangle([10, 0, 0], [11, 0, 0], [10, 1, 0]),
+  ]);
+  const diagnostics = {};
+
+  const partition = partitionOpenSurfaceSplitGroup(operand, [
+    triangle([20, 0, 0], [21, 0, 0], [20, 1, 0]),
+  ], 1e-4, diagnostics);
+
+  assert.equal(partition, null);
+  assert.deepEqual(diagnostics, {
+    failure: "ambiguous-region-owner",
+    region: 0,
+  });
 });
