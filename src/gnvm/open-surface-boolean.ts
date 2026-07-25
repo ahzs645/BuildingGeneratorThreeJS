@@ -1,5 +1,9 @@
 import type { Vec3 } from "./core";
 import { buildTopology, type Mesh, triangulateFaceIndices } from "./geometry";
+import {
+  intersectMeshPairTagged,
+  retriangulateWithSteinerPoints,
+} from "trimesh-boolean";
 
 export interface OpenBooleanVertex {
   x: number;
@@ -33,6 +37,32 @@ export interface OpenSurfaceCycleFilterReport {
   droppedInterfaces: [number, number][];
   retainedTriangles: number;
   droppedTriangles: number;
+  atomicCellCount?: number;
+  atomicTriangleCount?: number;
+  atomicConstraintCount?: number;
+}
+
+export interface OpenSurfaceAtomicRegion {
+  triangles: OpenBooleanTriangle[];
+  ownerCutterIsland: number;
+}
+
+export interface OpenSurfaceAtomicCell {
+  triangles: OpenBooleanTriangle[];
+  ownerCutterIsland: number;
+  boundaryCutterIslands: number[];
+  area: number;
+}
+
+export interface OpenSurfaceAtomicPartition {
+  cells: OpenSurfaceAtomicCell[];
+  triangles: OpenBooleanTriangle[];
+  constraintCount: number;
+}
+
+export interface OpenSurfaceAtomicSelection {
+  cells: OpenSurfaceAtomicCell[];
+  triangles: OpenBooleanTriangle[];
 }
 
 interface Region {
@@ -40,6 +70,7 @@ interface Region {
   boundaryEdges: BoundaryEdge[];
   area: number;
   seamLength: number;
+  ownerCutterIsland: number;
   ownerSourceIsland: number;
   touchedSourceIsland: number;
 }
@@ -63,6 +94,12 @@ interface Interface {
   regions: Region[];
   area: number;
   seamLength: number;
+}
+
+interface AtomicConstraint {
+  p0: OpenBooleanVertex;
+  p1: OpenBooleanVertex;
+  otherCutterIslands: number[];
 }
 
 const pointKey = (point: OpenBooleanVertex, tolerance: number): string =>
@@ -89,6 +126,16 @@ function triangleArea(triangle: OpenBooleanTriangle): number {
   const y = a[2] * b[0] - a[0] * b[2];
   const z = a[0] * b[1] - a[1] * b[0];
   return Math.hypot(x, y, z) * 0.5;
+}
+
+function triangleCross(triangle: OpenBooleanTriangle): Vec3 {
+  const a: Vec3 = [triangle.v1.x - triangle.v0.x, triangle.v1.y - triangle.v0.y, triangle.v1.z - triangle.v0.z];
+  const b: Vec3 = [triangle.v2.x - triangle.v0.x, triangle.v2.y - triangle.v0.y, triangle.v2.z - triangle.v0.z];
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
 }
 
 function edgeLength(edge: BoundaryEdge): number {
@@ -184,14 +231,26 @@ function connectedRegions(triangles: OpenBooleanTriangle[], tolerance: number): 
   return regions;
 }
 
-function triangleIslands(mesh: Mesh): { byTriangle: number[]; centers: Vec3[] } {
+function triangleIslands(mesh: Mesh): {
+  byTriangle: number[];
+  centers: Vec3[];
+  soups: OpenBooleanTriangle[][];
+} {
   const topology = buildTopology(mesh);
   const vertices = Array.from({ length: topology.faceIslandCount }, () => new Set<number>());
+  const soups = Array.from({ length: topology.faceIslandCount }, () => [] as OpenBooleanTriangle[]);
   const byTriangle: number[] = [];
   for (let faceIndex = 0; faceIndex < mesh.faces.length; faceIndex++) {
     const island = topology.faceIsland[faceIndex];
     for (const vertex of mesh.faces[faceIndex]) vertices[island].add(vertex);
-    for (let count = triangulateFaceIndices(mesh, mesh.faces[faceIndex]).length; count > 0; count--) byTriangle.push(island);
+    for (const [a, b, c] of triangulateFaceIndices(mesh, mesh.faces[faceIndex])) {
+      const vertex = (index: number): OpenBooleanVertex => {
+        const point = mesh.positions[index];
+        return { x: point[0], y: point[1], z: point[2] };
+      };
+      soups[island].push({ v0: vertex(a), v1: vertex(b), v2: vertex(c) });
+      byTriangle.push(island);
+    }
   }
   const centers = vertices.map((indices) => {
     const center: Vec3 = [0, 0, 0];
@@ -204,7 +263,7 @@ function triangleIslands(mesh: Mesh): { byTriangle: number[]; centers: Vec3[] } 
     const scale = indices.size ? 1 / indices.size : 0;
     return [center[0] * scale, center[1] * scale, center[2] * scale] as Vec3;
   });
-  return { byTriangle, centers };
+  return { byTriangle, centers, soups };
 }
 
 function meshScale(source: Mesh, cutter: Mesh): number {
@@ -244,6 +303,306 @@ function matchCutterToSourceIslands(sourceCenters: Vec3[], cutterCenters: Vec3[]
     used.add(candidates[0].island);
   }
   return matches;
+}
+
+interface Bounds {
+  min: Vec3;
+  max: Vec3;
+}
+
+function soupBounds(triangles: OpenBooleanTriangle[]): Bounds | null {
+  if (!triangles.length) return null;
+  const min: Vec3 = [Infinity, Infinity, Infinity];
+  const max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const triangle of triangles) for (const point of [triangle.v0, triangle.v1, triangle.v2]) {
+    min[0] = Math.min(min[0], point.x);
+    min[1] = Math.min(min[1], point.y);
+    min[2] = Math.min(min[2], point.z);
+    max[0] = Math.max(max[0], point.x);
+    max[1] = Math.max(max[1], point.y);
+    max[2] = Math.max(max[2], point.z);
+  }
+  return { min, max };
+}
+
+function boundsOverlap(a: Bounds, b: Bounds, tolerance: number): boolean {
+  return a.min.every((value, axis) => value <= b.max[axis] + tolerance)
+    && a.max.every((value, axis) => value >= b.min[axis] - tolerance);
+}
+
+function lerpPoint(a: OpenBooleanVertex, b: OpenBooleanVertex, factor: number): OpenBooleanVertex {
+  return {
+    x: a.x + (b.x - a.x) * factor,
+    y: a.y + (b.y - a.y) * factor,
+    z: a.z + (b.z - a.z) * factor,
+  };
+}
+
+function segmentLength(a: OpenBooleanVertex, b: OpenBooleanVertex): number {
+  return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+function splitAtomicConstraints(
+  parent: OpenBooleanTriangle,
+  raw: AtomicConstraint[],
+  tolerance: number,
+): AtomicConstraint[] | null {
+  if (!raw.length) return [];
+  const normal = triangleCross(parent);
+  const dropAxis = Math.abs(normal[0]) >= Math.abs(normal[1]) && Math.abs(normal[0]) >= Math.abs(normal[2])
+    ? 0
+    : Math.abs(normal[1]) >= Math.abs(normal[2]) ? 1 : 2;
+  const axes = [0, 1, 2].filter((axis) => axis !== dropAxis);
+  const project = (point: OpenBooleanVertex): [number, number] => {
+    const values = [point.x, point.y, point.z];
+    return [values[axes[0]], values[axes[1]]];
+  };
+  const cross2 = (a: [number, number], b: [number, number]) => a[0] * b[1] - a[1] * b[0];
+  const subtract2 = (a: [number, number], b: [number, number]): [number, number] => [a[0] - b[0], a[1] - b[1]];
+  const splitFactors = raw.map(() => [0, 1]);
+
+  for (let first = 0; first < raw.length; first++) {
+    const p = project(raw[first].p0);
+    const p1 = project(raw[first].p1);
+    const r = subtract2(p1, p);
+    const rLength = Math.hypot(r[0], r[1]);
+    if (rLength <= tolerance) return null;
+    for (let second = first + 1; second < raw.length; second++) {
+      const q = project(raw[second].p0);
+      const q1 = project(raw[second].p1);
+      const s = subtract2(q1, q);
+      const sLength = Math.hypot(s[0], s[1]);
+      if (sLength <= tolerance) return null;
+      const denominator = cross2(r, s);
+      const qp = subtract2(q, p);
+      const parallelTolerance = tolerance * Math.max(rLength, sLength);
+      if (Math.abs(denominator) <= parallelTolerance) {
+        if (Math.abs(cross2(qp, r)) > parallelTolerance) continue;
+        const dominant = Math.abs(r[0]) >= Math.abs(r[1]) ? 0 : 1;
+        const firstRange = [p[dominant], p1[dominant]].sort((a, b) => a - b);
+        const secondRange = [q[dominant], q1[dominant]].sort((a, b) => a - b);
+        const overlap = Math.min(firstRange[1], secondRange[1]) - Math.max(firstRange[0], secondRange[0]);
+        if (overlap > tolerance) return null;
+        continue;
+      }
+      const firstFactor = cross2(qp, s) / denominator;
+      const secondFactor = cross2(qp, r) / denominator;
+      const firstFactorTolerance = tolerance / rLength;
+      const secondFactorTolerance = tolerance / sLength;
+      if (
+        firstFactor < -firstFactorTolerance || firstFactor > 1 + firstFactorTolerance
+        || secondFactor < -secondFactorTolerance || secondFactor > 1 + secondFactorTolerance
+      ) continue;
+      if (firstFactor > firstFactorTolerance && firstFactor < 1 - firstFactorTolerance)
+        splitFactors[first].push(firstFactor);
+      if (secondFactor > secondFactorTolerance && secondFactor < 1 - secondFactorTolerance)
+        splitFactors[second].push(secondFactor);
+    }
+  }
+
+  const pieces = new Map<string, AtomicConstraint>();
+  for (let index = 0; index < raw.length; index++) {
+    const length = segmentLength(raw[index].p0, raw[index].p1);
+    const factorTolerance = tolerance / length;
+    const factors = splitFactors[index]
+      .sort((a, b) => a - b)
+      .filter((factor, factorIndex, values) => !factorIndex || factor - values[factorIndex - 1] > factorTolerance);
+    for (let factor = 0; factor + 1 < factors.length; factor++) {
+      const p0 = lerpPoint(raw[index].p0, raw[index].p1, factors[factor]);
+      const p1 = lerpPoint(raw[index].p0, raw[index].p1, factors[factor + 1]);
+      if (segmentLength(p0, p1) <= tolerance) continue;
+      const key = edgeKey(p0, p1, tolerance);
+      const existing = pieces.get(key);
+      if (existing) {
+        existing.otherCutterIslands = [...new Set([
+          ...existing.otherCutterIslands,
+          ...raw[index].otherCutterIslands,
+        ])].sort((a, b) => a - b);
+      } else {
+        pieces.set(key, {
+          p0,
+          p1,
+          otherCutterIslands: [...raw[index].otherCutterIslands],
+        });
+      }
+    }
+  }
+  return [...pieces.values()];
+}
+
+/**
+ * Partition retained cutter patches at cutter-cutter intersection curves.
+ *
+ * This is deliberately independent of material selection: it validates every
+ * constrained triangulation and returns null on overlaps, topology ambiguity,
+ * or area loss so callers can preserve the established cycle-filter result.
+ */
+export function partitionOpenSurfaceAtomicCells(
+  cutter: Mesh,
+  regions: OpenSurfaceAtomicRegion[],
+  tolerance = 1e-4,
+): OpenSurfaceAtomicPartition | null {
+  if (!regions.length) return null;
+  const cutterIslands = triangleIslands(cutter);
+  if (cutterIslands.soups.length < 2) return null;
+  const scale = meshScale(cutter, cutter);
+  const keyTolerance = Math.max(tolerance * 0.1, scale * 1e-8);
+  const islandBounds = cutterIslands.soups.map(soupBounds);
+  const cells: OpenSurfaceAtomicCell[] = [];
+  const allTriangles: OpenBooleanTriangle[] = [];
+  let constraintCount = 0;
+
+  for (const region of regions) {
+    const regionBounds = soupBounds(region.triangles);
+    if (!regionBounds || !cutterIslands.soups[region.ownerCutterIsland]) return null;
+    const constraintsByTriangle = region.triangles.map(() => [] as AtomicConstraint[]);
+    for (let otherIsland = 0; otherIsland < cutterIslands.soups.length; otherIsland++) {
+      if (otherIsland === region.ownerCutterIsland) continue;
+      const otherBounds = islandBounds[otherIsland];
+      if (!otherBounds || !boundsOverlap(regionBounds, otherBounds, keyTolerance)) continue;
+      const intersections = intersectMeshPairTagged(region.triangles, cutterIslands.soups[otherIsland]);
+      for (const segment of intersections) {
+        if (!constraintsByTriangle[segment.idxA]) return null;
+        constraintsByTriangle[segment.idxA].push({
+          p0: segment.p0,
+          p1: segment.p1,
+          otherCutterIslands: [otherIsland],
+        });
+      }
+    }
+
+    const atomicTriangles: OpenBooleanTriangle[] = [];
+    const barrierLabels = new Map<string, number[]>();
+    for (let triangleIndex = 0; triangleIndex < region.triangles.length; triangleIndex++) {
+      const parent = region.triangles[triangleIndex];
+      const constraints = splitAtomicConstraints(parent, constraintsByTriangle[triangleIndex], keyTolerance);
+      if (!constraints) return null;
+      for (const constraint of constraints) {
+        const key = edgeKey(constraint.p0, constraint.p1, keyTolerance);
+        barrierLabels.set(key, constraint.otherCutterIslands);
+      }
+      const children = constraints.length
+        ? retriangulateWithSteinerPoints(parent, constraints)
+        : [parent];
+      const parentArea = triangleArea(parent);
+      const childArea = children.reduce((sum, child) => sum + triangleArea(child), 0);
+      const areaTolerance = Math.max(parentArea * 1e-7, scale * scale * 1e-12);
+      if (!children.length || Math.abs(childArea - parentArea) > areaTolerance) return null;
+      const childEdges = new Set(children.flatMap((child) =>
+        triangleEdges(child).map(([a, b]) => edgeKey(a, b, keyTolerance))));
+      if (constraints.some((constraint) => !childEdges.has(edgeKey(constraint.p0, constraint.p1, keyTolerance))))
+        return null;
+      atomicTriangles.push(...children);
+      constraintCount += constraints.length;
+    }
+
+    const edgeTriangles = new Map<string, number[]>();
+    for (let triangle = 0; triangle < atomicTriangles.length; triangle++) {
+      for (const [a, b] of triangleEdges(atomicTriangles[triangle])) {
+        const key = edgeKey(a, b, keyTolerance);
+        const incident = edgeTriangles.get(key) ?? [];
+        incident.push(triangle);
+        edgeTriangles.set(key, incident);
+      }
+    }
+    if ([...edgeTriangles.values()].some((incident) => incident.length > 2)) return null;
+    const neighbors = atomicTriangles.map(() => [] as number[]);
+    for (const [key, incident] of edgeTriangles) {
+      if (barrierLabels.has(key) || incident.length !== 2) continue;
+      neighbors[incident[0]].push(incident[1]);
+      neighbors[incident[1]].push(incident[0]);
+    }
+    const visited = new Uint8Array(atomicTriangles.length);
+    for (let seed = 0; seed < atomicTriangles.length; seed++) {
+      if (visited[seed]) continue;
+      const indices: number[] = [];
+      const queue = [seed];
+      visited[seed] = 1;
+      for (let head = 0; head < queue.length; head++) {
+        const triangle = queue[head];
+        indices.push(triangle);
+        for (const neighbor of neighbors[triangle]) {
+          if (visited[neighbor]) continue;
+          visited[neighbor] = 1;
+          queue.push(neighbor);
+        }
+      }
+      const triangles = indices.map((index) => atomicTriangles[index]);
+      const triangleSet = new Set(indices);
+      const boundaryCutterIslands = new Set<number>();
+      for (const [key, incident] of edgeTriangles) {
+        if (!barrierLabels.has(key) || !incident.some((triangle) => triangleSet.has(triangle))) continue;
+        for (const island of barrierLabels.get(key) ?? []) boundaryCutterIslands.add(island);
+      }
+      cells.push({
+        triangles,
+        ownerCutterIsland: region.ownerCutterIsland,
+        boundaryCutterIslands: [...boundaryCutterIslands].sort((a, b) => a - b),
+        area: triangles.reduce((sum, triangle) => sum + triangleArea(triangle), 0),
+      });
+    }
+    allTriangles.push(...atomicTriangles);
+  }
+
+  return { cells, triangles: allTriangles, constraintCount };
+}
+
+/**
+ * Select atomic cells whose two sides have different material occupancy.
+ *
+ * Sampling at both one and two epsilon rejects unstable near-boundary
+ * classifications. Returning null is intentional: production callers must
+ * fall back to their unmodified patch set rather than guess.
+ */
+export function selectOpenSurfaceMaterialBoundaryCells(
+  partition: OpenSurfaceAtomicPartition,
+  materialAt: (point: OpenBooleanVertex) => boolean | null,
+  epsilon: number,
+): OpenSurfaceAtomicSelection | null {
+  if (!(epsilon > 0) || !Number.isFinite(epsilon)) return null;
+  const cells: OpenSurfaceAtomicCell[] = [];
+  for (const cell of partition.cells) {
+    const centroid: Vec3 = [0, 0, 0];
+    const normal: Vec3 = [0, 0, 0];
+    let area = 0;
+    for (const triangle of cell.triangles) {
+      const triangleWeight = triangleArea(triangle);
+      const center: Vec3 = [
+        (triangle.v0.x + triangle.v1.x + triangle.v2.x) / 3,
+        (triangle.v0.y + triangle.v1.y + triangle.v2.y) / 3,
+        (triangle.v0.z + triangle.v1.z + triangle.v2.z) / 3,
+      ];
+      centroid[0] += center[0] * triangleWeight;
+      centroid[1] += center[1] * triangleWeight;
+      centroid[2] += center[2] * triangleWeight;
+      const cross = triangleCross(triangle);
+      normal[0] += cross[0];
+      normal[1] += cross[1];
+      normal[2] += cross[2];
+      area += triangleWeight;
+    }
+    const normalLength = Math.hypot(normal[0], normal[1], normal[2]);
+    if (!(area > 0) || normalLength <= 1e-12) return null;
+    centroid[0] /= area;
+    centroid[1] /= area;
+    centroid[2] /= area;
+    normal[0] /= normalLength;
+    normal[1] /= normalLength;
+    normal[2] /= normalLength;
+    const sample = (side: number, distance: number): boolean | null => materialAt({
+      x: centroid[0] + normal[0] * side * distance,
+      y: centroid[1] + normal[1] * side * distance,
+      z: centroid[2] + normal[2] * side * distance,
+    });
+    const plus = sample(1, epsilon);
+    const plusFar = sample(1, epsilon * 2);
+    const minus = sample(-1, epsilon);
+    const minusFar = sample(-1, epsilon * 2);
+    if (plus === null || plusFar === null || minus === null || minusFar === null) return null;
+    if (plus !== plusFar || minus !== minusFar) return null;
+    if (plus !== minus) cells.push(cell);
+  }
+  return { cells, triangles: cells.flatMap((cell) => cell.triangles) };
 }
 
 class DisjointSet {
@@ -324,6 +683,7 @@ export function filterOpenSurfaceCutterCycles(
     if (ownerSourceIsland === undefined) return null;
     regions.push({
       ...region,
+      ownerCutterIsland: first.cutter,
       ownerSourceIsland,
       touchedSourceIsland: first.source,
     });
@@ -374,6 +734,14 @@ export function filterOpenSurfaceCutterCycles(
 
   const keptRegions = new Set([...selfRegions, ...retained.flatMap((entry) => entry.regions)]);
   const bInside = regions.filter((region) => keptRegions.has(region)).flatMap((region) => region.triangles);
+  const atomicPartition = partitionOpenSurfaceAtomicCells(
+    cutter,
+    retained.flatMap((entry) => entry.regions).map((region) => ({
+      triangles: region.triangles,
+      ownerCutterIsland: region.ownerCutterIsland,
+    })),
+    tolerance,
+  );
   return {
     bInside,
     regionCount: regions.length,
@@ -382,5 +750,10 @@ export function filterOpenSurfaceCutterCycles(
     droppedInterfaces: dropped.map(({ a, b }) => [a, b]),
     retainedTriangles: bInside.length,
     droppedTriangles: split.groups.bInside.length - bInside.length,
+    ...(atomicPartition ? {
+      atomicCellCount: atomicPartition.cells.length,
+      atomicTriangleCount: atomicPartition.triangles.length,
+      atomicConstraintCount: atomicPartition.constraintCount,
+    } : {}),
   };
 }

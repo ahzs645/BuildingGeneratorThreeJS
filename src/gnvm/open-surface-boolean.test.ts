@@ -3,6 +3,9 @@ import test from "node:test";
 import { Mesh } from "./geometry";
 import {
   filterOpenSurfaceCutterCycles,
+  partitionOpenSurfaceAtomicCells,
+  selectOpenSurfaceMaterialBoundaryCells,
+  type OpenSurfaceAtomicPartition,
   type OpenBooleanSegment,
   type OpenBooleanTriangle,
   type OpenBooleanVertex,
@@ -76,6 +79,30 @@ function crackedRegion(
       { p0: a, p1: d, idxA: touched, idxB: owner },
     ],
   };
+}
+
+function triangle(
+  a: [number, number, number],
+  b: [number, number, number],
+  c: [number, number, number],
+): OpenBooleanTriangle {
+  const vertex = ([x, y, z]: [number, number, number]): OpenBooleanVertex => ({ x, y, z });
+  return { v0: vertex(a), v1: vertex(b), v2: vertex(c) };
+}
+
+function disconnectedTrianglesMesh(triangles: OpenBooleanTriangle[]): Mesh {
+  const mesh = new Mesh();
+  for (const entry of triangles) {
+    const offset = mesh.positions.length;
+    mesh.positions.push(
+      [entry.v0.x, entry.v0.y, entry.v0.z],
+      [entry.v1.x, entry.v1.y, entry.v1.z],
+      [entry.v2.x, entry.v2.y, entry.v2.z],
+    );
+    mesh.faces.push([offset, offset + 1, offset + 2]);
+    mesh.faceMaterial.push(0);
+  }
+  return mesh;
 }
 
 test("drops only the weakest reciprocal interface that closes an island cycle", () => {
@@ -173,4 +200,91 @@ test("declines to filter an interface with unmatched same-direction regions", ()
   ]);
 
   assert.equal(filterOpenSurfaceCutterCycles(source, cutter, split), null);
+});
+
+test("partitions a retained sheet into atomic cells at a cutter-cutter constraint", () => {
+  const region = [
+    triangle([0, 0, 0], [1, 0, 0], [1, 1, 0]),
+    triangle([0, 0, 0], [1, 1, 0], [0, 1, 0]),
+  ];
+  const cutter = disconnectedTrianglesMesh([
+    triangle([10, 10, 10], [11, 10, 10], [10, 11, 10]),
+    triangle([0.5, -1, -1], [0.5, 2, -1], [0.5, 0.5, 2]),
+  ]);
+
+  const partition = partitionOpenSurfaceAtomicCells(cutter, [{
+    triangles: region,
+    ownerCutterIsland: 0,
+  }]);
+
+  assert.ok(partition);
+  assert.ok(partition.constraintCount >= 2);
+  assert.ok(partition.triangles.length > region.length);
+  assert.equal(partition.cells.length, 2);
+  assert.ok(Math.abs(partition.cells.reduce((sum, cell) => sum + cell.area, 0) - 1) < 1e-7);
+  assert.deepEqual(partition.cells.map((cell) => cell.boundaryCutterIslands), [[1], [1]]);
+});
+
+test("inserts one stable crossing for two constraint families inside a parent", () => {
+  const parent = triangle([0, 0, 0], [1, 0, 0], [0, 1, 0]);
+  const cutter = disconnectedTrianglesMesh([
+    triangle([10, 10, 10], [11, 10, 10], [10, 11, 10]),
+    triangle([0.3, -1, -1], [0.3, 2, -1], [0.3, 0.5, 2]),
+    triangle([-1, 0.3, -1], [2, 0.3, -1], [0.5, 0.3, 2]),
+  ]);
+
+  const partition = partitionOpenSurfaceAtomicCells(cutter, [{
+    triangles: [parent],
+    ownerCutterIsland: 0,
+  }]);
+
+  assert.ok(partition);
+  assert.equal(partition.cells.length, 4);
+  assert.ok(Math.abs(partition.cells.reduce((sum, cell) => sum + cell.area, 0) - 0.5) < 1e-7);
+  const crossingPoints = partition.triangles.flatMap((entry) => [entry.v0, entry.v1, entry.v2])
+    .filter((point) => Math.hypot(point.x - 0.3, point.y - 0.3, point.z) < 1e-8);
+  assert.ok(crossingPoints.length >= 4);
+  assert.ok(crossingPoints.every((point) => point.x === crossingPoints[0].x
+    && point.y === crossingPoints[0].y
+    && point.z === crossingPoints[0].z));
+});
+
+test("declines overlapping cutter-cutter constraints conservatively", () => {
+  const crossing = triangle([0.3, -1, -1], [0.3, 2, -1], [0.3, 0.5, 2]);
+  const cutter = disconnectedTrianglesMesh([
+    triangle([10, 10, 10], [11, 10, 10], [10, 11, 10]),
+    crossing,
+    crossing,
+  ]);
+  const region = triangle([0, 0, 0], [1, 0, 0], [0, 1, 0]);
+
+  assert.equal(partitionOpenSurfaceAtomicCells(cutter, [{
+    triangles: [region],
+    ownerCutterIsland: 0,
+  }]), null);
+});
+
+test("selects only stable two-sided material boundaries", () => {
+  const cellTriangle = triangle([0, 0, 0], [1, 0, 0], [0, 1, 0]);
+  const partition: OpenSurfaceAtomicPartition = {
+    cells: [{
+      triangles: [cellTriangle],
+      ownerCutterIsland: 0,
+      boundaryCutterIslands: [],
+      area: 0.5,
+    }],
+    triangles: [cellTriangle],
+    constraintCount: 0,
+  };
+
+  const selected = selectOpenSurfaceMaterialBoundaryCells(partition, (point) => point.z > 0, 0.01);
+  assert.ok(selected);
+  assert.equal(selected.cells.length, 1);
+  assert.deepEqual(selected.triangles, [cellTriangle]);
+  assert.equal(selectOpenSurfaceMaterialBoundaryCells(partition, () => false, 0.01)?.cells.length, 0);
+  assert.equal(selectOpenSurfaceMaterialBoundaryCells(
+    partition,
+    (point) => Math.abs(point.z) < 0.015,
+    0.01,
+  ), null);
 });
