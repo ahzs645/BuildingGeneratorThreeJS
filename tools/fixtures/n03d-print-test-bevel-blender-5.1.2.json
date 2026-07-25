@@ -1,0 +1,59 @@
+{
+  "source": "Blender 5.1.2",
+  "object": "print test mesh",
+  "modifier": "Bevel",
+  "settings": {
+    "affect": "EDGES",
+    "limit_method": "ANGLE",
+    "angle": 0.5235987901687622,
+    "width": 0.17926661670207977,
+    "offset_type": "OFFSET",
+    "segments": 10,
+    "profile": 0.5,
+    "clamp_overlap": true,
+    "loop_slide": true,
+    "miter_outer": "SHARP",
+    "miter_inner": "SHARP"
+  },
+  "bounds": {
+    "min": [-5.86973762512207, -5.5, -5.86973762512207],
+    "max": [5.86973762512207, 9.126971244812012, 5.86973762512207]
+  },
+  "geometry_nodes": {
+    "verts": 16751,
+    "edges": 25815,
+    "faces": 9065,
+    "triangles": 18120,
+    "components": [
+      {
+        "count": 240,
+        "verts": 64,
+        "faces": 32,
+        "boundary_edges": 64,
+        "bevel_result": { "verts": 64, "faces": 32 }
+      },
+      {
+        "count": 2,
+        "verts": 640,
+        "faces": 640,
+        "boundary_edges": 0,
+        "bevel_result": { "verts": 4700, "faces": 4780 }
+      },
+      {
+        "count": 1,
+        "verts": 111,
+        "faces": 105,
+        "boundary_edges": 20,
+        "bevel_result": { "verts": 959, "faces": 942 }
+      }
+    ]
+  },
+  "full_modifier_stack": {
+    "verts": 25719,
+    "edges": 43900,
+    "faces": 18182,
+    "triangles": 36020
+  },
+  "contract": "The 240 unchanged components may pass through verbatim once component correspondence is proven. The three changed components require BMesh-compatible edge selection, vertex fans, sharp miters, overlap clamping, and loop slide; emitting a strip-only approximation is forbidden.",
+  "provenance": "GN-only and full-stack evaluated meshes were exported in local object space with tools/export_blender_evaluated_mesh.py. Component rows are deterministic connected-index topology counts. No inferred selected-edge counts are recorded because GN-VM and Blender currently differ in evaluated face winding on the two 640-face tubes."
+}
