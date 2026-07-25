@@ -4,6 +4,7 @@ import { Field, type Vec3 } from "./core";
 import { Geometry, Mesh } from "./geometry";
 import "./nodes/meshops";
 import { type EvalAPI, REGISTRY } from "./registry";
+import "./nodes/geometry";
 
 test("region Extrude Mesh preserves the magnitude of averaged face normals", () => {
   const geometry = new Geometry();
@@ -43,6 +44,40 @@ test("region Extrude Mesh preserves the magnitude of averaged face normals", () 
   for (let axis = 0; axis < 3; axis++)
     assert.ok(Math.abs(actual[axis] - expected[axis]) < 1e-12);
   assert.ok(Math.hypot(...actual) < 2, "the non-planar average must not be normalized back to unit length");
+});
+
+test("face Extrude Mesh Top selects every duplicated top point", () => {
+  const geometry = new Geometry();
+  const mesh = new Mesh();
+  mesh.positions = [[0, 0, 0], [2, 0, 0], [2, 1, 0], [0, 1, 0]];
+  mesh.faces = [[0, 1, 2, 3]];
+  geometry.mesh = mesh;
+
+  const extrude = REGISTRY.get("GeometryNodeExtrudeMesh");
+  const setPosition = REGISTRY.get("GeometryNodeSetPosition");
+  assert.ok(extrude && setPosition);
+  const extruded = extrude({
+    geo: () => geometry,
+    prop: () => "FACES",
+    num: () => 0,
+    bool: () => false,
+    field: () => Field.of(1),
+    node: { name: "Extrude Mesh", inputs: [{ identifier: "Offset", linked: false }] },
+  } as unknown as EvalAPI);
+  const moved = setPosition({
+    geo: () => extruded.Mesh as Geometry,
+    field: (name: string) => name === "Selection" ? extruded.Top as Field : Field.of([0.25, 0.5, 0]),
+    node: {
+      name: "Set Position",
+      inputs: [
+        { identifier: "Position", linked: false },
+        { identifier: "Offset", linked: true },
+      ],
+    },
+  } as unknown as EvalAPI).Geometry as Geometry;
+
+  assert.deepEqual(moved.mesh!.positions.slice(0, 4), mesh.positions);
+  assert.deepEqual(moved.mesh!.positions.slice(4), mesh.positions.map(([x, y, z]) => [x + 0.25, y + 0.5, z]));
 });
 
 test("repeated edge extrusion keeps open-profile endpoint strips consistently wound", () => {

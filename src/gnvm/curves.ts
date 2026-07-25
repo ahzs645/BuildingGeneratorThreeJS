@@ -569,7 +569,7 @@ export function sweep(
     const binormal = evaluatedNormal
       ? vnorm(vcross(frame.tangent, evaluatedNormal))
       : horizontalPlanar
-      ? convertedProfile ? vscale(frame.binormal, -1) : vnorm(vcross(frame.tangent, normal))
+      ? convertedProfile ? frame.binormal : vnorm(vcross(frame.tangent, normal))
       : tiltedPlanarNormal ? tiltedPlanarNormal : vscale(frame.binormal, evaluatedFrameSign);
     const f = Math.fround;
     const s = f(scales?.[i] ?? 1);

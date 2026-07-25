@@ -764,6 +764,14 @@ function faceMaskField(name: string): Field {
   return Field.perElem((i, ctx) => (asNum((ctx.attr?.(name, i) ?? 0) as Elem) > 0 ? 1 : 0))
     .tagged("FACE", "BOOLEAN");
 }
+function faceTopMaskField(name: string): Field {
+  // Extrude Top is a topological membership field. When consumed on points,
+  // Blender selects every duplicated top vertex even though that vertex also
+  // touches false side faces. Keep ordinary FACE -> POINT interpolation here;
+  // the stricter boolean-AND adaptation remains correct for Side/Outer masks.
+  return Field.perElem((i, ctx) => (asNum((ctx.attr?.(name, i) ?? 0) as Elem) > 0 ? 1 : 0))
+    .tagged("FACE");
+}
 // A new extrude makes earlier extrudes' Top/Side masks stale; carrying them
 // forward made repeat-zone lathes accumulate hundreds of attributes (every
 // clone copied them all — superlinear). Blender's anonymous attributes are
@@ -1218,7 +1226,7 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
   out.attributes.set(sideName, { domain: "FACE", data: out.faces.map((_, i) => (i >= keptCount && !topSet.has(i) ? 1 : 0)) });
   return {
     Mesh: g,
-    Top: faceMaskField(topName),
+    Top: faceTopMaskField(topName),
     Side: faceMaskField(sideName),
   };
 }

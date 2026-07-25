@@ -7,6 +7,7 @@ import {
   polySplineTangentsBlender,
   resampleSpline,
   resampleSplineWithSamples,
+  splineFrames,
   sweep,
 } from "./curves";
 import { makeFieldCtx } from "./evaluator";
@@ -418,6 +419,24 @@ test("Curve to Mesh keeps converted profile +X inward on cyclic planar rails", (
   assert.ok(Math.min(...native.positions.map((point) => point[0])) < 0);
   assert.ok(Math.min(...converted.positions.map((point) => point[0])) >= 0);
   assert.ok(Math.max(...converted.positions.map((point) => point[0])) <= 4);
+});
+
+test("Curve to Mesh preserves the evaluated binormal sign for converted profiles", () => {
+  const rail = {
+    cyclic: true,
+    points: [[0, 0, 0], [4, 0, 0], [4, 3, 0], [0, 3, 0]] as Vec3[],
+  };
+  const convertedProfile = {
+    cyclic: false,
+    points: [[0, -2, 0], [1, -2, 0]] as Vec3[],
+  };
+
+  const converted = sweep(rail, convertedProfile, false, undefined, undefined, undefined, false, true);
+  const frame = splineFrames(rail.points, true)[0];
+  assert.equal(
+    converted.positions[0][2],
+    Math.fround(Math.fround(convertedProfile.points[0][1]) * Math.fround(frame.binormal[2])),
+  );
 });
 
 test("Align Rotation preserves native Curve to Points quaternion at 180 degrees", () => {
