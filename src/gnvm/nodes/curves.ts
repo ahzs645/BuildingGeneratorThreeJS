@@ -1,6 +1,6 @@
 // Curve subsystem handlers: primitives, resample, fillet, sweep-to-mesh, fill.
 import { Field, Vec3, Elem, asNum, asVec3, vadd, vsub, vscale, vdot, vcross, vlen, vnorm } from "../core";
-import { Geometry, Mesh, Spline, buildTopology, realizeInstances } from "../geometry";
+import { Geometry, Mesh, Spline, buildTopology, realizeInstances, setUniformFaceSharpness } from "../geometry";
 import { DUMP_CONTEXT, reg } from "../registry";
 import { makeFieldCtx } from "../evaluator";
 import { resampleSpline, filletSpline, sweep, fillCurves, meshEdgesToChains, splineLength, splineFrames, polySplineNormalsBlender } from "../curves";
@@ -966,6 +966,7 @@ reg("GeometryNodeFillCurve", (api) => {
       // face count and leaves counter shapes such as O and P visibly open.
       out.mesh = fillCurves(planar, mode);
       applyEvaluatedTopology(out.mesh);
+      setUniformFaceSharpness(out.mesh, true);
     }
     // String to Curves outputs one curve instance per glyph. Fill Curve keeps
     // those instances and fills each payload in local space; dropping them made
@@ -1056,7 +1057,8 @@ reg("GeometryNodeMeshToCurve", (api) => {
       out.curveAttributes.set("__curve_normal", { domain: "POINT", data: meshNormals });
     }
     // carry the mesh's POINT attributes onto the flattened curve control points
-    const pointAttrs = [...g.mesh.attributes].filter(([, a]) => a.domain === "POINT");
+    const pointAttrs = [...g.mesh.attributes].filter(([name, a]) =>
+      a.domain === "POINT" && name !== "sharp_face" && name !== "sharp_edge");
     for (const [name, a] of pointAttrs) {
       const data: any[] = [];
       for (const c of chains) for (const vi of c.verts) data.push(a.data[vi]);
@@ -1064,7 +1066,8 @@ reg("GeometryNodeMeshToCurve", (api) => {
     }
     // FACE attributes captured before Mesh to Curve are sampled onto the emitted
     // control points. The subdivision graph stores its X/Y split factors this way.
-    const faceAttrs = [...g.mesh.attributes].filter(([, a]) => a.domain === "FACE");
+    const faceAttrs = [...g.mesh.attributes].filter(([name, a]) =>
+      a.domain === "FACE" && name !== "sharp_face" && name !== "sharp_edge");
     if (faceAttrs.length) {
       const pointFaces: number[][] = g.mesh.positions.map(() => []);
       for (let fi = 0; fi < g.mesh.faces.length; fi++) for (const vi of g.mesh.faces[fi]) pointFaces[vi]?.push(fi);

@@ -1,6 +1,6 @@
 // Mesh primitive builders matching Blender GN node output (centered at origin).
 import { Vec3 } from "./core";
-import { Geometry, Mesh } from "./geometry";
+import { Geometry, Mesh, setUniformFaceSharpness } from "./geometry";
 
 /**
  * Blender's circular mesh primitives increment a float angle in their vertex
@@ -17,6 +17,19 @@ function blenderCircleDirections(verts: number): Array<[number, number]> {
     angle = Math.fround(angle + step);
   }
   return directions;
+}
+
+/**
+ * Blender mesh primitives create flat polygons. In Geometry Nodes this is
+ * exposed as the inverse built-in `sharp_face` attribute.
+ */
+function primitiveGeometry(mesh: Mesh): Geometry {
+  mesh.faceMaterial = mesh.faces.map(() => 0);
+  mesh.materialSlots = [null];
+  setUniformFaceSharpness(mesh, true);
+  const geometry = new Geometry();
+  geometry.mesh = mesh;
+  return geometry;
 }
 
 export function meshCube(size: Vec3, vx = 2, vy = 2, vz = 2): Geometry {
@@ -94,11 +107,7 @@ export function meshCube(size: Vec3, vx = 2, vy = 2, vz = 2): Geometry {
     for (let z = 0; z + 1 < vz; z++) for (let y = 0; y + 1 < vy; y++)
       m.faces.push([vertex(vx - 1, y, z), vertex(vx - 1, y + 1, z), vertex(vx - 1, y + 1, z + 1), vertex(vx - 1, y, z + 1)]);
   }
-  m.faceMaterial = m.faces.map(() => 0);
-  m.materialSlots = [null];
-  const g = new Geometry();
-  g.mesh = m;
-  return g;
+  return primitiveGeometry(m);
 }
 
 export function meshGrid(sizeX: number, sizeY: number, vx: number, vy: number): Geometry {
@@ -144,11 +153,7 @@ export function meshGrid(sizeX: number, sizeY: number, vx: number, vy: number): 
     for (let j = 0; j + 1 < vy; j++) m.edges.push([i * vy + j, i * vy + j + 1]);
   for (let j = 0; j < vy; j++)
     for (let i = 0; i + 1 < vx; i++) m.edges.push([i * vy + j, (i + 1) * vy + j]);
-  m.faceMaterial = m.faces.map(() => 0);
-  m.materialSlots = [null];
-  const g = new Geometry();
-  g.mesh = m;
-  return g;
+  return primitiveGeometry(m);
 }
 
 export function meshCircle(verts: number, radius: number, fill: "NONE" | "NGON" | "TRIANGLE_FAN" = "NGON"): Geometry {
@@ -164,11 +169,7 @@ export function meshCircle(verts: number, radius: number, fill: "NONE" | "NGON" 
     m.positions.push([0, 0, 0]);
     for (let i = 0; i < verts; i++) m.faces.push([c, i, (i + 1) % verts]);
   }
-  m.faceMaterial = m.faces.map(() => 0);
-  m.materialSlots = [null];
-  const g = new Geometry();
-  g.mesh = m;
-  return g;
+  return primitiveGeometry(m);
 }
 
 export function meshLine(count: number, start: Vec3, offset: Vec3): Geometry {
@@ -287,11 +288,7 @@ export function meshIcoSphere(radius = 1, subdivisions = 2): Geometry {
       if (i + j < frequency - 1) m.faces.push([grid[i + 1][j], grid[i + 1][j + 1], grid[i][j + 1]]);
     }
   }
-  m.faceMaterial = m.faces.map(() => 0);
-  m.materialSlots = [null];
-  const g = new Geometry();
-  g.mesh = m;
-  return g;
+  return primitiveGeometry(m);
 }
 
 /** Cone / frustum along +Z, starting at the origin (Blender Mesh Cone). */
@@ -365,9 +362,5 @@ export function meshCone(
   // Keep the native face-domain order: sides, bottom, then top.
   addCap(ringStart[sideSegments], radiusBottom, z0, true);
   addCap(ringStart[0], radiusTop, z1, false);
-  m.faceMaterial = m.faces.map(() => 0);
-  m.materialSlots = [null];
-  const g = new Geometry();
-  g.mesh = m;
-  return g;
+  return primitiveGeometry(m);
 }

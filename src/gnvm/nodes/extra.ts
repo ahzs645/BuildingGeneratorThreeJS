@@ -18,7 +18,7 @@ import {
   vlen,
   vnorm,
 } from "../core";
-import { Geometry, Mesh, mergeMeshInto, realizeInstances, rotateEulerXYZ, Spline, buildTopology, triangulateFaceIndices } from "../geometry";
+import { Geometry, Mesh, mergeMeshInto, realizeInstances, rotateEulerXYZ, Spline, buildTopology, triangulateFaceIndices, setUniformFaceSharpness } from "../geometry";
 import { fillCurves, meshEdgesToChains, splineLength, splineSegments, splineFrames } from "../curves";
 import { makeFieldCtx } from "../evaluator";
 import { ClosureValue, EMPTY_CLOSURE, reg, EvalAPI, type SockVal } from "../registry";
@@ -38,6 +38,13 @@ import type {
 const DOMAINS = new Set<Domain>(["POINT", "EDGE", "FACE", "CORNER", "CURVE", "INSTANCE"]);
 const EPS = 1e-9;
 
+function convexHullGeometry(mesh: Mesh): Geometry {
+  setUniformFaceSharpness(mesh, true);
+  const geometry = new Geometry();
+  geometry.mesh = mesh;
+  return geometry;
+}
+
 reg("GeometryNodeConvexHull", (api) => {
   const source = realizeInstances(api.geo("Geometry"));
   // Retain the BLI-polyfill reconstruction for synthetic cylinder pairs. It
@@ -45,9 +52,7 @@ reg("GeometryNodeConvexHull", (api) => {
   // Bullet point-cloud path discards that source topology.
   const retainedCylinderHull = source.mesh ? twoEqualCylinderHull(source.mesh) : null;
   if (retainedCylinderHull) {
-    const geometry = new Geometry();
-    geometry.mesh = retainedCylinderHull;
-    return { "Convex Hull": geometry };
+    return { "Convex Hull": convexHullGeometry(retainedCylinderHull) };
   }
   const points: Vec3[] = [
     ...(source.mesh?.positions ?? []),
@@ -55,9 +60,7 @@ reg("GeometryNodeConvexHull", (api) => {
   ];
   const bulletHull = blenderBulletHull(points);
   if (bulletHull) {
-    const geometry = new Geometry();
-    geometry.mesh = bulletHull;
-    return { "Convex Hull": geometry };
+    return { "Convex Hull": convexHullGeometry(bulletHull) };
   }
   let raw = manifoldHull(points);
   // Dissolving Manifold's coplanar triangles can leave face-interior support
@@ -87,9 +90,7 @@ reg("GeometryNodeConvexHull", (api) => {
     }
   }
   if (!mesh) return { "Convex Hull": new Geometry() };
-  const geometry = new Geometry();
-  geometry.mesh = mesh;
-  return { "Convex Hull": geometry };
+  return { "Convex Hull": convexHullGeometry(mesh) };
 });
 
 function strictConvexHull(points: Vec3[], materialSlots: Array<string | null>, material: number): Mesh | null {

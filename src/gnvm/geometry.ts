@@ -108,6 +108,18 @@ export class Mesh {
   }
 }
 
+/** Stamp Blender's inverse per-polygon smooth-shading built-in. */
+export function setUniformFaceSharpness(mesh: Mesh, sharp: boolean): void {
+  if (!mesh.faces.length) {
+    mesh.attributes.delete("sharp_face");
+    return;
+  }
+  mesh.attributes.set("sharp_face", {
+    domain: "FACE",
+    data: mesh.faces.map(() => sharp ? 1 : 0),
+  });
+}
+
 /** Triangulate one ordered 3D polygon without assuming it is convex. */
 export function triangulateFaceIndices(mesh: Mesh, face: number[]): [number, number, number][] {
   if (face.length < 3) return [];

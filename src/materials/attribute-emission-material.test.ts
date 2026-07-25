@@ -58,10 +58,13 @@ test("wires Outline Sticker color and power attributes into its browser material
   assert.deepEqual(Object.fromEntries(Object.entries(result.soup.attributes).map(([name, attribute]) => [name, attribute.itemSize])), {
     col: 3,
     power: 1,
+    sharp_face: 1,
   });
   assert.ok(result.soup.attributes.col.data.some((value) => value > 0.99));
   assert.ok(result.soup.attributes.col.data.some((value) => value > 0.04 && value < 0.5));
   assert.ok(result.soup.attributes.power.data.every((value) => value === 1));
+  assert.equal(result.soup.attributes.sharp_face.domain, "FACE");
+  assert.equal(result.soup.attributes.sharp_face.domainData?.filter(Boolean).length, 1);
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(result.soup.positions, 3));

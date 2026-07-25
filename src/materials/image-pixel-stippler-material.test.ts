@@ -34,6 +34,7 @@ test("exports and wires img, dens, and grid attributes on the exact authored mes
   assert.deepEqual(result.soup.stats, { verts: 72094, faces: 71550, tris: 143100 });
   assert.deepEqual(result.soup.groups, [{ start: 0, count: 429300, material: "img stippler shader.001" }]);
   assert.deepEqual(Object.fromEntries(Object.entries(result.soup.attributes).map(([name, attribute]) => [name, attribute.itemSize])), {
+    sharp_face: 1,
     grid: 1,
     dens: 1,
     img: 3,
@@ -41,6 +42,8 @@ test("exports and wires img, dens, and grid attributes on the exact authored mes
   assert.equal(result.soup.attributes.dens.data[0], 333);
   assert.ok(Math.abs(result.soup.attributes.grid.data[0] - 0.4826087951660156) < 1e-7);
   assert.ok(result.soup.attributes.img.data.some((value) => value > 0.99));
+  assert.equal(result.soup.attributes.sharp_face.domain, "FACE");
+  assert.ok(result.soup.attributes.sharp_face.domainData?.every((value) => value === 1));
   assert.equal(result.soup.attributes.img.domain, "FACE");
   assert.equal(result.soup.attributes.img.domainData?.length, result.soup.stats.faces * 3);
   const blenderFaceColors = [
