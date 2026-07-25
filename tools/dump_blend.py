@@ -656,6 +656,10 @@ for obj in bpy.data.objects:
                 "verts": [[float(v.co.x), float(v.co.y), float(v.co.z)] for v in me.vertices],
                 "faces": [list(p.vertices) for p in me.polygons],
                 "face_materials": [p.material_index for p in me.polygons],
+                # Mesh polygon smoothness is not an ordinary named attribute in
+                # Blender RNA, but it is part of the geometry contract consumed
+                # by Geometry Nodes and Workbench split-normal shading.
+                "face_smooth": [bool(p.use_smooth) for p in me.polygons],
                 # Preserve Blender's stored edge order, including polygon
                 # boundaries. Mesh to Curve and edge-domain fields use this
                 # order; rebuilding only from face winding can reverse a
@@ -763,6 +767,7 @@ for obj in bpy.data.objects:
                 "verts": [[float(v.co.x), float(v.co.y), float(v.co.z)] for v in mesh.vertices],
                 "faces": [list(p.vertices) for p in mesh.polygons],
                 "face_materials": [p.material_index for p in mesh.polygons],
+                "face_smooth": [bool(p.use_smooth) for p in mesh.polygons],
                 "edges": [[e.vertices[0], e.vertices[1]] for e in mesh.edges],
                 "materials": [material.name if material else None for material in mesh.materials],
                 "attributes": dump_mesh_attributes(mesh, include_uv=True),

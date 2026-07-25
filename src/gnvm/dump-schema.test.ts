@@ -73,6 +73,52 @@ test("valid current-shape dumps pass through the canonical boundary", () => {
   assert.equal(dump.node_groups.Root.nodes[0].inputs[0].type, "NodeSocketGeometry");
 });
 
+test("face smoothness survives the canonical dump boundary for base and evaluated meshes", () => {
+  const source = {
+    node_groups: {},
+    objects: [{
+      name: "Surface",
+      mesh: {
+        verts: [[0, 0, 0], [1, 0, 0], [0, 1, 0]],
+        faces: [[0, 1, 2]],
+        face_smooth: [false],
+      },
+      evaluated_mesh: {
+        verts: [[0, 0, 0], [1, 0, 0], [0, 1, 0]],
+        faces: [[0, 1, 2]],
+        face_smooth: [true],
+      },
+    }],
+  };
+
+  assert.deepEqual(validateDump(source), []);
+  const dump = normalizeDump(source);
+  assert.deepEqual(dump.objects?.[0].mesh?.face_smooth, [false]);
+  assert.deepEqual(dump.objects?.[0].evaluated_mesh?.face_smooth, [true]);
+  assert.equal("face_smooth" in source.objects[0].mesh, true);
+});
+
+test("face smoothness validates boolean values and one-to-one face alignment", () => {
+  const issues = validateDump({
+    node_groups: {},
+    objects: [{
+      name: "Broken",
+      mesh: {
+        verts: [],
+        faces: [[], []],
+        face_smooth: [true, 0, false],
+      },
+    }],
+  });
+
+  assert.ok(issues.some((issue) =>
+    issue.code === "EXPECTED_BOOLEAN"
+    && issue.path === "$.objects[0].mesh.face_smooth[1]"));
+  assert.ok(issues.some((issue) =>
+    issue.code === "LENGTH_MISMATCH"
+    && issue.path === "$.objects[0].mesh.face_smooth"));
+});
+
 test("validation reports precise structural paths and normalization rejects them", () => {
   const invalid = {
     node_groups: {

@@ -2032,6 +2032,14 @@
      0,
      0
     ],
+    "face_smooth": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
     "edges": [
      [
       2,

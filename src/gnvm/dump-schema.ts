@@ -124,6 +124,8 @@ export interface DumpMesh {
   verts: number[][];
   faces: number[][];
   face_materials?: number[];
+  /** Blender polygon.use_smooth, aligned one-to-one with faces. */
+  face_smooth?: boolean[];
   edges?: [number, number][];
   attributes?: Record<string, DumpMeshAttribute>;
   [key: string]: unknown;
@@ -301,6 +303,34 @@ function validateGroup(value: unknown, path: string, issues: DumpValidationIssue
     for (const [index, link] of value.links.entries()) validateLink(link, `${path}.links[${index}]`, issues);
 }
 
+function validateMeshSmoothness(value: unknown, path: string, issues: DumpValidationIssue[]): void {
+  if (!isRecord(value) || value.face_smooth === undefined) return;
+  if (!Array.isArray(value.face_smooth)) {
+    issues.push({
+      code: "EXPECTED_ARRAY",
+      path: `${path}.face_smooth`,
+      message: "expected an array",
+    });
+    return;
+  }
+  for (const [index, smooth] of value.face_smooth.entries()) {
+    if (typeof smooth !== "boolean") {
+      issues.push({
+        code: "EXPECTED_BOOLEAN",
+        path: `${path}.face_smooth[${index}]`,
+        message: "expected a boolean",
+      });
+    }
+  }
+  if (Array.isArray(value.faces) && value.face_smooth.length !== value.faces.length) {
+    issues.push({
+      code: "LENGTH_MISMATCH",
+      path: `${path}.face_smooth`,
+      message: `expected ${value.faces.length} values to match faces`,
+    });
+  }
+}
+
 /** Return structural problems without rejecting unknown, forward-compatible data. */
 export function validateDump(value: unknown): DumpValidationIssue[] {
   const issues: DumpValidationIssue[] = [];
@@ -325,6 +355,8 @@ export function validateDump(value: unknown): DumpValidationIssue[] {
       requireString(object, "name", path, issues);
       if (object.modifiers !== undefined && !Array.isArray(object.modifiers))
         issues.push({ code: "EXPECTED_ARRAY", path: `${path}.modifiers`, message: "expected an array" });
+      validateMeshSmoothness(object.mesh, `${path}.mesh`, issues);
+      validateMeshSmoothness(object.evaluated_mesh, `${path}.evaluated_mesh`, issues);
     }
   }
   return issues;

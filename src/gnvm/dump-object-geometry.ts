@@ -1,6 +1,7 @@
 import { evaluateBezierSpline } from "./bezier";
 import type { Vec3 } from "./core";
 import type { Dump, DumpObject } from "./dump-schema";
+import { applyDumpFaceSmoothness } from "./dump-mesh-smoothness";
 import { Geometry, Mesh } from "./geometry";
 
 function transformByMatrix(point: [number, number, number], matrix: number[][]): [number, number, number] {
@@ -103,6 +104,7 @@ export function baseGeometryOf(dump: Dump, objectName: string): Geometry | null 
     while (mesh.materialSlots.length <= highestMaterialSlot) mesh.materialSlots.push(null);
     mesh.edges = (object.mesh.edges ?? []).map((edge) => [edge[0], edge[1]] as [number, number]);
     if (mesh.edges.length) mesh.attributes.set("__gnvm_stored_edge_order", { domain: "CORNER", data: [] });
+    applyDumpFaceSmoothness(mesh, object.mesh);
     for (const [name, attribute] of Object.entries(object.mesh.attributes ?? {}))
       mesh.attributes.set(name, { domain: attribute.domain ?? "POINT", data: [...attribute.data] });
     geometry.mesh = mesh;

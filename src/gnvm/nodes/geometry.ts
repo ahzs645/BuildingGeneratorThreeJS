@@ -6,6 +6,7 @@ import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitive
 import { reg, EvalAPI, DUMP_CONTEXT, recordApproximation } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 import { evaluateBezierSpline } from "../bezier";
+import { applyDumpFaceSmoothness } from "../dump-mesh-smoothness";
 
 export function matchLegacyCurvePassthrough(geometry: Geometry): void {
   // A legacy Curve datablock routed through an otherwise empty Geometry Nodes
@@ -43,6 +44,7 @@ function geometryOfDumpObject(obj: (typeof DUMP_CONTEXT.objects)[number] | undef
     const highestMaterialSlot = m.faceMaterial.reduce((highest, slot) => Math.max(highest, slot), -1);
     while (m.materialSlots.length <= highestMaterialSlot) m.materialSlots.push(null);
     m.edges = (source.edges ?? []).map((edge) => [...edge] as [number, number]);
+    applyDumpFaceSmoothness(m, source);
     for (const [name, attribute] of Object.entries(source.attributes ?? {})) {
       m.attributes.set(name, { domain: attribute.domain, data: [...attribute.data] });
     }

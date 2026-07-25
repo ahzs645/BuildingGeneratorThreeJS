@@ -101663,6 +101663,9 @@
     "face_materials": [
      0
     ],
+    "face_smooth": [
+     false
+    ],
     "edges": []
    }
   },
