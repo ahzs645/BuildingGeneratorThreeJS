@@ -22,7 +22,7 @@ These source-inventory counts are deliberately different from the **101 browser 
 | Module 4 | 68 | 35 | All roots classified; shared finale live and topology/bounds exact |
 | Chrome Crayon | 1 | 1 | Live Blender/GN-VM comparison |
 | Math Clay | 33 | 14 | All 13 distinct surface roots live; shared helper represented through its consumer |
-| Bubble Vessel | 6 | 3 | Live Blender/GN-VM comparison |
+| Bubble Vessel | 6 | 3 | Product live; `Vert` classified as a non-product presentation helper |
 | Chrome Asset Library | 43 | 26 | All 26 active modifier roots represented in the browser library |
 
 ## Evidence standard for each port
@@ -37,3 +37,5 @@ A root is not considered ported merely because it evaluates without throwing. Ea
 6. Regression tests for any new shared node semantics.
 
 This standard is satisfied by every represented reusable root and distinct course study listed in the browser catalog; any documented residual is stated in that asset's status evidence rather than hidden by a generic completion label. The expanded acceptance criteria and completion checklist are in [`NODE_DOJO_MAINTAINERS_GUIDE.md`](NODE_DOJO_MAINTAINERS_GUIDE.md#completion-checklist).
+
+The Bubble Vessel object's `Vert` / `Geometry Nodes` root is a fixed title-card helper for the curve-only lettering “BUBBLE VASE GENERATOR,” not another vessel generator. It has no product controls, its geometry input is unused, and the source references an unavailable, unpacked `1CamBam_Stick_3 Regular` font. Blender 5.1.2 therefore evaluates the supplied copy to empty geometry (0 vertices / 0 faces / 0 triangles). It remains in the source inventory as evidence but must not become a browser catalog product; the published Bubble Vessel generator is the meaningful reusable asset.
