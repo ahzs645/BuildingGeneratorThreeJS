@@ -20,9 +20,9 @@ dumps. Those dumps expose 108 modifier or reusable-group Studio targets.
 | Exact node closures | 93 |
 | Portable targets, including bounded approximations | 107 |
 | Targets with an unsupported reachable node | 1 |
-| Portable targets producing renderable mesh, curve, or point output | 94 |
+| Portable targets producing renderable mesh, curve, or point output | 93 |
 | Portable targets completing with empty output | 9 |
-| Portable targets exceeding the 30-second probe budget | 4 |
+| Portable targets exceeding the 30-second probe budget | 5 |
 | Portable targets throwing an evaluation error | 0 |
 
 This is a large improvement over the first audit (58 exact and 60 portable
@@ -100,12 +100,13 @@ The 14 portable-but-approximated targets reach one or more of:
 
 ## Runtime findings
 
-The isolated sweep executed every portable target with inferred seeds and
-modifier indices. Ninety-four produced renderable output and none threw. Four targets
+The concurrent sweep executed every portable target with inferred seeds and
+modifier indices. Ninety-three produced renderable output and none threw. Five targets
 exceeded 30 seconds:
 
 - `apple-magsafe-charger` · Apple Magsafe Charger
 - `apple-watch-charger` · Apple Watch Charger
+- `gabor-pattern-airpod-case` · Gabor Pattern Airpod Case
 - `putty-flange-generator` · Putty Flange Generator
 - `spike-putty-1` · Spike Putty 1
 
@@ -114,9 +115,11 @@ Studio auto-evaluation is disabled for closures over 500 nodes, as well as for
 volume-grid approximations. These targets remain available through the
 explicit Apply action and the 180-second worker safety limit.
 
-The Gabor modifier completed this concurrent audit in 27.4 seconds with
-126,628 vertices, 118,195 faces, and 234,619 triangles. Its volume-grid
-closure remains manual-preview only.
+The Gabor modifier crossed the 30-second limit while three audit workers were
+contending for CPU. An isolated rerun completed in 22.9 seconds with 126,628
+vertices, 118,195 faces, and 234,619 triangles. This is probe-concurrency
+variance rather than a runtime regression; its volume-grid closure remains
+manual-preview only.
 
 The large `Dojo Gluefinity Grid_obj.001` closure now completes in 20.6 seconds
 with 480 vertices and 252 faces. It remains over the 500-node live-edit

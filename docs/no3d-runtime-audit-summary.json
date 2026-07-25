@@ -1,27 +1,27 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-24T23:29:50.032Z",
+  "generatedAt": "2026-07-24T23:57:55.040Z",
   "source": {
     "directory": "/Users/ahmadjalil/Documents/No3d Tools",
     "blendFiles": 47,
     "blenderVersion": "5.1.2",
-    "extractor": "tools/dump_blend.py 1.4",
-    "dumpSetSha256": "b5d9f5b99819f1d274e96e6f639c0cf1681aa697e950354288db41ef1e503b95"
+    "extractor": "tools/dump_blend.py 1.5",
+    "dumpSetSha256": "efa84cc76e10156cb370cc7be1f78daac307341d36af617dab6a9dbbc23a743a"
   },
   "runtimeAudit": {
     "timeoutMs": 30000,
     "concurrency": 3,
-    "reportSha256": "545a54a47e3bb2f773ac4f46652ece1c5c53905718035e383e2ee3d6d6465385",
+    "reportSha256": "6b4ba95e5b4474ed9f5418f928c89339304eebffe379d6968d4714c63dda458b",
     "summary": {
       "files": 47,
       "targets": 108,
       "exact": 93,
       "portable": 107,
       "nonportable": 1,
-      "geometry": 94,
+      "geometry": 93,
       "empty": 9,
       "errors": 0,
-      "timeouts": 4,
+      "timeouts": 5,
       "notRun": 1
     },
     "timeouts": [
@@ -32,6 +32,17 @@
       {
         "file": "apple-watch-charger.json",
         "target": "Apple Watch Charger"
+      },
+      {
+        "file": "gabor-pattern-airpod-case.json",
+        "target": "Gabor Pattern Airpod Case",
+        "isolatedRerun": {
+          "status": "geometry",
+          "durationMs": 22900,
+          "verts": 126628,
+          "faces": 118195,
+          "tris": 234619
+        }
       },
       {
         "file": "putty-flange-generator.json",
