@@ -21,13 +21,10 @@ The complete machine-readable mapping is in `public/dojo/n03d/root-classificatio
 Both outputs are closed manifolds with matching healed thread silhouette. The
 stored-snapshot difference is 2.05%, while ten identical Blender OpenVDB runs
 varied from 16,526 to 16,598 vertices. The browser's one-pass 21,642 / 21,818
-topology exactly matches one observed Blender schedule, and 131,278 of 131,279
-controlled pass-one SDF signs agree. The first persistent topology divergence
-appears at pass two: current GN-VM is 15,302 / 15,400, outside the recorded
-Blender results. Native scheduling is a proven amplifier, but does not fully
-explain the residual. The next proof step freezes and cross-runs one shared
-pass-one mesh and 43×43×71 FloatGrid rather than tuning toward a nondeterministic
-pass-13 snapshot.
+topology exactly matches one observed Blender schedule. Reciprocal frozen-source
+tests now produce byte-exact 131,279-value grids and identical meshes in both
+engines. Two equal-count pass-one sources nevertheless differ at 80 signs,
+isolating the repeat cascade to live pass-one source generation/scheduling.
 
 The `.001` and `.002` compact Bolt roots are not separate targets: both contain the same 59-node root shape and the same saved modifier values. Their only measured difference is the source profile's Z placement. The old v02 active root produces one loose point and no surface.
 

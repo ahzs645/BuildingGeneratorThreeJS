@@ -568,10 +568,10 @@ Two current examples:
 - N03D Watertight Bolt: the deterministic 13-pass browser result is
   16,230 / 16,232, while ten sequential Blender results ranged from 16,526 to
   16,598 vertices. The one-pass browser topology exactly matches one observed
-  Blender schedule and 131,278 of 131,279 controlled SDF signs match. Pass two
-  is outside the measured native range, so this is evidence of native
-  variability amplifying a deterministic scalar/BVH boundary, not evidence for
-  a scheduling-only classification. See
+  Blender schedule. Reciprocal frozen-source evidence now gives byte-exact
+  131,279-value sampling and identical meshing in both directions; equal-count
+  pass-one sources differ at 80 signs, locating the cascade in live source
+  generation/scheduling. See
   [`public/dojo/n03d/bolt-watertight/status.json`](../public/dojo/n03d/bolt-watertight/status.json).
 
 For an OpenVDB claim:
@@ -626,9 +626,9 @@ bit-identical or every source dependency exists.
 
 - **N03D Watertight Bolt:** deterministic browser topology differs from the
   stored 13-pass Blender snapshot by about 2.05%; native Blender/OpenVDB itself
-  varies, but the pass-two browser result is outside the measured native range.
-  This remains quantified visual near parity with a bounded scalar-grid/mesher
-  cross-run experiment still open.
+  varies. Reciprocal frozen-source evidence proves byte-exact sampling and
+  identical meshing in both engines; the divergence begins in live pass-one
+  source generation despite equal counts and near-identical bounds.
 - **Math Clay TPMS.016:** four vertices/faces below the stored reference, but
   inside repeated native OpenVDB ranges. Broader parameter validation remains
   useful; there is no evidence of a default-field defect.

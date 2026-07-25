@@ -53,5 +53,5 @@
   ],
   "profileEvaluationMs": 257978,
   "performance": "Volume Cube density evaluation accounts for roughly 98-99% of each pass; nearest-surface and raycast field evaluation, not surface-net meshing, is the dominant cost.",
-  "nextExperiment": "Freeze one shared pass-one mesh and raw 43x43x71 FloatGrid. Cross-run that identical grid through deterministic GN-VM once and Blender-bundled OpenVDB ten times, then swap Blender- and GN-VM-produced grids. This separates scalar/BVH drift from native mesher scheduling without tuning the pass-13 snapshot."
+  "completedCrossGridExperiment": "tools/fixtures/watertight-cross-grid/evidence.json proves reciprocal byte-exact 131279-value sampling and identical meshing. Equal-count pass-one sources differ at 80 signs, isolating the cascade to live source generation/scheduling."
 }
