@@ -1,6 +1,7 @@
 import type { Vec3 } from "./core";
 import { buildTopology, type Mesh, triangulateFaceIndices } from "./geometry";
 import {
+  countOpenEdges,
   intersectMeshPairTagged,
   retriangulateWithSteinerPoints,
 } from "trimesh-boolean";
@@ -40,16 +41,21 @@ export interface OpenSurfaceCycleFilterReport {
   atomicCellCount?: number;
   atomicTriangleCount?: number;
   atomicConstraintCount?: number;
+  ownedSelectedCellCount?: number;
+  ownedSelectedTriangleCount?: number;
+  ownedSelectedArea?: number;
 }
 
 export interface OpenSurfaceAtomicRegion {
   triangles: OpenBooleanTriangle[];
   ownerCutterIsland: number;
+  occludingCutterIsland?: number;
 }
 
 export interface OpenSurfaceAtomicCell {
   triangles: OpenBooleanTriangle[];
   ownerCutterIsland: number;
+  occludingCutterIsland?: number;
   boundaryCutterIslands: number[];
   area: number;
 }
@@ -537,6 +543,7 @@ export function partitionOpenSurfaceAtomicCells(
       cells.push({
         triangles,
         ownerCutterIsland: region.ownerCutterIsland,
+        occludingCutterIsland: region.occludingCutterIsland,
         boundaryCutterIslands: [...boundaryCutterIslands].sort((a, b) => a - b),
         area: triangles.reduce((sum, triangle) => sum + triangleArea(triangle), 0),
       });
@@ -545,6 +552,66 @@ export function partitionOpenSurfaceAtomicCells(
   }
 
   return { cells, triangles: allTriangles, constraintCount };
+}
+
+function atomicCellFrame(cell: OpenSurfaceAtomicCell): {
+  centroid: Vec3;
+  normal: Vec3;
+  area: number;
+  minEdge: number;
+} | null {
+  const centroid: Vec3 = [0, 0, 0];
+  const normal: Vec3 = [0, 0, 0];
+  let area = 0;
+  let minEdge = Infinity;
+  for (const triangle of cell.triangles) {
+    const triangleWeight = triangleArea(triangle);
+    const center: Vec3 = [
+      (triangle.v0.x + triangle.v1.x + triangle.v2.x) / 3,
+      (triangle.v0.y + triangle.v1.y + triangle.v2.y) / 3,
+      (triangle.v0.z + triangle.v1.z + triangle.v2.z) / 3,
+    ];
+    centroid[0] += center[0] * triangleWeight;
+    centroid[1] += center[1] * triangleWeight;
+    centroid[2] += center[2] * triangleWeight;
+    const cross = triangleCross(triangle);
+    normal[0] += cross[0];
+    normal[1] += cross[1];
+    normal[2] += cross[2];
+    for (const [a, b] of triangleEdges(triangle))
+      minEdge = Math.min(minEdge, segmentLength(a, b));
+    area += triangleWeight;
+  }
+  const normalLength = Math.hypot(normal[0], normal[1], normal[2]);
+  if (!(area > 0) || normalLength <= 1e-12 || !Number.isFinite(minEdge)) return null;
+  centroid[0] /= area;
+  centroid[1] /= area;
+  centroid[2] /= area;
+  normal[0] /= normalLength;
+  normal[1] /= normalLength;
+  normal[2] /= normalLength;
+  return { centroid, normal, area, minEdge };
+}
+
+function atomicTriangleFrame(triangle: OpenBooleanTriangle): {
+  centroid: Vec3;
+  normal: Vec3;
+  area: number;
+  minEdge: number;
+} | null {
+  const cross = triangleCross(triangle);
+  const crossLength = Math.hypot(cross[0], cross[1], cross[2]);
+  if (crossLength <= 1e-12) return null;
+  return {
+    centroid: [
+      (triangle.v0.x + triangle.v1.x + triangle.v2.x) / 3,
+      (triangle.v0.y + triangle.v1.y + triangle.v2.y) / 3,
+      (triangle.v0.z + triangle.v1.z + triangle.v2.z) / 3,
+    ],
+    normal: [cross[0] / crossLength, cross[1] / crossLength, cross[2] / crossLength],
+    area: crossLength * 0.5,
+    minEdge: Math.min(...triangleEdges(triangle).map(([a, b]) => segmentLength(a, b))),
+  };
 }
 
 /**
@@ -562,37 +629,12 @@ export function selectOpenSurfaceMaterialBoundaryCells(
   if (!(epsilon > 0) || !Number.isFinite(epsilon)) return null;
   const cells: OpenSurfaceAtomicCell[] = [];
   for (const cell of partition.cells) {
-    const centroid: Vec3 = [0, 0, 0];
-    const normal: Vec3 = [0, 0, 0];
-    let area = 0;
-    for (const triangle of cell.triangles) {
-      const triangleWeight = triangleArea(triangle);
-      const center: Vec3 = [
-        (triangle.v0.x + triangle.v1.x + triangle.v2.x) / 3,
-        (triangle.v0.y + triangle.v1.y + triangle.v2.y) / 3,
-        (triangle.v0.z + triangle.v1.z + triangle.v2.z) / 3,
-      ];
-      centroid[0] += center[0] * triangleWeight;
-      centroid[1] += center[1] * triangleWeight;
-      centroid[2] += center[2] * triangleWeight;
-      const cross = triangleCross(triangle);
-      normal[0] += cross[0];
-      normal[1] += cross[1];
-      normal[2] += cross[2];
-      area += triangleWeight;
-    }
-    const normalLength = Math.hypot(normal[0], normal[1], normal[2]);
-    if (!(area > 0) || normalLength <= 1e-12) return null;
-    centroid[0] /= area;
-    centroid[1] /= area;
-    centroid[2] /= area;
-    normal[0] /= normalLength;
-    normal[1] /= normalLength;
-    normal[2] /= normalLength;
+    const frame = atomicCellFrame(cell);
+    if (!frame) return null;
     const sample = (side: number, distance: number): boolean | null => materialAt({
-      x: centroid[0] + normal[0] * side * distance,
-      y: centroid[1] + normal[1] * side * distance,
-      z: centroid[2] + normal[2] * side * distance,
+      x: frame.centroid[0] + frame.normal[0] * side * distance,
+      y: frame.centroid[1] + frame.normal[1] * side * distance,
+      z: frame.centroid[2] + frame.normal[2] * side * distance,
     });
     const plus = sample(1, epsilon);
     const plusFar = sample(1, epsilon * 2);
@@ -601,6 +643,89 @@ export function selectOpenSurfaceMaterialBoundaryCells(
     if (plus === null || plusFar === null || minus === null || minusFar === null) return null;
     if (plus !== plusFar || minus !== minusFar) return null;
     if (plus !== minus) cells.push(cell);
+  }
+  return { cells, triangles: cells.flatMap((cell) => cell.triangles) };
+}
+
+interface CutterIslandClassifier {
+  soup: OpenBooleanTriangle[];
+}
+
+function cutterIslandClassifier(soup: OpenBooleanTriangle[]): CutterIslandClassifier | null {
+  const edges = countOpenEdges(soup);
+  if (edges.openEdges || edges.overShared) return null;
+  return { soup };
+}
+
+function classifyPointBySolidAngle(
+  point: OpenBooleanVertex,
+  soup: OpenBooleanTriangle[],
+): 1 | -1 | null {
+  let winding = 0;
+  for (const triangle of soup) {
+    const a: Vec3 = [triangle.v0.x - point.x, triangle.v0.y - point.y, triangle.v0.z - point.z];
+    const b: Vec3 = [triangle.v1.x - point.x, triangle.v1.y - point.y, triangle.v1.z - point.z];
+    const c: Vec3 = [triangle.v2.x - point.x, triangle.v2.y - point.y, triangle.v2.z - point.z];
+    const lengthA = Math.hypot(a[0], a[1], a[2]);
+    const lengthB = Math.hypot(b[0], b[1], b[2]);
+    const lengthC = Math.hypot(c[0], c[1], c[2]);
+    if (Math.min(lengthA, lengthB, lengthC) <= 1e-12) return null;
+    const determinant = a[0] * (b[1] * c[2] - b[2] * c[1])
+      - a[1] * (b[0] * c[2] - b[2] * c[0])
+      + a[2] * (b[0] * c[1] - b[1] * c[0]);
+    const denominator = lengthA * lengthB * lengthC
+      + (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]) * lengthC
+      + (b[0] * c[0] + b[1] * c[1] + b[2] * c[2]) * lengthA
+      + (c[0] * a[0] + c[1] * a[1] + c[2] * a[2]) * lengthB;
+    winding += 2 * Math.atan2(determinant, denominator);
+  }
+  const magnitude = Math.abs(winding);
+  if (magnitude >= Math.PI * 2) return 1;
+  if (magnitude <= Math.PI) return -1;
+  return null;
+}
+
+/**
+ * Keep owned cutter cells that lie inside the paired cutter of the source
+ * shell which exposed them. This is the per-pipe form of material ownership:
+ * the overlapping shell no longer hides the owner's inner wall once its own
+ * void occupies that atomic cell.
+ */
+export function selectOpenSurfaceOwnedShellCells(
+  cutter: Mesh,
+  partition: OpenSurfaceAtomicPartition,
+): OpenSurfaceAtomicSelection | null {
+  const islands = triangleIslands(cutter);
+  const classifiers = islands.soups.map(cutterIslandClassifier);
+  if (classifiers.some((entry) => !entry)) return null;
+  const scale = meshScale(cutter, cutter);
+  const cells: OpenSurfaceAtomicCell[] = [];
+  for (const cell of partition.cells) {
+    const occludingIsland = cell.occludingCutterIsland;
+    if (
+      occludingIsland === undefined
+      || occludingIsland === cell.ownerCutterIsland
+      || !cell.boundaryCutterIslands.includes(occludingIsland)
+    ) return null;
+    const classifier = classifiers[occludingIsland]!;
+    const representative = [...cell.triangles].sort((a, b) => triangleArea(b) - triangleArea(a))[0];
+    const frame = representative ? atomicTriangleFrame(representative) : null;
+    if (!frame) return null;
+    const epsilon = Math.max(scale * 1e-7, frame.minEdge * 1e-4);
+    const classify = (side: number, distance: number) => classifyPointBySolidAngle({
+      x: frame.centroid[0] + frame.normal[0] * side * distance,
+      y: frame.centroid[1] + frame.normal[1] * side * distance,
+      z: frame.centroid[2] + frame.normal[2] * side * distance,
+    }, classifier.soup);
+    const classifications = [
+      classify(0, 0),
+      classify(1, epsilon),
+      classify(1, epsilon * 2),
+      classify(-1, epsilon),
+      classify(-1, epsilon * 2),
+    ];
+    if (classifications.some((classification) => classification !== classifications[0])) return null;
+    if (classifications[0] === 1) cells.push(cell);
   }
   return { cells, triangles: cells.flatMap((cell) => cell.triangles) };
 }
@@ -734,14 +859,21 @@ export function filterOpenSurfaceCutterCycles(
 
   const keptRegions = new Set([...selfRegions, ...retained.flatMap((entry) => entry.regions)]);
   const bInside = regions.filter((region) => keptRegions.has(region)).flatMap((region) => region.triangles);
+  const sourceToCutter = Array.from({ length: sourceIslands.centers.length }, () => -1);
+  for (let cutterIsland = 0; cutterIsland < cutterToSource.length; cutterIsland++)
+    sourceToCutter[cutterToSource[cutterIsland]] = cutterIsland;
   const atomicPartition = partitionOpenSurfaceAtomicCells(
     cutter,
     retained.flatMap((entry) => entry.regions).map((region) => ({
       triangles: region.triangles,
       ownerCutterIsland: region.ownerCutterIsland,
+      occludingCutterIsland: sourceToCutter[region.touchedSourceIsland],
     })),
     tolerance,
   );
+  const ownedSelection = atomicPartition
+    ? selectOpenSurfaceOwnedShellCells(cutter, atomicPartition)
+    : null;
   return {
     bInside,
     regionCount: regions.length,
@@ -754,6 +886,11 @@ export function filterOpenSurfaceCutterCycles(
       atomicCellCount: atomicPartition.cells.length,
       atomicTriangleCount: atomicPartition.triangles.length,
       atomicConstraintCount: atomicPartition.constraintCount,
+    } : {}),
+    ...(ownedSelection ? {
+      ownedSelectedCellCount: ownedSelection.cells.length,
+      ownedSelectedTriangleCount: ownedSelection.triangles.length,
+      ownedSelectedArea: ownedSelection.cells.reduce((sum, cell) => sum + cell.area, 0),
     } : {}),
   };
 }

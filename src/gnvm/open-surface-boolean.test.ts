@@ -5,6 +5,7 @@ import {
   filterOpenSurfaceCutterCycles,
   partitionOpenSurfaceAtomicCells,
   selectOpenSurfaceMaterialBoundaryCells,
+  selectOpenSurfaceOwnedShellCells,
   type OpenSurfaceAtomicPartition,
   type OpenBooleanSegment,
   type OpenBooleanTriangle,
@@ -103,6 +104,22 @@ function disconnectedTrianglesMesh(triangles: OpenBooleanTriangle[]): Mesh {
     mesh.faceMaterial.push(0);
   }
   return mesh;
+}
+
+function appendCube(mesh: Mesh, center: [number, number, number], size = 2): void {
+  const offset = mesh.positions.length;
+  const half = size * 0.5;
+  for (const z of [-half, half]) for (const y of [-half, half]) for (const x of [-half, half])
+    mesh.positions.push([center[0] + x, center[1] + y, center[2] + z]);
+  mesh.faces.push(
+    [offset + 0, offset + 2, offset + 3, offset + 1],
+    [offset + 4, offset + 5, offset + 7, offset + 6],
+    [offset + 0, offset + 1, offset + 5, offset + 4],
+    [offset + 2, offset + 6, offset + 7, offset + 3],
+    [offset + 0, offset + 4, offset + 6, offset + 2],
+    [offset + 1, offset + 3, offset + 7, offset + 5],
+  );
+  mesh.faceMaterial.push(0, 0, 0, 0, 0, 0);
 }
 
 test("drops only the weakest reciprocal interface that closes an island cycle", () => {
@@ -287,4 +304,49 @@ test("selects only stable two-sided material boundaries", () => {
     (point) => Math.abs(point.z) < 0.015,
     0.01,
   ), null);
+});
+
+test("selects an owned shell cell only inside its occluding cutter island", () => {
+  const cutter = new Mesh();
+  appendCube(cutter, [10, 0, 0]);
+  appendCube(cutter, [0, 0, 0]);
+  const insideTriangle = triangle([-0.5, -0.5, 0], [0.5, -0.5, 0], [-0.5, 0.5, 0]);
+  const outsideTriangle = triangle([3, -0.5, 0], [4, -0.5, 0], [3, 0.5, 0]);
+  const partition: OpenSurfaceAtomicPartition = {
+    cells: [insideTriangle, outsideTriangle].map((entry) => ({
+      triangles: [entry],
+      ownerCutterIsland: 0,
+      occludingCutterIsland: 1,
+      boundaryCutterIslands: [1],
+      area: 0.5,
+    })),
+    triangles: [insideTriangle, outsideTriangle],
+    constraintCount: 1,
+  };
+
+  const selected = selectOpenSurfaceOwnedShellCells(cutter, partition);
+
+  assert.ok(selected);
+  assert.equal(selected.cells.length, 1);
+  assert.deepEqual(selected.triangles, [insideTriangle]);
+});
+
+test("declines an owned shell cell whose representative lies on the occluder", () => {
+  const cutter = new Mesh();
+  appendCube(cutter, [10, 0, 0]);
+  appendCube(cutter, [0, 0, 0]);
+  const boundaryTriangle = triangle([1, -0.5, -0.5], [1, 0.5, -0.5], [1, -0.5, 0.5]);
+  const partition: OpenSurfaceAtomicPartition = {
+    cells: [{
+      triangles: [boundaryTriangle],
+      ownerCutterIsland: 0,
+      occludingCutterIsland: 1,
+      boundaryCutterIslands: [1],
+      area: 0.5,
+    }],
+    triangles: [boundaryTriangle],
+    constraintCount: 1,
+  };
+
+  assert.equal(selectOpenSurfaceOwnedShellCells(cutter, partition), null);
 });
