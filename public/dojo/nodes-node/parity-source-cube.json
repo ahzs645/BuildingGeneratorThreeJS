@@ -23,32 +23,44 @@
     "filmTransparent": true
   },
   "workbenchApproximationContract": {
-    "implementation": "scene-light-independent view-space-normal ShaderMaterial",
+    "implementation": "scene-light-independent view-space-normal ShaderMaterial plus presentation-only sharp-edge ridge overlay",
     "sourceColorSpace": "sRGB",
     "targetSrgbLuminance": { "topAndLeft": 0.504, "screenRight": 0.227 },
     "toneMapped": false,
-    "cavityParity": false
+    "flatShading": "explicitly preserved from the Blender source cube contract",
+    "cavityParity": false,
+    "cavityApproximation": {
+      "model": "30-degree EdgesGeometry ridge overlay",
+      "opacity": 0.3,
+      "coplanarTriangleDiagonals": "excluded",
+      "geometryInvariant": "mesh positions, indices, counts, and bounds are unchanged"
+    }
   },
   "authoredCaptureComparison": {
-    "viewport": [570, 570],
+    "viewport": [768, 768],
+    "blenderReference": "../references/nodes-node/cube-002.png",
+    "browserReference": "../references/nodes-node/cube-002-workbench-webgl.png",
     "before": {
-      "maskIoU": 0.9792,
-      "luminanceMAE": 0.28199,
-      "browserMeanLuminance": 0.14083,
-      "blenderMeanLuminance": 0.40344,
-      "luminanceCorrelation": -0.08043
+      "status": "grouped null material incorrectly claimed by the generic Blender default adapter",
+      "maskIoU": 0.9993607313567537,
+      "luminanceMAE": 0.2778735147729109,
+      "luminanceCorrelation": -0.08931158306383932
     },
     "workbenchApproximation": {
-      "maskIoU": 0.97966,
-      "intersectionPixels": 263921,
-      "unionPixels": 269401,
-      "luminanceMAE": 0.02515,
-      "browserMeanLuminance": 0.41582,
-      "blenderMeanLuminance": 0.40353,
-      "luminanceCorrelation": 0.99287
+      "maskIoU": 0.9994946035352692,
+      "luminanceMAE": 0.02488503548086431,
+      "luminanceCorrelation": 0.994521994015408,
+      "macroLuminanceMAE": 0.022925357588553814,
+      "macroLuminanceCorrelation": 0.9967315836050871
     },
-    "luminanceMAEReduction": 0.91081
+    "registryLuminanceMAEReduction": 0.9104447377750221,
+    "ridgeOnlyImprovementAgainstRestoredNoRidgeBaseline": {
+      "pixelLuminanceMAEReduction": 0.004156311268819883,
+      "pixelLuminanceCorrelationGain": 0.0018863369339345848,
+      "macroLuminanceMAEReduction": 0.013005736342617326,
+      "macroLuminanceCorrelationGain": 0.000944728540505313
+    }
   },
-  "result": "exact geometry and strong camera silhouette; the explicit WebGL Workbench approximation materially improves face luminance",
-  "note": "The ShaderMaterial approximates Blender's neutral studio lobes from view-space normals and does not depend on scene lights. Blender Workbench cavity/AO, shadows, specular, and AgX raster are not reproduced, so no exact pixel-parity claim is made."
+  "result": "exact geometry with restored Workbench adapter precedence, explicit flat shading, and a reusable convex-ridge cavity cue",
+  "note": "The ShaderMaterial approximates Blender's neutral studio lobes without scene lights, and the overlay restores sharp convex edge cues without changing evaluated mesh geometry. Blender Workbench valley cavity/AO, contact shadows, specular, and AgX raster remain unreproduced, so no exact pixel-parity claim is made."
 }

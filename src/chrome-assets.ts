@@ -9,7 +9,11 @@ import {
 } from "./chrome-asset-controls";
 import type { Dump, TriSoup } from "./gnvm/index";
 import { expandFaceDomainMaterialAttributes } from "./image-pixel-stippler-material";
-import { makeWorkbenchApproximationMaterial, shouldUseWorkbenchApproximation } from "./workbench-approx-material";
+import {
+  makeWorkbenchApproximationMaterial,
+  makeWorkbenchCavityRidgeOverlay,
+  shouldUseWorkbenchApproximation,
+} from "./workbench-approx-material";
 import { loadBlenderStudioEnvironment } from "./blender-studio-environment";
 import { EeveeTemporalCapture } from "./eevee-temporal-capture";
 import { makeLiveChromeCrayonMaterial } from "./materialx/live-chrome-crayon";
@@ -228,6 +232,14 @@ function makeMesh(soup: TriSoup): THREE.Mesh {
       : diagnosticMaterial(),
   );
   const mesh = new THREE.Mesh(geometry, materials.length===1?materials[0]:materials);
+  if (
+    materials.length === 1
+    && current.workbenchColor
+    && materials[0].userData.workbenchApproximation
+    && materials[0].userData.workbenchApproximation.smoothShading === false
+  ) {
+    mesh.add(makeWorkbenchCavityRidgeOverlay(geometry, current.workbenchColor));
+  }
   const linePreview = document.querySelector<HTMLSelectElement>('[data-control="__linePreview"]')?.value;
   if (soup.lines) {
     const wireGeometry = new THREE.BufferGeometry();

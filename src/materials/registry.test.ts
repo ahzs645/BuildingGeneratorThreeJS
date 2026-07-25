@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import * as THREE from "three";
 import type { Dump } from "../gnvm";
@@ -12,6 +13,9 @@ import {
 
 const group = { start: 0, count: 3, material: "Material" };
 const geometry = new THREE.BufferGeometry();
+const catalog = JSON.parse(
+  readFileSync(new URL("../../public/dojo/chrome-assets/catalog.json", import.meta.url), "utf8"),
+) as Array<{ id: string; workbenchColor?: [number, number, number]; flatShading?: boolean }>;
 const context: AuthoredMaterialContext = {
   asset: {},
   dump: {} as Dump,
@@ -48,8 +52,8 @@ test("strict adapter rejection is terminal instead of silently falling back", ()
 test("default registry keeps the authored dispatch order stable", () => {
   assert.deepEqual(AUTHORED_MATERIAL_ADAPTERS.map((adapter) => adapter.id), [
     "preview-workbench",
-    "blender-default-surface",
     "unmaterialed-workbench",
+    "blender-default-surface",
     "profile-image-pixel-stippler",
     "profile-chain-mace",
     "profile-chrome-crayon",
@@ -86,16 +90,53 @@ test("default and Workbench preview adapters preserve top-level precedence", () 
   assert.equal(defaultMaterial?.name, "Blender unassigned material surface");
   defaultMaterial?.dispose();
 
-  const workbenchMaterial = authoredMaterialRegistry.resolve({
+  const authoredWorkbenchMaterial = authoredMaterialRegistry.resolve({
+    ...context,
+    asset: { workbenchColor: [0.1, 0.2, 0.3], flatShading: true },
+    group: { ...group, material: null },
+    materialName: "",
+    sourceMaterials: [null],
+  });
+  assert.ok(authoredWorkbenchMaterial?.isShaderMaterial);
+  assert.equal(authoredWorkbenchMaterial?.name, "Blender Workbench studio approximation");
+  assert.equal(authoredWorkbenchMaterial?.userData.workbenchApproximation.smoothShading, false);
+  authoredWorkbenchMaterial?.dispose();
+
+  const defaultSmoothWorkbenchMaterial = authoredMaterialRegistry.resolve({
     ...context,
     asset: { workbenchColor: [0.1, 0.2, 0.3] },
     group: { ...group, material: null },
     materialName: "",
+    sourceMaterials: [null],
+  });
+  assert.ok(defaultSmoothWorkbenchMaterial?.isShaderMaterial);
+  assert.equal(defaultSmoothWorkbenchMaterial?.userData.workbenchApproximation.smoothShading, true);
+  defaultSmoothWorkbenchMaterial?.dispose();
+
+  const previewWorkbenchMaterial = authoredMaterialRegistry.resolve({
+    ...context,
+    asset: { workbenchColor: [0.1, 0.2, 0.3], flatShading: false },
+    group: { ...group, material: null },
+    materialName: "",
     previewMode: "workbench",
   });
-  assert.ok(workbenchMaterial?.isShaderMaterial);
-  assert.equal(workbenchMaterial?.name, "Blender Workbench studio approximation");
-  workbenchMaterial?.dispose();
+  assert.ok(previewWorkbenchMaterial?.isShaderMaterial);
+  assert.equal(previewWorkbenchMaterial?.name, "Blender Workbench studio approximation");
+  assert.equal(previewWorkbenchMaterial?.userData.workbenchApproximation.smoothShading, true);
+  previewWorkbenchMaterial?.dispose();
+});
+
+test("Workbench catalog shading defaults smooth and declares flat assets explicitly", () => {
+  const workbenchAssets = catalog.filter((asset) => asset.workbenchColor);
+  assert.ok(workbenchAssets.length > 1);
+  assert.deepEqual(
+    workbenchAssets.filter((asset) => asset.flatShading === true).map((asset) => asset.id),
+    ["nodes-node-source-cube"],
+  );
+  assert.equal(
+    workbenchAssets.every((asset) => asset.flatShading === undefined || asset.flatShading === true),
+    true,
+  );
 });
 
 test("chain profile retains its evaluated material-slot fallback", () => {

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import * as THREE from "three";
 import {
+  makeWorkbenchCavityRidgeOverlay,
   makeWorkbenchApproximationMaterial,
   shouldUseWorkbenchApproximation,
 } from "../workbench-approx-material";
@@ -50,4 +51,32 @@ test("can preserve Blender smooth vertex normals for curved Workbench assets", (
   assert.equal(material.userData.workbenchApproximation.lightingModel, "Blender 5.1 studio.sl");
   assert.equal(material.userData.workbenchApproximation.roughness, 0.4);
   material.dispose();
+});
+
+test("builds sharp Workbench cavity ridges without changing the evaluated mesh", () => {
+  const geometry = new THREE.BoxGeometry(2, 2, 2);
+  const positionCount = geometry.getAttribute("position").count;
+  const indexCount = geometry.index?.count;
+  const overlay = makeWorkbenchCavityRidgeOverlay(geometry, [0.8, 0.8, 0.8]);
+  const overlayPosition = overlay.geometry.getAttribute("position");
+  const overlayMaterial = overlay.material as THREE.LineBasicMaterial;
+
+  assert.equal(geometry.getAttribute("position").count, positionCount);
+  assert.equal(geometry.index?.count, indexCount);
+  assert.equal(overlayPosition.count, 24);
+  assert.equal(overlayPosition.count / 2, 12);
+  assert.equal(overlay.name, "Workbench cavity ridges");
+  assert.equal(overlay.userData.workbenchPresentationOnly, true);
+  assert.equal(overlayMaterial.depthWrite, false);
+  assert.equal(overlayMaterial.toneMapped, false);
+  assert.deepEqual(overlayMaterial.userData.workbenchCavityRidge, {
+    thresholdAngle: 30,
+    opacity: 0.3,
+    geometryInvariant: true,
+    cavityModel: "sharp-edge ridge overlay",
+  });
+
+  overlay.geometry.dispose();
+  overlayMaterial.dispose();
+  geometry.dispose();
 });

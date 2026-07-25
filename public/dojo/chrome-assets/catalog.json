@@ -1389,8 +1389,9 @@
     "reference": "dojo/references/nodes-node/cube-002.png",
     "blenderStats": { "verts": 8, "faces": 6 },
     "localSpace": true,
+    "flatShading": true,
     "workbenchColor": [0.8, 0.8, 0.8],
-    "note": "Exact source geometry: 8 vertices / 6 faces and local bounds [-1, -1, -1] to [1, 1, 1] in Blender and the browser. The scene-light-independent Workbench approximation reaches 0.97966 mask IoU, 0.02515 luminance MAE, and 0.99287 luminance correlation against the fixed Blender reference. Blender cavity/AO, shadows, specular, and AgX raster are not reproduced; this remains explicitly approximate.",
+    "note": "Exact source geometry: 8 vertices / 6 faces and local bounds [-1, -1, -1] to [1, 1, 1] in Blender and the browser. The scene-light-independent Workbench approximation now takes precedence over the null material group, preserves the authored flat shading, and adds presentation-only sharp convex ridges without changing mesh geometry. A fresh 768px comparison reaches 0.99949 mask IoU, 0.02489 luminance MAE, and 0.99452 luminance correlation. Blender valley cavity/AO, contact shadows, specular, and AgX raster are not reproduced; this remains explicitly approximate.",
     "controls": []
   },
   {

@@ -93,15 +93,15 @@ export const AUTHORED_MATERIAL_ADAPTERS: readonly AuthoredMaterialAdapter[] = [
       : undefined,
   },
   {
-    id: "blender-default-surface",
-    resolve: ({ group }) => group.material === null ? makeBlenderDefaultSurfaceMaterial() : undefined,
-  },
-  {
     id: "unmaterialed-workbench",
     resolve: ({ asset, materialName, sourceMaterials }) =>
       shouldUseWorkbenchApproximation(asset.workbenchColor, sourceMaterials, materialName)
-        ? makeWorkbenchApproximationMaterial(asset.workbenchColor!)
+        ? makeWorkbenchApproximationMaterial(asset.workbenchColor!, !(asset.flatShading ?? false))
         : undefined,
+  },
+  {
+    id: "blender-default-surface",
+    resolve: ({ group }) => group.material === null ? makeBlenderDefaultSurfaceMaterial() : undefined,
   },
   {
     id: "profile-image-pixel-stippler",

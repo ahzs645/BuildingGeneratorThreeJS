@@ -2,6 +2,11 @@ import * as THREE from "three";
 
 export type WorkbenchColor = [number, number, number];
 
+export interface WorkbenchCavityRidgeOptions {
+  thresholdAngle?: number;
+  opacity?: number;
+}
+
 /**
  * Restrict the normalized Workbench look to catalog assets that genuinely have
  * no authored material. A catalog color must never replace an extracted shader.
@@ -176,4 +181,45 @@ export function makeWorkbenchApproximationMaterial(
     label: "approximation",
   };
   return material;
+}
+
+/**
+ * Workbench's cavity pass brightens convex creases after surface shading. Three
+ * does not expose Workbench's screen-space cavity buffer, but a sharp-edge
+ * overlay captures the same ridge cue without modifying the evaluated mesh.
+ * `EdgesGeometry` deliberately excludes coplanar triangulation diagonals.
+ */
+export function makeWorkbenchCavityRidgeOverlay(
+  geometry: THREE.BufferGeometry,
+  color: WorkbenchColor,
+  options: WorkbenchCavityRidgeOptions = {},
+): THREE.LineSegments {
+  const thresholdAngle = options.thresholdAngle ?? 30;
+  const opacity = options.opacity ?? 0.3;
+  const ridgeColor = new THREE.Color()
+    .setRGB(color[0], color[1], color[2])
+    .lerp(new THREE.Color(1, 1, 1), 0.35);
+  const material = new THREE.LineBasicMaterial({
+    color: ridgeColor,
+    transparent: opacity < 1,
+    opacity,
+    depthWrite: false,
+    depthTest: true,
+  });
+  material.toneMapped = false;
+  material.name = "Blender Workbench cavity ridge approximation";
+  material.userData.workbenchCavityRidge = {
+    thresholdAngle,
+    opacity,
+    geometryInvariant: true,
+    cavityModel: "sharp-edge ridge overlay",
+  };
+  const overlay = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geometry, thresholdAngle),
+    material,
+  );
+  overlay.name = "Workbench cavity ridges";
+  overlay.renderOrder = 1;
+  overlay.userData.workbenchPresentationOnly = true;
+  return overlay;
 }
