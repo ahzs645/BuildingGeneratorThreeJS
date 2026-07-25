@@ -15,16 +15,19 @@ The complete machine-readable mapping is in `public/dojo/n03d/root-classificatio
 `BOLT GEN DHTS v03_Thru Head_1JUL2024.005` adds the saved `watertighten` branch and is materially different from the original published Bolt root. It is now published as `n03d-bolt-watertight`. In the authored 13-pass comparison:
 
 - Blender: 16,570 vertices / 16,572 faces.
-- GN-VM: 16,284 vertices / 16,286 faces.
-- Clean GN-VM evaluation: about 384 seconds.
+- GN-VM: 16,230 vertices / 16,232 faces.
+- Fresh cold GN-VM evaluation: about 258 seconds.
 
 Both outputs are closed manifolds with matching healed thread silhouette. The
-stored-snapshot difference is 1.73%, while ten identical Blender OpenVDB runs
+stored-snapshot difference is 2.05%, while ten identical Blender OpenVDB runs
 varied from 16,526 to 16,598 vertices. The browser's one-pass 21,642 / 21,818
 topology exactly matches one observed Blender schedule, and 131,278 of 131,279
-controlled pass-one SDF signs agree. The remaining 13-pass count difference is
-therefore recorded as compounded native scheduling variability, not tuned
-toward one nondeterministic snapshot.
+controlled pass-one SDF signs agree. The first persistent topology divergence
+appears at pass two: current GN-VM is 15,302 / 15,400, outside the recorded
+Blender results. Native scheduling is a proven amplifier, but does not fully
+explain the residual. The next proof step freezes and cross-runs one shared
+pass-one mesh and 43×43×71 FloatGrid rather than tuning toward a nondeterministic
+pass-13 snapshot.
 
 The `.001` and `.002` compact Bolt roots are not separate targets: both contain the same 59-node root shape and the same saved modifier values. Their only measured difference is the source profile's Z placement. The old v02 active root produces one loose point and no surface.
 

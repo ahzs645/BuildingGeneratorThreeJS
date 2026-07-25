@@ -2,16 +2,19 @@
   "source": "gnvm",
   "object": "Bolt Gen_DHTS_Thru Head v03.003",
   "node_group": "BOLT GEN DHTS v03_Thru Head_1JUL2024.005",
-  "evaluation_ms": 384412,
-  "commit": "6e7ebd1",
-  "validation": "One clean CLI run; two isolated browser runs produced the same counts.",
+  "evaluation_ms": 257978,
+  "commit": "53e699a",
+  "validation": "Fresh cold 13-pass CLI profile. The final Repeat Output and the returned mesh independently reported the same topology. This diagnostic run did not serialize the mesh, so no current bounding box is asserted here.",
   "result": {
+    "verts": 16230,
+    "faces": 16232,
+    "tris": 32456
+  },
+  "priorCheckpoint": {
+    "commit": "6e7ebd1",
     "verts": 16284,
     "faces": 16286,
-    "bbox": {
-      "min": [-7.966, -7.9692, 0.0],
-      "max": [7.979, 7.9692, 27.1718],
-      "precision": 4
-    }
+    "evaluation_ms": 384412,
+    "matchingBrowserRuns": 2
   }
 }

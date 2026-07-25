@@ -566,9 +566,12 @@ Two current examples:
   labeled `native-equivalent-openvdb-race`, not snapshot-exact. See
   [`public/dojo/math-clay/status.json`](../public/dojo/math-clay/status.json).
 - N03D Watertight Bolt: the deterministic 13-pass browser result is
-  16,284 / 16,286, while ten sequential Blender results ranged from 16,526 to
+  16,230 / 16,232, while ten sequential Blender results ranged from 16,526 to
   16,598 vertices. The one-pass browser topology exactly matches one observed
-  Blender schedule and 131,278 of 131,279 controlled SDF signs match. See
+  Blender schedule and 131,278 of 131,279 controlled SDF signs match. Pass two
+  is outside the measured native range, so this is evidence of native
+  variability amplifying a deterministic scalar/BVH boundary, not evidence for
+  a scheduling-only classification. See
   [`public/dojo/n03d/bolt-watertight/status.json`](../public/dojo/n03d/bolt-watertight/status.json).
 
 For an OpenVDB claim:
@@ -622,8 +625,10 @@ bit-identical or every source dependency exists.
 ### Geometry and evaluation
 
 - **N03D Watertight Bolt:** deterministic browser topology differs from the
-  stored 13-pass Blender snapshot by about 1.73%; native Blender/OpenVDB itself
-  varies. This remains quantified visual/native-equivalent near parity.
+  stored 13-pass Blender snapshot by about 2.05%; native Blender/OpenVDB itself
+  varies, but the pass-two browser result is outside the measured native range.
+  This remains quantified visual near parity with a bounded scalar-grid/mesher
+  cross-run experiment still open.
 - **Math Clay TPMS.016:** four vertices/faces below the stored reference, but
   inside repeated native OpenVDB ranges. Broader parameter validation remains
   useful; there is no evidence of a default-field defect.

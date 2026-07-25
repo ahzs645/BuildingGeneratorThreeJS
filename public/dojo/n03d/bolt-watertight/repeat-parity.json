@@ -1,6 +1,7 @@
 {
   "asset": "n03d-bolt-watertight",
   "blenderVersion": "5.1.2",
+  "gnvmProfileCommit": "53e699a",
   "repeat1": {
     "blenderObserved": [
       { "verts": 21636, "faces": 21810 },
@@ -27,12 +28,30 @@
       { "runs": 1, "verts": 15572, "faces": 15678 },
       { "runs": 5, "verts": 15470, "faces": 15560 }
     ],
-    "gnvm": { "verts": 15324, "faces": 15434 },
+    "gnvm": { "verts": 15302, "faces": 15400 },
+    "gnvmSurfaceNetsBeforeDual": { "verts": 15400, "faces": 15302 },
     "gnvmSecondVolumeGrid": {
       "resolution": [43, 43, 71],
-      "valueCount": 131279,
-      "fnv1a64": "7ee383c444e9f58c"
+      "valueCount": 131279
     },
-    "interpretation": "The second remesh amplifies small schedule-dependent differences in the first surface. The residual is therefore a repeat-chain/OpenVDB determinism boundary; the one-pass surface-net topology table itself is not independently disproven."
-  }
+    "interpretation": "This is the first persistent topology divergence. The deterministic GN-VM result is outside both recorded Blender schedules, so native OpenVDB variability is an amplifier but does not explain the entire residual. The controlled input lattice differs at one of 131,279 signs; durable diagnostics localize that sign to a compiler-sensitive n-gon triangulation/BVH coincident-hit tie."
+  },
+  "gnvmThirteenPassProfile": [
+    { "pass": 1, "verts": 21642, "faces": 21818, "cumulativeMs": 54198, "passMs": 54198 },
+    { "pass": 2, "verts": 15302, "faces": 15400, "cumulativeMs": 76725, "passMs": 22527 },
+    { "pass": 3, "verts": 16166, "faces": 16184, "cumulativeMs": 91608, "passMs": 14883 },
+    { "pass": 4, "verts": 16312, "faces": 16324, "cumulativeMs": 108950, "passMs": 17342 },
+    { "pass": 5, "verts": 16270, "faces": 16276, "cumulativeMs": 124101, "passMs": 15151 },
+    { "pass": 6, "verts": 16242, "faces": 16246, "cumulativeMs": 139265, "passMs": 15164 },
+    { "pass": 7, "verts": 16230, "faces": 16232, "cumulativeMs": 154228, "passMs": 14963 },
+    { "pass": 8, "verts": 16234, "faces": 16236, "cumulativeMs": 169174, "passMs": 14946 },
+    { "pass": 9, "verts": 16230, "faces": 16232, "cumulativeMs": 184252, "passMs": 15078 },
+    { "pass": 10, "verts": 16232, "faces": 16234, "cumulativeMs": 199261, "passMs": 15009 },
+    { "pass": 11, "verts": 16228, "faces": 16230, "cumulativeMs": 226949, "passMs": 27688 },
+    { "pass": 12, "verts": 16232, "faces": 16234, "cumulativeMs": 242200, "passMs": 15251 },
+    { "pass": 13, "verts": 16230, "faces": 16232, "cumulativeMs": 257153, "passMs": 14953 }
+  ],
+  "profileEvaluationMs": 257978,
+  "performance": "Volume Cube density evaluation accounts for roughly 98-99% of each pass; nearest-surface and raycast field evaluation, not surface-net meshing, is the dominant cost.",
+  "nextExperiment": "Freeze one shared pass-one mesh and raw 43x43x71 FloatGrid. Cross-run that identical grid through deterministic GN-VM once and Blender-bundled OpenVDB ten times, then swap Blender- and GN-VM-produced grids. This separates scalar/BVH drift from native mesher scheduling without tuning the pass-13 snapshot."
 }

@@ -18,13 +18,20 @@ test("Watertight Bolt preserves its unassigned Blender surface and native varian
   const evidence = readJson("public/dojo/n03d/bolt-watertight/material-parity.json");
   assert.equal(evidence.source.material, null);
   assert.equal(evidence.surface.borrowedFilamentShader, false);
-  assert.deepEqual(evidence.geometry.cleanGnvm, {
+  assert.deepEqual(evidence.geometry.currentCleanGnvm, {
+    commit: "53e699a",
+    verts: 16_230,
+    faces: 16_232,
+    cliEvaluationMs: 257_978,
+  });
+  assert.deepEqual(evidence.geometry.browserCaptureCheckpoint, {
     commit: "6e7ebd1",
     verts: 16_284,
     faces: 16_286,
     matchingBrowserRuns: 2,
     cliEvaluationMs: 384_412,
   });
+  assert.match(evidence.geometry.interpretation, /predates the current/);
   assert.ok(evidence.comparison.surfaceMaskIou > 0.96);
   assert.ok(evidence.comparison.pixelLuminanceCorrelation > 0.78);
   assert.ok(evidence.comparison.macroLuminanceCorrelation > 0.86);

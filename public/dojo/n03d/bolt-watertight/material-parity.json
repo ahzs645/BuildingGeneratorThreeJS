@@ -11,14 +11,20 @@
     "storedBlenderReference": { "verts": 16570, "faces": 16572 },
     "materialCaptureBlenderRun": { "verts": 16566, "faces": 16568 },
     "blenderObservedVertexRange": [16526, 16598],
-    "cleanGnvm": {
+    "currentCleanGnvm": {
+      "commit": "53e699a",
+      "verts": 16230,
+      "faces": 16232,
+      "cliEvaluationMs": 257978
+    },
+    "browserCaptureCheckpoint": {
       "commit": "6e7ebd1",
       "verts": 16284,
       "faces": 16286,
       "matchingBrowserRuns": 2,
       "cliEvaluationMs": 384412
     },
-    "interpretation": "Blender's OpenVDB output is scheduling-dependent. The fixed stored reference, the Blender material capture, and the browser capture are separate valid evaluations of the same authored closure."
+    "interpretation": "Blender's OpenVDB output is scheduling-dependent, but current GN-VM pass-two topology is outside the measured native range. The fixed stored reference, Blender material capture, and browser material capture remain valid presentation checkpoints; the browser image predates the current 16,230 / 16,232 cold profile and is not presented as current topology evidence."
   },
   "surface": {
     "blender": "neutral unassigned surface",
@@ -52,5 +58,5 @@
     "macroLuminanceCorrelation": 0.8606175592806729,
     "meanLuminanceDelta": -0.018869029582798347
   },
-  "interpretation": "The comparison proves the neutral material assignment and broadly aligned lighting on the authored watertight form. It does not claim identical OpenVDB topology or renderer pixels; the remaining silhouette difference includes the documented 13-pass scheduling cascade."
+  "interpretation": "The comparison proves the neutral material assignment and broadly aligned lighting on the authored watertight form. It does not claim identical OpenVDB topology, current-HEAD geometry, or renderer pixels; the remaining silhouette difference includes both native scheduling variability and the documented deterministic pass-two residual."
 }
