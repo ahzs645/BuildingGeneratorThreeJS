@@ -40,7 +40,7 @@ import os
 import sys
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Quaternion, Vector
 
 
 def file_fingerprint(path):
@@ -388,6 +388,11 @@ if mesh and frozen_mesh_path:
         f"{frozen_payload['stats']['faces']} faces, "
         f"{frozen_payload['stats']['triangles']} triangles)"
     )
+studio_axis_transform = (
+    Matrix.Rotation(-math.pi / 2.0, 4, "X")
+    if os.environ.get("NODE_DOJO_THREE_Z_UP") == "1"
+    else None
+)
 if (local_space or freeze_evaluated_mesh) and mesh:
     # Evaluate with the authored object/parent transforms intact: Object Info,
     # dependency cycles, and relative transform sockets can observe them. Render
@@ -397,6 +402,8 @@ if (local_space or freeze_evaluated_mesh) and mesh:
     snapshot_name = "__NODE_DOJO_LOCAL_SNAPSHOT" if local_space else "__NODE_DOJO_EVALUATED_SNAPSHOT"
     snapshot_object = bpy.data.objects.new(snapshot_name, snapshot_mesh)
     scene.collection.objects.link(snapshot_object)
+    if studio_axis_transform is not None:
+        snapshot_mesh.transform(studio_axis_transform)
     if freeze_evaluated_mesh and not local_space:
         snapshot_object.matrix_world = evaluated.matrix_world.copy()
     obj.hide_render = True
@@ -413,6 +420,8 @@ else:
         vertex.co.copy() if local_space else evaluated.matrix_world @ vertex.co
         for vertex in mesh.vertices
     ] if mesh else []
+if studio_axis_transform is not None:
+    corners = [studio_axis_transform @ corner for corner in corners]
 # Evaluated Curve objects can retain their pre-modifier/invalid bound_box even
 # when Geometry Nodes produces a large mesh. Prefer realized mesh vertices and
 # use the object bounds only as a fallback for non-mesh outputs.
@@ -435,11 +444,29 @@ camera_data = bpy.data.cameras.new("__NODE_DOJO_REFERENCE_CAMERA")
 camera = bpy.data.objects.new("__NODE_DOJO_REFERENCE_CAMERA", camera_data)
 scene.collection.objects.link(camera)
 direction = Vector((1.0, -1.25, 0.85)).normalized()
-camera.location = center + direction * radius * 3.0
-camera.rotation_euler = (center - camera.location).to_track_quat("-Z", "Y").to_euler()
-camera_data.type = "ORTHO"
-camera_data.ortho_scale = max(size.x, size.y, size.z, 1e-4) * 1.45
-camera_data.clip_end = max(1000.0, radius * 6.0)
+if os.environ.get("NODE_DOJO_STUDIO_PERSPECTIVE") == "1":
+    camera_data.type = "PERSP"
+    camera_data.angle = math.radians(42.0)
+    distance = radius / math.sin(math.radians(42.0 * 0.5))
+    camera.location = center + Vector((0.72, 0.48, 0.92)) * distance
+    camera_data.clip_start = max(radius / 1000.0, 0.0001)
+    camera_data.clip_end = max(1000.0, radius * 100.0)
+    # Match Three.js Camera.lookAt/OrbitControls roll exactly. Blender's
+    # ``to_track_quat("-Z", "Y")`` chooses a different valid roll for the
+    # same direction and therefore cannot be used for aligned pixel evidence.
+    camera.rotation_mode = "QUATERNION"
+    camera.rotation_quaternion = Quaternion((
+        0.9274819129656825,
+        -0.18311144591562536,
+        0.3197835895155591,
+        0.06313442304124958,
+    ))
+else:
+    camera.location = center + direction * radius * 3.0
+    camera_data.type = "ORTHO"
+    camera_data.ortho_scale = max(size.x, size.y, size.z, 1e-4) * 1.45
+    camera_data.clip_end = max(1000.0, radius * 6.0)
+    camera.rotation_euler = (center - camera.location).to_track_quat("-Z", "Y").to_euler()
 bpy.context.scene.camera = camera
 
 scene = bpy.context.scene

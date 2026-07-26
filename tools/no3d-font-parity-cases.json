@@ -1,0 +1,588 @@
+{
+  "schemaVersion": 1,
+  "profiles": {
+    "stringToText": [
+      {
+        "name": "editable Latin and digits",
+        "inputs": {
+          "String": "NODE 123",
+          "Size": 2,
+          "Character Spacing": 1,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0
+        }
+      },
+      {
+        "name": "expanded character spacing",
+        "inputs": {
+          "String": "ABCD",
+          "Size": 2,
+          "Character Spacing": 1.5,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0
+        }
+      },
+      {
+        "name": "centered wrapped text",
+        "inputs": {
+          "String": "AB CD",
+          "Align": "centered",
+          "Size": 2,
+          "Character Spacing": 1,
+          "Word Spacing": 1,
+          "Line Spacing": 0.75,
+          "Text Box Width": 6
+        }
+      },
+      {
+        "name": "right aligned reset letters",
+        "inputs": {
+          "String": "TEST",
+          "Align": "right",
+          "Size": 1.25,
+          "Character Spacing": 0.8,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0,
+          "Reset Letters Position": true
+        }
+      }
+    ],
+    "stringToTextLowercaseReset": [
+      {
+        "name": "editable Latin and digits",
+        "inputs": {
+          "String": "NODE 123",
+          "Size": 2,
+          "Character Spacing": 1,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0
+        }
+      },
+      {
+        "name": "expanded character spacing",
+        "inputs": {
+          "String": "ABCD",
+          "Size": 2,
+          "Character Spacing": 1.5,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0
+        }
+      },
+      {
+        "name": "centered wrapped text",
+        "inputs": {
+          "String": "AB CD",
+          "Align": "centered",
+          "Size": 2,
+          "Character Spacing": 1,
+          "Word Spacing": 1,
+          "Line Spacing": 0.75,
+          "Text Box Width": 6
+        }
+      },
+      {
+        "name": "right aligned reset location",
+        "inputs": {
+          "String": "TEST",
+          "Align": "right",
+          "Size": 1.25,
+          "Character Spacing": 0.8,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0,
+          "reset location": true
+        }
+      }
+    ],
+    "stringToTextMenu": [
+      {
+        "name": "editable Latin and digits",
+        "inputs": {
+          "String": "NODE 123",
+          "Size": 2,
+          "Character Spacing": 1,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0
+        }
+      },
+      {
+        "name": "expanded character spacing",
+        "inputs": {
+          "String": "ABCD",
+          "Size": 2,
+          "Character Spacing": 1.5,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0
+        }
+      },
+      {
+        "name": "centered wrapped text",
+        "inputs": {
+          "String": "AB CD",
+          "Menu": "centered",
+          "Size": 2,
+          "Character Spacing": 1,
+          "Word Spacing": 1,
+          "Line Spacing": 0.75,
+          "Text Box Width": 6
+        }
+      },
+      {
+        "name": "filled glyphs",
+        "inputs": {
+          "String": "FILL",
+          "Menu": "right",
+          "Size": 1.5,
+          "Character Spacing": 1,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0,
+          "fill": true
+        }
+      }
+    ],
+    "valueToText": [
+      {
+        "name": "positive decimal and suffix",
+        "inputs": {
+          "v string": 12.34,
+          "text": " mm",
+          "Size": 2,
+          "Character Spacing": 1,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0,
+          "fill": true
+        }
+      },
+      {
+        "name": "negative value",
+        "inputs": {
+          "v string": -7.5,
+          "text": " mm",
+          "Size": 1.5,
+          "Character Spacing": 1,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0,
+          "fill": true
+        }
+      },
+      {
+        "name": "centered expanded spacing",
+        "inputs": {
+          "v string": 100,
+          "text": "%",
+          "Menu": "centered",
+          "Size": 2,
+          "Character Spacing": 1.5,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0,
+          "fill": false
+        }
+      }
+    ],
+    "valueToMm": [
+      {
+        "name": "positive millimeters",
+        "inputs": {
+          "mm": 12.34,
+          "Size": 2,
+          "Character Spacing": 1,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0,
+          "fill": true
+        }
+      },
+      {
+        "name": "negative millimeters",
+        "inputs": {
+          "mm": -7.5,
+          "Size": 1.5,
+          "Character Spacing": 1,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0,
+          "fill": true
+        }
+      },
+      {
+        "name": "centered expanded spacing",
+        "inputs": {
+          "mm": 100,
+          "Menu": "centered",
+          "Size": 2,
+          "Character Spacing": 1.5,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0,
+          "fill": false
+        }
+      }
+    ],
+    "valueToMmWithDecimals": [
+      {
+        "name": "two decimal millimeters",
+        "inputs": {
+          "mm": 12.345,
+          "Strings": " mm",
+          "Decimals": 2,
+          "Size": 2,
+          "Character Spacing": 1,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0,
+          "fill": true
+        }
+      },
+      {
+        "name": "zero decimal negative",
+        "inputs": {
+          "mm": -7.5,
+          "Strings": " mm",
+          "Decimals": 0,
+          "Size": 1.5,
+          "Character Spacing": 1,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0,
+          "fill": true
+        }
+      },
+      {
+        "name": "centered expanded spacing",
+        "inputs": {
+          "mm": 100,
+          "Strings": "%",
+          "Decimals": 1,
+          "Menu": "centered",
+          "Size": 2,
+          "Character Spacing": 1.5,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0,
+          "fill": false
+        }
+      }
+    ],
+    "caliper": [
+      {
+        "name": "zero reading battery out",
+        "inputs": {
+          "measure": 0,
+          "Install Battery": 0
+        }
+      },
+      {
+        "name": "25.4 millimeter reading",
+        "inputs": {
+          "measure": -25.4,
+          "Install Battery": 0
+        }
+      },
+      {
+        "name": "full negative range battery installed",
+        "inputs": {
+          "measure": -100,
+          "Install Battery": 1
+        }
+      }
+    ],
+    "logoOffset": [
+      {
+        "name": "default logo",
+        "inputs": {
+          "Offset": [0, 0, 0]
+        }
+      },
+      {
+        "name": "translated logo",
+        "inputs": {
+          "Offset": [2, -1, 0.5]
+        }
+      }
+    ],
+    "pixelText": [
+      {
+        "name": "editable pixel text",
+        "inputs": {
+          "String": "NO3D 123",
+          "Size": 2,
+          "Character Spacing": 1,
+          "Word Spacing": 1,
+          "Line Spacing": 1,
+          "Text Box Width": 0,
+          "Translation": [0, 0, 0],
+          "Rotation": [0, 0, 0],
+          "Scale": [1, 1, 1]
+        }
+      },
+      {
+        "name": "pixel text spacing and transform",
+        "inputs": {
+          "String": "AB CD",
+          "Size": 1.5,
+          "Character Spacing": 1.5,
+          "Word Spacing": 1.25,
+          "Line Spacing": 0.8,
+          "Text Box Width": 5,
+          "Translation": [1, -2, 0.5],
+          "Rotation": [0, 0, 0.25],
+          "Scale": [1.2, 0.8, 1]
+        }
+      }
+    ],
+    "pixelMarker": [
+      {
+        "name": "default 3D marker",
+        "inputs": {
+          "extrude height": 10,
+          "line thiccness": 42.501827239990234,
+          "FLATTEN": false,
+          "pixel resolution": 0.5,
+          "3D/flat": false
+        }
+      },
+      {
+        "name": "short extrusion",
+        "inputs": {
+          "extrude height": 4,
+          "line thiccness": 30,
+          "FLATTEN": false,
+          "pixel resolution": 0.75,
+          "3D/flat": false
+        }
+      },
+      {
+        "name": "flat marker",
+        "inputs": {
+          "extrude height": 10,
+          "line thiccness": 42.501827239990234,
+          "FLATTEN": true,
+          "pixel resolution": 0.5,
+          "3D/flat": true
+        }
+      }
+    ],
+    "buildEnvs": [
+      {
+        "name": "200 millimeter bed",
+        "inputs": {
+          "Size": 200,
+          "Value": 200
+        }
+      },
+      {
+        "name": "300 millimeter bed",
+        "inputs": {
+          "Size": 300,
+          "Value": 300
+        }
+      }
+    ],
+    "printBed": [
+      {
+        "name": "default bed",
+        "inputs": {
+          "Size Select": 1,
+          "LAYER": 1,
+          "slice": false,
+          "Scale": 1,
+          "Translation": [0, 0, 0],
+          "Rotation": [0, 0, 0]
+        }
+      },
+      {
+        "name": "alternate bed selection",
+        "inputs": {
+          "Size Select": 2,
+          "LAYER": 3,
+          "slice": false,
+          "Scale": 1,
+          "Translation": [10, -5, 0],
+          "Rotation": [0, 0, 0.25]
+        }
+      }
+    ],
+    "remesh": [
+      {
+        "name": "default remesh",
+        "inputs": {
+          "Iterations": 1,
+          "soften": 0,
+          "Factor": 0.5
+        }
+      }
+    ]
+  },
+  "assets": [
+    {
+      "slug": "bic-lighter",
+      "suites": [
+        {
+          "group": "Dojo_STRING TO TEXT.002",
+          "profile": "stringToText"
+        },
+        {
+          "group": "String to Text_Killspencer.001",
+          "profile": "stringToText"
+        },
+        {
+          "group": "VALUE to MM.001",
+          "profile": "valueToMmWithDecimals"
+        }
+      ]
+    },
+    {
+      "slug": "bubble-putty-generator",
+      "suites": [
+        {
+          "group": ".remesh.001",
+          "profile": "remesh",
+          "seed": "cube",
+          "geometryInput": "Input"
+        },
+        {
+          "group": "STRING to TEXT",
+          "profile": "stringToTextLowercaseReset"
+        },
+        {
+          "group": "STRING to TEXT.002",
+          "profile": "stringToTextMenu"
+        },
+        {
+          "group": "STRING to TEXT.003",
+          "profile": "stringToTextMenu"
+        },
+        {
+          "group": "VALUE to MM",
+          "profile": "valueToMm"
+        },
+        {
+          "group": "VALUE to TEXT",
+          "profile": "valueToText"
+        }
+      ]
+    },
+    {
+      "slug": "corner-mounted-skadis",
+      "suites": [
+        {
+          "group": "Dojo_STRING TO TEXT.001",
+          "profile": "stringToText"
+        },
+        {
+          "group": "Dojo_STRING TO TEXT.003",
+          "profile": "stringToText"
+        },
+        {
+          "group": "VALUE to TEXT",
+          "profile": "valueToText"
+        }
+      ]
+    },
+    {
+      "slug": "dojo-calipers",
+      "suites": [
+        {
+          "group": "digital caliper controller",
+          "profile": "caliper",
+          "seedObject": "1_calipers",
+          "geometryInput": "Socket"
+        },
+        {
+          "group": "noedtools",
+          "profile": "logoOffset",
+          "seed": "cube",
+          "geometryInput": "Geometry"
+        }
+      ]
+    },
+    {
+      "slug": "no3d-pixel-markers",
+      "suites": [
+        {
+          "group": "_TEXT.007",
+          "profile": "pixelText"
+        },
+        {
+          "group": "pixel marker.001",
+          "profile": "pixelMarker",
+          "seedObject": "NO3D Pixel Marker",
+          "geometryInput": "Geometry"
+        }
+      ]
+    },
+    {
+      "slug": "print-bed-preview-obj",
+      "suites": [
+        {
+          "group": "build envs",
+          "profile": "buildEnvs",
+          "activeObject": "Print Bed Preview_obj"
+        },
+        {
+          "group": "VALUE to MM",
+          "profile": "valueToMm"
+        },
+        {
+          "group": "Print Bed Preview",
+          "profile": "printBed",
+          "seedObject": "Print Bed Preview_obj",
+          "geometryInput": "Geometry"
+        }
+      ]
+    },
+    {
+      "slug": "spike-putty-1",
+      "suites": [
+        {
+          "group": "Dojo_STRING TO TEXT.002",
+          "profile": "stringToText"
+        },
+        {
+          "group": "String to Text_Killspencer.001",
+          "profile": "stringToText"
+        },
+        {
+          "group": "VALUE to MM.001",
+          "profile": "valueToMmWithDecimals"
+        },
+        {
+          "group": "VALUE to TEXT",
+          "profile": "valueToText"
+        }
+      ]
+    },
+    {
+      "slug": "voronoi-putty-1",
+      "suites": [
+        {
+          "group": "Dojo_STRING TO TEXT.002",
+          "profile": "stringToText"
+        },
+        {
+          "group": "String to Text_Killspencer.001",
+          "profile": "stringToText"
+        },
+        {
+          "group": "VALUE to MM.001",
+          "profile": "valueToMmWithDecimals"
+        },
+        {
+          "group": "VALUE to TEXT",
+          "profile": "valueToText"
+        }
+      ]
+    }
+  ]
+}

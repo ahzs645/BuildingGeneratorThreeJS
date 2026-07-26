@@ -1,0 +1,23 @@
+[
+  {
+    "name": "zero reading battery out",
+    "overrides": {
+      "measure": 0,
+      "Install Battery": 0
+    }
+  },
+  {
+    "name": "25.4 millimeter reading",
+    "overrides": {
+      "measure": -25.4,
+      "Install Battery": 0
+    }
+  },
+  {
+    "name": "100 millimeter reading battery installed",
+    "overrides": {
+      "measure": -100,
+      "Install Battery": 1
+    }
+  }
+]

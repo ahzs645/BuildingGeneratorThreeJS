@@ -7,8 +7,13 @@ Usage:
 
 Only font sockets whose external file is absent are changed. The source file is
 never saved over, which keeps the generated reference honest and reproducible.
+
+Set ``NODE_DOJO_PACK_REPLACEMENT_FONTS=1`` to pack every replacement font into
+the repaired copy before it is saved. This is the preferred mode for portable
+font-parity fixtures.
 """
 import bpy
+import hashlib
 import json
 import os
 import sys
@@ -59,7 +64,29 @@ if font_map:
     if missing_names:
         raise RuntimeError(f"font mapping matched no missing String to Curves socket: {missing_names}")
 
+packed = []
+if os.environ.get("NODE_DOJO_PACK_REPLACEMENT_FONTS") == "1":
+    for font in sorted(
+        {node_font for node_font in replacements.values()}
+        if replacements is not None
+        else {replacement},
+        key=lambda item: item.name,
+    ):
+        if font.packed_file is None:
+            font.pack()
+        data = bytes(font.packed_file.data)
+        packed.append(
+            {
+                "name": font.name,
+                "filepath": font.filepath,
+                "bytes": len(data),
+                "sha256": hashlib.sha256(data).hexdigest(),
+            }
+        )
+
 bpy.ops.wm.save_as_mainfile(filepath=output_path, compress=True)
 print(f"FONT_OVERRIDE_BLEND_OK -> {output_path} ({len(replaced)} sockets)")
 for group_name, node_name, old_name, old_path in replaced:
     print(f"  {group_name} :: {node_name}: {old_name} ({old_path or 'no path'})")
+for item in packed:
+    print(f"  PACKED_FONT {json.dumps(item, sort_keys=True)}")

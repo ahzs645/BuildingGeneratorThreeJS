@@ -1,0 +1,47 @@
+[
+  {
+    "name": "default letter A",
+    "overrides": {
+      "Letter": "A",
+      "top cut": true,
+      "Bic Lighter": true,
+      "Emboss tolerance": true
+    }
+  },
+  {
+    "name": "editable text NODE",
+    "overrides": {
+      "Letter": "NODE",
+      "top cut": true,
+      "Bic Lighter": true,
+      "Emboss tolerance": true
+    }
+  },
+  {
+    "name": "top cut disabled",
+    "overrides": {
+      "Letter": "B",
+      "top cut": false,
+      "Bic Lighter": true,
+      "Emboss tolerance": true
+    }
+  },
+  {
+    "name": "emboss tolerance disabled",
+    "overrides": {
+      "Letter": "C",
+      "top cut": true,
+      "Bic Lighter": true,
+      "Emboss tolerance": false
+    }
+  },
+  {
+    "name": "lighter boolean disabled",
+    "overrides": {
+      "Letter": "D",
+      "top cut": true,
+      "Bic Lighter": false,
+      "Emboss tolerance": true
+    }
+  }
+]

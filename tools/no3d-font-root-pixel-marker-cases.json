@@ -1,0 +1,32 @@
+[
+  {
+    "name": "default 3D marker",
+    "overrides": {
+      "extrude height": 10,
+      "line thiccness": 42.501827239990234,
+      "FLATTEN": false,
+      "pixel resolution": 0.5,
+      "3D/flat": false
+    }
+  },
+  {
+    "name": "short extrusion",
+    "overrides": {
+      "extrude height": 4,
+      "line thiccness": 30,
+      "FLATTEN": false,
+      "pixel resolution": 0.75,
+      "3D/flat": false
+    }
+  },
+  {
+    "name": "flat marker",
+    "overrides": {
+      "extrude height": 10,
+      "line thiccness": 42.501827239990234,
+      "FLATTEN": true,
+      "pixel resolution": 0.5,
+      "3D/flat": true
+    }
+  }
+]

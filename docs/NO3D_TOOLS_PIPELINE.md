@@ -1,7 +1,8 @@
 # No3d Tools Geometry Nodes pipeline
 
-The local library at `/Users/ahmadjalil/Documents/No3d Tools` contains 47
-Blender files. They are source assets, not application dependencies:
+The local library, referred to here as `$NO3D_TOOLS_DIR`, contains 47 Blender
+files. It may live anywhere on the importing machine. These files are source
+assets, not application dependencies:
 BlendBridge copies a user-selected file into transient storage, extracts a
 portable JSON dump with Blender, returns it to the browser, and removes the
 copy. It never modifies the source `.blend`.
@@ -11,12 +12,16 @@ The current file-by-file and node-closure results live in
 That report is authoritative for counts and remaining gaps; this document
 describes the pipeline contract.
 
+The non-destructive recovered-font workflow, direct text-helper sweeps, and
+matched Blender/WebGL evidence are recorded in
+[`NO3D_FONT_PARITY_AUDIT.md`](./NO3D_FONT_PARITY_AUDIT.md).
+
 ## Import boundary
 
 1. The local Vite endpoint accepts plain, Gzip-compressed, or
    Zstandard-compressed `.blend` envelopes, validates the header and 1 GiB
    upload limit, and runs `tools/dump_blend.py` in background Blender.
-2. Extractor 1.5 records node groups, stable interface/socket identifiers,
+2. Extractor 1.6 records node groups, stable interface/socket identifiers,
    modifier bindings and viewport/render enablement, object/collection
    dependencies, materials, curves, bounded base meshes, and source-packaging
    warnings.
@@ -32,6 +37,11 @@ describes the pipeline contract.
    STL inputs remain explicit compatibility failures.
 5. Unpacked missing fonts and images are reported in
    `extraction_metadata.warnings` and shown in Studio.
+6. `tools/repair_blend_dependencies.py` can build a separate repaired copy from
+   an authorized asset directory. Only case-insensitive exact filenames are
+   accepted. Images are decoded and packed; STLs are copied to a relative
+   sidecar and rebound. A SHA-256 manifest records every recovered and
+   unresolved dependency.
 
 ## Target and preset boundary
 
@@ -73,6 +83,10 @@ Studio and API callers share the typed `runGeometryTarget` contract.
   per-target probe budget.
 - Graph edits debounce for 250 ms. A failed evaluation reports diagnostics and
   retains the last valid viewport result.
+- Topology-derived interpretation layers may add reversible portable nodes to
+  the evaluated/exported draft without mutating the extracted authoring graph.
+  The caliper uses this boundary for zero offset and `mm`/`in` LCD conversion,
+  so the modeled String to Curves result—not only the panel readout—changes.
 
 Automatic live evaluation is disabled when a closure:
 
@@ -118,8 +132,33 @@ entire corpus.
 ## Known remaining boundaries
 
 - The absent McMaster-Carr STLs in `corner-mounted-skadis` are not fabricated.
-- Eight files need their external fonts packed or replaced, and the source
-  library still contains unresolved image uses.
+- Multi-item Bake boundaries pass every dynamic socket through during live
+  evaluation. Extraction adds an explicit `bake_contract` for every item.
+  `tools/attach_bake_snapshots.ts` can attach Blender-evaluated realized meshes
+  as portable v1 snapshots, which take precedence over live input. Blender's
+  native cache serialization is not treated as an interchange format.
+- The eight original files retain their authored external font paths. The
+  non-destructive `Font Repaired` copies contain the recovered fonts. The 19
+  missing image datablocks are seven unique files—five Preciva maps, a BIC
+  logo, and one shared JPEG—and are material-only, so they do not block
+  Geometry Nodes output.
+- The shared lighter NURBS helper now moves retained authored controls and
+  re-evaluates the NURBS spline. Spike Putty and Voronoi Putty no longer return
+  empty top-level output; their remaining topology delta is the already
+  reported dense-volume approximation/budget boundary.
+- The collection contains 89 Linear Gizmos and 13 Dial Gizmos. They remain
+  editor-only sinks for geometry evaluation, but Studio now traces nested and
+  component-level bindings back to root inputs and exposes working controls
+  and positioned direct viewport drag handles. The caliper retains a
+  specialized jaw/measurement overlay on top of that shared path.
+- Chrome Crayon and Pixel Markers contain active node-tree F-curves. The dump
+  now retains their Actions, keyframes, interpolation, FPS, and frame range;
+  BlendBridge supplies the requested evaluation frame.
+- Blender scene-unit metadata is serialized and displayed. Thirty-one audited
+  scenes use Metric millimetres (`scale_length=.001`) and sixteen use Metric
+  metres (`scale_length=1`); imported reference scaling remains explicit.
+- Seven reachable Warning nodes now emit their authored validation/status text
+  as typed Studio diagnostics.
 - Four targets exceeded the 30-second concurrent runtime probe budget. The
   Gabor volume modifier completed the corrected concurrent audit in 27.4
   seconds after edge-BVH and field-allocation optimizations, while Apple
@@ -137,11 +176,20 @@ entire corpus.
   unfold continuously; explicit seams cut charts. Open and non-manifold
   polygon soups match Blender's canonical topology exactly.
 - Grid to Mesh Adaptivity is functional and monotonic rather than ignored.
-  Its zero and fully coarse cube endpoints match Blender topology; intermediate
-  topology remains bounded because GN-VM uses deterministic dense clustering
-  instead of OpenVDB's sparse-tree error metric.
+  The canonical cube now matches Blender at `0`, `.1`, `.5`, and `1`, including
+  vertex, edge, face, triangle, and quad counts. Small meshes use deterministic
+  crease-aware collapse; meshes above 2,048 vertices use validated independent
+  batch collapses. General topology remains bounded because GN-VM does not
+  reproduce OpenVDB's sparse-tree error metric.
 - Dense SDF coarsening is no longer silent: runtime diagnostics expose
   requested/effective spacing and sample counts, the active cap, and whether
-  the cap changed the lattice. Manual previews can explicitly raise the cap.
+  the cap changed the lattice. These typed details pass through workers into
+  Studio and BlendBridge. Manual previews can explicitly select a 1M, 4M, 12M,
+  or 16M dense-sample cap.
+- Seam-heavy cyclic UV charts now split corner wedges at authored seams and
+  distribute curved-cycle closure error deterministically. Angle Based and
+  Conformal use distinct bounded objectives, while developable charts retain
+  the exact rigid-unfold path. UV Pack Islands reconstructs disconnected and
+  UV-discontinuous islands from topology and packs them independently.
 - Exact general parity is still not claimed for curved cyclic ABF/LSCM UV
-  charts, arbitrary island packing, or intermediate adaptive OpenVDB topology.
+  distortion, arbitrary island packing, or arbitrary adaptive OpenVDB surfaces.
