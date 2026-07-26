@@ -1,16 +1,41 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isStaticDeploy, publicUrl } from "../../base-url";
-import type { Dump } from "../../gnvm";
+import { animationFrameRange, type Dump } from "../../gnvm";
 import {
   autoEvaluationPolicyForBlendStudioTarget,
   compatibilityForBlendStudioTarget,
   connectedGeometryInputsForBlendStudioTarget,
   controlsForBlendStudioTarget,
+  datablockControlsForBlendStudioTarget,
   discoverBlendStudioTargets,
   seedableObjectNames,
   type BlendStudioSeed,
 } from "../../blend-studio/model";
+import {
+  dependencyExtractionPackage,
+  type DependencyExtractionPackage,
+} from "../../blend-studio/dependency-extraction";
 import { presetContractForBlendStudioTarget } from "../../blend-studio/preset-contracts";
+import { sceneUnits } from "../../blend-studio/units";
+import {
+  gizmoContractsForBlendStudioTarget,
+  setGizmoValue,
+} from "../../blend-studio/gizmos";
+import {
+  authoredValueFromMeasurementDistance,
+  interpretMeasurementDisplay,
+  linearMeasurementContractForBlendStudioTarget,
+  measurementDistanceForDisplay,
+  measurementDistanceFromAuthoredValue,
+  measurementDistanceFromDisplay,
+  measurementDistanceRange,
+  type BlendStudioMeasurementUnit,
+} from "../../blend-studio/measurement";
+import type {
+  BlendStudioMeasurementMode,
+  BlendStudioMeasurementSubjectSnapshot,
+  BlendStudioPointMeasurementSnapshot,
+} from "../../blend-studio/runtime";
 import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import { useBlendStudioRuntime } from "../blend-studio/useBlendStudioRuntime";
 import { usePageRuntime } from "../page-runtime";
@@ -101,6 +126,7 @@ function seedFromValue(value: string): BlendStudioSeed {
 export default function BlendBridgePage(): React.JSX.Element {
   usePageRuntime("BlendBridge · Geometry Nodes import studio");
   const fileInput = useRef<HTMLInputElement>(null);
+  const workpieceInput = useRef<HTMLInputElement>(null);
   const importSerial = useRef(0);
   const [docksOpen, setDocksOpen] = useState(true);
   const [graphOpen, setGraphOpen] = useState(true);
@@ -116,10 +142,27 @@ export default function BlendBridgePage(): React.JSX.Element {
   const [sourceBytes, setSourceBytes] = useState(0);
   const [sourceKey, setSourceKey] = useState("");
   const [targetId, setTargetId] = useState("");
-  const [overrides, setOverrides] = useState<Record<string, number | boolean>>({});
+  const [overrides, setOverrides] = useState<Record<string, unknown>>({});
+  const [animationFrame, setAnimationFrame] = useState(0);
+  const [volumeSampleBudget, setVolumeSampleBudget] = useState(1_000_000);
   const [seedValue, setSeedValue] = useState("authored");
   const [geometryInput, setGeometryInput] = useState("");
   const [geometryOutput, setGeometryOutput] = useState("");
+  const [dependencySummary, setDependencySummary] =
+    useState<DependencyExtractionPackage["summary"] | null>(null);
+  const [measurementUnit, setMeasurementUnit] =
+    useState<BlendStudioMeasurementUnit>("mm");
+  const [measurementMode, setMeasurementMode] =
+    useState<BlendStudioMeasurementMode>("jaw");
+  const [measurementZeroMm, setMeasurementZeroMm] = useState(0);
+  const [pointMeasurement, setPointMeasurement] =
+    useState<BlendStudioPointMeasurementSnapshot>({ points: [] });
+  const [measurementSubject, setMeasurementSubject] =
+    useState<BlendStudioMeasurementSubjectSnapshot | null>(null);
+  const [measurementSubjectFile, setMeasurementSubjectFile] = useState<File | null>(null);
+  const [measurementSubjectMessage, setMeasurementSubjectMessage] =
+    useState("Optional · load a GLB, OBJ, or STL workpiece");
+  const [workpieceMillimetersPerUnit, setWorkpieceMillimetersPerUnit] = useState(1);
   const runtime = useBlendStudioRuntime();
 
   useEffect(() => {
@@ -147,10 +190,47 @@ export default function BlendBridgePage(): React.JSX.Element {
     () => workingDump && target ? controlsForBlendStudioTarget(workingDump, target) : [],
     [target, workingDump],
   );
+  const datablockControls = useMemo(
+    () => workingDump && target
+      ? datablockControlsForBlendStudioTarget(workingDump, target)
+      : [],
+    [target, workingDump],
+  );
+  const gizmoContracts = useMemo(
+    () => workingDump && target
+      ? gizmoContractsForBlendStudioTarget(workingDump, target)
+      : [],
+    [target, workingDump],
+  );
+  const measurementContract = useMemo(
+    () => target
+      ? (workingDump
+          ? linearMeasurementContractForBlendStudioTarget(workingDump, target.groupName)
+          : null)
+        ?? (sourceDump
+          ? linearMeasurementContractForBlendStudioTarget(sourceDump, target.groupName)
+          : null)
+      : null,
+    [sourceDump, target, workingDump],
+  );
+  const ordinaryControls = useMemo(
+    () => controls.filter((control) =>
+      control.identifier !== measurementContract?.inputIdentifier
+      && control.identifier !== measurementContract?.batteryInputIdentifier),
+    [controls, measurementContract],
+  );
   const compatibility = useMemo(
     () => workingDump && target ? compatibilityForBlendStudioTarget(workingDump, target) : null,
     [target, workingDump],
   );
+  const hasVolumeBoundary = Boolean(compatibility?.report.approximatedNodeTypes.some((entry) =>
+    [
+      "GeometryNodeGridToMesh",
+      "GeometryNodeMeshToSDFGrid",
+      "GeometryNodePointsToSDFGrid",
+      "GeometryNodeVolumeCube",
+      "GeometryNodeVolumeToMesh",
+    ].includes(entry.type)));
   const autoEvaluation = useMemo(
     () => workingDump && target ? autoEvaluationPolicyForBlendStudioTarget(workingDump, target) : null,
     [target, workingDump],
@@ -199,12 +279,40 @@ export default function BlendBridgePage(): React.JSX.Element {
     };
   }, [targets, workingDump]);
   const extractionWarnings = workingDump?.extraction_metadata?.warnings ?? [];
+  const sourceUnits = useMemo(
+    () => workingDump ? sceneUnits(workingDump) : null,
+    [workingDump],
+  );
+  const animatedFrameRange = useMemo(
+    () => workingDump ? animationFrameRange(workingDump) : null,
+    [workingDump],
+  );
+
+  useEffect(() => {
+    let current = true;
+    setDependencySummary(null);
+    if (sourceDump) {
+      void dependencyExtractionPackage(sourceDump).then((result) => {
+        if (current) setDependencySummary(result.summary);
+      }).catch(() => {
+        if (current) setDependencySummary(null);
+      });
+    }
+    return () => {
+      current = false;
+    };
+  }, [sourceDump]);
 
   useEffect(() => {
     if (!target || !workingDump) return;
     const next = Object.fromEntries(
-      controls.map((control) => [control.identifier, control.value]),
-    ) as Record<string, number | boolean>;
+      [
+        ...controls.map((control) => [control.identifier, control.value] as const),
+        ...datablockControls.map((control) => [control.identifier, control.value] as const),
+        ...gizmoContracts.map((contract) =>
+          [contract.rootInputIdentifier, contract.rootValue] as const),
+      ],
+    );
     setOverrides(next);
     setGeometryInput(String(connectedGeometryInputs[0]?.identifier ?? ""));
     setGeometryOutput(String(geometryOutputs[0]?.identifier ?? ""));
@@ -216,6 +324,8 @@ export default function BlendBridgePage(): React.JSX.Element {
   }, [
     connectedGeometryInputs,
     controls,
+    datablockControls,
+    gizmoContracts,
     geometryOutputs,
     presetContract,
     sourceKey,
@@ -223,10 +333,33 @@ export default function BlendBridgePage(): React.JSX.Element {
     workingDump,
   ]);
 
+  useEffect(() => {
+    setAnimationFrame(Number(
+      workingDump?.scene?.frame_current
+      ?? animatedFrameRange?.[0]
+      ?? 0,
+    ));
+  }, [animatedFrameRange, sourceKey, workingDump?.scene?.frame_current]);
+
+  const interpretedDump = useMemo(
+    () => workingDump && measurementContract?.display
+      ? interpretMeasurementDisplay(workingDump, measurementContract, {
+          zeroOffsetMm: measurementZeroMm,
+          unit: measurementUnit,
+        })
+      : workingDump,
+    [
+      measurementContract,
+      measurementUnit,
+      measurementZeroMm,
+      workingDump,
+    ],
+  );
+
   const evaluation = useMemo(() => {
-    if (!workingDump || !target) return null;
+    if (!interpretedDump || !target) return null;
     return {
-      dump: workingDump,
+      dump: interpretedDump,
       target,
       overrides,
       seed: connectedGeometryInputs.length && seedValue !== "authored"
@@ -234,8 +367,108 @@ export default function BlendBridgePage(): React.JSX.Element {
         : undefined,
       geometryInput: geometryInput || undefined,
       output: geometryOutput || undefined,
+      frame: animationFrame,
+      volumeSampleBudget: hasVolumeBoundary ? volumeSampleBudget : undefined,
     };
-  }, [connectedGeometryInputs.length, geometryInput, geometryOutput, overrides, seedValue, target, workingDump]);
+  }, [animationFrame, connectedGeometryInputs.length, geometryInput, geometryOutput, hasVolumeBoundary, interpretedDump, overrides, seedValue, target, volumeSampleBudget]);
+
+  const authoredMeasurementValue = measurementContract
+    ? Number(
+        overrides[measurementContract.inputIdentifier]
+        ?? controls.find((control) =>
+          control.identifier === measurementContract.inputIdentifier)?.value
+        ?? 0,
+      )
+    : 0;
+  const physicalMeasurementMm = measurementContract
+    ? measurementDistanceFromAuthoredValue(
+        measurementContract,
+        authoredMeasurementValue,
+      )
+    : 0;
+  const displayedMeasurementMm = physicalMeasurementMm - measurementZeroMm;
+  const displayedMeasurement = measurementDistanceForDisplay(
+    displayedMeasurementMm,
+    measurementUnit,
+  );
+  const measurementRange = measurementContract
+    ? measurementDistanceRange(measurementContract)
+    : [0, 0] as [number, number];
+  const modeledCapacityMm = Math.min(measurementRange[1], 200);
+  const batteryControl = controls.find((control) =>
+    control.identifier === measurementContract?.batteryInputIdentifier);
+  const batteryValue = batteryControl
+    ? Number(overrides[batteryControl.identifier] ?? batteryControl.value)
+    : 0;
+
+  const setPhysicalMeasurementMm = useCallback((distanceMm: number): void => {
+    if (!measurementContract) return;
+    const [, graphMaximum] = measurementDistanceRange(measurementContract);
+    const capacityMm = Math.min(graphMaximum, 200);
+    const boundedDistanceMm = Math.min(
+      Math.max(Number.isFinite(distanceMm) ? distanceMm : 0, 0),
+      capacityMm,
+    );
+    setOverrides((current) => ({
+      ...current,
+      [measurementContract.inputIdentifier]:
+        authoredValueFromMeasurementDistance(measurementContract, boundedDistanceMm),
+    }));
+  }, [measurementContract]);
+
+  useEffect(() => {
+    if (!measurementContract) {
+      runtime.configureMeasurement(null);
+      return;
+    }
+    runtime.configureMeasurement({
+      contract: measurementContract,
+      authoredValue: authoredMeasurementValue,
+      mode: measurementMode,
+      onAuthoredValue(value) {
+        setPhysicalMeasurementMm(
+          measurementDistanceFromAuthoredValue(measurementContract, value),
+        );
+      },
+      onPointMeasurement: setPointMeasurement,
+    });
+  }, [
+    authoredMeasurementValue,
+    measurementContract,
+    measurementMode,
+    runtime.configureMeasurement,
+    setPhysicalMeasurementMm,
+  ]);
+
+  useEffect(() => {
+    const directContracts = gizmoContracts.filter((contract) =>
+      contract.rootInputIdentifier !== measurementContract?.inputIdentifier);
+    if (!directContracts.length) {
+      runtime.configureGizmos(null);
+      return;
+    }
+    runtime.configureGizmos({
+      contracts: directContracts,
+      values: overrides,
+      onValue(contract, value) {
+        setOverrides((current) => setGizmoValue(current, contract, value));
+      },
+    });
+  }, [
+    gizmoContracts,
+    measurementContract?.inputIdentifier,
+    overrides,
+    runtime.configureGizmos,
+  ]);
+
+  useEffect(() => {
+    setMeasurementZeroMm(0);
+    setPointMeasurement({ points: [] });
+    setMeasurementSubject(null);
+    setMeasurementSubjectFile(null);
+    setMeasurementSubjectMessage("Optional · load a GLB, OBJ, or STL workpiece");
+    runtime.clearMeasurementSubject();
+  }, [runtime.clearMeasurementSubject, sourceKey, target?.id]);
 
   useEffect(() => {
     if (evaluation && autoEvaluation?.enabled) runtime.queue(evaluation);
@@ -325,6 +558,34 @@ export default function BlendBridgePage(): React.JSX.Element {
       setBusy(false);
     }
   }, [installDump]);
+
+  const loadMeasurementSubject = useCallback(async (
+    file: File,
+    scaleOverride?: number,
+  ): Promise<void> => {
+    // This studio primarily handles Blender/3D-print assets whose authored
+    // coordinates are millimetres, including the audit GLBs in this project.
+    // Standards-compliant metre-scale GLBs remain one explicit selector away.
+    const defaultScale = scaleOverride ?? 1;
+    setMeasurementSubjectFile(file);
+    setWorkpieceMillimetersPerUnit(defaultScale);
+    setMeasurementSubjectMessage(`Loading ${file.name}…`);
+    try {
+      const subject = await runtime.loadMeasurementSubject(file, defaultScale);
+      setMeasurementSubject(subject);
+      setMeasurementSubjectMessage(
+        `${subject.triangles.toLocaleString()} triangles · ${subject.dimensionsMm
+          .map((value) => `${value.toFixed(2)} mm`)
+          .join(" × ")}`,
+      );
+      setMeasurementMode("points");
+    } catch (error) {
+      setMeasurementSubject(null);
+      setMeasurementSubjectMessage(
+        `Workpiece failed · ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }, [runtime.loadMeasurementSubject]);
 
   const graphSource = sourceDump && target ? {
     sourceKey: `${sourceKey}:${target.id}`,
@@ -424,18 +685,274 @@ export default function BlendBridgePage(): React.JSX.Element {
             void runtime.evaluate(evaluation).catch(() => {});
           }}
         >Apply to preview</button>
-        <button type="button" disabled={!workingDump} onClick={() => {
+        <button type="button" disabled={!interpretedDump} onClick={() => {
+          if (!interpretedDump) return;
+          const base = (sourceName || "blend-graph").replace(/\.blend$/i, "").replace(/[^a-z0-9._-]+/gi, "-");
+          download(
+            `${base}${measurementContract?.display ? ".interpreted" : ""}.nodes.json`,
+            JSON.stringify(interpretedDump),
+          );
+        }}>Export JSON</button>
+        <button className="blend-dependency-export" type="button" disabled={!workingDump} onClick={() => {
           if (!workingDump) return;
           const base = (sourceName || "blend-graph").replace(/\.blend$/i, "").replace(/[^a-z0-9._-]+/gi, "-");
-          download(`${base}.nodes.json`, JSON.stringify(workingDump));
-        }}>Export JSON</button>
+          void dependencyExtractionPackage(workingDump).then((extractionPackage) => {
+            download(`${base}.dependencies.json`, JSON.stringify(extractionPackage, null, 2));
+          });
+        }}>Export dependencies</button>
       </div>
     </section>
-    <section>
-      <div className="section-title"><span>Exposed inputs</span><small>{controls.length} editable</small></div>
+    {animatedFrameRange && <section>
+      <div className="section-title">
+        <span>Animation</span>
+        <small>{`${animatedFrameRange[0]}–${animatedFrameRange[1]}`}</small>
+      </div>
+      <label className="blend-positive-measure">
+        <span>Frame</span>
+        <input
+          type="number"
+          min={animatedFrameRange[0]}
+          max={animatedFrameRange[1]}
+          step={1}
+          value={animationFrame}
+          onChange={(event) => setAnimationFrame(Number(event.target.value))}
+        />
+      </label>
+      <input
+        className="blend-measurement-slider"
+        type="range"
+        min={animatedFrameRange[0]}
+        max={animatedFrameRange[1]}
+        step={1}
+        value={animationFrame}
+        onChange={(event) => setAnimationFrame(Number(event.target.value))}
+      />
+      <p className="blend-studio-copy">
+        Extracted Blender node-tree F-curves are evaluated at this frame before Geometry Nodes run.
+      </p>
+    </section>}
+    {hasVolumeBoundary && <section>
+      <div className="section-title">
+        <span>Volume fidelity</span>
+        <small>manual preview</small>
+      </div>
+      <label className="blend-field">
+        <span>Dense sample ceiling</span>
+        <select
+          value={volumeSampleBudget}
+          onChange={(event) => setVolumeSampleBudget(Number(event.target.value))}
+        >
+          <option value={1_000_000}>Interactive · 1 million</option>
+          <option value={4_000_000}>Detailed · 4 million</option>
+          <option value={12_000_000}>Parity probe · 12 million</option>
+          <option value={16_000_000}>Maximum · 16 million</option>
+        </select>
+      </label>
+      <p className="blend-studio-copy">
+        Higher settings preserve the authored voxel spacing for larger grids,
+        but intentionally remain manual because memory and evaluation time rise sharply.
+      </p>
+    </section>}
+    {measurementContract && <section className="blend-measurement-tool">
+      <div className="section-title">
+        <span>Caliper measurement</span>
+        <small>{measurementContract.display
+          ? "LCD graph interpreted"
+          : "Linear Gizmo detected"}</small>
+      </div>
+      <div className="blend-measurement-readout">
+        <strong>{displayedMeasurement.toFixed(3)}</strong>
+        <span>{measurementUnit}</span>
+      </div>
+      <div className="blend-segmented" aria-label="Measurement unit">
+        {(["mm", "in"] as const).map((unit) => <button
+          className={measurementUnit === unit ? "active" : ""}
+          key={unit}
+          type="button"
+          onClick={() => setMeasurementUnit(unit)}
+        >{unit}</button>)}
+      </div>
+      <label className="blend-positive-measure">
+        <span>Positive opening</span>
+        <input
+          type="number"
+          min={0}
+          max={measurementDistanceForDisplay(modeledCapacityMm, measurementUnit)}
+          step={.001}
+          value={Number.isFinite(displayedMeasurement)
+            ? Number(displayedMeasurement.toFixed(3))
+            : 0}
+          onChange={(event) => setPhysicalMeasurementMm(
+            measurementDistanceFromDisplay(Number(event.target.value), measurementUnit)
+            + measurementZeroMm,
+          )}
+        />
+        <span>{measurementUnit}</span>
+      </label>
+      <input
+        className="blend-measurement-slider"
+        type="range"
+        min={0}
+        max={modeledCapacityMm}
+        step={.05}
+        value={Math.min(modeledCapacityMm, physicalMeasurementMm)}
+        onChange={(event) => setPhysicalMeasurementMm(Number(event.target.value))}
+      />
+      <div className="blend-measurement-actions">
+        <button type="button" onClick={() => {
+          setMeasurementZeroMm(0);
+          setPhysicalMeasurementMm(0);
+        }}>Close &amp; zero</button>
+        <button type="button" onClick={() =>
+          setMeasurementZeroMm(physicalMeasurementMm)
+        }>Zero here</button>
+        <button
+          type="button"
+          disabled={measurementZeroMm === 0}
+          onClick={() => setMeasurementZeroMm(0)}
+        >Clear zero</button>
+      </div>
+      <div className="blend-segmented blend-measurement-modes" aria-label="Measurement mode">
+        <button
+          className={measurementMode === "jaw" ? "active" : ""}
+          type="button"
+          onClick={() => setMeasurementMode("jaw")}
+        >Drag jaw</button>
+        <button
+          className={measurementMode === "points" ? "active" : ""}
+          type="button"
+          onClick={() => setMeasurementMode("points")}
+        >Pick 2 points</button>
+      </div>
+      <p className="blend-studio-copy">
+        {measurementMode === "jaw"
+          ? "Drag the mint handle in the viewport. The positive value is mapped back to Blender’s authored negative socket."
+          : pointMeasurement.missed
+            ? "No workpiece surface at that point · pick directly on the shaded reference mesh."
+            : pointMeasurement.points.length === 0
+            ? "Pick two surfaces in the viewport to drive the jaw opening from their distance."
+            : pointMeasurement.points.length === 1
+              ? "First point set · pick the second point."
+              : `Measured ${pointMeasurement.distanceMm?.toFixed(3)} mm between the selected points.`}
+      </p>
+      <div className="blend-workpiece">
+        <input
+          ref={workpieceInput}
+          hidden
+          type="file"
+          accept=".glb,.obj,.stl,model/gltf-binary,model/obj"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void loadMeasurementSubject(file);
+            event.target.value = "";
+          }}
+        />
+        <button type="button" onClick={() => workpieceInput.current?.click()}>
+          {measurementSubject ? "Replace workpiece" : "Load workpiece"}
+        </button>
+        <label>
+          <span>File units</span>
+          <select
+            value={workpieceMillimetersPerUnit}
+            onChange={(event) => {
+              const scale = Number(event.target.value);
+              setWorkpieceMillimetersPerUnit(scale);
+              if (measurementSubjectFile)
+                void loadMeasurementSubject(measurementSubjectFile, scale);
+            }}
+          >
+            <option value={1}>millimetres</option>
+            <option value={10}>centimetres</option>
+            <option value={25.4}>inches</option>
+            <option value={1_000}>metres / GLB</option>
+          </select>
+        </label>
+        <small>{measurementSubjectMessage}</small>
+        {measurementSubject && <div className="blend-measurement-actions">
+          <button
+            type="button"
+            onClick={() => setPhysicalMeasurementMm(measurementSubject.dimensionsMm[0])}
+          >Fit X span</button>
+          <button type="button" onClick={() => {
+            runtime.clearMeasurementSubject();
+            setMeasurementSubject(null);
+            setMeasurementSubjectFile(null);
+            setMeasurementSubjectMessage("Optional · load a GLB, OBJ, or STL workpiece");
+            setPointMeasurement({ points: [] });
+          }}>Remove</button>
+        </div>}
+      </div>
+      {batteryControl && <div className="blend-battery-control">
+        <div><span>Battery insertion</span><output>{Math.round(batteryValue * 100)}%</output></div>
+        <input
+          type="range"
+          min={batteryControl.min}
+          max={batteryControl.max}
+          step={batteryControl.step}
+          value={batteryValue}
+          onChange={(event) => setOverrides((current) => ({
+            ...current,
+            [batteryControl.identifier]: Number(event.target.value),
+          }))}
+        />
+        <div className="blend-measurement-actions">
+          <button type="button" onClick={() => setOverrides((current) => ({
+            ...current,
+            [batteryControl.identifier]: 0,
+          }))}>Eject</button>
+          <button type="button" onClick={() => setOverrides((current) => ({
+            ...current,
+            [batteryControl.identifier]: 1,
+          }))}>Install</button>
+        </div>
+      </div>}
+      <p className="blend-measurement-truth">
+        {measurementContract.display
+          ? "The modeled LCD is evaluated from reversible zero-offset and unit-scale Geometry Nodes added by BlendBridge. The source Blender graph remains untouched."
+          : "This graph exposes jaw measurement but no traceable modeled LCD branch; mm/in and tare remain studio readout features."}
+      </p>
+    </section>}
+    {gizmoContracts.length > 0 && <section>
+      <div className="section-title">
+        <span>Graph gizmos</span>
+        <small>{gizmoContracts.length} bound</small>
+      </div>
+      <p className="blend-studio-copy">
+        These controls follow Blender’s Linear and Dial gizmo links back to the
+        root graph inputs, including nested groups and rotation components.
+        Matching handles can also be dragged directly in the 3D viewport.
+      </p>
       <div className="blend-controls">
-        {controls.length === 0 && <p>No numeric or boolean inputs are exposed by this target.</p>}
-        {controls.map((control) => <label key={control.identifier}>
+        {gizmoContracts.map((contract) => {
+          const raw = overrides[contract.rootInputIdentifier] ?? contract.rootValue;
+          const value = contract.component === undefined
+            ? Number(raw)
+            : Number(Array.isArray(raw) ? raw[contract.component] : contract.value);
+          const display = contract.kind === "dial"
+            ? `${(value * 180 / Math.PI).toFixed(1)}°`
+            : value.toFixed(3);
+          return <label key={contract.id} title={`${contract.groupName} · ${contract.nodeName}`}>
+            <span>{contract.rootInputName} · {contract.kind}</span>
+            <input
+              type="range"
+              min={contract.min}
+              max={contract.max}
+              step={contract.step}
+              value={value}
+              onChange={(event) => setOverrides((current) =>
+                setGizmoValue(current, contract, Number(event.target.value)))}
+            />
+            <output>{display}</output>
+          </label>;
+        })}
+      </div>
+    </section>}
+    <section>
+      <div className="section-title"><span>Exposed inputs</span><small>{ordinaryControls.length + datablockControls.length} editable</small></div>
+      <div className="blend-controls">
+        {ordinaryControls.length === 0 && datablockControls.length === 0
+          && <p>No additional portable inputs are exposed by this target.</p>}
+        {ordinaryControls.map((control) => <label key={control.identifier}>
           <span>{control.name}</span>
           {control.socketType === "NodeSocketBool"
             ? <input
@@ -455,6 +972,25 @@ export default function BlendBridgePage(): React.JSX.Element {
                 <output>{Number(overrides[control.identifier] ?? control.value).toFixed(control.step === 1 ? 0 : 3)}</output>
               </>}
         </label>)}
+        {datablockControls.map((control) => {
+          const value = overrides[control.identifier] as { name?: string } | null | undefined;
+          return <label key={control.identifier}>
+            <span>{control.name}</span>
+            <select
+              value={value?.name ?? ""}
+              onChange={(event) => setOverrides((current) => ({
+                ...current,
+                [control.identifier]: event.target.value
+                  ? { datablock: control.datablock, name: event.target.value }
+                  : null,
+              }))}
+            >
+              <option value="">Unbound</option>
+              {control.options.map((name) =>
+                <option key={name} value={name}>{control.datablock} · {name}</option>)}
+            </select>
+          </label>;
+        })}
       </div>
     </section>
   </>;
@@ -488,19 +1024,33 @@ export default function BlendBridgePage(): React.JSX.Element {
     {presetContract && <section>
       <div className="section-title"><span>Input contract</span><small>{presetContract.mode.replaceAll("-", " ")}</small></div>
       <p className="blend-studio-copy">{presetContract.reason}</p>
+      {sourceUnits && <p className="blend-studio-copy">
+        Scene units · {sourceUnits.system.toLowerCase()} · {sourceUnits.lengthUnit.toLowerCase().replaceAll("_", " ")}
+        {" · "}{sourceUnits.millimetersPerBlenderUnit.toLocaleString()} mm per Blender unit
+      </p>}
       {presetContract.unboundDatablockInputs.length > 0 && <div className="blend-gaps">
         {presetContract.unboundDatablockInputs.map((name) =>
           <span key={name}>Unbound datablock input · {name}</span>)}
       </div>}
     </section>}
-    {extractionWarnings.length > 0 && <section>
-      <div className="section-title"><span>Source packaging</span><small>{extractionWarnings.length} warnings</small></div>
-      <div className="blend-gaps">
+    {(dependencySummary || extractionWarnings.length > 0) && <section>
+      <div className="section-title">
+        <span>Source packaging</span>
+        <small>{dependencySummary
+          ? `${dependencySummary.unresolved} unresolved`
+          : `${extractionWarnings.length} warnings`}</small>
+      </div>
+      {dependencySummary && <div className="blend-packaging-summary">
+        <span><b>{dependencySummary.fontsRecovered + dependencySummary.imagesRecovered}</b>recovered</span>
+        <span><b>{dependencySummary.referenced}</b>extractable refs</span>
+        <span className={dependencySummary.unresolved ? "warning" : ""}><b>{dependencySummary.unresolved}</b>unresolved</span>
+      </div>}
+      {extractionWarnings.length > 0 && <div className="blend-gaps">
         {extractionWarnings.slice(0, 8).map((warning, index) =>
           <span key={`${warning.code}:${index}`}>{warning.message}</span>)}
         {extractionWarnings.length > 8
           && <p>{extractionWarnings.length - 8} additional extraction warnings are retained in the exported JSON.</p>}
-      </div>
+      </div>}
     </section>}
     {runtime.snapshot.stats && <section className="blend-result">
       <span className="panel-label">Last valid result</span>
@@ -522,6 +1072,27 @@ export default function BlendBridgePage(): React.JSX.Element {
         <em key={entry.type}>{entry.type} ×{entry.count}</em>)}
       {(runtime.snapshot.approximateTypes ?? []).map((entry) =>
         <em key={entry.type}>Bounded approximation · {entry.type} ×{entry.count}</em>)}
+    </section>}
+    {(runtime.snapshot.details?.length ?? 0) > 0 && <section>
+      <div className="section-title">
+        <span>Runtime details</span>
+        <small>{runtime.snapshot.details!.filter((detail) => detail.severity === "warning").length} warnings</small>
+      </div>
+      <div className="blend-runtime-details">
+        {runtime.snapshot.details!.map((detail, index) =>
+          <article className={detail.severity} key={`${detail.kind}:${detail.stage}:${index}`}>
+            <b>{detail.kind === "volume-grid-budget"
+              ? "Volume grid allocation"
+              : detail.kind === "bounded-grid-adaptivity"
+                ? "Bounded adaptivity"
+                : `${detail.warningType} · ${detail.nodeName}`}</b>
+            <span>{detail.stage.replaceAll("-", " ")}</span>
+            <p>{detail.message}</p>
+            {detail.kind === "volume-grid-budget" && <small>
+              Requested {detail.requestedSampleCount.toLocaleString()} · effective {detail.effectiveSampleCount.toLocaleString()} · spacing {detail.effectiveSpacing.map((value) => value.toPrecision(4)).join(" × ")}
+            </small>}
+          </article>)}
+      </div>
     </section>}
     <section className="blend-note">
       <span className="panel-label">Truth contract</span>

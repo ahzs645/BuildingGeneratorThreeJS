@@ -7,8 +7,10 @@ import {
   compatibilityForBlendStudioTarget,
   connectedGeometryInputsForBlendStudioTarget,
   controlsForBlendStudioTarget,
+  datablockControlsForBlendStudioTarget,
   discoverBlendStudioTargets,
   seedableObjectNames,
+  summarizeBlendStudioRuntimeDetails,
 } from "./model";
 
 const socket = (name: string, identifier: string, inOut: "INPUT" | "OUTPUT", socketType: string, extra = {}) => ({
@@ -87,6 +89,44 @@ test("builds numeric and boolean controls with identifier-first saved values", (
   assert.deepEqual(controls.map(({ name, value, min, max, step }) => ({ name, value, min, max, step })), [
     { name: "Count", value: 4, min: 1, max: 12, step: 1 },
     { name: "Scale", value: .25, min: 0, max: 1, step: .001 },
+  ]);
+});
+
+test("builds typed datablock controls from portable dump dependencies", () => {
+  const dump = fixture();
+  dump.materials = {
+    Chrome: {
+      name: "Chrome",
+      type: "ShaderNodeTree",
+      interface: [],
+      nodes: [],
+      links: [],
+    },
+  };
+  dump.node_groups.Assigned.interface.push(
+    socket("Target", "Socket_Object", "INPUT", "NodeSocketObject", { default: null }),
+    socket("Surface", "Socket_Material", "INPUT", "NodeSocketMaterial", {
+      default: { datablock: "Material", name: "Chrome" },
+    }),
+  );
+  const target = discoverBlendStudioTargets(dump)[0];
+  assert.deepEqual(datablockControlsForBlendStudioTarget(dump, target), [
+    {
+      identifier: "Socket_Object",
+      name: "Target",
+      socketType: "NodeSocketObject",
+      datablock: "Object",
+      value: null,
+      options: ["Curve Seed", "Generator"],
+    },
+    {
+      identifier: "Socket_Material",
+      name: "Surface",
+      socketType: "NodeSocketMaterial",
+      datablock: "Material",
+      value: { datablock: "Material", name: "Chrome" },
+      options: ["Chrome"],
+    },
   ]);
 });
 
@@ -173,6 +213,47 @@ test("requires explicit preview for resource-bounded volume grids", () => {
   assert.deepEqual(autoEvaluationPolicyForBlendStudioTarget(dump, target), {
     enabled: false,
     reason: "Volume-grid approximations require explicit preview because evaluation cost depends on voxel density",
+  });
+});
+
+test("summarizes executed volume budget and adaptivity warnings independently of static coverage", () => {
+  assert.deepEqual(summarizeBlendStudioRuntimeDetails([
+    {
+      kind: "volume-grid-budget",
+      severity: "warning",
+      stage: "mesh-to-sdf-grid",
+      message: "resampled",
+      adjusted: true,
+      requestedSpacing: .01,
+      effectiveSpacing: [.02, .02, .02],
+      requestedSampleCount: 8_000_000,
+      effectiveSampleCount: 1_000_000,
+      sampleBudget: 1_000_000,
+    },
+    {
+      kind: "volume-grid-budget",
+      severity: "info",
+      stage: "grid-to-mesh",
+      message: "within budget",
+      adjusted: false,
+      requestedSpacing: .02,
+      effectiveSpacing: [.02, .02, .02],
+      requestedSampleCount: 1_000_000,
+      effectiveSampleCount: 1_000_000,
+      sampleBudget: 1_000_000,
+    },
+    {
+      kind: "bounded-grid-adaptivity",
+      severity: "warning",
+      stage: "grid-to-mesh",
+      message: "bounded",
+      requestedAdaptivity: .5,
+      implementation: "dense-surface-net-decimation",
+    },
+  ]), {
+    warningCount: 2,
+    budgetAdjustedCount: 1,
+    boundedAdaptivityCount: 1,
   });
 });
 

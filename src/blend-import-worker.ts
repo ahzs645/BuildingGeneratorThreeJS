@@ -2,6 +2,7 @@ import {
   GEOMETRY_PROBE,
   runGeometryTarget,
   toTriSoup,
+  setDenseSdfSampleBudget,
   type Dump,
   type RunNodeGroupOptions,
   type TriSoup,
@@ -14,7 +15,9 @@ type Request = {
   group?: string;
   modifierIndex?: number;
   targetKind?: "object" | "group";
-  overrides: Record<string, number | boolean>;
+  overrides: Record<string, unknown>;
+  frame?: number;
+  volumeSampleBudget?: number;
   seed?: RunNodeGroupOptions["seed"];
   geometryInput?: string;
   output?: string;
@@ -42,8 +45,11 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
     output,
     curves,
     probe,
+    frame,
+    volumeSampleBudget,
   } = event.data;
   try {
+    setDenseSdfSampleBudget(volumeSampleBudget ?? null);
     if (curves) {
       if (!object) throw new Error("curve overrides require an object target");
       const target = dump.objects?.find((candidate) => candidate.name === object);
@@ -64,6 +70,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
           seed,
           geometryInput,
           output,
+          frame,
         }
         : {
           kind: "object",
@@ -73,6 +80,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
           overrides,
           seed,
           geometryInput,
+          frame,
         },
     );
     const probeSoup = GEOMETRY_PROBE.geometry ? toTriSoup(GEOMETRY_PROBE.geometry) : undefined;
@@ -93,6 +101,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
         points: result.soup.points,
       },
       coverage: result.coverage,
+      details: result.details ?? [],
       probeSoup: probeSoup ? transferableSoup(probeSoup) : undefined,
     };
     const transfer: Transferable[] = [result.soup.positions.buffer, result.soup.normals.buffer, result.soup.indices.buffer];
@@ -129,6 +138,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
       error: error instanceof Error ? error.stack ?? error.message : String(error),
     });
   } finally {
+    setDenseSdfSampleBudget(null);
     GEOMETRY_PROBE.group = null;
     GEOMETRY_PROBE.node = null;
     GEOMETRY_PROBE.socket = null;

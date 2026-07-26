@@ -1,9 +1,29 @@
 import {
   analyzeProgramCapabilities,
+  type DataRef,
   type Dump,
   type DumpInterfaceItem,
   type ProgramCapabilityReport,
+  type RunDetail,
 } from "../gnvm";
+
+export type BlendStudioRuntimeDetailSummary = {
+  warningCount: number;
+  budgetAdjustedCount: number;
+  boundedAdaptivityCount: number;
+};
+
+export function summarizeBlendStudioRuntimeDetails(
+  details: readonly RunDetail[],
+): BlendStudioRuntimeDetailSummary {
+  return {
+    warningCount: details.filter((detail) => detail.severity === "warning").length,
+    budgetAdjustedCount: details.filter((detail) =>
+      detail.kind === "volume-grid-budget" && detail.adjusted).length,
+    boundedAdaptivityCount: details.filter((detail) =>
+      detail.kind === "bounded-grid-adaptivity").length,
+  };
+}
 
 export type BlendStudioTarget =
   | {
@@ -40,6 +60,15 @@ export type BlendStudioControl = {
   min: number;
   max: number;
   step: number;
+};
+
+export type BlendStudioDatablockControl = {
+  identifier: string;
+  name: string;
+  socketType: string;
+  datablock: "Object" | "Collection" | "Image" | "Material";
+  value: DataRef | null;
+  options: string[];
 };
 
 export type BlendStudioCompatibility = {
@@ -327,6 +356,67 @@ export function controlsForBlendStudioTarget(dump: Dump, target: BlendStudioTarg
       min,
       max,
       step,
+    }];
+  });
+}
+
+function dataRef(value: unknown): DataRef | null {
+  return value
+    && typeof value === "object"
+    && typeof (value as { name?: unknown }).name === "string"
+    ? {
+        datablock: typeof (value as { datablock?: unknown }).datablock === "string"
+          ? (value as { datablock: string }).datablock
+          : undefined,
+        name: (value as { name: string }).name,
+      }
+    : null;
+}
+
+/**
+ * Expose typed pointer sockets without guessing a replacement. The options are
+ * limited to datablocks already embedded in the portable dump, so every choice
+ * remains serializable and worker-safe.
+ */
+export function datablockControlsForBlendStudioTarget(
+  dump: Dump,
+  target: BlendStudioTarget,
+): BlendStudioDatablockControl[] {
+  const group = dump.node_groups[target.groupName];
+  if (!group) return [];
+  const types = new Map<string, BlendStudioDatablockControl["datablock"]>([
+    ["NodeSocketObject", "Object"],
+    ["NodeSocketCollection", "Collection"],
+    ["NodeSocketImage", "Image"],
+    ["NodeSocketMaterial", "Material"],
+  ]);
+  const options = {
+    Object: (dump.objects ?? []).map((object) => object.name),
+    Collection: (dump.collections ?? []).map((collection) => collection.name),
+    Image: (dump.images ?? []).map((image) => image.name),
+    Material: Object.keys(dump.materials ?? {}),
+  };
+  return group.interface.flatMap((item) => {
+    if (
+      item.item_type !== "SOCKET"
+      || item.in_out !== "INPUT"
+      || !item.identifier
+      || !item.socket_type
+    ) return [];
+    const datablock = types.get(item.socket_type);
+    if (!datablock) return [];
+    const stored = Object.prototype.hasOwnProperty.call(target.savedInputs, item.identifier)
+      ? target.savedInputs[item.identifier]
+      : Object.prototype.hasOwnProperty.call(target.savedInputs, item.name)
+        ? target.savedInputs[item.name]
+        : item.default;
+    return [{
+      identifier: item.identifier,
+      name: item.name,
+      socketType: item.socket_type,
+      datablock,
+      value: dataRef(stored),
+      options: [...new Set(options[datablock])].sort((a, b) => a.localeCompare(b)),
     }];
   });
 }

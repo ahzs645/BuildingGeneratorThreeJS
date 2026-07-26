@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   mountBlendStudioRuntime,
   type BlendStudioEvaluation,
+  type BlendStudioGizmoConfiguration,
+  type BlendStudioMeasurementConfiguration,
+  type BlendStudioMeasurementSubjectSnapshot,
   type BlendStudioRuntimeController,
   type BlendStudioRuntimeSnapshot,
 } from "../../blend-studio/runtime";
@@ -35,6 +38,39 @@ export function useBlendStudioRuntime() {
   const evaluate = useCallback((request: BlendStudioEvaluation): Promise<void> =>
     controllerRef.current?.evaluate(request) ?? Promise.resolve(), []);
   const cancel = useCallback((): void => controllerRef.current?.cancel(), []);
+  const configureMeasurement = useCallback(
+    (configuration: BlendStudioMeasurementConfiguration | null): void =>
+      controllerRef.current?.configureMeasurement(configuration),
+    [],
+  );
+  const configureGizmos = useCallback(
+    (configuration: BlendStudioGizmoConfiguration | null): void =>
+      controllerRef.current?.configureGizmos(configuration),
+    [],
+  );
+  const loadMeasurementSubject = useCallback(
+    (
+      file: File,
+      millimetersPerUnit: number,
+    ): Promise<BlendStudioMeasurementSubjectSnapshot> =>
+      controllerRef.current?.loadMeasurementSubject(file, millimetersPerUnit)
+      ?? Promise.reject(new Error("The 3D viewport is not ready")),
+    [],
+  );
+  const clearMeasurementSubject = useCallback(
+    (): void => controllerRef.current?.clearMeasurementSubject(),
+    [],
+  );
 
-  return { canvasRef, snapshot, queue, evaluate, cancel };
+  return {
+    canvasRef,
+    snapshot,
+    queue,
+    evaluate,
+    cancel,
+    configureMeasurement,
+    configureGizmos,
+    loadMeasurementSubject,
+    clearMeasurementSubject,
+  };
 }
