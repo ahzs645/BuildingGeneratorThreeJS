@@ -103,6 +103,27 @@ test("capability analysis distinguishes runnable approximations from exact suppo
   ]);
 });
 
+test("legacy NURBS Curve Offset helpers use the exact Set Position handler", () => {
+  const program: Program = {
+    Root: group("Root", [
+      node("Offset", "GeometryNodeGroup", { group: "Curve Offset.001" }),
+      node("Output", "NodeGroupOutput"),
+    ]),
+    "Curve Offset.001": group("Curve Offset.001", [
+      node("Set Position", "GeometryNodeSetPosition"),
+      node("Output", "NodeGroupOutput"),
+    ]),
+  };
+  const registry = new Map<string, Handler>([
+    ["GeometryNodeSetPosition", handler],
+  ]);
+
+  const report = analyzeProgramCapabilities(program, "Root", registry);
+  assert.equal(report.portable, true);
+  assert.equal(report.exact, true);
+  assert.deepEqual(report.approximatedNodeTypes, []);
+});
+
 test("capability analysis classifies dense volume creation and resampling as bounded", () => {
   const program: Program = {
     Root: group("Root", [

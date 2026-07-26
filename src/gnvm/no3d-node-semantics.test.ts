@@ -4,6 +4,10 @@ import { analyzeProgramCapabilities } from "./capabilities";
 import { Field, type FieldCtx } from "./core";
 import { Geometry, Mesh } from "./geometry";
 import { DUMP_CONTEXT, REGISTRY, type EvalAPI, type RawNode } from "./registry";
+import {
+  beginRuntimeDetailCollection,
+  runtimeDetailSnapshot,
+} from "./runtime-details";
 import "./index";
 
 const fieldApi = (
@@ -58,7 +62,23 @@ test("Warning passes through Show while gizmos emit no renderable geometry", () 
   const gizmo = REGISTRY.get("GeometryNodeGizmoLinear");
   assert.ok(warning && gizmo);
   const show = Field.of(1);
-  assert.equal(warning(fieldApi("GeometryNodeWarning", { Show: show })).Show, show);
+  const warningApi = fieldApi(
+    "GeometryNodeWarning",
+    { Show: show },
+    { warning_type: "ERROR" },
+  );
+  warningApi.bool = () => true;
+  warningApi.str = () => "Surface is Manifold";
+  beginRuntimeDetailCollection();
+  assert.equal(warning(warningApi).Show, show);
+  assert.deepEqual(runtimeDetailSnapshot(), [{
+    kind: "authored-node-warning",
+    severity: "warning",
+    stage: "geometry-node-warning",
+    message: "Surface is Manifold",
+    warningType: "ERROR",
+    nodeName: "GeometryNodeWarning",
+  }]);
   const transform = gizmo(fieldApi("GeometryNodeGizmoLinear", {})).Transform as Geometry;
   assert.equal(transform.mesh, undefined);
   assert.equal(transform.curves.length, 0);

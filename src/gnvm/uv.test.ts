@@ -6,7 +6,12 @@ import { Geometry, Mesh } from "./geometry";
 import "./nodes/uv";
 import { APPROXIMATIONS, REGISTRY, type EvalAPI } from "./registry";
 
-function unwrapApi(selection: Field, margin = .001, seam = Field.of(0)): EvalAPI {
+function unwrapApi(
+  selection: Field,
+  margin = .001,
+  seam = Field.of(0),
+  method = "Angle Based",
+): EvalAPI {
   const fields: Record<string, Field> = {
     Selection: selection,
     Seam: seam,
@@ -28,7 +33,7 @@ function unwrapApi(selection: Field, margin = .001, seam = Field.of(0)): EvalAPI
     num: (name) => Number(fields[name]?.value ?? 0),
     vec: () => [0, 0, 0],
     bool: () => false,
-    str: () => "",
+    str: (name) => name === "Method" ? method : "",
     ref: () => null,
     prop: (_name, fallback) => fallback as never,
     resolve: () => [],
@@ -64,6 +69,41 @@ function orthogonalFaces(): Geometry {
     [4, 5, 6, 7],
   ];
   return geometry;
+}
+
+function seamHeavyCube(): Geometry {
+  const geometry = new Geometry();
+  geometry.mesh = new Mesh();
+  geometry.mesh.positions = [
+    [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
+    [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1],
+  ];
+  geometry.mesh.faces = [
+    [0, 3, 2, 1], [4, 5, 6, 7], [0, 1, 5, 4],
+    [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7],
+  ];
+  return geometry;
+}
+
+function seamHeavyCubeField(): Field {
+  const seamPairs = new Set([
+    "0:1", "1:2", "2:3", "0:3", "0:4", "2:6",
+  ]);
+  return Field.perElem((edge, context) => {
+    const vertices = [...(context.edgeVerts?.(edge) ?? [-1, -1])]
+      .sort((a, b) => a - b);
+    return seamPairs.has(`${vertices[0]}:${vertices[1]}`) ? 1 : 0;
+  }).tagged("EDGE", "BOOLEAN");
+}
+
+function faceStart(mesh: Mesh, face: number): number {
+  let start = 0;
+  for (let index = 0; index < face; index++) start += mesh.faces[index].length;
+  return start;
+}
+
+function faceCornerForVertex(mesh: Mesh, face: number, vertex: number): number {
+  return faceStart(mesh, face) + mesh.faces[face].indexOf(vertex);
 }
 
 function signedArea(points: Vec3[]): number {
@@ -132,9 +172,15 @@ test("UV Unwrap keeps non-seam strip corners continuous and cuts a requested sea
   const geometry = bentStrip();
   const context = makeFieldCtx(geometry, "CORNER");
   const continuous = (handler(unwrapApi(Field.of(1))).UV as Field).array(context) as Vec3[];
+  const conformal = (handler(
+    unwrapApi(Field.of(1), .001, Field.of(0), "Conformal"),
+  ).UV as Field).array(context) as Vec3[];
   // Face 0 corners 2/3 are the same mesh vertices as face 1 corners 4/5.
   assert.deepEqual(continuous[2], continuous[5]);
   assert.deepEqual(continuous[3], continuous[4]);
+  // Both bounded modes retain the exact rigid path when the chart has no
+  // closure residual; the menu affects only genuinely curved cycles.
+  assert.deepEqual(conformal, continuous);
 
   const middleSeam = Field.perElem((edge, edgeContext) => {
     const vertices = [...(edgeContext.edgeVerts?.(edge) ?? [-1, -1])].sort((a, b) => a - b);
@@ -146,6 +192,57 @@ test("UV Unwrap keeps non-seam strip corners continuous and cuts a requested sea
   assert.notDeepEqual(cut[3], cut[4]);
   assert.ok(cut.every((value) =>
     value[0] >= 0 && value[0] <= 1 && value[1] >= 0 && value[1] <= 1));
+});
+
+test("UV Unwrap splits seam wedges inside one cyclic chart and relaxes both methods", () => {
+  const handler = REGISTRY.get("GeometryNodeUVUnwrap");
+  assert.ok(handler);
+  const geometry = seamHeavyCube();
+  const mesh = geometry.mesh!;
+  const context = makeFieldCtx(geometry, "CORNER");
+  const seam = seamHeavyCubeField();
+  const angle = (handler(unwrapApi(Field.of(1), .001, seam, "Angle Based")).UV as Field)
+    .array(context) as Vec3[];
+  const conformal = (handler(unwrapApi(Field.of(1), .001, seam, "Conformal")).UV as Field)
+    .array(context) as Vec3[];
+
+  for (const values of [angle, conformal]) {
+    assert.equal(values.length, 24);
+    assert.ok(values.every((value) =>
+      value.every(Number.isFinite)
+      && value[0] >= 0 && value[0] <= 1
+      && value[1] >= 0 && value[1] <= 1));
+    for (let face = 0; face < mesh.faces.length; face++) {
+      const start = faceStart(mesh, face);
+      assert.ok(signedArea(values.slice(start, start + mesh.faces[face].length)) > 1e-5);
+    }
+
+    // Top and side faces retain one UV vertex across their non-seam edge.
+    assert.deepEqual(
+      values[faceCornerForVertex(mesh, 1, 4)],
+      values[faceCornerForVertex(mesh, 2, 4)],
+    );
+    assert.deepEqual(
+      values[faceCornerForVertex(mesh, 1, 5)],
+      values[faceCornerForVertex(mesh, 2, 5)],
+    );
+    // Faces 2 and 5 remain part of the same face chart through the top. The
+    // multi-seam endpoint at vertex 0 splits while the seam's lone endpoint at
+    // vertex 4 stays welded through its surrounding non-seam fan, matching the
+    // Blender 5.1.2 fixture's corner topology.
+    assert.notDeepEqual(
+      values[faceCornerForVertex(mesh, 2, 0)],
+      values[faceCornerForVertex(mesh, 5, 0)],
+    );
+    assert.deepEqual(
+      values[faceCornerForVertex(mesh, 2, 4)],
+      values[faceCornerForVertex(mesh, 5, 4)],
+    );
+  }
+
+  // The bounded modes intentionally solve different objectives on a curved
+  // cycle instead of silently treating Blender's menu as a no-op.
+  assert.notDeepEqual(angle, conformal);
 });
 
 test("UV Pack Islands approximation fits selected UV bounds and preserves unselected values", () => {
@@ -188,4 +285,45 @@ test("UV Pack Islands approximation fits selected UV bounds and preserves unsele
       assert.ok(Math.abs((values[corner] as Vec3)[axis] - blender[corner][axis]) <= 3e-7);
   }
   assert.deepEqual([...APPROXIMATIONS], [["GeometryNodeUVPackIslands", 1]]);
+});
+
+test("UV Pack Islands keeps disconnected topology in separate packed cells", () => {
+  const handler = REGISTRY.get("GeometryNodeUVPackIslands");
+  assert.ok(handler);
+  const geometry = orthogonalFaces();
+  const uvValues: Vec3[] = [
+    [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
+    [4, 0, 0], [5, 0, 0], [5, 1, 0], [4, 1, 0],
+  ];
+  const fields: Record<string, Field> = {
+    UV: Field.perElem((corner) => uvValues[corner]).tagged("CORNER", "VECTOR"),
+    Selection: Field.of(1),
+    Margin: Field.of(.001),
+  };
+  const api = {
+    node: {
+      name: "Pack UV Islands",
+      type: "GeometryNodeUVPackIslands",
+      label: null,
+      inputs: [],
+      outputs: [],
+    },
+    field: (name: string) => fields[name] ?? Field.of(0),
+    num: (name: string) => name === "Margin" ? .001 : 0,
+    vec: (name: string) => name === "Top Right" ? [1, 1, 0] : [0, 0, 0],
+  } as EvalAPI;
+  const values = (handler(api).UV as Field)
+    .array(makeFieldCtx(geometry, "CORNER")) as Vec3[];
+  const first = values.slice(0, 4);
+  const second = values.slice(4, 8);
+  const firstMaxY = Math.max(...first.map((value) => value[1]));
+  const secondMinY = Math.min(...second.map((value) => value[1]));
+
+  assert.ok(firstMaxY <= secondMinY + 1e-12);
+  assert.ok(Math.max(...first.map((value) => value[0]))
+    - Math.min(...first.map((value) => value[0])) > .49);
+  assert.ok(Math.max(...second.map((value) => value[0]))
+    - Math.min(...second.map((value) => value[0])) > .49);
+  assert.ok(values.every((value) =>
+    value[0] >= 0 && value[0] <= 1 && value[1] >= 0 && value[1] <= 1));
 });

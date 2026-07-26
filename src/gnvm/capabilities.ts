@@ -36,6 +36,7 @@ export const EDITOR_ONLY_NODE_TYPES = new Set([
 ]);
 
 export const BOUNDED_APPROXIMATION_NODE_TYPES = new Set([
+  "GeometryNodeBake",
   "GeometryNodeGridToMesh",
   "GeometryNodeMeshToSDFGrid",
   "GeometryNodePointsToSDFGrid",
@@ -81,6 +82,7 @@ type HandlerRegistry = ReadonlyMap<string, Handler>;
 function supportOf(
   node: RawNode,
   registry: HandlerRegistry,
+  groupName: string,
 ): NodeSupport {
   if (node.ui?.mute) return "muted-passthrough";
   if (EVALUATOR_NATIVE_NODE_TYPES.has(node.type)) return "native";
@@ -147,7 +149,7 @@ export function analyzeProgramCapabilities(
     reachableGroups.push(current.group);
 
     for (const node of group.nodes ?? []) {
-      const support = supportOf(node, registry);
+      const support = supportOf(node, registry, current.group);
       const bySupport = counts.get(node.type) ?? new Map<NodeSupport, number>();
       bySupport.set(support, (bySupport.get(support) ?? 0) + 1);
       counts.set(node.type, bySupport);

@@ -1,5 +1,6 @@
 // Scalar / vector / boolean field-math handlers.
 import { Field, fieldMap, Vec3, Elem, asNum, asVec3, vadd, vsub, vmul, vscale, vdot, vcross, vnorm } from "../core";
+import { Geometry } from "../geometry";
 import { reg, EvalAPI, MISSING } from "../registry";
 
 const num = (e: Elem) => asNum(e);
@@ -645,7 +646,35 @@ reg("GeometryNodeSwitch", (api) => {
   const sw = api.field("Switch");
   const on = (v: Elem) => asNum(v) > 0;
   if (sw.isConst) return { Output: api.input(on(sw.value) ? "True" : "False") };
-  if (api.prop<string>("input_type", "") === "GEOMETRY") return { Output: api.input("False") };
+  if (api.prop<string>("input_type", "") === "GEOMETRY") {
+    const falseValue = api.input("False");
+    const trueValue = api.input("True");
+    const contextGeometry = [falseValue, trueValue].find(
+      (value): value is Geometry =>
+        value instanceof Geometry
+        && Boolean(
+          value.mesh?.positions.length
+          || value.curves.length
+          || value.instances.length,
+        ),
+    );
+    if (!contextGeometry) return { Output: falseValue };
+    // Geometry itself cannot be a field in Blender, so a Geometry Switch's
+    // circular socket is a single value even when its upstream math is
+    // represented as a lazy VM Field. Resolve that field on the candidate
+    // geometry and use its uniform first value. Falling back unconditionally
+    // to False erased For Each branches whose switch was driven by bounding-box
+    // distance (the Spike/Voronoi Putty collection selector).
+    const domain = contextGeometry.instances.length
+      && !contextGeometry.mesh
+      && !contextGeometry.curves.length
+      ? "INSTANCE"
+      : "POINT";
+    const resolved = api.resolve(sw, contextGeometry, domain);
+    return {
+      Output: on(resolved[0] ?? 0) ? trueValue : falseValue,
+    };
+  }
   const falseVal = api.input("False");
   const trueVal = api.input("True");
   if (falseVal instanceof Field || trueVal instanceof Field) {

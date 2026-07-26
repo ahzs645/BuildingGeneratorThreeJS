@@ -10,6 +10,24 @@ export interface DataRef {
 export interface FontAtlas {
   name: string;
   error?: string;
+  unavailable?: boolean;
+  filepath?: string;
+  atlas_status?: "embedded" | "unavailable" | "error" | "skipped" | "not-referenced";
+  source?: {
+    status?: "builtin" | "packed-extractable" | "packed-unreadable"
+      | "external-available" | "external-missing";
+    authored_filepath?: string;
+    packed_size_bytes?: number;
+    binary_extractable?: boolean;
+  };
+  packed_binary?: {
+    included?: boolean;
+    encoding?: "base64";
+    byte_length?: number;
+    sha256?: string;
+    data?: string;
+    error?: string;
+  };
   sample_stride?: number;
   align_offsets?: Record<string, number>;
   glyphs: Record<string, {
@@ -71,6 +89,39 @@ export interface RawNode {
   outputs: RawOutput[];
   props?: Record<string, any>;
   baked_instances?: { position: Vec3; rotation?: Vec3; scale: Vec3 }[];
+  bake_contract?: {
+    items: {
+      identifier: string;
+      name: string;
+      socket_type: string;
+      has_live_input: boolean;
+    }[];
+    live_passthrough_portable: boolean;
+    persistent_cache_portable: boolean;
+    persistent_cache_status: "not-exported" | "portable-evaluated-snapshot";
+    reason: string;
+  };
+  bake_snapshot?: {
+    schema_version: 1;
+    source: "blender-evaluated";
+    frame: number;
+    source_fingerprint_sha256?: string;
+    items: Record<string, {
+      socket_type: "NodeSocketGeometry";
+      component_contract: "realized-mesh";
+      geometry: {
+        positions: Vec3[];
+        edges: [number, number][];
+        faces: number[][];
+        face_material?: number[];
+        material_slots?: (string | null)[];
+        attributes?: Record<string, {
+          domain: "POINT" | "EDGE" | "FACE" | "CORNER";
+          data: (number | Vec3)[];
+        }>;
+      };
+    }>;
+  };
   group?: string;
   /** Name of the paired output node for repeat/simulation zones. */
   paired_output?: string;
@@ -111,7 +162,40 @@ export interface DumpNodeGroup {
   nodes: RawNode[];
   links: DumpLink[];
   interface: DumpInterfaceItem[];
+  animation?: DumpAnimation;
   [key: string]: unknown;
+}
+
+export interface DumpAnimationKeyframe {
+  frame: number;
+  value: number;
+  interpolation?: string;
+  easing?: string;
+  handle_left?: [number, number];
+  handle_right?: [number, number];
+}
+
+export interface DumpAnimationFCurve {
+  data_path: string;
+  array_index: number;
+  extrapolation?: string;
+  keyframes: DumpAnimationKeyframe[];
+}
+
+export interface DumpAnimation {
+  action: string;
+  frame_range: [number, number];
+  fcurves: DumpAnimationFCurve[];
+}
+
+export interface DumpUnitSettings {
+  system?: string;
+  system_rotation?: string;
+  scale_length?: number;
+  length_unit?: string;
+  mass_unit?: string;
+  time_unit?: string;
+  temperature_unit?: string;
 }
 
 export interface DumpMeshAttribute {
@@ -203,7 +287,15 @@ export interface DumpImage {
 export interface Dump {
   node_groups: Record<string, DumpNodeGroup>;
   blender_version?: string;
-  scene?: { frame_current?: number; fps?: number; fps_base?: number; [key: string]: unknown };
+  scene?: {
+    frame_current?: number;
+    frame_start?: number;
+    frame_end?: number;
+    fps?: number;
+    fps_base?: number;
+    unit_settings?: DumpUnitSettings;
+    [key: string]: unknown;
+  };
   collections?: { name: string; objects: string[]; [key: string]: unknown }[];
   images?: DumpImage[];
   fonts?: Record<string, FontAtlas>;

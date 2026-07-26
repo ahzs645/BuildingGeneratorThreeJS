@@ -208,6 +208,35 @@ def find_modifier(object_name):
     raise RuntimeError(f'NODES modifier not found on "{object_name}"')
 
 
+def stop_stack_after_selected_modifier(obj, selected):
+    """Match runGenerator's selected-modifier boundary.
+
+    Blender evaluates the complete modifier stack when an object is converted to
+    a mesh. GN-VM intentionally evaluates only through the selected Geometry
+    Nodes modifier, because each Studio target represents one stack boundary.
+    Disable later modifiers in this in-memory Blender session so the two sides
+    compare the same authored boundary.
+    """
+    modifiers = list(obj.modifiers)
+    selected_index = modifiers.index(selected)
+    disabled = []
+    for index, modifier in enumerate(modifiers):
+        if index <= selected_index:
+            continue
+        disabled.append(
+            {
+                "index": index,
+                "name": modifier.name,
+                "type": modifier.type,
+                "show_viewport": bool(modifier.show_viewport),
+                "show_render": bool(modifier.show_render),
+            }
+        )
+        modifier.show_viewport = False
+        modifier.show_render = False
+    return selected_index, disabled
+
+
 def modifier_interface(mod):
     name_to_identifier = {}
     saved_values = {}
@@ -375,6 +404,7 @@ def main():
     if export_dir:
         os.makedirs(export_dir, exist_ok=True)
     obj, mod = find_modifier(object_name)
+    modifier_index, disabled_later_modifiers = stop_stack_after_selected_modifier(obj, mod)
     # Asset-library objects can live in hidden/excluded collections. Evaluate
     # them in a clean scene by default, as the isolated reference renderer
     # does. Legacy volume graphs can depend on their authored scene context;
@@ -463,7 +493,9 @@ def main():
         "blender_version": bpy.app.version_string,
         "object": obj.name,
         "modifier": mod.name,
+        "modifier_index": modifier_index,
         "node_group": mod.node_group.name,
+        "disabled_later_modifiers": disabled_later_modifiers,
         "saved_values": saved_values,
         "results": results,
         "export_dir": export_dir,

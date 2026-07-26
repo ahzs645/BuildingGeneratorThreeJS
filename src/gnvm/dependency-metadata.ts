@@ -32,6 +32,21 @@ export interface ExtractionMetadataV1 {
   roots?: { objects: string[]; node_groups: string[] };
   provenance?: { payload: string; dependency_policy: string };
   warnings?: { code: string; message: string; path?: string[] }[];
+  fonts?: Record<string, {
+    source: {
+      status:
+        | "builtin"
+        | "packed-extractable"
+        | "packed-unreadable"
+        | "external-available"
+        | "external-missing";
+      authored_filepath: string;
+      packed_size_bytes?: number;
+      binary_extractable: boolean;
+    };
+    atlas_status: "embedded" | "unavailable" | "error" | "skipped" | "not-referenced";
+    referenced_by_geometry_nodes: boolean;
+  }>;
   ids?: {
     objects?: Record<string, string>;
     node_groups?: Record<string, {

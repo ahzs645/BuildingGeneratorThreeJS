@@ -324,6 +324,13 @@ function meshSignedAreaXY(m: Mesh): number {
       1, 0, 0,
     ]),
   );
+  check(
+    "Minimal Cube keeps Blender Geometry Nodes vertex indices",
+    JSON.stringify(minimalCube.mesh!.positions) === JSON.stringify([
+      [-1, -2, -3], [1, -2, -3], [-1, 2, -3], [1, 2, -3],
+      [-1, -2, 3], [1, -2, 3], [-1, 2, 3], [1, 2, 3],
+    ]),
+  );
 }
 
 {

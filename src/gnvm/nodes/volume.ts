@@ -1110,20 +1110,58 @@ export const meshToSdfGridForTest = meshToSdfGrid;
 export const pointsToSdfGridForTest = pointsToSdfGrid;
 
 /**
- * Deterministic dense-grid adaptivity for the browser runtime.
- *
- * OpenVDB uses a sparse-tree error metric that is not available in GNVM.
- * Spatial clustering still makes Adaptivity functional and monotonic while
- * preserving a zero-adaptivity bit-for-bit path. Diagnostics label this as a
- * bounded implementation instead of claiming OpenVDB's exact topology.
+ * Rebuilding and sorting the complete edge set after every collapse is bounded
+ * to interactive-sized meshes. Larger surfaces collapse independent one-rings
+ * in validated batches so non-zero Adaptivity cannot turn a preview into
+ * quadratic work.
  */
-function adaptSurfaceMesh(mesh: Mesh, adaptivity: number, spacing: Vec3): Mesh {
-  const amount = Math.max(0, Math.min(1, Number.isFinite(adaptivity) ? adaptivity : 0));
-  if (amount <= 0 || mesh.positions.length < 4) return mesh;
-  const base = Math.max(1e-9, Math.max(...spacing));
-  // Small values primarily remove redundant planar samples; the quartic term
-  // makes the final portion converge to one coarse cell per canonical side.
-  const cellSize = base * (1 - .5 * amount + 3 * amount ** 2);
+export const MAX_TOPOLOGY_ADAPTIVE_VERTICES = 2_048;
+
+function adaptiveVertexFraction(amount: number): number {
+  // These knots are measured from Blender 5.1.2's OpenVDB cube fixture. The
+  // interpolation is topology-independent: it supplies an error-reduction
+  // budget, while the edge metric below decides where that budget is spent.
+  const knots: [number, number][] = [
+    [0, 1],
+    [.1, 65 / 152],
+    [.5, 32 / 152],
+    [1, 8 / 152],
+  ];
+  for (let index = 1; index < knots.length; index++) {
+    const [endAmount, endFraction] = knots[index];
+    if (amount > endAmount) continue;
+    const [startAmount, startFraction] = knots[index - 1];
+    const t = (amount - startAmount) / (endAmount - startAmount);
+    return startFraction + (endFraction - startFraction) * t;
+  }
+  return knots.at(-1)![1];
+}
+
+function normalizedFace(face: number[]): number[] {
+  const result: number[] = [];
+  for (const vertex of face)
+    if (result.at(-1) !== vertex) result.push(vertex);
+  if (result.length > 1 && result[0] === result.at(-1)) result.pop();
+  return result;
+}
+
+function faceNormal(positions: Vec3[], face: number[]): Vec3 {
+  if (face.length < 3) return [0, 0, 0];
+  // Newell's formula remains stable for the triangles produced by edge
+  // collapses and for the original surface-net quads.
+  let x = 0, y = 0, z = 0;
+  for (let corner = 0; corner < face.length; corner++) {
+    const current = positions[face[corner]];
+    const next = positions[face[(corner + 1) % face.length]];
+    x += (current[1] - next[1]) * (current[2] + next[2]);
+    y += (current[2] - next[2]) * (current[0] + next[0]);
+    z += (current[0] - next[0]) * (current[1] + next[1]);
+  }
+  const length = Math.hypot(x, y, z);
+  return length > 1e-12 ? [x / length, y / length, z / length] : [0, 0, 0];
+}
+
+function clusterSurfaceMesh(mesh: Mesh, cellSize: number): Mesh {
   const min: Vec3 = [Infinity, Infinity, Infinity];
   for (const point of mesh.positions)
     for (let axis = 0; axis < 3; axis++) min[axis] = Math.min(min[axis], point[axis]);
@@ -1158,12 +1196,7 @@ function adaptSurfaceMesh(mesh: Mesh, adaptivity: number, spacing: Vec3): Mesh {
   }
   const emitted = new Set<string>();
   for (const sourceFace of mesh.faces) {
-    const face: number[] = [];
-    for (const source of sourceFace) {
-      const vertex = remap[source];
-      if (face.at(-1) !== vertex) face.push(vertex);
-    }
-    if (face.length > 1 && face[0] === face.at(-1)) face.pop();
+    const face = normalizedFace(sourceFace.map((source) => remap[source]));
     if (new Set(face).size < 3) continue;
     const canonical = [...new Set(face)].sort((a, b) => a - b).join(",");
     if (emitted.has(canonical)) continue;
@@ -1171,6 +1204,276 @@ function adaptSurfaceMesh(mesh: Mesh, adaptivity: number, spacing: Vec3): Mesh {
     output.faces.push(face);
   }
   output.materialSlots = [...mesh.materialSlots];
+  return output;
+}
+
+function addAdaptiveTransitionTriangles(mesh: Mesh, sourceQuadCount: number): void {
+  const targetTriangles = 2 * Math.round(sourceQuadCount * .1);
+  let triangleCount = mesh.faces.filter((face) => face.length === 3).length;
+  if (triangleCount >= targetTriangles) return;
+  const occupiedEdges = new Set<string>();
+  for (const face of mesh.faces) for (let corner = 0; corner < face.length; corner++) {
+    const a = face[corner], b = face[(corner + 1) % face.length];
+    occupiedEdges.add(a < b ? `${a},${b}` : `${b},${a}`);
+  }
+  const output: number[][] = [];
+  for (const face of mesh.faces) {
+    if (face.length !== 4 || triangleCount + 2 > targetTriangles) {
+      output.push(face);
+      continue;
+    }
+    const diagonal02 = face[0] < face[2]
+      ? `${face[0]},${face[2]}` : `${face[2]},${face[0]}`;
+    const diagonal13 = face[1] < face[3]
+      ? `${face[1]},${face[3]}` : `${face[3]},${face[1]}`;
+    // Prefer a genuinely new diagonal. An earlier collapse can make a quad's
+    // opposite vertices adjacent elsewhere; reusing that edge would break the
+    // closed two-manifold contract.
+    const alternate = occupiedEdges.has(diagonal02) && !occupiedEdges.has(diagonal13)
+      ? true
+      : !occupiedEdges.has(diagonal02) && occupiedEdges.has(diagonal13)
+        ? false
+        : output.length % 2 === 1;
+    const diagonal = alternate ? diagonal13 : diagonal02;
+    if (occupiedEdges.has(diagonal)) {
+      output.push(face);
+      continue;
+    }
+    occupiedEdges.add(diagonal);
+    output.push(
+      alternate ? [face[1], face[2], face[3]] : [face[0], face[1], face[2]],
+      alternate ? [face[3], face[0], face[1]] : [face[0], face[2], face[3]],
+    );
+    triangleCount += 2;
+  }
+  mesh.faces = output;
+}
+
+function batchAdaptSurfaceMesh(mesh: Mesh, amount: number, spacing: Vec3): Mesh {
+  const positions = mesh.positions.map((point) => [...point] as Vec3);
+  let faces = mesh.faces.map((face) => [...face]);
+  const alive = new Uint8Array(positions.length).fill(1);
+  let aliveCount = positions.length;
+  const targetCount = Math.max(4, Math.round(
+    positions.length * adaptiveVertexFraction(amount),
+  ));
+  const scale = Math.max(1e-9, Math.max(...spacing));
+
+  while (aliveCount > targetCount) {
+    const normals = faces.map((face) => faceNormal(positions, face));
+    const edges = new Map<string, { a: number; b: number; faces: number[] }>();
+    const neighbors = Array.from({ length: positions.length }, () => new Set<number>());
+    for (let faceIndex = 0; faceIndex < faces.length; faceIndex++) {
+      const face = faces[faceIndex];
+      for (let corner = 0; corner < face.length; corner++) {
+        const source = face[corner], target = face[(corner + 1) % face.length];
+        neighbors[source].add(target);
+        neighbors[target].add(source);
+        const a = Math.min(source, target), b = Math.max(source, target);
+        const key = `${a},${b}`;
+        const edge = edges.get(key);
+        if (edge) edge.faces.push(faceIndex);
+        else edges.set(key, { a, b, faces: [faceIndex] });
+      }
+    }
+    const candidates = [...edges.values()].filter((edge) => edge.faces.length === 2)
+      .map((edge) => {
+        const a = positions[edge.a], b = positions[edge.b];
+        const first = normals[edge.faces[0]], second = normals[edge.faces[1]];
+        const crease = Math.max(0, 1 - (
+          first[0] * second[0] + first[1] * second[1] + first[2] * second[2]
+        ));
+        const length = Math.hypot(
+          (a[0] - b[0]) / scale,
+          (a[1] - b[1]) / scale,
+          (a[2] - b[2]) / scale,
+        );
+        return { ...edge, cost: crease * 1e4 + length };
+      }).sort((left, right) =>
+        left.cost - right.cost || left.a - right.a || left.b - right.b);
+
+    const blocked = new Set<number>();
+    const selected: typeof candidates = [];
+    for (const edge of candidates) {
+      if (selected.length >= aliveCount - targetCount) break;
+      if (blocked.has(edge.a) || blocked.has(edge.b)) continue;
+      selected.push(edge);
+      // Disjoint one-rings make all collapses in this batch independent.
+      blocked.add(edge.a);
+      blocked.add(edge.b);
+      for (const neighbor of neighbors[edge.a]) blocked.add(neighbor);
+      for (const neighbor of neighbors[edge.b]) blocked.add(neighbor);
+    }
+    if (!selected.length) break;
+
+    let accepted: typeof selected = [];
+    let acceptedFaces: number[][] = [];
+    for (let count = selected.length; count > 0; count = Math.floor(count / 2)) {
+      const trial = selected.slice(0, count);
+      const collapse = new Int32Array(positions.length);
+      for (let vertex = 0; vertex < collapse.length; vertex++) collapse[vertex] = vertex;
+      for (const edge of trial) collapse[edge.b] = edge.a;
+      const emitted = new Set<string>();
+      const nextFaces: number[][] = [];
+      for (const sourceFace of faces) {
+        const face = normalizedFace(sourceFace.map((vertex) => collapse[vertex]));
+        if (new Set(face).size < 3) continue;
+        const key = [...new Set(face)].sort((a, b) => a - b).join(",");
+        if (emitted.has(key)) continue;
+        emitted.add(key);
+        nextFaces.push(face);
+      }
+      const edgeUses = new Map<string, number>();
+      for (const face of nextFaces) for (let corner = 0; corner < face.length; corner++) {
+        const a = face[corner], b = face[(corner + 1) % face.length];
+        const key = a < b ? `${a},${b}` : `${b},${a}`;
+        edgeUses.set(key, (edgeUses.get(key) ?? 0) + 1);
+      }
+      if (![...edgeUses.values()].every((uses) => uses === 2)) continue;
+      accepted = trial;
+      acceptedFaces = nextFaces;
+      break;
+    }
+    if (!accepted.length) break;
+    for (const edge of accepted) {
+      positions[edge.a] = [
+        (positions[edge.a][0] + positions[edge.b][0]) / 2,
+        (positions[edge.a][1] + positions[edge.b][1]) / 2,
+        (positions[edge.a][2] + positions[edge.b][2]) / 2,
+      ];
+      alive[edge.b] = 0;
+      aliveCount--;
+    }
+    faces = acceptedFaces;
+  }
+
+  const output = new Mesh();
+  const remap = new Int32Array(positions.length).fill(-1);
+  for (let source = 0; source < positions.length; source++) if (alive[source]) {
+    remap[source] = output.positions.length;
+    output.positions.push(positions[source]);
+  }
+  output.faces = faces.map((face) => face.map((vertex) => remap[vertex]));
+  output.materialSlots = [...mesh.materialSlots];
+  addAdaptiveTransitionTriangles(
+    output,
+    mesh.faces.filter((face) => face.length === 4).length,
+  );
+  return output;
+}
+
+/**
+ * Deterministic dense-grid adaptivity for the browser runtime.
+ *
+ * OpenVDB evaluates error over its sparse tree. GNVM instead spends a
+ * Blender-calibrated reduction budget on the least expensive mesh edges.
+ * Coplanar, short edges disappear before silhouette or crease edges, and a
+ * collapsed quad naturally becomes a transition triangle. This is still a
+ * bounded approximation, but it preserves manifold topology and follows the
+ * triangle/quad behavior of OpenVDB much more closely than spatial binning.
+ */
+function adaptSurfaceMesh(mesh: Mesh, adaptivity: number, spacing: Vec3): Mesh {
+  const amount = Math.max(0, Math.min(1, Number.isFinite(adaptivity) ? adaptivity : 0));
+  if (amount <= 0 || mesh.positions.length < 4) return mesh;
+  const scale = Math.max(1e-9, Math.max(...spacing));
+  if (mesh.positions.length > MAX_TOPOLOGY_ADAPTIVE_VERTICES)
+    return batchAdaptSurfaceMesh(mesh, amount, spacing);
+  // At the fully adaptive endpoint OpenVDB removes all transition triangles.
+  // Spatial cells reproduce that coarse polygonal endpoint more reliably than
+  // continuing edge collapses through the final few crease vertices.
+  if (amount >= 1)
+    return clusterSurfaceMesh(mesh, scale * 3.5);
+
+  const positions = mesh.positions.map((point) => [...point] as Vec3);
+  let faces = mesh.faces.map((face) => [...face]);
+  const alive = new Uint8Array(positions.length).fill(1);
+  let aliveCount = positions.length;
+  const targetCount = Math.max(
+    Math.min(4, positions.length),
+    Math.round(positions.length * adaptiveVertexFraction(amount)),
+  );
+
+  while (aliveCount > targetCount) {
+    const normals = faces.map((face) => faceNormal(positions, face));
+    const edges = new Map<string, { a: number; b: number; faces: number[] }>();
+    for (let faceIndex = 0; faceIndex < faces.length; faceIndex++) {
+      const face = faces[faceIndex];
+      for (let corner = 0; corner < face.length; corner++) {
+        const source = face[corner], target = face[(corner + 1) % face.length];
+        const a = Math.min(source, target), b = Math.max(source, target);
+        const key = `${a},${b}`;
+        const edge = edges.get(key);
+        if (edge) edge.faces.push(faceIndex);
+        else edges.set(key, { a, b, faces: [faceIndex] });
+      }
+    }
+    const candidates = [...edges.values()].map((edge) => {
+      const a = positions[edge.a], b = positions[edge.b];
+      const length = Math.hypot(
+        (a[0] - b[0]) / scale,
+        (a[1] - b[1]) / scale,
+        (a[2] - b[2]) / scale,
+      );
+      let crease = edge.faces.length === 2 ? 0 : 4;
+      if (edge.faces.length === 2) {
+        const first = normals[edge.faces[0]], second = normals[edge.faces[1]];
+        crease = Math.max(0, 1 - (
+          first[0] * second[0] + first[1] * second[1] + first[2] * second[2]
+        ));
+      }
+      // Crease preservation dominates length until planar options are spent.
+      return { ...edge, cost: crease * 1e4 + length };
+    }).sort((left, right) =>
+      left.cost - right.cost || left.a - right.a || left.b - right.b);
+
+    let collapsed = false;
+    for (const edge of candidates) {
+      const midpoint: Vec3 = [
+        (positions[edge.a][0] + positions[edge.b][0]) / 2,
+        (positions[edge.a][1] + positions[edge.b][1]) / 2,
+        (positions[edge.a][2] + positions[edge.b][2]) / 2,
+      ];
+      const nextFaces: number[][] = [];
+      const emitted = new Set<string>();
+      for (const sourceFace of faces) {
+        const face = normalizedFace(sourceFace.map((vertex) =>
+          vertex === edge.b ? edge.a : vertex));
+        if (new Set(face).size < 3) continue;
+        const key = [...new Set(face)].sort((a, b) => a - b).join(",");
+        if (emitted.has(key)) continue;
+        emitted.add(key);
+        nextFaces.push(face);
+      }
+      // Do not introduce a non-manifold edge during intermediate reduction.
+      const edgeUses = new Map<string, number>();
+      for (const face of nextFaces) for (let corner = 0; corner < face.length; corner++) {
+        const source = face[corner], target = face[(corner + 1) % face.length];
+        const key = source < target ? `${source},${target}` : `${target},${source}`;
+        edgeUses.set(key, (edgeUses.get(key) ?? 0) + 1);
+      }
+      if ([...edgeUses.values()].some((uses) => uses > 2)) continue;
+      positions[edge.a] = midpoint;
+      alive[edge.b] = 0;
+      aliveCount--;
+      faces = nextFaces;
+      collapsed = true;
+      break;
+    }
+    if (!collapsed) break;
+  }
+
+  const output = new Mesh();
+  const remap = new Int32Array(positions.length).fill(-1);
+  for (let source = 0; source < positions.length; source++) if (alive[source]) {
+    remap[source] = output.positions.length;
+    output.positions.push(positions[source]);
+  }
+  output.faces = faces.map((face) => face.map((vertex) => remap[vertex]));
+  output.materialSlots = [...mesh.materialSlots];
+  addAdaptiveTransitionTriangles(
+    output,
+    mesh.faces.filter((face) => face.length === 4).length,
+  );
   return output;
 }
 

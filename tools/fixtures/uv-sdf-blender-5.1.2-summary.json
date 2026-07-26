@@ -23,20 +23,21 @@
     ]
   },
   "non_manifold_sdf": {
-    "open_quad": { "vertices": 72, "edges": 140, "faces": 70 },
-    "three_face_edge": { "vertices": 96, "edges": 188, "faces": 94 },
-    "cube_one_flipped_face": { "vertices": 152, "edges": 300, "faces": 150 }
+    "open_quad": { "vertices": 72, "edges": 140, "faces": 70, "face_sizes": { "4": 70 } },
+    "three_face_edge": { "vertices": 96, "edges": 188, "faces": 94, "face_sizes": { "4": 94 } },
+    "cube_one_flipped_face": { "vertices": 152, "edges": 300, "faces": 150, "face_sizes": { "4": 150 } }
   },
   "adaptive_cube_sdf": {
-    "0": { "vertices": 152, "edges": 300, "faces": 150 },
-    "0.1": { "vertices": 65, "edges": 141, "faces": 78 },
-    "0.5": { "vertices": 32, "edges": 75, "faces": 45 },
-    "1": { "vertices": 8, "edges": 12, "faces": 6 }
+    "0": { "vertices": 152, "edges": 300, "faces": 150, "face_sizes": { "4": 150 } },
+    "0.1": { "vertices": 65, "edges": 141, "faces": 78, "face_sizes": { "3": 30, "4": 48 } },
+    "0.5": { "vertices": 32, "edges": 75, "faces": 45, "face_sizes": { "3": 30, "4": 15 } },
+    "1": { "vertices": 8, "edges": 12, "faces": 6, "face_sizes": { "4": 6 } }
   },
   "budget_cube_10_voxel_0.1": {
     "requested_samples": 1225043,
     "vertices": 61208,
     "edges": 122412,
-    "faces": 61206
+    "faces": 61206,
+    "face_sizes": { "4": 61206 }
   }
 }

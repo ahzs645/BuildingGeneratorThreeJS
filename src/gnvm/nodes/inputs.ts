@@ -2,6 +2,7 @@
 import { Field, Vec3 } from "../core";
 import { Geometry } from "../geometry";
 import { DUMP_CONTEXT, reg } from "../registry";
+import { recordRuntimeDetail } from "../runtime-details";
 
 // Gizmos only contribute viewport interaction metadata. Blender represents
 // their transform chain with a geometry-typed socket so it can be joined to a
@@ -10,12 +11,24 @@ reg(["GeometryNodeGizmoLinear", "GeometryNodeGizmoDial"], () => ({
   Transform: Geometry.empty(),
 }));
 
-// Warning is an editor diagnostic sink. Its Show output is intentionally a
-// pass-through so reusable "info label" groups can expose the condition while
-// the runtime ignores presentation-only warning text.
-reg("GeometryNodeWarning", (api) => ({
-  Show: api.input("Show"),
-}));
+// Warning remains a pass-through, but authored messages are also surfaced as
+// typed runtime details when their Show input is true.
+reg("GeometryNodeWarning", (api) => {
+  const show = api.input("Show");
+  if (api.bool("Show")) {
+    const warningType = String(api.prop("warning_type", "WARNING")).toUpperCase();
+    const message = api.str("Message") || api.node.label || api.node.name;
+    recordRuntimeDetail({
+      kind: "authored-node-warning",
+      severity: warningType === "INFO" ? "info" : "warning",
+      stage: "geometry-node-warning",
+      message,
+      warningType,
+      nodeName: api.node.name,
+    });
+  }
+  return { Show: show };
+});
 
 reg("GeometryNodeSelfObject", () => ({
   "Self Object": DUMP_CONTEXT.activeObject

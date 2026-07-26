@@ -7,6 +7,7 @@ import { reg, EvalAPI, DUMP_CONTEXT, recordApproximation } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 import { evaluateBezierSpline } from "../bezier";
 import { applyDumpFaceSmoothness } from "../dump-mesh-smoothness";
+import { nurbsSpline } from "./extra";
 
 export function matchLegacyCurvePassthrough(geometry: Geometry): void {
   // A legacy Curve datablock routed through an otherwise empty Geometry Nodes
@@ -556,7 +557,21 @@ reg("GeometryNodeSetPosition", (api) => {
   // instances component as well as mesh/curve points. Periodic Brush uses this
   // to lift each successive dot instance slightly in Z.
   const domain = !hasMeshPoints && !g.curves.length && g.instances.length ? "INSTANCE" : "POINT";
-  const ctx = makeFieldCtx(g, domain);
+  const fieldGeometry = !hasMeshPoints && g.curves.some((spline) =>
+    spline.controlPoints?.length)
+    ? (() => {
+        const authored = g.clone();
+        authored.curves = authored.curves.map((spline) => ({
+          ...spline,
+          points: (spline.controlPoints?.length
+            ? spline.controlPoints
+            : spline.points).map((point) => [...point] as Vec3),
+          controlPoints: undefined,
+        }));
+        return authored;
+      })()
+    : g;
+  const ctx = makeFieldCtx(fieldGeometry, domain);
   // Selection chains built entirely from FACE/EDGE-domain masks evaluate on
   // their source domain and convert ONCE at the end (Blender's order).
   // Boolean domain adaptation is an AND at the destination element: a point
@@ -605,9 +620,39 @@ reg("GeometryNodeSetPosition", (api) => {
   if (hasMeshPoints) {
     g.mesh!.positions = g.mesh!.positions.map(move);
   } else if (g.curves.length) {
-    // curve geometry: the ctx flattens control points in spline order
+    // Curve POINT fields address authored control points. Retain the authored
+    // representation and re-evaluate NURBS samples after editing it; replacing
+    // the spline with a plain polyline silently lost control points and changed
+    // downstream Curve to Mesh vertex counts.
     let i = 0;
-    g.curves = g.curves.map((s) => ({ cyclic: s.cyclic, points: s.points.map((p) => move(p, i++)) }));
+    g.curves = g.curves.map((s) => {
+      const controls = s.controlPoints?.length ? s.controlPoints : s.points;
+      const moved = controls.map((point) => move(point, i++));
+      if (s.splineType === "NURBS") {
+        return nurbsSpline({
+          ...s,
+          points: moved,
+          controlPoints: undefined,
+        });
+      }
+      if (s.controlPoints?.length) {
+        const deltas = moved.map((point, index) => [
+          point[0] - controls[index][0],
+          point[1] - controls[index][1],
+          point[2] - controls[index][2],
+        ] as Vec3);
+        return {
+          ...s,
+          controlPoints: moved,
+          bezierLeft: s.bezierLeft?.map((point, index) =>
+            vadd(point, deltas[index] ?? [0, 0, 0])),
+          bezierRight: s.bezierRight?.map((point, index) =>
+            vadd(point, deltas[index] ?? [0, 0, 0])),
+          points: s.points.map((point) => [...point] as Vec3),
+        };
+      }
+      return { ...s, points: moved };
+    });
   } else {
     g.instances = g.instances.map((instance, i) => ({
       ...instance,

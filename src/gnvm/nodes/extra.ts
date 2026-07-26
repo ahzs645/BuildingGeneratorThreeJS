@@ -19,9 +19,17 @@ import {
   vnorm,
 } from "../core";
 import { Geometry, Mesh, mergeMeshInto, realizeInstances, rotateEulerXYZ, Spline, buildTopology, triangulateFaceIndices, setUniformFaceSharpness } from "../geometry";
+import { bakeSnapshotGeometry } from "../bake-snapshot";
 import { fillCurves, meshEdgesToChains, splineLength, splineSegments, splineFrames } from "../curves";
 import { makeFieldCtx } from "../evaluator";
-import { ClosureValue, EMPTY_CLOSURE, reg, EvalAPI, type SockVal } from "../registry";
+import {
+  ClosureValue,
+  EMPTY_CLOSURE,
+  recordApproximation,
+  reg,
+  EvalAPI,
+  type SockVal,
+} from "../registry";
 import { getManifoldFaceProvenance, isManifoldMesh, isManifoldReady, manifoldBoolean, manifoldBooleanBox, manifoldBooleanMany, manifoldHull } from "../boolean";
 import { asBezierSpline } from "../bezier";
 import { Vector3 as ThreeVector3 } from "three";
@@ -1119,9 +1127,27 @@ reg("ShaderNodeVectorRotate", (api) => {
   };
 });
 
-// Bake is an evaluation cache boundary; live browser evaluation passes its
-// current items through unchanged.
-reg("GeometryNodeBake", (api) => ({ Item_0: api.input("Item_0") }));
+// Bake is an evaluation cache boundary; live browser evaluation passes every
+// dynamic item through unchanged. Persistent Blender bake/cache semantics are
+// intentionally classified as bounded by the capability layer.
+reg("GeometryNodeBake", (api) => {
+  const outputs: Record<string, SockVal> = {};
+  let usedSnapshot = false;
+  for (const output of api.node.outputs) {
+    if (!output.identifier || output.identifier === "__extend__") continue;
+    const snapshot = bakeSnapshotGeometry(api.node, output.identifier);
+    if (snapshot) {
+      outputs[output.identifier] = snapshot;
+      usedSnapshot = true;
+      continue;
+    }
+    const input = api.node.inputs.find((socket) =>
+      socket.identifier === output.identifier);
+    if (input) outputs[output.identifier] = api.input(input.identifier);
+  }
+  if (!usedSnapshot) recordApproximation(api.node.type);
+  return outputs;
+});
 
 function pointTopologyField(kind: "VERTEX" | "FACE"): Field {
   return Field.make((ctx) => {
@@ -1261,7 +1287,7 @@ function deBoor(control: Vec3[], degree: number, knots: number[], u: number): Ve
   return d[degree];
 }
 
-function clampedNurbsSpline(s: Spline): Spline {
+function clampedNurbsSpline(s: Spline, resolution: number): Spline {
   const pts = s.points;
   const n = pts.length;
   if (n < 2) return cloneSpline(s);
@@ -1270,7 +1296,7 @@ function clampedNurbsSpline(s: Spline): Spline {
   // Blender evaluates an open NURBS once per non-zero knot span, not once per
   // control-point interval. With order 4 (degree 3), six controls therefore
   // produce (6 - 3) * resolution + 1 = 37 evaluated points at resolution 12.
-  const count = Math.max(2, (n - degree) * SPLINE_TYPE_SAMPLES_PER_SEGMENT + 1);
+  const count = Math.max(2, (n - degree) * resolution + 1);
   const out: Vec3[] = [];
   for (let i = 0; i < count; i++) out.push(deBoor(pts, degree, knots, i / (count - 1)));
   return { points: out, cyclic: false };
@@ -1295,15 +1321,19 @@ function periodicCubicBSplinePoint(pts: Vec3[], i: number, t: number): Vec3 {
   ];
 }
 
-function nurbsSpline(s: Spline): Spline {
+export function nurbsSpline(s: Spline): Spline {
   const pts = s.points;
   const n = pts.length;
   if (n < 2) return cloneSpline(s);
+  const resolution = Math.max(
+    1,
+    Math.round(s.resolution ?? SPLINE_TYPE_SAMPLES_PER_SEGMENT),
+  );
   if (!s.cyclic) {
-    const out = clampedNurbsSpline(s);
+    const out = clampedNurbsSpline(s, resolution);
     out.controlPoints = pts.map((point) => [...point] as Vec3);
     out.splineType = "NURBS";
-    out.resolution = SPLINE_TYPE_SAMPLES_PER_SEGMENT;
+    out.resolution = resolution;
     return out;
   }
   if (n < 4) return catmullRomSpline(s);
@@ -1315,15 +1345,15 @@ function nurbsSpline(s: Spline): Spline {
   // different surface (the Chrome spikey chain link is sensitive to this).
   for (let step = 0; step < n; step++) {
     const i = (step + 1) % n;
-    for (let k = 0; k < SPLINE_TYPE_SAMPLES_PER_SEGMENT; k++)
-      out.push(periodicCubicBSplinePoint(pts, i, k / SPLINE_TYPE_SAMPLES_PER_SEGMENT));
+    for (let k = 0; k < resolution; k++)
+      out.push(periodicCubicBSplinePoint(pts, i, k / resolution));
   }
   return {
     points: out,
     cyclic: true,
     controlPoints: pts.map((point) => [...point] as Vec3),
     splineType: "NURBS",
-    resolution: SPLINE_TYPE_SAMPLES_PER_SEGMENT,
+    resolution,
   };
 }
 

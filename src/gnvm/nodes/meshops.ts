@@ -81,10 +81,58 @@ reg("GeometryNodeDeleteGeometry", (api) => {
   const g = api.geo("Geometry").clone();
   if (!g.mesh && !g.curves.length && !g.instances.length) return { Geometry: g };
   const domain = api.prop<string>("domain", "POINT");
+  const mode = api.prop<string>("mode", "ALL");
   // Blender's float->bool conversion is `> 0` (e.g. Map Range feeding a Selection
   // uses -0.02 as its false sentinel; plain truthiness would treat it as selected).
   const on = (v: Elem | undefined) => asNum(v ?? 0) > 0;
-  if (domain === "INSTANCE") {
+  if (mode === "ONLY_FACE" && g.mesh) {
+    // "Only Face" removes selected faces but deliberately retains their
+    // vertices and edges as loose topology. The Putty web generator uses an
+    // all-true POINT selection as a concise Mesh-to-wire conversion before
+    // Mesh to Curve; ordinary point deletion erased that wire completely.
+    const source = g.mesh;
+    const faceContext = makeFieldCtx(g, "FACE");
+    const selection = api.field("Selection").array(faceContext);
+    const keptFaces = source.faces
+      .map((_, index) => index)
+      .filter((index) => !on(selection[index]));
+    const out = new Mesh();
+    out.positions = source.positions.map((point) => [...point] as Vec3);
+    out.edges = buildTopology(source).edges.map((edge) =>
+      [...edge.verts] as [number, number]);
+    out.faces = keptFaces.map((index) => [...source.faces[index]]);
+    out.faceMaterial = keptFaces.map((index) =>
+      source.faceMaterial[index] ?? 0);
+    out.materialSlots = [...source.materialSlots];
+    const cornerStarts: number[] = [];
+    let cornerStart = 0;
+    for (const face of source.faces) {
+      cornerStarts.push(cornerStart);
+      cornerStart += face.length;
+    }
+    const keptCorners = keptFaces.flatMap((faceIndex) =>
+      source.faces[faceIndex].map((_, corner) =>
+        cornerStarts[faceIndex] + corner));
+    for (const [name, attribute] of source.attributes) {
+      if (attribute.domain === "FACE") {
+        out.attributes.set(name, {
+          domain: "FACE",
+          data: keptFaces.map((index) => attribute.data[index] ?? 0),
+        });
+      } else if (attribute.domain === "CORNER") {
+        out.attributes.set(name, {
+          domain: "CORNER",
+          data: keptCorners.map((index) => attribute.data[index] ?? 0),
+        });
+      } else {
+        out.attributes.set(name, {
+          domain: attribute.domain,
+          data: [...attribute.data],
+        });
+      }
+    }
+    g.mesh = out;
+  } else if (domain === "INSTANCE") {
     // Component-domain operations only edit their selected component. A mesh
     // or curve beside the instance component passes through unchanged, even
     // when every instance is deleted (the Intro chalkboard relies on this to
@@ -295,6 +343,76 @@ reg("GeometryNodeSeparateGeometry", (api) => {
         scale: [...instance.scale] as Vec3,
       });
     });
+    return { Selection: selG, Inverted: invG };
+  }
+  if (
+    domain !== "INSTANCE"
+    && !hasMeshComponent
+    && !g.curves.length
+    && g.instances.length
+  ) {
+    // A component-domain Separate Geometry applied to Collection Info keeps
+    // the outer instances and filters each referenced geometry payload. The
+    // Putty wrappers rely on a named FACE attribute (`wrap`) before realizing
+    // those instances; treating the top-level instance set as an empty mesh
+    // erased the complete generator branch.
+    const append = (
+      target: Geometry,
+      instance: Geometry["instances"][number],
+      payload: Geometry,
+    ): void => {
+      const populated = Boolean(
+        payload.mesh?.positions.length
+        || payload.mesh?.edges.length
+        || payload.mesh?.faces.length
+        || payload.curves.length
+        || payload.instances.length,
+      );
+      if (!populated) return;
+      target.instances.push({
+        ...instance,
+        geometry: payload,
+        position: [...instance.position] as Vec3,
+        rotation: [...instance.rotation] as Vec3,
+        scale: [...instance.scale] as Vec3,
+        transformMatrix: instance.transformMatrix?.map((row) => [...row]),
+        attributes: instance.attributes
+          ? new Map(instance.attributes)
+          : undefined,
+      });
+    };
+    for (const instance of g.instances) {
+      const payload = instance.geometry;
+      if (!payload.mesh) continue;
+      if (domain === "FACE") {
+        const values = sel.array(makeFieldCtx(payload, "FACE"));
+        const on = (index: number) => asNum(values[index] ?? 0) > 0;
+        const selected = new Geometry();
+        selected.mesh = keepFaces(payload.mesh, on);
+        const inverted = new Geometry();
+        inverted.mesh = keepFaces(payload.mesh, (index) => !on(index));
+        append(selG, instance, selected);
+        append(invG, instance, inverted);
+      } else if (domain === "EDGE") {
+        const values = sel.array(makeFieldCtx(payload, "EDGE"));
+        const on = (index: number) => asNum(values[index] ?? 0) > 0;
+        const selected = new Geometry();
+        selected.mesh = keepEdgesMesh(payload.mesh, on);
+        const inverted = new Geometry();
+        inverted.mesh = keepEdgesMesh(payload.mesh, (index) => !on(index));
+        append(selG, instance, selected);
+        append(invG, instance, inverted);
+      } else {
+        const values = sel.array(makeFieldCtx(payload, "POINT"));
+        const on = (index: number) => asNum(values[index] ?? 0) > 0;
+        const selected = new Geometry();
+        selected.mesh = keepPointsMesh(payload.mesh, on);
+        const inverted = new Geometry();
+        inverted.mesh = keepPointsMesh(payload.mesh, (index) => !on(index));
+        append(selG, instance, selected);
+        append(invG, instance, inverted);
+      }
+    }
     return { Selection: selG, Inverted: invG };
   }
   if (!hasMeshComponent && g.curves.length) {
@@ -590,7 +708,12 @@ reg("GeometryNodeMergeByDistance", (api) => {
   m.positions = pos;
   m.materialSlots = [...mesh.materialSlots];
   const seenEdges = new Set<string>();
-  for (const [a, b] of mesh.edges) {
+  // A Blender mesh always owns an edge component even when the portable VM
+  // mesh was generated from faces and did not carry a redundant explicit edge
+  // array. Welding only `mesh.edges` dropped most of an Icosphere's topology;
+  // the following Only Face deletion then retained just 15 loose edges instead
+  // of the complete Voronoi web.
+  for (const { verts: [a, b] } of buildTopology(mesh).edges) {
     const ra = remap[a], rb = remap[b];
     if (ra === rb) continue;
     const k = ekey(ra, rb);

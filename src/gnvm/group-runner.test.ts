@@ -108,6 +108,7 @@ test("direct group runner binds a generated primitive and friendly interface val
   assert.deepEqual(result.soup.stats, { verts: 8, faces: 6, tris: 12 });
   assert.equal(Math.min(...result.geometry.mesh!.positions.map((point) => point[0])), 2);
   assert.equal(result.coverage.missingTypes.length, 0);
+  assert.deepEqual(result.details, []);
 });
 
 test("direct group runner can seed from an extracted object's base geometry", async () => {

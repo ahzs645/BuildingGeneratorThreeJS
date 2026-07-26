@@ -15,6 +15,88 @@ out_path = tool_args[0]
 target_object = tool_args[1] if len(tool_args) > 1 else None
 
 
+def font_source_metadata(font):
+    """Describe where a VectorFont can be recovered without exporting it."""
+    authored_path = getattr(font, "filepath", "") or ""
+    packed_file = getattr(font, "packed_file", None)
+    if not authored_path or authored_path == "<builtin>":
+        return {
+            "status": "builtin",
+            "authored_filepath": authored_path or "<builtin>",
+            "binary_extractable": False,
+        }
+    if packed_file is not None:
+        packed_size = int(getattr(packed_file, "size", 0))
+        try:
+            packed_data = packed_file.data
+            binary_extractable = isinstance(packed_data, bytes) and len(packed_data) == packed_size
+        except Exception:
+            binary_extractable = False
+        return {
+            "status": "packed-extractable" if binary_extractable else "packed-unreadable",
+            "authored_filepath": authored_path,
+            "packed_size_bytes": packed_size,
+            "binary_extractable": binary_extractable,
+        }
+    resolved_path = bpy.path.abspath(authored_path)
+    external_available = os.path.isfile(resolved_path)
+    return {
+        "status": "external-available" if external_available else "external-missing",
+        "authored_filepath": authored_path,
+        "binary_extractable": external_available,
+    }
+
+
+def dump_opt_in_packed_font_binary(font, source_metadata):
+    """Return a bounded packed binary only when the caller explicitly opts in.
+
+    Font binaries can carry redistribution restrictions. The normal portable
+    payload remains the evaluated glyph atlas; raw bytes are never included by
+    default.
+    """
+    if os.environ.get("NODE_DOJO_INCLUDE_PACKED_FONT_BYTES") != "1":
+        return None
+    if source_metadata.get("status") not in ("packed-extractable", "packed-unreadable"):
+        return None
+    try:
+        configured_limit = int(os.environ.get("NODE_DOJO_MAX_PACKED_FONT_BYTES", str(8 * 1024 * 1024)))
+    except ValueError:
+        configured_limit = 8 * 1024 * 1024
+    # Always retain a hard ceiling even when the environment is misconfigured.
+    byte_limit = max(0, min(configured_limit, 32 * 1024 * 1024))
+    packed_size = int(source_metadata.get("packed_size_bytes", 0))
+    if packed_size > byte_limit:
+        return {
+            "included": False,
+            "error": "PACKED_FONT_SIZE_LIMIT_EXCEEDED",
+            "byte_length": packed_size,
+            "byte_limit": byte_limit,
+        }
+    try:
+        data = bytes(font.packed_file.data)
+    except Exception as error:
+        return {
+            "included": False,
+            "error": "PACKED_FONT_DATA_UNREADABLE",
+            "message": repr(error),
+            "byte_limit": byte_limit,
+        }
+    if len(data) > byte_limit:
+        return {
+            "included": False,
+            "error": "PACKED_FONT_SIZE_LIMIT_EXCEEDED",
+            "byte_length": len(data),
+            "byte_limit": byte_limit,
+        }
+    return {
+        "included": True,
+        "encoding": "base64",
+        "byte_length": len(data),
+        "sha256": hashlib.sha256(data).hexdigest(),
+        "data": base64.b64encode(data).decode("ascii"),
+    }
+
+
 def apply_font_override():
     path = os.environ.get("NODE_DOJO_FONT_OVERRIDE")
     if not path:
@@ -122,6 +204,32 @@ def dump_node(node):
             "idx": i,
             "value": None if s.is_linked else socket_value(s),
         })
+    if node.bl_idname == "GeometryNodeBake":
+        input_by_identifier = {
+            socket.identifier: socket for socket in node.inputs
+            if socket.identifier and socket.identifier != "__extend__"
+        }
+        items = []
+        for output in node.outputs:
+            if not output.identifier or output.identifier == "__extend__":
+                continue
+            source = input_by_identifier.get(output.identifier)
+            items.append({
+                "identifier": output.identifier,
+                "name": output.name,
+                "socket_type": output.bl_idname,
+                "has_live_input": source is not None,
+            })
+        d["bake_contract"] = {
+            "items": items,
+            "live_passthrough_portable": True,
+            "persistent_cache_portable": False,
+            "persistent_cache_status": "not-exported",
+            "reason": (
+                "Blender does not expose a stable, self-contained Geometry "
+                "Nodes bake payload through this extraction boundary."
+            ),
+        }
     # Import STL cannot read a user's filesystem in the browser. Embed only a
     # strict, bounded triangle payload while Blender still has access to an
     # authored, unlinked path. Missing/dynamic/rejected paths remain explicit
@@ -214,6 +322,42 @@ def dump_tree(tree):
         "nodes": [dump_node(n) for n in tree.nodes],
         "links": [],
     }
+    animation_data = getattr(tree, "animation_data", None)
+    action = getattr(animation_data, "action", None)
+    if action is not None:
+        action_slot = getattr(animation_data, "action_slot", None)
+        fcurves = []
+        # Blender 4.4+ stores F-curves in layered Action channel bags. Retain a
+        # legacy fallback so dumps remain usable with older Blender releases.
+        for layer in getattr(action, "layers", []):
+            for strip in getattr(layer, "strips", []):
+                for channelbag in getattr(strip, "channelbags", []):
+                    if action_slot is not None and channelbag.slot != action_slot:
+                        continue
+                    fcurves.extend(channelbag.fcurves)
+        if not fcurves:
+            fcurves.extend(getattr(action, "fcurves", []))
+        curves = []
+        for fcurve in fcurves:
+            curves.append({
+                "data_path": fcurve.data_path,
+                "array_index": int(fcurve.array_index),
+                "extrapolation": fcurve.extrapolation,
+                "keyframes": [{
+                    "frame": float(point.co[0]),
+                    "value": float(point.co[1]),
+                    "interpolation": point.interpolation,
+                    "easing": point.easing,
+                    "handle_left": [float(point.handle_left[0]), float(point.handle_left[1])],
+                    "handle_right": [float(point.handle_right[0]), float(point.handle_right[1])],
+                } for point in fcurve.keyframe_points],
+            })
+        if curves:
+            d["animation"] = {
+                "action": action.name,
+                "frame_range": [float(action.frame_range[0]), float(action.frame_range[1])],
+                "fcurves": curves,
+            }
     if hasattr(tree, "interface"):
         for item in tree.interface.items_tree:
             entry = {"name": item.name, "item_type": item.item_type}
@@ -412,8 +556,19 @@ result = {
     "blender_version": bpy.app.version_string,
     "scene": {
         "frame_current": bpy.context.scene.frame_current,
+        "frame_start": bpy.context.scene.frame_start,
+        "frame_end": bpy.context.scene.frame_end,
         "fps": bpy.context.scene.render.fps,
         "fps_base": bpy.context.scene.render.fps_base,
+        "unit_settings": {
+            "system": bpy.context.scene.unit_settings.system,
+            "system_rotation": bpy.context.scene.unit_settings.system_rotation,
+            "scale_length": bpy.context.scene.unit_settings.scale_length,
+            "length_unit": bpy.context.scene.unit_settings.length_unit,
+            "mass_unit": bpy.context.scene.unit_settings.mass_unit,
+            "time_unit": bpy.context.scene.unit_settings.time_unit,
+            "temperature_unit": bpy.context.scene.unit_settings.temperature_unit,
+        },
     },
     "objects": [], "collections": [], "node_groups": {}, "shader_node_groups": {},
     "materials": {}, "images": [], "fonts": {}, "dependency_objects": []
@@ -906,42 +1061,51 @@ for img in bpy.data.images:
 # cannot recover from a .blend. Export the referenced ASCII glyphs as cyclic
 # polylines so the GN-VM can reproduce packed fonts and explicitly supplied
 # font overrides without shipping Blender or a TTF parser.
+referenced_fonts = {}
+for tree_name in result["node_groups"]:
+    tree = bpy.data.node_groups.get(tree_name)
+    if tree is None:
+        continue
+    for node in tree.nodes:
+        if node.bl_idname != "GeometryNodeStringToCurves":
+            continue
+        socket = next((candidate for candidate in node.inputs if candidate.name == "Font"), None)
+        font = getattr(socket, "default_value", None) if socket else None
+        if isinstance(font, bpy.types.VectorFont):
+            referenced_fonts[font.name] = font
+
 if os.environ.get("NODE_DOJO_SKIP_FONT_ATLAS") == "1":
     print("FONT_ATLAS_SKIPPED")
 else:
-    referenced_fonts = {}
-    for tree_name in result["node_groups"]:
-        tree = bpy.data.node_groups.get(tree_name)
-        if tree is None:
-            continue
-        for node in tree.nodes:
-            if node.bl_idname != "GeometryNodeStringToCurves":
-                continue
-            socket = next((candidate for candidate in node.inputs if candidate.name == "Font"), None)
-            font = getattr(socket, "default_value", None) if socket else None
-            if isinstance(font, bpy.types.VectorFont):
-                referenced_fonts[font.name] = font
     for font_name, font in referenced_fonts.items():
-        authored_path = getattr(font, "filepath", "") or ""
-        resolved_path = bpy.path.abspath(authored_path) if authored_path and authored_path != "<builtin>" else ""
-        if (
-            authored_path
-            and authored_path != "<builtin>"
-            and not getattr(font, "packed_file", None)
-            and not os.path.isfile(resolved_path)
-        ):
+        source_metadata = font_source_metadata(font)
+        if source_metadata["status"] == "external-missing":
             result["fonts"][font_name] = {
                 "name": font_name,
-                "filepath": authored_path,
+                "filepath": source_metadata["authored_filepath"],
                 "unavailable": True,
+                "atlas_status": "unavailable",
+                "source": source_metadata,
                 "glyphs": {},
             }
-            print(f"FONT_ATLAS_UNAVAILABLE {font_name}: {authored_path}")
+            print(f"FONT_ATLAS_UNAVAILABLE {font_name}: {source_metadata['authored_filepath']}")
             continue
         try:
-            result["fonts"][font_name] = dump_font_atlas(font)
+            atlas = dump_font_atlas(font)
+            atlas["atlas_status"] = "embedded"
+            atlas["source"] = source_metadata
+            packed_binary = dump_opt_in_packed_font_binary(font, source_metadata)
+            if packed_binary is not None:
+                atlas["packed_binary"] = packed_binary
+            result["fonts"][font_name] = atlas
         except Exception as error:
-            result["fonts"][font_name] = {"name": font_name, "error": repr(error), "glyphs": {}}
+            result["fonts"][font_name] = {
+                "name": font_name,
+                "error": repr(error),
+                "atlas_status": "error",
+                "source": source_metadata,
+                "glyphs": {},
+            }
             print(f"FONT_ATLAS_ERROR {font_name}: {error!r}")
 
 
@@ -1017,7 +1181,15 @@ def build_extraction_metadata(payload):
                 return "unavailable"
             return "embedded" if item.get("pixels_rgba8") else "referenced"
         if kind == "font":
-            return "embedded" if name in payload["fonts"] else "referenced"
+            item = payload["fonts"].get(name)
+            if not item:
+                font = bpy.data.fonts.get(name)
+                if font is not None and font_source_metadata(font)["status"] == "external-missing":
+                    return "unavailable"
+                return "referenced"
+            if item.get("unavailable") or item.get("source", {}).get("status") == "external-missing":
+                return "unavailable"
+            return "embedded" if item.get("atlas_status") == "embedded" or item.get("glyphs") else "referenced"
         if kind == "scene":
             return "referenced"
         if kind == "node_tree":
@@ -1349,9 +1521,23 @@ def build_extraction_metadata(payload):
         except Exception as error:
             warnings.append({"code": "SOURCE_FINGERPRINT_FAILED", "message": repr(error)})
 
+    font_inventory = {}
+    for font in bpy.data.fonts:
+        atlas = payload["fonts"].get(font.name)
+        font_inventory[font.name] = {
+            "source": font_source_metadata(font),
+            "atlas_status": (
+                atlas.get("atlas_status", "embedded" if atlas.get("glyphs") else "error")
+                if atlas is not None
+                else "skipped" if os.environ.get("NODE_DOJO_SKIP_FONT_ATLAS") == "1"
+                else "not-referenced"
+            ),
+            "referenced_by_geometry_nodes": font.name in referenced_fonts,
+        }
+
     return {
         "schema_version": 1,
-        "extractor": {"name": "tools/dump_blend.py", "version": "1.5", "blender_version": bpy.app.version_string},
+        "extractor": {"name": "tools/dump_blend.py", "version": "1.6", "blender_version": bpy.app.version_string},
         "source": source,
         "roots": {"objects": roots, "node_groups": root_groups},
         "provenance": {
@@ -1359,6 +1545,7 @@ def build_extraction_metadata(payload):
             "dependency_policy": "reachable typed datablock pointers; legacy dependency_objects retained",
         },
         "warnings": warnings,
+        "fonts": font_inventory,
         "ids": {"objects": object_ids, "node_groups": groups},
         "dependencies": descriptors,
     }

@@ -38,8 +38,8 @@ export function meshCube(size: Vec3, vx = 2, vy = 2, vz = 2): Geometry {
   // Common case: 8 verts / 6 quads (Blender's default cube topology).
   if (vx <= 2 && vy <= 2 && vz <= 2) {
     m.positions = [
-      [-sx, -sy, -sz], [sx, -sy, -sz], [sx, sy, -sz], [-sx, sy, -sz],
-      [-sx, -sy, sz], [sx, -sy, sz], [sx, sy, sz], [-sx, sy, sz],
+      [-sx, -sy, -sz], [sx, -sy, -sz], [-sx, sy, -sz], [sx, sy, -sz],
+      [-sx, -sy, sz], [sx, -sy, sz], [-sx, sy, sz], [sx, sy, sz],
     ];
     // Geometry Nodes' Cube primitive keeps the same directional face order as
     // the subdivided builder below even at the 2 × 2 × 2 minimum:
@@ -47,12 +47,21 @@ export function meshCube(size: Vec3, vx = 2, vy = 2, vz = 2): Geometry {
     // cube's polygon order.  Graphs can observe it through Face-domain Index;
     // Nylon Bolt selects face 5 of a Bounding Box to identify its +X end.
     m.faces = [
-      [0, 3, 2, 1], // -z
+      [0, 2, 3, 1], // -z
       [0, 1, 5, 4], // -y
-      [4, 5, 6, 7], // +z
-      [2, 3, 7, 6], // +y
-      [3, 0, 4, 7], // -x
-      [1, 2, 6, 5], // +x
+      [4, 5, 7, 6], // +z
+      [2, 6, 7, 3], // +y
+      [0, 4, 6, 2], // -x
+      [1, 3, 7, 5], // +x
+    ];
+    // Edge-domain Index follows the primitive's stored edge order rather than
+    // the order in which polygon boundaries happen to be encountered.  The
+    // distinction is observable: Print Bed Preview selects edge 0, merges its
+    // endpoints, and uses the midpoint to place its dimension label.
+    m.edges = [
+      [0, 1], [0, 2], [2, 3], [1, 3],
+      [0, 4], [1, 5], [4, 5], [4, 6],
+      [5, 7], [6, 7], [2, 6], [3, 7],
     ];
   } else {
     // Blender stores a subdivided Cube as a bottom grid, perimeter rings for

@@ -233,10 +233,15 @@ def mesh_sdf_case(name, mesh, voxel_size=0.25, adaptivity=0.0, include_levels=Fa
     evaluated, result = evaluate_object(name, mesh, tree)
     try:
         positions = [[float(value) for value in vertex.co] for vertex in result.vertices]
+        face_sizes = {}
+        for polygon in result.polygons:
+            key = str(len(polygon.vertices))
+            face_sizes[key] = face_sizes.get(key, 0) + 1
         output = {
             "vertices": len(result.vertices),
             "edges": len(result.edges),
             "faces": len(result.polygons),
+            "face_sizes": face_sizes,
             "bounds": {
                 "min": [
                     min(point[axis] for point in positions)
@@ -311,6 +316,7 @@ def adaptive_sdf_probes():
             f"Adaptive Cube {adaptivity}",
             cube_mesh(f"Adaptive Cube {adaptivity} Mesh"),
             adaptivity=adaptivity,
+            include_levels=True,
         )
         for adaptivity in (0.0, 0.1, 0.5, 1.0)
     }

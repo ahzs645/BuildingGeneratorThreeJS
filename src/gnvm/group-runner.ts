@@ -8,6 +8,12 @@ import { Geometry, toTriSoup } from "./geometry";
 import { meshCube, meshGrid, meshLine } from "./primitives";
 import { APPROXIMATIONS, DUMP_CONTEXT, MISSING, REGISTRY } from "./registry";
 import type { RunResult } from "./run-result";
+import {
+  beginRuntimeDetailCollection,
+  endRuntimeDetailCollection,
+  runtimeDetailSnapshot,
+} from "./runtime-details";
+import { dumpAtFrame } from "./animation";
 
 // Keep this module usable as a direct entry point, not only through index.ts.
 import "./nodes/math";
@@ -210,6 +216,7 @@ function prepareDumpContext(dump: Dump, activeObjectName: string | undefined, fr
  * renderer-ready geometry/soup/coverage contract.
  */
 export async function runNodeGroup(dump: Dump, options: RunNodeGroupOptions): Promise<RunResult> {
+  dump = dumpAtFrame(dump, Number(options.frame ?? dump.scene?.frame_current ?? 0));
   const group = dump.node_groups[options.group];
   if (!group) throw new Error(`group not found: ${options.group}`);
   if (group.type !== "GeometryNodeTree") throw new Error(`group is not a GeometryNodeTree: ${options.group}`);
@@ -239,6 +246,7 @@ export async function runNodeGroup(dump: Dump, options: RunNodeGroupOptions): Pr
   MISSING.clear();
   APPROXIMATIONS.clear();
   prepareDumpContext(dump, options.activeObject ?? seedObjectName, options.frame);
+  beginRuntimeDetailCollection();
   try {
     const result = new Evaluator(dump.node_groups).evalModifierGroup(options.group, bindings);
     const selected = result.outputs[outputSocket.identifier];
@@ -257,8 +265,10 @@ export async function runNodeGroup(dump: Dump, options: RunNodeGroupOptions): Pr
           .map(([type, count]) => ({ type, count }))
           .sort((left, right) => right.count - left.count),
       },
+      details: runtimeDetailSnapshot(),
     };
   } finally {
+    endRuntimeDetailCollection();
     DUMP_CONTEXT.evaluatingObjects.clear();
   }
 }

@@ -4,12 +4,11 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { runGenerator, Dump } from "../src/gnvm/index";
 
-type Numeric = number | boolean;
 type Vec3 = [number, number, number];
 
 interface Combo {
   name: string;
-  overrides: Record<string, Numeric>;
+  overrides: Record<string, unknown>;
 }
 
 interface BBox {

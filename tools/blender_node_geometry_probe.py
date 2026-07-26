@@ -167,6 +167,18 @@ source = node.outputs.get(socket_name)
 target = next((socket for socket in group_output.inputs if socket.type == "GEOMETRY"), None)
 if source is None or target is None:
     raise RuntimeError(f"missing geometry socket: {socket_name!r}")
+if os.environ.get("NODE_DOJO_PROBE_CURVE_AS_MESH") == "1":
+    # Object.to_mesh() omits a pure curve component emitted by Geometry Nodes.
+    # Convert a probed curve with a fixed two-point profile so its spline point
+    # count and bounds remain measurable without using the downstream asset
+    # profile that may itself be under investigation.
+    profile = group.nodes.new("GeometryNodeCurvePrimitiveLine")
+    profile.inputs["Start"].default_value = (0.0, 0.0, 0.0)
+    profile.inputs["End"].default_value = (0.0, 0.0, 0.001)
+    curve_to_mesh = group.nodes.new("GeometryNodeCurveToMesh")
+    group.links.new(source, curve_to_mesh.inputs["Curve"])
+    group.links.new(profile.outputs["Curve"], curve_to_mesh.inputs["Profile Curve"])
+    source = curve_to_mesh.outputs["Mesh"]
 for link in list(target.links):
     group.links.remove(link)
 group.links.new(source, target)

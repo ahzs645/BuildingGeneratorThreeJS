@@ -16,11 +16,17 @@ import type { Dump } from "./dump-schema";
 import { baseGeometryOf } from "./dump-object-geometry";
 import type { RunResult } from "./run-result";
 import {
+  beginRuntimeDetailCollection,
+  endRuntimeDetailCollection,
+  runtimeDetailSnapshot,
+} from "./runtime-details";
+import {
   resolveGeometrySeed,
   runNodeGroup,
   type GroupGeometrySeed,
   type RunNodeGroupOptions,
 } from "./group-runner";
+import { dumpAtFrame } from "./animation";
 
 // Registering the handler modules populates the REGISTRY.
 import "./nodes/math";
@@ -48,7 +54,15 @@ export type { TriSoup } from "./geometry";
 export { APPROXIMATIONS, REGISTRY, MISSING } from "./registry";
 export type { SockVal, VolumeGrid } from "./registry";
 export { DumpValidationError, normalizeDump, validateDump } from "./dump-schema";
+export { animationFrameRange, dumpAtFrame, evaluateFCurve } from "./animation";
+export {
+  MAX_DENSE_SDF_SAMPLES,
+  setDenseSdfSampleBudget,
+} from "./nodes/volume";
 export type {
+  DumpAnimation,
+  DumpAnimationFCurve,
+  DumpAnimationKeyframe,
   DataRef,
   Dump,
   DumpCurve,
@@ -62,6 +76,7 @@ export type {
   DumpNodeGroup,
   DumpObject,
   DumpValidationIssue,
+  DumpUnitSettings,
   FontAtlas,
   RawNode,
   RawOutput,
@@ -88,7 +103,13 @@ export type {
   PrimitiveGeometrySeed,
   RunNodeGroupOptions,
 } from "./group-runner";
-export type { RunCoverage, RunResult } from "./run-result";
+export type {
+  RunCoverage,
+  RunDetail,
+  RunDetailSeverity,
+  RunResult,
+  RunVolumeGridStage,
+} from "./run-result";
 
 export interface RunGeneratorOptions {
   object?: string;
@@ -102,6 +123,8 @@ export interface RunGeneratorOptions {
   seed?: Exclude<GroupGeometrySeed, Geometry>;
   /** Target Geometry input identifier or friendly name. */
   geometryInput?: string;
+  /** Blender scene frame used for extracted node-tree F-curves and Scene Time. */
+  frame?: number;
 }
 
 export type RunGeometryTargetOptions =
@@ -206,6 +229,8 @@ export async function runGenerator(
   dump: Dump,
   opts: RunGeneratorOptions = {},
 ): Promise<RunResult> {
+  const frame = Number(opts.frame ?? opts.overrides?.__frame ?? dump.scene?.frame_current ?? 0);
+  dump = dumpAtFrame(dump, frame);
   // Mesh boolean and Blender-compatible convex hull need WASM; load both once.
   await Promise.all([ensureManifold(), ensureBulletHull()]);
   MISSING.clear();
@@ -225,7 +250,7 @@ export async function runGenerator(
     if (object.type === "CURVE" && modifier?.node_group && isGeometryPassthroughGroup(dump.node_groups[modifier.node_group]))
       DUMP_CONTEXT.legacyCurvePassthroughObjects.add(object.name);
   }
-  DUMP_CONTEXT.frame = Number(opts.overrides?.__frame ?? dump.scene?.frame_current ?? 0);
+  DUMP_CONTEXT.frame = frame;
   DUMP_CONTEXT.fps = Number(dump.scene?.fps ?? 24) / Math.max(Number(dump.scene?.fps_base ?? 1), 1e-9);
   const found = findModifierGroup(dump, opts.object, opts.group, opts.modifierIndex);
   if (!found) {
@@ -268,6 +293,7 @@ export async function runGenerator(
   // back-edges to it then match Blender's unavailable cycle edge instead of
   // materializing the main object's base geometry.
   DUMP_CONTEXT.evaluatingObjects.add(found.objectName);
+  beginRuntimeDetailCollection();
   try {
     for (const dependencyName of dependencyNames) {
       const object = objectsByName.get(dependencyName);
@@ -352,8 +378,10 @@ export async function runGenerator(
       geometry,
       soup,
       coverage: { handled: REGISTRY.size, missingTypes, approximateTypes },
+      details: runtimeDetailSnapshot(),
     };
   } finally {
+    endRuntimeDetailCollection();
     DUMP_CONTEXT.evaluatingObjects.clear();
   }
 }
