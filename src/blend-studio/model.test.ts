@@ -118,6 +118,8 @@ test("builds typed datablock controls from portable dump dependencies", () => {
       datablock: "Object",
       value: null,
       options: ["Curve Seed", "Generator"],
+      panelPath: [],
+      hiddenInModifier: false,
     },
     {
       identifier: "Socket_Material",
@@ -126,8 +128,50 @@ test("builds typed datablock controls from portable dump dependencies", () => {
       datablock: "Material",
       value: { datablock: "Material", name: "Chrome" },
       options: ["Chrome"],
+      panelPath: [],
+      hiddenInModifier: false,
     },
   ]);
+});
+
+test("preserves nested modifier panels and exposes editable modeled text", () => {
+  const dump = fixture();
+  dump.node_groups.Assigned.interface.push(
+    {
+      name: "Display",
+      identifier: "Panel_Display",
+      item_type: "PANEL",
+    },
+    {
+      name: "Typography",
+      identifier: "Panel_Typography",
+      parent_identifier: "Panel_Display",
+      item_type: "PANEL",
+      default_closed: true,
+    },
+    socket("Label", "Socket_Label", "INPUT", "NodeSocketString", {
+      default: "READY",
+      parent_identifier: "Panel_Typography",
+      hide_in_modifier: true,
+    }),
+  );
+  const controls = controlsForBlendStudioTarget(
+    dump,
+    discoverBlendStudioTargets(dump)[0],
+  );
+  const label = controls.find((control) => control.identifier === "Socket_Label");
+  assert.deepEqual(label, {
+    identifier: "Socket_Label",
+    name: "Label",
+    socketType: "NodeSocketString",
+    value: "READY",
+    min: 0,
+    max: 1,
+    step: .001,
+    panelPath: ["Display", "Typography"],
+    hiddenInModifier: true,
+    hideValue: false,
+  });
 });
 
 test("reports reachable support and seedable extracted objects", () => {

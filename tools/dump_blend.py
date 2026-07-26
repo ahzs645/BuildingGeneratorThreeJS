@@ -361,10 +361,29 @@ def dump_tree(tree):
     if hasattr(tree, "interface"):
         for item in tree.interface.items_tree:
             entry = {"name": item.name, "item_type": item.item_type}
+            identifier = getattr(item, "identifier", None)
+            if identifier:
+                entry["identifier"] = identifier
+            parent = getattr(item, "parent", None)
+            if parent is not None:
+                entry["parent_identifier"] = (
+                    getattr(parent, "identifier", None) or parent.name
+                )
+            description = getattr(item, "description", "")
+            if description:
+                entry["description"] = description
+            if item.item_type == "PANEL":
+                entry["default_closed"] = bool(
+                    getattr(item, "default_closed", False)
+                )
             if item.item_type == "SOCKET":
                 entry["identifier"] = item.identifier
                 entry["in_out"] = item.in_out
                 entry["socket_type"] = item.socket_type
+                entry["hide_in_modifier"] = bool(
+                    getattr(item, "hide_in_modifier", False)
+                )
+                entry["hide_value"] = bool(getattr(item, "hide_value", False))
                 if hasattr(item, "default_value"):
                     v = item.default_value
                     if hasattr(v, "__len__") and not isinstance(v, str):
@@ -372,7 +391,7 @@ def dump_tree(tree):
                     elif hasattr(v, "name"):
                         v = {"datablock": type(v).__name__, "name": v.name}
                     entry["default"] = v
-                for attr in ("min_value", "max_value", "subtype", "description"):
+                for attr in ("min_value", "max_value", "subtype"):
                     if hasattr(item, attr):
                         val = getattr(item, attr)
                         if val not in (None, ""):

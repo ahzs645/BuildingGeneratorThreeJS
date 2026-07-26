@@ -1,5 +1,5 @@
 // Geometry-operation handlers.
-import { Field, Vec3, asVec3, asNum, vadd } from "../core";
+import { Field, Vec3, asVec3, asNum, vadd, type Elem, type FieldCtx } from "../core";
 import { Geometry, Mesh, InstanceRef, MATERIAL_MATCH_ATTRIBUTE, buildTopology, inverseTransformPoint, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint, transformPointFloat32, transformPointMatrixFloat32, triangulateFaceIndices } from "../geometry";
 import { decomposeMatrix, identityMatrix, invertMatrix, multiplyMatrices, objectTransformMatrix } from "../matrix";
 import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitives";
@@ -1469,7 +1469,12 @@ reg("GeometryNodeProximity", (api) => {
       right: buildKd(indices.slice(mid + 1), depth + 1),
     };
   };
-  const kdRoot = buildKd(Array.from({ length: pts.length }, (_, i) => i));
+  // Face/edge BVHs answer the query directly. Avoid sorting and allocating a
+  // second point tree for these modes; large charger meshes were paying this
+  // setup cost even though the point tree could never be visited.
+  const kdRoot = faces || edges
+    ? null
+    : buildKd(Array.from({ length: pts.length }, (_, i) => i));
   const nearest = (p: Vec3): { d: number; q: Vec3 } => {
     if (!pts.length) return { d: 0, q: [0, 0, 0] };
     if (faces) return nearestFacePoint(p, faces);
@@ -1499,25 +1504,38 @@ reg("GeometryNodeProximity", (api) => {
     visit(kdRoot);
     return { d: f(Math.sqrt(bestSq)), q: best };
   };
-  const sample = (ctx: import("../core").FieldCtx, i: number, arr: import("../core").Elem[] | null): Vec3 =>
+  const sample = (ctx: FieldCtx, i: number, arr: Elem[] | null): Vec3 =>
     arr ? asVec3(arr[i] ?? [0, 0, 0]) : ctx.position?.(i) ?? [0, 0, 0];
+  const batches = new WeakMap<FieldCtx, {
+    positions: Vec3[];
+    values: { d: number; q: Vec3 }[];
+  }>();
+  const batch = (ctx: FieldCtx) => {
+    const cached = batches.get(ctx);
+    if (cached) return cached;
+    const arr = posF ? posF.array(ctx) : null;
+    const positions = Array.from({ length: ctx.size }, (_, i) => sample(ctx, i, arr));
+    const values = positions.map((position) =>
+      pts.length ? nearest(position) : { d: 0, q: [0, 0, 0] as Vec3 });
+    const result = { positions, values };
+    batches.set(ctx, result);
+    return result;
+  };
   return {
     Position: Field.make((ctx) => {
-      const arr = posF ? posF.array(ctx) : null;
-      const positions: Vec3[] = Array.from({ length: ctx.size }, (_, i) => sample(ctx, i, arr));
-      const values: Vec3[] = positions.map((position) => (pts.length ? nearest(position).q : [0, 0, 0]));
+      const { positions, values: samples } = batch(ctx);
+      const values = samples.map((value) => value.q);
       if (FIELD_PROBE.node === api.node.name && FIELD_PROBE.socket === "Position") {
         FIELD_PROBE.batches.push({ domain: ctx.domain, positions, values, targets: pts });
       }
       return values;
     }),
     Distance: Field.make((ctx) => {
-      const arr = posF ? posF.array(ctx) : null;
+      const { positions, values: samples } = batch(ctx);
+      const values = samples.map((value) => value.d);
       if (FIELD_PROBE.node !== api.node.name || FIELD_PROBE.socket !== "Distance") {
-        return Array.from({ length: ctx.size }, (_, i) => (pts.length ? nearest(sample(ctx, i, arr)).d : 0));
+        return values;
       }
-      const positions = Array.from({ length: ctx.size }, (_, i) => sample(ctx, i, arr));
-      const values = positions.map((p) => (pts.length ? nearest(p).d : 0));
       FIELD_PROBE.batches.push({ domain: ctx.domain, positions, values, targets: pts });
       return values;
     }),

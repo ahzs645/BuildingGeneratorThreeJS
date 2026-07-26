@@ -101,3 +101,91 @@ test("Bake prefers an embedded portable evaluated snapshot over the live input",
   assert.deepEqual(result.mesh?.positions, [[0, 0, 0], [2, 0, 0], [0, 2, 0]]);
   assert.notEqual(result, live);
 });
+
+test("Bake restores portable curves, instances, volumes, and literal values", () => {
+  const node: RawNode = {
+    name: "Bake",
+    type: "GeometryNodeBake",
+    inputs: [],
+    outputs: [
+      { name: "Geometry", identifier: "Geometry", type: "NodeSocketGeometry" },
+      { name: "Volume", identifier: "Volume", type: "NodeSocketVolume" },
+      { name: "Value", identifier: "Value", type: "NodeSocketFloat" },
+    ],
+    bake_snapshot: {
+      schema_version: 2,
+      source: "blender-evaluated",
+      frame: 3,
+      items: {
+        Geometry: {
+          socket_type: "NodeSocketGeometry",
+          value_contract: "geometry-set",
+          geometry: {
+            curves: [{
+              points: [[0, 0, 0], [1, 0, 0]],
+              cyclic: false,
+              spline_type: "POLY",
+            }],
+            instances: [{
+              geometry: {
+                mesh: {
+                  positions: [[0, 0, 0], [0, 1, 0], [0, 0, 1]],
+                  edges: [],
+                  faces: [[0, 1, 2]],
+                },
+              },
+              position: [2, 3, 4],
+              rotation: [0, 0, 0],
+              scale: [1, 1, 1],
+            }],
+          },
+        },
+        Volume: {
+          socket_type: "NodeSocketVolume",
+          value_contract: "volume-grid",
+          volume_grid: {
+            background: 1,
+            min: [0, 0, 0],
+            max: [1, 1, 1],
+            resolution: [2, 1, 1],
+            origin: [0, 0, 0],
+            voxel_size: [0.5, 1, 1],
+            values: [0.25, 0.75],
+            requested_voxel_size: 0.5,
+            requested_sample_count: 2,
+            budget_adjusted: false,
+            sample_budget: 100,
+          },
+        },
+        Value: {
+          socket_type: "NodeSocketFloat",
+          value_contract: "literal",
+          value: 42.5,
+        },
+      },
+    },
+  };
+  const api: EvalAPI = {
+    node,
+    input: () => undefined,
+    inputs: () => [],
+    geoInputs: () => [],
+    geo: () => new Geometry(),
+    field: () => Field.of(0),
+    num: () => 0,
+    vec: () => [0, 0, 0],
+    bool: () => false,
+    str: () => "",
+    ref: () => null,
+    prop: (_name, fallback) => fallback as never,
+    resolve: () => [],
+  };
+  const result = REGISTRY.get("GeometryNodeBake")!(api);
+  assert.ok(result.Geometry instanceof Geometry);
+  const geometry = result.Geometry as Geometry;
+  assert.equal(geometry.curves.length, 1);
+  assert.deepEqual(geometry.instances[0]?.position, [2, 3, 4]);
+  assert.deepEqual(geometry.instances[0]?.geometry.mesh?.faces, [[0, 1, 2]]);
+  assert.deepEqual(Array.from((result.Volume as { values: Float32Array }).values), [0.25, 0.75]);
+  assert.equal((result.Value as Field).value, 42.5);
+});

@@ -18,6 +18,10 @@ import {
 import { presetContractForBlendStudioTarget } from "../../blend-studio/preset-contracts";
 import { sceneUnits } from "../../blend-studio/units";
 import {
+  applyViewerPreview,
+  viewerPreviewsForBlendStudioTarget,
+} from "../../blend-studio/viewer-previews";
+import {
   gizmoContractsForBlendStudioTarget,
   setGizmoValue,
 } from "../../blend-studio/gizmos";
@@ -148,6 +152,7 @@ export default function BlendBridgePage(): React.JSX.Element {
   const [seedValue, setSeedValue] = useState("authored");
   const [geometryInput, setGeometryInput] = useState("");
   const [geometryOutput, setGeometryOutput] = useState("");
+  const [showHiddenControls, setShowHiddenControls] = useState(false);
   const [dependencySummary, setDependencySummary] =
     useState<DependencyExtractionPackage["summary"] | null>(null);
   const [measurementUnit, setMeasurementUnit] =
@@ -269,6 +274,12 @@ export default function BlendBridgePage(): React.JSX.Element {
       : [],
     [target, workingDump],
   );
+  const viewerPreviews = useMemo(
+    () => workingDump && target
+      ? viewerPreviewsForBlendStudioTarget(workingDump, target.groupName)
+      : [],
+    [target, workingDump],
+  );
   const inventory = useMemo(() => {
     if (!workingDump) return { objects: 0, groups: 0, nodes: 0, materials: 0 };
     return {
@@ -358,19 +369,26 @@ export default function BlendBridgePage(): React.JSX.Element {
 
   const evaluation = useMemo(() => {
     if (!interpretedDump || !target) return null;
+    const selectedViewer = geometryOutput.startsWith("viewer:")
+      ? viewerPreviews.find((preview) => `viewer:${preview.id}` === geometryOutput)
+      : undefined;
+    const viewerApplication = selectedViewer
+      ? applyViewerPreview(interpretedDump, selectedViewer)
+      : null;
     return {
-      dump: interpretedDump,
+      dump: viewerApplication?.dump ?? interpretedDump,
       target,
       overrides,
       seed: connectedGeometryInputs.length && seedValue !== "authored"
         ? seedFromValue(seedValue)
         : undefined,
       geometryInput: geometryInput || undefined,
-      output: geometryOutput || undefined,
+      output: viewerApplication?.outputIdentifier
+        ?? (geometryOutput.startsWith("viewer:") ? undefined : geometryOutput || undefined),
       frame: animationFrame,
       volumeSampleBudget: hasVolumeBoundary ? volumeSampleBudget : undefined,
     };
-  }, [animationFrame, connectedGeometryInputs.length, geometryInput, geometryOutput, hasVolumeBoundary, interpretedDump, overrides, seedValue, target, volumeSampleBudget]);
+  }, [animationFrame, connectedGeometryInputs.length, geometryInput, geometryOutput, hasVolumeBoundary, interpretedDump, overrides, seedValue, target, viewerPreviews, volumeSampleBudget]);
 
   const authoredMeasurementValue = measurementContract
     ? Number(
@@ -594,6 +612,20 @@ export default function BlendBridgePage(): React.JSX.Element {
     rootGroupName: target.groupName,
   } : undefined;
 
+  const hiddenControlCount = [
+    ...ordinaryControls.filter((control) =>
+      control.hiddenInModifier || control.hideValue),
+    ...datablockControls.filter((control) => control.hiddenInModifier),
+  ].length;
+  const visibleOrdinaryControls = ordinaryControls.filter((control) =>
+    showHiddenControls || (!control.hiddenInModifier && !control.hideValue));
+  const visibleDatablockControls = datablockControls.filter((control) =>
+    showHiddenControls || !control.hiddenInModifier);
+  const controlPanelKeys = [...new Set([
+    ...visibleOrdinaryControls.map((control) => control.panelPath.join(" › ")),
+    ...visibleDatablockControls.map((control) => control.panelPath.join(" › ")),
+  ])];
+
   const leftDock = <>
     <header className="studio-dock-header"><span>Source</span><small>local Blender bridge</small></header>
     <section>
@@ -670,10 +702,12 @@ export default function BlendBridgePage(): React.JSX.Element {
       </label>}
       {target && geometryInputs.length > 0 && connectedGeometryInputs.length === 0
         && <p className="blend-studio-copy">Pure generator · its exposed Geometry socket is disconnected, so output is driven by node parameters.</p>}
-      {target && geometryOutputs.length > 1 && <label className="blend-field">
+      {target && (geometryOutputs.length > 1 || viewerPreviews.length > 0) && <label className="blend-field">
         <span>Preview output</span>
         <select value={geometryOutput} onChange={(event) => setGeometryOutput(event.target.value)}>
           {geometryOutputs.map((item) => <option key={item.identifier} value={item.identifier}>{item.name}</option>)}
+          {viewerPreviews.map((preview) =>
+            <option key={preview.id} value={`viewer:${preview.id}`}>Viewer · {preview.label}</option>)}
         </select>
       </label>}
       <div className="blend-button-row">
@@ -948,49 +982,71 @@ export default function BlendBridgePage(): React.JSX.Element {
       </div>
     </section>}
     <section>
-      <div className="section-title"><span>Exposed inputs</span><small>{ordinaryControls.length + datablockControls.length} editable</small></div>
+      <div className="section-title"><span>Exposed inputs</span><small>{visibleOrdinaryControls.length + visibleDatablockControls.length} editable</small></div>
+      {hiddenControlCount > 0 && <label className="blend-hidden-toggle">
+        <input
+          type="checkbox"
+          checked={showHiddenControls}
+          onChange={(event) => setShowHiddenControls(event.target.checked)}
+        />
+        <span>Show {hiddenControlCount} Blender-hidden {hiddenControlCount === 1 ? "control" : "controls"}</span>
+      </label>}
       <div className="blend-controls">
-        {ordinaryControls.length === 0 && datablockControls.length === 0
+        {visibleOrdinaryControls.length === 0 && visibleDatablockControls.length === 0
           && <p>No additional portable inputs are exposed by this target.</p>}
-        {ordinaryControls.map((control) => <label key={control.identifier}>
-          <span>{control.name}</span>
-          {control.socketType === "NodeSocketBool"
-            ? <input
-                type="checkbox"
-                checked={Boolean(overrides[control.identifier])}
-                onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: event.target.checked }))}
-              />
-            : <>
-                <input
-                  type="range"
-                  min={control.min}
-                  max={control.max}
-                  step={control.step}
-                  value={Number(overrides[control.identifier] ?? control.value)}
-                  onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: Number(event.target.value) }))}
-                />
-                <output>{Number(overrides[control.identifier] ?? control.value).toFixed(control.step === 1 ? 0 : 3)}</output>
-              </>}
-        </label>)}
-        {datablockControls.map((control) => {
-          const value = overrides[control.identifier] as { name?: string } | null | undefined;
-          return <label key={control.identifier}>
-            <span>{control.name}</span>
-            <select
-              value={value?.name ?? ""}
-              onChange={(event) => setOverrides((current) => ({
-                ...current,
-                [control.identifier]: event.target.value
-                  ? { datablock: control.datablock, name: event.target.value }
-                  : null,
-              }))}
-            >
-              <option value="">Unbound</option>
-              {control.options.map((name) =>
-                <option key={name} value={name}>{control.datablock} · {name}</option>)}
-            </select>
-          </label>;
-        })}
+        {controlPanelKeys.map((panelKey) => <div className="blend-control-panel" key={panelKey || "General"}>
+          {panelKey && <h4>{panelKey}</h4>}
+          {visibleOrdinaryControls
+            .filter((control) => control.panelPath.join(" › ") === panelKey)
+            .map((control) => <label key={control.identifier}>
+              <span>{control.name}</span>
+              {control.socketType === "NodeSocketBool"
+                ? <input
+                    type="checkbox"
+                    checked={Boolean(overrides[control.identifier])}
+                    onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: event.target.checked }))}
+                  />
+                : control.socketType === "NodeSocketString"
+                  ? <input
+                      className="blend-string-input"
+                      type="text"
+                      value={String(overrides[control.identifier] ?? control.value)}
+                      onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: event.target.value }))}
+                    />
+                  : <>
+                      <input
+                        type="range"
+                        min={control.min}
+                        max={control.max}
+                        step={control.step}
+                        value={Number(overrides[control.identifier] ?? control.value)}
+                        onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: Number(event.target.value) }))}
+                      />
+                      <output>{Number(overrides[control.identifier] ?? control.value).toFixed(control.step === 1 ? 0 : 3)}</output>
+                    </>}
+            </label>)}
+          {visibleDatablockControls
+            .filter((control) => control.panelPath.join(" › ") === panelKey)
+            .map((control) => {
+              const value = overrides[control.identifier] as { name?: string } | null | undefined;
+              return <label key={control.identifier}>
+                <span>{control.name}</span>
+                <select
+                  value={value?.name ?? ""}
+                  onChange={(event) => setOverrides((current) => ({
+                    ...current,
+                    [control.identifier]: event.target.value
+                      ? { datablock: control.datablock, name: event.target.value }
+                      : null,
+                  }))}
+                >
+                  <option value="">Unbound</option>
+                  {control.options.map((name) =>
+                    <option key={name} value={name}>{control.datablock} · {name}</option>)}
+                </select>
+              </label>;
+            })}
+        </div>)}
       </div>
     </section>
   </>;

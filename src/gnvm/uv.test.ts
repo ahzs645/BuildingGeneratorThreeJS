@@ -316,10 +316,21 @@ test("UV Pack Islands keeps disconnected topology in separate packed cells", () 
     .array(makeFieldCtx(geometry, "CORNER")) as Vec3[];
   const first = values.slice(0, 4);
   const second = values.slice(4, 8);
+  const firstMinX = Math.min(...first.map((value) => value[0]));
+  const firstMaxX = Math.max(...first.map((value) => value[0]));
+  const secondMinX = Math.min(...second.map((value) => value[0]));
+  const secondMaxX = Math.max(...second.map((value) => value[0]));
+  const firstMinY = Math.min(...first.map((value) => value[1]));
   const firstMaxY = Math.max(...first.map((value) => value[1]));
   const secondMinY = Math.min(...second.map((value) => value[1]));
+  const secondMaxY = Math.max(...second.map((value) => value[1]));
 
-  assert.ok(firstMaxY <= secondMinY + 1e-12);
+  assert.ok(
+    firstMaxX <= secondMinX + 1e-12
+    || secondMaxX <= firstMinX + 1e-12
+    || firstMaxY <= secondMinY + 1e-12
+    || secondMaxY <= firstMinY + 1e-12,
+  );
   assert.ok(Math.max(...first.map((value) => value[0]))
     - Math.min(...first.map((value) => value[0])) > .49);
   assert.ok(Math.max(...second.map((value) => value[0]))

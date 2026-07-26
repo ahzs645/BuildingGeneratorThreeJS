@@ -68,6 +68,95 @@ export interface RawOutput {
   [key: string]: unknown;
 }
 
+export interface BakeSnapshotAttribute {
+  domain: "POINT" | "EDGE" | "FACE" | "CORNER" | "CURVE" | "INSTANCE";
+  data: unknown[];
+}
+
+export interface BakeSnapshotMesh {
+  positions: Vec3[];
+  edges: [number, number][];
+  faces: number[][];
+  face_material?: number[];
+  material_slots?: (string | null)[];
+  attributes?: Record<string, BakeSnapshotAttribute>;
+}
+
+export interface BakeSnapshotSpline {
+  points: Vec3[];
+  cyclic: boolean;
+  spline_type?: "POLY" | "BEZIER" | "NURBS" | "CATMULL_ROM";
+  resolution?: number;
+  control_points?: Vec3[];
+  bezier_left?: Vec3[];
+  bezier_right?: Vec3[];
+}
+
+export interface BakeSnapshotGeometrySet {
+  mesh?: BakeSnapshotMesh;
+  curves?: BakeSnapshotSpline[];
+  curve_attributes?: Record<string, BakeSnapshotAttribute>;
+  instances?: {
+    geometry: BakeSnapshotGeometrySet;
+    position: Vec3;
+    rotation: Vec3;
+    scale: Vec3;
+    transform_matrix?: number[][];
+    attributes?: Record<string, unknown>;
+  }[];
+}
+
+export interface BakeSnapshotVolumeGrid {
+  background: number;
+  min: Vec3;
+  max: Vec3;
+  resolution: Vec3;
+  origin: Vec3;
+  voxel_size: Vec3;
+  values: number[];
+  requested_voxel_size: number;
+  requested_sample_count: number;
+  budget_adjusted: boolean;
+  sample_budget: number;
+}
+
+export type BakeSnapshotV2Item =
+  | {
+      socket_type: "NodeSocketGeometry";
+      value_contract: "geometry-set";
+      geometry: BakeSnapshotGeometrySet;
+    }
+  | {
+      socket_type: "NodeSocketVolume";
+      value_contract: "volume-grid";
+      volume_grid: BakeSnapshotVolumeGrid;
+    }
+  | {
+      socket_type: string;
+      value_contract: "literal";
+      value: unknown;
+    };
+
+export type BakeSnapshot =
+  | {
+      schema_version: 1;
+      source: "blender-evaluated";
+      frame: number;
+      source_fingerprint_sha256?: string;
+      items: Record<string, {
+        socket_type: "NodeSocketGeometry";
+        component_contract: "realized-mesh";
+        geometry: BakeSnapshotMesh;
+      }>;
+    }
+  | {
+      schema_version: 2;
+      source: "blender-evaluated";
+      frame: number;
+      source_fingerprint_sha256?: string;
+      items: Record<string, BakeSnapshotV2Item>;
+    };
+
 export interface RawNode {
   name: string;
   type: string;
@@ -101,27 +190,7 @@ export interface RawNode {
     persistent_cache_status: "not-exported" | "portable-evaluated-snapshot";
     reason: string;
   };
-  bake_snapshot?: {
-    schema_version: 1;
-    source: "blender-evaluated";
-    frame: number;
-    source_fingerprint_sha256?: string;
-    items: Record<string, {
-      socket_type: "NodeSocketGeometry";
-      component_contract: "realized-mesh";
-      geometry: {
-        positions: Vec3[];
-        edges: [number, number][];
-        faces: number[][];
-        face_material?: number[];
-        material_slots?: (string | null)[];
-        attributes?: Record<string, {
-          domain: "POINT" | "EDGE" | "FACE" | "CORNER";
-          data: (number | Vec3)[];
-        }>;
-      };
-    }>;
-  };
+  bake_snapshot?: BakeSnapshot;
   group?: string;
   /** Name of the paired output node for repeat/simulation zones. */
   paired_output?: string;
@@ -153,6 +222,10 @@ export interface DumpInterfaceItem {
   max_value?: number;
   subtype?: string;
   description?: string;
+  parent_identifier?: string;
+  default_closed?: boolean;
+  hide_in_modifier?: boolean;
+  hide_value?: boolean;
   [key: string]: unknown;
 }
 

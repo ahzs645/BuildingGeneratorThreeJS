@@ -56,10 +56,13 @@ export type BlendStudioControl = {
   identifier: string;
   name: string;
   socketType: string;
-  value: number | boolean;
+  value: number | boolean | string;
   min: number;
   max: number;
   step: number;
+  panelPath: string[];
+  hiddenInModifier: boolean;
+  hideValue: boolean;
 };
 
 export type BlendStudioDatablockControl = {
@@ -69,6 +72,8 @@ export type BlendStudioDatablockControl = {
   datablock: "Object" | "Collection" | "Image" | "Material";
   value: DataRef | null;
   options: string[];
+  panelPath: string[];
+  hiddenInModifier: boolean;
 };
 
 export type BlendStudioCompatibility = {
@@ -331,9 +336,34 @@ function rangeFor(item: DumpInterfaceItem, value: number): [number, number, numb
   return [min, max, Math.max((max - min) / 1_000, .0001)];
 }
 
+function panelPaths(items: DumpInterfaceItem[]): Map<string, string[]> {
+  const panels = new Map<string, DumpInterfaceItem>();
+  for (const item of items) {
+    if (item.item_type !== "PANEL") continue;
+    panels.set(item.identifier ?? item.name, item);
+  }
+  const cache = new Map<string, string[]>();
+  const resolve = (identifier: string | undefined, seen = new Set<string>()): string[] => {
+    if (!identifier || seen.has(identifier)) return [];
+    const cached = cache.get(identifier);
+    if (cached) return cached;
+    const panel = panels.get(identifier);
+    if (!panel) return [];
+    const path = [
+      ...resolve(panel.parent_identifier, new Set(seen).add(identifier)),
+      panel.name,
+    ];
+    cache.set(identifier, path);
+    return path;
+  };
+  for (const identifier of panels.keys()) resolve(identifier);
+  return cache;
+}
+
 export function controlsForBlendStudioTarget(dump: Dump, target: BlendStudioTarget): BlendStudioControl[] {
   const group = dump.node_groups[target.groupName];
   if (!group) return [];
+  const paths = panelPaths(group.interface);
   return group.interface.flatMap((item) => {
     if (
       item.item_type !== "SOCKET"
@@ -342,11 +372,17 @@ export function controlsForBlendStudioTarget(dump: Dump, target: BlendStudioTarg
       || item.socket_type === "NodeSocketGeometry"
       || (!item.socket_type?.includes("Float")
         && !item.socket_type?.includes("Int")
-        && item.socket_type !== "NodeSocketBool")
+        && item.socket_type !== "NodeSocketBool"
+        && item.socket_type !== "NodeSocketString")
     ) return [];
     const stored = target.savedInputs[item.identifier] ?? target.savedInputs[item.name];
-    const raw = stored ?? item.default ?? (item.socket_type === "NodeSocketBool" ? false : 0);
-    const value = item.socket_type === "NodeSocketBool" ? Boolean(raw) : Number(raw) || 0;
+    const fallback = item.socket_type === "NodeSocketBool"
+      ? false
+      : item.socket_type === "NodeSocketString" ? "" : 0;
+    const raw = stored ?? item.default ?? fallback;
+    const value = item.socket_type === "NodeSocketBool"
+      ? Boolean(raw)
+      : item.socket_type === "NodeSocketString" ? String(raw) : Number(raw) || 0;
     const [min, max, step] = rangeFor(item, typeof value === "number" ? value : 0);
     return [{
       identifier: item.identifier,
@@ -356,6 +392,9 @@ export function controlsForBlendStudioTarget(dump: Dump, target: BlendStudioTarg
       min,
       max,
       step,
+      panelPath: paths.get(item.parent_identifier ?? "") ?? [],
+      hiddenInModifier: Boolean(item.hide_in_modifier),
+      hideValue: Boolean(item.hide_value),
     }];
   });
 }
@@ -384,6 +423,7 @@ export function datablockControlsForBlendStudioTarget(
 ): BlendStudioDatablockControl[] {
   const group = dump.node_groups[target.groupName];
   if (!group) return [];
+  const paths = panelPaths(group.interface);
   const types = new Map<string, BlendStudioDatablockControl["datablock"]>([
     ["NodeSocketObject", "Object"],
     ["NodeSocketCollection", "Collection"],
@@ -417,6 +457,8 @@ export function datablockControlsForBlendStudioTarget(
       datablock,
       value: dataRef(stored),
       options: [...new Set(options[datablock])].sort((a, b) => a.localeCompare(b)),
+      panelPath: paths.get(item.parent_identifier ?? "") ?? [],
+      hiddenInModifier: Boolean(item.hide_in_modifier),
     }];
   });
 }

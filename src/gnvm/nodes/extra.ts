@@ -19,7 +19,7 @@ import {
   vnorm,
 } from "../core";
 import { Geometry, Mesh, mergeMeshInto, realizeInstances, rotateEulerXYZ, Spline, buildTopology, triangulateFaceIndices, setUniformFaceSharpness } from "../geometry";
-import { bakeSnapshotGeometry } from "../bake-snapshot";
+import { bakeSnapshotValue } from "../bake-snapshot";
 import { fillCurves, meshEdgesToChains, splineLength, splineSegments, splineFrames } from "../curves";
 import { makeFieldCtx } from "../evaluator";
 import {
@@ -1135,9 +1135,9 @@ reg("GeometryNodeBake", (api) => {
   let usedSnapshot = false;
   for (const output of api.node.outputs) {
     if (!output.identifier || output.identifier === "__extend__") continue;
-    const snapshot = bakeSnapshotGeometry(api.node, output.identifier);
+    const snapshot = bakeSnapshotValue(api.node, output.identifier);
     if (snapshot) {
-      outputs[output.identifier] = snapshot;
+      outputs[output.identifier] = snapshot.value;
       usedSnapshot = true;
       continue;
     }

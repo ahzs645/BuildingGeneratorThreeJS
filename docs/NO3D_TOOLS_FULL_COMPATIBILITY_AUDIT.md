@@ -229,20 +229,24 @@ source.
 
 ## Remaining work, in priority order
 
-1. Continue reducing face-proximity and deep-field costs in the
-   budget-sensitive chargers, Gluefinity, Gabor, and putty targets before
-   enabling live edit; the manual-preview policy remains intentional.
+1. Continue target-specific reduction in the budget-sensitive chargers,
+   Gluefinity, Gabor, and putty closures before enabling live edit. Shared
+   face/edge proximity setup and dual-output sampling are now deduplicated, but
+   Apple Magsafe and Putty Flange still require isolated profiling; the
+   manual-preview policy remains intentional.
 2. Supply the four McMaster STLs if those exact Skadis screws are intended to
    ship, and restore the optional material images where visual parity matters.
    Recovery must use the exact licensed/source files; the official part pages
    require an authenticated McMaster account.
 3. Expand beyond the new seam, non-manifold, adaptivity, and budget fixtures
    into curved cyclic UV charts and complex sparse OpenVDB surfaces before
-   promoting the bounded implementations to general exact parity.
-4. Expand the evaluated Bake snapshot schema beyond the currently audited
-   realized-mesh items if future files use cached volumes, curves, instances,
-   or non-geometry Bake sockets. Native Blender cache serialization remains a
-   private, version-sensitive format.
+   promoting the bounded implementations to general exact parity. UV island
+   placement now uses deterministic maximal-free rectangles, but exact
+   polygon-silhouette packing is still outside the proven boundary.
+4. Generate typed v2 Bake attachments from future Blender fixtures when cached
+   volumes, curves, instances, or non-geometry sockets appear. The runtime and
+   attachment boundary support those types now; Blender's private,
+   version-sensitive native cache container remains intentionally unsupported.
 
 ## July 25 behavior audit follow-up
 

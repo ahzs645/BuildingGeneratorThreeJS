@@ -134,8 +134,10 @@ entire corpus.
 - The absent McMaster-Carr STLs in `corner-mounted-skadis` are not fabricated.
 - Multi-item Bake boundaries pass every dynamic socket through during live
   evaluation. Extraction adds an explicit `bake_contract` for every item.
-  `tools/attach_bake_snapshots.ts` can attach Blender-evaluated realized meshes
-  as portable v1 snapshots, which take precedence over live input. Blender's
+  `tools/attach_bake_snapshots.ts` now attaches typed portable v2 snapshots:
+  complete geometry sets (meshes, curves, and instances), dense volume grids,
+  and literal socket values. Existing realized-mesh v1 snapshots still load
+  and are upgraded when the attachment tool rewrites a dump. Blender's private
   native cache serialization is not treated as an interchange format.
 - The eight original files retain their authored external font paths. The
   non-destructive `Font Repaired` copies contain the recovered fonts. The 19
@@ -163,6 +165,9 @@ entire corpus.
   Gabor volume modifier completed the corrected concurrent audit in 27.4
   seconds after edge-BVH and field-allocation optimizations, while Apple
   Magsafe and Putty Flange still exceed a 60-second isolated budget.
+- Geometry Proximity now skips an unused point KD-tree for face/edge modes and
+  shares each query batch between Position and Distance outputs. This removes
+  duplicate closest-surface work without changing Blender float32 results.
 - Nylon Bolt's visible modifier is exact at 8,735 / 10,070. Its later
   `cl_thumbs` modifier is authored viewport-disabled and remains an explicit
   diagnostic target rather than part of the default evaluated stack.
@@ -190,6 +195,14 @@ entire corpus.
   distribute curved-cycle closure error deterministically. Angle Based and
   Conformal use distinct bounded objectives, while developable charts retain
   the exact rigid-unfold path. UV Pack Islands reconstructs disconnected and
-  UV-discontinuous islands from topology and packs them independently.
+  UV-discontinuous islands from topology and packs them independently with a
+  deterministic maximal-free-rectangle search and a safe high-island-count
+  fallback. This uses atlas space more effectively than the previous fixed
+  grid while preserving the bounded classification.
+- BlendBridge can preview any linked Viewer node, routing nested Viewers
+  through temporary cloned group outputs. It also preserves extracted nested
+  modifier panels and Blender-hidden controls, and exposes String sockets so
+  authored modeled text displays can be edited beyond the caliper-specific
+  adapter.
 - Exact general parity is still not claimed for curved cyclic ABF/LSCM UV
   distortion, arbitrary island packing, or arbitrary adaptive OpenVDB surfaces.

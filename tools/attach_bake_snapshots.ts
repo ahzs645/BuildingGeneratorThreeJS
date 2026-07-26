@@ -5,12 +5,17 @@
  *   npx tsx tools/attach_bake_snapshots.ts INPUT_DUMP MANIFEST OUTPUT_DUMP
  *
  * The manifest contains `frame`, an optional source fingerprint, and entries
- * with `group`, `node`, `item`, and a `probe` path. Probe JSON is produced by
- * `bake_geometry_probe.py` or `bake_nested_geometry_probe.py`.
+ * with `group`, `node`, `item`, and either a legacy realized-mesh `probe` path
+ * or a typed v2 `snapshot` path. Typed items can contain a geometry set,
+ * volume grid, or literal socket value.
  */
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import type { Dump, RawNode } from "../src/gnvm/index";
+import type {
+  BakeSnapshot,
+  BakeSnapshotV2Item,
+} from "../src/gnvm/dump-schema";
 
 type Probe = {
   positions: number[][];
@@ -31,9 +36,33 @@ type Manifest = {
     group: string;
     node: string;
     item: string;
-    probe: string;
+    probe?: string;
+    snapshot?: string;
   }[];
 };
+
+function v2Snapshot(node: RawNode, manifest: Manifest): Extract<BakeSnapshot, { schema_version: 2 }> {
+  const existing = node.bake_snapshot;
+  if (existing?.schema_version === 2) return existing;
+  const items: Record<string, BakeSnapshotV2Item> = {};
+  if (existing?.schema_version === 1) {
+    for (const [identifier, item] of Object.entries(existing.items)) {
+      items[identifier] = {
+        socket_type: "NodeSocketGeometry",
+        value_contract: "geometry-set",
+        geometry: { mesh: item.geometry },
+      };
+    }
+  }
+  return {
+    schema_version: 2,
+    source: "blender-evaluated",
+    frame: manifest.frame ?? existing?.frame ?? 1,
+    source_fingerprint_sha256:
+      manifest.source_fingerprint_sha256 ?? existing?.source_fingerprint_sha256,
+    items,
+  };
+}
 
 const [inputPath, manifestPath, outputPath] = process.argv.slice(2);
 if (!inputPath || !manifestPath || !outputPath)
@@ -50,33 +79,41 @@ for (const entry of manifest.snapshots) {
   if (!node || node.type !== "GeometryNodeBake")
     throw new Error(`Bake node not found: ${entry.group} / ${entry.node}`);
   const output = node.outputs.find((socket) => socket.identifier === entry.item);
-  if (!output || output.type !== "NodeSocketGeometry")
-    throw new Error(`geometry Bake item not found: ${entry.item}`);
-  const probePath = resolve(manifestDirectory, entry.probe);
-  const probe = JSON.parse(await readFile(probePath, "utf8")) as Probe;
-  if (!Array.isArray(probe.positions) || !Array.isArray(probe.faces))
-    throw new Error(`invalid geometry probe: ${probePath}`);
-  const snapshot = node.bake_snapshot ?? {
-    schema_version: 1 as const,
-    source: "blender-evaluated" as const,
-    frame: manifest.frame ?? 1,
-    ...(manifest.source_fingerprint_sha256
-      ? { source_fingerprint_sha256: manifest.source_fingerprint_sha256 }
-      : {}),
-    items: {},
-  };
-  snapshot.items[entry.item] = {
-    socket_type: "NodeSocketGeometry",
-    component_contract: "realized-mesh",
-    geometry: {
-      positions: probe.positions as [number, number, number][],
-      edges: (probe.edges ?? []) as [number, number][],
-      faces: probe.faces,
-      ...(probe.face_material ? { face_material: probe.face_material } : {}),
-      ...(probe.material_slots ? { material_slots: probe.material_slots } : {}),
-      ...(probe.attributes ? { attributes: probe.attributes as never } : {}),
-    },
-  };
+  if (!output) throw new Error(`Bake item not found: ${entry.item}`);
+  if (Boolean(entry.probe) === Boolean(entry.snapshot))
+    throw new Error(`choose exactly one of probe or snapshot for ${entry.item}`);
+  let item: BakeSnapshotV2Item;
+  if (entry.probe) {
+    if (output.type !== "NodeSocketGeometry")
+      throw new Error(`realized mesh probe requires a Geometry Bake item: ${entry.item}`);
+    const probePath = resolve(manifestDirectory, entry.probe);
+    const probe = JSON.parse(await readFile(probePath, "utf8")) as Probe;
+    if (!Array.isArray(probe.positions) || !Array.isArray(probe.faces))
+      throw new Error(`invalid geometry probe: ${probePath}`);
+    item = {
+      socket_type: "NodeSocketGeometry",
+      value_contract: "geometry-set",
+      geometry: {
+        mesh: {
+          positions: probe.positions as [number, number, number][],
+          edges: (probe.edges ?? []) as [number, number][],
+          faces: probe.faces,
+          ...(probe.face_material ? { face_material: probe.face_material } : {}),
+          ...(probe.material_slots ? { material_slots: probe.material_slots } : {}),
+          ...(probe.attributes ? { attributes: probe.attributes as never } : {}),
+        },
+      },
+    };
+  } else {
+    const snapshotPath = resolve(manifestDirectory, entry.snapshot!);
+    item = JSON.parse(await readFile(snapshotPath, "utf8")) as BakeSnapshotV2Item;
+    if (!item || typeof item !== "object" || !("value_contract" in item))
+      throw new Error(`invalid typed Bake snapshot: ${snapshotPath}`);
+    if (item.socket_type !== output.type)
+      throw new Error(`snapshot socket type ${item.socket_type} does not match ${output.type}`);
+  }
+  const snapshot = v2Snapshot(node, manifest);
+  snapshot.items[entry.item] = item;
   node.bake_snapshot = snapshot;
   node.bake_contract = {
     ...(node.bake_contract ?? {
@@ -89,7 +126,7 @@ for (const entry of manifest.snapshots) {
     persistent_cache_portable: true,
     persistent_cache_status: "portable-evaluated-snapshot",
     reason: (
-      "A versioned Blender-evaluated realized-mesh snapshot is embedded. "
+      "A versioned Blender-evaluated typed snapshot is embedded. "
       + "It is portable across browser sessions and independent of Blender's private cache files."
     ),
   } satisfies NonNullable<RawNode["bake_contract"]>;

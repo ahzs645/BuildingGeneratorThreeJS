@@ -599,6 +599,178 @@ function uvIslands(
     Math.min(...left) - Math.min(...right));
 }
 
+type UVIslandBounds = {
+  indices: number[];
+  min: [number, number];
+  max: [number, number];
+  width: number;
+  height: number;
+  order: number;
+};
+
+type UVPlacement = {
+  island: UVIslandBounds;
+  x: number;
+  y: number;
+  rotate: boolean;
+  scale: number;
+};
+
+/**
+ * Deterministic rectangle packing for UV island bounds.
+ *
+ * Blender packs polygon silhouettes rather than rectangles, but a maximal-free
+ * rectangle search uses the available atlas much more effectively than fixed
+ * grid cells while remaining bounded, deterministic, and inexpensive.
+ */
+function packIslandBounds(
+  islands: UVIslandBounds[],
+  width: number,
+  height: number,
+  gap: number,
+): UVPlacement[] {
+  if (!islands.length || width <= 0 || height <= 0) return [];
+  const ordered = [...islands].sort((left, right) =>
+    Math.max(right.width, right.height) - Math.max(left.width, left.height)
+    || right.width * right.height - left.width * left.height
+    || left.order - right.order);
+
+  const attempt = (scale: number): UVPlacement[] | null => {
+    let free = [{ x: 0, y: 0, width, height }];
+    const placements: UVPlacement[] = [];
+    for (const island of ordered) {
+      let best: {
+        freeIndex: number;
+        rotate: boolean;
+        packedWidth: number;
+        packedHeight: number;
+        shortSide: number;
+        areaWaste: number;
+      } | null = null;
+      for (let freeIndex = 0; freeIndex < free.length; freeIndex++) {
+        const rectangle = free[freeIndex];
+        for (const rotate of [false, true]) {
+          const packedWidth = (rotate ? island.height : island.width) * scale + gap;
+          const packedHeight = (rotate ? island.width : island.height) * scale + gap;
+          if (packedWidth > rectangle.width + 1e-12
+            || packedHeight > rectangle.height + 1e-12) continue;
+          const shortSide = Math.min(
+            rectangle.width - packedWidth,
+            rectangle.height - packedHeight,
+          );
+          const areaWaste = rectangle.width * rectangle.height
+            - packedWidth * packedHeight;
+          const candidate = {
+            freeIndex,
+            rotate,
+            packedWidth,
+            packedHeight,
+            shortSide,
+            areaWaste,
+          };
+          if (
+            !best
+            || candidate.shortSide < best.shortSide - 1e-12
+            || (
+              Math.abs(candidate.shortSide - best.shortSide) <= 1e-12
+              && candidate.areaWaste < best.areaWaste - 1e-12
+            )
+            || (
+              Math.abs(candidate.shortSide - best.shortSide) <= 1e-12
+              && Math.abs(candidate.areaWaste - best.areaWaste) <= 1e-12
+              && Number(candidate.rotate) < Number(best.rotate)
+            )
+          ) best = candidate;
+        }
+      }
+      if (!best) return null;
+      const used = free[best.freeIndex];
+      placements.push({
+        island,
+        x: used.x + gap / 2,
+        y: used.y + gap / 2,
+        rotate: best.rotate,
+        scale,
+      });
+      const right = {
+        x: used.x + best.packedWidth,
+        y: used.y,
+        width: used.width - best.packedWidth,
+        height: best.packedHeight,
+      };
+      const top = {
+        x: used.x,
+        y: used.y + best.packedHeight,
+        width: used.width,
+        height: used.height - best.packedHeight,
+      };
+      free.splice(best.freeIndex, 1, right, top);
+      free = free.filter((rectangle) =>
+        rectangle.width > 1e-12 && rectangle.height > 1e-12);
+      free = free.filter((rectangle, index) =>
+        !free.some((candidate, candidateIndex) =>
+          candidateIndex !== index
+          && rectangle.x >= candidate.x - 1e-12
+          && rectangle.y >= candidate.y - 1e-12
+          && rectangle.x + rectangle.width <= candidate.x + candidate.width + 1e-12
+          && rectangle.y + rectangle.height <= candidate.y + candidate.height + 1e-12));
+    }
+    return placements;
+  };
+
+  let lower = 0;
+  let upper = Math.max(
+    ...islands.map((island) => Math.max(
+      island.width > 1e-12 ? width / island.width : 0,
+      island.height > 1e-12 ? height / island.height : 0,
+    )),
+    1,
+  );
+  while (attempt(upper)) upper *= 2;
+  let best = attempt(0);
+  if (!best) {
+    // A requested margin can consume every free rectangle before island scale
+    // is considered. Retain a deterministic grid fallback instead of emitting
+    // collapsed UVs for high-island-count assets.
+    const columns = Math.max(1, Math.ceil(Math.sqrt(
+      islands.length * width / Math.max(height, 1e-12),
+    )));
+    const rows = Math.ceil(islands.length / columns);
+    const cellWidth = width / columns;
+    const cellHeight = height / rows;
+    const inset = Math.min(gap / 2, cellWidth * .45, cellHeight * .45);
+    best = ordered.map((island, index) => {
+      const fittedScale = Math.min(
+        island.width > 1e-12
+          ? (cellWidth - inset * 2) / island.width
+          : Infinity,
+        island.height > 1e-12
+          ? (cellHeight - inset * 2) / island.height
+          : Infinity,
+      );
+      return {
+        island,
+        x: (index % columns) * cellWidth + inset,
+        y: Math.floor(index / columns) * cellHeight + inset,
+        rotate: false,
+        scale: Number.isFinite(fittedScale) ? Math.max(0, fittedScale) : 1,
+      };
+    });
+    return best;
+  }
+  for (let iteration = 0; iteration < 36; iteration++) {
+    const middle = (lower + upper) / 2;
+    const result = attempt(middle);
+    if (result) {
+      lower = middle;
+      best = result;
+    } else {
+      upper = middle;
+    }
+  }
+  return best;
+}
+
 /**
  * Bounded packing approximation for imported authoring graphs.
  *
@@ -648,12 +820,7 @@ reg("GeometryNodeUVPackIslands", (api) => {
         rectangleMax[1] - margin,
       ];
       const packed = source.map((value) => [...value] as Vec3);
-      const rows = Math.ceil(Math.sqrt(islands.length));
-      const columns = Math.ceil(islands.length / rows);
-      const cellWidth = Math.max(0, targetMax[0] - targetMin[0]) / columns;
-      const cellHeight = Math.max(0, targetMax[1] - targetMin[1]) / rows;
-      for (let islandIndex = 0; islandIndex < islands.length; islandIndex++) {
-        const indices = islands[islandIndex];
+      const islandBounds = islands.map((indices, order): UVIslandBounds => {
         const min: [number, number] = [Infinity, Infinity];
         const max: [number, number] = [-Infinity, -Infinity];
         for (const index of indices) {
@@ -662,36 +829,55 @@ reg("GeometryNodeUVPackIslands", (api) => {
           max[0] = Math.max(max[0], source[index][0]);
           max[1] = Math.max(max[1], source[index][1]);
         }
-        const width = max[0] - min[0];
-        const height = max[1] - min[1];
+        return {
+          indices,
+          min,
+          max,
+          width: max[0] - min[0],
+          height: max[1] - min[1],
+          order,
+        };
+      });
+      if (islandBounds.length === 1) {
+        const [{ indices, min, width, height }] = islandBounds;
         const normalScale = Math.min(
-          width > 1e-12 ? cellWidth / width : Infinity,
-          height > 1e-12 ? cellHeight / height : Infinity,
+          width > 1e-12 ? (targetMax[0] - targetMin[0]) / width : Infinity,
+          height > 1e-12 ? (targetMax[1] - targetMin[1]) / height : Infinity,
         );
         const rotatedScale = Math.min(
-          height > 1e-12 ? cellWidth / height : Infinity,
-          width > 1e-12 ? cellHeight / width : Infinity,
+          height > 1e-12 ? (targetMax[0] - targetMin[0]) / height : Infinity,
+          width > 1e-12 ? (targetMax[1] - targetMin[1]) / width : Infinity,
         );
         const rotate = rotatedScale > normalScale + 1e-12
           || (Math.abs(rotatedScale - normalScale) <= 1e-12 && width > height);
         const safeScale = Number.isFinite(rotate ? rotatedScale : normalScale)
           ? Math.max(0, rotate ? rotatedScale : normalScale)
           : 0;
-        const column = islandIndex % columns;
-        const row = Math.floor(islandIndex / columns);
-        const packedWidth = (rotate ? height : width) * safeScale;
-        const packedHeight = (rotate ? width : height) * safeScale;
-        const centerInCell = islands.length > 1;
-        const originX = targetMin[0] + column * cellWidth
-          + (centerInCell ? (cellWidth - packedWidth) / 2 : 0);
-        const originY = targetMin[1] + row * cellHeight
-          + (centerInCell ? (cellHeight - packedHeight) / 2 : 0);
         for (const index of indices) {
           const localX = source[index][0] - min[0];
           const localY = source[index][1] - min[1];
           packed[index] = [
-            originX + (rotate ? localY : localX) * safeScale,
-            originY + (rotate ? width - localX : localY) * safeScale,
+            targetMin[0] + (rotate ? localY : localX) * safeScale,
+            targetMin[1] + (rotate ? width - localX : localY) * safeScale,
+            source[index][2],
+          ];
+        }
+        return packed;
+      }
+      const placements = packIslandBounds(
+        islandBounds,
+        Math.max(0, targetMax[0] - targetMin[0]),
+        Math.max(0, targetMax[1] - targetMin[1]),
+        Math.min(margin, Math.max(0, targetMax[0] - targetMin[0]) / 100),
+      );
+      for (const placement of placements) {
+        const { island, rotate, scale } = placement;
+        for (const index of island.indices) {
+          const localX = source[index][0] - island.min[0];
+          const localY = source[index][1] - island.min[1];
+          packed[index] = [
+            targetMin[0] + placement.x + (rotate ? localY : localX) * scale,
+            targetMin[1] + placement.y + (rotate ? island.width - localX : localY) * scale,
             source[index][2],
           ];
         }
