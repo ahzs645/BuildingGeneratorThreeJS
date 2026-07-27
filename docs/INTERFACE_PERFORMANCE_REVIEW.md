@@ -1,6 +1,7 @@
 # Interface Performance Review — BlendBridge Studio with the No3d Tools
 
-Date: 2026-07-26
+Date: 2026-07-26 · **Updated 2026-07-27 with post-optimization results (see
+"Outcome" at the end).**
 Scope: the `/blendbridge` import → edit → evaluate loop, measured with the same
 No3d tool set distributed in `No3d Tools.zip` (bolt generator, stackable bin,
 bubble putty), using the pre-extracted dumps under `public/dojo/n03d/` and
@@ -191,6 +192,52 @@ most jarring perceived-performance issue while dragging sliders.
 * Progressive preview: evaluate with a reduced "Resolution"-class input first
   (several No3d tools expose one) and refine when idle — Blender's own
   viewport plays the same trick with subdivision levels.
+
+## Outcome (2026-07-27)
+
+Recommendations 1, 2, 4 and the material-cache half of 5 were implemented on
+this branch, with one architectural correction: the Float32Array storage idea
+from recommendation 2 was **rejected with evidence** — mesh positions
+legitimately carry double-precision values that parity fixtures assert
+exactly, so float32 storage would silently re-round them. The same goal
+(stop re-allocating and re-deriving everything per node and per run) was
+reached through **structural sharing + copy-on-write + cross-evaluation
+memoization** instead:
+
+* `Mesh`/`Geometry.clone()` share Vec3 elements, edge pairs, face rows and
+  attribute data arrays (copy-on-first-write via `ownAttributeData`);
+  topology and vertex-normal caches carry over to clones.
+* A persistent per-dump evaluation cache (`src/gnvm/evaluation-cache.ts`)
+  re-runs only the nodes an override can reach (per-group reachability
+  fixpoint; impure nodes taint downstream; zones/probes bypass; LRU-bounded).
+  Five regression tests assert bit-identical parity against cold runs.
+* One warm evaluation worker per studio mount; the dump is installed once
+  per import and evaluations send only overrides. Runs are superseded by id
+  instead of terminating the worker. Camera framing only on target change;
+  materials cached per name. Numeric edge keys replace string keys in
+  `extrudeMesh`/`mergeMeshInto`.
+
+Measured on the same container as the baselines (exact vert/tri parity on
+every run; all suites green — gnvm 248/248, materials 159/159,
+blend-studio 36/36, tsc clean):
+
+| Metric | Before | After |
+| --- | --- | --- |
+| Bubble putty cold evaluation (Node) | 182.7 s | 98.0 s |
+| Bubble putty cold evaluation (browser worker) | 123.8 s | 86.3 s |
+| Bubble putty warm re-eval, one override changed | ~124 s (full re-run) | **4.2 s** |
+| Bubble putty warm re-eval, unchanged | ~124 s | 1.3 s |
+| Bolt generator evaluation | 3.5 s | 2.4–2.5 s |
+| Workers spawned/killed during a 6-move slider drag | 6 / 5 | **0 / 0** |
+| Per-nudge main-thread dump clone | ~54–82 ms | none (install-once) |
+| Camera reset per evaluation | every result | target change only |
+
+Caveats: warm-run gains depend on which input changes — an input that
+reaches most of the graph (e.g. a global Resolution) still pays close to a
+cold run; dumps flowing through impure nodes (Object/Collection Info,
+Scene Time) intentionally get limited reuse. GC remains ~29 % of the
+remaining cold-run profile (field-array churn) — future work along with
+extrudeMesh's inherent rebuilds and progressive/low-res preview.
 
 ## Reproduction notes
 
