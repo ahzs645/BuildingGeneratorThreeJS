@@ -3,7 +3,6 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-route
 import { appHref } from "../base-url";
 import "./shell.css";
 
-const HomePage = lazy(() => import("./pages/HomePage"));
 const BlendBridgePage = lazy(() => import("./pages/BlendBridgePage"));
 const BuildingPage = lazy(() => import("./pages/BuildingPage"));
 const DojoViewerPage = lazy(() => import("./pages/DojoViewerPage"));
@@ -34,8 +33,8 @@ export default function App(): React.JSX.Element {
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Suspense fallback={<div className="route-loading">Loading procedural tool…</div>}>
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/blendbridge" element={<BlendBridgePage />} />
+          <Route path="/" element={<BlendBridgePage />} />
+          <Route path="/blendbridge" element={<LegacyRedirect to="/" />} />
           <Route path="/building" element={<BuildingPage />} />
           <Route path="/dojo" element={<DojoViewerPage />} />
           <Route path="/gallery" element={<DojoGalleryPage />} />
@@ -52,7 +51,7 @@ export default function App(): React.JSX.Element {
           <Route path="/geometry-painter" element={<GeometryPainterPage />} />
           <Route path="/vegetation-generator" element={<VegetationGeneratorPage />} />
 
-          <Route path="/blend-import.html" element={<LegacyRedirect to="/blendbridge" />} />
+          <Route path="/blend-import.html" element={<LegacyRedirect to="/" />} />
           <Route path="/building.html" element={<LegacyRedirect to="/building" />} />
           <Route path="/dojo-viewer.html" element={<LegacyRedirect to="/dojo" />} />
           <Route path="/dojo-gallery.html" element={<LegacyRedirect to="/gallery" />} />

@@ -23,9 +23,11 @@ All 18 generator parameters from the Blender modifier (floors, footprint, AC/clo
 lights probabilities, window type & open amount, curtains, store state, seed, low-poly
 toggle…) are exposed as live sliders.
 
-## BlendBridge Geometry Nodes studio
+## Geometry Nodes studio
 
-Open `http://127.0.0.1:5173/blendbridge` while the dev server is running. You
+The studio is the app's root: open `http://127.0.0.1:5173/` while the dev server
+is running (`/blendbridge` redirects there). Every other tool is reachable from
+the studio menu — the `PS` / `☰ studio` button on any page, or <kbd>⌘K</kbd>. You
 can drop in a `.blend` file, choose either a Geometry Nodes modifier or a reusable
 asset-only node group, edit its graph and exposed inputs, preview it in Three.js,
 and export the edited portable graph JSON. Asset groups can be seeded with a cube,
