@@ -14,6 +14,7 @@ import {
   runtimeDetailSnapshot,
 } from "./runtime-details";
 import { dumpAtFrame } from "./animation";
+import { tagGeometryFingerprint } from "./evaluation-cache";
 
 // Keep this module usable as a direct entry point, not only through index.ts.
 import "./nodes/math";
@@ -188,9 +189,11 @@ export function resolveGeometrySeed(dump: Dump, seed: GroupGeometrySeed): { geom
       throw new Error(`geometry seed object not found: ${objectName}`);
     const geometry = baseGeometryOf(dump, objectName);
     if (!geometry) throw new Error(`geometry seed object has no mesh or curve data: ${objectName}`);
-    return { geometry, objectName };
+    // Deterministic per (dump, object): a stable fingerprint lets the
+    // cross-evaluation cache match nodes fed by this binding across runs.
+    return { geometry: tagGeometryFingerprint(geometry, `base:${objectName}`), objectName };
   }
-  return { geometry: createPrimitiveGeometry(seed) };
+  return { geometry: tagGeometryFingerprint(createPrimitiveGeometry(seed), `seed:${JSON.stringify(seed)}`) };
 }
 
 function prepareDumpContext(dump: Dump, activeObjectName: string | undefined, frame: number | undefined): void {

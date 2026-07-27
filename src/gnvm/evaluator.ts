@@ -14,6 +14,7 @@ import { splineFrames, splineLength } from "./curves";
 import { ClosureValue, DUMP_CONTEXT, EMPTY_CLOSURE, EvalAPI, RawNode, REGISTRY, MISSING, SockVal, DataRef } from "./registry";
 import { tryEvaluateGroupOverride } from "./group-overrides";
 import { identityMatrix, MatrixValue } from "./matrix";
+import { evaluationCacheFor } from "./evaluation-cache";
 
 export { gradientDirectionField } from "./group-overrides";
 
@@ -188,6 +189,20 @@ export function translateGeometryContext(source: Geometry, translation: Vec3): G
 }
 
 const KEY = (n: string, s: string) => `${n}::${s}`;
+
+// Probe/trace hooks observe live evaluation, so the persistent cross-run
+// cache must be fully bypassed (no reads AND no writes) while any is active.
+function persistentCachingBlocked(): boolean {
+  return TRACE.on
+    || FIELD_PROBE.node !== null || FIELD_PROBE.socket !== null
+    || GEOMETRY_PROBE.node !== null
+    || GEOMETRY_PROBES.targets.length > 0
+    || VALUE_PROBE.node !== null;
+}
+
+// Counts cycle-guard trips globally. A node whose evaluation span saw a trip
+// may hold a traversal-order-dependent partial value — never persist those.
+let cycleGuardTrips = 0;
 
 function wrapConst(socketType: string, value: any): SockVal {
   const t = socketType;
@@ -794,11 +809,33 @@ class Invocation {
   private evalNode(name: string): Record<string, SockVal> {
     const cached = this.memo.get(name);
     if (cached) return cached;
-    if (this.visiting.has(name)) return {}; // cycle guard
+    if (this.visiting.has(name)) { cycleGuardTrips++; return {}; } // cycle guard
     this.visiting.add(name);
     const node = this.byName.get(name);
+    // Persistent cross-run cache: sound only for nodes the static analysis
+    // marks cacheable, keyed on (scope, node, reachable-bindings fingerprint),
+    // and fully bypassed while probes/trace observe the evaluation.
+    let persistentKey: { key: string; volatile: boolean } | null = null;
+    let persistentCache: ReturnType<typeof evaluationCacheFor> | null = null;
+    if (node && !persistentCachingBlocked()) {
+      persistentCache = evaluationCacheFor(this.ev.program);
+      persistentKey = persistentCache.keyFor(this.ev.program, this.group, this.scope, node, this.bindings);
+      if (persistentKey && !persistentKey.volatile) {
+        const hit = persistentCache.get(persistentKey.key);
+        if (hit) {
+          this.visiting.delete(name);
+          this.memo.set(name, hit);
+          return hit;
+        }
+      }
+    }
+    const tripsBefore = cycleGuardTrips;
     let outs: Record<string, SockVal> = {};
     if (node) outs = this.dispatch(node);
+    if (persistentKey && persistentCache && !persistentKey.volatile
+      && cycleGuardTrips === tripsBefore && !persistentCachingBlocked()) {
+      persistentCache.set(persistentKey.key, outs);
+    }
     if (node
       && (!FIELD_PROBE.group || FIELD_PROBE.group === this.group.name)
       && FIELD_PROBE.node === node.name

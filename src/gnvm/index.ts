@@ -27,6 +27,7 @@ import {
   type RunNodeGroupOptions,
 } from "./group-runner";
 import { dumpAtFrame } from "./animation";
+import { tagGeometryFingerprint } from "./evaluation-cache";
 
 // Registering the handler modules populates the REGISTRY.
 import "./nodes/math";
@@ -316,7 +317,7 @@ export async function runGenerator(
       const geometrySocket = dependencyGroup?.interface?.find((item: any) => item.item_type === "SOCKET" && item.in_out === "INPUT" && item.socket_type === "NodeSocketGeometry");
       if (geometrySocket) {
         const base = baseGeometryOf(dump, object.name);
-        if (base) dependencyInputs[geometrySocket.identifier] = base;
+        if (base) dependencyInputs[geometrySocket.identifier] = tagGeometryFingerprint(base, `base:${object.name}`);
       }
       DUMP_CONTEXT.activeObject = object;
       DUMP_CONTEXT.evaluatingObjects.add(object.name);
@@ -345,6 +346,8 @@ export async function runGenerator(
     if (opts.geometry && opts.seed) throw new Error("choose either geometry or seed, not both");
     const replacementGeometry = opts.geometry ?? opts.seed;
     let incomingGeometry = baseGeometryOf(dump, found.objectName);
+    // Deterministic per (dump, object) — see resolveGeometrySeed for the twin.
+    if (incomingGeometry) tagGeometryFingerprint(incomingGeometry, `base:${found.objectName}`);
     let geometry = new Geometry();
     for (const { modifier, index } of modifierStack) {
       const groupName = modifier.node_group!;

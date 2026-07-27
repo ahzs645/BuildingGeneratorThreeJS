@@ -1,6 +1,6 @@
 // Curve subsystem handlers: primitives, resample, fillet, sweep-to-mesh, fill.
 import { Field, Vec3, Elem, asNum, asVec3, vadd, vsub, vscale, vdot, vcross, vlen, vnorm } from "../core";
-import { Geometry, Mesh, Spline, buildTopology, realizeInstances, setUniformFaceSharpness } from "../geometry";
+import { Geometry, Mesh, Spline, buildTopology, ownAttributeData, realizeInstances, setUniformFaceSharpness } from "../geometry";
 import { DUMP_CONTEXT, reg } from "../registry";
 import { makeFieldCtx } from "../evaluator";
 import { resampleSpline, filletSpline, sweep, fillCurves, meshEdgesToChains, splineLength, splineFrames, polySplineNormalsBlender } from "../curves";
@@ -672,8 +672,9 @@ reg("GeometryNodeReverseCurve", (api) => {
       spline.points.reverse();
       for (const attribute of g.curveAttributes.values()) {
         if (attribute.domain !== "POINT") continue;
-        const reversed = attribute.data.slice(pointOffset, pointOffset + count).reverse();
-        attribute.data.splice(pointOffset, count, ...reversed);
+        const data = ownAttributeData(attribute); // clone-shared array: copy on write
+        const reversed = data.slice(pointOffset, pointOffset + count).reverse();
+        data.splice(pointOffset, count, ...reversed);
       }
     }
     pointOffset += count;

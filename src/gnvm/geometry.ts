@@ -9,6 +9,30 @@ export interface Attribute {
   data: Elem[];
 }
 
+// Attribute data arrays handed out by the structural-sharing clones below.
+// Once an array lands in this set it may be referenced by several meshes, so
+// it must never be mutated in place again — mutators go through
+// ownAttributeData, which copies on first write. (The set is append-only: an
+// array stays "shared" even after every other referent dies, costing at most
+// one extra copy.)
+const sharedAttributeData = new WeakSet<Elem[]>();
+
+function shareAttributeData(data: Elem[]): Elem[] {
+  sharedAttributeData.add(data);
+  return data;
+}
+
+/**
+ * Copy-on-write guard for attribute data. Mesh.clone/Geometry.clone share the
+ * `data` array between source and clone; call this to get an array that is
+ * safe to push/splice/index-write. Reads never need it. The returned array is
+ * always `attribute.data` (possibly freshly copied and reassigned).
+ */
+export function ownAttributeData(attribute: Attribute): Elem[] {
+  if (sharedAttributeData.has(attribute.data)) attribute.data = attribute.data.slice();
+  return attribute.data;
+}
+
 /** Previous-material membership retained across a Set Material operation. */
 export const MATERIAL_MATCH_ATTRIBUTE = "__gnvm_material_match";
 
@@ -108,15 +132,16 @@ export class Mesh {
     // whole array. Copying only the outer arrays turns node-boundary clones
     // of 100k-vertex meshes from ~400k small-array allocations into four
     // pointer copies; attribute Elem[] data already shared Vec3 elements the
-    // same way. Attribute data arrays themselves ARE appended/spliced in
-    // place (mergeMeshInto, FlipFaces corner reorder), so they stay flat-
-    // copied per clone.
+    // same way. Attribute data arrays are shared too (fresh wrapper, same
+    // array) and marked in sharedAttributeData; every in-place mutator
+    // (mergeMeshInto, FlipFaces corner reorder, the heal/clip duplicators)
+    // goes through ownAttributeData to copy on first write.
     m.positions = this.positions.slice();
     m.edges = this.edges.slice();
     m.faces = this.faces.slice();
     m.faceMaterial = this.faceMaterial.slice();
     m.materialSlots = this.materialSlots.slice();
-    for (const [k, a] of this.attributes) m.attributes.set(k, { domain: a.domain, data: a.data.slice() });
+    for (const [k, a] of this.attributes) m.attributes.set(k, { domain: a.domain, data: shareAttributeData(a.data) });
     carryDerivedCaches(this, m);
     return m;
   }
@@ -355,7 +380,7 @@ export class Geometry {
       transformMatrix: i.transformMatrix?.map((row) => [...row]),
       attributes: i.attributes ? new Map(i.attributes) : undefined,
     }));
-    for (const [k, a] of this.curveAttributes) g.curveAttributes.set(k, { domain: a.domain, data: a.data.slice() });
+    for (const [k, a] of this.curveAttributes) g.curveAttributes.set(k, { domain: a.domain, data: shareAttributeData(a.data) });
     return g;
   }
 }
@@ -389,8 +414,10 @@ export interface Topology {
 // (dump-object-geometry hook deform, runs on a freshly built mesh) and
 // converted the two in-place face-row mutations (orientClosedSurface,
 // reconstructSplitFastenerHeal) to row replacement. Attribute Elem[] data
-// arrays are NOT shared (they are appended/spliced in place), but they do
-// share Vec3 element objects, which is the same invariant.
+// arrays are shared by clones as well (wave 2): every in-place mutator
+// (push/splice/index write) must obtain the array through ownAttributeData,
+// which copies on first write while the array is marked shared. Their Vec3
+// element objects follow the same replace-don't-mutate invariant.
 interface TopologyCacheMeta {
   positions: Vec3[];
   faces: number[][];
@@ -863,19 +890,30 @@ const zeroLike = (e: Elem | undefined): Elem => (Array.isArray(e) ? [0, 0, 0] : 
 // Merge mesh b into a, offsetting vertex indices; preserves materials + attributes.
 // Unique undirected edge keys in buildTopology's enumeration order
 // (face-derived first-seen, then explicit wires) so EDGE attr data stays aligned.
-const ekeyG = (x: number, y: number) => (x < y ? `${x}_${y}` : `${y}_${x}`);
-function canonicalEdgeKeys(m: Mesh): string[] {
+// A numeric pair key (same 21-bit packing as computeTopology) avoids allocating
+// a string per edge in instance-heavy realizes; identity is all consumers use,
+// and Map insertion order — the contract note near computeTopology — is
+// independent of the key representation.
+const EDGE_KEY_BASE = 2 ** 21;
+const ekeyG = (x: number, y: number): number | string => {
+  const lo = x < y ? x : y, hi = x < y ? y : x;
+  return hi < EDGE_KEY_BASE ? lo * EDGE_KEY_BASE + hi : `${lo}_${hi}`;
+};
+function canonicalEdgeIndex(m: Mesh): Map<number | string, number> {
   // computeTopology inserts unique edges in the same order this function needs:
   // face-derived first-seen edges, followed by explicit loose edges.
-  return topologyOf(m).edges.map((e) => ekeyG(e.verts[0], e.verts[1]));
+  const index = new Map<number | string, number>();
+  const edges = topologyOf(m).edges;
+  for (let i = 0; i < edges.length; i++) index.set(ekeyG(edges[i].verts[0], edges[i].verts[1]), i);
+  return index;
 }
 
 export function mergeMeshInto(a: Mesh, b: Mesh): void {
   // Canonical edge maps must be taken before mutation for the EDGE-attr reconcile.
   const hasEdgeAttr = (m: Mesh) => [...m.attributes.values()].some((x) => x.domain === "EDGE");
   const needEdge = hasEdgeAttr(a) || hasEdgeAttr(b);
-  const aEdgeIdx = needEdge ? new Map(canonicalEdgeKeys(a).map((k, i) => [k, i])) : null;
-  const bEdgeIdx = needEdge ? new Map(canonicalEdgeKeys(b).map((k, i) => [k, i])) : null;
+  const aEdgeIdx = needEdge ? canonicalEdgeIndex(a) : null;
+  const bEdgeIdx = needEdge ? canonicalEdgeIndex(b) : null;
   const baseV = a.positions.length;
   const baseF = a.faces.length;
   const baseC = a.domainSize("CORNER");
@@ -902,8 +940,9 @@ export function mergeMeshInto(a: Mesh, b: Mesh): void {
       const ba = b.attributes.get(name);
       const dflt = zeroLike(aa?.data[0] ?? ba?.data[0]);
       if (!aa) { aa = { domain, data: [] }; a.attributes.set(name, aa); }
-      while (aa.data.length < baseCount) aa.data.push(dflt);
-      for (let i = 0; i < addCount; i++) aa.data.push(ba ? ba.data[i] ?? dflt : dflt);
+      const data = ownAttributeData(aa);
+      while (data.length < baseCount) data.push(dflt);
+      for (let i = 0; i < addCount; i++) data.push(ba ? ba.data[i] ?? dflt : dflt);
     }
   };
   reconcile("POINT", baseV, b.positions.length);
@@ -913,15 +952,15 @@ export function mergeMeshInto(a: Mesh, b: Mesh): void {
   // edges before ANY loose wires, so when A has loose edges the joined order
   // interleaves. Map each joined canonical edge back to its source explicitly.
   if (needEdge && aEdgeIdx && bEdgeIdx) {
-    const joined = canonicalEdgeKeys(a); // after mutation
+    const joined = topologyOf(a).edges; // after mutation (caches invalidated above)
     // a joined edge belongs to B iff both endpoints are >= baseV
-    const srcOf = joined.map((k) => {
-      const [u, v] = k.split("_").map(Number);
+    const srcOf = joined.map((edge) => {
+      const [u, v] = edge.verts;
       if (u >= baseV && v >= baseV) {
         const bi = bEdgeIdx.get(ekeyG(u - baseV, v - baseV));
         return bi === undefined ? null : { from: "b" as const, i: bi };
       }
-      const ai = aEdgeIdx.get(k);
+      const ai = aEdgeIdx.get(ekeyG(u, v));
       return ai === undefined ? null : { from: "a" as const, i: ai };
     });
     const names = new Set<string>();
@@ -1028,8 +1067,9 @@ export function realizeInstances(
         for (const [name, val] of inst.attributes) {
           let a = mesh.attributes.get(name);
           if (!a) { a = { domain: "POINT", data: [] }; mesh.attributes.set(name, a); }
-          while (a.data.length < mesh.positions.length) a.data.push(zeroLike(val));
-          for (let k = baseV; k < mesh.positions.length; k++) a.data[k] = val;
+          const data = ownAttributeData(a);
+          while (data.length < mesh.positions.length) data.push(zeroLike(val));
+          for (let k = baseV; k < mesh.positions.length; k++) data[k] = val;
         }
       }
     }
@@ -1076,7 +1116,7 @@ export function realizeInstances(
         const before = domain === "POINT" ? pointBase : curveBase;
         const count = domain === "POINT" ? addedPoints : addedCurves;
         const fallback = zeroLike(target?.data[0] ?? source?.data[0]);
-        const data = target?.data ?? [];
+        const data = target ? ownAttributeData(target) : [];
         while (data.length < before) data.push(fallback);
         for (let index = 0; index < count; index++) {
           const value = source?.data[index] ?? fallback;

@@ -2,11 +2,21 @@
 // Faithful-enough Blender semantics (region + individual extrude, domain-aware
 // delete/separate, weld, flip).
 import { Field, Vec3, Elem, Domain, asVec3, asNum, vadd, vscale, vnorm } from "../core";
-import { Geometry, Mesh, buildTopology, invalidateMeshCaches } from "../geometry";
+import { Geometry, Mesh, buildTopology, invalidateMeshCaches, ownAttributeData } from "../geometry";
 import { reg, type EvalAPI } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 
-const ekey = (a: number, b: number) => (a < b ? `${a}_${b}` : `${b}_${a}`);
+// Canonical undirected edge key. A numeric pair key is exact while both
+// indices fit in 21 bits (same scheme as computeTopology) and avoids
+// allocating a string per face corner in the hot extrude/weld paths; larger
+// meshes fall back to the legacy string key. Key identity is all that any
+// consumer relies on — Map/Set iteration stays insertion-ordered either way.
+type EdgeKey = number | string;
+const EKEY_BASE = 2 ** 21;
+const ekey = (a: number, b: number): EdgeKey => {
+  const lo = a < b ? a : b, hi = a < b ? b : a;
+  return hi < EKEY_BASE ? lo * EKEY_BASE + hi : `${lo}_${hi}`;
+};
 
 function avgElem(vals: Elem[]): Elem {
   if (!vals.length) return 0;
@@ -67,7 +77,7 @@ function keepFaces(mesh: Mesh, keep: (fi: number) => boolean, doCompact = true):
     // FACE-domain deletion/separation removes topology that belongs only to
     // discarded faces. Leaving the grid's original explicit edge list intact
     // kept thousands of otherwise orphaned vertices alive in compact().
-    const liveEdges = new Set<string>();
+    const liveEdges = new Set<EdgeKey>();
     for (const face of faces)
       for (let i = 0; i < face.length; i++) liveEdges.add(ekey(face[i], face[(i + 1) % face.length]));
     out.edges = out.edges.filter(([a, b]) => liveEdges.has(ekey(a, b)));
@@ -169,7 +179,7 @@ reg("GeometryNodeDeleteGeometry", (api) => {
     const sel = api.field("Selection").array(ctx);
     const topology = buildTopology(g.mesh);
     const edges = topology.edges;
-    const dead = new Set<string>();
+    const dead = new Set<EdgeKey>();
     for (let ei = 0; ei < edges.length; ei++) if (on(sel[ei])) dead.add(ekey(edges[ei].verts[0], edges[ei].verts[1]));
     const faceDead = (f: number[]) => {
       for (let i = 0; i < f.length; i++) if (dead.has(ekey(f[i], f[(i + 1) % f.length]))) return true;
@@ -522,8 +532,9 @@ reg("GeometryNodeFlipFaces", (api) => {
         // same (the N03D clevis weld is sensitive to this).
         const start = cornerStarts[fi];
         for (const attribute of cornerAttributes) {
-          const original = attribute.data.slice(start, start + face.length);
-          attribute.data.splice(start, face.length, original[0], ...original.slice(1).reverse());
+          const data = ownAttributeData(attribute); // clone-shared array: copy on write
+          const original = data.slice(start, start + face.length);
+          data.splice(start, face.length, original[0], ...original.slice(1).reverse());
         }
       }
       flipped = true;
@@ -707,7 +718,7 @@ reg("GeometryNodeMergeByDistance", (api) => {
   const m = new Mesh();
   m.positions = pos;
   m.materialSlots = [...mesh.materialSlots];
-  const seenEdges = new Set<string>();
+  const seenEdges = new Set<EdgeKey>();
   // A Blender mesh always owns an edge component even when the portable VM
   // mesh was generated from faces and did not carry a redundant explicit edge
   // array. Welding only `mesh.edges` dropped most of an Icosphere's topology;
@@ -843,15 +854,18 @@ function reconstructSplitFastenerHeal(mesh: Mesh): Mesh {
     const next = out.positions.length;
     out.positions.push([...out.positions[vertex]] as Vec3);
     for (const [, attribute] of out.attributes)
-      if (attribute.domain === "POINT") attribute.data.push(attribute.data[vertex] ?? 0);
+      if (attribute.domain === "POINT") ownAttributeData(attribute).push(attribute.data[vertex] ?? 0);
     return next;
   };
   const appendFace = (face: number[], sourceFace: number) => {
     out.faces.push(face);
     out.faceMaterial.push(out.faceMaterial[sourceFace] ?? 0);
     for (const [, attribute] of out.attributes) {
-      if (attribute.domain === "FACE") attribute.data.push(attribute.data[sourceFace] ?? 0);
-      else if (attribute.domain === "CORNER") for (let corner = 0; corner < face.length; corner++) attribute.data.push(0);
+      if (attribute.domain === "FACE") ownAttributeData(attribute).push(attribute.data[sourceFace] ?? 0);
+      else if (attribute.domain === "CORNER") {
+        const data = ownAttributeData(attribute);
+        for (let corner = 0; corner < face.length; corner++) data.push(0);
+      }
     }
   };
 
@@ -972,12 +986,15 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
     // Orient each side quad by the adjacent face's traversal direction (like
     // Blender) — canonical sorted order gives inconsistent winding, which
     // half-cancels the smoothed vertex normals downstream.
-    const orient = new Map<string, [number, number]>();
+    // Store only the first-seen edge direction's leading endpoint (the other
+    // endpoint is implied) — one map entry per edge instead of a fresh pair
+    // array, in a loop that runs once per corner per extrude.
+    const orient = new Map<EdgeKey, number>();
     for (const f of mesh.faces)
       for (let k = 0; k < f.length; k++) {
         const u = f[k], v = f[(k + 1) % f.length];
         const key = ekey(u, v);
-        if (!orient.has(key)) orient.set(key, [u, v]);
+        if (!orient.has(key)) orient.set(key, u);
       }
     // Loose wires have no face loop to orient from. Blender's generated side
     // loop traverses the source edge opposite its stored Curve-to-Mesh order;
@@ -985,7 +1002,7 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
     // arbitrary.
     for (const [a, b] of mesh.edges) {
       const key = ekey(a, b);
-      if (!orient.has(key)) orient.set(key, [b, a]);
+      if (!orient.has(key)) orient.set(key, b);
     }
     const inheritedTop = new Array(inEdges.length).fill(false);
     for (const [name, a] of mesh.attributes) {
@@ -997,7 +1014,9 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
     const newEdgePairs: [number, number][] = []; // duplicated (top) edges
     for (const ei of selEdges) {
       const [ca, cb] = inEdges[ei].verts;
-      let [a, b] = orient.get(ekey(ca, cb)) ?? [ca, cb];
+      const first = orient.get(ekey(ca, cb));
+      let a = first === undefined ? ca : first;
+      let b = a === ca ? cb : ca;
       // Repeated edge extrusion follows the previous pass's Top edges. The
       // adjacent side face traverses every such edge opposite the stored Top
       // direction, including the two endpoint edges of an open profile, so
@@ -1049,7 +1068,7 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
         // output canonical edges: original mesh edges keep their order (faces
         // unchanged), then each new quad appends its vertical + top edges
         const outEdges = buildTopology(out).edges;
-        const inIdx = new Map<string, number>();
+        const inIdx = new Map<EdgeKey, number>();
         inEdges.forEach((e, i) => inIdx.set(ekey(e.verts[0], e.verts[1]), i));
         const data = outEdges.map((e) => {
           const sa = srcVert[e.verts[0]], sb = srcVert[e.verts[1]];
@@ -1178,7 +1197,7 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
     const vertSet = new Set<number>();
     const normAcc = new Map<number, Vec3>();
     const normCount = new Map<number, number>();
-    const edgeCount = new Map<string, { a: number; b: number; n: number }>();
+    const edgeCount = new Map<EdgeKey, { a: number; b: number; n: number }>();
     for (const fi of selFaces) {
       const f = mesh.faces[fi];
       const n = mesh.faceNormal(fi);
@@ -1332,7 +1351,7 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
   const edgeAttrs = [...mesh.attributes].filter(([, a]) => a.domain === "EDGE");
   if (edgeAttrs.length) {
     const inEdges = buildTopology(mesh).edges;
-    const inIdx = new Map<string, number>();
+    const inIdx = new Map<EdgeKey, number>();
     inEdges.forEach((e, i) => inIdx.set(ekey(e.verts[0], e.verts[1]), i));
     const outEdges = buildTopology(out).edges;
     const srcEdge = outEdges.map((e) => {
@@ -1416,8 +1435,8 @@ function splitEdges(api: EvalAPI): Record<string, Geometry> {
     // union of edge.faces is not equivalent on non-manifold/degenerate input:
     // Chrome Crayon has one eight-face vertex where it creates a spurious
     // second fan even though every selected-edge bit is already exact.
-    const edgeKey = (a: number, b: number) => a < b ? `${a},${b}` : `${b},${a}`;
-    const edgeIndexByKey = new Map<string, number>();
+    const edgeKey = ekey;
+    const edgeIndexByKey = new Map<EdgeKey, number>();
     topology.edges.forEach((edge, index) => edgeIndexByKey.set(edgeKey(edge.verts[0], edge.verts[1]), index));
     const cornerVerts: number[] = [];
     const cornerEdges: number[] = [];
@@ -1515,7 +1534,7 @@ function splitEdges(api: EvalAPI): Record<string, Geometry> {
   const pointAttrNames = [...m.attributes].filter(([, a]) => a.domain === "POINT").map(([k]) => k);
   const newPointAttrs = new Map<string, Elem[]>();
   for (const name of pointAttrNames) newPointAttrs.set(name, []);
-  const originalFaceEdges = new Set<string>();
+  const originalFaceEdges = new Set<EdgeKey>();
   for (let fi = 0; fi < m.faces.length; fi++) {
     const f = m.faces[fi];
     const base = nm.positions.length;
@@ -1671,7 +1690,7 @@ function subdivideOnce(mesh: Mesh, catmullClark: boolean, edgeCrease = 0): Mesh 
   }
 
   // Unique edges from faces
-  const edgeMap = new Map<string, { a: number; b: number; faces: number[] }>();
+  const edgeMap = new Map<EdgeKey, { a: number; b: number; faces: number[] }>();
   for (let fi = 0; fi < nF; fi++) {
     const f = mesh.faces[fi];
     for (let i = 0; i < f.length; i++) {
@@ -1706,7 +1725,7 @@ function subdivideOnce(mesh: Mesh, catmullClark: boolean, edgeCrease = 0): Mesh 
     );
     return vadd(vscale(smooth, 1 - edgeCrease), vscale(midpoint, edgeCrease));
   });
-  const edgeIdx = new Map<string, number>();
+  const edgeIdx = new Map<EdgeKey, number>();
   edges.forEach((e, i) => edgeIdx.set(ekey(e.a, e.b), i));
 
   // Vertex points

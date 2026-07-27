@@ -18,7 +18,7 @@ import {
   vlen,
   vnorm,
 } from "../core";
-import { Geometry, Mesh, mergeMeshInto, realizeInstances, rotateEulerXYZ, Spline, buildTopology, triangulateFaceIndices, setUniformFaceSharpness } from "../geometry";
+import { Geometry, Mesh, mergeMeshInto, ownAttributeData, realizeInstances, rotateEulerXYZ, Spline, buildTopology, triangulateFaceIndices, setUniformFaceSharpness } from "../geometry";
 import { bakeSnapshotValue } from "../bake-snapshot";
 import { fillCurves, meshEdgesToChains, splineLength, splineSegments, splineFrames } from "../curves";
 import { makeFieldCtx } from "../evaluator";
@@ -3933,7 +3933,7 @@ function repartitionCompactBracketSecondBoolean(mesh: Mesh): Mesh {
     const duplicate = out.positions.length;
     out.positions.push([...out.positions[vertex]] as Vec3);
     for (const [, attribute] of out.attributes)
-      if (attribute.domain === "POINT") attribute.data.push(attribute.data[vertex] ?? 0);
+      if (attribute.domain === "POINT") ownAttributeData(attribute).push(attribute.data[vertex] ?? 0);
     addedPoints++;
     return duplicate;
   };
@@ -4147,7 +4147,7 @@ function openSweptDifference(source: Mesh, cutter: Mesh): Mesh | null {
     out.positions.push([...position] as Vec3);
     for (const [name, attribute] of out.attributes) {
       if (attribute.domain !== "POINT") continue;
-      attribute.data.push(cutterVertex === null ? 0 : (cutter.attributes.get(name)?.data[cutterVertex] ?? 0));
+      ownAttributeData(attribute).push(cutterVertex === null ? 0 : (cutter.attributes.get(name)?.data[cutterVertex] ?? 0));
     }
     return index;
   };
