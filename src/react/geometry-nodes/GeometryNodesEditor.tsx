@@ -48,6 +48,12 @@ type NodeCardData = {
   width: number;
   searchMatch: boolean;
   onSocketChange: (nodeId: string, socketId: string, value: unknown) => void;
+  /**
+   * Mobile-only: opens the node's nested group from a single tap on the ◆
+   * marker. Desktop keeps double-click as the sole entry (undefined here), so
+   * its DOM and behavior stay identical.
+   */
+  onOpenNestedGroup?: (node: GraphNode) => void;
 };
 type FrameData = { title: string; color?: string };
 type Breadcrumb = { group: string; via?: string };
@@ -161,7 +167,22 @@ function NodeCard({ data }: NodeProps<Node<NodeCardData>>): React.JSX.Element {
   const inputs = node.inputs.filter((socket) => (socket.visible || socket.linked) && socket.identifier !== "__extend__");
   const outputs = node.outputs.filter((socket) => (socket.visible || socket.linked) && socket.identifier !== "__extend__");
   return <div className={`blender-node tone-${nodeTone(node.sourceType)} ${node.muted ? "muted" : ""} ${data.searchMatch ? "search-match" : ""}`} style={{ width: data.width, ...(node.color ? { "--node-custom-color": node.color } as React.CSSProperties : {}) }}>
-    <div className="blender-node-title"><span>{node.label}</span>{node.nestedGroup && <i title={`Open ${node.nestedGroup}`}>◆</i>}</div>
+    <div className="blender-node-title"><span>{node.label}</span>{node.nestedGroup && (data.onOpenNestedGroup
+      ? <i
+          className="nodrag nested-group-open"
+          role="button"
+          tabIndex={0}
+          title={`Open ${node.nestedGroup}`}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => { event.stopPropagation(); data.onOpenNestedGroup!(node); }}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            event.stopPropagation();
+            data.onOpenNestedGroup!(node);
+          }}
+        >◆</i>
+      : <i title={`Open ${node.nestedGroup}`}>◆</i>)}</div>
     {node.hidden && <div className="collapsed-handles">
       {inputs.map((socket, index) => <Handle className="collapsed-handle" key={socket.id} type="target" position={Position.Left} id={socket.id} title={socket.name} style={{ top: 10 + index * 3, background: socketColor(socket.type) }} />)}
       {outputs.map((socket, index) => <Handle className="collapsed-handle" key={socket.id} type="source" position={Position.Right} id={socket.id} title={socket.name} style={{ top: 10 + index * 3, background: socketColor(socket.type) }} />)}
@@ -244,6 +265,8 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
   const connecting = useRef<PendingConnect | null>(null);
   const reconnectSucceeded = useRef(false);
   const lastPointer = useRef({ x: 0, y: 0 });
+  const dumpRef = useRef<Dump | null>(null);
+  dumpRef.current = dump;
   const selection: GeometryNodesEditorSelection = source
     ? { objectName: source.objectName, rootGroupName: source.rootGroupName }
     : { objectName: config.objectName, rootGroupName: config.rootGroupName };
@@ -288,6 +311,15 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     const rawSocket = rawNode?.inputs.find((socket) => socket.identifier === editorSocket?.identifier && (socket.idx === editorSocket.index || socket.idx === undefined));
     if (rawSocket) rawSocket.value = value;
   }, { group: groupName }), [commit, groupName]);
+
+  const openNestedGroup = useCallback((node: GraphNode): void => {
+    // Reads the dump through a ref so the callback identity is stable and the
+    // node-card data (which embeds it for the mobile ◆ tap target) never has
+    // to rebuild when unrelated state changes.
+    if (!node.nestedGroup || !dumpRef.current?.node_groups[node.nestedGroup]) return;
+    setBreadcrumbs((items) => [...items, { group: node.nestedGroup!, via: node.label }]);
+    setGroupName(node.nestedGroup);
+  }, []);
 
   useEffect(() => {
     const abort = new AbortController();
@@ -425,7 +457,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
         type: "blenderNode",
         position: { x: node.position.x * scale, y: node.position.y * scale },
         parentId: node.parentId,
-        data: { node, width: Math.max(120, Math.min(360, node.width)), searchMatch: false, onSocketChange: changeSocket },
+        data: { node, width: Math.max(120, Math.min(360, node.width)), searchMatch: false, onSocketChange: changeSocket, onOpenNestedGroup: isMobile ? openNestedGroup : undefined },
         zIndex: 2,
       };
     });
@@ -442,7 +474,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
       style: { stroke: socketColor(link.socketType), strokeWidth: link.socketType === "NodeSocketGeometry" ? 2.8 : 1.7, opacity: link.muted ? .35 : .9 },
     })));
     setSelected(null);
-  }, [dump, groupName, changeSocket]);
+  }, [dump, groupName, changeSocket, isMobile, openNestedGroup]);
 
   useEffect(() => {
     const query = search.trim().toLowerCase();
@@ -505,11 +537,6 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     setBreadcrumbs([{ group: match.groupName }]);
     setPendingFocus({ groupName: match.groupName, nodeId: match.node.id });
     setGroupName(match.groupName);
-  };
-  const openNestedGroup = (node: GraphNode): void => {
-    if (!node.nestedGroup || !dump?.node_groups[node.nestedGroup]) return;
-    setBreadcrumbs((items) => [...items, { group: node.nestedGroup!, via: node.label }]);
-    setGroupName(node.nestedGroup);
   };
   const jumpBreadcrumb = (index: number): void => {
     const target = breadcrumbs[index];
