@@ -236,9 +236,49 @@ blend-studio 36/36, tsc clean):
 Caveats: warm-run gains depend on which input changes — an input that
 reaches most of the graph (e.g. a global Resolution) still pays close to a
 cold run; dumps flowing through impure nodes (Object/Collection Info,
-Scene Time) intentionally get limited reuse. GC remains ~29 % of the
-remaining cold-run profile (field-array churn) — future work along with
-extrudeMesh's inherent rebuilds and progressive/low-res preview.
+Scene Time) intentionally get limited reuse.
+
+### Second round (wave 4)
+
+Three further changes, all suites green (gnvm 248/248, materials 159/159,
+blend-studio 43/43, geometry-nodes 11/11, tsc clean):
+
+* **Evaluator allocation work** (`src/gnvm/`): open-addressing edge dedup in
+  `computeTopology` (self time 6.0 s → 0.5 s), allocation-free `toDomain`
+  interpolation, `extrudeMesh` scratch-table reuse + incremental canonical
+  topology for its output, coordinate-independent topology cache keys, and
+  per-mesh corner/vertex-edge caches carried across clones. All items
+  hash-verified bit-identical.
+* **Empirical auto-evaluation policy** (`src/blend-studio/model.ts`): the
+  `>500 nodes` rule is replaced by measured cost — runs ≤ 2 s enable live
+  editing, > 4 s (or timeout/error) require explicit Apply with the measured
+  time in the message, 2–4 s keeps the previous decision. History persists
+  per (file fingerprint, target) so re-imports start with knowledge.
+* **Graph editor commits** (`GeometryNodesEditor.tsx`): clone only the
+  edited node group, patch-based undo, drafts debounced 1 s +
+  quota-guarded. Per-socket-edit main-thread cost ~576 ms → ~93 ms.
+
+| Metric | Original | After wave 2 | After wave 4 |
+| --- | --- | --- | --- |
+| Bubble putty cold (Node) | 182.7 s | 98.0 s | **33.5 s** |
+| Bubble putty cold (browser) | 123.8 s | 86.3 s | **33.6 s** |
+| Warm re-eval, one override | ~124 s | 4.2 s | **2.2 s** |
+| Warm re-eval, unchanged | ~124 s | 1.3 s | 0.94 s |
+| Bolt generator eval | 3.5 s | 2.4 s | 1.8 s (live editing unlocks after first Apply) |
+| Graph editor per-socket edit | ~576 ms | — | ~93 ms |
+
+Verified end-to-end in the browser on bubble putty: cold 33.6 s → policy
+correctly demotes the tool to explicit Apply (no more accidental 30 s+
+evaluations per slider tick) → Apply with one changed override 2.1 s →
+next Apply 1.0 s → a 0.9 s run re-enables live evaluation → subsequent
+slider nudges evaluate automatically in ~2.4 s. The interface now tunes
+itself to each tool's measured cost.
+
+Remaining headroom: GC is ~26 % of the remaining cold profile (genuinely
+needed per-iteration array materialization in ~350 repeat-zone spins);
+incremental vertex normals and a flat-array Topology layout are the next
+parity-sensitive candidates, plus a progressive low-res preview for
+global inputs like Resolution.
 
 ## Reproduction notes
 
