@@ -41,6 +41,7 @@ import {
   type GeometryNodesEditorSource,
 } from "./editor-config";
 import { GraphPresetLibrary, type GeometryNodesPreset } from "./GraphPresetLibrary";
+import { useMobileStudio } from "../studio/StudioShell";
 
 type NodeCardData = {
   node: GraphNode;
@@ -213,6 +214,7 @@ function cloneTemplateNode(dump: Dump, template: GraphNodeTemplate, targetNodes:
 }
 
 export default function GeometryNodesEditor({ config, source, onDumpChange, onPreviewChange, presets = [] }: GeometryNodesEditorProps): React.JSX.Element {
+  const isMobile = useMobileStudio();
   const [dump, setDump] = useState<Dump | null>(null);
   const [sourceDump, setSourceDump] = useState<Dump | null>(null);
   const [savedDraft, setSavedDraft] = useState<Dump | null>(null);
@@ -910,7 +912,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     }} onNodeDoubleClick={(_event, flowNode) => {
       const data = flowNode.data as NodeCardData | FrameData;
       if ("node" in data) openNestedGroup(data.node);
-    }} minZoom={.05} maxZoom={2.4} colorMode="dark" selectionOnDrag panOnScroll multiSelectionKeyCode={["Meta", "Control"]}>
+    }} minZoom={.05} maxZoom={2.4} colorMode="dark" selectionOnDrag panOnScroll onlyRenderVisibleElements={isMobile} multiSelectionKeyCode={["Meta", "Control"]}>
       <Background gap={22} size={1.1} color="#30343a" />
       <MiniMap pannable zoomable nodeColor={(node) => node.type === "blenderFrame" ? "#24272b" : "#567064"} maskColor="rgba(8,9,11,.62)" />
       <Controls showInteractive={false} />

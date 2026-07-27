@@ -17,7 +17,7 @@ export type StudioPanelRect = { x: number; y: number; width: number; height: num
 // The second clause keeps touch phones on the sheet in landscape (e.g.
 // 844x390), where desktop docks and floating panels would swallow the screen;
 // fine-pointer desktops never match it.
-const MOBILE_STUDIO_QUERY = "(max-width: 820px), ((pointer: coarse) and (max-height: 500px))";
+export const MOBILE_STUDIO_QUERY = "(max-width: 820px), ((pointer: coarse) and (max-height: 500px))";
 
 function subscribeToMobileStudio(onChange: () => void): () => void {
   const media = window.matchMedia(MOBILE_STUDIO_QUERY);
@@ -27,6 +27,15 @@ function subscribeToMobileStudio(onChange: () => void): () => void {
 
 function isMobileStudioViewport(): boolean {
   return window.matchMedia(MOBILE_STUDIO_QUERY).matches;
+}
+
+/**
+ * Shared mobile-studio breakpoint. Pages and panels must read the viewport
+ * through this hook (never a duplicated query string) so the React render
+ * paths can never disagree with the CSS media query above.
+ */
+export function useMobileStudio(): boolean {
+  return useSyncExternalStore(subscribeToMobileStudio, isMobileStudioViewport);
 }
 
 type StudioShellProps = {
@@ -52,7 +61,7 @@ export function StudioShell({
   children,
   footer,
 }: StudioShellProps): React.JSX.Element {
-  const isMobile = useSyncExternalStore(subscribeToMobileStudio, isMobileStudioViewport);
+  const isMobile = useMobileStudio();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetTab, setSheetTab] = useState<"controls" | "details">("controls");
   const hasDockContent = Boolean(leftDock ?? rightDock);
@@ -105,6 +114,11 @@ type FloatingStudioPanelProps = {
   minWidth?: number;
   minHeight?: number;
   className?: string;
+  /**
+   * Renders a prominent Close button on the mobile full-screen overlay.
+   * Ignored on desktop, where pages pass their own Hide action instead.
+   */
+  onClose?: () => void;
 };
 
 type Gesture =
@@ -136,17 +150,20 @@ export function FloatingStudioPanel({
   minWidth = 520,
   minHeight = 320,
   className = "",
+  onClose,
 }: FloatingStudioPanelProps): React.JSX.Element {
+  const isMobile = useMobileStudio();
   const panelRef = useRef<HTMLElement>(null);
   const gestureRef = useRef<Gesture | null>(null);
   const latestRect = useRef(rect);
 
   useEffect(() => {
-    if (maximized) return;
+    // Mobile ignores the rect entirely, so never clamp-and-persist it there.
+    if (maximized || isMobile) return;
     const onResize = (): void => onRectChange(clampRect(latestRect.current, minWidth, minHeight));
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [maximized, minHeight, minWidth, onRectChange]);
+  }, [isMobile, maximized, minHeight, minWidth, onRectChange]);
 
   useEffect(() => {
     latestRect.current = rect;
@@ -202,6 +219,19 @@ export function FloatingStudioPanel({
     window.addEventListener("pointermove", updateGesture);
     window.addEventListener("pointerup", finishGesture);
   };
+
+  // Mobile: a full-screen inspection overlay. Drag, resize, and maximize are
+  // meaningless there — the rect props are ignored and no gesture ever binds.
+  if (isMobile) return <section className={`floating-studio-panel mobile-overlay ${className}`}>
+    <header>
+      <b>{title}</b>
+      <div>
+        {actions}
+        {onClose && <button type="button" className="panel-mobile-close" onClick={onClose}>Close ✕</button>}
+      </div>
+    </header>
+    <div className="floating-studio-panel-body">{children}</div>
+  </section>;
 
   const panelStyle = maximized
     ? { left: 10, top: 10, width: "calc(100vw - 20px)", height: "calc(100vh - 20px)" }

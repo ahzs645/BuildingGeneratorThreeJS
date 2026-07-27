@@ -54,7 +54,7 @@ import {
 import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import { useBlendStudioRuntime } from "../blend-studio/useBlendStudioRuntime";
 import { usePageRuntime } from "../page-runtime";
-import { FloatingStudioPanel, StudioShell, type StudioPanelRect } from "../studio/StudioShell";
+import { FloatingStudioPanel, StudioShell, useMobileStudio, type StudioPanelRect } from "../studio/StudioShell";
 import "./crayon-compare.css";
 import "./blend-studio.css";
 
@@ -180,8 +180,10 @@ export default function BlendBridgePage(): React.JSX.Element {
   const fileInput = useRef<HTMLInputElement>(null);
   const workpieceInput = useRef<HTMLInputElement>(null);
   const importSerial = useRef(0);
+  const isMobile = useMobileStudio();
   const [docksOpen, setDocksOpen] = useState(true);
-  const [graphOpen, setGraphOpen] = useState(true);
+  // Mobile starts with the graph overlay closed; the FAB is its entry point.
+  const [graphOpen, setGraphOpen] = useState(!isMobile);
   const [graphMaximized, setGraphMaximized] = useState(false);
   const [graphRect, setGraphRect] = useState(initialGraphRect);
   const [health, setHealth] = useState<Health | null>(null);
@@ -656,8 +658,10 @@ export default function BlendBridgePage(): React.JSX.Element {
     setImportMessage(nextTargets.length
       ? `${nextTargets.length} runnable object or reusable group targets discovered`
       : "Graph extracted, but no Geometry Nodes output target was found");
-    setGraphOpen(true);
-  }, []);
+    // Desktop-only: auto-opening the full-screen overlay would hide the
+    // freshly imported preview on mobile, where the FAB opens it on demand.
+    if (!isMobile) setGraphOpen(true);
+  }, [isMobile]);
 
   const importFile = useCallback(async (file: File): Promise<void> => {
     setBusy(true);
@@ -1307,7 +1311,7 @@ export default function BlendBridgePage(): React.JSX.Element {
       <h1>Bring a Geometry Nodes tool into the studio.</h1>
       <p>{importMessage}</p>
     </div>}
-    {!graphOpen && workingDump && <button className="graph-toggle" type="button" onClick={() => setGraphOpen(true)}>Show Geometry Nodes workspace</button>}
+    {!graphOpen && workingDump && <button className="graph-toggle" type="button" onClick={() => setGraphOpen(true)}>{isMobile ? "Node graph" : "Show Geometry Nodes workspace"}</button>}
     {graphOpen && graphSource && target && <FloatingStudioPanel
       className="crayon-graph blend-graph"
       rect={graphRect}
@@ -1323,9 +1327,10 @@ export default function BlendBridgePage(): React.JSX.Element {
       title={`Geometry Nodes · ${target.label}`}
       actions={<>
         <span>{target.groupName}</span>
-        <button type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Maximize"}</button>
+        {!isMobile && <button type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Maximize"}</button>}
         <button type="button" onClick={() => { setGraphMaximized(false); setGraphOpen(false); }}>Hide</button>
       </>}
+      onClose={() => { setGraphMaximized(false); setGraphOpen(false); }}
     >
       <GeometryNodesEditor
         config={editorConfig}
