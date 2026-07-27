@@ -225,8 +225,9 @@ blend-studio 36/36, tsc clean):
 | --- | --- | --- |
 | Bubble putty cold evaluation (Node) | 182.7 s | 98.0 s |
 | Bubble putty cold evaluation (browser worker) | 123.8 s | 86.3 s |
-| Bubble putty warm re-eval, one override changed | ~124 s (full re-run) | **4.2 s** |
+| Bubble putty warm re-eval, one override changed | ~124 s (full re-run) | **4.2 s Node / 4.0 s in-browser ("bubble density"), 1.8 s ("bottom cut")** |
 | Bubble putty warm re-eval, unchanged | ~124 s | 1.3 s |
+| Bubble putty warm re-eval, global "Resolution" input | ~124 s | 82.7 s (reaches ~whole graph — expected worst case) |
 | Bolt generator evaluation | 3.5 s | 2.4–2.5 s |
 | Workers spawned/killed during a 6-move slider drag | 6 / 5 | **0 / 0** |
 | Per-nudge main-thread dump clone | ~54–82 ms | none (install-once) |
