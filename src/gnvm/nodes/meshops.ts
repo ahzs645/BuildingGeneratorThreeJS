@@ -2,7 +2,7 @@
 // Faithful-enough Blender semantics (region + individual extrude, domain-aware
 // delete/separate, weld, flip).
 import { Field, Vec3, Elem, Domain, asVec3, asNum, vadd, vscale, vnorm } from "../core";
-import { Geometry, Mesh, buildTopology, invalidateMeshCaches, ownAttributeData } from "../geometry";
+import { Geometry, Mesh, buildTopology, installTopology, invalidateMeshCaches, ownAttributeData } from "../geometry";
 import { reg, type EvalAPI } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 
@@ -17,6 +17,108 @@ const ekey = (a: number, b: number): EdgeKey => {
   const lo = a < b ? a : b, hi = a < b ? b : a;
   return hi < EKEY_BASE ? lo * EKEY_BASE + hi : `${lo}_${hi}`;
 };
+
+// Open-addressing lookup over undirected vertex pairs with a non-negative
+// int payload (-1 = absent). Replaces per-corner Map<EdgeKey, ...> churn in
+// extrudeMesh (the second-largest self-time consumer in the bubble-putty
+// profile). Keys are stored as exact doubles, so this covers every index the
+// legacy packed/string ekey covered; only key identity matters to callers,
+// and iteration-order-sensitive consumers keep their own entry lists.
+class PairTable {
+  private keyLo: Float64Array;
+  private keyHi: Float64Array;
+  private val: Int32Array;
+  private mask: number;
+  private used = 0;
+
+  constructor(expected: number) {
+    let cap = 16;
+    const target = (expected + 1) * 2;
+    while (cap < target) cap <<= 1;
+    this.keyLo = new Float64Array(cap);
+    this.keyHi = new Float64Array(cap);
+    this.val = new Int32Array(cap).fill(-1);
+    this.mask = cap - 1;
+  }
+
+  private slotOf(lo: number, hi: number): number {
+    let h = (Math.imul(lo, 0x9e3779b1) ^ Math.imul(hi, 0x85ebca6b)) & this.mask;
+    for (;;) {
+      if (this.val[h] === -1 || (this.keyLo[h] === lo && this.keyHi[h] === hi)) return h;
+      h = (h + 1) & this.mask;
+    }
+  }
+
+  /** Payload for the pair, or -1 when absent. */
+  get(a: number, b: number): number {
+    const lo = a < b ? a : b, hi = a < b ? b : a;
+    return this.val[this.slotOf(lo, hi)];
+  }
+
+  /** Store a non-negative payload (last write wins). */
+  set(a: number, b: number, value: number): void {
+    const lo = a < b ? a : b, hi = a < b ? b : a;
+    const h = this.slotOf(lo, hi);
+    if (this.val[h] === -1) {
+      if (++this.used * 4 > (this.mask + 1) * 3) {
+        this.grow();
+        this.set(a, b, value);
+        return;
+      }
+      this.keyLo[h] = lo;
+      this.keyHi[h] = hi;
+    }
+    this.val[h] = value;
+  }
+
+  /** Store only when absent. */
+  setIfAbsent(a: number, b: number, value: number): void {
+    const lo = a < b ? a : b, hi = a < b ? b : a;
+    const h = this.slotOf(lo, hi);
+    if (this.val[h] !== -1) return;
+    if (++this.used * 4 > (this.mask + 1) * 3) {
+      this.grow();
+      this.setIfAbsent(a, b, value);
+      return;
+    }
+    this.keyLo[h] = lo;
+    this.keyHi[h] = hi;
+    this.val[h] = value;
+  }
+
+  private grow(): void {
+    const oldLo = this.keyLo, oldHi = this.keyHi, oldVal = this.val;
+    const cap = (this.mask + 1) * 2;
+    this.keyLo = new Float64Array(cap);
+    this.keyHi = new Float64Array(cap);
+    this.val = new Int32Array(cap).fill(-1);
+    this.mask = cap - 1;
+    this.used = 0;
+    for (let i = 0; i < oldVal.length; i++) {
+      if (oldVal[i] === -1) continue;
+      const h = this.slotOf(oldLo[i], oldHi[i]);
+      this.keyLo[h] = oldLo[i];
+      this.keyHi[h] = oldHi[i];
+      this.val[h] = oldVal[i];
+      this.used++;
+    }
+  }
+}
+
+// a.data[srcVert[i]] for every output vertex, with a bulk prefix copy:
+// srcVert is the identity mapping below baseV in every extrude mode, so only
+// the duplicated tail needs indexed reads. Dense result, like the .map it
+// replaces (short source data still yields undefined holes as values).
+function carryPointData(data: Elem[], srcVert: number[], baseV: number, total: number): Elem[] {
+  let out: Elem[];
+  if (data.length === baseV) out = data.slice();
+  else {
+    out = new Array<Elem>(baseV);
+    for (let i = 0; i < baseV; i++) out[i] = data[i];
+  }
+  for (let i = baseV; i < total; i++) out.push(data[srcVert[i]]);
+  return out;
+}
 
 function avgElem(vals: Elem[]): Elem {
   if (!vals.length) return 0;
@@ -955,7 +1057,10 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
     if (!selEdges.length) return { Mesh: g, Top: Field.of(0), Side: Field.of(0) };
     const pctx = makeFieldCtx(g, "POINT");
     const offArr = offsetLinked ? api.field("Offset").array(pctx) : null;
-    const vnorms = mesh.vertexNormals();
+    // Vertex normals are only consulted when Offset is unlinked; computing
+    // them eagerly re-derived normals for the whole accumulated mesh on every
+    // spin-lathe iteration.
+    const vnorms = offArr ? null : mesh.vertexNormals();
     const out = mesh.clone();
     const srcVert: number[] = mesh.positions.map((_, i) => i);
     const dup = new Map<number, number>();
@@ -963,7 +1068,7 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
       let nv = dup.get(v);
       if (nv === undefined) {
         nv = out.positions.length;
-        const delta = offArr ? vscale(asVec3(offArr[v] ?? [0, 0, 0]), scale) : vscale(vnorms[v] ?? [0, 0, 1], scale);
+        const delta = offArr ? vscale(asVec3(offArr[v] ?? [0, 0, 0]), scale) : vscale(vnorms![v] ?? [0, 0, 1], scale);
         out.positions.push(vadd(mesh.positions[v], delta));
         srcVert.push(v);
         dup.set(v, nv);
@@ -986,24 +1091,23 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
     // Orient each side quad by the adjacent face's traversal direction (like
     // Blender) — canonical sorted order gives inconsistent winding, which
     // half-cancels the smoothed vertex normals downstream.
-    // Store only the first-seen edge direction's leading endpoint (the other
-    // endpoint is implied) — one map entry per edge instead of a fresh pair
-    // array, in a loop that runs once per corner per extrude.
-    const orient = new Map<EdgeKey, number>();
-    for (const f of mesh.faces)
-      for (let k = 0; k < f.length; k++) {
-        const u = f[k], v = f[(k + 1) % f.length];
-        const key = ekey(u, v);
-        if (!orient.has(key)) orient.set(key, u);
+    // The former per-corner first-seen map is derivable per selected edge:
+    // computeTopology pushes an edge's faces in ascending walk order, so the
+    // first face-walk direction lives in faces[0]'s corner ring; a loose wire
+    // (no faces) keeps its first stored direction in verts (explicit edges
+    // are seeded first), whose reversal Blender traverses — the old map
+    // stored `b` for wires. Building the full map cost O(corners) Map/table
+    // writes on the whole accumulated mesh per extrude.
+    const orientOf = (edge: { verts: [number, number]; faces: number[] }): number => {
+      if (!edge.faces.length) return edge.verts[1];
+      const face = mesh.faces[edge.faces[0]];
+      const [va, vb] = edge.verts;
+      for (let k = 0; k < face.length; k++) {
+        const u = face[k], v = face[(k + 1) % face.length];
+        if ((u === va && v === vb) || (u === vb && v === va)) return u;
       }
-    // Loose wires have no face loop to orient from. Blender's generated side
-    // loop traverses the source edge opposite its stored Curve-to-Mesh order;
-    // using the canonical sorted edge direction made the first Spin sector
-    // arbitrary.
-    for (const [a, b] of mesh.edges) {
-      const key = ekey(a, b);
-      if (!orient.has(key)) orient.set(key, b);
-    }
+      return va; // unreachable for a well-formed topology entry
+    };
     const inheritedTop = new Array(inEdges.length).fill(false);
     for (const [name, a] of mesh.attributes) {
       if (a.domain !== "EDGE" || !name.startsWith("__extrude_top_")) continue;
@@ -1014,8 +1118,8 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
     const newEdgePairs: [number, number][] = []; // duplicated (top) edges
     for (const ei of selEdges) {
       const [ca, cb] = inEdges[ei].verts;
-      const first = orient.get(ekey(ca, cb));
-      let a = first === undefined ? ca : first;
+      const first = orientOf(inEdges[ei]);
+      let a = first;
       let b = a === ca ? cb : ca;
       // Repeated edge extrusion follows the previous pass's Top edges. The
       // adjacent side face traverses every such edge opposite the stored Top
@@ -1056,10 +1160,46 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
       ...[...dup.entries()].map(([source, duplicate]) => [source, duplicate] as [number, number]),
       ...newEdgePairs,
     ];
+    // The canonical topology of `out` is fully determined here without a
+    // fresh per-corner dedup pass: out.edges IS the canonical list (every
+    // kept-face edge is in inEdges, every side-quad edge is in the explicit
+    // list), so a fresh computeTopology would enumerate exactly out.edges in
+    // order with these per-edge face lists (old faces keep their indices;
+    // side quads append in ascending order). Unselected input edges reuse
+    // their edge objects; Topology consumers are read-only.
+    {
+      const sideOf = new Map<number, number>(); // input edge -> its side quad
+      const connFaces = new Map<number, number[]>(); // source vert -> quads
+      for (let j = 0; j < selEdges.length; j++) {
+        sideOf.set(selEdges[j], sideFaceIdx[j]);
+        const [ca, cb] = inEdges[selEdges[j]].verts;
+        let fa = connFaces.get(ca);
+        if (!fa) connFaces.set(ca, fa = []);
+        fa.push(sideFaceIdx[j]);
+        let fb = connFaces.get(cb);
+        if (!fb) connFaces.set(cb, fb = []);
+        // A degenerate self-loop edge (ca === cb) pushes its quad twice, the
+        // same double count the per-corner walk produces.
+        fb.push(sideFaceIdx[j]);
+      }
+      const topoEdges: { verts: [number, number]; faces: number[] }[] = new Array(out.edges.length);
+      let at = 0;
+      for (let ei = 0; ei < inEdges.length; ei++) {
+        const edge = inEdges[ei];
+        const side = sideOf.get(ei);
+        topoEdges[at++] = side === undefined ? edge : { verts: edge.verts, faces: [...edge.faces, side] };
+      }
+      for (const [source, duplicate] of dup)
+        topoEdges[at++] = { verts: [source, duplicate], faces: connFaces.get(source) ?? [] };
+      for (let j = 0; j < newEdgePairs.length; j++)
+        topoEdges[at++] = { verts: [newEdgePairs[j][0], newEdgePairs[j][1]], faces: [sideFaceIdx[j]] };
+      installTopology(out, topoEdges);
+    }
     // carry POINT attributes onto the duplicated verts
+    let edgeAttrInIdx: PairTable | null = null;
     for (const [name, a] of mesh.attributes) {
       if (isStaleExtrudeMask(name)) { out.attributes.delete(name); continue; }
-      if (a.domain === "POINT") out.attributes.set(name, { domain: "POINT", data: out.positions.map((_, i) => a.data[srcVert[i]]) });
+      if (a.domain === "POINT") out.attributes.set(name, { domain: "POINT", data: carryPointData(a.data, srcVert, mesh.positions.length, out.positions.length) });
       else if (a.domain === "FACE") {
         const data = [...a.data];
         for (const ei of selEdges) data.push(inEdges[ei].faces.length ? a.data[inEdges[ei].faces[0]] : 0);
@@ -1068,24 +1208,28 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
         // output canonical edges: original mesh edges keep their order (faces
         // unchanged), then each new quad appends its vertical + top edges
         const outEdges = buildTopology(out).edges;
-        const inIdx = new Map<EdgeKey, number>();
-        inEdges.forEach((e, i) => inIdx.set(ekey(e.verts[0], e.verts[1]), i));
+        if (!edgeAttrInIdx) {
+          edgeAttrInIdx = new PairTable(inEdges.length);
+          inEdges.forEach((e, i) => edgeAttrInIdx!.set(e.verts[0], e.verts[1], i));
+        }
+        const inIdx = edgeAttrInIdx;
         const data = outEdges.map((e) => {
           const sa = srcVert[e.verts[0]], sb = srcVert[e.verts[1]];
           if (sa === sb) return 0;
-          const si = inIdx.get(ekey(sa, sb));
-          return si !== undefined ? a.data[si] : 0;
+          const si = inIdx.get(sa, sb);
+          return si !== -1 ? a.data[si] : 0;
         });
         out.attributes.set(name, { domain: "EDGE", data });
       }
     }
     g.mesh = out;
-    const topPairs = new Set(newEdgePairs.map(([x, y]) => ekey(x, y)));
+    const topPairs = new PairTable(newEdgePairs.length);
+    for (const [x, y] of newEdgePairs) topPairs.set(x, y, 1);
     const outEdges = buildTopology(out).edges;
     const topName = `__extrude_top_${extrudeSeq}`;
     const sideName = `__extrude_side_${extrudeSeq}`;
     extrudeSeq++;
-    out.attributes.set(topName, { domain: "EDGE", data: outEdges.map((e) => (topPairs.has(ekey(e.verts[0], e.verts[1])) ? 1 : 0)) });
+    out.attributes.set(topName, { domain: "EDGE", data: outEdges.map((e) => (topPairs.get(e.verts[0], e.verts[1]) !== -1 ? 1 : 0)) });
     const sideSet = new Set(sideFaceIdx);
     out.attributes.set(sideName, { domain: "FACE", data: out.faces.map((_, i) => (sideSet.has(i) ? 1 : 0)) });
     return {
@@ -1101,7 +1245,8 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
     const pctx0 = makeFieldCtx(g, "POINT");
     const selArr = api.field("Selection").array(pctx0);
     const offArr = offsetLinked ? api.field("Offset").array(pctx0) : null;
-    const vnorms = mesh.faces.length ? mesh.vertexNormals() : null;
+    // Only consulted when Offset is unlinked (see EDGES mode note).
+    const vnorms = !offArr && mesh.faces.length ? mesh.vertexNormals() : null;
     const out = mesh.clone();
     const srcVert: number[] = mesh.positions.map((_, i) => i);
     const newVerts: number[] = [];
@@ -1120,7 +1265,7 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
     }
     for (const [name, a] of mesh.attributes) {
       if (isStaleExtrudeMask(name)) { out.attributes.delete(name); continue; }
-      if (a.domain === "POINT") out.attributes.set(name, { domain: "POINT", data: out.positions.map((_, i) => a.data[srcVert[i]]) });
+      if (a.domain === "POINT") out.attributes.set(name, { domain: "POINT", data: carryPointData(a.data, srcVert, mesh.positions.length, out.positions.length) });
     }
     g.mesh = out;
     const topName = `__extrude_top_${extrudeSeq}`;
@@ -1197,20 +1342,36 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
     const vertSet = new Set<number>();
     const normAcc = new Map<number, Vec3>();
     const normCount = new Map<number, number>();
-    const edgeCount = new Map<EdgeKey, { a: number; b: number; n: number }>();
+    // Undirected edge -> entry index; entries keep the first-seen direction
+    // and use count (former Map values), appended in first-seen order.
+    let selCorners = 0;
+    for (const fi of selFaces) selCorners += mesh.faces[fi].length;
+    const edgeCount = new PairTable(Math.ceil(selCorners / 2) + 1);
+    const edgeA: number[] = [], edgeB: number[] = [], edgeN: number[] = [];
     for (const fi of selFaces) {
       const f = mesh.faces[fi];
       const n = mesh.faceNormal(fi);
       for (let i = 0; i < f.length; i++) {
         const v = f[i];
         vertSet.add(v);
-        normAcc.set(v, vadd(normAcc.get(v) ?? [0, 0, 0], n));
+        // Accumulate in place — same double-precision addition order as the
+        // former vadd(acc, n); these triples never attach to a mesh.
+        let acc = normAcc.get(v);
+        if (!acc) normAcc.set(v, acc = [0, 0, 0]);
+        acc[0] += n[0];
+        acc[1] += n[1];
+        acc[2] += n[2];
         normCount.set(v, (normCount.get(v) ?? 0) + 1);
         const a = f[i], b = f[(i + 1) % f.length];
-        const k = ekey(a, b);
-        const e = edgeCount.get(k) ?? { a, b, n: 0 };
-        e.n++;
-        edgeCount.set(k, e);
+        const idx = edgeCount.get(a, b);
+        if (idx === -1) {
+          edgeCount.set(a, b, edgeA.length);
+          edgeA.push(a);
+          edgeB.push(b);
+          edgeN.push(1);
+        } else {
+          edgeN[idx]++;
+        }
       }
     }
     // A region extrude duplicates only its boundary vertices. Vertices wholly
@@ -1220,10 +1381,10 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
     // from reproducing Blender's topology (the Dojo bin doubled 896 interior
     // vertices here and its wall-thickness field consequently pointed outward).
     const boundaryVerts = new Set<number>();
-    for (const e of edgeCount.values()) {
-      if (e.n !== 1) continue;
-      boundaryVerts.add(e.a);
-      boundaryVerts.add(e.b);
+    for (let i = 0; i < edgeN.length; i++) {
+      if (edgeN[i] !== 1) continue;
+      boundaryVerts.add(edgeA[i]);
+      boundaryVerts.add(edgeB[i]);
     }
     const newIdx = new Map<number, number>();
     // Region extrusion allocates boundary copies by the mesh's stored edge
@@ -1234,7 +1395,8 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
     let vertexOrder: number[] = [];
     const orderedVertices = new Set<number>();
     for (const edge of mesh.edges) {
-      if (edgeCount.get(ekey(edge[0], edge[1]))?.n !== 1) continue;
+      const edgeEntry = edgeCount.get(edge[0], edge[1]);
+      if (edgeEntry === -1 || edgeN[edgeEntry] !== 1) continue;
       for (const vertex of edge) {
         if (!vertSet.has(vertex) || orderedVertices.has(vertex)) continue;
         orderedVertices.add(vertex);
@@ -1298,7 +1460,7 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
       }
       for (let i = 0; i < f.length; i++) {
         const a = f[i], b = f[(i + 1) % f.length];
-        if (edgeCount.get(ekey(a, b))!.n === 1) {
+        if (edgeN[edgeCount.get(a, b)] === 1) {
           out.faces.push([a, b, newIdx.get(b)!, newIdx.get(a)!]);
           out.faceMaterial.push(mesh.faceMaterial[fi] ?? 0);
           srcFace.push(fi);
@@ -1325,7 +1487,7 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
   };
   for (const [name, a] of mesh.attributes) {
     if (isStaleExtrudeMask(name)) { out.attributes.delete(name); continue; }
-    if (a.domain === "POINT") out.attributes.set(name, { domain: "POINT", data: out.positions.map((_, i) => a.data[srcVert[i]]) });
+    if (a.domain === "POINT") out.attributes.set(name, { domain: "POINT", data: carryPointData(a.data, srcVert, mesh.positions.length, out.positions.length) });
     else if (a.domain === "FACE") out.attributes.set(name, { domain: "FACE", data: srcFace.map((fi) => a.data[fi]) });
     else if (a.domain === "CORNER") {
       const cornerStart: number[] = [];
@@ -1351,13 +1513,13 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
   const edgeAttrs = [...mesh.attributes].filter(([, a]) => a.domain === "EDGE");
   if (edgeAttrs.length) {
     const inEdges = buildTopology(mesh).edges;
-    const inIdx = new Map<EdgeKey, number>();
-    inEdges.forEach((e, i) => inIdx.set(ekey(e.verts[0], e.verts[1]), i));
+    const inIdx = new PairTable(inEdges.length);
+    inEdges.forEach((e, i) => inIdx.set(e.verts[0], e.verts[1], i));
     const outEdges = buildTopology(out).edges;
     const srcEdge = outEdges.map((e) => {
       const a = srcVert[e.verts[0]], b = srcVert[e.verts[1]];
       if (a === b) return -1; // vertical edge between an original vert and its copy
-      return inIdx.get(ekey(a, b)) ?? -1;
+      return inIdx.get(a, b);
     });
     for (const [name, a] of edgeAttrs)
       out.attributes.set(name, { domain: "EDGE", data: srcEdge.map((i) => (i >= 0 ? a.data[i] : 0)) });

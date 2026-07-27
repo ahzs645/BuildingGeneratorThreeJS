@@ -9,7 +9,11 @@
 //    so evaluation never crashes and we get a coverage report + partial mesh.
 
 import { Field, Vec3, Domain, FieldCtx, asNum, fieldMap, vadd, vcross, vdot, vlen, vnorm, vnormBlenderFloat, vscale, vsub } from "./core";
-import { Geometry, Mesh, mergeMeshInto, realizeInstances, topologyOf, Topology } from "./geometry";
+import {
+  Geometry, Mesh, mergeMeshInto, realizeInstances, topologyOf, Topology,
+  cornerMapsOf, vertexCornersOf, vertexEdgesOf, edgeIndexOf, canonicalEdgeKey,
+  type CornerMaps,
+} from "./geometry";
 import { splineFrames, splineLength } from "./curves";
 import { ClosureValue, DUMP_CONTEXT, EMPTY_CLOSURE, EvalAPI, RawNode, REGISTRY, MISSING, SockVal, DataRef } from "./registry";
 import { tryEvaluateGroupOverride } from "./group-overrides";
@@ -408,47 +412,18 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
   // Lazy topology (edges/adjacency/islands) — only built when a topology query needs it.
   let topo: Topology | null = null;
   const T = (): Topology => (topo ??= topologyOf(mesh!));
-  // Lazy corner maps: corner i -> (vertex, face); vertex -> corners; face -> first corner slot.
-  let corners: { vert: number[]; face: number[]; faceStart: number[] } | null = null;
-  const C = () => {
-    if (!corners) {
-      const vert: number[] = [], face: number[] = [], faceStart: number[] = [];
-      for (let fi = 0; fi < mesh!.faces.length; fi++) {
-        faceStart.push(vert.length);
-        for (const vi of mesh!.faces[fi]) { vert.push(vi); face.push(fi); }
-      }
-      corners = { vert, face, faceStart };
-    }
-    return corners;
-  };
+  // Corner/vertex incidence maps and the canonical edge index are cached per
+  // mesh (carried across clones) in geometry.ts; these wrappers only pin the
+  // resolved reference for this context.
+  let corners: CornerMaps | null = null;
+  const C = () => (corners ??= cornerMapsOf(mesh!));
   let vertCorners: number[][] | null = null;
-  const VC = () => {
-    if (!vertCorners) {
-      vertCorners = mesh!.positions.map(() => []);
-      const c = C();
-      for (let i = 0; i < c.vert.length; i++) vertCorners[c.vert[i]]?.push(i);
-    }
-    return vertCorners;
-  };
+  const VC = () => (vertCorners ??= vertexCornersOf(mesh!));
   let vertEdges: number[][] | null = null;
-  const VE = () => {
-    if (!vertEdges) {
-      vertEdges = mesh!.positions.map(() => []);
-      const es = T().edges;
-      for (let ei = 0; ei < es.length; ei++) for (const vi of es[ei].verts) vertEdges[vi]?.push(ei);
-    }
-    return vertEdges;
-  };
-  const edgeKeyOf = (a: number, b: number) => (a < b ? `${a}_${b}` : `${b}_${a}`);
-  let edgeKeyIdx: Map<string, number> | null = null;
-  const EK = () => {
-    if (!edgeKeyIdx) {
-      edgeKeyIdx = new Map();
-      const es = T().edges;
-      for (let ei = 0; ei < es.length; ei++) edgeKeyIdx.set(edgeKeyOf(es[ei].verts[0], es[ei].verts[1]), ei);
-    }
-    return edgeKeyIdx;
-  };
+  const VE = () => (vertEdges ??= vertexEdgesOf(mesh!));
+  const edgeKeyOf = canonicalEdgeKey;
+  let edgeKeyIdx: Map<number | string, number> | null = null;
+  const EK = () => (edgeKeyIdx ??= edgeIndexOf(mesh!));
   const size = domain === "INSTANCE"
     ? geo.instances.length
     : domain === "CURVE"

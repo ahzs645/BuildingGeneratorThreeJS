@@ -419,7 +419,10 @@ export interface Topology {
 // which copies on first write while the array is marked shared. Their Vec3
 // element objects follow the same replace-don't-mutate invariant.
 interface TopologyCacheMeta {
-  positions: Vec3[];
+  // No positions-array identity here: topology depends on faces/edges rows
+  // and the vertex COUNT only, so replacing the positions array (Set
+  // Position) must keep the cache. Vertex normals keep their own stricter
+  // meta below.
   faces: number[][];
   edges: [number, number][];
   positionCount: number;
@@ -439,11 +442,96 @@ const topologyCacheMeta = new WeakMap<Mesh, TopologyCacheMeta>();
 const vertexNormalsCache = new WeakMap<Mesh, Vec3[]>();
 const vertexNormalsCacheMeta = new WeakMap<Mesh, VertexNormalsCacheMeta>();
 
+// Corner maps (corner -> vertex/face, face -> first corner slot). Derived
+// from the face rows only; validated by faces-array identity + count, carried
+// across clones, cleared by invalidateMeshCaches — same discipline as the
+// topology cache. Previously rebuilt inside every makeFieldCtx call.
+export interface CornerMaps { vert: number[]; face: number[]; faceStart: number[] }
+interface CornerMapsCacheMeta { faces: number[][]; faceCount: number }
+const cornerMapsCache = new WeakMap<Mesh, CornerMaps>();
+const cornerMapsCacheMeta = new WeakMap<Mesh, CornerMapsCacheMeta>();
+
+export function cornerMapsOf(mesh: Mesh): CornerMaps {
+  const cached = cornerMapsCache.get(mesh);
+  const meta = cornerMapsCacheMeta.get(mesh);
+  if (cached && meta && meta.faces === mesh.faces && meta.faceCount === mesh.faces.length) return cached;
+  const vert: number[] = [], face: number[] = [], faceStart: number[] = [];
+  for (let fi = 0; fi < mesh.faces.length; fi++) {
+    faceStart.push(vert.length);
+    for (const vi of mesh.faces[fi]) { vert.push(vi); face.push(fi); }
+  }
+  const maps: CornerMaps = { vert, face, faceStart };
+  cornerMapsCache.set(mesh, maps);
+  cornerMapsCacheMeta.set(mesh, { faces: mesh.faces, faceCount: mesh.faces.length });
+  return maps;
+}
+
+// Corners attached to each vertex; needs the corner maps plus the vertex
+// count (isolated verts still get an empty list).
+interface VertexCornersCacheMeta extends CornerMapsCacheMeta { positionCount: number }
+const vertexCornersCache = new WeakMap<Mesh, number[][]>();
+const vertexCornersCacheMeta = new WeakMap<Mesh, VertexCornersCacheMeta>();
+
+export function vertexCornersOf(mesh: Mesh): number[][] {
+  const cached = vertexCornersCache.get(mesh);
+  const meta = vertexCornersCacheMeta.get(mesh);
+  if (
+    cached && meta
+    && meta.faces === mesh.faces
+    && meta.faceCount === mesh.faces.length
+    && meta.positionCount === mesh.positions.length
+  ) return cached;
+  const c = cornerMapsOf(mesh);
+  const list: number[][] = mesh.positions.map(() => []);
+  for (let i = 0; i < c.vert.length; i++) list[c.vert[i]]?.push(i);
+  vertexCornersCache.set(mesh, list);
+  vertexCornersCacheMeta.set(mesh, {
+    faces: mesh.faces,
+    faceCount: mesh.faces.length,
+    positionCount: mesh.positions.length,
+  });
+  return list;
+}
+
+// Canonical-edge incidence per vertex, keyed on the Topology object itself:
+// a fresh topology gives a fresh cache entry, and a carried topology carries
+// this list with it for free. No explicit invalidation needed.
+const vertexEdgesCache = new WeakMap<Topology, { positionCount: number; list: number[][] }>();
+
+export function vertexEdgesOf(mesh: Mesh): number[][] {
+  const topo = topologyOf(mesh);
+  const cached = vertexEdgesCache.get(topo);
+  if (cached && cached.positionCount === mesh.positions.length) return cached.list;
+  const list: number[][] = mesh.positions.map(() => []);
+  const es = topo.edges;
+  for (let ei = 0; ei < es.length; ei++) for (const vi of es[ei].verts) list[vi]?.push(ei);
+  vertexEdgesCache.set(topo, { positionCount: mesh.positions.length, list });
+  return list;
+}
+
+// Canonical edge key -> canonical edge index, keyed on the Topology object.
+const edgeIndexCache = new WeakMap<Topology, Map<number | string, number>>();
+
+export function edgeIndexOf(mesh: Mesh): Map<number | string, number> {
+  const topo = topologyOf(mesh);
+  let index = edgeIndexCache.get(topo);
+  if (!index) {
+    index = new Map();
+    for (let i = 0; i < topo.edges.length; i++) index.set(canonicalEdgeKey(topo.edges[i].verts[0], topo.edges[i].verts[1]), i);
+    edgeIndexCache.set(topo, index);
+  }
+  return index;
+}
+
 export function invalidateMeshCaches(mesh: Mesh): void {
   topologyCache.delete(mesh);
   topologyCacheMeta.delete(mesh);
   vertexNormalsCache.delete(mesh);
   vertexNormalsCacheMeta.delete(mesh);
+  cornerMapsCache.delete(mesh);
+  cornerMapsCacheMeta.delete(mesh);
+  vertexCornersCache.delete(mesh);
+  vertexCornersCacheMeta.delete(mesh);
 }
 
 /**
@@ -459,7 +547,6 @@ function carryDerivedCaches(source: Mesh, target: Mesh): void {
   const topoMeta = topologyCacheMeta.get(source);
   if (
     topo && topoMeta
-    && topoMeta.positions === source.positions
     && topoMeta.faces === source.faces
     && topoMeta.edges === source.edges
     && topoMeta.positionCount === source.positions.length
@@ -468,7 +555,6 @@ function carryDerivedCaches(source: Mesh, target: Mesh): void {
   ) {
     topologyCache.set(target, topo);
     topologyCacheMeta.set(target, {
-      positions: target.positions,
       faces: target.faces,
       edges: target.edges,
       positionCount: target.positions.length,
@@ -491,6 +577,31 @@ function carryDerivedCaches(source: Mesh, target: Mesh): void {
       faces: target.faces,
       positionCount: target.positions.length,
       faceCount: target.faces.length,
+    });
+  }
+  const corners = cornerMapsCache.get(source);
+  const cornersMeta = cornerMapsCacheMeta.get(source);
+  if (
+    corners && cornersMeta
+    && cornersMeta.faces === source.faces
+    && cornersMeta.faceCount === source.faces.length
+  ) {
+    cornerMapsCache.set(target, corners);
+    cornerMapsCacheMeta.set(target, { faces: target.faces, faceCount: target.faces.length });
+  }
+  const vertCorners = vertexCornersCache.get(source);
+  const vertCornersMeta = vertexCornersCacheMeta.get(source);
+  if (
+    vertCorners && vertCornersMeta
+    && vertCornersMeta.faces === source.faces
+    && vertCornersMeta.faceCount === source.faces.length
+    && vertCornersMeta.positionCount === source.positions.length
+  ) {
+    vertexCornersCache.set(target, vertCorners);
+    vertexCornersCacheMeta.set(target, {
+      faces: target.faces,
+      faceCount: target.faces.length,
+      positionCount: target.positions.length,
     });
   }
 }
@@ -684,7 +795,6 @@ export function topologyOf(mesh: Mesh): Topology {
   if (
     cached &&
     meta &&
-    meta.positions === mesh.positions &&
     meta.faces === mesh.faces &&
     meta.edges === mesh.edges &&
     meta.positionCount === mesh.positions.length &&
@@ -696,7 +806,6 @@ export function topologyOf(mesh: Mesh): Topology {
   const topo = computeTopology(mesh);
   topologyCache.set(mesh, topo);
   topologyCacheMeta.set(mesh, {
-    positions: mesh.positions,
     faces: mesh.faces,
     edges: mesh.edges,
     positionCount: mesh.positions.length,
@@ -776,6 +885,19 @@ function computeTopology(mesh: Mesh): Topology {
     for (let i = 0; i < f.length; i++) addFaceEdge(f[i], f[(i + 1) % f.length], fi);
   }
 
+  return assembleTopology(faces, positionCount, edges);
+}
+
+/**
+ * Wrap a canonical edge list into a Topology with the standard lazily built
+ * adjacency/island sections. `faces` must be a snapshot the topology may
+ * outlive its mesh with (computeTopology slices; installTopology snapshots).
+ */
+function assembleTopology(
+  faces: number[][],
+  positionCount: number,
+  edges: { verts: [number, number]; faces: number[] }[],
+): Topology {
   // Most consumers only need canonical edges. Build adjacency and connected
   // components lazily so an EDGE-domain field does not also allocate several
   // full-mesh union/find and incidence tables.
@@ -833,6 +955,30 @@ function computeTopology(mesh: Mesh): Topology {
     get pointIslandCount() { return getPointIslands().count; },
     get pointFaces() { return getPointFaces(); },
   };
+}
+
+/**
+ * Install a canonical topology that the caller has constructed incrementally
+ * (see extrudeMesh's EDGES mode). The edge list MUST be exactly what a fresh
+ * computeTopology(mesh) would produce — same enumeration order, same stored
+ * endpoint directions, same per-edge face lists (faces pushed in ascending
+ * face-walk order). The caller may share edge objects/arrays from an input
+ * mesh's topology; Topology consumers are read-only.
+ */
+export function installTopology(
+  mesh: Mesh,
+  edges: { verts: [number, number]; faces: number[] }[],
+): Topology {
+  const topo = assembleTopology(mesh.faces.slice(), mesh.positions.length, edges);
+  topologyCache.set(mesh, topo);
+  topologyCacheMeta.set(mesh, {
+    faces: mesh.faces,
+    edges: mesh.edges,
+    positionCount: mesh.positions.length,
+    faceCount: mesh.faces.length,
+    edgeCount: mesh.edges.length,
+  });
+  return topo;
 }
 
 // ---- euler rotation of a point (Blender XYZ order) ------------------------
@@ -924,17 +1070,15 @@ const zeroLike = (e: Elem | undefined): Elem => (Array.isArray(e) ? [0, 0, 0] : 
 // and Map insertion order — the contract note near computeTopology — is
 // independent of the key representation.
 const EDGE_KEY_BASE = 2 ** 21;
-const ekeyG = (x: number, y: number): number | string => {
+export const canonicalEdgeKey = (x: number, y: number): number | string => {
   const lo = x < y ? x : y, hi = x < y ? y : x;
   return hi < EDGE_KEY_BASE ? lo * EDGE_KEY_BASE + hi : `${lo}_${hi}`;
 };
+const ekeyG = canonicalEdgeKey;
 function canonicalEdgeIndex(m: Mesh): Map<number | string, number> {
-  // computeTopology inserts unique edges in the same order this function needs:
-  // face-derived first-seen edges, followed by explicit loose edges.
-  const index = new Map<number | string, number>();
-  const edges = topologyOf(m).edges;
-  for (let i = 0; i < edges.length; i++) index.set(ekeyG(edges[i].verts[0], edges[i].verts[1]), i);
-  return index;
+  // computeTopology inserts unique edges in the same order this function
+  // needs; the map is cached per Topology object.
+  return edgeIndexOf(m);
 }
 
 export function mergeMeshInto(a: Mesh, b: Mesh): void {
