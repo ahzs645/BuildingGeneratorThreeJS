@@ -16,3 +16,15 @@
 .studio-menu a small{display:block;margin-top:3px;color:#7c8794;font-size:11px;line-height:1.45}
 button.studio-link{cursor:pointer}
 button.studio-home{border:0;cursor:pointer}
+.studio-menu-dev{margin-top:6px;padding:0 10px}
+.studio-menu-dev-toggle{display:block;width:100%;padding:7px 0;border:0;background:none;color:#7c8794;cursor:pointer;text-align:left;font:700 9px/1 ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase}
+.studio-menu-dev-toggle:hover{color:#8fcfff}
+.studio-menu-dev-body{padding:4px 0 6px;display:grid;gap:12px}
+.studio-menu-status{display:flex;flex-wrap:wrap;gap:6px 16px;color:#9aa7b2;font:10px/1.6 ui-monospace,monospace}
+.studio-menu-status span{white-space:nowrap}
+.studio-menu-presets>span,.studio-menu-cli>span{display:block;margin-bottom:5px;color:#66727e;font:700 8.5px/1 ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase}
+.studio-menu-presets>div{display:flex;flex-wrap:wrap;gap:5px}
+.studio-menu-presets a{padding:4px 8px;border:1px solid rgba(255,255,255,.13);border-radius:999px;color:#a9b6c1;text-decoration:none;font:600 9.5px/1 ui-monospace,monospace}
+.studio-menu-presets a:hover{border-color:rgba(143,207,255,.45);color:#eaf2f8;background:rgba(143,207,255,.07)}
+.studio-menu-cli div{color:#7c8794;font:10px/1.7 ui-monospace,monospace}
+.studio-menu-cli code{color:#9fc6e8;background:#161a20;border-radius:4px;padding:1px 5px;margin-right:6px}

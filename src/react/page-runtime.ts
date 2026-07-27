@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 /**
  * A mounted studio tool. dispose() must return the document to the state it
@@ -24,6 +25,12 @@ export function usePageRuntime(title: string): void {
  * the page just rendered.
  */
 export function useToolRuntime(title: string, load: () => Promise<ToolModule>): void {
+  // Tools read location.search once at mount (capture modes, variant presets).
+  // Depending on it here remounts the runtime when router navigation changes
+  // only the query string — e.g. dev-menu preset links on the current tool.
+  // Tool-initiated history.replaceState does not notify the router, so tools
+  // rewriting their own query params never self-remount.
+  const { search } = useLocation();
   useEffect(() => {
     document.title = title;
     let disposed = false;
@@ -42,5 +49,5 @@ export function useToolRuntime(title: string, load: () => Promise<ToolModule>): 
       handle?.dispose();
       handle = null;
     };
-  }, [load, title]);
+  }, [load, search, title]);
 }

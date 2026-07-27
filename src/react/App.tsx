@@ -28,11 +28,14 @@ function NotFound(): React.JSX.Element {
   return <main className="not-found"><div><h1>That studio route does not exist.</h1><p><a href={appHref()}>Return to Procedural Studio</a></p></div></main>;
 }
 
-export default function App(): React.JSX.Element {
+function StudioRoutes(): React.JSX.Element {
+  const location = useLocation();
   return (
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <Suspense fallback={<div className="route-loading">Loading procedural tool…</div>}>
-        <Routes>
+    // Keyed by path + search: tool pages must remount (fresh canvas, fresh
+    // runtime) on ANY router navigation, including query-only preset links —
+    // dispose() force-loses the old canvas's GL context, so a runtime can
+    // never be rebuilt on a canvas that React kept alive.
+    <Routes location={location} key={`${location.pathname}?${location.search}`}>
           <Route path="/" element={<BlendBridgePage />} />
           <Route path="/blendbridge" element={<LegacyRedirect to="/" />} />
           <Route path="/building" element={<BuildingPage />} />
@@ -62,7 +65,15 @@ export default function App(): React.JSX.Element {
           <Route path="/geometry-painter.html" element={<LegacyRedirect to="/geometry-painter" />} />
           <Route path="/vegetation-generator.html" element={<LegacyRedirect to="/vegetation-generator" />} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
+    </Routes>
+  );
+}
+
+export default function App(): React.JSX.Element {
+  return (
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <Suspense fallback={<div className="route-loading">Loading procedural tool…</div>}>
+        <StudioRoutes />
       </Suspense>
     </BrowserRouter>
   );
