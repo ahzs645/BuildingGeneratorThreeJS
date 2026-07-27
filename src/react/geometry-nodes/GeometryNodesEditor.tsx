@@ -21,7 +21,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { publicUrl } from "../../base-url";
-import type { Dump, DumpLink, RawNode } from "../../gnvm";
+import type { Dump, DumpLink, DumpNodeGroup, RawNode } from "../../gnvm";
 import {
   areSocketTypesCompatible,
   dumpGroupToEditorGraph,
@@ -61,8 +61,22 @@ type PendingConnect = { nodeId: string; handleId: string | null; handleType: "so
 type AddMenuState = { x: number; y: number; flowX: number; flowY: number; pending?: PendingConnect };
 type ContextMenuState = { x: number; y: number; nodeId?: string; edgeId?: string };
 type GraphClipboard = { nodes: RawNode[]; links: DumpLink[] };
+/**
+ * A history entry is either a single-group snapshot (the pre-edit group object,
+ * shared by reference — never mutated after capture because every mutation path
+ * goes through `commit`, which clones before writing) or a full-dump snapshot
+ * for mutations whose scope was not declared.
+ */
+type HistoryEntry =
+  | { kind: "group"; groupName: string; group: DumpNodeGroup }
+  | { kind: "full"; dump: Dump };
+/** Declares which part of the dump a `commit` mutator writes. */
+type CommitScope = { group: string };
 
 let graphClipboard: GraphClipboard | null = null;
+
+/** Drafts above this serialized size are not persisted — they exceed typical localStorage quotas. */
+const DRAFT_PERSIST_MAX_CHARS = 4 * 1024 * 1024;
 
 const SOCKET_COLORS: Record<string, string> = {
   NodeSocketGeometry: "#00d6a3",
@@ -207,8 +221,8 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
   const [graph, setGraph] = useState<EditorGraph | null>(null);
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
-  const [undoStack, setUndoStack] = useState<Dump[]>([]);
-  const [redoStack, setRedoStack] = useState<Dump[]>([]);
+  const [undoStack, setUndoStack] = useState<HistoryEntry[]>([]);
+  const [redoStack, setRedoStack] = useState<HistoryEntry[]>([]);
   const [dirty, setDirty] = useState(false);
   const [selected, setSelected] = useState<GraphNode | null>(null);
   const [search, setSearch] = useState("");
@@ -221,6 +235,9 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
   const [flow, setFlow] = useState<ReactFlowInstance | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
+  const pendingDraft = useRef<{ key: string; dump: Dump } | null>(null);
+  const draftTimer = useRef<number | null>(null);
+  const draftWarned = useRef({ oversize: false, failed: false });
   const framedGroup = useRef("");
   const connecting = useRef<PendingConnect | null>(null);
   const reconnectSucceeded = useRef(false);
@@ -234,12 +251,27 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     ? ["source", source.sourceKey, source.objectName ?? null, source.rootGroupName ?? null, storageKey]
     : ["url", dumpUrl, config.objectName ?? null, config.rootGroupName ?? null, storageKey]);
 
-  const commit = useCallback((mutate: (next: Dump) => void) => {
+  const commit = useCallback((mutate: (next: Dump) => void, scope?: CommitScope) => {
     setDump((current) => {
       if (!current) return current;
-      const next = structuredClone(current);
+      const scopedGroup = scope ? current.node_groups[scope.group] : undefined;
+      let next: Dump;
+      let entry: HistoryEntry;
+      if (scope && scopedGroup) {
+        // Group-scoped commit: shallow-copy the dump and its node_groups map so
+        // downstream identity checks (gnvm evaluation cache keys on node_groups)
+        // see a change, deep-clone only the edited group, and share every other
+        // group by reference. Shared groups are never mutated afterwards — every
+        // mutation path goes through commit, which clones before writing.
+        next = { ...current, node_groups: { ...current.node_groups, [scope.group]: structuredClone(scopedGroup) } };
+        entry = { kind: "group", groupName: scope.group, group: scopedGroup };
+      } else {
+        // No declared scope (or unknown group): safe-but-slow full clone.
+        next = structuredClone(current);
+        entry = { kind: "full", dump: current };
+      }
       mutate(next);
-      setUndoStack((items) => [...items.slice(-39), current]);
+      setUndoStack((items) => [...items.slice(-39), entry]);
       setRedoStack([]);
       setDirty(true);
       return next;
@@ -253,7 +285,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     const rawNode = editorNode && next.node_groups[groupName]?.nodes.find((node) => node.name === editorNode.sourceName);
     const rawSocket = rawNode?.inputs.find((socket) => socket.identifier === editorSocket?.identifier && (socket.idx === editorSocket.index || socket.idx === undefined));
     if (rawSocket) rawSocket.value = value;
-  }), [commit, groupName]);
+  }, { group: groupName }), [commit, groupName]);
 
   useEffect(() => {
     const abort = new AbortController();
@@ -328,15 +360,47 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     };
   }, [sourceIdentity]);
 
+  const flushDraft = useCallback(() => {
+    if (draftTimer.current != null) {
+      window.clearTimeout(draftTimer.current);
+      draftTimer.current = null;
+    }
+    const pending = pendingDraft.current;
+    pendingDraft.current = null;
+    if (!pending) return;
+    try {
+      const serialized = JSON.stringify(pending.dump);
+      if (serialized.length > DRAFT_PERSIST_MAX_CHARS) {
+        if (!draftWarned.current.oversize) {
+          draftWarned.current.oversize = true;
+          console.warn(`GEOMETRY_NODES_DRAFT_SKIPPED: serialized draft (${serialized.length} chars) exceeds the ${DRAFT_PERSIST_MAX_CHARS} character persistence limit; use Save to keep your changes.`);
+        }
+        return;
+      }
+      localStorage.setItem(pending.key, serialized);
+      // Dumps are immutable after commit, so the draft can share the reference.
+      setSavedDraft(pending.dump);
+    } catch (error) {
+      if (!draftWarned.current.failed) {
+        draftWarned.current.failed = true;
+        console.warn("GEOMETRY_NODES_DRAFT_PERSIST", error);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (!dump || installedSourceIdentity !== sourceIdentity) return;
     if (onDumpChange) onDumpChange(dump);
     else window.dispatchEvent(new CustomEvent(config.events.change, { detail: { dump } }));
-    if (dirty) {
-      localStorage.setItem(storageKey, JSON.stringify(dump));
-      setSavedDraft(structuredClone(dump));
-    }
-  }, [config.events.change, dirty, dump, installedSourceIdentity, onDumpChange, sourceIdentity, storageKey]);
+    if (!dirty) return;
+    // Persist the draft off the hot path: coalesce writes until edits pause.
+    if (pendingDraft.current && pendingDraft.current.key !== storageKey) flushDraft();
+    pendingDraft.current = { key: storageKey, dump };
+    if (draftTimer.current != null) window.clearTimeout(draftTimer.current);
+    draftTimer.current = window.setTimeout(flushDraft, 1_000);
+  }, [config.events.change, dirty, dump, flushDraft, installedSourceIdentity, onDumpChange, sourceIdentity, storageKey]);
+
+  useEffect(() => () => flushDraft(), [flushDraft]);
 
   useEffect(() => {
     if (!dump || !groupName) return;
@@ -499,15 +563,30 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     setSelected(node);
     setPendingFocus(null);
   }, [flow, graph, groupName, nodes, pendingFocus]);
+  /** Restores a history entry onto `current`, returning the restored dump and the inverse entry for the opposite stack. */
+  const applyHistoryEntry = (entry: HistoryEntry, current: Dump): { restored: Dump; inverse: HistoryEntry } => {
+    if (entry.kind === "group") {
+      const currentGroup = current.node_groups[entry.groupName];
+      return {
+        restored: { ...current, node_groups: { ...current.node_groups, [entry.groupName]: entry.group } },
+        inverse: currentGroup
+          ? { kind: "group", groupName: entry.groupName, group: currentGroup }
+          : { kind: "full", dump: current },
+      };
+    }
+    return { restored: entry.dump, inverse: { kind: "full", dump: current } };
+  };
   const undo = (): void => setUndoStack((items) => {
     if (!items.length || !dump) return items;
-    const next = [...items], previous = next.pop()!;
-    setRedoStack((redo) => [...redo, dump]); setDump(previous); setDirty(true); return next;
+    const next = [...items];
+    const { restored, inverse } = applyHistoryEntry(next.pop()!, dump);
+    setRedoStack((redo) => [...redo, inverse]); setDump(restored); setDirty(true); return next;
   });
   const redo = (): void => setRedoStack((items) => {
     if (!items.length || !dump) return items;
-    const next = [...items], following = next.pop()!;
-    setUndoStack((undoItems) => [...undoItems, dump]); setDump(following); setDirty(true); return next;
+    const next = [...items];
+    const { restored, inverse } = applyHistoryEntry(next.pop()!, dump);
+    setUndoStack((undoItems) => [...undoItems, inverse]); setDump(restored); setDirty(true); return next;
   });
 
   const appendConnection = (next: Dump, connection: Connection): boolean => {
@@ -538,7 +617,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
   const connect = (connection: Connection): void => {
     commit((next) => {
       appendConnection(next, connection);
-    });
+    }, { group: groupName });
   };
   const isValidConnection = (connection: Connection | Edge): boolean => {
     if (!graph || !connection.source || !connection.target || connection.source === connection.target) return false;
@@ -609,7 +688,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
         }
       }
       refreshLinkedFlags(rawGraph);
-    });
+    }, { group: groupName });
     setAddMenu(null);
   };
   const reconnect: OnReconnect<Edge> = (oldEdge, connection) => {
@@ -619,14 +698,14 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
       const sourceIndex = Number((oldEdge.data as { sourceIndex?: number } | undefined)?.sourceIndex);
       if (Number.isInteger(sourceIndex)) rawGraph.links = rawGraph.links.filter((_link, index) => index !== sourceIndex);
       appendConnection(next, connection);
-    });
+    }, { group: groupName });
   };
   const deleteEdges = (removed: Edge[]): void => commit((next) => {
     const rawGraph = next.node_groups[groupName];
     const indices = new Set(removed.map((edge) => Number((edge.data as { sourceIndex?: number } | undefined)?.sourceIndex)).filter(Number.isInteger));
     rawGraph.links = rawGraph.links.filter((_link, index) => !indices.has(index));
     refreshLinkedFlags(rawGraph);
-  });
+  }, { group: groupName });
   const copySelection = (ids: string[]): void => {
     if (!dump || !graph) return;
     const names = new Set(graph.nodes.filter((node) => ids.includes(node.id) && node.kind !== "frame").map((node) => node.sourceName));
@@ -645,14 +724,14 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     rawGraph.nodes = rawGraph.nodes.filter((node) => !names.has(node.name));
     rawGraph.links = rawGraph.links.filter((link) => !names.has(link.from_node) && !names.has(link.to_node));
     refreshLinkedFlags(rawGraph);
-  });
+  }, { group: groupName });
   const disconnectSelection = (ids: string[]): void => commit((next) => {
     const current = dumpGroupToEditorGraph(next, groupName);
     const names = new Set(current.nodes.filter((node) => ids.includes(node.id)).map((node) => node.sourceName));
     const rawGraph = next.node_groups[groupName];
     rawGraph.links = rawGraph.links.filter((link) => !names.has(link.from_node) && !names.has(link.to_node));
     refreshLinkedFlags(rawGraph);
-  });
+  }, { group: groupName });
   const pasteClipboard = (position?: { x: number; y: number }): void => {
     if (!graphClipboard?.nodes.length) return;
     const target = position ?? flow?.screenToFlowPosition(lastPointer.current) ?? { x: 0, y: 0 };
@@ -680,7 +759,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
         to_node: names.get(link.to_node) ?? link.to_node,
       });
       refreshLinkedFlags(rawGraph);
-    });
+    }, { group: groupName });
   };
   const duplicateSelection = (ids: string[]): void => {
     copySelection(ids);
@@ -703,7 +782,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
       location: [flowNode.position.x, -flowNode.position.y],
       location_absolute: [absoluteX, -absoluteY],
     };
-  });
+  }, { group: groupName });
   const previewNode = (nodeId: string): void => {
     const node = graph?.nodes.find((candidate) => candidate.id === nodeId);
     if (!node) return;
@@ -723,7 +802,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     rawGraph.links = rawGraph.links.filter((link) => link.to_node !== output.sourceName || link.to_socket !== to.identifier);
     rawGraph.links.push({ from_node: source.sourceName, from_socket: from.identifier, to_node: output.sourceName, to_socket: to.identifier, from_type: from.type, to_type: to.type });
     refreshLinkedFlags(rawGraph);
-  });
+  }, { group: groupName });
   const selectedIds = (): string[] => nodes.filter((node) => node.selected && node.type !== "blenderFrame").map((node) => node.id);
   const openNodeMenu = (event: React.MouseEvent, node: Node): void => {
     event.preventDefault();
@@ -775,7 +854,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     const parsed = JSON.parse(await file.text()) as Dump;
     if (!parsed.node_groups || !parsed.objects) throw new Error("Not a portable Geometry Nodes dump");
     const root = resolveEditorRootGroup(parsed, selection);
-    if (dump) setUndoStack((items) => [...items, dump]);
+    if (dump) setUndoStack((items) => [...items, { kind: "full", dump }]);
     setDump(parsed); setRedoStack([]); setDirty(true);
     setGroupName(root); setBreadcrumbs([{ group: root }]);
   };
@@ -783,7 +862,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     if (!sourceDump) return;
     const next = structuredClone(preset.dump ?? sourceDump);
     preset.transform?.(next);
-    if (dump) setUndoStack((items) => [...items.slice(-39), dump]);
+    if (dump) setUndoStack((items) => [...items.slice(-39), { kind: "full", dump }]);
     setRedoStack([]);
     setDump(next);
     setDirty(true);
