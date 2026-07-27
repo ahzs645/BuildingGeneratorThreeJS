@@ -399,6 +399,48 @@ export function controlsForBlendStudioTarget(dump: Dump, target: BlendStudioTarg
   });
 }
 
+export type BlendStudioProgressivePreviewContract = {
+  control: BlendStudioControl;
+  previewValue: number;
+};
+
+/**
+ * Exact-word names only. Substring matches are deliberately excluded so a
+ * semantic input like "bubble density" or "wall resolution factor" can never
+ * be hijacked into a fidelity dial.
+ */
+const RESOLUTION_CLASS_NAME = /^(resolution|res|quality|detail|subdiv(isions?)?|segments|steps)$/i;
+
+/**
+ * Find the exposed control that behaves like Blender's viewport fidelity dial
+ * (Resolution, Segments, Subdivisions, …) and compute a cheap preview value
+ * for it: floats drop to min + 25% of the authored-or-current span above min,
+ * integers to max(min, ceil(25% of current)). Returns null when no control
+ * safely matches, the range is degenerate, or the preview would not actually
+ * be lower than the current value — the progressive-preview feature simply
+ * stays off for that tool.
+ */
+export function progressivePreviewContractForBlendStudioTarget(
+  dump: Dump,
+  target: BlendStudioTarget,
+): BlendStudioProgressivePreviewContract | null {
+  const candidates = controlsForBlendStudioTarget(dump, target).filter((control) =>
+    typeof control.value === "number"
+    && (control.socketType.includes("Float") || control.socketType.includes("Int"))
+    && RESOLUTION_CLASS_NAME.test(control.name.trim()));
+  const control = candidates.find((candidate) =>
+    candidate.name.trim().toLowerCase() === "resolution") ?? candidates[0];
+  if (!control) return null;
+  const value = Number(control.value);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  if (!(control.max - control.min > 0)) return null;
+  const previewValue = control.socketType.includes("Int")
+    ? Math.max(control.min, Math.ceil(value * .25))
+    : Math.max(control.min, control.min + (value - control.min) * .25);
+  if (!Number.isFinite(previewValue) || previewValue >= value) return null;
+  return { control, previewValue };
+}
+
 function dataRef(value: unknown): DataRef | null {
   return value
     && typeof value === "object"

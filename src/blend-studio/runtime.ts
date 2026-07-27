@@ -22,6 +22,8 @@ export type BlendStudioRuntimeSnapshot = {
   state: BlendStudioRuntimeState;
   message: string;
   lastValid: boolean;
+  /** The displayed result is a low-resolution progressive preview. */
+  preview?: boolean;
   stats?: TriSoup["stats"];
   runtimeSeconds?: number;
   missingTypes?: { type: string; count: number }[];
@@ -29,6 +31,15 @@ export type BlendStudioRuntimeSnapshot = {
   details?: RunDetail[];
   lineStats?: NonNullable<TriSoup["lines"]>["stats"];
   pointStats?: NonNullable<TriSoup["points"]>["stats"];
+};
+
+export type BlendStudioProgressivePreview = {
+  /** Interface identifier of the resolution-class input to lower for phase 1. */
+  identifier: string;
+  /** Display name of that input, used in the preview status message. */
+  name: string;
+  /** Cheap phase-1 value; phase 2 re-evaluates with the caller's overrides. */
+  previewValue: number;
 };
 
 export type BlendStudioEvaluation = {
@@ -40,6 +51,13 @@ export type BlendStudioEvaluation = {
   geometryInput?: string;
   output?: string;
   volumeSampleBudget?: number;
+  /**
+   * Two-phase evaluation: run once with the resolution-class input lowered to
+   * previewValue (shown as a marked low-res preview), then—after the user has
+   * stayed idle—re-run at full quality and replace the result silently.
+   * Callers that omit this get exactly the single-phase behavior.
+   */
+  progressive?: BlendStudioProgressivePreview;
 };
 
 export type BlendStudioRuntimeController = {
@@ -57,6 +75,12 @@ export type BlendStudioRuntimeController = {
 };
 
 export const BLEND_STUDIO_EVALUATION_TIMEOUT_MS = 180_000;
+/** Idle time after a low-res preview before the full-quality refinement runs. */
+export const BLEND_STUDIO_REFINEMENT_IDLE_MS = 500;
+
+function formatPreviewValue(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
 
 export type BlendStudioMeasurementMode = "jaw" | "points";
 
@@ -289,6 +313,9 @@ export function mountBlendStudioRuntime({
   type ActiveEvaluation = {
     id: number;
     request: BlendStudioEvaluation;
+    // "preview" runs the request with its progressive low-res override applied;
+    // the same run object is then re-armed as "full" for the refinement pass.
+    phase: "preview" | "full";
     started: number;
     posted: boolean;
     retriedInstall: boolean;
@@ -296,6 +323,8 @@ export function mountBlendStudioRuntime({
     reject: (reason?: unknown) => void;
   };
   let activeEvaluation: ActiveEvaluation | null = null;
+  // Pending phase-2 (full quality) dispatch after a low-res preview landed.
+  let refineTimer = 0;
   // The run currently executing inside the persistent worker; superseded runs
   // stay in flight (their replies are dropped by id) so the warm worker and
   // its JIT state survive slider drags.
@@ -961,10 +990,13 @@ export function mountBlendStudioRuntime({
     if (!active) return;
     activeEvaluation = null;
     window.clearTimeout(timeout);
+    window.clearTimeout(refineTimer);
     onState({
       state: "error",
       message: `${error.message.split("\n")[0]}${lastValid ? " · previous valid geometry retained" : ""}`,
       lastValid,
+      // A failed low-res pass measures the preview, not the target's cost.
+      ...(active.phase === "preview" ? { preview: true } : {}),
     });
     active.reject(error);
   };
@@ -994,13 +1026,72 @@ export function mountBlendStudioRuntime({
         ? run.request.target.modifierIndex
         : undefined,
       targetKind: run.request.target.kind,
-      overrides: run.request.overrides,
+      overrides: run.phase === "preview" && run.request.progressive
+        ? {
+            ...run.request.overrides,
+            [run.request.progressive.identifier]: run.request.progressive.previewValue,
+          }
+        : run.request.overrides,
       frame: run.request.frame,
       seed: run.request.seed,
       geometryInput: run.request.geometryInput,
       output: run.request.output,
       volumeSampleBudget: run.request.volumeSampleBudget,
     });
+  };
+
+  // The only path that kills the warm worker: a runaway evaluation. The
+  // respawned worker starts empty, so the install tracking resets too.
+  const armSafetyTimeout = (run: ActiveEvaluation): void => {
+    const id = run.id;
+    window.clearTimeout(timeout);
+    timeout = window.setTimeout(() => {
+      if (activeEvaluation?.id !== id) return;
+      teardownWorker();
+      failActiveEvaluation(new Error("Evaluation stopped after the 180 second safety limit"));
+    }, BLEND_STUDIO_EVALUATION_TIMEOUT_MS);
+  };
+
+  // Phase 1 of a progressive run landed: show the low-res result immediately,
+  // then—once the user has stayed idle—re-arm the same run at full quality.
+  // Its promise resolves with phase 2; a supersede in between rejects it and
+  // skips the refinement entirely.
+  const handlePreviewReply = (
+    active: ActiveEvaluation,
+    reply: Extract<WorkerReply, { soup: TriSoup }>,
+  ): void => {
+    window.clearTimeout(timeout);
+    showSoup(active.request.dump, reply.soup, active.request.target.id);
+    lastValid = true;
+    const progressive = active.request.progressive!;
+    onState({
+      state: "ready",
+      preview: true,
+      message: `Low-res preview (${progressive.name} ${formatPreviewValue(progressive.previewValue)}) · refining…`,
+      lastValid,
+      stats: reply.soup.stats,
+      lineStats: reply.soup.lines?.stats,
+      pointStats: reply.soup.points?.stats,
+      runtimeSeconds: (performance.now() - active.started) / 1_000,
+      missingTypes: reply.coverage.missingTypes,
+      approximateTypes: reply.coverage.approximateTypes,
+      details: reply.details ?? [],
+    });
+    window.clearTimeout(refineTimer);
+    refineTimer = window.setTimeout(() => {
+      // A queued edit is about to supersede this run anyway; when it does,
+      // cancel() rejects the run and no refinement is dispatched.
+      if (activeEvaluation !== active || queuedEvaluationPending) return;
+      active.phase = "full";
+      active.id = ++runId;
+      active.started = performance.now();
+      active.posted = false;
+      active.retriedInstall = false;
+      armSafetyTimeout(active);
+      // If a superseded stale run still occupies the worker, the stale-reply
+      // handler dispatches this run as soon as the worker frees up.
+      if (postedRunId === null) postEvaluation(active);
+    }, BLEND_STUDIO_REFINEMENT_IDLE_MS);
   };
 
   const handleWorkerReply = (reply: WorkerReply): void => {
@@ -1033,6 +1124,10 @@ export function mountBlendStudioRuntime({
         return;
       }
       failActiveEvaluation(new Error(reply.error));
+      return;
+    }
+    if (active.phase === "preview" && active.request.progressive) {
+      handlePreviewReply(active, reply);
       return;
     }
     activeEvaluation = null;
@@ -1087,6 +1182,8 @@ export function mountBlendStudioRuntime({
     window.clearTimeout(queueTimer);
     queuedEvaluationPending = false;
     window.clearTimeout(timeout);
+    // Superseding a progressive run between its phases skips the refinement.
+    window.clearTimeout(refineTimer);
     const active = activeEvaluation;
     activeEvaluation = null;
     active?.reject(new BlendStudioEvaluationCancelledError());
@@ -1105,6 +1202,7 @@ export function mountBlendStudioRuntime({
       const run: ActiveEvaluation = {
         id,
         request,
+        phase: request.progressive ? "preview" : "full",
         started: performance.now(),
         posted: false,
         retriedInstall: false,
@@ -1112,13 +1210,7 @@ export function mountBlendStudioRuntime({
         reject,
       };
       activeEvaluation = run;
-      timeout = window.setTimeout(() => {
-        if (activeEvaluation?.id !== id) return;
-        // The only path that kills the warm worker: a runaway evaluation. The
-        // respawned worker starts empty, so the install tracking resets too.
-        teardownWorker();
-        failActiveEvaluation(new Error("Evaluation stopped after the 180 second safety limit"));
-      }, BLEND_STUDIO_EVALUATION_TIMEOUT_MS);
+      armSafetyTimeout(run);
       // If a superseded run is still executing, wait for its reply; the reply
       // handler dispatches this run as soon as the worker frees up.
       if (postedRunId === null) postEvaluation(run);

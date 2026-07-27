@@ -532,6 +532,274 @@ export function invalidateMeshCaches(mesh: Mesh): void {
   cornerMapsCacheMeta.delete(mesh);
   vertexCornersCache.delete(mesh);
   vertexCornersCacheMeta.delete(mesh);
+  normalsDeltaHints.delete(mesh);
+}
+
+// ---- incremental vertex normals -------------------------------------------
+// A "delta hint" records that this mesh's state derives from a base state
+// whose vertex normals are known: positions 0..baseVertCount-1 hold the same
+// coordinate values as the base except the vertices listed in `dirty`, and
+// faces 0..baseFaceCount-1 are the base's face rows unchanged (appends only).
+// vertexNormalsOf can then recompute only the affected vertices — a vertex's
+// corner-angle-weighted normal depends solely on its incident faces' corner
+// geometry, and the full pass's Float64Array accumulator is f32-rounded after
+// every addition while a vertex's slot is only ever touched by that vertex's
+// own corners in ascending global corner order. Re-accumulating one vertex's
+// corners in ascending corner order (vertexCornersOf's order) therefore
+// reproduces the full pass bit-exactly.
+//
+// Soundness follows the same discipline as the derived caches above: hints
+// are keyed to the exact outer-array identities AND lengths at install time,
+// so wholesale array replacement or in-place growth invalidates them, and
+// every audited in-place element mutation calls invalidateMeshCaches (which
+// also deletes the hint). Hints are only installed at sites that guarantee
+// the pure-append/pure-move contract (extrude EDGES/VERTICES, Set Position).
+interface NormalsDeltaHint {
+  baseNormals: Vec3[];
+  baseVertCount: number;
+  baseFaceCount: number;
+  dirty: ReadonlySet<number>; // indices < baseVertCount whose positions moved
+  positions: Vec3[];
+  faces: number[][];
+  positionCount: number;
+  faceCount: number;
+}
+const normalsDeltaHints = new WeakMap<Mesh, NormalsDeltaHint>();
+const EMPTY_DIRTY: ReadonlySet<number> = new Set<number>();
+
+function validNormalsHint(mesh: Mesh): NormalsDeltaHint | null {
+  const hint = normalsDeltaHints.get(mesh);
+  return hint
+    && hint.positions === mesh.positions
+    && hint.faces === mesh.faces
+    && hint.positionCount === mesh.positions.length
+    && hint.faceCount === mesh.faces.length
+    ? hint
+    : null;
+}
+
+/**
+ * The known-normals base state a mesh can serve as: either its own cached
+ * (fully valid) vertex normals, or the base carried by its own valid hint.
+ */
+function normalsBaseStateOf(mesh: Mesh): {
+  baseNormals: Vec3[];
+  baseVertCount: number;
+  baseFaceCount: number;
+  dirty: ReadonlySet<number>;
+} | null {
+  const cached = vertexNormalsCache.get(mesh);
+  const meta = vertexNormalsCacheMeta.get(mesh);
+  if (
+    cached && meta
+    && meta.positions === mesh.positions
+    && meta.faces === mesh.faces
+    && meta.positionCount === mesh.positions.length
+    && meta.faceCount === mesh.faces.length
+  ) {
+    return {
+      baseNormals: cached,
+      baseVertCount: mesh.positions.length,
+      baseFaceCount: mesh.faces.length,
+      dirty: EMPTY_DIRTY,
+    };
+  }
+  const hint = validNormalsHint(mesh);
+  if (hint) {
+    return {
+      baseNormals: hint.baseNormals,
+      baseVertCount: hint.baseVertCount,
+      baseFaceCount: hint.baseFaceCount,
+      dirty: hint.dirty,
+    };
+  }
+  return null;
+}
+
+/**
+ * Declare that `target` extends `source` by pure append: target's first
+ * source-count positions are the same elements, its first source-count face
+ * rows are the same rows, and everything beyond is newly added. Callers
+ * (extrude EDGES/VERTICES) must guarantee that contract. No-op when the
+ * source has no usable normals base.
+ */
+export function carryNormalsDeltaOnAppend(source: Mesh, target: Mesh): void {
+  const base = normalsBaseStateOf(source);
+  if (!base) {
+    normalsDeltaHints.delete(target);
+    return;
+  }
+  normalsDeltaHints.set(target, {
+    ...base,
+    positions: target.positions,
+    faces: target.faces,
+    positionCount: target.positions.length,
+    faceCount: target.faces.length,
+  });
+}
+
+/**
+ * Declare that `mesh.positions` was just replaced wholesale by a same-length
+ * array (Set Position). Diffs against `oldPositions` to extend/install the
+ * delta hint. Call AFTER the assignment; no-op (hint cleared) when there is
+ * no usable base or the length changed.
+ */
+export function notePositionsReplaced(mesh: Mesh, oldPositions: Vec3[]): void {
+  const next = mesh.positions;
+  if (next === oldPositions || next.length !== oldPositions.length) {
+    normalsDeltaHints.delete(mesh);
+    return;
+  }
+  // The base must be valid for the PRE-replacement state: either cached
+  // normals keyed to oldPositions, or a hint keyed to oldPositions.
+  let base: ReturnType<typeof normalsBaseStateOf> = null;
+  const cached = vertexNormalsCache.get(mesh);
+  const meta = vertexNormalsCacheMeta.get(mesh);
+  if (
+    cached && meta
+    && meta.positions === oldPositions
+    && meta.faces === mesh.faces
+    && meta.positionCount === oldPositions.length
+    && meta.faceCount === mesh.faces.length
+  ) {
+    base = {
+      baseNormals: cached,
+      baseVertCount: oldPositions.length,
+      baseFaceCount: mesh.faces.length,
+      dirty: EMPTY_DIRTY,
+    };
+  } else {
+    const hint = normalsDeltaHints.get(mesh);
+    if (
+      hint
+      && hint.positions === oldPositions
+      && hint.faces === mesh.faces
+      && hint.positionCount === oldPositions.length
+      && hint.faceCount === mesh.faces.length
+    ) {
+      base = hint;
+    }
+  }
+  if (!base) {
+    normalsDeltaHints.delete(mesh);
+    return;
+  }
+  const dirty = new Set<number>(base.dirty);
+  for (let i = 0; i < next.length; i++) {
+    const before = oldPositions[i], after = next[i];
+    if (before === after) continue;
+    // Object.is: exact coordinate comparison including -0/NaN, so a "moved"
+    // vertex whose coordinates are bit-identical stays clean.
+    if (Object.is(before[0], after[0]) && Object.is(before[1], after[1]) && Object.is(before[2], after[2])) continue;
+    if (i < base.baseVertCount) dirty.add(i);
+  }
+  normalsDeltaHints.set(mesh, {
+    baseNormals: base.baseNormals,
+    baseVertCount: base.baseVertCount,
+    baseFaceCount: base.baseFaceCount,
+    dirty,
+    positions: next,
+    faces: mesh.faces,
+    positionCount: next.length,
+    faceCount: mesh.faces.length,
+  });
+}
+
+/**
+ * Recompute only the vertices whose normals can differ from the hint's base:
+ * appended vertices, vertices of appended faces, and vertices sharing a face
+ * with a moved vertex. Returns null when the affected set is large enough
+ * that the full pass is the better call. Bit-exact vs computeVertexNormals
+ * (see the hint contract comment above).
+ */
+function incrementalVertexNormals(mesh: Mesh, hint: NormalsDeltaHint): Vec3[] | null {
+  const vertCount = mesh.positions.length;
+  const faces = mesh.faces;
+  if (hint.baseNormals.length < hint.baseVertCount) return null;
+  const affected = new Uint8Array(vertCount);
+  let affectedCount = 0;
+  for (let vi = hint.baseVertCount; vi < vertCount; vi++) {
+    affected[vi] = 1;
+    affectedCount++;
+  }
+  for (let fi = hint.baseFaceCount; fi < faces.length; fi++) {
+    for (const vi of faces[fi]) {
+      if (!affected[vi]) { affected[vi] = 1; affectedCount++; }
+    }
+  }
+  const corners = vertexCornersOf(mesh);
+  const cm = cornerMapsOf(mesh);
+  for (const vi of hint.dirty) {
+    if (vi >= vertCount) return null; // contract breach — bail to full pass
+    if (!affected[vi]) { affected[vi] = 1; affectedCount++; }
+    for (const c of corners[vi]) {
+      for (const u of faces[cm.face[c]]) {
+        if (!affected[u]) { affected[u] = 1; affectedCount++; }
+      }
+    }
+  }
+  if (affectedCount * 3 > vertCount) return null;
+
+  const out: Vec3[] = new Array(vertCount);
+  const baseNormals = hint.baseNormals;
+  for (let vi = 0; vi < hint.baseVertCount; vi++) out[vi] = baseNormals[vi];
+  // Face normals are pure per-face; compute each affected face once (the full
+  // pass computes every face once — identical values for the ones we touch).
+  const faceNormalMemo = new Map<number, Vec3>();
+  const faceNormalOf = (fi: number): Vec3 => {
+    let n = faceNormalMemo.get(fi);
+    if (!n) {
+      n = faceNormalBlenderFloat(mesh, faces[fi]);
+      faceNormalMemo.set(fi, n);
+    }
+    return n;
+  };
+  for (let vi = 0; vi < vertCount; vi++) {
+    if (!affected[vi]) continue;
+    const cs = corners[vi];
+    if (!cs.length) {
+      out[vi] = normalizeBlenderFloat(mesh.positions[vi]);
+      continue;
+    }
+    // Same inlined float32 arithmetic and per-vertex accumulation order as
+    // computeVertexNormals: ascending corner order, f32 rounding after every
+    // addition.
+    let accX = 0, accY = 0, accZ = 0;
+    for (const c of cs) {
+      const fi = cm.face[c];
+      const face = faces[fi];
+      const k = c - cm.faceStart[fi];
+      const n = faceNormalOf(fi);
+      const p = mesh.positions[face[k]];
+      const prev = mesh.positions[face[(k - 1 + face.length) % face.length]];
+      const next = mesh.positions[face[(k + 1) % face.length]];
+      let ax = f32(prev[0] - p[0]);
+      let ay = f32(prev[1] - p[1]);
+      let az = f32(prev[2] - p[2]);
+      const alen = f32(Math.sqrt(f32(f32(f32(ax * ax) + f32(ay * ay)) + f32(az * az))));
+      if (alen > 0) {
+        ax = f32(ax / alen); ay = f32(ay / alen); az = f32(az / alen);
+      } else {
+        ax = 0; ay = 0; az = 0;
+      }
+      let bx = f32(next[0] - p[0]);
+      let by = f32(next[1] - p[1]);
+      let bz = f32(next[2] - p[2]);
+      const blen = f32(Math.sqrt(f32(f32(f32(bx * bx) + f32(by * by)) + f32(bz * bz))));
+      if (blen > 0) {
+        bx = f32(bx / blen); by = f32(by / blen); bz = f32(bz / blen);
+      } else {
+        bx = 0; by = 0; bz = 0;
+      }
+      const dot = f32(f32(f32(ax * bx) + f32(ay * by)) + f32(az * bz));
+      const angle = safeAcosApproxBlenderFloat(dot);
+      accX = f32(accX + f32(n[0] * angle));
+      accY = f32(accY + f32(n[1] * angle));
+      accZ = f32(accZ + f32(n[2] * angle));
+    }
+    out[vi] = normalizeBlenderFloat([accX, accY, accZ]);
+  }
+  return out;
 }
 
 /**
@@ -588,6 +856,19 @@ function carryDerivedCaches(source: Mesh, target: Mesh): void {
   ) {
     cornerMapsCache.set(target, corners);
     cornerMapsCacheMeta.set(target, { faces: target.faces, faceCount: target.faces.length });
+  }
+  const hint = validNormalsHint(source);
+  if (hint) {
+    // The clone shares the same position elements and face rows, so the
+    // hint's base relationship holds for it verbatim; re-key to the clone's
+    // outer arrays (identical contents and lengths by construction).
+    normalsDeltaHints.set(target, {
+      ...hint,
+      positions: target.positions,
+      faces: target.faces,
+      positionCount: target.positions.length,
+      faceCount: target.faces.length,
+    });
   }
   const vertCorners = vertexCornersCache.get(source);
   const vertCornersMeta = vertexCornersCacheMeta.get(source);
@@ -778,7 +1059,20 @@ function vertexNormalsOf(mesh: Mesh): Vec3[] {
   ) {
     return cached;
   }
-  const normals = computeVertexNormals(mesh);
+  const hint = validNormalsHint(mesh);
+  let normals = hint ? incrementalVertexNormals(mesh, hint) : null;
+  const diag = (globalThis as any).__VN_DIAG;
+  if (diag) diag.push({ v: mesh.positions.length, f: mesh.faces.length, mode: normals ? "incremental" : hint ? "hint-bailed" : "full" });
+  if (normals && (globalThis as any).__VN_VERIFY) {
+    const full = computeVertexNormals(mesh);
+    let bad = 0;
+    for (let i = 0; i < full.length; i++) {
+      if (!Object.is(full[i][0], normals[i][0]) || !Object.is(full[i][1], normals[i][1]) || !Object.is(full[i][2], normals[i][2])) bad++;
+    }
+    ((globalThis as any).__VN_VERIFY_RESULTS ??= []).push({ v: mesh.positions.length, bad });
+  }
+  if (!normals) normals = computeVertexNormals(mesh);
+  normalsDeltaHints.delete(mesh); // superseded by the full cache below
   vertexNormalsCache.set(mesh, normals);
   vertexNormalsCacheMeta.set(mesh, {
     positions: mesh.positions,

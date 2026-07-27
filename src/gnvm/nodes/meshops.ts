@@ -2,7 +2,7 @@
 // Faithful-enough Blender semantics (region + individual extrude, domain-aware
 // delete/separate, weld, flip).
 import { Field, Vec3, Elem, Domain, asVec3, asNum, vadd, vscale, vnorm } from "../core";
-import { Geometry, Mesh, buildTopology, installTopology, invalidateMeshCaches, ownAttributeData } from "../geometry";
+import { Geometry, Mesh, buildTopology, carryNormalsDeltaOnAppend, installTopology, invalidateMeshCaches, ownAttributeData } from "../geometry";
 import { reg, type EvalAPI } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 
@@ -1223,6 +1223,10 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
       }
     }
     g.mesh = out;
+    // Pure append: out shares mesh's position elements/face rows as a strict
+    // prefix, so downstream normal reads can reuse mesh's normals and touch
+    // only the duplicated ring + new side quads.
+    carryNormalsDeltaOnAppend(mesh, out);
     const topPairs = new PairTable(newEdgePairs.length);
     for (const [x, y] of newEdgePairs) topPairs.set(x, y, 1);
     const outEdges = buildTopology(out).edges;
@@ -1268,6 +1272,8 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
       if (a.domain === "POINT") out.attributes.set(name, { domain: "POINT", data: carryPointData(a.data, srcVert, mesh.positions.length, out.positions.length) });
     }
     g.mesh = out;
+    // Pure append (new verts + loose edges only) — see EDGES-mode note.
+    carryNormalsDeltaOnAppend(mesh, out);
     const topName = `__extrude_top_${extrudeSeq}`;
     extrudeSeq++;
     const newSet = new Set(newVerts);

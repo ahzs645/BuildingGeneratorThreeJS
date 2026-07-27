@@ -12,6 +12,7 @@ import {
   controlsForBlendStudioTarget,
   datablockControlsForBlendStudioTarget,
   discoverBlendStudioTargets,
+  progressivePreviewContractForBlendStudioTarget,
   recordBlendStudioEvaluationRun,
   seedableObjectNames,
   summarizeBlendStudioRuntimeDetails,
@@ -511,6 +512,119 @@ test("evaluation history reads sanitize malformed persisted payloads", () => {
       },
     }, "key"),
     [{ seconds: 2.5, outcome: "ready", at: 0 }],
+  );
+});
+
+test("progressive preview finds a literal Resolution float and quarters its span above min", () => {
+  // Bubble putty shape: NodeSocketFloat, min 0, max 1, current value 0.45.
+  const dump = fixture();
+  dump.node_groups.Assigned.interface.push(
+    socket("Resolution", "Socket_Res", "INPUT", "NodeSocketFloat", {
+      default: .5,
+      min_value: 0,
+      max_value: 1,
+    }),
+  );
+  dump.objects![0].modifiers![0].input_values = { Resolution: .45 };
+  const target = discoverBlendStudioTargets(dump)[0];
+  const contract = progressivePreviewContractForBlendStudioTarget(dump, target);
+  assert.equal(contract?.control.identifier, "Socket_Res");
+  assert.equal(contract?.previewValue, .1125);
+});
+
+test("progressive preview quarters integer segments-style inputs with the socket min as floor", () => {
+  const dump = fixture();
+  dump.node_groups.Assigned.interface.push(
+    socket("Segments", "Socket_Seg", "INPUT", "NodeSocketInt", {
+      default: 24,
+      min_value: 2,
+      max_value: 64,
+    }),
+  );
+  const target = discoverBlendStudioTargets(dump)[0];
+  const contract = progressivePreviewContractForBlendStudioTarget(dump, target);
+  assert.equal(contract?.control.identifier, "Socket_Seg");
+  assert.equal(contract?.previewValue, 6);
+
+  // A large socket min floors the preview instead of dropping below it.
+  dump.node_groups.Assigned.interface = dump.node_groups.Assigned.interface
+    .filter((item) => item.identifier !== "Socket_Seg");
+  dump.node_groups.Assigned.interface.push(
+    socket("Segments", "Socket_Seg2", "INPUT", "NodeSocketInt", {
+      default: 6,
+      min_value: 4,
+      max_value: 64,
+    }),
+  );
+  assert.equal(
+    progressivePreviewContractForBlendStudioTarget(dump, target)?.previewValue,
+    4,
+  );
+});
+
+test("progressive preview only accepts exact-word resolution-class names", () => {
+  // "bubble density" and "wall resolution factor" are semantic inputs and
+  // must never be hijacked as fidelity dials.
+  const dump = fixture();
+  dump.node_groups.Assigned.interface.push(
+    socket("bubble density", "Socket_Density", "INPUT", "NodeSocketInt", {
+      default: 26,
+      min_value: 1,
+      max_value: 10_000,
+    }),
+    socket("wall resolution factor", "Socket_Wall", "INPUT", "NodeSocketFloat", {
+      default: .8,
+      min_value: 0,
+      max_value: 1,
+    }),
+  );
+  const target = discoverBlendStudioTargets(dump)[0];
+  assert.equal(progressivePreviewContractForBlendStudioTarget(dump, target), null);
+});
+
+test("progressive preview returns null for degenerate ranges and already-minimal values", () => {
+  const dump = fixture();
+  dump.node_groups.Assigned.interface.push(
+    socket("Resolution", "Socket_Res", "INPUT", "NodeSocketInt", {
+      default: 5,
+      min_value: 5,
+      max_value: 5,
+    }),
+  );
+  const target = discoverBlendStudioTargets(dump)[0];
+  assert.equal(progressivePreviewContractForBlendStudioTarget(dump, target), null);
+
+  // A float already sitting at the socket min offers nothing to reduce.
+  dump.node_groups.Assigned.interface = dump.node_groups.Assigned.interface
+    .filter((item) => item.identifier !== "Socket_Res");
+  dump.node_groups.Assigned.interface.push(
+    socket("Resolution", "Socket_Res2", "INPUT", "NodeSocketFloat", {
+      default: .2,
+      min_value: .2,
+      max_value: 1,
+    }),
+  );
+  assert.equal(progressivePreviewContractForBlendStudioTarget(dump, target), null);
+});
+
+test("progressive preview prefers the literal name Resolution among multiple matches", () => {
+  const dump = fixture();
+  dump.node_groups.Assigned.interface.push(
+    socket("Steps", "Socket_Steps", "INPUT", "NodeSocketInt", {
+      default: 32,
+      min_value: 1,
+      max_value: 128,
+    }),
+    socket("Resolution", "Socket_Res", "INPUT", "NodeSocketFloat", {
+      default: .6,
+      min_value: 0,
+      max_value: 1,
+    }),
+  );
+  const target = discoverBlendStudioTargets(dump)[0];
+  assert.equal(
+    progressivePreviewContractForBlendStudioTarget(dump, target)?.control.identifier,
+    "Socket_Res",
   );
 });
 

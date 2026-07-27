@@ -3,6 +3,7 @@ import { isStaticDeploy, publicUrl } from "../../base-url";
 import { animationFrameRange, type Dump } from "../../gnvm";
 import {
   autoEvaluationPolicyForBlendStudioTarget,
+  BLEND_STUDIO_LIVE_EVALUATION_DISABLE_SECONDS,
   blendStudioEvaluationHistoryKey,
   blendStudioEvaluationRunsForKey,
   compatibilityForBlendStudioTarget,
@@ -10,6 +11,7 @@ import {
   controlsForBlendStudioTarget,
   datablockControlsForBlendStudioTarget,
   discoverBlendStudioTargets,
+  progressivePreviewContractForBlendStudioTarget,
   recordBlendStudioEvaluationRun,
   seedableObjectNames,
   touchBlendStudioEvaluationHistory,
@@ -296,6 +298,22 @@ export default function BlendBridgePage(): React.JSX.Element {
       : null,
     [evaluationRuns, target, workingDump],
   );
+  const progressiveContract = useMemo(
+    () => workingDump && target
+      ? progressivePreviewContractForBlendStudioTarget(workingDump, target)
+      : null,
+    [target, workingDump],
+  );
+  // Two-phase previews only make sense when the target is measured-slow: the
+  // last recorded run exceeded the live-edit disable budget (timeouts and
+  // errors record the safety ceiling, so they count as slow too).
+  const lastMeasuredRun = evaluationRuns[evaluationRuns.length - 1];
+  const progressivePreviewApplies = Boolean(
+    progressiveContract
+    && lastMeasuredRun
+    && (lastMeasuredRun.outcome !== "ready"
+      || lastMeasuredRun.seconds > BLEND_STUDIO_LIVE_EVALUATION_DISABLE_SECONDS),
+  );
   const presetContract = useMemo(
     () => workingDump && target ? presetContractForBlendStudioTarget(workingDump, target) : null,
     [target, workingDump],
@@ -446,6 +464,24 @@ export default function BlendBridgePage(): React.JSX.Element {
     };
   }, [animationFrame, connectedGeometryInputs.length, geometryInput, geometryOutput, hasVolumeBoundary, interpretedDump, overrides, seedValue, target, viewerPreviews, volumeSampleBudget]);
 
+  // Attach the two-phase low-res preview at dispatch time (not inside the
+  // evaluation memo, whose identity gates the live-edit queue) so a request is
+  // progressive exactly when the target is measured-slow and lowering the
+  // resolution-class input would actually reduce work.
+  const withProgressivePreview = useCallback(
+    (request: BlendStudioEvaluation): BlendStudioEvaluation => {
+      if (!progressivePreviewApplies || !progressiveContract) return request;
+      const { control, previewValue } = progressiveContract;
+      const current = Number(request.overrides[control.identifier] ?? control.value);
+      if (!Number.isFinite(current) || current <= previewValue) return request;
+      return {
+        ...request,
+        progressive: { identifier: control.identifier, name: control.name, previewValue },
+      };
+    },
+    [progressiveContract, progressivePreviewApplies],
+  );
+
   const authoredMeasurementValue = measurementContract
     ? Number(
         overrides[measurementContract.inputIdentifier]
@@ -558,6 +594,9 @@ export default function BlendBridgePage(): React.JSX.Element {
     if (recordedSnapshot.current === snapshot) return;
     recordedSnapshot.current = snapshot;
     if (!evaluationHistoryKey) return;
+    // Low-res progressive previews measure the preview pass, not the target's
+    // real cost; only the full-quality phase may drive the live-edit gate.
+    if (snapshot.preview) return;
     if (snapshot.state === "ready" && typeof snapshot.runtimeSeconds === "number") {
       setEvaluationRuns(persistEvaluationRun(evaluationHistoryKey, {
         seconds: snapshot.runtimeSeconds,
@@ -579,9 +618,9 @@ export default function BlendBridgePage(): React.JSX.Element {
       // current request has already been evaluated; only queue actual edits.
       if (lastQueuedEvaluation.current === evaluation) return;
       lastQueuedEvaluation.current = evaluation;
-      runtime.queue(evaluation);
+      runtime.queue(withProgressivePreview(evaluation));
     } else runtime.cancel();
-  }, [autoEvaluation?.enabled, evaluation, runtime.cancel, runtime.queue]);
+  }, [autoEvaluation?.enabled, evaluation, runtime.cancel, runtime.queue, withProgressivePreview]);
 
   useEffect(() => {
     if (!graphMaximized) return;
@@ -808,7 +847,7 @@ export default function BlendBridgePage(): React.JSX.Element {
           onClick={() => {
             if (!evaluation) return;
             lastQueuedEvaluation.current = evaluation;
-            void runtime.evaluate(evaluation).catch(() => {});
+            void runtime.evaluate(withProgressivePreview(evaluation)).catch(() => {});
           }}
         >Apply to preview</button>
         <button type="button" disabled={!interpretedDump} onClick={() => {
@@ -1146,7 +1185,7 @@ export default function BlendBridgePage(): React.JSX.Element {
   const rightDock = <>
     <header className="studio-dock-header"><span>Compatibility</span><small>static + executed</small></header>
     <section>
-      <div className={`blend-runtime-status ${runtime.snapshot.state}`}>
+      <div className={`blend-runtime-status ${runtime.snapshot.state}${runtime.snapshot.preview ? " preview" : ""}`}>
         <span />
         <div><b>{runtime.snapshot.state}</b><small>{runtime.snapshot.message}</small></div>
       </div>
@@ -1162,6 +1201,8 @@ export default function BlendBridgePage(): React.JSX.Element {
       <div className="blend-compat-score"><strong>{compatibility.score}%</strong><div><b>reachable records recognized</b><span>{compatibility.recognizedNodes}/{compatibility.totalNodes} nodes · {compatibility.report.reachableGroups.length} groups</span></div></div>
       {autoEvaluation && <p className="blend-studio-copy">
         {autoEvaluation.reason}. {!autoEvaluation.enabled && "Use Apply to preview the partial result explicitly."}
+        {progressivePreviewApplies && progressiveContract
+          && ` Previews start with a quick low-${progressiveContract.control.name} pass and refine to full quality once you pause.`}
       </p>}
       <div className="blend-gaps">
         {compatibility.gaps.length
@@ -1216,6 +1257,7 @@ export default function BlendBridgePage(): React.JSX.Element {
             ? <strong>{runtime.snapshot.pointStats.points.toLocaleString()} point-cloud points</strong>
           : <strong>Empty geometry output</strong>}
       <small>{runtime.snapshot.runtimeSeconds?.toFixed(2)}s in worker</small>
+      {runtime.snapshot.preview && <em>Low-resolution preview · full quality refining</em>}
       {(runtime.snapshot.missingTypes ?? []).map((entry) =>
         <em key={entry.type}>{entry.type} ×{entry.count}</em>)}
       {(runtime.snapshot.approximateTypes ?? []).map((entry) =>
