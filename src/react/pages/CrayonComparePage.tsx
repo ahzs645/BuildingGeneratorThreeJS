@@ -3,7 +3,7 @@ import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import type { GeometryNodesPreset } from "../geometry-nodes/GraphPresetLibrary";
 import { usePageRuntime } from "../page-runtime";
 import { useCrayonRuntime } from "../crayon/useCrayonRuntime";
-import { FloatingStudioPanel, StudioShell, type StudioPanelRect } from "../studio/StudioShell";
+import { FloatingStudioPanel, StudioShell, useMobileStudio, type StudioPanelRect } from "../studio/StudioShell";
 import "./crayon-compare.css";
 
 const editorConfig = {
@@ -89,9 +89,12 @@ function loadUiState(): CrayonUiState {
 
 export default function CrayonComparePage(): React.JSX.Element {
   usePageRuntime("Chrome Crayon · Blender vs browser Geometry Nodes");
+  const isMobile = useMobileStudio();
   const [initialUi] = useState(loadUiState);
   const [docksOpen, setDocksOpen] = useState(initialUi.docksOpen);
-  const [graphOpen, setGraphOpen] = useState(initialUi.graphOpen);
+  // Mobile starts with the graph overlay closed regardless of the persisted
+  // desktop preference; the FAB is its entry point.
+  const [graphOpen, setGraphOpen] = useState(!isMobile && initialUi.graphOpen);
   const [graphRect, setGraphRect] = useState(initialUi.graphRect);
   const [graphMaximized, setGraphMaximized] = useState(false);
   const [overrides, setOverrides] = useState<Record<string, number>>(initialOverrides);
@@ -131,7 +134,8 @@ export default function CrayonComparePage(): React.JSX.Element {
   const closeGraph = (): void => {
     setGraphMaximized(false);
     setGraphOpen(false);
-    persistUi({ graphOpen: false });
+    // Mobile open/close is transient inspection; only desktop persists it.
+    if (!isMobile) persistUi({ graphOpen: false });
   };
 
   const leftDock = <>
@@ -176,8 +180,8 @@ export default function CrayonComparePage(): React.JSX.Element {
     <canvas ref={runtime.canvasRef} id="crayon-canvas" />
     {!graphOpen && <button className="graph-toggle" type="button" onClick={() => {
       setGraphOpen(true);
-      persistUi({ graphOpen: true });
-    }}>Show Geometry Nodes workspace</button>}
+      if (!isMobile) persistUi({ graphOpen: true });
+    }}>{isMobile ? "Node graph" : "Show Geometry Nodes workspace"}</button>}
     {graphOpen && <FloatingStudioPanel
       className="crayon-graph"
       rect={graphRect}
@@ -186,9 +190,10 @@ export default function CrayonComparePage(): React.JSX.Element {
       title="Geometry Nodes"
       actions={<>
         <span>pan · zoom · box-select · F3 search</span>
-        <button type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Maximize"}</button>
+        {!isMobile && <button type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Maximize"}</button>}
         <button type="button" onClick={closeGraph}>Hide</button>
       </>}
+      onClose={closeGraph}
     >
       <GeometryNodesEditor config={editorConfig} onDumpChange={runtime.setDump} onPreviewChange={runtime.setProbe} presets={crayonPresets} />
     </FloatingStudioPanel>}

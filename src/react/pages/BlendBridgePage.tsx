@@ -3,12 +3,20 @@ import { isStaticDeploy, publicUrl } from "../../base-url";
 import { animationFrameRange, type Dump } from "../../gnvm";
 import {
   autoEvaluationPolicyForBlendStudioTarget,
+  BLEND_STUDIO_LIVE_EVALUATION_DISABLE_SECONDS,
+  blendStudioEvaluationHistoryKey,
+  blendStudioEvaluationRunsForKey,
   compatibilityForBlendStudioTarget,
   connectedGeometryInputsForBlendStudioTarget,
   controlsForBlendStudioTarget,
   datablockControlsForBlendStudioTarget,
   discoverBlendStudioTargets,
+  progressivePreviewContractForBlendStudioTarget,
+  recordBlendStudioEvaluationRun,
   seedableObjectNames,
+  touchBlendStudioEvaluationHistory,
+  type BlendStudioEvaluationHistoryStore,
+  type BlendStudioEvaluationRunRecord,
   type BlendStudioSeed,
 } from "../../blend-studio/model";
 import {
@@ -35,15 +43,18 @@ import {
   measurementDistanceRange,
   type BlendStudioMeasurementUnit,
 } from "../../blend-studio/measurement";
-import type {
-  BlendStudioMeasurementMode,
-  BlendStudioMeasurementSubjectSnapshot,
-  BlendStudioPointMeasurementSnapshot,
+import {
+  BLEND_STUDIO_EVALUATION_TIMEOUT_MS,
+  type BlendStudioEvaluation,
+  type BlendStudioMeasurementMode,
+  type BlendStudioMeasurementSubjectSnapshot,
+  type BlendStudioPointMeasurementSnapshot,
+  type BlendStudioRuntimeSnapshot,
 } from "../../blend-studio/runtime";
 import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import { useBlendStudioRuntime } from "../blend-studio/useBlendStudioRuntime";
 import { usePageRuntime } from "../page-runtime";
-import { FloatingStudioPanel, StudioShell, type StudioPanelRect } from "../studio/StudioShell";
+import { FloatingStudioPanel, StudioShell, useMobileStudio, type StudioPanelRect } from "../studio/StudioShell";
 import "./crayon-compare.css";
 import "./blend-studio.css";
 
@@ -75,6 +86,43 @@ const editorConfig = {
 } as const;
 
 const UI_STORAGE_KEY = "procedural-studio.blendbridge.ui";
+const EVALUATION_HISTORY_STORAGE_KEY = "procedural-studio.blendbridge.evaluation-history";
+
+function loadEvaluationHistoryStore(): unknown {
+  try {
+    return JSON.parse(localStorage.getItem(EVALUATION_HISTORY_STORAGE_KEY) ?? "null");
+  } catch {
+    return null;
+  }
+}
+
+function saveEvaluationHistoryStore(store: BlendStudioEvaluationHistoryStore): void {
+  try {
+    localStorage.setItem(EVALUATION_HISTORY_STORAGE_KEY, JSON.stringify(store));
+  } catch {
+    // Evaluation history persistence is optional.
+  }
+}
+
+/** Read a target's measured runs and refresh its LRU last-use stamp. */
+function storedEvaluationRuns(key: string): BlendStudioEvaluationRunRecord[] {
+  const store = loadEvaluationHistoryStore();
+  const runs = blendStudioEvaluationRunsForKey(store, key);
+  if (runs.length) {
+    const touched = touchBlendStudioEvaluationHistory(store, key, Date.now());
+    if (touched) saveEvaluationHistoryStore(touched);
+  }
+  return runs;
+}
+
+function persistEvaluationRun(
+  key: string,
+  run: BlendStudioEvaluationRunRecord,
+): BlendStudioEvaluationRunRecord[] {
+  const next = recordBlendStudioEvaluationRun(loadEvaluationHistoryStore(), key, run);
+  saveEvaluationHistoryStore(next);
+  return blendStudioEvaluationRunsForKey(next, key);
+}
 
 function defaultGraphRect(): StudioPanelRect {
   const width = Math.min(1120, Math.max(640, window.innerWidth - 650));
@@ -132,8 +180,10 @@ export default function BlendBridgePage(): React.JSX.Element {
   const fileInput = useRef<HTMLInputElement>(null);
   const workpieceInput = useRef<HTMLInputElement>(null);
   const importSerial = useRef(0);
+  const isMobile = useMobileStudio();
   const [docksOpen, setDocksOpen] = useState(true);
-  const [graphOpen, setGraphOpen] = useState(true);
+  // Mobile starts with the graph overlay closed; the FAB is its entry point.
+  const [graphOpen, setGraphOpen] = useState(!isMobile);
   const [graphMaximized, setGraphMaximized] = useState(false);
   const [graphRect, setGraphRect] = useState(initialGraphRect);
   const [health, setHealth] = useState<Health | null>(null);
@@ -145,6 +195,11 @@ export default function BlendBridgePage(): React.JSX.Element {
   const [sourceName, setSourceName] = useState("");
   const [sourceBytes, setSourceBytes] = useState(0);
   const [sourceKey, setSourceKey] = useState("");
+  const [sourceFingerprint, setSourceFingerprint] = useState("");
+  const [evaluationRuns, setEvaluationRuns] =
+    useState<readonly BlendStudioEvaluationRunRecord[]>([]);
+  const recordedSnapshot = useRef<BlendStudioRuntimeSnapshot | null>(null);
+  const lastQueuedEvaluation = useRef<BlendStudioEvaluation | null>(null);
   const [targetId, setTargetId] = useState("");
   const [overrides, setOverrides] = useState<Record<string, unknown>>({});
   const [animationFrame, setAnimationFrame] = useState(0);
@@ -236,9 +291,30 @@ export default function BlendBridgePage(): React.JSX.Element {
       "GeometryNodeVolumeCube",
       "GeometryNodeVolumeToMesh",
     ].includes(entry.type)));
+  const evaluationHistoryKey = sourceFingerprint && target
+    ? blendStudioEvaluationHistoryKey(sourceFingerprint, target.id)
+    : "";
   const autoEvaluation = useMemo(
-    () => workingDump && target ? autoEvaluationPolicyForBlendStudioTarget(workingDump, target) : null,
+    () => workingDump && target
+      ? autoEvaluationPolicyForBlendStudioTarget(workingDump, target, evaluationRuns)
+      : null,
+    [evaluationRuns, target, workingDump],
+  );
+  const progressiveContract = useMemo(
+    () => workingDump && target
+      ? progressivePreviewContractForBlendStudioTarget(workingDump, target)
+      : null,
     [target, workingDump],
+  );
+  // Two-phase previews only make sense when the target is measured-slow: the
+  // last recorded run exceeded the live-edit disable budget (timeouts and
+  // errors record the safety ceiling, so they count as slow too).
+  const lastMeasuredRun = evaluationRuns[evaluationRuns.length - 1];
+  const progressivePreviewApplies = Boolean(
+    progressiveContract
+    && lastMeasuredRun
+    && (lastMeasuredRun.outcome !== "ready"
+      || lastMeasuredRun.seconds > BLEND_STUDIO_LIVE_EVALUATION_DISABLE_SECONDS),
   );
   const presetContract = useMemo(
     () => workingDump && target ? presetContractForBlendStudioTarget(workingDump, target) : null,
@@ -390,6 +466,24 @@ export default function BlendBridgePage(): React.JSX.Element {
     };
   }, [animationFrame, connectedGeometryInputs.length, geometryInput, geometryOutput, hasVolumeBoundary, interpretedDump, overrides, seedValue, target, viewerPreviews, volumeSampleBudget]);
 
+  // Attach the two-phase low-res preview at dispatch time (not inside the
+  // evaluation memo, whose identity gates the live-edit queue) so a request is
+  // progressive exactly when the target is measured-slow and lowering the
+  // resolution-class input would actually reduce work.
+  const withProgressivePreview = useCallback(
+    (request: BlendStudioEvaluation): BlendStudioEvaluation => {
+      if (!progressivePreviewApplies || !progressiveContract) return request;
+      const { control, previewValue } = progressiveContract;
+      const current = Number(request.overrides[control.identifier] ?? control.value);
+      if (!Number.isFinite(current) || current <= previewValue) return request;
+      return {
+        ...request,
+        progressive: { identifier: control.identifier, name: control.name, previewValue },
+      };
+    },
+    [progressiveContract, progressivePreviewApplies],
+  );
+
   const authoredMeasurementValue = measurementContract
     ? Number(
         overrides[measurementContract.inputIdentifier]
@@ -488,10 +582,47 @@ export default function BlendBridgePage(): React.JSX.Element {
     runtime.clearMeasurementSubject();
   }, [runtime.clearMeasurementSubject, sourceKey, target?.id]);
 
+  // A re-import of a known tool (same fingerprint) starts with its measured
+  // evaluation history instead of falling back to the node-count default.
   useEffect(() => {
-    if (evaluation && autoEvaluation?.enabled) runtime.queue(evaluation);
-    else runtime.cancel();
-  }, [autoEvaluation?.enabled, evaluation, runtime.cancel, runtime.queue]);
+    setEvaluationRuns(evaluationHistoryKey ? storedEvaluationRuns(evaluationHistoryKey) : []);
+  }, [evaluationHistoryKey]);
+
+  // Record every completed evaluation of the current target so the live-edit
+  // gate stays empirical. Timeouts and errors count as slow: they record the
+  // 180 s safety ceiling rather than nothing.
+  useEffect(() => {
+    const snapshot = runtime.snapshot;
+    if (recordedSnapshot.current === snapshot) return;
+    recordedSnapshot.current = snapshot;
+    if (!evaluationHistoryKey) return;
+    // Low-res progressive previews measure the preview pass, not the target's
+    // real cost; only the full-quality phase may drive the live-edit gate.
+    if (snapshot.preview) return;
+    if (snapshot.state === "ready" && typeof snapshot.runtimeSeconds === "number") {
+      setEvaluationRuns(persistEvaluationRun(evaluationHistoryKey, {
+        seconds: snapshot.runtimeSeconds,
+        outcome: "ready",
+        at: Date.now(),
+      }));
+    } else if (snapshot.state === "error") {
+      setEvaluationRuns(persistEvaluationRun(evaluationHistoryKey, {
+        seconds: BLEND_STUDIO_EVALUATION_TIMEOUT_MS / 1_000,
+        outcome: snapshot.message.includes("safety limit") ? "timeout" : "error",
+        at: Date.now(),
+      }));
+    }
+  }, [evaluationHistoryKey, runtime.snapshot]);
+
+  useEffect(() => {
+    if (evaluation && autoEvaluation?.enabled) {
+      // When live evaluation unlocks because a measured run completed, the
+      // current request has already been evaluated; only queue actual edits.
+      if (lastQueuedEvaluation.current === evaluation) return;
+      lastQueuedEvaluation.current = evaluation;
+      runtime.queue(withProgressivePreview(evaluation));
+    } else runtime.cancel();
+  }, [autoEvaluation?.enabled, evaluation, runtime.cancel, runtime.queue, withProgressivePreview]);
 
   useEffect(() => {
     if (!graphMaximized) return;
@@ -521,13 +652,16 @@ export default function BlendBridgePage(): React.JSX.Element {
     setSourceBytes(dump.import_meta?.bytes ?? bytes);
     const fingerprint = dump.extraction_metadata?.source?.fingerprint_sha256
       ?? `${filename}:${bytes}`;
+    setSourceFingerprint(fingerprint);
     setSourceKey(`${fingerprint}:${++importSerial.current}`);
     setTargetId(nextTargets[0]?.id ?? "");
     setImportMessage(nextTargets.length
       ? `${nextTargets.length} runnable object or reusable group targets discovered`
       : "Graph extracted, but no Geometry Nodes output target was found");
-    setGraphOpen(true);
-  }, []);
+    // Desktop-only: auto-opening the full-screen overlay would hide the
+    // freshly imported preview on mobile, where the FAB opens it on demand.
+    if (!isMobile) setGraphOpen(true);
+  }, [isMobile]);
 
   const importFile = useCallback(async (file: File): Promise<void> => {
     setBusy(true);
@@ -716,7 +850,8 @@ export default function BlendBridgePage(): React.JSX.Element {
           disabled={!workingDump || !target || runtime.snapshot.state === "evaluating"}
           onClick={() => {
             if (!evaluation) return;
-            void runtime.evaluate(evaluation).catch(() => {});
+            lastQueuedEvaluation.current = evaluation;
+            void runtime.evaluate(withProgressivePreview(evaluation)).catch(() => {});
           }}
         >Apply to preview</button>
         <button type="button" disabled={!interpretedDump} onClick={() => {
@@ -1054,7 +1189,7 @@ export default function BlendBridgePage(): React.JSX.Element {
   const rightDock = <>
     <header className="studio-dock-header"><span>Compatibility</span><small>static + executed</small></header>
     <section>
-      <div className={`blend-runtime-status ${runtime.snapshot.state}`}>
+      <div className={`blend-runtime-status ${runtime.snapshot.state}${runtime.snapshot.preview ? " preview" : ""}`}>
         <span />
         <div><b>{runtime.snapshot.state}</b><small>{runtime.snapshot.message}</small></div>
       </div>
@@ -1070,6 +1205,8 @@ export default function BlendBridgePage(): React.JSX.Element {
       <div className="blend-compat-score"><strong>{compatibility.score}%</strong><div><b>reachable records recognized</b><span>{compatibility.recognizedNodes}/{compatibility.totalNodes} nodes · {compatibility.report.reachableGroups.length} groups</span></div></div>
       {autoEvaluation && <p className="blend-studio-copy">
         {autoEvaluation.reason}. {!autoEvaluation.enabled && "Use Apply to preview the partial result explicitly."}
+        {progressivePreviewApplies && progressiveContract
+          && ` Previews start with a quick low-${progressiveContract.control.name} pass and refine to full quality once you pause.`}
       </p>}
       <div className="blend-gaps">
         {compatibility.gaps.length
@@ -1124,6 +1261,7 @@ export default function BlendBridgePage(): React.JSX.Element {
             ? <strong>{runtime.snapshot.pointStats.points.toLocaleString()} point-cloud points</strong>
           : <strong>Empty geometry output</strong>}
       <small>{runtime.snapshot.runtimeSeconds?.toFixed(2)}s in worker</small>
+      {runtime.snapshot.preview && <em>Low-resolution preview · full quality refining</em>}
       {(runtime.snapshot.missingTypes ?? []).map((entry) =>
         <em key={entry.type}>{entry.type} ×{entry.count}</em>)}
       {(runtime.snapshot.approximateTypes ?? []).map((entry) =>
@@ -1173,7 +1311,7 @@ export default function BlendBridgePage(): React.JSX.Element {
       <h1>Bring a Geometry Nodes tool into the studio.</h1>
       <p>{importMessage}</p>
     </div>}
-    {!graphOpen && workingDump && <button className="graph-toggle" type="button" onClick={() => setGraphOpen(true)}>Show Geometry Nodes workspace</button>}
+    {!graphOpen && workingDump && <button className="graph-toggle" type="button" onClick={() => setGraphOpen(true)}>{isMobile ? "Node graph" : "Show Geometry Nodes workspace"}</button>}
     {graphOpen && graphSource && target && <FloatingStudioPanel
       className="crayon-graph blend-graph"
       rect={graphRect}
@@ -1189,9 +1327,10 @@ export default function BlendBridgePage(): React.JSX.Element {
       title={`Geometry Nodes · ${target.label}`}
       actions={<>
         <span>{target.groupName}</span>
-        <button type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Maximize"}</button>
+        {!isMobile && <button type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Maximize"}</button>}
         <button type="button" onClick={() => { setGraphMaximized(false); setGraphOpen(false); }}>Hide</button>
       </>}
+      onClose={() => { setGraphMaximized(false); setGraphOpen(false); }}
     >
       <GeometryNodesEditor
         config={editorConfig}

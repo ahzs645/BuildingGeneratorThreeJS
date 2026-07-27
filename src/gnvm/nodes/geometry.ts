@@ -1,6 +1,6 @@
 // Geometry-operation handlers.
 import { Field, Vec3, asVec3, asNum, vadd, type Elem, type FieldCtx } from "../core";
-import { Geometry, Mesh, InstanceRef, MATERIAL_MATCH_ATTRIBUTE, buildTopology, inverseTransformPoint, mergeMeshInto, realizeInstances, rotateEulerXYZ, transformPoint, transformPointFloat32, transformPointMatrixFloat32, triangulateFaceIndices } from "../geometry";
+import { Geometry, Mesh, InstanceRef, MATERIAL_MATCH_ATTRIBUTE, buildTopology, inverseTransformPoint, mergeMeshInto, notePositionsReplaced, realizeInstances, rotateEulerXYZ, transformPoint, transformPointFloat32, transformPointMatrixFloat32, triangulateFaceIndices } from "../geometry";
 import { decomposeMatrix, identityMatrix, invertMatrix, multiplyMatrices, objectTransformMatrix } from "../matrix";
 import { meshCube, meshGrid, meshCircle, meshLine, meshCone } from "../primitives";
 import { reg, EvalAPI, DUMP_CONTEXT, recordApproximation } from "../registry";
@@ -618,7 +618,11 @@ reg("GeometryNodeSetPosition", (api) => {
     ];
   };
   if (hasMeshPoints) {
-    g.mesh!.positions = g.mesh!.positions.map(move);
+    const oldPositions = g.mesh!.positions;
+    g.mesh!.positions = oldPositions.map(move);
+    // Feed the incremental vertex-normal path: usually only a small selection
+    // moved, and the repeat-zone lathes re-read normals every iteration.
+    notePositionsReplaced(g.mesh!, oldPositions);
   } else if (g.curves.length) {
     // Curve POINT fields address authored control points. Retain the authored
     // representation and re-evaluate NURBS samples after editing it; replacing

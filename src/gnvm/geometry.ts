@@ -9,6 +9,30 @@ export interface Attribute {
   data: Elem[];
 }
 
+// Attribute data arrays handed out by the structural-sharing clones below.
+// Once an array lands in this set it may be referenced by several meshes, so
+// it must never be mutated in place again — mutators go through
+// ownAttributeData, which copies on first write. (The set is append-only: an
+// array stays "shared" even after every other referent dies, costing at most
+// one extra copy.)
+const sharedAttributeData = new WeakSet<Elem[]>();
+
+function shareAttributeData(data: Elem[]): Elem[] {
+  sharedAttributeData.add(data);
+  return data;
+}
+
+/**
+ * Copy-on-write guard for attribute data. Mesh.clone/Geometry.clone share the
+ * `data` array between source and clone; call this to get an array that is
+ * safe to push/splice/index-write. Reads never need it. The returned array is
+ * always `attribute.data` (possibly freshly copied and reassigned).
+ */
+export function ownAttributeData(attribute: Attribute): Elem[] {
+  if (sharedAttributeData.has(attribute.data)) attribute.data = attribute.data.slice();
+  return attribute.data;
+}
+
 /** Previous-material membership retained across a Set Material operation. */
 export const MATERIAL_MATCH_ATTRIBUTE = "__gnvm_material_match";
 
@@ -40,12 +64,16 @@ export class Mesh {
       // Blender special-cases triangles and quads with a left-associated float
       // sum followed by direct division. Marching Squares converts these
       // centers to points and exposes a one-ULP difference in every instance.
-      return [0, 1, 2].map((axis) => {
+      // Plain loop (same per-axis operation order) — this is the FACE-domain
+      // position accessor and runs once per face per field evaluation.
+      const center: Vec3 = [0, 0, 0];
+      for (let axis = 0; axis < 3; axis++) {
         let sum = f(this.positions[face[0]][axis]);
         for (let corner = 1; corner < face.length; corner++)
           sum = f(sum + f(this.positions[face[corner]][axis]));
-        return f(sum / f(face.length));
-      }) as Vec3;
+        center[axis] = f(sum / f(face.length));
+      }
+      return center;
     }
     const weight = f(1 / f(face.length));
     const center: Vec3 = [0, 0, 0];
@@ -98,12 +126,23 @@ export class Mesh {
 
   clone(): Mesh {
     const m = new Mesh();
-    m.positions = this.positions.map((p) => [...p] as Vec3);
-    m.edges = this.edges.map((e) => [...e] as [number, number]);
-    m.faces = this.faces.map((f) => [...f]);
-    m.faceMaterial = [...this.faceMaterial];
-    m.materialSlots = [...this.materialSlots];
-    for (const [k, a] of this.attributes) m.attributes.set(k, { domain: a.domain, data: [...a.data] });
+    // Structural sharing: Vec3 positions, edge pairs, and face rows are never
+    // mutated element-in-place after they are attached to a mesh (see the
+    // mutation-safety audit below) — mutations replace the element or the
+    // whole array. Copying only the outer arrays turns node-boundary clones
+    // of 100k-vertex meshes from ~400k small-array allocations into four
+    // pointer copies; attribute Elem[] data already shared Vec3 elements the
+    // same way. Attribute data arrays are shared too (fresh wrapper, same
+    // array) and marked in sharedAttributeData; every in-place mutator
+    // (mergeMeshInto, FlipFaces corner reorder, the heal/clip duplicators)
+    // goes through ownAttributeData to copy on first write.
+    m.positions = this.positions.slice();
+    m.edges = this.edges.slice();
+    m.faces = this.faces.slice();
+    m.faceMaterial = this.faceMaterial.slice();
+    m.materialSlots = this.materialSlots.slice();
+    for (const [k, a] of this.attributes) m.attributes.set(k, { domain: a.domain, data: shareAttributeData(a.data) });
+    carryDerivedCaches(this, m);
     return m;
   }
 }
@@ -323,14 +362,17 @@ export class Geometry {
   clone(): Geometry {
     const g = new Geometry();
     if (this.mesh) g.mesh = this.mesh.clone();
+    // Point arrays copy only their outer array; the Vec3 elements are shared
+    // under the same immutability invariant as mesh positions (see the
+    // mutation-safety audit above Mesh's cache section).
     g.curves = this.curves.map((s) => ({
       cyclic: s.cyclic,
       resolution: s.resolution,
       splineType: s.splineType,
-      points: s.points.map((p) => [...p] as Vec3),
-      controlPoints: s.controlPoints?.map((p) => [...p] as Vec3),
-      bezierLeft: s.bezierLeft?.map((p) => [...p] as Vec3),
-      bezierRight: s.bezierRight?.map((p) => [...p] as Vec3),
+      points: s.points.slice(),
+      controlPoints: s.controlPoints?.slice(),
+      bezierLeft: s.bezierLeft?.slice(),
+      bezierRight: s.bezierRight?.slice(),
     }));
     g.instances = this.instances.map((i) => ({
       ...i,
@@ -338,7 +380,7 @@ export class Geometry {
       transformMatrix: i.transformMatrix?.map((row) => [...row]),
       attributes: i.attributes ? new Map(i.attributes) : undefined,
     }));
-    for (const [k, a] of this.curveAttributes) g.curveAttributes.set(k, { domain: a.domain, data: [...a.data] });
+    for (const [k, a] of this.curveAttributes) g.curveAttributes.set(k, { domain: a.domain, data: shareAttributeData(a.data) });
     return g;
   }
 }
@@ -354,19 +396,33 @@ export interface Topology {
   pointFaces: number[][]; // faces incident to each vertex (for domain interpolation)
 }
 
-// Mutation-safety audit, 2026-07-08:
+// Mutation-safety audit, 2026-07-08 (extended 2026-07-27 for structural
+// sharing):
 // src/gnvm construction paths mutate fresh Mesh instances before any derived
 // query. The current query-then-mutate handlers are SetPosition (positions
 // assignment), DeleteGeometry EDGE (edges assignment), FlipFaces (face-row
-// reverse), and mergeMeshInto's EDGE-attribute reconciliation (canonical keys
-// before append). Cache validation records array identities/counts plus face
-// and counts, so assignments and appends invalidate without turning hot mesh
-// arrays into accessor/proxy arrays. The audited in-place face reversals call
+// replacement), and mergeMeshInto's EDGE-attribute reconciliation (canonical
+// keys before append). Cache validation records array identities/counts plus
+// face and counts, so assignments and appends invalidate without turning hot
+// mesh arrays into accessor/proxy arrays. The audited face reversals call
 // invalidateMeshCaches explicitly.
-// The audit found no in-place Vec3 coordinate writes; if those are added later
-// they must assign a fresh positions array or explicitly invalidate the cache.
+// STRUCTURAL-SHARING INVARIANT (Mesh.clone copies only the outer arrays):
+// once a Vec3 position, [a,b] edge pair, or face row is attached to a mesh,
+// its CONTENTS are immutable — mutate by replacing the element
+// (positions[i] = fresh) or the whole array, never p[0] = x or row.splice.
+// The 2026-07 audit found one pre-attachment coordinate write
+// (dump-object-geometry hook deform, runs on a freshly built mesh) and
+// converted the two in-place face-row mutations (orientClosedSurface,
+// reconstructSplitFastenerHeal) to row replacement. Attribute Elem[] data
+// arrays are shared by clones as well (wave 2): every in-place mutator
+// (push/splice/index write) must obtain the array through ownAttributeData,
+// which copies on first write while the array is marked shared. Their Vec3
+// element objects follow the same replace-don't-mutate invariant.
 interface TopologyCacheMeta {
-  positions: Vec3[];
+  // No positions-array identity here: topology depends on faces/edges rows
+  // and the vertex COUNT only, so replacing the positions array (Set
+  // Position) must keep the cache. Vertex normals keep their own stricter
+  // meta below.
   faces: number[][];
   edges: [number, number][];
   positionCount: number;
@@ -386,11 +442,525 @@ const topologyCacheMeta = new WeakMap<Mesh, TopologyCacheMeta>();
 const vertexNormalsCache = new WeakMap<Mesh, Vec3[]>();
 const vertexNormalsCacheMeta = new WeakMap<Mesh, VertexNormalsCacheMeta>();
 
+// Corner maps (corner -> vertex/face, face -> first corner slot). Derived
+// from the face rows only; validated by faces-array identity + count, carried
+// across clones, cleared by invalidateMeshCaches — same discipline as the
+// topology cache. Previously rebuilt inside every makeFieldCtx call.
+export interface CornerMaps { vert: number[]; face: number[]; faceStart: number[] }
+interface CornerMapsCacheMeta { faces: number[][]; faceCount: number }
+const cornerMapsCache = new WeakMap<Mesh, CornerMaps>();
+const cornerMapsCacheMeta = new WeakMap<Mesh, CornerMapsCacheMeta>();
+
+export function cornerMapsOf(mesh: Mesh): CornerMaps {
+  const cached = cornerMapsCache.get(mesh);
+  const meta = cornerMapsCacheMeta.get(mesh);
+  if (cached && meta && meta.faces === mesh.faces && meta.faceCount === mesh.faces.length) return cached;
+  const vert: number[] = [], face: number[] = [], faceStart: number[] = [];
+  for (let fi = 0; fi < mesh.faces.length; fi++) {
+    faceStart.push(vert.length);
+    for (const vi of mesh.faces[fi]) { vert.push(vi); face.push(fi); }
+  }
+  const maps: CornerMaps = { vert, face, faceStart };
+  cornerMapsCache.set(mesh, maps);
+  cornerMapsCacheMeta.set(mesh, { faces: mesh.faces, faceCount: mesh.faces.length });
+  return maps;
+}
+
+// Corners attached to each vertex; needs the corner maps plus the vertex
+// count (isolated verts still get an empty list).
+interface VertexCornersCacheMeta extends CornerMapsCacheMeta { positionCount: number }
+const vertexCornersCache = new WeakMap<Mesh, number[][]>();
+const vertexCornersCacheMeta = new WeakMap<Mesh, VertexCornersCacheMeta>();
+
+export function vertexCornersOf(mesh: Mesh): number[][] {
+  const cached = vertexCornersCache.get(mesh);
+  const meta = vertexCornersCacheMeta.get(mesh);
+  if (
+    cached && meta
+    && meta.faces === mesh.faces
+    && meta.faceCount === mesh.faces.length
+    && meta.positionCount === mesh.positions.length
+  ) return cached;
+  const c = cornerMapsOf(mesh);
+  const list: number[][] = mesh.positions.map(() => []);
+  for (let i = 0; i < c.vert.length; i++) list[c.vert[i]]?.push(i);
+  vertexCornersCache.set(mesh, list);
+  vertexCornersCacheMeta.set(mesh, {
+    faces: mesh.faces,
+    faceCount: mesh.faces.length,
+    positionCount: mesh.positions.length,
+  });
+  return list;
+}
+
+// Canonical-edge incidence per vertex, keyed on the Topology object itself:
+// a fresh topology gives a fresh cache entry, and a carried topology carries
+// this list with it for free. No explicit invalidation needed.
+const vertexEdgesCache = new WeakMap<Topology, { positionCount: number; list: number[][] }>();
+
+export function vertexEdgesOf(mesh: Mesh): number[][] {
+  const topo = topologyOf(mesh);
+  const cached = vertexEdgesCache.get(topo);
+  if (cached && cached.positionCount === mesh.positions.length) return cached.list;
+  const list: number[][] = mesh.positions.map(() => []);
+  const es = topo.edges;
+  for (let ei = 0; ei < es.length; ei++) for (const vi of es[ei].verts) list[vi]?.push(ei);
+  vertexEdgesCache.set(topo, { positionCount: mesh.positions.length, list });
+  return list;
+}
+
+/**
+ * Extend a source mesh's cached vertex->edge incidence onto a target mesh
+ * whose installed topology lists the source's canonical edges as a strict
+ * prefix (same verts in order) followed by appended edges — exactly what
+ * extrude EDGES installs. Per-vertex lists of untouched vertices are shared
+ * (they are read-only, like the topology edge objects themselves); vertices
+ * gaining an edge get a fresh extended copy, preserving vertexEdgesOf's
+ * ascending-edge-index order. No-op when either side lacks valid caches.
+ */
+export function carryVertexEdgesOnAppend(source: Mesh, target: Mesh): void {
+  const sourceMeta = topologyCacheMeta.get(source);
+  const sourceTopo = topologyCache.get(source);
+  if (
+    !sourceTopo || !sourceMeta
+    || sourceMeta.faces !== source.faces
+    || sourceMeta.edges !== source.edges
+    || sourceMeta.positionCount !== source.positions.length
+    || sourceMeta.faceCount !== source.faces.length
+    || sourceMeta.edgeCount !== source.edges.length
+  ) return;
+  const targetTopo = topologyCache.get(target);
+  if (!targetTopo || vertexEdgesCache.has(targetTopo)) return;
+  const cached = vertexEdgesCache.get(sourceTopo);
+  if (!cached || cached.positionCount !== source.positions.length) return;
+  const sourceEdgeCount = sourceTopo.edges.length;
+  const targetEdges = targetTopo.edges;
+  if (targetEdges.length < sourceEdgeCount || target.positions.length < source.positions.length) return;
+  const list = cached.list.slice();
+  const owned = new Uint8Array(target.positions.length);
+  for (let vi = list.length; vi < target.positions.length; vi++) {
+    list[vi] = [];
+    owned[vi] = 1;
+  }
+  for (let ei = sourceEdgeCount; ei < targetEdges.length; ei++) {
+    for (const vi of targetEdges[ei].verts) {
+      if (vi >= list.length) return; // malformed append — leave no cache
+      if (!owned[vi]) {
+        list[vi] = list[vi].slice();
+        owned[vi] = 1;
+      }
+      list[vi].push(ei);
+    }
+  }
+  vertexEdgesCache.set(targetTopo, { positionCount: target.positions.length, list });
+}
+
+// Canonical edge key -> canonical edge index, keyed on the Topology object.
+const edgeIndexCache = new WeakMap<Topology, Map<number | string, number>>();
+
+export function edgeIndexOf(mesh: Mesh): Map<number | string, number> {
+  const topo = topologyOf(mesh);
+  let index = edgeIndexCache.get(topo);
+  if (!index) {
+    index = new Map();
+    for (let i = 0; i < topo.edges.length; i++) index.set(canonicalEdgeKey(topo.edges[i].verts[0], topo.edges[i].verts[1]), i);
+    edgeIndexCache.set(topo, index);
+  }
+  return index;
+}
+
 export function invalidateMeshCaches(mesh: Mesh): void {
   topologyCache.delete(mesh);
   topologyCacheMeta.delete(mesh);
   vertexNormalsCache.delete(mesh);
   vertexNormalsCacheMeta.delete(mesh);
+  cornerMapsCache.delete(mesh);
+  cornerMapsCacheMeta.delete(mesh);
+  vertexCornersCache.delete(mesh);
+  vertexCornersCacheMeta.delete(mesh);
+  normalsDeltaHints.delete(mesh);
+}
+
+// ---- incremental vertex normals -------------------------------------------
+// A "delta hint" records that this mesh's state derives from a base state
+// whose vertex normals are known: positions 0..baseVertCount-1 hold the same
+// coordinate values as the base except the vertices listed in `dirty`, and
+// faces 0..baseFaceCount-1 are the base's face rows unchanged (appends only).
+// vertexNormalsOf can then recompute only the affected vertices — a vertex's
+// corner-angle-weighted normal depends solely on its incident faces' corner
+// geometry, and the full pass's Float64Array accumulator is f32-rounded after
+// every addition while a vertex's slot is only ever touched by that vertex's
+// own corners in ascending global corner order. Re-accumulating one vertex's
+// corners in ascending corner order (vertexCornersOf's order) therefore
+// reproduces the full pass bit-exactly.
+//
+// Soundness follows the same discipline as the derived caches above: hints
+// are keyed to the exact outer-array identities AND lengths at install time,
+// so wholesale array replacement or in-place growth invalidates them, and
+// every audited in-place element mutation calls invalidateMeshCaches (which
+// also deletes the hint). Hints are only installed at sites that guarantee
+// the pure-append/pure-move contract (extrude EDGES/VERTICES, Set Position).
+interface NormalsDeltaHint {
+  baseNormals: Vec3[];
+  baseVertCount: number;
+  baseFaceCount: number;
+  dirty: ReadonlySet<number>; // indices < baseVertCount whose positions moved
+  positions: Vec3[];
+  faces: number[][];
+  positionCount: number;
+  faceCount: number;
+}
+const normalsDeltaHints = new WeakMap<Mesh, NormalsDeltaHint>();
+const EMPTY_DIRTY: ReadonlySet<number> = new Set<number>();
+
+function validNormalsHint(mesh: Mesh): NormalsDeltaHint | null {
+  const hint = normalsDeltaHints.get(mesh);
+  return hint
+    && hint.positions === mesh.positions
+    && hint.faces === mesh.faces
+    && hint.positionCount === mesh.positions.length
+    && hint.faceCount === mesh.faces.length
+    ? hint
+    : null;
+}
+
+/**
+ * The known-normals base state a mesh can serve as: either its own cached
+ * (fully valid) vertex normals, or the base carried by its own valid hint.
+ */
+function normalsBaseStateOf(mesh: Mesh): {
+  baseNormals: Vec3[];
+  baseVertCount: number;
+  baseFaceCount: number;
+  dirty: ReadonlySet<number>;
+} | null {
+  const cached = vertexNormalsCache.get(mesh);
+  const meta = vertexNormalsCacheMeta.get(mesh);
+  if (
+    cached && meta
+    && meta.positions === mesh.positions
+    && meta.faces === mesh.faces
+    && meta.positionCount === mesh.positions.length
+    && meta.faceCount === mesh.faces.length
+  ) {
+    return {
+      baseNormals: cached,
+      baseVertCount: mesh.positions.length,
+      baseFaceCount: mesh.faces.length,
+      dirty: EMPTY_DIRTY,
+    };
+  }
+  const hint = validNormalsHint(mesh);
+  if (hint) {
+    return {
+      baseNormals: hint.baseNormals,
+      baseVertCount: hint.baseVertCount,
+      baseFaceCount: hint.baseFaceCount,
+      dirty: hint.dirty,
+    };
+  }
+  return null;
+}
+
+/**
+ * Declare that `target` extends `source` by pure append: target's first
+ * source-count positions are the same elements, its first source-count face
+ * rows are the same rows, and everything beyond is newly added. Callers
+ * (extrude EDGES/VERTICES) must guarantee that contract. No-op when the
+ * source has no usable normals base.
+ */
+export function carryNormalsDeltaOnAppend(source: Mesh, target: Mesh): void {
+  const base = normalsBaseStateOf(source);
+  if (!base) {
+    normalsDeltaHints.delete(target);
+    return;
+  }
+  normalsDeltaHints.set(target, {
+    ...base,
+    positions: target.positions,
+    faces: target.faces,
+    positionCount: target.positions.length,
+    faceCount: target.faces.length,
+  });
+}
+
+/**
+ * Declare that `mesh.positions` was just replaced wholesale by a same-length
+ * array (Set Position). Diffs against `oldPositions` to extend/install the
+ * delta hint. Call AFTER the assignment; no-op (hint cleared) when there is
+ * no usable base or the length changed.
+ */
+export function notePositionsReplaced(mesh: Mesh, oldPositions: Vec3[]): void {
+  const next = mesh.positions;
+  if (next === oldPositions || next.length !== oldPositions.length) {
+    normalsDeltaHints.delete(mesh);
+    return;
+  }
+  // The base must be valid for the PRE-replacement state: either cached
+  // normals keyed to oldPositions, or a hint keyed to oldPositions.
+  let base: ReturnType<typeof normalsBaseStateOf> = null;
+  const cached = vertexNormalsCache.get(mesh);
+  const meta = vertexNormalsCacheMeta.get(mesh);
+  if (
+    cached && meta
+    && meta.positions === oldPositions
+    && meta.faces === mesh.faces
+    && meta.positionCount === oldPositions.length
+    && meta.faceCount === mesh.faces.length
+  ) {
+    base = {
+      baseNormals: cached,
+      baseVertCount: oldPositions.length,
+      baseFaceCount: mesh.faces.length,
+      dirty: EMPTY_DIRTY,
+    };
+  } else {
+    const hint = normalsDeltaHints.get(mesh);
+    if (
+      hint
+      && hint.positions === oldPositions
+      && hint.faces === mesh.faces
+      && hint.positionCount === oldPositions.length
+      && hint.faceCount === mesh.faces.length
+    ) {
+      base = hint;
+    }
+  }
+  if (!base) {
+    normalsDeltaHints.delete(mesh);
+    return;
+  }
+  const dirty = new Set<number>(base.dirty);
+  for (let i = 0; i < next.length; i++) {
+    const before = oldPositions[i], after = next[i];
+    if (before === after) continue;
+    // Object.is: exact coordinate comparison including -0/NaN, so a "moved"
+    // vertex whose coordinates are bit-identical stays clean.
+    if (Object.is(before[0], after[0]) && Object.is(before[1], after[1]) && Object.is(before[2], after[2])) continue;
+    if (i < base.baseVertCount) dirty.add(i);
+  }
+  normalsDeltaHints.set(mesh, {
+    baseNormals: base.baseNormals,
+    baseVertCount: base.baseVertCount,
+    baseFaceCount: base.baseFaceCount,
+    dirty,
+    positions: next,
+    faces: mesh.faces,
+    positionCount: next.length,
+    faceCount: mesh.faces.length,
+  });
+}
+
+/**
+ * Recompute only the vertices whose normals can differ from the hint's base:
+ * appended vertices, vertices of appended faces, and vertices sharing a face
+ * with a moved vertex. Returns null when the affected set is large enough
+ * that the full pass is the better call. Bit-exact vs computeVertexNormals
+ * (see the hint contract comment above).
+ */
+// Reusable scratch tables for incrementalVertexNormals (module is
+// single-threaded and the function is non-reentrant, like the edge-dedup
+// scratch below). dirtyMask/affected are re-cleared per call; acc slots are
+// zeroed only for affected vertices before accumulation.
+let incNormalsDirtyMask = new Uint8Array(0);
+let incNormalsAffected = new Uint8Array(0);
+let incNormalsIncident = new Uint8Array(0);
+let incNormalsAcc = new Float64Array(0);
+
+function incrementalVertexNormals(mesh: Mesh, hint: NormalsDeltaHint): Vec3[] | null {
+  const vertCount = mesh.positions.length;
+  const faces = mesh.faces;
+  if (hint.baseNormals.length < hint.baseVertCount) return null;
+  for (const vi of hint.dirty) if (vi >= vertCount) return null; // contract breach
+  if (incNormalsDirtyMask.length < vertCount) {
+    incNormalsDirtyMask = new Uint8Array(vertCount);
+    incNormalsAffected = new Uint8Array(vertCount);
+    incNormalsIncident = new Uint8Array(vertCount);
+    incNormalsAcc = new Float64Array(vertCount * 3);
+  }
+  const dirtyMask = incNormalsDirtyMask;
+  const affected = incNormalsAffected;
+  dirtyMask.fill(0, 0, vertCount);
+  affected.fill(0, 0, vertCount);
+  for (const vi of hint.dirty) dirtyMask[vi] = 1;
+  let affectedCount = 0;
+  for (let vi = hint.baseVertCount; vi < vertCount; vi++) {
+    affected[vi] = 1;
+    affectedCount++;
+  }
+  // One flat scan marks every vertex whose incident-face geometry changed:
+  // all vertices of appended faces, and all vertices of any pre-existing face
+  // containing a moved vertex (its face normal and corner angles changed).
+  const scanDirty = hint.dirty.size > 0;
+  for (let fi = 0; fi < faces.length; fi++) {
+    const face = faces[fi];
+    if (fi < hint.baseFaceCount) {
+      if (!scanDirty) continue;
+      let touched = false;
+      for (let k = 0; k < face.length; k++) {
+        if (dirtyMask[face[k]]) { touched = true; break; }
+      }
+      if (!touched) continue;
+    }
+    for (let k = 0; k < face.length; k++) {
+      const vi = face[k];
+      if (!affected[vi]) { affected[vi] = 1; affectedCount++; }
+    }
+  }
+  if (affectedCount * 3 > vertCount) return null;
+
+  // Restricted full pass: identical face-major iteration and inlined float32
+  // arithmetic as computeVertexNormals — an affected vertex's accumulator sees
+  // exactly the same f32-rounded addition sequence as in the full pass, and
+  // unaffected vertices keep their base normals (their incident corner
+  // geometry is untouched by construction of the affected set).
+  const incident = incNormalsIncident;
+  const acc = incNormalsAcc;
+  for (let vi = 0; vi < vertCount; vi++) {
+    if (affected[vi]) {
+      incident[vi] = 0;
+      const at = vi * 3;
+      acc[at] = 0; acc[at + 1] = 0; acc[at + 2] = 0;
+    }
+  }
+  for (let fi = 0; fi < faces.length; fi++) {
+    const f = faces[fi];
+    let touched = false;
+    for (let k = 0; k < f.length; k++) {
+      if (affected[f[k]]) { touched = true; break; }
+    }
+    if (!touched) continue;
+    const n = faceNormalBlenderFloat(mesh, f);
+    for (let k = 0; k < f.length; k++) {
+      const vi = f[k];
+      if (!affected[vi]) continue;
+      incident[vi] = 1;
+      const p = mesh.positions[vi];
+      const prev = mesh.positions[f[(k - 1 + f.length) % f.length]];
+      const next = mesh.positions[f[(k + 1) % f.length]];
+      let ax = f32(prev[0] - p[0]);
+      let ay = f32(prev[1] - p[1]);
+      let az = f32(prev[2] - p[2]);
+      const alen = f32(Math.sqrt(f32(f32(f32(ax * ax) + f32(ay * ay)) + f32(az * az))));
+      if (alen > 0) {
+        ax = f32(ax / alen); ay = f32(ay / alen); az = f32(az / alen);
+      } else {
+        ax = 0; ay = 0; az = 0;
+      }
+      let bx = f32(next[0] - p[0]);
+      let by = f32(next[1] - p[1]);
+      let bz = f32(next[2] - p[2]);
+      const blen = f32(Math.sqrt(f32(f32(f32(bx * bx) + f32(by * by)) + f32(bz * bz))));
+      if (blen > 0) {
+        bx = f32(bx / blen); by = f32(by / blen); bz = f32(bz / blen);
+      } else {
+        bx = 0; by = 0; bz = 0;
+      }
+      const dot = f32(f32(f32(ax * bx) + f32(ay * by)) + f32(az * bz));
+      const angle = safeAcosApproxBlenderFloat(dot);
+      const at = vi * 3;
+      acc[at] = f32(acc[at] + f32(n[0] * angle));
+      acc[at + 1] = f32(acc[at + 1] + f32(n[1] * angle));
+      acc[at + 2] = f32(acc[at + 2] + f32(n[2] * angle));
+    }
+  }
+  const out: Vec3[] = new Array(vertCount);
+  const baseNormals = hint.baseNormals;
+  for (let vi = 0; vi < vertCount; vi++) {
+    if (!affected[vi]) {
+      out[vi] = baseNormals[vi];
+      continue;
+    }
+    out[vi] = incident[vi]
+      ? normalizeBlenderFloat([acc[vi * 3], acc[vi * 3 + 1], acc[vi * 3 + 2]])
+      : normalizeBlenderFloat(mesh.positions[vi]);
+  }
+  return out;
+}
+
+/**
+ * Install a source mesh's still-valid derived caches on its clone. The clone
+ * shares position/edge/face rows with the source, so topology and vertex
+ * normals computed for the source are bit-identical for the clone. Re-keying
+ * the meta to the clone's own outer arrays keeps the usual invalidation rules
+ * (wholesale array replacement, count change, explicit invalidate) working
+ * independently on each mesh afterwards.
+ */
+function carryDerivedCaches(source: Mesh, target: Mesh): void {
+  const topo = topologyCache.get(source);
+  const topoMeta = topologyCacheMeta.get(source);
+  if (
+    topo && topoMeta
+    && topoMeta.faces === source.faces
+    && topoMeta.edges === source.edges
+    && topoMeta.positionCount === source.positions.length
+    && topoMeta.faceCount === source.faces.length
+    && topoMeta.edgeCount === source.edges.length
+  ) {
+    topologyCache.set(target, topo);
+    topologyCacheMeta.set(target, {
+      faces: target.faces,
+      edges: target.edges,
+      positionCount: target.positions.length,
+      faceCount: target.faces.length,
+      edgeCount: target.edges.length,
+    });
+  }
+  const normals = vertexNormalsCache.get(source);
+  const normalsMeta = vertexNormalsCacheMeta.get(source);
+  if (
+    normals && normalsMeta
+    && normalsMeta.positions === source.positions
+    && normalsMeta.faces === source.faces
+    && normalsMeta.positionCount === source.positions.length
+    && normalsMeta.faceCount === source.faces.length
+  ) {
+    vertexNormalsCache.set(target, normals);
+    vertexNormalsCacheMeta.set(target, {
+      positions: target.positions,
+      faces: target.faces,
+      positionCount: target.positions.length,
+      faceCount: target.faces.length,
+    });
+  }
+  const corners = cornerMapsCache.get(source);
+  const cornersMeta = cornerMapsCacheMeta.get(source);
+  if (
+    corners && cornersMeta
+    && cornersMeta.faces === source.faces
+    && cornersMeta.faceCount === source.faces.length
+  ) {
+    cornerMapsCache.set(target, corners);
+    cornerMapsCacheMeta.set(target, { faces: target.faces, faceCount: target.faces.length });
+  }
+  const hint = validNormalsHint(source);
+  if (hint) {
+    // The clone shares the same position elements and face rows, so the
+    // hint's base relationship holds for it verbatim; re-key to the clone's
+    // outer arrays (identical contents and lengths by construction).
+    normalsDeltaHints.set(target, {
+      ...hint,
+      positions: target.positions,
+      faces: target.faces,
+      positionCount: target.positions.length,
+      faceCount: target.faces.length,
+    });
+  }
+  const vertCorners = vertexCornersCache.get(source);
+  const vertCornersMeta = vertexCornersCacheMeta.get(source);
+  if (
+    vertCorners && vertCornersMeta
+    && vertCornersMeta.faces === source.faces
+    && vertCornersMeta.faceCount === source.faces.length
+    && vertCornersMeta.positionCount === source.positions.length
+  ) {
+    vertexCornersCache.set(target, vertCorners);
+    vertexCornersCacheMeta.set(target, {
+      faces: target.faces,
+      faceCount: target.faces.length,
+      positionCount: target.positions.length,
+    });
+  }
 }
 
 const f32 = Math.fround;
@@ -488,52 +1058,68 @@ function safeAcosApproxBlenderFloat(value: number): number {
 
 function computeVertexNormals(mesh: Mesh): Vec3[] {
   const faceNormals = mesh.faces.map((face) => faceNormalBlenderFloat(mesh, face));
-  const incident: number[][] = mesh.positions.map(() => []);
+  const hasIncident = new Uint8Array(mesh.positions.length);
   // Blender's mesh point normals are corner-angle weighted. Equal face
   // weighting badly tilts a rounded n-gon rim toward its two wall quads: the
   // n-gon's almost-pi corner must contribute about twice each quad's pi/2
   // corner. The Dojo bin's normal-based thickness offset exposes this directly.
-  const acc: Vec3[] = mesh.positions.map(() => [0, 0, 0]);
+  //
+  // This is the hottest per-corner loop in the evaluator; the vector helpers
+  // are inlined into scalar float32 arithmetic (identical operation order, so
+  // bit-identical results) to avoid five short-lived arrays per corner.
+  const acc = new Float64Array(mesh.positions.length * 3);
   for (let fi = 0; fi < mesh.faces.length; fi++) {
     const f = mesh.faces[fi];
     const n = faceNormals[fi];
     for (let k = 0; k < f.length; k++) {
       const vi = f[k];
-      incident[vi]?.push(fi);
+      hasIncident[vi] = 1;
       const p = mesh.positions[vi];
       const prev = mesh.positions[f[(k - 1 + f.length) % f.length]];
       const next = mesh.positions[f[(k + 1) % f.length]];
-      const a = normalizeBlenderFloat([
-        f32(prev[0] - p[0]),
-        f32(prev[1] - p[1]),
-        f32(prev[2] - p[2]),
-      ]);
-      const b = normalizeBlenderFloat([
-        f32(next[0] - p[0]),
-        f32(next[1] - p[1]),
-        f32(next[2] - p[2]),
-      ]);
-      const dot = f32(f32(f32(a[0] * b[0]) + f32(a[1] * b[1])) + f32(a[2] * b[2]));
+      // normalizeBlenderFloat(prev - p), inlined
+      let ax = f32(prev[0] - p[0]);
+      let ay = f32(prev[1] - p[1]);
+      let az = f32(prev[2] - p[2]);
+      const alen = f32(Math.sqrt(f32(f32(f32(ax * ax) + f32(ay * ay)) + f32(az * az))));
+      if (alen > 0) {
+        ax = f32(ax / alen); ay = f32(ay / alen); az = f32(az / alen);
+      } else {
+        ax = 0; ay = 0; az = 0;
+      }
+      // normalizeBlenderFloat(next - p), inlined
+      let bx = f32(next[0] - p[0]);
+      let by = f32(next[1] - p[1]);
+      let bz = f32(next[2] - p[2]);
+      const blen = f32(Math.sqrt(f32(f32(f32(bx * bx) + f32(by * by)) + f32(bz * bz))));
+      if (blen > 0) {
+        bx = f32(bx / blen); by = f32(by / blen); bz = f32(bz / blen);
+      } else {
+        bx = 0; by = 0; bz = 0;
+      }
+      const dot = f32(f32(f32(ax * bx) + f32(ay * by)) + f32(az * bz));
       const angle = safeAcosApproxBlenderFloat(dot);
-      const current = acc[vi];
-      acc[vi] = [
-        f32(current[0] + f32(n[0] * angle)),
-        f32(current[1] + f32(n[1] * angle)),
-        f32(current[2] + f32(n[2] * angle)),
-      ];
+      const at = vi * 3;
+      acc[at] = f32(acc[at] + f32(n[0] * angle));
+      acc[at + 1] = f32(acc[at + 1] + f32(n[1] * angle));
+      acc[at + 2] = f32(acc[at + 2] + f32(n[2] * angle));
     }
   }
 
-  return acc.map((n, vi) => {
-    const fis = incident[vi];
-    if (!fis.length) return normalizeBlenderFloat(mesh.positions[vi]);
+  const out: Vec3[] = new Array(mesh.positions.length);
+  for (let vi = 0; vi < mesh.positions.length; vi++) {
+    if (!hasIncident[vi]) {
+      out[vi] = normalizeBlenderFloat(mesh.positions[vi]);
+      continue;
+    }
     // Blender does not select one of several opposing normal fans on a
     // non-manifold point. It corner-angle-weights every incident face and
     // normalizes the resulting sum. This is observable on the Bolt Generator's
     // tap thread: choosing one fan moves nine seam points by about 0.5 units and
     // prevents the authored Heal Mesh weld from closing the surface.
-    return normalizeBlenderFloat(n);
-  });
+    out[vi] = normalizeBlenderFloat([acc[vi * 3], acc[vi * 3 + 1], acc[vi * 3 + 2]]);
+  }
+  return out;
 }
 
 function vertexNormalsOf(mesh: Mesh): Vec3[] {
@@ -549,7 +1135,10 @@ function vertexNormalsOf(mesh: Mesh): Vec3[] {
   ) {
     return cached;
   }
-  const normals = computeVertexNormals(mesh);
+  const hint = validNormalsHint(mesh);
+  let normals = hint ? incrementalVertexNormals(mesh, hint) : null;
+  if (!normals) normals = computeVertexNormals(mesh);
+  normalsDeltaHints.delete(mesh); // superseded by the full cache below
   vertexNormalsCache.set(mesh, normals);
   vertexNormalsCacheMeta.set(mesh, {
     positions: mesh.positions,
@@ -566,7 +1155,6 @@ export function topologyOf(mesh: Mesh): Topology {
   if (
     cached &&
     meta &&
-    meta.positions === mesh.positions &&
     meta.faces === mesh.faces &&
     meta.edges === mesh.edges &&
     meta.positionCount === mesh.positions.length &&
@@ -578,7 +1166,6 @@ export function topologyOf(mesh: Mesh): Topology {
   const topo = computeTopology(mesh);
   topologyCache.set(mesh, topo);
   topologyCacheMeta.set(mesh, {
-    positions: mesh.positions,
     faces: mesh.faces,
     edges: mesh.edges,
     positionCount: mesh.positions.length,
@@ -592,36 +1179,85 @@ export function buildTopology(mesh: Mesh): Topology {
   return topologyOf(mesh);
 }
 
+// Scratch tables for computeTopology's undirected-edge dedup, reused across
+// calls (module is single-threaded and the dedup loop is non-reentrant). The
+// slot table is re-cleared per call; key tables hold stale values that are
+// only read after a slot match. Profiling the bubble-putty dump showed the
+// per-corner Map<get/set> here as the single largest self-time consumer
+// (~16 s of a 99 s run), most of it hashing + entry allocation churn.
+let edgeDedupKeyLo = new Float64Array(0);
+let edgeDedupKeyHi = new Float64Array(0);
+let edgeDedupSlot = new Int32Array(0);
+
 function computeTopology(mesh: Mesh): Topology {
-  type EdgeKey = number | string;
-  const edgeKeyBase = 2 ** 21;
-  const ekey = (a: number, b: number): EdgeKey => {
-    const lo = Math.min(a, b), hi = Math.max(a, b);
-    // A numeric pair key is exact while both indices fit in 21 bits and avoids
-    // allocating a string for every face corner on normal browser-sized meshes.
-    return hi < edgeKeyBase ? lo * edgeKeyBase + hi : `${lo}_${hi}`;
-  };
-  const emap = new Map<EdgeKey, { verts: [number, number]; faces: number[] }>();
+  // Snapshot the rows and counts: the returned Topology can outlive this
+  // mesh's array identities (clones carry it, and meshes can be appended to
+  // in place by mergeMeshInto). Face rows are immutable once attached, so a
+  // row-pointer snapshot keeps the lazily computed sections correct for every
+  // mesh that shares them.
+  const faces = mesh.faces.slice();
+  const positionCount = mesh.positions.length;
+  // Open-addressing dedup keyed on the (lo, hi) endpoint pair. Exact for any
+  // numeric index (doubles compare exactly), so it fully replaces the old
+  // 21-bit-packed / string-fallback Map keys. Insertion order — explicit
+  // wires first, then face-derived first-seen — and the first stored edge's
+  // endpoint order are preserved unchanged (Blender keeps the first stored
+  // direction; sorting endpoints shifts Geometry Proximity EDGES by ULPs).
+  let totalCorners = 0;
+  for (const f of faces) totalCorners += f.length;
+  const upper = mesh.edges.length + totalCorners + 1;
+  let cap = 16;
+  while (cap < upper * 2) cap <<= 1;
+  if (edgeDedupSlot.length < cap) {
+    edgeDedupKeyLo = new Float64Array(cap);
+    edgeDedupKeyHi = new Float64Array(cap);
+    edgeDedupSlot = new Int32Array(cap);
+  }
+  const keyLo = edgeDedupKeyLo, keyHi = edgeDedupKeyHi, slot = edgeDedupSlot;
+  const mask = cap - 1;
+  slot.fill(-1, 0, cap);
+  const edges: { verts: [number, number]; faces: number[] }[] = [];
   const addFaceEdge = (a: number, b: number, fi: number) => {
-    const k = ekey(a, b);
-    let e = emap.get(k);
-    // The key is undirected, but Blender preserves the first stored edge's
-    // endpoint order. Sorting the endpoints changes float32 projection by a
-    // few ULPs in Geometry Proximity (EDGES), even though the segment is
-    // geometrically identical. Explicit mesh.edges are seeded first below.
-    if (!e) { e = { verts: [a, b], faces: [] }; emap.set(k, e); }
+    const lo = a < b ? a : b, hi = a < b ? b : a;
+    let h = (Math.imul(lo, 0x9e3779b1) ^ Math.imul(hi, 0x85ebca6b)) & mask;
+    let e: { verts: [number, number]; faces: number[] };
+    for (;;) {
+      const s = slot[h];
+      if (s === -1) {
+        slot[h] = edges.length;
+        keyLo[h] = lo;
+        keyHi[h] = hi;
+        e = { verts: [a, b], faces: [] };
+        edges.push(e);
+        break;
+      }
+      if (keyLo[h] === lo && keyHi[h] === hi) { e = edges[s]; break; }
+      h = (h + 1) & mask;
+    }
     if (fi >= 0) e.faces.push(fi);
   };
   // Blender's Edge Index follows the mesh's stored edge order. Generated
   // meshes often carry that order explicitly (notably Edge Extrude); seed the
   // topology map from it before adding any implicit polygon boundaries.
   for (const [a, b] of mesh.edges) addFaceEdge(a, b, -1);
-  for (let fi = 0; fi < mesh.faces.length; fi++) {
-    const f = mesh.faces[fi];
+  for (let fi = 0; fi < faces.length; fi++) {
+    const f = faces[fi];
     for (let i = 0; i < f.length; i++) addFaceEdge(f[i], f[(i + 1) % f.length], fi);
   }
-  const edges = [...emap.values()];
 
+  return assembleTopology(faces, positionCount, edges);
+}
+
+/**
+ * Wrap a canonical edge list into a Topology with the standard lazily built
+ * adjacency/island sections. `faces` must be a snapshot the topology may
+ * outlive its mesh with (computeTopology slices; installTopology snapshots).
+ */
+function assembleTopology(
+  faces: number[][],
+  positionCount: number,
+  edges: { verts: [number, number]; faces: number[] }[],
+): Topology {
   // Most consumers only need canonical edges. Build adjacency and connected
   // components lazily so an EDGE-domain field does not also allocate several
   // full-mesh union/find and incidence tables.
@@ -646,7 +1282,7 @@ function computeTopology(mesh: Mesh): Topology {
   let pointFaces: number[][] | null = null;
   const getFaceNeighbors = () => {
     if (!faceNeighbors) {
-      const sets: Set<number>[] = mesh.faces.map(() => new Set<number>());
+      const sets: Set<number>[] = faces.map(() => new Set<number>());
       for (const e of edges)
         for (const fa of e.faces)
           for (const fb of e.faces)
@@ -655,17 +1291,17 @@ function computeTopology(mesh: Mesh): Topology {
     }
     return faceNeighbors;
   };
-  const getFaceIslands = () => (faceIslands ??= uf(mesh.faces.length, (join) => {
+  const getFaceIslands = () => (faceIslands ??= uf(faces.length, (join) => {
     for (const e of edges) for (let i = 1; i < e.faces.length; i++) join(e.faces[0], e.faces[i]);
   }));
-  const getPointIslands = () => (pointIslands ??= uf(mesh.positions.length, (join) => {
+  const getPointIslands = () => (pointIslands ??= uf(positionCount, (join) => {
     for (const e of edges) join(e.verts[0], e.verts[1]);
   }));
   const getPointFaces = () => {
     if (!pointFaces) {
-      pointFaces = mesh.positions.map(() => []);
-      for (let fi = 0; fi < mesh.faces.length; fi++)
-        for (const v of mesh.faces[fi]) pointFaces[v]?.push(fi);
+      pointFaces = Array.from({ length: positionCount }, () => [] as number[]);
+      for (let fi = 0; fi < faces.length; fi++)
+        for (const v of faces[fi]) pointFaces[v]?.push(fi);
     }
     return pointFaces;
   };
@@ -679,6 +1315,30 @@ function computeTopology(mesh: Mesh): Topology {
     get pointIslandCount() { return getPointIslands().count; },
     get pointFaces() { return getPointFaces(); },
   };
+}
+
+/**
+ * Install a canonical topology that the caller has constructed incrementally
+ * (see extrudeMesh's EDGES mode). The edge list MUST be exactly what a fresh
+ * computeTopology(mesh) would produce — same enumeration order, same stored
+ * endpoint directions, same per-edge face lists (faces pushed in ascending
+ * face-walk order). The caller may share edge objects/arrays from an input
+ * mesh's topology; Topology consumers are read-only.
+ */
+export function installTopology(
+  mesh: Mesh,
+  edges: { verts: [number, number]; faces: number[] }[],
+): Topology {
+  const topo = assembleTopology(mesh.faces.slice(), mesh.positions.length, edges);
+  topologyCache.set(mesh, topo);
+  topologyCacheMeta.set(mesh, {
+    faces: mesh.faces,
+    edges: mesh.edges,
+    positionCount: mesh.positions.length,
+    faceCount: mesh.faces.length,
+    edgeCount: mesh.edges.length,
+  });
+  return topo;
 }
 
 // ---- euler rotation of a point (Blender XYZ order) ------------------------
@@ -765,24 +1425,35 @@ const zeroLike = (e: Elem | undefined): Elem => (Array.isArray(e) ? [0, 0, 0] : 
 // Merge mesh b into a, offsetting vertex indices; preserves materials + attributes.
 // Unique undirected edge keys in buildTopology's enumeration order
 // (face-derived first-seen, then explicit wires) so EDGE attr data stays aligned.
-const ekeyG = (x: number, y: number) => (x < y ? `${x}_${y}` : `${y}_${x}`);
-function canonicalEdgeKeys(m: Mesh): string[] {
-  // computeTopology inserts unique edges in the same order this function needs:
-  // face-derived first-seen edges, followed by explicit loose edges.
-  return topologyOf(m).edges.map((e) => ekeyG(e.verts[0], e.verts[1]));
+// A numeric pair key (same 21-bit packing as computeTopology) avoids allocating
+// a string per edge in instance-heavy realizes; identity is all consumers use,
+// and Map insertion order — the contract note near computeTopology — is
+// independent of the key representation.
+const EDGE_KEY_BASE = 2 ** 21;
+export const canonicalEdgeKey = (x: number, y: number): number | string => {
+  const lo = x < y ? x : y, hi = x < y ? y : x;
+  return hi < EDGE_KEY_BASE ? lo * EDGE_KEY_BASE + hi : `${lo}_${hi}`;
+};
+const ekeyG = canonicalEdgeKey;
+function canonicalEdgeIndex(m: Mesh): Map<number | string, number> {
+  // computeTopology inserts unique edges in the same order this function
+  // needs; the map is cached per Topology object.
+  return edgeIndexOf(m);
 }
 
 export function mergeMeshInto(a: Mesh, b: Mesh): void {
   // Canonical edge maps must be taken before mutation for the EDGE-attr reconcile.
   const hasEdgeAttr = (m: Mesh) => [...m.attributes.values()].some((x) => x.domain === "EDGE");
   const needEdge = hasEdgeAttr(a) || hasEdgeAttr(b);
-  const aEdgeIdx = needEdge ? new Map(canonicalEdgeKeys(a).map((k, i) => [k, i])) : null;
-  const bEdgeIdx = needEdge ? new Map(canonicalEdgeKeys(b).map((k, i) => [k, i])) : null;
+  const aEdgeIdx = needEdge ? canonicalEdgeIndex(a) : null;
+  const bEdgeIdx = needEdge ? canonicalEdgeIndex(b) : null;
   const baseV = a.positions.length;
   const baseF = a.faces.length;
   const baseC = a.domainSize("CORNER");
   const addedC = b.domainSize("CORNER");
-  for (const p of b.positions) a.positions.push([...p] as Vec3);
+  // Share the Vec3 elements (immutable once attached); only a's outer array
+  // grows.
+  for (const p of b.positions) a.positions.push(p);
   for (const e of b.edges) a.edges.push([e[0] + baseV, e[1] + baseV]);
   const slotMap = b.materialSlots.map((name) => a.ensureMaterialSlot(name));
   for (let fi = 0; fi < b.faces.length; fi++) {
@@ -802,8 +1473,9 @@ export function mergeMeshInto(a: Mesh, b: Mesh): void {
       const ba = b.attributes.get(name);
       const dflt = zeroLike(aa?.data[0] ?? ba?.data[0]);
       if (!aa) { aa = { domain, data: [] }; a.attributes.set(name, aa); }
-      while (aa.data.length < baseCount) aa.data.push(dflt);
-      for (let i = 0; i < addCount; i++) aa.data.push(ba ? ba.data[i] ?? dflt : dflt);
+      const data = ownAttributeData(aa);
+      while (data.length < baseCount) data.push(dflt);
+      for (let i = 0; i < addCount; i++) data.push(ba ? ba.data[i] ?? dflt : dflt);
     }
   };
   reconcile("POINT", baseV, b.positions.length);
@@ -813,15 +1485,15 @@ export function mergeMeshInto(a: Mesh, b: Mesh): void {
   // edges before ANY loose wires, so when A has loose edges the joined order
   // interleaves. Map each joined canonical edge back to its source explicitly.
   if (needEdge && aEdgeIdx && bEdgeIdx) {
-    const joined = canonicalEdgeKeys(a); // after mutation
+    const joined = topologyOf(a).edges; // after mutation (caches invalidated above)
     // a joined edge belongs to B iff both endpoints are >= baseV
-    const srcOf = joined.map((k) => {
-      const [u, v] = k.split("_").map(Number);
+    const srcOf = joined.map((edge) => {
+      const [u, v] = edge.verts;
       if (u >= baseV && v >= baseV) {
         const bi = bEdgeIdx.get(ekeyG(u - baseV, v - baseV));
         return bi === undefined ? null : { from: "b" as const, i: bi };
       }
-      const ai = aEdgeIdx.get(k);
+      const ai = aEdgeIdx.get(ekeyG(u, v));
       return ai === undefined ? null : { from: "a" as const, i: ai };
     });
     const names = new Set<string>();
@@ -881,10 +1553,18 @@ export function realizeInstances(
   // base curves pass through; instanced curves get appended transformed below
   out.curves = g.curves.map((s) => ({
     cyclic: s.cyclic,
-    points: s.points.map((p) => pendingMatrix ? transformPointMatrixFloat32(p, pendingMatrix) : [...p] as Vec3),
-    controlPoints: s.controlPoints?.map((p) => pendingMatrix ? transformPointMatrixFloat32(p, pendingMatrix) : [...p] as Vec3),
-    bezierLeft: s.bezierLeft?.map((p) => pendingMatrix ? transformPointMatrixFloat32(p, pendingMatrix) : [...p] as Vec3),
-    bezierRight: s.bezierRight?.map((p) => pendingMatrix ? transformPointMatrixFloat32(p, pendingMatrix) : [...p] as Vec3),
+    points: pendingMatrix
+      ? s.points.map((p) => transformPointMatrixFloat32(p, pendingMatrix))
+      : s.points.slice(),
+    controlPoints: pendingMatrix
+      ? s.controlPoints?.map((p) => transformPointMatrixFloat32(p, pendingMatrix))
+      : s.controlPoints?.slice(),
+    bezierLeft: pendingMatrix
+      ? s.bezierLeft?.map((p) => transformPointMatrixFloat32(p, pendingMatrix))
+      : s.bezierLeft?.slice(),
+    bezierRight: pendingMatrix
+      ? s.bezierRight?.map((p) => transformPointMatrixFloat32(p, pendingMatrix))
+      : s.bezierRight?.slice(),
   }));
   for (const [k, a] of g.curveAttributes) out.curveAttributes.set(k, {
     domain: a.domain,
@@ -920,8 +1600,9 @@ export function realizeInstances(
         for (const [name, val] of inst.attributes) {
           let a = mesh.attributes.get(name);
           if (!a) { a = { domain: "POINT", data: [] }; mesh.attributes.set(name, a); }
-          while (a.data.length < mesh.positions.length) a.data.push(zeroLike(val));
-          for (let k = baseV; k < mesh.positions.length; k++) a.data[k] = val;
+          const data = ownAttributeData(a);
+          while (data.length < mesh.positions.length) data.push(zeroLike(val));
+          for (let k = baseV; k < mesh.positions.length; k++) data[k] = val;
         }
       }
     }
@@ -934,15 +1615,15 @@ export function realizeInstances(
     for (const s of rg.curves)
       out.curves.push({
         cyclic: s.cyclic,
-        points: explicitMatrix ? s.points.map((p) => [...p] as Vec3) : s.points.map(transformGenericPoint),
+        points: explicitMatrix ? s.points.slice() : s.points.map(transformGenericPoint),
         controlPoints: explicitMatrix
-          ? s.controlPoints?.map((p) => [...p] as Vec3)
+          ? s.controlPoints?.slice()
           : s.controlPoints?.map(transformGenericPoint),
         bezierLeft: explicitMatrix
-          ? s.bezierLeft?.map((p) => [...p] as Vec3)
+          ? s.bezierLeft?.slice()
           : s.bezierLeft?.map(transformGenericPoint),
         bezierRight: explicitMatrix
-          ? s.bezierRight?.map((p) => [...p] as Vec3)
+          ? s.bezierRight?.slice()
           : s.bezierRight?.map(transformGenericPoint),
       });
     if (addedCurves) {
@@ -968,7 +1649,7 @@ export function realizeInstances(
         const before = domain === "POINT" ? pointBase : curveBase;
         const count = domain === "POINT" ? addedPoints : addedCurves;
         const fallback = zeroLike(target?.data[0] ?? source?.data[0]);
-        const data = target?.data ?? [];
+        const data = target ? ownAttributeData(target) : [];
         while (data.length < before) data.push(fallback);
         for (let index = 0; index < count; index++) {
           const value = source?.data[index] ?? fallback;
@@ -1211,7 +1892,9 @@ export function orientClosedSurface(mesh: Mesh, eps = 1e-5): number {
       : component.filter((face) => parity.get(face) === 0);
     for (const face of chosen) flips.add(face);
   }
-  for (const fi of flips) mesh.faces[fi].reverse();
+  // Replace rows instead of reversing in place: face rows may be shared with
+  // clones of this mesh (structural-sharing invariant).
+  for (const fi of flips) mesh.faces[fi] = [...mesh.faces[fi]].reverse();
   if (flips.size) invalidateMeshCaches(mesh);
   return flips.size;
 }
@@ -1244,7 +1927,8 @@ export function orientShellOutward(mesh: Mesh): void {
     else if (radial < -0.12) inn++;
   }
   if (inn <= out * 1.15) return;
-  for (const f of mesh.faces) f.reverse();
+  // Fresh rows: the existing ones may be shared with clones of this mesh.
+  mesh.faces = mesh.faces.map((f) => [...f].reverse());
   invalidateMeshCaches(mesh);
 }
 
@@ -1291,7 +1975,7 @@ export function toTriSoup(g: Geometry): TriSoup {
       const remap = new Map<number, number>();
       for (let vertex = 0; vertex < realizedMesh.positions.length; vertex++) if (retained[vertex]) {
         remap.set(vertex, filtered.positions.length);
-        filtered.positions.push([...realizedMesh.positions[vertex]] as Vec3);
+        filtered.positions.push(realizedMesh.positions[vertex]);
       }
       filtered.faces = realizedMesh.faces.map((face) => face.map((vertex) => remap.get(vertex)!));
       filtered.faceMaterial = [...realizedMesh.faceMaterial];
@@ -1308,8 +1992,9 @@ export function toTriSoup(g: Geometry): TriSoup {
   mesh.positions = source.positions;
   mesh.materialSlots = [...source.materialSlots];
   for (let fi = 0; fi < source.faces.length; fi++) {
-    const face = source.faces[fi];
-    mesh.faces.push([...face]);
+    // Rows are shared (never mutated in place) — this mesh only normalizes
+    // faceMaterial for the grouping pass below.
+    mesh.faces.push(source.faces[fi]);
     mesh.faceMaterial.push(source.faceMaterial[fi] ?? 0);
   }
   // Export the evaluated face loops verbatim. Winding is observable Geometry
@@ -1319,7 +2004,10 @@ export function toTriSoup(g: Geometry): TriSoup {
   // OpenVDB shells (including Math Clay TPMS variants) and made the browser
   // select the opposite material branch from Blender. Nodes that genuinely
   // repair topology must do so before this serialization boundary.
-  const normals = mesh.vertexNormals();
+  // Normals come from `source`: identical positions and face content, and
+  // source may already carry a valid vertex-normal cache from its clone
+  // lineage.
+  const normals = source.vertexNormals();
   const positions = new Float32Array(mesh.positions.length * 3);
   const normArr = new Float32Array(mesh.positions.length * 3);
   for (let i = 0; i < mesh.positions.length; i++) {

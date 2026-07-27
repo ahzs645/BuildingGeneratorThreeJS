@@ -176,13 +176,32 @@ export function fieldMap(inputs: Field[], op: (...vals: Elem[]) => Elem): Field 
     const value = (input: number, index: number): Elem =>
       inputs[input].isConst ? inputs[input].value : arrays[input]![index];
     switch (inputs.length) {
-      case 1:
-        for (let i = 0; i < ctx.size; i++) res[i] = op(value(0, i));
+      case 1: {
+        // Hoist the const/array branch out of the per-element loops for the
+        // one- and two-input shapes that dominate math-node chains.
+        const a0 = arrays[0];
+        if (a0) for (let i = 0; i < ctx.size; i++) res[i] = op(a0[i]);
+        else {
+          const c0 = inputs[0].value;
+          for (let i = 0; i < ctx.size; i++) res[i] = op(c0);
+        }
         break;
-      case 2:
-        for (let i = 0; i < ctx.size; i++)
-          res[i] = op(value(0, i), value(1, i));
+      }
+      case 2: {
+        const a0 = arrays[0], a1 = arrays[1];
+        if (a0 && a1) for (let i = 0; i < ctx.size; i++) res[i] = op(a0[i], a1[i]);
+        else if (a0) {
+          const c1 = inputs[1].value;
+          for (let i = 0; i < ctx.size; i++) res[i] = op(a0[i], c1);
+        } else if (a1) {
+          const c0 = inputs[0].value;
+          for (let i = 0; i < ctx.size; i++) res[i] = op(c0, a1[i]);
+        } else {
+          const c0 = inputs[0].value, c1 = inputs[1].value;
+          for (let i = 0; i < ctx.size; i++) res[i] = op(c0, c1);
+        }
         break;
+      }
       case 3:
         for (let i = 0; i < ctx.size; i++)
           res[i] = op(value(0, i), value(1, i), value(2, i));

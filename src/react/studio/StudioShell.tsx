@@ -1,8 +1,42 @@
-import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 import { appHref } from "../../base-url";
 import "./studio-shell.css";
 
 export type StudioPanelRect = { x: number; y: number; width: number; height: number };
+
+// Must match the mobile breakpoint in studio-shell.css. Docks and the bottom
+// sheet are exclusive render paths (never CSS-hidden duplicates) so hidden
+// file inputs, ids, and event handlers inside dock content exist exactly once.
+// The second clause keeps touch phones on the sheet in landscape (e.g.
+// 844x390), where desktop docks and floating panels would swallow the screen;
+// fine-pointer desktops never match it.
+export const MOBILE_STUDIO_QUERY = "(max-width: 820px), ((pointer: coarse) and (max-height: 500px))";
+
+function subscribeToMobileStudio(onChange: () => void): () => void {
+  const media = window.matchMedia(MOBILE_STUDIO_QUERY);
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+
+function isMobileStudioViewport(): boolean {
+  return window.matchMedia(MOBILE_STUDIO_QUERY).matches;
+}
+
+/**
+ * Shared mobile-studio breakpoint. Pages and panels must read the viewport
+ * through this hook (never a duplicated query string) so the React render
+ * paths can never disagree with the CSS media query above.
+ */
+export function useMobileStudio(): boolean {
+  return useSyncExternalStore(subscribeToMobileStudio, isMobileStudioViewport);
+}
 
 type StudioShellProps = {
   eyebrow: string;
@@ -27,6 +61,12 @@ export function StudioShell({
   children,
   footer,
 }: StudioShellProps): React.JSX.Element {
+  const isMobile = useMobileStudio();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetTab, setSheetTab] = useState<"controls" | "details">("controls");
+  const hasDockContent = Boolean(leftDock ?? rightDock);
+  const toggleSheet = (): void => setSheetOpen((open) => !open);
+
   return <main className={`studio-shell ${docksOpen ? "docks-open" : "docks-closed"}`}>
     <div className="studio-viewport">{children}</div>
     <header className="studio-brand">
@@ -36,12 +76,30 @@ export function StudioShell({
         <strong>{title}</strong>
         <small>{subtitle}</small>
       </div>
-      <button type="button" onClick={onToggleDocks} aria-pressed={docksOpen} title={docksOpen ? "Hide studio docks" : "Show studio docks"}>
-        {docksOpen ? "Hide panels" : "Show panels"}
-      </button>
+      {isMobile
+        ? hasDockContent && <button type="button" onClick={toggleSheet} aria-pressed={sheetOpen} title={sheetOpen ? "Collapse studio panels" : "Expand studio panels"}>
+            {sheetOpen ? "Hide panels" : "Show panels"}
+          </button>
+        : <button type="button" onClick={onToggleDocks} aria-pressed={docksOpen} title={docksOpen ? "Hide studio docks" : "Show studio docks"}>
+            {docksOpen ? "Hide panels" : "Show panels"}
+          </button>}
     </header>
-    {leftDock && <aside className="studio-dock studio-dock-left">{leftDock}</aside>}
-    {rightDock && <aside className="studio-dock studio-dock-right">{rightDock}</aside>}
+    {!isMobile && leftDock && <aside className="studio-dock studio-dock-left">{leftDock}</aside>}
+    {!isMobile && rightDock && <aside className="studio-dock studio-dock-right">{rightDock}</aside>}
+    {isMobile && hasDockContent && <div className={`studio-sheet ${sheetOpen ? "is-open" : "is-collapsed"}`}>
+      <button type="button" className="studio-sheet-handle" aria-expanded={sheetOpen} onClick={toggleSheet}>
+        <span className="studio-sheet-grip" aria-hidden="true" />
+        <span className="studio-sheet-title">{sheetOpen ? "Hide studio panels" : "Studio panels"}</span>
+      </button>
+      <div className="studio-sheet-body" hidden={!sheetOpen}>
+        {leftDock && rightDock && <div className="studio-sheet-tabs" role="tablist" aria-label="Studio panels">
+          <button type="button" role="tab" aria-selected={sheetTab === "controls"} className={sheetTab === "controls" ? "active" : ""} onClick={() => setSheetTab("controls")}>Controls</button>
+          <button type="button" role="tab" aria-selected={sheetTab === "details"} className={sheetTab === "details" ? "active" : ""} onClick={() => setSheetTab("details")}>Details</button>
+        </div>}
+        {leftDock && <div className="studio-sheet-panel" hidden={Boolean(rightDock) && sheetTab !== "controls"}>{leftDock}</div>}
+        {rightDock && <div className="studio-sheet-panel" hidden={Boolean(leftDock) && sheetTab !== "details"}>{rightDock}</div>}
+      </div>
+    </div>}
     {footer && <footer className="studio-footer">{footer}</footer>}
   </main>;
 }
@@ -56,6 +114,11 @@ type FloatingStudioPanelProps = {
   minWidth?: number;
   minHeight?: number;
   className?: string;
+  /**
+   * Renders a prominent Close button on the mobile full-screen overlay.
+   * Ignored on desktop, where pages pass their own Hide action instead.
+   */
+  onClose?: () => void;
 };
 
 type Gesture =
@@ -87,17 +150,20 @@ export function FloatingStudioPanel({
   minWidth = 520,
   minHeight = 320,
   className = "",
+  onClose,
 }: FloatingStudioPanelProps): React.JSX.Element {
+  const isMobile = useMobileStudio();
   const panelRef = useRef<HTMLElement>(null);
   const gestureRef = useRef<Gesture | null>(null);
   const latestRect = useRef(rect);
 
   useEffect(() => {
-    if (maximized) return;
+    // Mobile ignores the rect entirely, so never clamp-and-persist it there.
+    if (maximized || isMobile) return;
     const onResize = (): void => onRectChange(clampRect(latestRect.current, minWidth, minHeight));
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [maximized, minHeight, minWidth, onRectChange]);
+  }, [isMobile, maximized, minHeight, minWidth, onRectChange]);
 
   useEffect(() => {
     latestRect.current = rect;
@@ -153,6 +219,19 @@ export function FloatingStudioPanel({
     window.addEventListener("pointermove", updateGesture);
     window.addEventListener("pointerup", finishGesture);
   };
+
+  // Mobile: a full-screen inspection overlay. Drag, resize, and maximize are
+  // meaningless there — the rect props are ignored and no gesture ever binds.
+  if (isMobile) return <section className={`floating-studio-panel mobile-overlay ${className}`}>
+    <header>
+      <b>{title}</b>
+      <div>
+        {actions}
+        {onClose && <button type="button" className="panel-mobile-close" onClick={onClose}>Close ✕</button>}
+      </div>
+    </header>
+    <div className="floating-studio-panel-body">{children}</div>
+  </section>;
 
   const panelStyle = maximized
     ? { left: 10, top: 10, width: "calc(100vw - 20px)", height: "calc(100vh - 20px)" }

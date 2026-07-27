@@ -22,6 +22,8 @@ export type BlendStudioRuntimeSnapshot = {
   state: BlendStudioRuntimeState;
   message: string;
   lastValid: boolean;
+  /** The displayed result is a low-resolution progressive preview. */
+  preview?: boolean;
   stats?: TriSoup["stats"];
   runtimeSeconds?: number;
   missingTypes?: { type: string; count: number }[];
@@ -29,6 +31,15 @@ export type BlendStudioRuntimeSnapshot = {
   details?: RunDetail[];
   lineStats?: NonNullable<TriSoup["lines"]>["stats"];
   pointStats?: NonNullable<TriSoup["points"]>["stats"];
+};
+
+export type BlendStudioProgressivePreview = {
+  /** Interface identifier of the resolution-class input to lower for phase 1. */
+  identifier: string;
+  /** Display name of that input, used in the preview status message. */
+  name: string;
+  /** Cheap phase-1 value; phase 2 re-evaluates with the caller's overrides. */
+  previewValue: number;
 };
 
 export type BlendStudioEvaluation = {
@@ -40,6 +51,13 @@ export type BlendStudioEvaluation = {
   geometryInput?: string;
   output?: string;
   volumeSampleBudget?: number;
+  /**
+   * Two-phase evaluation: run once with the resolution-class input lowered to
+   * previewValue (shown as a marked low-res preview), then—after the user has
+   * stayed idle—re-run at full quality and replace the result silently.
+   * Callers that omit this get exactly the single-phase behavior.
+   */
+  progressive?: BlendStudioProgressivePreview;
 };
 
 export type BlendStudioRuntimeController = {
@@ -57,6 +75,12 @@ export type BlendStudioRuntimeController = {
 };
 
 export const BLEND_STUDIO_EVALUATION_TIMEOUT_MS = 180_000;
+/** Idle time after a low-res preview before the full-quality refinement runs. */
+export const BLEND_STUDIO_REFINEMENT_IDLE_MS = 500;
+
+function formatPreviewValue(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
 
 export type BlendStudioMeasurementMode = "jaw" | "points";
 
@@ -106,7 +130,8 @@ type WorkerReply =
       };
       details: RunDetail[];
     }
-  | { id: number; ok: false; error: string };
+  | { id: number; ok: false; error: string; unknownInstall?: boolean }
+  | { id?: undefined; ok: true; installed: string };
 
 type MountOptions = {
   canvas: HTMLCanvasElement;
@@ -158,14 +183,16 @@ function materialFor(dump: Dump, name: string | null): THREE.Material {
   });
 }
 
-function disposeObject(root: THREE.Object3D): void {
+function disposeObject(root: THREE.Object3D, keepMaterials?: ReadonlySet<THREE.Material>): void {
   root.traverse((object) => {
     const renderable = object as THREE.Mesh | THREE.Line | THREE.Points;
     renderable.geometry?.dispose();
     const materials = renderable.material
       ? Array.isArray(renderable.material) ? renderable.material : [renderable.material]
       : [];
-    materials.forEach((material) => material.dispose());
+    materials.forEach((material) => {
+      if (!keepMaterials?.has(material)) material.dispose();
+    });
   });
 }
 
@@ -283,10 +310,36 @@ export function mountBlendStudioRuntime({
   let queueTimer = 0;
   let disposed = false;
   let lastValid = false;
-  let activeEvaluation: {
+  type ActiveEvaluation = {
     id: number;
+    request: BlendStudioEvaluation;
+    // "preview" runs the request with its progressive low-res override applied;
+    // the same run object is then re-armed as "full" for the refinement pass.
+    phase: "preview" | "full";
+    started: number;
+    posted: boolean;
+    retriedInstall: boolean;
+    resolve: () => void;
     reject: (reason?: unknown) => void;
-  } | null = null;
+  };
+  let activeEvaluation: ActiveEvaluation | null = null;
+  // Pending phase-2 (full quality) dispatch after a low-res preview landed.
+  let refineTimer = 0;
+  // The run currently executing inside the persistent worker; superseded runs
+  // stay in flight (their replies are dropped by id) so the warm worker and
+  // its JIT state survive slider drags.
+  let postedRunId: number | null = null;
+  // True while queue()'s debounce timer is pending, i.e. a newer evaluation
+  // request is about to supersede the active one.
+  let queuedEvaluationPending = false;
+  // Dump installed in the persistent worker, tracked by object identity.
+  let installedDump: Dump | null = null;
+  let installedId = "";
+  let installCounter = 0;
+  // Materials built per dump, keyed by material name; reused across results.
+  const materialCache = new Map<string | null, THREE.Material>();
+  let materialCacheDump: Dump | null = null;
+  let lastGridBox: { size: THREE.Vector3; minY: number } | null = null;
 
   const resize = (): void => {
     const rect = canvas.getBoundingClientRect();
@@ -729,6 +782,25 @@ export function mountBlendStudioRuntime({
   canvas.addEventListener("pointerup", finishMeasurementDrag);
   canvas.addEventListener("pointercancel", finishMeasurementDrag);
 
+  const disposeMaterialCache = (): void => {
+    for (const material of materialCache.values()) material.dispose();
+    materialCache.clear();
+    materialCacheDump = null;
+  };
+
+  const cachedMaterialFor = (dump: Dump, name: string | null): THREE.Material => {
+    if (materialCacheDump !== dump) {
+      disposeMaterialCache();
+      materialCacheDump = dump;
+    }
+    let material = materialCache.get(name);
+    if (!material) {
+      material = materialFor(dump, name);
+      materialCache.set(name, material);
+    }
+    return material;
+  };
+
   const disposeCurrent = (): void => {
     // Gizmos are children of the evaluated root. Detach and dispose them
     // before disposing that root so a later rebuild cannot retain a stale
@@ -736,17 +808,34 @@ export function mountBlendStudioRuntime({
     clearGizmoHandles();
     if (currentRoot) {
       scene.remove(currentRoot);
-      disposeObject(currentRoot);
+      // Cached per-material-name materials outlive individual results; they
+      // are disposed on dump change and in dispose() instead.
+      disposeObject(currentRoot, new Set(materialCache.values()));
       currentRoot = null;
       measurementHandle = null;
       measurementArrow = null;
     }
-    if (currentGrid) {
-      scene.remove(currentGrid);
-      currentGrid.geometry.dispose();
-      (currentGrid.material as THREE.Material).dispose();
-      currentGrid = null;
-    }
+  };
+
+  const disposeGrid = (): void => {
+    if (!currentGrid) return;
+    scene.remove(currentGrid);
+    currentGrid.geometry.dispose();
+    (currentGrid.material as THREE.Material).dispose();
+    currentGrid = null;
+    lastGridBox = null;
+  };
+
+  const rebuildGrid = (box: THREE.Box3, size: THREE.Vector3, radius: number): void => {
+    disposeGrid();
+    if (captureMode) return;
+    const gridSize = Math.max(size.x, size.z, radius) * 4;
+    currentGrid = new THREE.GridHelper(gridSize, 30, 0x3a424d, 0x1d2229);
+    (currentGrid.material as THREE.Material).transparent = true;
+    (currentGrid.material as THREE.Material).opacity = .42;
+    currentGrid.position.y = box.min.y;
+    scene.add(currentGrid);
+    lastGridBox = { size: size.clone(), minY: box.min.y };
   };
 
   const frameAssembly = (): void => {
@@ -780,20 +869,25 @@ export function mountBlendStudioRuntime({
         size: size.toArray(),
       });
     }
-    if (currentGrid) {
-      scene.remove(currentGrid);
-      currentGrid.geometry.dispose();
-      (currentGrid.material as THREE.Material).dispose();
-      currentGrid = null;
-    }
-    if (!captureMode) {
-      const gridSize = Math.max(size.x, size.z, radius) * 4;
-      currentGrid = new THREE.GridHelper(gridSize, 30, 0x3a424d, 0x1d2229);
-      (currentGrid.material as THREE.Material).transparent = true;
-      (currentGrid.material as THREE.Material).opacity = .42;
-      currentGrid.position.y = box.min.y;
-      scene.add(currentGrid);
-    }
+    rebuildGrid(box, size, radius);
+  };
+
+  // Refresh the grid without touching the camera; rebuild only when the
+  // assembly bounds changed materially (>20% along an axis or the floor
+  // moved), so slider nudges keep both the orbit and the grid stable.
+  const updateGridForCurrentBounds = (): void => {
+    const box = new THREE.Box3();
+    if (currentRoot) box.expandByObject(currentRoot);
+    if (referenceRoot.children.length) box.expandByObject(referenceRoot);
+    if (box.isEmpty()) return;
+    const size = box.getSize(new THREE.Vector3());
+    const radius = Math.max(size.length() * .5, .01);
+    const previous = lastGridBox;
+    const grewMaterially = !previous
+      || (["x", "y", "z"] as const).some((axis) =>
+        Math.abs(size[axis] - previous.size[axis]) > Math.max(previous.size[axis], 1e-6) * .2)
+      || Math.abs(box.min.y - previous.minY) > radius * 1e-3;
+    if (grewMaterially) rebuildGrid(box, size, radius);
   };
 
   const clearMeasurementSubject = (): void => {
@@ -808,7 +902,9 @@ export function mountBlendStudioRuntime({
   };
 
   const showSoup = (dump: Dump, soup: TriSoup, targetId: string): void => {
-    if (currentTargetId !== targetId) {
+    const targetChanged = currentTargetId !== targetId;
+    const hadPreviousResult = currentRoot !== null;
+    if (targetChanged) {
       currentTargetId = targetId;
       assemblyCenter = null;
       clearMeasurementSubject();
@@ -827,9 +923,9 @@ export function mountBlendStudioRuntime({
       const materials: THREE.Material[] = [];
       for (const [index, group] of soup.groups.entries()) {
         geometry.addGroup(group.start, group.count, index);
-        materials.push(materialFor(dump, group.material));
+        materials.push(cachedMaterialFor(dump, group.material));
       }
-      if (!materials.length) materials.push(materialFor(dump, null));
+      if (!materials.length) materials.push(cachedMaterialFor(dump, null));
       currentRoot.add(new THREE.Mesh(geometry, materials.length === 1 ? materials[0] : materials));
     }
     if (soup.lines?.positions.length) {
@@ -871,14 +967,223 @@ export function mountBlendStudioRuntime({
     });
     rebuildMeasurementHandle();
     rebuildGizmoHandles();
-    frameAssembly();
+    // Full re-framing resets the user's orbit, so reserve it for the first
+    // result of a target (or after the previous result was torn down). Capture
+    // runs still frame every result so their dataset export stays intact.
+    if (targetChanged || !hadPreviousResult || !lastValid || captureMode) frameAssembly();
+    else updateGridForCurrentBounds();
+  };
+
+  // Tear down the persistent worker. Only the timeout path, fatal worker
+  // errors, and dispose() reach this; ordinary cancellation and superseded
+  // runs keep the warm worker (and its installed dump + JIT state) alive.
+  const teardownWorker = (): void => {
+    worker?.terminate();
+    worker = null;
+    postedRunId = null;
+    installedDump = null;
+    installedId = "";
+  };
+
+  const failActiveEvaluation = (error: Error): void => {
+    const active = activeEvaluation;
+    if (!active) return;
+    activeEvaluation = null;
+    window.clearTimeout(timeout);
+    window.clearTimeout(refineTimer);
+    onState({
+      state: "error",
+      message: `${error.message.split("\n")[0]}${lastValid ? " · previous valid geometry retained" : ""}`,
+      lastValid,
+      // A failed low-res pass measures the preview, not the target's cost.
+      ...(active.phase === "preview" ? { preview: true } : {}),
+    });
+    active.reject(error);
+  };
+
+  // Post an evaluation to the persistent worker, installing the dump first
+  // whenever its identity changed since the last install (or after respawn).
+  const postEvaluation = (run: ActiveEvaluation): void => {
+    const evaluationWorker = ensureWorker();
+    if (installedDump !== run.request.dump) {
+      installedDump = run.request.dump;
+      installedId = `install-${++installCounter}`;
+      evaluationWorker.postMessage({
+        kind: "install",
+        installId: installedId,
+        dump: run.request.dump,
+      });
+    }
+    run.posted = true;
+    postedRunId = run.id;
+    evaluationWorker.postMessage({
+      kind: "evaluate",
+      id: run.id,
+      installId: installedId,
+      object: run.request.target.kind === "object" ? run.request.target.objectName : undefined,
+      group: run.request.target.groupName,
+      modifierIndex: run.request.target.kind === "object"
+        ? run.request.target.modifierIndex
+        : undefined,
+      targetKind: run.request.target.kind,
+      overrides: run.phase === "preview" && run.request.progressive
+        ? {
+            ...run.request.overrides,
+            [run.request.progressive.identifier]: run.request.progressive.previewValue,
+          }
+        : run.request.overrides,
+      frame: run.request.frame,
+      seed: run.request.seed,
+      geometryInput: run.request.geometryInput,
+      output: run.request.output,
+      volumeSampleBudget: run.request.volumeSampleBudget,
+    });
+  };
+
+  // The only path that kills the warm worker: a runaway evaluation. The
+  // respawned worker starts empty, so the install tracking resets too.
+  const armSafetyTimeout = (run: ActiveEvaluation): void => {
+    const id = run.id;
+    window.clearTimeout(timeout);
+    timeout = window.setTimeout(() => {
+      if (activeEvaluation?.id !== id) return;
+      teardownWorker();
+      failActiveEvaluation(new Error("Evaluation stopped after the 180 second safety limit"));
+    }, BLEND_STUDIO_EVALUATION_TIMEOUT_MS);
+  };
+
+  // Phase 1 of a progressive run landed: show the low-res result immediately,
+  // then—once the user has stayed idle—re-arm the same run at full quality.
+  // Its promise resolves with phase 2; a supersede in between rejects it and
+  // skips the refinement entirely.
+  const handlePreviewReply = (
+    active: ActiveEvaluation,
+    reply: Extract<WorkerReply, { soup: TriSoup }>,
+  ): void => {
+    window.clearTimeout(timeout);
+    showSoup(active.request.dump, reply.soup, active.request.target.id);
+    lastValid = true;
+    const progressive = active.request.progressive!;
+    onState({
+      state: "ready",
+      preview: true,
+      message: `Low-res preview (${progressive.name} ${formatPreviewValue(progressive.previewValue)}) · refining…`,
+      lastValid,
+      stats: reply.soup.stats,
+      lineStats: reply.soup.lines?.stats,
+      pointStats: reply.soup.points?.stats,
+      runtimeSeconds: (performance.now() - active.started) / 1_000,
+      missingTypes: reply.coverage.missingTypes,
+      approximateTypes: reply.coverage.approximateTypes,
+      details: reply.details ?? [],
+    });
+    window.clearTimeout(refineTimer);
+    refineTimer = window.setTimeout(() => {
+      // A queued edit is about to supersede this run anyway; when it does,
+      // cancel() rejects the run and no refinement is dispatched.
+      if (activeEvaluation !== active || queuedEvaluationPending) return;
+      active.phase = "full";
+      active.id = ++runId;
+      active.started = performance.now();
+      active.posted = false;
+      active.retriedInstall = false;
+      armSafetyTimeout(active);
+      // If a superseded stale run still occupies the worker, the stale-reply
+      // handler dispatches this run as soon as the worker frees up.
+      if (postedRunId === null) postEvaluation(active);
+    }, BLEND_STUDIO_REFINEMENT_IDLE_MS);
+  };
+
+  const handleWorkerReply = (reply: WorkerReply): void => {
+    if (reply.id === undefined) return; // install acknowledgement
+    if (reply.id === postedRunId) postedRunId = null;
+    const active = activeEvaluation;
+    if (!active || reply.id !== active.id) {
+      // Stale (superseded) run finished. If its install went missing the
+      // current install bookkeeping is wrong too, so force a re-install.
+      if (!reply.ok && reply.unknownInstall) {
+        installedDump = null;
+        installedId = "";
+      }
+      // The worker is free again; dispatch the latest run if it is waiting.
+      // When the queue debounce is about to replace it anyway (the user is
+      // still dragging), hold off so the worker is not burned on a run that
+      // is already known to be obsolete.
+      if (active && !active.posted && postedRunId === null && !queuedEvaluationPending)
+        postEvaluation(active);
+      return;
+    }
+    if (!reply.ok) {
+      if (reply.unknownInstall && !active.retriedInstall) {
+        // The worker was respawned since this dump was installed (timeout
+        // path). Re-install once and retry the same run.
+        active.retriedInstall = true;
+        installedDump = null;
+        installedId = "";
+        postEvaluation(active);
+        return;
+      }
+      failActiveEvaluation(new Error(reply.error));
+      return;
+    }
+    if (active.phase === "preview" && active.request.progressive) {
+      handlePreviewReply(active, reply);
+      return;
+    }
+    activeEvaluation = null;
+    window.clearTimeout(timeout);
+    showSoup(active.request.dump, reply.soup, active.request.target.id);
+    lastValid = true;
+    const missing = reply.coverage.missingTypes;
+    const approximations = reply.coverage.approximateTypes;
+    const details = reply.details ?? [];
+    const { warningCount } = summarizeBlendStudioRuntimeDetails(details);
+    const coverageMessage = missing.length
+      ? `Ready with ${missing.length} runtime fallback ${missing.length === 1 ? "type" : "types"}`
+      : approximations.length
+        ? `Ready with ${approximations.length} bounded approximation ${approximations.length === 1 ? "type" : "types"}`
+        : "Ready · all executed nodes handled";
+    onState({
+      state: "ready",
+      message: warningCount
+        ? `${coverageMessage} · ${warningCount} runtime ${warningCount === 1 ? "warning" : "warnings"}`
+        : coverageMessage,
+      lastValid,
+      stats: reply.soup.stats,
+      lineStats: reply.soup.lines?.stats,
+      pointStats: reply.soup.points?.stats,
+      runtimeSeconds: (performance.now() - active.started) / 1_000,
+      missingTypes: missing,
+      approximateTypes: approximations,
+      details,
+    });
+    active.resolve();
+  };
+
+  const ensureWorker = (): Worker => {
+    if (worker) return worker;
+    const evaluationWorker = new Worker(new URL("../blend-import-worker.ts", import.meta.url), {
+      type: "module",
+      name: "blend-studio-gnvm",
+    });
+    evaluationWorker.onmessage = (event: MessageEvent<WorkerReply>) =>
+      handleWorkerReply(event.data);
+    evaluationWorker.onerror = (event) => {
+      // A worker-level error is unrecoverable for anything already queued in
+      // it; respawn lazily on the next evaluation.
+      teardownWorker();
+      failActiveEvaluation(new Error(event.message || "Evaluation worker failed"));
+    };
+    worker = evaluationWorker;
+    return evaluationWorker;
   };
 
   const cancel = (): void => {
     window.clearTimeout(queueTimer);
+    queuedEvaluationPending = false;
     window.clearTimeout(timeout);
-    worker?.terminate();
-    worker = null;
+    // Superseding a progressive run between its phases skips the refinement.
+    window.clearTimeout(refineTimer);
     const active = activeEvaluation;
     activeEvaluation = null;
     active?.reject(new BlendStudioEvaluationCancelledError());
@@ -888,114 +1193,40 @@ export function mountBlendStudioRuntime({
     cancel();
     if (disposed) return Promise.resolve();
     const id = ++runId;
-    const started = performance.now();
     onState({
       state: "evaluating",
       message: `Evaluating ${request.target.label}…`,
       lastValid,
     });
     return new Promise((resolve, reject) => {
-      const evaluationWorker = new Worker(new URL("../blend-import-worker.ts", import.meta.url), {
-        type: "module",
-        name: "blend-studio-gnvm",
-      });
-      worker = evaluationWorker;
-      activeEvaluation = { id, reject };
-      timeout = window.setTimeout(() => {
-        if (activeEvaluation?.id !== id) return;
-        activeEvaluation = null;
-        evaluationWorker.terminate();
-        if (worker === evaluationWorker) worker = null;
-        const error = new Error("Evaluation stopped after the 180 second safety limit");
-        onState({
-          state: "error",
-          message: `${error.message}${lastValid ? " · previous valid geometry retained" : ""}`,
-          lastValid,
-        });
-        reject(error);
-      }, BLEND_STUDIO_EVALUATION_TIMEOUT_MS);
-      evaluationWorker.onmessage = (event: MessageEvent<WorkerReply>) => {
-        if (event.data.id !== id || activeEvaluation?.id !== id) return;
-        activeEvaluation = null;
-        window.clearTimeout(timeout);
-        evaluationWorker.terminate();
-        if (worker === evaluationWorker) worker = null;
-        if (!event.data.ok) {
-          const message = event.data.error.split("\n")[0];
-          onState({
-            state: "error",
-            message: `${message}${lastValid ? " · previous valid geometry retained" : ""}`,
-            lastValid,
-          });
-          reject(new Error(event.data.error));
-          return;
-        }
-        showSoup(request.dump, event.data.soup, request.target.id);
-        lastValid = true;
-        const missing = event.data.coverage.missingTypes;
-        const approximations = event.data.coverage.approximateTypes;
-        const details = event.data.details ?? [];
-        const { warningCount } = summarizeBlendStudioRuntimeDetails(details);
-        const coverageMessage = missing.length
-          ? `Ready with ${missing.length} runtime fallback ${missing.length === 1 ? "type" : "types"}`
-          : approximations.length
-            ? `Ready with ${approximations.length} bounded approximation ${approximations.length === 1 ? "type" : "types"}`
-            : "Ready · all executed nodes handled";
-        onState({
-          state: "ready",
-          message: warningCount
-            ? `${coverageMessage} · ${warningCount} runtime ${warningCount === 1 ? "warning" : "warnings"}`
-            : coverageMessage,
-          lastValid,
-          stats: event.data.soup.stats,
-          lineStats: event.data.soup.lines?.stats,
-          pointStats: event.data.soup.points?.stats,
-          runtimeSeconds: (performance.now() - started) / 1_000,
-          missingTypes: missing,
-          approximateTypes: approximations,
-          details,
-        });
-        resolve();
-      };
-      evaluationWorker.onerror = (event) => {
-        if (activeEvaluation?.id !== id) return;
-        activeEvaluation = null;
-        window.clearTimeout(timeout);
-        evaluationWorker.terminate();
-        if (worker === evaluationWorker) worker = null;
-        const message = event.message || "Evaluation worker failed";
-        onState({
-          state: "error",
-          message: `${message}${lastValid ? " · previous valid geometry retained" : ""}`,
-          lastValid,
-        });
-        reject(new Error(message));
-      };
-      evaluationWorker.postMessage({
+      const run: ActiveEvaluation = {
         id,
-        dump: request.dump,
-        object: request.target.kind === "object" ? request.target.objectName : undefined,
-        group: request.target.groupName,
-        modifierIndex: request.target.kind === "object" ? request.target.modifierIndex : undefined,
-        targetKind: request.target.kind,
-        overrides: request.overrides,
-        frame: request.frame,
-        seed: request.seed,
-        geometryInput: request.geometryInput,
-        output: request.output,
-        volumeSampleBudget: request.volumeSampleBudget,
-      });
+        request,
+        phase: request.progressive ? "preview" : "full",
+        started: performance.now(),
+        posted: false,
+        retriedInstall: false,
+        resolve,
+        reject,
+      };
+      activeEvaluation = run;
+      armSafetyTimeout(run);
+      // If a superseded run is still executing, wait for its reply; the reply
+      // handler dispatches this run as soon as the worker frees up.
+      if (postedRunId === null) postEvaluation(run);
     });
   };
 
   const queue = (request: BlendStudioEvaluation): void => {
     window.clearTimeout(queueTimer);
+    queuedEvaluationPending = true;
     onState({
       state: "queued",
       message: `Queued ${request.target.label}…`,
       lastValid,
     });
     queueTimer = window.setTimeout(() => {
+      queuedEvaluationPending = false;
       void evaluate(request).catch(() => {
         // The state callback already reports the actionable failure.
       });
@@ -1084,6 +1315,7 @@ export function mountBlendStudioRuntime({
     dispose() {
       disposed = true;
       cancel();
+      teardownWorker();
       resizeObserver.disconnect();
       renderer.setAnimationLoop(null);
       canvas.removeEventListener("pointerdown", onPointerDown, true);
@@ -1092,6 +1324,8 @@ export function mountBlendStudioRuntime({
       canvas.removeEventListener("pointerup", finishMeasurementDrag);
       canvas.removeEventListener("pointercancel", finishMeasurementDrag);
       disposeCurrent();
+      disposeGrid();
+      disposeMaterialCache();
       clearGizmoHandles();
       clearMeasurementSubject();
       scene.remove(referenceRoot, measurementOverlay);

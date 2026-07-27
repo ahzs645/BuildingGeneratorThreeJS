@@ -9,11 +9,16 @@
 //    so evaluation never crashes and we get a coverage report + partial mesh.
 
 import { Field, Vec3, Domain, FieldCtx, asNum, fieldMap, vadd, vcross, vdot, vlen, vnorm, vnormBlenderFloat, vscale, vsub } from "./core";
-import { Geometry, Mesh, mergeMeshInto, realizeInstances, topologyOf, Topology } from "./geometry";
+import {
+  Geometry, Mesh, mergeMeshInto, realizeInstances, topologyOf, Topology,
+  cornerMapsOf, vertexCornersOf, vertexEdgesOf, edgeIndexOf, canonicalEdgeKey,
+  type CornerMaps,
+} from "./geometry";
 import { splineFrames, splineLength } from "./curves";
 import { ClosureValue, DUMP_CONTEXT, EMPTY_CLOSURE, EvalAPI, RawNode, REGISTRY, MISSING, SockVal, DataRef } from "./registry";
 import { tryEvaluateGroupOverride } from "./group-overrides";
 import { identityMatrix, MatrixValue } from "./matrix";
+import { evaluationCacheFor } from "./evaluation-cache";
 
 export { gradientDirectionField } from "./group-overrides";
 
@@ -189,6 +194,20 @@ export function translateGeometryContext(source: Geometry, translation: Vec3): G
 
 const KEY = (n: string, s: string) => `${n}::${s}`;
 
+// Probe/trace hooks observe live evaluation, so the persistent cross-run
+// cache must be fully bypassed (no reads AND no writes) while any is active.
+function persistentCachingBlocked(): boolean {
+  return TRACE.on
+    || FIELD_PROBE.node !== null || FIELD_PROBE.socket !== null
+    || GEOMETRY_PROBE.node !== null
+    || GEOMETRY_PROBES.targets.length > 0
+    || VALUE_PROBE.node !== null;
+}
+
+// Counts cycle-guard trips globally. A node whose evaluation span saw a trip
+// may hold a traversal-order-dependent partial value — never persist those.
+let cycleGuardTrips = 0;
+
 function wrapConst(socketType: string, value: any): SockVal {
   const t = socketType;
   if (t === "NodeSocketClosure") return EMPTY_CLOSURE;
@@ -258,6 +277,78 @@ function coerceGroupInput(value: SockVal, socketType: string): SockVal {
   return coerced;
 }
 
+// avgElems over `indices.map((i) => arr[i])`, without materializing that
+// array. Bit-identical accumulation order (same frounds, same skip rules) —
+// this runs once per element in cross-domain interpolation, and the map
+// allocations dominated the field-evaluation GC churn.
+function avgMapped(
+  indices: ArrayLike<number> | undefined,
+  arr: (import("./core").Elem | undefined)[],
+): import("./core").Elem | undefined {
+  if (!indices || !indices.length) return undefined;
+  const first = arr[indices[0]];
+  const f = Math.fround;
+  if (Array.isArray(first)) {
+    let a0 = 0, a1 = 0, a2 = 0, n = 0;
+    for (let k = 0; k < indices.length; k++) {
+      const v = arr[indices[k]];
+      if (!Array.isArray(v)) continue;
+      a0 = f(a0 + f(v[0]));
+      a1 = f(a1 + f(v[1]));
+      a2 = f(a2 + f(v[2]));
+      n++;
+    }
+    if (!n) return [0, 0, 0];
+    const reciprocal = f(1 / n);
+    return [f(a0 * reciprocal), f(a1 * reciprocal), f(a2 * reciprocal)];
+  }
+  let s = 0, n = 0;
+  for (let k = 0; k < indices.length; k++) {
+    const v = arr[indices[k]];
+    if (typeof v !== "number") continue;
+    s = f(s + f(v));
+    n++;
+  }
+  return n ? f(s * f(1 / n)) : 0;
+}
+
+// avgElems over `arr.slice(start, start + count)` without the slice.
+function avgRange(
+  arr: (import("./core").Elem | undefined)[],
+  start: number,
+  count: number,
+): import("./core").Elem | undefined {
+  if (count <= 0 || start >= arr.length) return undefined; // matches avgElems on an empty slice
+  const first = arr[start];
+  const f = Math.fround;
+  if (Array.isArray(first)) {
+    let a0 = 0, a1 = 0, a2 = 0, n = 0;
+    for (let k = 0; k < count; k++) {
+      const v = arr[start + k];
+      if (!Array.isArray(v)) continue;
+      a0 = f(a0 + f(v[0]));
+      a1 = f(a1 + f(v[1]));
+      a2 = f(a2 + f(v[2]));
+      n++;
+    }
+    if (!n) return [0, 0, 0];
+    const reciprocal = f(1 / n);
+    return [f(a0 * reciprocal), f(a1 * reciprocal), f(a2 * reciprocal)];
+  }
+  let s = 0, n = 0;
+  for (let k = 0; k < count; k++) {
+    const v = arr[start + k];
+    if (typeof v !== "number") continue;
+    s = f(s + f(v));
+    n++;
+  }
+  return n ? f(s * f(1 / n)) : 0;
+}
+
+// Reused value list for the EDGE->FACE interpolation loop below (single
+// threaded; consumed synchronously by avgElems before any other use).
+const edgeFaceScratch: (import("./core").Elem | undefined)[] = [];
+
 // Average a set of field elements (numbers or vec3), for domain interpolation.
 function avgElems(vals: (import("./core").Elem | undefined)[] | undefined): import("./core").Elem | undefined {
   if (!vals || !vals.length) return undefined;
@@ -321,47 +412,18 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
   // Lazy topology (edges/adjacency/islands) — only built when a topology query needs it.
   let topo: Topology | null = null;
   const T = (): Topology => (topo ??= topologyOf(mesh!));
-  // Lazy corner maps: corner i -> (vertex, face); vertex -> corners; face -> first corner slot.
-  let corners: { vert: number[]; face: number[]; faceStart: number[] } | null = null;
-  const C = () => {
-    if (!corners) {
-      const vert: number[] = [], face: number[] = [], faceStart: number[] = [];
-      for (let fi = 0; fi < mesh!.faces.length; fi++) {
-        faceStart.push(vert.length);
-        for (const vi of mesh!.faces[fi]) { vert.push(vi); face.push(fi); }
-      }
-      corners = { vert, face, faceStart };
-    }
-    return corners;
-  };
+  // Corner/vertex incidence maps and the canonical edge index are cached per
+  // mesh (carried across clones) in geometry.ts; these wrappers only pin the
+  // resolved reference for this context.
+  let corners: CornerMaps | null = null;
+  const C = () => (corners ??= cornerMapsOf(mesh!));
   let vertCorners: number[][] | null = null;
-  const VC = () => {
-    if (!vertCorners) {
-      vertCorners = mesh!.positions.map(() => []);
-      const c = C();
-      for (let i = 0; i < c.vert.length; i++) vertCorners[c.vert[i]]?.push(i);
-    }
-    return vertCorners;
-  };
+  const VC = () => (vertCorners ??= vertexCornersOf(mesh!));
   let vertEdges: number[][] | null = null;
-  const VE = () => {
-    if (!vertEdges) {
-      vertEdges = mesh!.positions.map(() => []);
-      const es = T().edges;
-      for (let ei = 0; ei < es.length; ei++) for (const vi of es[ei].verts) vertEdges[vi]?.push(ei);
-    }
-    return vertEdges;
-  };
-  const edgeKeyOf = (a: number, b: number) => (a < b ? `${a}_${b}` : `${b}_${a}`);
-  let edgeKeyIdx: Map<string, number> | null = null;
-  const EK = () => {
-    if (!edgeKeyIdx) {
-      edgeKeyIdx = new Map();
-      const es = T().edges;
-      for (let ei = 0; ei < es.length; ei++) edgeKeyIdx.set(edgeKeyOf(es[ei].verts[0], es[ei].verts[1]), ei);
-    }
-    return edgeKeyIdx;
-  };
+  const VE = () => (vertEdges ??= vertexEdgesOf(mesh!));
+  const edgeKeyOf = canonicalEdgeKey;
+  let edgeKeyIdx: Map<number | string, number> | null = null;
+  const EK = () => (edgeKeyIdx ??= edgeIndexOf(mesh!));
   const size = domain === "INSTANCE"
     ? geo.instances.length
     : domain === "CURVE"
@@ -390,45 +452,55 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
         let start = 0;
         for (let spline = 0; spline < i; spline++) start += geo.curves[spline]?.points.length ?? 0;
         const count = geo.curves[i]?.points.length ?? 0;
-        return avgElems(arr.slice(start, start + count));
+        return avgRange(arr, start, count);
       }
       return arr[i];
     }
     if (src === "POINT") {
-      if (domain === "FACE") return avgElems(mesh.faces[i]?.map((vi) => arr[vi]));
+      if (domain === "FACE") return avgMapped(mesh.faces[i], arr);
       if (domain === "CORNER") return arr[C().vert[i]];
       if (domain === "EDGE") {
         // Blender's boolean point->edge rule is AND (both endpoints); min() gives
         // that exactly for 0/1 masks. Averaging selected the lathe's vertical
         // edges (one hot endpoint) and doubled the Spin zone every iteration.
-        const vs = T().edges[i]?.verts.map((vi) => arr[vi]);
-        if (!vs) return undefined;
-        const nums = vs.map((v) => (typeof v === "number" ? v : v === undefined ? 0 : 0));
-        if (vs.every((v) => typeof v === "number" || v === undefined)) return Math.min(nums[0] ?? 0, nums[1] ?? 0);
-        return avgElems(vs);
+        const verts = T().edges[i]?.verts;
+        if (!verts) return undefined;
+        const v0 = arr[verts[0]], v1 = arr[verts[1]];
+        if ((typeof v0 === "number" || v0 === undefined) && (typeof v1 === "number" || v1 === undefined))
+          return Math.min(typeof v0 === "number" ? v0 : 0, typeof v1 === "number" ? v1 : 0);
+        return avgElems([v0, v1]);
       }
     }
     if (src === "FACE") {
-      if (domain === "POINT") return avgElems(T().pointFaces[i]?.map((fi) => arr[fi]));
+      if (domain === "POINT") return avgMapped(T().pointFaces[i], arr);
       if (domain === "CORNER") return arr[C().face[i]];
-      if (domain === "EDGE") return avgElems(T().edges[i]?.faces.map((fi) => arr[fi]));
+      if (domain === "EDGE") return avgMapped(T().edges[i]?.faces, arr);
     }
     if (src === "CORNER") {
-      if (domain === "POINT") return avgElems(VC()[i]?.map((ci) => arr[ci]));
+      if (domain === "POINT") return avgMapped(VC()[i], arr);
       if (domain === "FACE") {
-        const c = C();
         const f = mesh.faces[i];
-        return avgElems(f?.map((_, k) => arr[c.faceStart[i] + k]));
+        if (!f || !f.length) return undefined;
+        // `?? 0`: the mapped original indexed past a short data array and fell
+        // into avgElems' numeric no-hit result (0) rather than the empty-slice
+        // undefined that avgRange's guard reports.
+        return avgRange(arr, C().faceStart[i], f.length) ?? 0;
       }
     }
     if (src === "EDGE") {
-      if (domain === "POINT") return avgElems(VE()[i]?.map((ei) => arr[ei]));
+      if (domain === "POINT") return avgMapped(VE()[i], arr);
       if (domain === "FACE") {
         const f = mesh.faces[i];
-        return avgElems(f?.map((_, k) => {
+        if (!f) return undefined;
+        // Map the face's loop edges through EK() into a reused scratch list
+        // (avgElems semantics preserved, including undefined entries for
+        // unknown edges), without a fresh array per element.
+        edgeFaceScratch.length = 0;
+        for (let k = 0; k < f.length; k++) {
           const ei = EK().get(edgeKeyOf(f[k], f[(k + 1) % f.length]));
-          return ei === undefined ? undefined : arr[ei];
-        }));
+          edgeFaceScratch.push(ei === undefined ? undefined : arr[ei]);
+        }
+        return avgElems(edgeFaceScratch);
       }
       if (domain === "CORNER") {
         // a corner maps to its loop edge (this corner's vert -> next in the face)
@@ -794,11 +866,33 @@ class Invocation {
   private evalNode(name: string): Record<string, SockVal> {
     const cached = this.memo.get(name);
     if (cached) return cached;
-    if (this.visiting.has(name)) return {}; // cycle guard
+    if (this.visiting.has(name)) { cycleGuardTrips++; return {}; } // cycle guard
     this.visiting.add(name);
     const node = this.byName.get(name);
+    // Persistent cross-run cache: sound only for nodes the static analysis
+    // marks cacheable, keyed on (scope, node, reachable-bindings fingerprint),
+    // and fully bypassed while probes/trace observe the evaluation.
+    let persistentKey: { key: string; volatile: boolean } | null = null;
+    let persistentCache: ReturnType<typeof evaluationCacheFor> | null = null;
+    if (node && !persistentCachingBlocked()) {
+      persistentCache = evaluationCacheFor(this.ev.program);
+      persistentKey = persistentCache.keyFor(this.ev.program, this.group, this.scope, node, this.bindings);
+      if (persistentKey && !persistentKey.volatile) {
+        const hit = persistentCache.get(persistentKey.key);
+        if (hit) {
+          this.visiting.delete(name);
+          this.memo.set(name, hit);
+          return hit;
+        }
+      }
+    }
+    const tripsBefore = cycleGuardTrips;
     let outs: Record<string, SockVal> = {};
     if (node) outs = this.dispatch(node);
+    if (persistentKey && persistentCache && !persistentKey.volatile
+      && cycleGuardTrips === tripsBefore && !persistentCachingBlocked()) {
+      persistentCache.set(persistentKey.key, outs);
+    }
     if (node
       && (!FIELD_PROBE.group || FIELD_PROBE.group === this.group.name)
       && FIELD_PROBE.node === node.name
