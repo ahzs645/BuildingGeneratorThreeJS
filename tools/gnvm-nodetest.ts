@@ -1579,7 +1579,14 @@ function meshSignedAreaXY(m: Mesh): number {
   check("MergeByDistance welds two quad seam verts", om.positions.length === 6 && om.faces.length === 2, `got ${om.positions.length}v/${om.faces.length}f`);
   check("MergeByDistance carries POINT attrs from first reps", approx(om.attributes.get("pid")!.data as number[], [0, 1, 2, 3, 5, 6]));
   check("MergeByDistance carries FACE attrs/materials", approx(om.attributes.get("fid")!.data as number[], [100, 200]) && approx(om.faceMaterial, [1, 2]));
-  check("MergeByDistance carries CORNER attrs and remaps edges", approx(om.attributes.get("cid")!.data as number[], [10, 11, 12, 13, 20, 21, 22, 23]) && edgeKeys.join(",") === "1_2,4_5");
+  // A Blender mesh's edge component always covers face boundaries, so the
+  // weld emits the full topology edge set: the surviving explicit wires first
+  // (in stored order, first stored direction kept), then face-derived edges.
+  check("MergeByDistance carries CORNER attrs and remaps edges",
+    approx(om.attributes.get("cid")!.data as number[], [10, 11, 12, 13, 20, 21, 22, 23])
+      && JSON.stringify(om.edges.slice(0, 2)) === JSON.stringify([[1, 2], [4, 5]])
+      && edgeKeys.join(",") === "0_1,0_3,1_2,1_4,2_3,2_5,4_5",
+    JSON.stringify({ cid: om.attributes.get("cid")?.data, edges: om.edges }));
   check("MergeByDistance preserves material slots", JSON.stringify(om.materialSlots) === JSON.stringify([null, "left", "right"]));
 }
 
