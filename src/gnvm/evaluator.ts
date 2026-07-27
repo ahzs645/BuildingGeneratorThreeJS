@@ -273,6 +273,78 @@ function coerceGroupInput(value: SockVal, socketType: string): SockVal {
   return coerced;
 }
 
+// avgElems over `indices.map((i) => arr[i])`, without materializing that
+// array. Bit-identical accumulation order (same frounds, same skip rules) —
+// this runs once per element in cross-domain interpolation, and the map
+// allocations dominated the field-evaluation GC churn.
+function avgMapped(
+  indices: ArrayLike<number> | undefined,
+  arr: (import("./core").Elem | undefined)[],
+): import("./core").Elem | undefined {
+  if (!indices || !indices.length) return undefined;
+  const first = arr[indices[0]];
+  const f = Math.fround;
+  if (Array.isArray(first)) {
+    let a0 = 0, a1 = 0, a2 = 0, n = 0;
+    for (let k = 0; k < indices.length; k++) {
+      const v = arr[indices[k]];
+      if (!Array.isArray(v)) continue;
+      a0 = f(a0 + f(v[0]));
+      a1 = f(a1 + f(v[1]));
+      a2 = f(a2 + f(v[2]));
+      n++;
+    }
+    if (!n) return [0, 0, 0];
+    const reciprocal = f(1 / n);
+    return [f(a0 * reciprocal), f(a1 * reciprocal), f(a2 * reciprocal)];
+  }
+  let s = 0, n = 0;
+  for (let k = 0; k < indices.length; k++) {
+    const v = arr[indices[k]];
+    if (typeof v !== "number") continue;
+    s = f(s + f(v));
+    n++;
+  }
+  return n ? f(s * f(1 / n)) : 0;
+}
+
+// avgElems over `arr.slice(start, start + count)` without the slice.
+function avgRange(
+  arr: (import("./core").Elem | undefined)[],
+  start: number,
+  count: number,
+): import("./core").Elem | undefined {
+  if (count <= 0 || start >= arr.length) return undefined; // matches avgElems on an empty slice
+  const first = arr[start];
+  const f = Math.fround;
+  if (Array.isArray(first)) {
+    let a0 = 0, a1 = 0, a2 = 0, n = 0;
+    for (let k = 0; k < count; k++) {
+      const v = arr[start + k];
+      if (!Array.isArray(v)) continue;
+      a0 = f(a0 + f(v[0]));
+      a1 = f(a1 + f(v[1]));
+      a2 = f(a2 + f(v[2]));
+      n++;
+    }
+    if (!n) return [0, 0, 0];
+    const reciprocal = f(1 / n);
+    return [f(a0 * reciprocal), f(a1 * reciprocal), f(a2 * reciprocal)];
+  }
+  let s = 0, n = 0;
+  for (let k = 0; k < count; k++) {
+    const v = arr[start + k];
+    if (typeof v !== "number") continue;
+    s = f(s + f(v));
+    n++;
+  }
+  return n ? f(s * f(1 / n)) : 0;
+}
+
+// Reused value list for the EDGE->FACE interpolation loop below (single
+// threaded; consumed synchronously by avgElems before any other use).
+const edgeFaceScratch: (import("./core").Elem | undefined)[] = [];
+
 // Average a set of field elements (numbers or vec3), for domain interpolation.
 function avgElems(vals: (import("./core").Elem | undefined)[] | undefined): import("./core").Elem | undefined {
   if (!vals || !vals.length) return undefined;
@@ -405,45 +477,55 @@ export function makeFieldCtx(geo: Geometry, domain: Domain): FieldCtx {
         let start = 0;
         for (let spline = 0; spline < i; spline++) start += geo.curves[spline]?.points.length ?? 0;
         const count = geo.curves[i]?.points.length ?? 0;
-        return avgElems(arr.slice(start, start + count));
+        return avgRange(arr, start, count);
       }
       return arr[i];
     }
     if (src === "POINT") {
-      if (domain === "FACE") return avgElems(mesh.faces[i]?.map((vi) => arr[vi]));
+      if (domain === "FACE") return avgMapped(mesh.faces[i], arr);
       if (domain === "CORNER") return arr[C().vert[i]];
       if (domain === "EDGE") {
         // Blender's boolean point->edge rule is AND (both endpoints); min() gives
         // that exactly for 0/1 masks. Averaging selected the lathe's vertical
         // edges (one hot endpoint) and doubled the Spin zone every iteration.
-        const vs = T().edges[i]?.verts.map((vi) => arr[vi]);
-        if (!vs) return undefined;
-        const nums = vs.map((v) => (typeof v === "number" ? v : v === undefined ? 0 : 0));
-        if (vs.every((v) => typeof v === "number" || v === undefined)) return Math.min(nums[0] ?? 0, nums[1] ?? 0);
-        return avgElems(vs);
+        const verts = T().edges[i]?.verts;
+        if (!verts) return undefined;
+        const v0 = arr[verts[0]], v1 = arr[verts[1]];
+        if ((typeof v0 === "number" || v0 === undefined) && (typeof v1 === "number" || v1 === undefined))
+          return Math.min(typeof v0 === "number" ? v0 : 0, typeof v1 === "number" ? v1 : 0);
+        return avgElems([v0, v1]);
       }
     }
     if (src === "FACE") {
-      if (domain === "POINT") return avgElems(T().pointFaces[i]?.map((fi) => arr[fi]));
+      if (domain === "POINT") return avgMapped(T().pointFaces[i], arr);
       if (domain === "CORNER") return arr[C().face[i]];
-      if (domain === "EDGE") return avgElems(T().edges[i]?.faces.map((fi) => arr[fi]));
+      if (domain === "EDGE") return avgMapped(T().edges[i]?.faces, arr);
     }
     if (src === "CORNER") {
-      if (domain === "POINT") return avgElems(VC()[i]?.map((ci) => arr[ci]));
+      if (domain === "POINT") return avgMapped(VC()[i], arr);
       if (domain === "FACE") {
-        const c = C();
         const f = mesh.faces[i];
-        return avgElems(f?.map((_, k) => arr[c.faceStart[i] + k]));
+        if (!f || !f.length) return undefined;
+        // `?? 0`: the mapped original indexed past a short data array and fell
+        // into avgElems' numeric no-hit result (0) rather than the empty-slice
+        // undefined that avgRange's guard reports.
+        return avgRange(arr, C().faceStart[i], f.length) ?? 0;
       }
     }
     if (src === "EDGE") {
-      if (domain === "POINT") return avgElems(VE()[i]?.map((ei) => arr[ei]));
+      if (domain === "POINT") return avgMapped(VE()[i], arr);
       if (domain === "FACE") {
         const f = mesh.faces[i];
-        return avgElems(f?.map((_, k) => {
+        if (!f) return undefined;
+        // Map the face's loop edges through EK() into a reused scratch list
+        // (avgElems semantics preserved, including undefined entries for
+        // unknown edges), without a fresh array per element.
+        edgeFaceScratch.length = 0;
+        for (let k = 0; k < f.length; k++) {
           const ei = EK().get(edgeKeyOf(f[k], f[(k + 1) % f.length]));
-          return ei === undefined ? undefined : arr[ei];
-        }));
+          edgeFaceScratch.push(ei === undefined ? undefined : arr[ei]);
+        }
+        return avgElems(edgeFaceScratch);
       }
       if (domain === "CORNER") {
         // a corner maps to its loop edge (this corner's vert -> next in the face)
