@@ -4,13 +4,20 @@ import type { Dump } from "../gnvm";
 import {
   aggregateCapabilityReportForBlendStudioTarget,
   autoEvaluationPolicyForBlendStudioTarget,
+  BLEND_STUDIO_EVALUATION_HISTORY_MAX_ENTRIES,
+  blendStudioEvaluationHistoryKey,
+  blendStudioEvaluationRunsForKey,
   compatibilityForBlendStudioTarget,
   connectedGeometryInputsForBlendStudioTarget,
   controlsForBlendStudioTarget,
   datablockControlsForBlendStudioTarget,
   discoverBlendStudioTargets,
+  recordBlendStudioEvaluationRun,
   seedableObjectNames,
   summarizeBlendStudioRuntimeDetails,
+  touchBlendStudioEvaluationHistory,
+  type BlendStudioEvaluationRunOutcome,
+  type BlendStudioEvaluationRunRecord,
 } from "./model";
 
 const socket = (name: string, identifier: string, inOut: "INPUT" | "OUTPUT", socketType: string, extra = {}) => ({
@@ -319,7 +326,7 @@ test("requires explicit preview for Volume Cube and Volume to Mesh", () => {
   }
 });
 
-test("requires explicit preview for very large exact closures", () => {
+test("requires explicit preview for very large unmeasured closures", () => {
   const dump = fixture();
   const group = dump.node_groups.Assigned;
   group.nodes.push(...Array.from({ length: 501 }, (_, index) => ({
@@ -332,8 +339,179 @@ test("requires explicit preview for very large exact closures", () => {
   const [target] = discoverBlendStudioTargets(dump);
   assert.deepEqual(autoEvaluationPolicyForBlendStudioTarget(dump, target), {
     enabled: false,
-    reason: "This 503-node closure requires explicit preview to stay inside the live-edit budget",
+    reason: "This 503-node closure requires explicit preview until a measured run proves it fits the live-edit budget",
   });
+});
+
+const measuredRun = (
+  seconds: number,
+  outcome: BlendStudioEvaluationRunOutcome = "ready",
+  at = 0,
+): BlendStudioEvaluationRunRecord => ({ seconds, outcome, at });
+
+function largeFixture(): Dump {
+  const dump = fixture();
+  dump.node_groups.Assigned.nodes.push(...Array.from({ length: 501 }, (_, index) => ({
+    name: `Math ${index}`,
+    type: "ShaderNodeMath",
+    inputs: [],
+    outputs: [],
+    props: { operation: "ADD" },
+  })));
+  return dump;
+}
+
+test("static gates still win over a measured-fast history", () => {
+  const dump = fixture();
+  const target = discoverBlendStudioTargets(dump)[0];
+  dump.node_groups.Assigned.nodes.push({
+    name: "Future Node",
+    type: "GeometryNodeFutureUnsupported",
+    label: null,
+    inputs: [],
+    outputs: [],
+  });
+  assert.deepEqual(
+    autoEvaluationPolicyForBlendStudioTarget(dump, target, [measuredRun(.4)]),
+    {
+      enabled: false,
+      reason: "1 unsupported node type requires explicit preview",
+    },
+  );
+});
+
+test("an empty measured history keeps the small-closure live default", () => {
+  const dump = fixture();
+  const target = discoverBlendStudioTargets(dump)[0];
+  assert.deepEqual(autoEvaluationPolicyForBlendStudioTarget(dump, target, []), {
+    enabled: true,
+    reason: "Live evaluation enabled for this portable closure",
+  });
+});
+
+test("a measured fast run enables live evaluation for a large closure", () => {
+  const dump = largeFixture();
+  const [target] = discoverBlendStudioTargets(dump);
+  assert.deepEqual(
+    autoEvaluationPolicyForBlendStudioTarget(dump, target, [measuredRun(1.4)]),
+    {
+      enabled: true,
+      reason: "Live evaluation enabled · last run took 1.4 s",
+    },
+  );
+});
+
+test("a measured slow run disables live evaluation with the duration in the reason", () => {
+  const dump = fixture();
+  const target = discoverBlendStudioTargets(dump)[0];
+  assert.deepEqual(
+    autoEvaluationPolicyForBlendStudioTarget(dump, target, [measuredRun(86.3)]),
+    {
+      enabled: false,
+      reason: "Last evaluation took 86.3 s, above the 4 s live-edit budget",
+    },
+  );
+});
+
+test("the 2-4 s hysteresis band keeps the previous decision without flapping", () => {
+  const small = fixture();
+  const smallTarget = discoverBlendStudioTargets(small)[0];
+  assert.deepEqual(
+    autoEvaluationPolicyForBlendStudioTarget(small, smallTarget, [
+      measuredRun(5),
+      measuredRun(3),
+    ]),
+    {
+      enabled: false,
+      reason: "Last evaluation took 3.0 s; a run at or under 2 s re-enables live evaluation",
+    },
+  );
+
+  const large = largeFixture();
+  const [largeTarget] = discoverBlendStudioTargets(large);
+  assert.deepEqual(
+    autoEvaluationPolicyForBlendStudioTarget(large, largeTarget, [
+      measuredRun(1.2),
+      measuredRun(3),
+    ]),
+    {
+      enabled: true,
+      reason: "Live evaluation enabled · last run took 3.0 s",
+    },
+  );
+});
+
+test("a timed-out or failed run counts as slow", () => {
+  const dump = fixture();
+  const target = discoverBlendStudioTargets(dump)[0];
+  assert.deepEqual(
+    autoEvaluationPolicyForBlendStudioTarget(dump, target, [measuredRun(180, "timeout")]),
+    {
+      enabled: false,
+      reason: "Last evaluation was stopped at the 180 second safety limit",
+    },
+  );
+  assert.deepEqual(
+    autoEvaluationPolicyForBlendStudioTarget(dump, target, [measuredRun(180, "error")]),
+    {
+      enabled: false,
+      reason: "Last evaluation failed, which counts as over the 4 s live-edit budget",
+    },
+  );
+  // A later fast run re-enables live evaluation after a failure.
+  assert.equal(
+    autoEvaluationPolicyForBlendStudioTarget(dump, target, [
+      measuredRun(180, "timeout"),
+      measuredRun(1.1),
+    ]).enabled,
+    true,
+  );
+});
+
+test("evaluation history keeps the newest runs and evicts least recently used entries", () => {
+  const key = blendStudioEvaluationHistoryKey("sha", "object:Generator:0:Assigned");
+  let store = recordBlendStudioEvaluationRun(null, key, measuredRun(1, "ready", 1));
+  store = recordBlendStudioEvaluationRun(store, key, measuredRun(2, "ready", 2));
+  store = recordBlendStudioEvaluationRun(store, key, measuredRun(3, "ready", 3));
+  store = recordBlendStudioEvaluationRun(store, key, measuredRun(4, "ready", 4));
+  assert.deepEqual(
+    blendStudioEvaluationRunsForKey(store, key).map((run) => run.seconds),
+    [2, 3, 4],
+  );
+
+  for (let index = 0; index < BLEND_STUDIO_EVALUATION_HISTORY_MAX_ENTRIES; index += 1) {
+    store = recordBlendStudioEvaluationRun(store, `other-${index}`, measuredRun(1, "ready", 100 + index));
+  }
+  assert.equal(
+    Object.keys(store.entries).length,
+    BLEND_STUDIO_EVALUATION_HISTORY_MAX_ENTRIES,
+  );
+  assert.deepEqual(blendStudioEvaluationRunsForKey(store, key), []);
+
+  const touched = touchBlendStudioEvaluationHistory(store, "other-0", 9_999);
+  assert.equal(touched?.entries["other-0"].usedAt, 9_999);
+  assert.equal(touchBlendStudioEvaluationHistory(store, "absent", 1), null);
+});
+
+test("evaluation history reads sanitize malformed persisted payloads", () => {
+  assert.deepEqual(blendStudioEvaluationRunsForKey(null, "key"), []);
+  assert.deepEqual(blendStudioEvaluationRunsForKey("not a store", "key"), []);
+  assert.deepEqual(
+    blendStudioEvaluationRunsForKey({
+      entries: {
+        key: {
+          runs: [
+            { seconds: "fast", outcome: "ready", at: 1 },
+            { seconds: 2.5, outcome: "unknown", at: 1 },
+            { seconds: 2.5, outcome: "ready", at: "later" },
+            null,
+          ],
+          usedAt: 5,
+        },
+      },
+    }, "key"),
+    [{ seconds: 2.5, outcome: "ready", at: 0 }],
+  );
 });
 
 test("aggregates unsupported nodes from earlier executed Geometry Nodes modifiers", () => {

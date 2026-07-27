@@ -491,15 +491,162 @@ export function compatibilityForBlendStudioTarget(
   };
 }
 
+/** A measured run at or under this duration turns live evaluation on. */
+export const BLEND_STUDIO_LIVE_EVALUATION_ENABLE_SECONDS = 2;
+/** A measured run over this duration turns live evaluation off. */
+export const BLEND_STUDIO_LIVE_EVALUATION_DISABLE_SECONDS = 4;
+/** Unmeasured closures above this node count start in explicit-preview mode. */
+const UNMEASURED_LIVE_NODE_BUDGET = 500;
+
+export const BLEND_STUDIO_EVALUATION_HISTORY_MAX_ENTRIES = 100;
+export const BLEND_STUDIO_EVALUATION_HISTORY_MAX_RUNS = 3;
+
+export type BlendStudioEvaluationRunOutcome = "ready" | "error" | "timeout";
+
+export type BlendStudioEvaluationRunRecord = {
+  /** Wall-clock duration; timeouts and errors record the safety ceiling, not nothing. */
+  seconds: number;
+  outcome: BlendStudioEvaluationRunOutcome;
+  /** Epoch milliseconds when the run completed; drives LRU eviction. */
+  at: number;
+};
+
+export type BlendStudioEvaluationHistoryEntry = {
+  runs: BlendStudioEvaluationRunRecord[];
+  usedAt: number;
+};
+
+export type BlendStudioEvaluationHistoryStore = {
+  entries: Record<string, BlendStudioEvaluationHistoryEntry>;
+};
+
+/**
+ * Stable history key for one (source file, execution target) pair. The
+ * fingerprint survives re-imports of the same file, unlike the page-level
+ * sourceKey which embeds an import serial.
+ */
+export function blendStudioEvaluationHistoryKey(
+  sourceFingerprint: string,
+  targetIdentifier: string,
+): string {
+  return `${sourceFingerprint}\0${targetIdentifier}`;
+}
+
+function sanitizedEvaluationRun(value: unknown): BlendStudioEvaluationRunRecord | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Partial<BlendStudioEvaluationRunRecord>;
+  const seconds = Number(record.seconds);
+  const at = Number(record.at);
+  return Number.isFinite(seconds)
+    && seconds >= 0
+    && (record.outcome === "ready" || record.outcome === "error" || record.outcome === "timeout")
+    ? { seconds, outcome: record.outcome, at: Number.isFinite(at) ? at : 0 }
+    : null;
+}
+
+/**
+ * Parse untrusted persisted history (localStorage JSON) into a well-formed
+ * store, dropping malformed keys instead of failing the whole record.
+ */
+function sanitizedHistoryEntries(store: unknown): Record<string, BlendStudioEvaluationHistoryEntry> {
+  const entries = (store as { entries?: unknown } | null | undefined)?.entries;
+  if (!entries || typeof entries !== "object") return {};
+  const result: Record<string, BlendStudioEvaluationHistoryEntry> = {};
+  for (const [key, value] of Object.entries(entries)) {
+    const runs = (value as { runs?: unknown } | null)?.runs;
+    if (!Array.isArray(runs)) continue;
+    const sanitized = runs
+      .map(sanitizedEvaluationRun)
+      .filter((run): run is BlendStudioEvaluationRunRecord => run !== null);
+    if (!sanitized.length) continue;
+    const usedAt = Number((value as { usedAt?: unknown }).usedAt);
+    result[key] = {
+      runs: sanitized.slice(-BLEND_STUDIO_EVALUATION_HISTORY_MAX_RUNS),
+      usedAt: Number.isFinite(usedAt) ? usedAt : 0,
+    };
+  }
+  return result;
+}
+
+export function blendStudioEvaluationRunsForKey(
+  store: unknown,
+  key: string,
+): BlendStudioEvaluationRunRecord[] {
+  return sanitizedHistoryEntries(store)[key]?.runs ?? [];
+}
+
+/**
+ * Append a completed run, keeping the newest runs per key and evicting the
+ * least recently used keys beyond the entry cap.
+ */
+export function recordBlendStudioEvaluationRun(
+  store: unknown,
+  key: string,
+  run: BlendStudioEvaluationRunRecord,
+): BlendStudioEvaluationHistoryStore {
+  const entries = sanitizedHistoryEntries(store);
+  entries[key] = {
+    runs: [...entries[key]?.runs ?? [], run].slice(-BLEND_STUDIO_EVALUATION_HISTORY_MAX_RUNS),
+    usedAt: run.at,
+  };
+  const keys = Object.keys(entries);
+  if (keys.length <= BLEND_STUDIO_EVALUATION_HISTORY_MAX_ENTRIES) return { entries };
+  const keep = keys
+    .sort((a, b) => entries[b].usedAt - entries[a].usedAt || a.localeCompare(b))
+    .slice(0, BLEND_STUDIO_EVALUATION_HISTORY_MAX_ENTRIES);
+  return { entries: Object.fromEntries(keep.map((kept) => [kept, entries[kept]])) };
+}
+
+/**
+ * Mark a key as used (a known tool was re-imported) so it stays inside the
+ * LRU window. Returns null when the key has no recorded history.
+ */
+export function touchBlendStudioEvaluationHistory(
+  store: unknown,
+  key: string,
+  at: number,
+): BlendStudioEvaluationHistoryStore | null {
+  const entries = sanitizedHistoryEntries(store);
+  if (!entries[key]) return null;
+  entries[key] = { ...entries[key], usedAt: at };
+  return { entries };
+}
+
+/**
+ * Fold measured runs (oldest first) into a live/explicit decision. Fast runs
+ * enable, slow or failed runs disable, and the 2–4 s band keeps the previous
+ * decision so the gate cannot flap while a tool hovers near the budget.
+ */
+function measuredLiveDecision(
+  measuredRuns: readonly BlendStudioEvaluationRunRecord[],
+  unmeasuredDefault: boolean,
+): boolean {
+  let live = unmeasuredDefault;
+  for (const run of measuredRuns) {
+    if (run.outcome !== "ready" || run.seconds > BLEND_STUDIO_LIVE_EVALUATION_DISABLE_SECONDS) {
+      live = false;
+    } else if (run.seconds <= BLEND_STUDIO_LIVE_EVALUATION_ENABLE_SECONDS) {
+      live = true;
+    }
+  }
+  return live;
+}
+
 /**
  * Live evaluation is reserved for closures the static capability pass can run
  * without silently skipping semantics. Unsupported targets stay available for
  * an explicit, capability-labelled preview, but cannot replace a last-known-
  * good viewport result merely because a graph control changed.
+ *
+ * Beyond the static gates the budget is empirical: once any evaluation of the
+ * target has completed, measured wall-clock durations (injected as
+ * `measuredRuns`, oldest first) decide live vs explicit. Node count only
+ * seeds the default while no run has been observed.
  */
 export function autoEvaluationPolicyForBlendStudioTarget(
   dump: Dump,
   target: BlendStudioTarget,
+  measuredRuns: readonly BlendStudioEvaluationRunRecord[] = [],
 ): BlendStudioAutoEvaluationPolicy {
   const report = aggregateCapabilityReportForBlendStudioTarget(dump, target);
   if (report.missingGroups.length) {
@@ -534,10 +681,41 @@ export function autoEvaluationPolicyForBlendStudioTarget(
       reason: "Volume-grid approximations require explicit preview because evaluation cost depends on voxel density",
     };
   }
-  if (reachableNodeCount > 500) {
+  if (measuredRuns.length) {
+    const live = measuredLiveDecision(
+      measuredRuns,
+      reachableNodeCount <= UNMEASURED_LIVE_NODE_BUDGET,
+    );
+    const last = measuredRuns[measuredRuns.length - 1];
+    if (live) {
+      return {
+        enabled: true,
+        reason: `Live evaluation enabled · last run took ${last.seconds.toFixed(1)} s`,
+      };
+    }
+    if (last.outcome === "timeout") {
+      return {
+        enabled: false,
+        reason: `Last evaluation was stopped at the ${last.seconds.toFixed(0)} second safety limit`,
+      };
+    }
+    if (last.outcome === "error") {
+      return {
+        enabled: false,
+        reason: `Last evaluation failed, which counts as over the ${BLEND_STUDIO_LIVE_EVALUATION_DISABLE_SECONDS} s live-edit budget`,
+      };
+    }
     return {
       enabled: false,
-      reason: `This ${reachableNodeCount.toLocaleString()}-node closure requires explicit preview to stay inside the live-edit budget`,
+      reason: last.seconds > BLEND_STUDIO_LIVE_EVALUATION_DISABLE_SECONDS
+        ? `Last evaluation took ${last.seconds.toFixed(1)} s, above the ${BLEND_STUDIO_LIVE_EVALUATION_DISABLE_SECONDS} s live-edit budget`
+        : `Last evaluation took ${last.seconds.toFixed(1)} s; a run at or under ${BLEND_STUDIO_LIVE_EVALUATION_ENABLE_SECONDS} s re-enables live evaluation`,
+    };
+  }
+  if (reachableNodeCount > UNMEASURED_LIVE_NODE_BUDGET) {
+    return {
+      enabled: false,
+      reason: `This ${reachableNodeCount.toLocaleString()}-node closure requires explicit preview until a measured run proves it fits the live-edit budget`,
     };
   }
   if (report.approximatedNodeTypes.length) {

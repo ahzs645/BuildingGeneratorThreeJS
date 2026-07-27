@@ -3,12 +3,18 @@ import { isStaticDeploy, publicUrl } from "../../base-url";
 import { animationFrameRange, type Dump } from "../../gnvm";
 import {
   autoEvaluationPolicyForBlendStudioTarget,
+  blendStudioEvaluationHistoryKey,
+  blendStudioEvaluationRunsForKey,
   compatibilityForBlendStudioTarget,
   connectedGeometryInputsForBlendStudioTarget,
   controlsForBlendStudioTarget,
   datablockControlsForBlendStudioTarget,
   discoverBlendStudioTargets,
+  recordBlendStudioEvaluationRun,
   seedableObjectNames,
+  touchBlendStudioEvaluationHistory,
+  type BlendStudioEvaluationHistoryStore,
+  type BlendStudioEvaluationRunRecord,
   type BlendStudioSeed,
 } from "../../blend-studio/model";
 import {
@@ -35,10 +41,13 @@ import {
   measurementDistanceRange,
   type BlendStudioMeasurementUnit,
 } from "../../blend-studio/measurement";
-import type {
-  BlendStudioMeasurementMode,
-  BlendStudioMeasurementSubjectSnapshot,
-  BlendStudioPointMeasurementSnapshot,
+import {
+  BLEND_STUDIO_EVALUATION_TIMEOUT_MS,
+  type BlendStudioEvaluation,
+  type BlendStudioMeasurementMode,
+  type BlendStudioMeasurementSubjectSnapshot,
+  type BlendStudioPointMeasurementSnapshot,
+  type BlendStudioRuntimeSnapshot,
 } from "../../blend-studio/runtime";
 import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import { useBlendStudioRuntime } from "../blend-studio/useBlendStudioRuntime";
@@ -75,6 +84,43 @@ const editorConfig = {
 } as const;
 
 const UI_STORAGE_KEY = "procedural-studio.blendbridge.ui";
+const EVALUATION_HISTORY_STORAGE_KEY = "procedural-studio.blendbridge.evaluation-history";
+
+function loadEvaluationHistoryStore(): unknown {
+  try {
+    return JSON.parse(localStorage.getItem(EVALUATION_HISTORY_STORAGE_KEY) ?? "null");
+  } catch {
+    return null;
+  }
+}
+
+function saveEvaluationHistoryStore(store: BlendStudioEvaluationHistoryStore): void {
+  try {
+    localStorage.setItem(EVALUATION_HISTORY_STORAGE_KEY, JSON.stringify(store));
+  } catch {
+    // Evaluation history persistence is optional.
+  }
+}
+
+/** Read a target's measured runs and refresh its LRU last-use stamp. */
+function storedEvaluationRuns(key: string): BlendStudioEvaluationRunRecord[] {
+  const store = loadEvaluationHistoryStore();
+  const runs = blendStudioEvaluationRunsForKey(store, key);
+  if (runs.length) {
+    const touched = touchBlendStudioEvaluationHistory(store, key, Date.now());
+    if (touched) saveEvaluationHistoryStore(touched);
+  }
+  return runs;
+}
+
+function persistEvaluationRun(
+  key: string,
+  run: BlendStudioEvaluationRunRecord,
+): BlendStudioEvaluationRunRecord[] {
+  const next = recordBlendStudioEvaluationRun(loadEvaluationHistoryStore(), key, run);
+  saveEvaluationHistoryStore(next);
+  return blendStudioEvaluationRunsForKey(next, key);
+}
 
 function defaultGraphRect(): StudioPanelRect {
   const width = Math.min(1120, Math.max(640, window.innerWidth - 650));
@@ -145,6 +191,11 @@ export default function BlendBridgePage(): React.JSX.Element {
   const [sourceName, setSourceName] = useState("");
   const [sourceBytes, setSourceBytes] = useState(0);
   const [sourceKey, setSourceKey] = useState("");
+  const [sourceFingerprint, setSourceFingerprint] = useState("");
+  const [evaluationRuns, setEvaluationRuns] =
+    useState<readonly BlendStudioEvaluationRunRecord[]>([]);
+  const recordedSnapshot = useRef<BlendStudioRuntimeSnapshot | null>(null);
+  const lastQueuedEvaluation = useRef<BlendStudioEvaluation | null>(null);
   const [targetId, setTargetId] = useState("");
   const [overrides, setOverrides] = useState<Record<string, unknown>>({});
   const [animationFrame, setAnimationFrame] = useState(0);
@@ -236,9 +287,14 @@ export default function BlendBridgePage(): React.JSX.Element {
       "GeometryNodeVolumeCube",
       "GeometryNodeVolumeToMesh",
     ].includes(entry.type)));
+  const evaluationHistoryKey = sourceFingerprint && target
+    ? blendStudioEvaluationHistoryKey(sourceFingerprint, target.id)
+    : "";
   const autoEvaluation = useMemo(
-    () => workingDump && target ? autoEvaluationPolicyForBlendStudioTarget(workingDump, target) : null,
-    [target, workingDump],
+    () => workingDump && target
+      ? autoEvaluationPolicyForBlendStudioTarget(workingDump, target, evaluationRuns)
+      : null,
+    [evaluationRuns, target, workingDump],
   );
   const presetContract = useMemo(
     () => workingDump && target ? presetContractForBlendStudioTarget(workingDump, target) : null,
@@ -488,9 +544,43 @@ export default function BlendBridgePage(): React.JSX.Element {
     runtime.clearMeasurementSubject();
   }, [runtime.clearMeasurementSubject, sourceKey, target?.id]);
 
+  // A re-import of a known tool (same fingerprint) starts with its measured
+  // evaluation history instead of falling back to the node-count default.
   useEffect(() => {
-    if (evaluation && autoEvaluation?.enabled) runtime.queue(evaluation);
-    else runtime.cancel();
+    setEvaluationRuns(evaluationHistoryKey ? storedEvaluationRuns(evaluationHistoryKey) : []);
+  }, [evaluationHistoryKey]);
+
+  // Record every completed evaluation of the current target so the live-edit
+  // gate stays empirical. Timeouts and errors count as slow: they record the
+  // 180 s safety ceiling rather than nothing.
+  useEffect(() => {
+    const snapshot = runtime.snapshot;
+    if (recordedSnapshot.current === snapshot) return;
+    recordedSnapshot.current = snapshot;
+    if (!evaluationHistoryKey) return;
+    if (snapshot.state === "ready" && typeof snapshot.runtimeSeconds === "number") {
+      setEvaluationRuns(persistEvaluationRun(evaluationHistoryKey, {
+        seconds: snapshot.runtimeSeconds,
+        outcome: "ready",
+        at: Date.now(),
+      }));
+    } else if (snapshot.state === "error") {
+      setEvaluationRuns(persistEvaluationRun(evaluationHistoryKey, {
+        seconds: BLEND_STUDIO_EVALUATION_TIMEOUT_MS / 1_000,
+        outcome: snapshot.message.includes("safety limit") ? "timeout" : "error",
+        at: Date.now(),
+      }));
+    }
+  }, [evaluationHistoryKey, runtime.snapshot]);
+
+  useEffect(() => {
+    if (evaluation && autoEvaluation?.enabled) {
+      // When live evaluation unlocks because a measured run completed, the
+      // current request has already been evaluated; only queue actual edits.
+      if (lastQueuedEvaluation.current === evaluation) return;
+      lastQueuedEvaluation.current = evaluation;
+      runtime.queue(evaluation);
+    } else runtime.cancel();
   }, [autoEvaluation?.enabled, evaluation, runtime.cancel, runtime.queue]);
 
   useEffect(() => {
@@ -521,6 +611,7 @@ export default function BlendBridgePage(): React.JSX.Element {
     setSourceBytes(dump.import_meta?.bytes ?? bytes);
     const fingerprint = dump.extraction_metadata?.source?.fingerprint_sha256
       ?? `${filename}:${bytes}`;
+    setSourceFingerprint(fingerprint);
     setSourceKey(`${fingerprint}:${++importSerial.current}`);
     setTargetId(nextTargets[0]?.id ?? "");
     setImportMessage(nextTargets.length
@@ -716,6 +807,7 @@ export default function BlendBridgePage(): React.JSX.Element {
           disabled={!workingDump || !target || runtime.snapshot.state === "evaluating"}
           onClick={() => {
             if (!evaluation) return;
+            lastQueuedEvaluation.current = evaluation;
             void runtime.evaluate(evaluation).catch(() => {});
           }}
         >Apply to preview</button>

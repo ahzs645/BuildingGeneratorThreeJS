@@ -710,6 +710,16 @@ export function buildTopology(mesh: Mesh): Topology {
   return topologyOf(mesh);
 }
 
+// Scratch tables for computeTopology's undirected-edge dedup, reused across
+// calls (module is single-threaded and the dedup loop is non-reentrant). The
+// slot table is re-cleared per call; key tables hold stale values that are
+// only read after a slot match. Profiling the bubble-putty dump showed the
+// per-corner Map<get/set> here as the single largest self-time consumer
+// (~16 s of a 99 s run), most of it hashing + entry allocation churn.
+let edgeDedupKeyLo = new Float64Array(0);
+let edgeDedupKeyHi = new Float64Array(0);
+let edgeDedupSlot = new Int32Array(0);
+
 function computeTopology(mesh: Mesh): Topology {
   // Snapshot the rows and counts: the returned Topology can outlive this
   // mesh's array identities (clones carry it, and meshes can be appended to
@@ -718,23 +728,43 @@ function computeTopology(mesh: Mesh): Topology {
   // mesh that shares them.
   const faces = mesh.faces.slice();
   const positionCount = mesh.positions.length;
-  type EdgeKey = number | string;
-  const edgeKeyBase = 2 ** 21;
-  const ekey = (a: number, b: number): EdgeKey => {
-    const lo = Math.min(a, b), hi = Math.max(a, b);
-    // A numeric pair key is exact while both indices fit in 21 bits and avoids
-    // allocating a string for every face corner on normal browser-sized meshes.
-    return hi < edgeKeyBase ? lo * edgeKeyBase + hi : `${lo}_${hi}`;
-  };
-  const emap = new Map<EdgeKey, { verts: [number, number]; faces: number[] }>();
+  // Open-addressing dedup keyed on the (lo, hi) endpoint pair. Exact for any
+  // numeric index (doubles compare exactly), so it fully replaces the old
+  // 21-bit-packed / string-fallback Map keys. Insertion order — explicit
+  // wires first, then face-derived first-seen — and the first stored edge's
+  // endpoint order are preserved unchanged (Blender keeps the first stored
+  // direction; sorting endpoints shifts Geometry Proximity EDGES by ULPs).
+  let totalCorners = 0;
+  for (const f of faces) totalCorners += f.length;
+  const upper = mesh.edges.length + totalCorners + 1;
+  let cap = 16;
+  while (cap < upper * 2) cap <<= 1;
+  if (edgeDedupSlot.length < cap) {
+    edgeDedupKeyLo = new Float64Array(cap);
+    edgeDedupKeyHi = new Float64Array(cap);
+    edgeDedupSlot = new Int32Array(cap);
+  }
+  const keyLo = edgeDedupKeyLo, keyHi = edgeDedupKeyHi, slot = edgeDedupSlot;
+  const mask = cap - 1;
+  slot.fill(-1, 0, cap);
+  const edges: { verts: [number, number]; faces: number[] }[] = [];
   const addFaceEdge = (a: number, b: number, fi: number) => {
-    const k = ekey(a, b);
-    let e = emap.get(k);
-    // The key is undirected, but Blender preserves the first stored edge's
-    // endpoint order. Sorting the endpoints changes float32 projection by a
-    // few ULPs in Geometry Proximity (EDGES), even though the segment is
-    // geometrically identical. Explicit mesh.edges are seeded first below.
-    if (!e) { e = { verts: [a, b], faces: [] }; emap.set(k, e); }
+    const lo = a < b ? a : b, hi = a < b ? b : a;
+    let h = (Math.imul(lo, 0x9e3779b1) ^ Math.imul(hi, 0x85ebca6b)) & mask;
+    let e: { verts: [number, number]; faces: number[] };
+    for (;;) {
+      const s = slot[h];
+      if (s === -1) {
+        slot[h] = edges.length;
+        keyLo[h] = lo;
+        keyHi[h] = hi;
+        e = { verts: [a, b], faces: [] };
+        edges.push(e);
+        break;
+      }
+      if (keyLo[h] === lo && keyHi[h] === hi) { e = edges[s]; break; }
+      h = (h + 1) & mask;
+    }
     if (fi >= 0) e.faces.push(fi);
   };
   // Blender's Edge Index follows the mesh's stored edge order. Generated
@@ -745,7 +775,6 @@ function computeTopology(mesh: Mesh): Topology {
     const f = faces[fi];
     for (let i = 0; i < f.length; i++) addFaceEdge(f[i], f[(i + 1) % f.length], fi);
   }
-  const edges = [...emap.values()];
 
   // Most consumers only need canonical edges. Build adjacency and connected
   // components lazily so an EDGE-domain field does not also allocate several
