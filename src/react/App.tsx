@@ -3,7 +3,6 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-route
 import { appHref } from "../base-url";
 import "./shell.css";
 
-const HomePage = lazy(() => import("./pages/HomePage"));
 const BlendBridgePage = lazy(() => import("./pages/BlendBridgePage"));
 const BuildingPage = lazy(() => import("./pages/BuildingPage"));
 const DojoViewerPage = lazy(() => import("./pages/DojoViewerPage"));
@@ -29,13 +28,16 @@ function NotFound(): React.JSX.Element {
   return <main className="not-found"><div><h1>That studio route does not exist.</h1><p><a href={appHref()}>Return to Procedural Studio</a></p></div></main>;
 }
 
-export default function App(): React.JSX.Element {
+function StudioRoutes(): React.JSX.Element {
+  const location = useLocation();
   return (
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <Suspense fallback={<div className="route-loading">Loading procedural tool…</div>}>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/blendbridge" element={<BlendBridgePage />} />
+    // Keyed by path + search: tool pages must remount (fresh canvas, fresh
+    // runtime) on ANY router navigation, including query-only preset links —
+    // dispose() force-loses the old canvas's GL context, so a runtime can
+    // never be rebuilt on a canvas that React kept alive.
+    <Routes location={location} key={`${location.pathname}?${location.search}`}>
+          <Route path="/" element={<BlendBridgePage />} />
+          <Route path="/blendbridge" element={<LegacyRedirect to="/" />} />
           <Route path="/building" element={<BuildingPage />} />
           <Route path="/dojo" element={<DojoViewerPage />} />
           <Route path="/gallery" element={<DojoGalleryPage />} />
@@ -52,7 +54,7 @@ export default function App(): React.JSX.Element {
           <Route path="/geometry-painter" element={<GeometryPainterPage />} />
           <Route path="/vegetation-generator" element={<VegetationGeneratorPage />} />
 
-          <Route path="/blend-import.html" element={<LegacyRedirect to="/blendbridge" />} />
+          <Route path="/blend-import.html" element={<LegacyRedirect to="/" />} />
           <Route path="/building.html" element={<LegacyRedirect to="/building" />} />
           <Route path="/dojo-viewer.html" element={<LegacyRedirect to="/dojo" />} />
           <Route path="/dojo-gallery.html" element={<LegacyRedirect to="/gallery" />} />
@@ -63,7 +65,15 @@ export default function App(): React.JSX.Element {
           <Route path="/geometry-painter.html" element={<LegacyRedirect to="/geometry-painter" />} />
           <Route path="/vegetation-generator.html" element={<LegacyRedirect to="/vegetation-generator" />} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
+    </Routes>
+  );
+}
+
+export default function App(): React.JSX.Element {
+  return (
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <Suspense fallback={<div className="route-loading">Loading procedural tool…</div>}>
+        <StudioRoutes />
       </Suspense>
     </BrowserRouter>
   );

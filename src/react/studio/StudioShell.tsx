@@ -6,7 +6,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import { appHref } from "../../base-url";
+import { StudioMenuButton } from "./StudioMenu";
 import "./studio-shell.css";
 
 export type StudioPanelRect = { x: number; y: number; width: number; height: number };
@@ -70,7 +70,7 @@ export function StudioShell({
   return <main className={`studio-shell ${docksOpen ? "docks-open" : "docks-closed"}`}>
     <div className="studio-viewport">{children}</div>
     <header className="studio-brand">
-      <a className="studio-home" href={appHref()} aria-label="Return to Procedural Studio">PS</a>
+      <StudioMenuButton className="studio-home" title="Studio tools (⌘K)">PS</StudioMenuButton>
       <div>
         <span>{eyebrow}</span>
         <strong>{title}</strong>

@@ -1,11 +1,11 @@
 import { StudioLink } from "../StudioLink";
-import { usePageRuntime } from "../page-runtime";
+import { useToolRuntime } from "../page-runtime";
 import "./periodic-brush.css";
 
 const loadPeriodicBrush = () => import("../../periodic-brush");
 
 export default function PeriodicBrushPage(): React.JSX.Element {
-  usePageRuntime("Node Dojo Periodic Brush · browser Geometry Nodes", loadPeriodicBrush);
+  useToolRuntime("Node Dojo Periodic Brush · browser Geometry Nodes", loadPeriodicBrush);
   return <main className="periodic-shell">
     <canvas id="periodic-canvas" />
     <StudioLink />

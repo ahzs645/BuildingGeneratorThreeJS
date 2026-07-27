@@ -1,11 +1,11 @@
 import { StudioLink } from "../StudioLink";
-import { usePageRuntime } from "../page-runtime";
+import { useToolRuntime } from "../page-runtime";
 import "./vegetation-generator.css";
 
 const loadVegetationGenerator = () => import("../../vegetation-generator/main");
 
 export default function VegetationGeneratorPage(): React.JSX.Element {
-  usePageRuntime("Vegetation Generator · three.js WebGPU", loadVegetationGenerator);
+  useToolRuntime("Vegetation Generator · three.js WebGPU", loadVegetationGenerator);
 
   return (
     <main className="vegetation-generator-page">

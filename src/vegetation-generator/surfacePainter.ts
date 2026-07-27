@@ -113,6 +113,24 @@ export class SurfacePainter {
     }
   }
 
+  /** Remove every listener this painter added and release its preview meshes. */
+  dispose(): void {
+    this.dom.removeEventListener('pointerdown', this.onDown);
+    window.removeEventListener('pointermove', this.onMove);
+    window.removeEventListener('pointerup', this.onUp);
+    this.dom.removeEventListener('pointerleave', this.onLeave);
+    this.group.removeFromParent();
+    this.beads.dispose();
+    this.beads.geometry.dispose();
+    (this.beads.material as THREE.Material).dispose();
+    this.startMarker.geometry.dispose();
+    (this.startMarker.material as THREE.Material).dispose();
+    this.brushRing.geometry.dispose();
+    (this.brushRing.material as THREE.Material).dispose();
+    this.brushDot.geometry.dispose();
+    (this.brushDot.material as THREE.Material).dispose();
+  }
+
   setEnabled(on: boolean): void {
     this.enabled = on;
     if (!on) {

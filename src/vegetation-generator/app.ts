@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import type GUI from 'lil-gui';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { disposeRaycastIndex, firstHitOnly, indexForRaycasts } from './bvh';
@@ -74,12 +75,20 @@ export class App {
   private regrowPending: { mode: 'instant' | 'animate'; ivy: boolean; tree: boolean } | null = null;
   private lastRegrowAt = 0; // performance.now() of the last rebuild
   private regrowCost = 0;   // how long that rebuild took (ms) — drives the throttle
+  private gui: GUI | null = null;
+  private modeBtn: HTMLElement | null = null;
+  private disposed = false;
 
   constructor(private container: HTMLElement) {}
 
   async start(): Promise<void> {
     const renderer = new THREE.WebGPURenderer({ antialias: true });
     await renderer.init();
+    if (this.disposed) {
+      // dispose() ran while the backend was initializing — release it and stop here.
+      renderer.dispose();
+      return;
+    }
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.shadowMap.enabled = true;
@@ -135,21 +144,73 @@ export class App {
       this.onFlowerPointerMove(e);
     });
 
-    buildGui(this);
+    this.gui = buildGui(this);
     this.applyModes();
 
-    document.getElementById('modeBtn')!.addEventListener('click', () => this.toggleMode());
+    this.modeBtn = document.getElementById('modeBtn')!;
+    this.modeBtn.addEventListener('click', this.onModeBtnClick);
 
     window.addEventListener('resize', this.onResize);
     this.onResize();
-    window.addEventListener('keydown', (e) => {
-      if (e.repeat || e.target instanceof HTMLInputElement) return;
-      const key = e.key.toLowerCase();
-      if (key === 'd') this.toggleMode();
-      else if (key === 'f') this.toggleFlowerMode();
-    });
+    window.addEventListener('keydown', this.onKeyDown);
 
     renderer.setAnimationLoop((t) => this.tick(t));
+  }
+
+  private onModeBtnClick = (): void => {
+    this.toggleMode();
+  };
+
+  private onKeyDown = (e: KeyboardEvent): void => {
+    if (e.repeat || e.target instanceof HTMLInputElement) return;
+    const key = e.key.toLowerCase();
+    if (key === 'd') this.toggleMode();
+    else if (key === 'f') this.toggleFlowerMode();
+  };
+
+  /**
+   * Tear down everything start() built, returning the document to its pre-start state
+   * so the tool can be mounted again later (SPA navigation) as if freshly loaded.
+   */
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+
+    window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('keydown', this.onKeyDown);
+    this.modeBtn?.removeEventListener('click', this.onModeBtnClick);
+    this.modeBtn = null;
+
+    this.gui?.destroy();
+    this.gui = null;
+
+    if (this.painter) this.painter.dispose();
+    if (this.controls) this.controls.dispose();
+    window.clearTimeout(this.toastTimer);
+
+    for (const p of this.plants) p.dispose();
+    this.plants = [];
+    this.strokes = [];
+    this.regrowPending = null;
+    this.tree?.dispose();
+    this.tree = null;
+    this.disposeModel();
+    if (this.branchMarker) {
+      this.branchMarker.geometry.dispose();
+      (this.branchMarker.material as THREE.Material).dispose();
+    }
+    if (this.flowerMarker) {
+      this.flowerMarker.geometry.dispose();
+      (this.flowerMarker.material as THREE.Material).dispose();
+    }
+
+    document.body.classList.remove('draw', 'flower', 'orbit', 'tree');
+
+    if (this.renderer) {
+      this.renderer.setAnimationLoop(null); // stops the frame loop
+      this.renderer.domElement.remove();
+      this.renderer.dispose();
+    }
   }
 
   // ---------- ivy plants ----------

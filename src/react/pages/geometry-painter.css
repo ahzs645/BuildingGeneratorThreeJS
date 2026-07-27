@@ -1,42 +1,36 @@
-:root {
-  color-scheme: dark;
-}
-
-html,
-body {
-  width: 100%;
-  height: 100%;
-  margin: 0;
+.geometry-painter-page {
+  position: fixed;
+  inset: 0;
   overflow: hidden;
   background: #0a0b10;
+  color-scheme: dark;
   font-family: system-ui, sans-serif;
 }
 
-.geometry-painter-page,
-#geometry-painter-app {
+.geometry-painter-page #geometry-painter-app {
   position: fixed;
   inset: 0;
 }
 
-#geometry-painter-app canvas {
+.geometry-painter-page #geometry-painter-app canvas {
   display: block;
   width: 100%;
   height: 100%;
 }
 
-body.draw #geometry-painter-app {
+body.draw .geometry-painter-page #geometry-painter-app {
   cursor: crosshair;
 }
 
-body.orbit #geometry-painter-app {
+body.orbit .geometry-painter-page #geometry-painter-app {
   cursor: grab;
 }
 
-body.orbit #geometry-painter-app:active {
+body.orbit .geometry-painter-page #geometry-painter-app:active {
   cursor: grabbing;
 }
 
-#geometry-painter-title {
+.geometry-painter-page #geometry-painter-title {
   position: fixed;
   left: 96px;
   top: 14px;
@@ -49,14 +43,14 @@ body.orbit #geometry-painter-app:active {
   opacity: 0.92;
 }
 
-#geometry-painter-title small {
+.geometry-painter-page #geometry-painter-title small {
   margin-left: 5px;
   opacity: 0.55;
   font-size: 13px;
   font-weight: 400;
 }
 
-#drawFrame {
+.geometry-painter-page #drawFrame {
   position: fixed;
   inset: 0;
   z-index: 2;
@@ -69,7 +63,7 @@ body.orbit #geometry-painter-app:active {
   transition: opacity 0.25s ease;
 }
 
-body.draw #drawFrame {
+body.draw .geometry-painter-page #drawFrame {
   opacity: 1;
   animation: geometry-painter-frame-pulse 2.4s ease-in-out infinite;
 }
@@ -85,7 +79,7 @@ body.draw #drawFrame {
   }
 }
 
-#modeBtn {
+.geometry-painter-page #modeBtn {
   position: fixed;
   left: 50%;
   bottom: 20px;
@@ -110,15 +104,15 @@ body.draw #drawFrame {
     box-shadow 0.2s ease;
 }
 
-#modeBtn:hover {
+.geometry-painter-page #modeBtn:hover {
   transform: translateX(-50%) translateY(-1px);
 }
 
-#modeBtn:active {
+.geometry-painter-page #modeBtn:active {
   transform: translateX(-50%) translateY(1px);
 }
 
-#modeBtn .dot {
+.geometry-painter-page #modeBtn .dot {
   width: 9px;
   height: 9px;
   border-radius: 50%;
@@ -126,7 +120,7 @@ body.draw #drawFrame {
   box-shadow: 0 0 8px #2a1240;
 }
 
-#modeBtn .key {
+.geometry-painter-page #modeBtn .key {
   margin-left: 2px;
   padding: 2px 7px;
   border-radius: 6px;
@@ -136,7 +130,7 @@ body.draw #drawFrame {
   font-weight: 700;
 }
 
-body.orbit #modeBtn {
+body.orbit .geometry-painter-page #modeBtn {
   background: rgba(24, 28, 40, 0.85);
   box-shadow:
     0 6px 20px rgba(0, 0, 0, 0.4),
@@ -144,17 +138,17 @@ body.orbit #modeBtn {
   color: #dbe7f5;
 }
 
-body.orbit #modeBtn .dot {
+body.orbit .geometry-painter-page #modeBtn .dot {
   background: #6ea8ff;
   box-shadow: 0 0 8px #6ea8ff;
 }
 
-body.orbit #modeBtn .key {
+body.orbit .geometry-painter-page #modeBtn .key {
   background: rgba(255, 255, 255, 0.1);
   color: #dbe7f5;
 }
 
-#hud {
+.geometry-painter-page #hud {
   position: fixed;
   left: 16px;
   bottom: 16px;
@@ -170,17 +164,17 @@ body.orbit #modeBtn .key {
   backdrop-filter: blur(6px);
 }
 
-#hud b {
+.geometry-painter-page #hud b {
   color: #cfa4ff;
 }
 
-#hud .sub {
+.geometry-painter-page #hud .sub {
   margin-top: 6px;
   opacity: 0.5;
   font-size: 12px;
 }
 
-#toast {
+.geometry-painter-page #toast {
   position: fixed;
   left: 50%;
   top: 64px;
@@ -200,13 +194,12 @@ body.orbit #modeBtn .key {
     transform 0.3s ease;
 }
 
-#toast.show {
+.geometry-painter-page #toast.show {
   transform: translateX(-50%) translateY(0);
   opacity: 1;
 }
 
-.geometry-painter-page + .fatal,
-.fatal {
+.geometry-painter-page .fatal {
   position: fixed;
   left: 50%;
   top: 50%;
@@ -226,18 +219,18 @@ body.orbit #modeBtn .key {
 }
 
 @media (max-width: 720px) {
-  #geometry-painter-title {
+  .geometry-painter-page #geometry-painter-title {
     display: none;
   }
 
-  #hud {
+  .geometry-painter-page #hud {
     right: 12px;
     bottom: 70px;
     left: 12px;
     max-width: none;
   }
 
-  #modeBtn {
+  .geometry-painter-page #modeBtn {
     bottom: 16px;
   }
 }

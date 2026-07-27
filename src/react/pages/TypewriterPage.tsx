@@ -1,11 +1,11 @@
 import { StudioLink } from "../StudioLink";
-import { usePageRuntime } from "../page-runtime";
+import { useToolRuntime } from "../page-runtime";
 import "./typewriter.css";
 
 const loadTypewriter = () => import("../../typewriter");
 
 export default function TypewriterPage(): React.JSX.Element {
-  usePageRuntime("Node Dojo Typewriter · browser Geometry Nodes", loadTypewriter);
+  useToolRuntime("Node Dojo Typewriter · browser Geometry Nodes", loadTypewriter);
   return <main className="typewriter-shell">
     <canvas id="typewriter-canvas" />
     <StudioLink />

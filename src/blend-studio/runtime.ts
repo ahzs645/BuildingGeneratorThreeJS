@@ -247,7 +247,8 @@ export function mountBlendStudioRuntime({
   controls.enableDamping = true;
   const pmrem = new THREE.PMREMGenerator(renderer);
   const room = new RoomEnvironment();
-  scene.environment = pmrem.fromScene(room, .04).texture;
+  const environmentTexture = pmrem.fromScene(room, .04).texture;
+  scene.environment = environmentTexture;
   scene.environmentIntensity = .75;
   room.dispose();
   pmrem.dispose();
@@ -1323,14 +1324,18 @@ export function mountBlendStudioRuntime({
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerup", finishMeasurementDrag);
       canvas.removeEventListener("pointercancel", finishMeasurementDrag);
+      canvas.style.cursor = "";
       disposeCurrent();
       disposeGrid();
       disposeMaterialCache();
       clearGizmoHandles();
       clearMeasurementSubject();
       scene.remove(referenceRoot, measurementOverlay);
+      scene.environment = null;
+      environmentTexture.dispose();
       controls.dispose();
       renderer.dispose();
+      if (captureMode) delete document.documentElement.dataset.blendStudioCaptureCamera;
     },
   };
 }

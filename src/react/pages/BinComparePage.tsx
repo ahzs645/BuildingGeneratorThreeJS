@@ -1,5 +1,5 @@
 import { StudioLink } from "../StudioLink";
-import { usePageRuntime } from "../page-runtime";
+import { useToolRuntime } from "../page-runtime";
 import { appHref } from "../../base-url";
 import { BIN_PARAMETERS } from "../../bin-params";
 import "./bin-compare.css";
@@ -7,7 +7,7 @@ import "./bin-compare.css";
 const loadBinCompare = () => import("../../bin-compare");
 
 export default function BinComparePage(): React.JSX.Element {
-  usePageRuntime("Dojo Bin Compare · Blender vs GN-VM", loadBinCompare);
+  useToolRuntime("Dojo Bin Compare · Blender vs GN-VM", loadBinCompare);
   return (
     <div className="bin-compare-shell">
       <canvas id="app"></canvas>

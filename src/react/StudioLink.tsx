@@ -1,5 +1,5 @@
-import { appHref } from "../base-url";
+import { StudioMenuButton } from "./studio/StudioMenu";
 
 export function StudioLink(): React.JSX.Element {
-  return <a id="home" className="studio-link" href={appHref()}>← studio</a>;
+  return <StudioMenuButton id="home" className="studio-link">☰ studio</StudioMenuButton>;
 }

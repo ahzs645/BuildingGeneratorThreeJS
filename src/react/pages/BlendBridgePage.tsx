@@ -176,7 +176,7 @@ function seedFromValue(value: string): BlendStudioSeed {
 }
 
 export default function BlendBridgePage(): React.JSX.Element {
-  usePageRuntime("BlendBridge · Geometry Nodes import studio");
+  usePageRuntime("Procedural Studio · Blender Geometry Nodes on the web");
   const fileInput = useRef<HTMLInputElement>(null);
   const workpieceInput = useRef<HTMLInputElement>(null);
   const importSerial = useRef(0);
@@ -1296,8 +1296,8 @@ export default function BlendBridgePage(): React.JSX.Element {
   </>;
 
   return <StudioShell
-    eyebrow="Local Blender portability lab"
-    title={sourceName || "BlendBridge Studio"}
+    eyebrow="Procedural Studio"
+    title={sourceName || "Geometry Nodes Studio"}
     subtitle={target ? <>{target.kind === "object" ? "Modifier object" : "Reusable group"} · {target.label}</> : "Import · inspect · edit · evaluate"}
     docksOpen={docksOpen}
     onToggleDocks={() => setDocksOpen((open) => !open)}

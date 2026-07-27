@@ -342,6 +342,15 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   const renderer = officialEssl
     ? new THREE.WebGLRenderer({ canvas, antialias: true })
     : new WebGPURenderer({ canvas, antialias: true, forceWebGL: query.get("forceWebGL") === "1" });
+  let rendererReleased = false;
+  const releaseRenderer = (): void => {
+    if (rendererReleased) return;
+    rendererReleased = true;
+    void renderer.dispose();
+    // Release the GL context immediately: SPA remounts render a fresh canvas, and
+    // browsers cap the number of live WebGL contexts.
+    if (renderer instanceof THREE.WebGLRenderer) renderer.forceContextLoss();
+  };
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.toneMappingExposure = 1;
@@ -952,7 +961,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     applySelection();
     renderer.setAnimationLoop(() => renderer.render(scene, camera));
   }).finally(() => {
-    if (!active) void renderer.dispose();
+    if (!active) releaseRenderer();
   });
 
   return () => {
@@ -972,7 +981,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     ownedGeometries.clear();
     ownedMaterials.clear();
     ownedTextures.clear();
-    void renderer.dispose();
+    releaseRenderer();
 
     const dataset = ownerDocument.documentElement.dataset;
     if (previousDataset.ready === undefined) delete dataset.materialxReady;
