@@ -2,7 +2,7 @@
 // Faithful-enough Blender semantics (region + individual extrude, domain-aware
 // delete/separate, weld, flip).
 import { Field, Vec3, Elem, Domain, asVec3, asNum, vadd, vscale, vnorm } from "../core";
-import { Geometry, Mesh, buildTopology, carryNormalsDeltaOnAppend, installTopology, invalidateMeshCaches, ownAttributeData } from "../geometry";
+import { Geometry, Mesh, buildTopology, carryNormalsDeltaOnAppend, carryVertexEdgesOnAppend, installTopology, invalidateMeshCaches, ownAttributeData } from "../geometry";
 import { reg, type EvalAPI } from "../registry";
 import { FIELD_PROBE, makeFieldCtx } from "../evaluator";
 
@@ -1155,8 +1155,13 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
     // edges. Edge Index fields downstream rely on this order; retaining only
     // the input's loose edge made Clevis select a horizontal edge on its second
     // extrusion instead of the authored vertical side.
+    // Share the canonical pair arrays instead of copying: edge pairs are
+    // immutable once attached to a mesh/topology (structural-sharing audit),
+    // and every mesh.edges mutation site pushes fresh pairs or replaces the
+    // array. Copying here allocated one short array per accumulated edge per
+    // repeat-zone iteration (~12M over the bubble lathe).
     out.edges = [
-      ...inEdges.map((edge) => [...edge.verts] as [number, number]),
+      ...inEdges.map((edge) => edge.verts),
       ...[...dup.entries()].map(([source, duplicate]) => [source, duplicate] as [number, number]),
       ...newEdgePairs,
     ];
@@ -1194,6 +1199,10 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
       for (let j = 0; j < newEdgePairs.length; j++)
         topoEdges[at++] = { verts: [newEdgePairs[j][0], newEdgePairs[j][1]], faces: [sideFaceIdx[j]] };
       installTopology(out, topoEdges);
+      // The installed edge list is the input's canonical edges plus appended
+      // ones, so the vertex->edge incidence extends instead of rebuilding
+      // O(verts) lists on every repeat-zone iteration.
+      carryVertexEdgesOnAppend(mesh, out);
     }
     // carry POINT attributes onto the duplicated verts
     let edgeAttrInIdx: PairTable | null = null;

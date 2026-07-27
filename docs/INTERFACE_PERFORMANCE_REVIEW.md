@@ -274,11 +274,45 @@ next Apply 1.0 s → a 0.9 s run re-enables live evaluation → subsequent
 slider nudges evaluate automatically in ~2.4 s. The interface now tunes
 itself to each tool's measured cost.
 
-Remaining headroom: GC is ~26 % of the remaining cold profile (genuinely
-needed per-iteration array materialization in ~350 repeat-zone spins);
-incremental vertex normals and a flat-array Topology layout are the next
-parity-sensitive candidates, plus a progressive low-res preview for
-global inputs like Resolution.
+### Third round (wave 5)
+
+All suites green (gnvm 248/248, materials 159/159, blend-studio 48/48,
+geometry-nodes 11/11, tsc clean):
+
+* **Incremental vertex normals** (`src/gnvm/`): mutation sites now leave a
+  "delta hint" (which vertices moved / were appended), and
+  `vertexNormalsOf` recomputes only affected vertices in the exact
+  face-major fround order of the full pass — proven bit-exact against a
+  temporary cross-check of 9.04 M vertex normals over 344 incremental runs
+  (0 mismatches). `computeVertexNormals` self time 4.23 s → 0.12 s; on the
+  bubble tool only ~1.8 % of points actually move per repeat iteration.
+* **Flat-array Topology: evaluated and rejected on evidence.** After wave 3's
+  incremental topology, the full 45-consumer refactor had ≲1 s upside.
+  What was actually allocating shipped surgically instead: edge-pair
+  structural sharing in extrude (~12 M short arrays per run eliminated)
+  and copy-on-extend vertex→edge incidence carry. GC 10.3 s → 5.2 s.
+* **Progressive low-resolution preview** (`blend-studio` + page): for
+  targets whose measured cost exceeds the live-edit budget and that expose
+  a resolution-class input (exact-word match only), Apply first evaluates
+  at a reduced value and shows it as "Low-res preview (Resolution 0.11) ·
+  refining…", then refines to full quality after 500 ms of idle. Preview
+  costs never enter the policy history. Verified in-browser: a Resolution
+  change on bubble putty shows usable geometry **0.78 s** after Apply
+  (full-quality refine lands ~38 s later, silently); fast tools never see
+  a preview phase.
+
+Same-session evaluator delta (identical machine state, bubble putty):
+cold 40.25 s → **24.4 s**; warm one-override 2.9–3.4 s; warm unchanged
+0.75–2.0 s; exact vert/tri parity and identical output hashes throughout.
+Cumulative from the original 182.7 s cold baseline: **~7×**, and the
+worst visible wait in the interface (Resolution on a slow tool) went from
+~124 s of frozen "evaluating…" to a 0.78 s preview.
+
+Remaining headroom (diminishing): fieldMap per-element math (~3.4 s),
+evaluator context lambdas (~2.6 s), extrudeMesh's inherent rebuilds
+(~2.4 s) — real math more than churn now; further cuts likely need
+SharedArrayBuffer parallelism or algorithmic changes under the same
+parity contract.
 
 ## Reproduction notes
 

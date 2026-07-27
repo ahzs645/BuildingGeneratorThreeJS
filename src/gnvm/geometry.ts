@@ -509,6 +509,52 @@ export function vertexEdgesOf(mesh: Mesh): number[][] {
   return list;
 }
 
+/**
+ * Extend a source mesh's cached vertex->edge incidence onto a target mesh
+ * whose installed topology lists the source's canonical edges as a strict
+ * prefix (same verts in order) followed by appended edges — exactly what
+ * extrude EDGES installs. Per-vertex lists of untouched vertices are shared
+ * (they are read-only, like the topology edge objects themselves); vertices
+ * gaining an edge get a fresh extended copy, preserving vertexEdgesOf's
+ * ascending-edge-index order. No-op when either side lacks valid caches.
+ */
+export function carryVertexEdgesOnAppend(source: Mesh, target: Mesh): void {
+  const sourceMeta = topologyCacheMeta.get(source);
+  const sourceTopo = topologyCache.get(source);
+  if (
+    !sourceTopo || !sourceMeta
+    || sourceMeta.faces !== source.faces
+    || sourceMeta.edges !== source.edges
+    || sourceMeta.positionCount !== source.positions.length
+    || sourceMeta.faceCount !== source.faces.length
+    || sourceMeta.edgeCount !== source.edges.length
+  ) return;
+  const targetTopo = topologyCache.get(target);
+  if (!targetTopo || vertexEdgesCache.has(targetTopo)) return;
+  const cached = vertexEdgesCache.get(sourceTopo);
+  if (!cached || cached.positionCount !== source.positions.length) return;
+  const sourceEdgeCount = sourceTopo.edges.length;
+  const targetEdges = targetTopo.edges;
+  if (targetEdges.length < sourceEdgeCount || target.positions.length < source.positions.length) return;
+  const list = cached.list.slice();
+  const owned = new Uint8Array(target.positions.length);
+  for (let vi = list.length; vi < target.positions.length; vi++) {
+    list[vi] = [];
+    owned[vi] = 1;
+  }
+  for (let ei = sourceEdgeCount; ei < targetEdges.length; ei++) {
+    for (const vi of targetEdges[ei].verts) {
+      if (vi >= list.length) return; // malformed append — leave no cache
+      if (!owned[vi]) {
+        list[vi] = list[vi].slice();
+        owned[vi] = 1;
+      }
+      list[vi].push(ei);
+    }
+  }
+  vertexEdgesCache.set(targetTopo, { positionCount: target.positions.length, list });
+}
+
 // Canonical edge key -> canonical edge index, keyed on the Topology object.
 const edgeIndexCache = new WeakMap<Topology, Map<number | string, number>>();
 
@@ -1091,16 +1137,6 @@ function vertexNormalsOf(mesh: Mesh): Vec3[] {
   }
   const hint = validNormalsHint(mesh);
   let normals = hint ? incrementalVertexNormals(mesh, hint) : null;
-  const diag = (globalThis as any).__VN_DIAG;
-  if (diag) diag.push({ v: mesh.positions.length, f: mesh.faces.length, mode: normals ? "incremental" : hint ? "hint-bailed" : "full" });
-  if (normals && (globalThis as any).__VN_VERIFY) {
-    const full = computeVertexNormals(mesh);
-    let bad = 0;
-    for (let i = 0; i < full.length; i++) {
-      if (!Object.is(full[i][0], normals[i][0]) || !Object.is(full[i][1], normals[i][1]) || !Object.is(full[i][2], normals[i][2])) bad++;
-    }
-    ((globalThis as any).__VN_VERIFY_RESULTS ??= []).push({ v: mesh.positions.length, bad });
-  }
   if (!normals) normals = computeVertexNormals(mesh);
   normalsDeltaHints.delete(mesh); // superseded by the full cache below
   vertexNormalsCache.set(mesh, normals);
