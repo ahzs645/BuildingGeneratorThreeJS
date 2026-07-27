@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useLocation } from "react-router-dom";
-import { appHref } from "../../base-url";
+import { Link, useLocation } from "react-router-dom";
 import "./studio-menu.css";
 
 type Tool = { href: string; title: string; desc: string; badge?: string };
@@ -80,10 +79,10 @@ export function StudioMenu({ open, onClose }: { open: boolean; onClose: () => vo
               {section.items.map((tool) => {
                 const current = pathname === tool.href;
                 return (
-                  <a key={tool.href} href={appHref(tool.href)} className={current ? "current" : ""} aria-current={current ? "page" : undefined}>
+                  <Link key={tool.href} to={tool.href} onClick={onClose} className={current ? "current" : ""} aria-current={current ? "page" : undefined}>
                     <b>{tool.title}{tool.badge && <em>{tool.badge}</em>}</b>
                     <small>{tool.desc}</small>
-                  </a>
+                  </Link>
                 );
               })}
             </div>
