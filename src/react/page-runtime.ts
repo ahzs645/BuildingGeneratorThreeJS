@@ -11,11 +11,10 @@ export type ToolHandle = { dispose(): void };
 
 export type ToolModule = { createTool(): ToolHandle | Promise<ToolHandle> };
 
-export function usePageRuntime(title: string, load?: () => Promise<unknown>): void {
+export function usePageRuntime(title: string): void {
   useEffect(() => {
     document.title = title;
-    if (load) void load();
-  }, [load, title]);
+  }, [title]);
 }
 
 /**

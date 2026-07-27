@@ -73,13 +73,25 @@ const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 const room = new RoomEnvironment();
 const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(room, .04).texture;
+const environmentTexture = pmrem.fromScene(room, .04).texture;
+scene.environment = environmentTexture;
 room.dispose(); pmrem.dispose();
 scene.add(new THREE.HemisphereLight(0xe4f0ff, 0x11151b, 1.2));
 const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(4, 7, 5); scene.add(key);
 
 const truthGroup = new THREE.Group(), vmGroup = new THREE.Group(), probeGroup = new THREE.Group();
 scene.add(truthGroup, vmGroup, probeGroup);
+
+// Materials are shared across result swaps (disposed once in dispose()), so
+// clearing a result group only needs to release its GPU geometry buffers.
+function clearGroupGeometry(group: THREE.Group): void {
+  for (const child of [...group.children]) {
+    group.remove(child);
+    child.traverse((object) => {
+      (object as THREE.Mesh).geometry?.dispose();
+    });
+  }
+}
 let split = true;
 let dump: Dump;
 let pendingDump: Dump | undefined;
@@ -194,6 +206,15 @@ function truthObject(source: THREE.Object3D): THREE.Object3D {
   });
   for (const mesh of meshes) {
     if (!mesh.geometry.getAttribute("rough")) mesh.geometry.setAttribute("rough", new THREE.BufferAttribute(new Float32Array(mesh.geometry.attributes.position.count), 1));
+    // The authored GLB materials are never rendered here; release them (and
+    // their textures) instead of leaking them on every mount.
+    for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+      if (!material) continue;
+      for (const value of Object.values(material)) {
+        if ((value as THREE.Texture | null)?.isTexture) (value as THREE.Texture).dispose();
+      }
+      material.dispose();
+    }
     mesh.material = truthDiagnostic;
     mesh.userData.crayonPrimary = true;
     const clone = new THREE.Mesh(mesh.geometry, truthWireMaterial);
@@ -242,6 +263,7 @@ function evaluateWorker(overrides: Record<string, number>): Promise<CrayonWorker
 }
 
 async function update(overrides = currentOverrides): Promise<void> {
+  if (disposed) return;
   currentOverrides = { ...overrides };
   const version = ++updateVersion;
   emit({ state: "evaluating", message: "Evaluating 22 nested node groups in the Web Worker…" });
@@ -251,8 +273,8 @@ async function update(overrides = currentOverrides): Promise<void> {
     if (disposed || version !== updateVersion) return;
     // Commit only after the complete graph succeeds. Until here vmGroup still
     // contains the previous last-known-good object.
-    vmGroup.clear(); vmGroup.add(soupObject(result.soup));
-    probeGroup.clear();
+    clearGroupGeometry(vmGroup); vmGroup.add(soupObject(result.soup));
+    clearGroupGeometry(probeGroup);
     if (result.probeSoup?.indices.length) probeGroup.add(probeObject(result.probeSoup));
     applyShaderMode();
     const truth = baseline.results[0];
@@ -290,6 +312,7 @@ async function main(): Promise<void> {
   if (disposed) return;
   dump = pendingDump ?? loadedDump;
   baseline = await baselineResponse.json() as Baseline;
+  if (disposed) return;
   truthGroup.add(truthObject(glb.scene));
   runtimeReady = true;
   await update();
@@ -298,7 +321,9 @@ async function main(): Promise<void> {
 const resize = (): void => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); };
 addEventListener("resize", resize);
 renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
-void main().catch((error) => emit({ state: "error", message: `Runtime failed · ${error instanceof Error ? error.message : String(error)}` }));
+void main().catch((error) => {
+  if (!disposed) emit({ state: "error", message: `Runtime failed · ${error instanceof Error ? error.message : String(error)}` });
+});
 
 return {
   setDump(next: Dump): void {
@@ -337,10 +362,13 @@ return {
     removeEventListener("resize", resize);
     renderer.setAnimationLoop(null);
     controls.dispose();
+    clearGroupGeometry(truthGroup);
+    clearGroupGeometry(vmGroup);
+    clearGroupGeometry(probeGroup);
+    scene.environment = null;
+    environmentTexture.dispose();
     renderer.dispose();
-    truthGroup.clear();
-    vmGroup.clear();
-    probeGroup.clear();
+    delete (window as typeof window & { __CRAYON_COMPARE__?: unknown }).__CRAYON_COMPARE__;
     reconstructedChrome.dispose();
     truthDiagnostic.dispose();
     vmDiagnostic.dispose();

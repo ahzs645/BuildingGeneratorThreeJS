@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { StudioLink } from "../StudioLink";
 import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
-import { usePageRuntime } from "../page-runtime";
+import { useToolRuntime } from "../page-runtime";
 import "./chrome-assets.css";
 import "./crayon-compare.css";
 
@@ -20,7 +20,7 @@ const typePixelBrushEditorConfig = {
 } as const;
 
 export default function ChromeAssetsPage(): React.JSX.Element {
-  usePageRuntime("Node Dojo Asset Library · Blender vs browser", loadChromeAssets);
+  useToolRuntime("Node Dojo Asset Library · Blender vs browser", loadChromeAssets);
   const query = new URLSearchParams(location.search);
   const [activeAssetId, setActiveAssetId] = useState(() => query.get("asset") ?? "");
   const [graphOpen, setGraphOpen] = useState(true);

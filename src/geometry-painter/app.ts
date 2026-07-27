@@ -651,6 +651,7 @@ export class App {
 
     const materials = new Set<THREE.Material>();
     this.scene.traverse((object) => {
+      if ((object as THREE.Light).isLight) (object as THREE.Light).dispose(); // frees shadow-map targets
       const mesh = object as THREE.Mesh;
       mesh.geometry?.dispose();
       const material = mesh.material;

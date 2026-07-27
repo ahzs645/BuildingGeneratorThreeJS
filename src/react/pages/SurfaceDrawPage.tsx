@@ -1,11 +1,11 @@
 import { StudioLink } from "../StudioLink";
-import { usePageRuntime } from "../page-runtime";
+import { useToolRuntime } from "../page-runtime";
 import "./surface-draw.css";
 
 const loadSurfaceDraw = () => import("../../surface-draw");
 
 export default function SurfaceDrawPage(): React.JSX.Element {
-  usePageRuntime("Surface Draw Lab · browser Geometry Nodes", loadSurfaceDraw);
+  useToolRuntime("Surface Draw Lab · browser Geometry Nodes", loadSurfaceDraw);
   return <main className="surface-shell">
     <canvas id="surface-canvas" />
     <StudioLink />
