@@ -28,17 +28,21 @@
         -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
       .lede { margin-top: 20px; max-width: 62ch; font-size: 16px; line-height: 1.65; color: var(--dim); }
       .lede b { color: var(--text); font-weight: 600; }
-      .grid { margin-top: 48px; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+      .section { margin-top: 52px; }
+      .section-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px;
+        border-top: 1px solid var(--border); padding-top: 26px; }
+      .section-head h2 { font: 600 12px/1.4 ui-monospace, Menlo, monospace; letter-spacing: 0.2em;
+        text-transform: uppercase; color: var(--accent); }
+      .section-head p { font-size: 13px; line-height: 1.6; color: var(--dim); }
+      .grid { margin-top: 20px; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
       a.card {
         display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: inherit;
         background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px;
         transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-        position: relative; overflow: hidden; min-height: 190px;
+        position: relative; overflow: hidden; min-height: 160px;
       }
       a.card:hover { transform: translateY(-4px); border-color: rgba(143, 207, 255, 0.4); background: rgba(143, 207, 255, 0.05); }
-      .tag { font: 600 10px/1 ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase;
-        color: var(--accent); padding: 5px 8px; border: 1px solid var(--border); border-radius: 999px; align-self: flex-start; }
-      .card h2 { font-size: 20px; font-weight: 620; letter-spacing: -0.01em; margin-top: 4px; }
+      .card h3 { font-size: 20px; font-weight: 620; letter-spacing: -0.01em; margin-top: 4px; }
       .card p { font-size: 13.5px; line-height: 1.55; color: var(--dim); }
       .card .go { margin-top: auto; font: 600 12px/1 ui-monospace, monospace; color: var(--accent); letter-spacing: 0.04em; }
       .card .go::after { content: " →"; transition: margin 0.18s ease; display: inline-block; }
