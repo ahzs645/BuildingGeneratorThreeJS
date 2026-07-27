@@ -40,12 +40,16 @@ export class Mesh {
       // Blender special-cases triangles and quads with a left-associated float
       // sum followed by direct division. Marching Squares converts these
       // centers to points and exposes a one-ULP difference in every instance.
-      return [0, 1, 2].map((axis) => {
+      // Plain loop (same per-axis operation order) — this is the FACE-domain
+      // position accessor and runs once per face per field evaluation.
+      const center: Vec3 = [0, 0, 0];
+      for (let axis = 0; axis < 3; axis++) {
         let sum = f(this.positions[face[0]][axis]);
         for (let corner = 1; corner < face.length; corner++)
           sum = f(sum + f(this.positions[face[corner]][axis]));
-        return f(sum / f(face.length));
-      }) as Vec3;
+        center[axis] = f(sum / f(face.length));
+      }
+      return center;
     }
     const weight = f(1 / f(face.length));
     const center: Vec3 = [0, 0, 0];
@@ -98,12 +102,22 @@ export class Mesh {
 
   clone(): Mesh {
     const m = new Mesh();
-    m.positions = this.positions.map((p) => [...p] as Vec3);
-    m.edges = this.edges.map((e) => [...e] as [number, number]);
-    m.faces = this.faces.map((f) => [...f]);
-    m.faceMaterial = [...this.faceMaterial];
-    m.materialSlots = [...this.materialSlots];
-    for (const [k, a] of this.attributes) m.attributes.set(k, { domain: a.domain, data: [...a.data] });
+    // Structural sharing: Vec3 positions, edge pairs, and face rows are never
+    // mutated element-in-place after they are attached to a mesh (see the
+    // mutation-safety audit below) — mutations replace the element or the
+    // whole array. Copying only the outer arrays turns node-boundary clones
+    // of 100k-vertex meshes from ~400k small-array allocations into four
+    // pointer copies; attribute Elem[] data already shared Vec3 elements the
+    // same way. Attribute data arrays themselves ARE appended/spliced in
+    // place (mergeMeshInto, FlipFaces corner reorder), so they stay flat-
+    // copied per clone.
+    m.positions = this.positions.slice();
+    m.edges = this.edges.slice();
+    m.faces = this.faces.slice();
+    m.faceMaterial = this.faceMaterial.slice();
+    m.materialSlots = this.materialSlots.slice();
+    for (const [k, a] of this.attributes) m.attributes.set(k, { domain: a.domain, data: a.data.slice() });
+    carryDerivedCaches(this, m);
     return m;
   }
 }
@@ -323,14 +337,17 @@ export class Geometry {
   clone(): Geometry {
     const g = new Geometry();
     if (this.mesh) g.mesh = this.mesh.clone();
+    // Point arrays copy only their outer array; the Vec3 elements are shared
+    // under the same immutability invariant as mesh positions (see the
+    // mutation-safety audit above Mesh's cache section).
     g.curves = this.curves.map((s) => ({
       cyclic: s.cyclic,
       resolution: s.resolution,
       splineType: s.splineType,
-      points: s.points.map((p) => [...p] as Vec3),
-      controlPoints: s.controlPoints?.map((p) => [...p] as Vec3),
-      bezierLeft: s.bezierLeft?.map((p) => [...p] as Vec3),
-      bezierRight: s.bezierRight?.map((p) => [...p] as Vec3),
+      points: s.points.slice(),
+      controlPoints: s.controlPoints?.slice(),
+      bezierLeft: s.bezierLeft?.slice(),
+      bezierRight: s.bezierRight?.slice(),
     }));
     g.instances = this.instances.map((i) => ({
       ...i,
@@ -338,7 +355,7 @@ export class Geometry {
       transformMatrix: i.transformMatrix?.map((row) => [...row]),
       attributes: i.attributes ? new Map(i.attributes) : undefined,
     }));
-    for (const [k, a] of this.curveAttributes) g.curveAttributes.set(k, { domain: a.domain, data: [...a.data] });
+    for (const [k, a] of this.curveAttributes) g.curveAttributes.set(k, { domain: a.domain, data: a.data.slice() });
     return g;
   }
 }
@@ -354,17 +371,26 @@ export interface Topology {
   pointFaces: number[][]; // faces incident to each vertex (for domain interpolation)
 }
 
-// Mutation-safety audit, 2026-07-08:
+// Mutation-safety audit, 2026-07-08 (extended 2026-07-27 for structural
+// sharing):
 // src/gnvm construction paths mutate fresh Mesh instances before any derived
 // query. The current query-then-mutate handlers are SetPosition (positions
 // assignment), DeleteGeometry EDGE (edges assignment), FlipFaces (face-row
-// reverse), and mergeMeshInto's EDGE-attribute reconciliation (canonical keys
-// before append). Cache validation records array identities/counts plus face
-// and counts, so assignments and appends invalidate without turning hot mesh
-// arrays into accessor/proxy arrays. The audited in-place face reversals call
+// replacement), and mergeMeshInto's EDGE-attribute reconciliation (canonical
+// keys before append). Cache validation records array identities/counts plus
+// face and counts, so assignments and appends invalidate without turning hot
+// mesh arrays into accessor/proxy arrays. The audited face reversals call
 // invalidateMeshCaches explicitly.
-// The audit found no in-place Vec3 coordinate writes; if those are added later
-// they must assign a fresh positions array or explicitly invalidate the cache.
+// STRUCTURAL-SHARING INVARIANT (Mesh.clone copies only the outer arrays):
+// once a Vec3 position, [a,b] edge pair, or face row is attached to a mesh,
+// its CONTENTS are immutable — mutate by replacing the element
+// (positions[i] = fresh) or the whole array, never p[0] = x or row.splice.
+// The 2026-07 audit found one pre-attachment coordinate write
+// (dump-object-geometry hook deform, runs on a freshly built mesh) and
+// converted the two in-place face-row mutations (orientClosedSurface,
+// reconstructSplitFastenerHeal) to row replacement. Attribute Elem[] data
+// arrays are NOT shared (they are appended/spliced in place), but they do
+// share Vec3 element objects, which is the same invariant.
 interface TopologyCacheMeta {
   positions: Vec3[];
   faces: number[][];
@@ -391,6 +417,55 @@ export function invalidateMeshCaches(mesh: Mesh): void {
   topologyCacheMeta.delete(mesh);
   vertexNormalsCache.delete(mesh);
   vertexNormalsCacheMeta.delete(mesh);
+}
+
+/**
+ * Install a source mesh's still-valid derived caches on its clone. The clone
+ * shares position/edge/face rows with the source, so topology and vertex
+ * normals computed for the source are bit-identical for the clone. Re-keying
+ * the meta to the clone's own outer arrays keeps the usual invalidation rules
+ * (wholesale array replacement, count change, explicit invalidate) working
+ * independently on each mesh afterwards.
+ */
+function carryDerivedCaches(source: Mesh, target: Mesh): void {
+  const topo = topologyCache.get(source);
+  const topoMeta = topologyCacheMeta.get(source);
+  if (
+    topo && topoMeta
+    && topoMeta.positions === source.positions
+    && topoMeta.faces === source.faces
+    && topoMeta.edges === source.edges
+    && topoMeta.positionCount === source.positions.length
+    && topoMeta.faceCount === source.faces.length
+    && topoMeta.edgeCount === source.edges.length
+  ) {
+    topologyCache.set(target, topo);
+    topologyCacheMeta.set(target, {
+      positions: target.positions,
+      faces: target.faces,
+      edges: target.edges,
+      positionCount: target.positions.length,
+      faceCount: target.faces.length,
+      edgeCount: target.edges.length,
+    });
+  }
+  const normals = vertexNormalsCache.get(source);
+  const normalsMeta = vertexNormalsCacheMeta.get(source);
+  if (
+    normals && normalsMeta
+    && normalsMeta.positions === source.positions
+    && normalsMeta.faces === source.faces
+    && normalsMeta.positionCount === source.positions.length
+    && normalsMeta.faceCount === source.faces.length
+  ) {
+    vertexNormalsCache.set(target, normals);
+    vertexNormalsCacheMeta.set(target, {
+      positions: target.positions,
+      faces: target.faces,
+      positionCount: target.positions.length,
+      faceCount: target.faces.length,
+    });
+  }
 }
 
 const f32 = Math.fround;
@@ -488,52 +563,68 @@ function safeAcosApproxBlenderFloat(value: number): number {
 
 function computeVertexNormals(mesh: Mesh): Vec3[] {
   const faceNormals = mesh.faces.map((face) => faceNormalBlenderFloat(mesh, face));
-  const incident: number[][] = mesh.positions.map(() => []);
+  const hasIncident = new Uint8Array(mesh.positions.length);
   // Blender's mesh point normals are corner-angle weighted. Equal face
   // weighting badly tilts a rounded n-gon rim toward its two wall quads: the
   // n-gon's almost-pi corner must contribute about twice each quad's pi/2
   // corner. The Dojo bin's normal-based thickness offset exposes this directly.
-  const acc: Vec3[] = mesh.positions.map(() => [0, 0, 0]);
+  //
+  // This is the hottest per-corner loop in the evaluator; the vector helpers
+  // are inlined into scalar float32 arithmetic (identical operation order, so
+  // bit-identical results) to avoid five short-lived arrays per corner.
+  const acc = new Float64Array(mesh.positions.length * 3);
   for (let fi = 0; fi < mesh.faces.length; fi++) {
     const f = mesh.faces[fi];
     const n = faceNormals[fi];
     for (let k = 0; k < f.length; k++) {
       const vi = f[k];
-      incident[vi]?.push(fi);
+      hasIncident[vi] = 1;
       const p = mesh.positions[vi];
       const prev = mesh.positions[f[(k - 1 + f.length) % f.length]];
       const next = mesh.positions[f[(k + 1) % f.length]];
-      const a = normalizeBlenderFloat([
-        f32(prev[0] - p[0]),
-        f32(prev[1] - p[1]),
-        f32(prev[2] - p[2]),
-      ]);
-      const b = normalizeBlenderFloat([
-        f32(next[0] - p[0]),
-        f32(next[1] - p[1]),
-        f32(next[2] - p[2]),
-      ]);
-      const dot = f32(f32(f32(a[0] * b[0]) + f32(a[1] * b[1])) + f32(a[2] * b[2]));
+      // normalizeBlenderFloat(prev - p), inlined
+      let ax = f32(prev[0] - p[0]);
+      let ay = f32(prev[1] - p[1]);
+      let az = f32(prev[2] - p[2]);
+      const alen = f32(Math.sqrt(f32(f32(f32(ax * ax) + f32(ay * ay)) + f32(az * az))));
+      if (alen > 0) {
+        ax = f32(ax / alen); ay = f32(ay / alen); az = f32(az / alen);
+      } else {
+        ax = 0; ay = 0; az = 0;
+      }
+      // normalizeBlenderFloat(next - p), inlined
+      let bx = f32(next[0] - p[0]);
+      let by = f32(next[1] - p[1]);
+      let bz = f32(next[2] - p[2]);
+      const blen = f32(Math.sqrt(f32(f32(f32(bx * bx) + f32(by * by)) + f32(bz * bz))));
+      if (blen > 0) {
+        bx = f32(bx / blen); by = f32(by / blen); bz = f32(bz / blen);
+      } else {
+        bx = 0; by = 0; bz = 0;
+      }
+      const dot = f32(f32(f32(ax * bx) + f32(ay * by)) + f32(az * bz));
       const angle = safeAcosApproxBlenderFloat(dot);
-      const current = acc[vi];
-      acc[vi] = [
-        f32(current[0] + f32(n[0] * angle)),
-        f32(current[1] + f32(n[1] * angle)),
-        f32(current[2] + f32(n[2] * angle)),
-      ];
+      const at = vi * 3;
+      acc[at] = f32(acc[at] + f32(n[0] * angle));
+      acc[at + 1] = f32(acc[at + 1] + f32(n[1] * angle));
+      acc[at + 2] = f32(acc[at + 2] + f32(n[2] * angle));
     }
   }
 
-  return acc.map((n, vi) => {
-    const fis = incident[vi];
-    if (!fis.length) return normalizeBlenderFloat(mesh.positions[vi]);
+  const out: Vec3[] = new Array(mesh.positions.length);
+  for (let vi = 0; vi < mesh.positions.length; vi++) {
+    if (!hasIncident[vi]) {
+      out[vi] = normalizeBlenderFloat(mesh.positions[vi]);
+      continue;
+    }
     // Blender does not select one of several opposing normal fans on a
     // non-manifold point. It corner-angle-weights every incident face and
     // normalizes the resulting sum. This is observable on the Bolt Generator's
     // tap thread: choosing one fan moves nine seam points by about 0.5 units and
     // prevents the authored Heal Mesh weld from closing the surface.
-    return normalizeBlenderFloat(n);
-  });
+    out[vi] = normalizeBlenderFloat([acc[vi * 3], acc[vi * 3 + 1], acc[vi * 3 + 2]]);
+  }
+  return out;
 }
 
 function vertexNormalsOf(mesh: Mesh): Vec3[] {
@@ -593,6 +684,13 @@ export function buildTopology(mesh: Mesh): Topology {
 }
 
 function computeTopology(mesh: Mesh): Topology {
+  // Snapshot the rows and counts: the returned Topology can outlive this
+  // mesh's array identities (clones carry it, and meshes can be appended to
+  // in place by mergeMeshInto). Face rows are immutable once attached, so a
+  // row-pointer snapshot keeps the lazily computed sections correct for every
+  // mesh that shares them.
+  const faces = mesh.faces.slice();
+  const positionCount = mesh.positions.length;
   type EdgeKey = number | string;
   const edgeKeyBase = 2 ** 21;
   const ekey = (a: number, b: number): EdgeKey => {
@@ -616,8 +714,8 @@ function computeTopology(mesh: Mesh): Topology {
   // meshes often carry that order explicitly (notably Edge Extrude); seed the
   // topology map from it before adding any implicit polygon boundaries.
   for (const [a, b] of mesh.edges) addFaceEdge(a, b, -1);
-  for (let fi = 0; fi < mesh.faces.length; fi++) {
-    const f = mesh.faces[fi];
+  for (let fi = 0; fi < faces.length; fi++) {
+    const f = faces[fi];
     for (let i = 0; i < f.length; i++) addFaceEdge(f[i], f[(i + 1) % f.length], fi);
   }
   const edges = [...emap.values()];
@@ -646,7 +744,7 @@ function computeTopology(mesh: Mesh): Topology {
   let pointFaces: number[][] | null = null;
   const getFaceNeighbors = () => {
     if (!faceNeighbors) {
-      const sets: Set<number>[] = mesh.faces.map(() => new Set<number>());
+      const sets: Set<number>[] = faces.map(() => new Set<number>());
       for (const e of edges)
         for (const fa of e.faces)
           for (const fb of e.faces)
@@ -655,17 +753,17 @@ function computeTopology(mesh: Mesh): Topology {
     }
     return faceNeighbors;
   };
-  const getFaceIslands = () => (faceIslands ??= uf(mesh.faces.length, (join) => {
+  const getFaceIslands = () => (faceIslands ??= uf(faces.length, (join) => {
     for (const e of edges) for (let i = 1; i < e.faces.length; i++) join(e.faces[0], e.faces[i]);
   }));
-  const getPointIslands = () => (pointIslands ??= uf(mesh.positions.length, (join) => {
+  const getPointIslands = () => (pointIslands ??= uf(positionCount, (join) => {
     for (const e of edges) join(e.verts[0], e.verts[1]);
   }));
   const getPointFaces = () => {
     if (!pointFaces) {
-      pointFaces = mesh.positions.map(() => []);
-      for (let fi = 0; fi < mesh.faces.length; fi++)
-        for (const v of mesh.faces[fi]) pointFaces[v]?.push(fi);
+      pointFaces = Array.from({ length: positionCount }, () => [] as number[]);
+      for (let fi = 0; fi < faces.length; fi++)
+        for (const v of faces[fi]) pointFaces[v]?.push(fi);
     }
     return pointFaces;
   };
@@ -782,7 +880,9 @@ export function mergeMeshInto(a: Mesh, b: Mesh): void {
   const baseF = a.faces.length;
   const baseC = a.domainSize("CORNER");
   const addedC = b.domainSize("CORNER");
-  for (const p of b.positions) a.positions.push([...p] as Vec3);
+  // Share the Vec3 elements (immutable once attached); only a's outer array
+  // grows.
+  for (const p of b.positions) a.positions.push(p);
   for (const e of b.edges) a.edges.push([e[0] + baseV, e[1] + baseV]);
   const slotMap = b.materialSlots.map((name) => a.ensureMaterialSlot(name));
   for (let fi = 0; fi < b.faces.length; fi++) {
@@ -881,10 +981,18 @@ export function realizeInstances(
   // base curves pass through; instanced curves get appended transformed below
   out.curves = g.curves.map((s) => ({
     cyclic: s.cyclic,
-    points: s.points.map((p) => pendingMatrix ? transformPointMatrixFloat32(p, pendingMatrix) : [...p] as Vec3),
-    controlPoints: s.controlPoints?.map((p) => pendingMatrix ? transformPointMatrixFloat32(p, pendingMatrix) : [...p] as Vec3),
-    bezierLeft: s.bezierLeft?.map((p) => pendingMatrix ? transformPointMatrixFloat32(p, pendingMatrix) : [...p] as Vec3),
-    bezierRight: s.bezierRight?.map((p) => pendingMatrix ? transformPointMatrixFloat32(p, pendingMatrix) : [...p] as Vec3),
+    points: pendingMatrix
+      ? s.points.map((p) => transformPointMatrixFloat32(p, pendingMatrix))
+      : s.points.slice(),
+    controlPoints: pendingMatrix
+      ? s.controlPoints?.map((p) => transformPointMatrixFloat32(p, pendingMatrix))
+      : s.controlPoints?.slice(),
+    bezierLeft: pendingMatrix
+      ? s.bezierLeft?.map((p) => transformPointMatrixFloat32(p, pendingMatrix))
+      : s.bezierLeft?.slice(),
+    bezierRight: pendingMatrix
+      ? s.bezierRight?.map((p) => transformPointMatrixFloat32(p, pendingMatrix))
+      : s.bezierRight?.slice(),
   }));
   for (const [k, a] of g.curveAttributes) out.curveAttributes.set(k, {
     domain: a.domain,
@@ -934,15 +1042,15 @@ export function realizeInstances(
     for (const s of rg.curves)
       out.curves.push({
         cyclic: s.cyclic,
-        points: explicitMatrix ? s.points.map((p) => [...p] as Vec3) : s.points.map(transformGenericPoint),
+        points: explicitMatrix ? s.points.slice() : s.points.map(transformGenericPoint),
         controlPoints: explicitMatrix
-          ? s.controlPoints?.map((p) => [...p] as Vec3)
+          ? s.controlPoints?.slice()
           : s.controlPoints?.map(transformGenericPoint),
         bezierLeft: explicitMatrix
-          ? s.bezierLeft?.map((p) => [...p] as Vec3)
+          ? s.bezierLeft?.slice()
           : s.bezierLeft?.map(transformGenericPoint),
         bezierRight: explicitMatrix
-          ? s.bezierRight?.map((p) => [...p] as Vec3)
+          ? s.bezierRight?.slice()
           : s.bezierRight?.map(transformGenericPoint),
       });
     if (addedCurves) {
@@ -1211,7 +1319,9 @@ export function orientClosedSurface(mesh: Mesh, eps = 1e-5): number {
       : component.filter((face) => parity.get(face) === 0);
     for (const face of chosen) flips.add(face);
   }
-  for (const fi of flips) mesh.faces[fi].reverse();
+  // Replace rows instead of reversing in place: face rows may be shared with
+  // clones of this mesh (structural-sharing invariant).
+  for (const fi of flips) mesh.faces[fi] = [...mesh.faces[fi]].reverse();
   if (flips.size) invalidateMeshCaches(mesh);
   return flips.size;
 }
@@ -1244,7 +1354,8 @@ export function orientShellOutward(mesh: Mesh): void {
     else if (radial < -0.12) inn++;
   }
   if (inn <= out * 1.15) return;
-  for (const f of mesh.faces) f.reverse();
+  // Fresh rows: the existing ones may be shared with clones of this mesh.
+  mesh.faces = mesh.faces.map((f) => [...f].reverse());
   invalidateMeshCaches(mesh);
 }
 
@@ -1291,7 +1402,7 @@ export function toTriSoup(g: Geometry): TriSoup {
       const remap = new Map<number, number>();
       for (let vertex = 0; vertex < realizedMesh.positions.length; vertex++) if (retained[vertex]) {
         remap.set(vertex, filtered.positions.length);
-        filtered.positions.push([...realizedMesh.positions[vertex]] as Vec3);
+        filtered.positions.push(realizedMesh.positions[vertex]);
       }
       filtered.faces = realizedMesh.faces.map((face) => face.map((vertex) => remap.get(vertex)!));
       filtered.faceMaterial = [...realizedMesh.faceMaterial];
@@ -1308,8 +1419,9 @@ export function toTriSoup(g: Geometry): TriSoup {
   mesh.positions = source.positions;
   mesh.materialSlots = [...source.materialSlots];
   for (let fi = 0; fi < source.faces.length; fi++) {
-    const face = source.faces[fi];
-    mesh.faces.push([...face]);
+    // Rows are shared (never mutated in place) — this mesh only normalizes
+    // faceMaterial for the grouping pass below.
+    mesh.faces.push(source.faces[fi]);
     mesh.faceMaterial.push(source.faceMaterial[fi] ?? 0);
   }
   // Export the evaluated face loops verbatim. Winding is observable Geometry
@@ -1319,7 +1431,10 @@ export function toTriSoup(g: Geometry): TriSoup {
   // OpenVDB shells (including Math Clay TPMS variants) and made the browser
   // select the opposite material branch from Blender. Nodes that genuinely
   // repair topology must do so before this serialization boundary.
-  const normals = mesh.vertexNormals();
+  // Normals come from `source`: identical positions and face content, and
+  // source may already carry a valid vertex-normal cache from its clone
+  // lineage.
+  const normals = source.vertexNormals();
   const positions = new Float32Array(mesh.positions.length * 3);
   const normArr = new Float32Array(mesh.positions.length * 3);
   for (let i = 0; i < mesh.positions.length; i++) {

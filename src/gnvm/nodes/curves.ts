@@ -1003,7 +1003,7 @@ reg("GeometryNodeMeshToCurve", (api) => {
         && selected.some((value) => asNum(value) > 0)) return out;
       const topology = buildTopology(g.mesh);
       const filtered = new Mesh();
-      filtered.positions = g.mesh.positions.map((p) => [...p] as Vec3);
+      filtered.positions = g.mesh.positions.slice();
       filtered.edges = topology.edges
         .filter((_, i) => asNum(selected[i] ?? 0) > 0)
         .map((edge) => [...edge.verts] as [number, number]);

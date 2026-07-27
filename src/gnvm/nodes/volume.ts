@@ -1250,7 +1250,7 @@ function addAdaptiveTransitionTriangles(mesh: Mesh, sourceQuadCount: number): vo
 }
 
 function batchAdaptSurfaceMesh(mesh: Mesh, amount: number, spacing: Vec3): Mesh {
-  const positions = mesh.positions.map((point) => [...point] as Vec3);
+  const positions = mesh.positions.slice();
   let faces = mesh.faces.map((face) => [...face]);
   const alive = new Uint8Array(positions.length).fill(1);
   let aliveCount = positions.length;
@@ -1384,7 +1384,7 @@ function adaptSurfaceMesh(mesh: Mesh, adaptivity: number, spacing: Vec3): Mesh {
   if (amount >= 1)
     return clusterSurfaceMesh(mesh, scale * 3.5);
 
-  const positions = mesh.positions.map((point) => [...point] as Vec3);
+  const positions = mesh.positions.slice();
   let faces = mesh.faces.map((face) => [...face]);
   const alive = new Uint8Array(positions.length).fill(1);
   let aliveCount = positions.length;

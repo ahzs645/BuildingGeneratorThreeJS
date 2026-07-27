@@ -97,7 +97,7 @@ reg("GeometryNodeDeleteGeometry", (api) => {
       .map((_, index) => index)
       .filter((index) => !on(selection[index]));
     const out = new Mesh();
-    out.positions = source.positions.map((point) => [...point] as Vec3);
+    out.positions = source.positions.slice();
     out.edges = buildTopology(source).edges.map((edge) =>
       [...edge.verts] as [number, number]);
     out.faces = keptFaces.map((index) => [...source.faces[index]]);
@@ -858,7 +858,11 @@ function reconstructSplitFastenerHeal(mesh: Mesh): Mesh {
   const face13 = out.faces.findIndex((face) => face.length === 13);
   if (face13 >= 0) {
     const duplicate = duplicatePoint(out.faces[face13][0]);
-    out.faces[face13].splice(1, 0, duplicate);
+    // Replace the row rather than splicing in place: the row may be shared
+    // with the source mesh (structural-sharing clone).
+    const row = out.faces[face13];
+    out.faces[face13] = [row[0], duplicate, ...row.slice(1)];
+    invalidateMeshCaches(out);
   }
   const face18 = out.faces.findIndex((face) => face.length === 18);
   if (face18 >= 0) appendFace([...out.faces[face18]].reverse(), face18);
@@ -1125,7 +1129,7 @@ function extrudeMesh(api: EvalAPI): Record<string, Geometry | Field> {
   if (!selFaces.length) return { Mesh: g, Top: Field.of(0), Side: Field.of(0) };
 
   const out = new Mesh();
-  out.positions = mesh.positions.map((p) => [...p] as Vec3);
+  out.positions = mesh.positions.slice();
   out.materialSlots = [...mesh.materialSlots];
   // Attribute provenance: source vertex per out-vertex, source face per out-face.
   // Lets Captured/Stored attributes survive the extrude — the inset-floor trick
@@ -1642,7 +1646,7 @@ function subdivideOnce(mesh: Mesh, catmullClark: boolean, edgeCrease = 0): Mesh 
   // edges, then extrudes that open wire into the wall panels. A face-only
   // implementation silently discarded those authored edges.
   if (nF === 0 && mesh.edges.length) {
-    out.positions = mesh.positions.map((point) => [...point] as Vec3);
+    out.positions = mesh.positions.slice();
     const midpointSources: [number, number][] = [];
     for (const [a, b] of mesh.edges) {
       const midpoint = out.positions.length;

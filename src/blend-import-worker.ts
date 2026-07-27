@@ -8,9 +8,8 @@ import {
   type TriSoup,
 } from "./gnvm/index";
 
-type Request = {
+type EvaluationFields = {
   id: number;
-  dump: Dump;
   object?: string;
   group?: string;
   modifierIndex?: number;
@@ -25,16 +24,57 @@ type Request = {
   probe?: { group: string; node: string; socket?: string };
 };
 
+/** Original one-shot shape: the full dump travels with every request. */
+type InlineRequest = EvaluationFields & { kind?: undefined; dump: Dump };
+
+/** Cache a dump worker-side so later evaluations can skip the ~10 MB clone. */
+type InstallRequest = { kind: "install"; installId: string; dump: Dump };
+
+/** Evaluate against a previously installed dump. */
+type CachedEvaluateRequest = EvaluationFields & { kind: "evaluate"; installId: string };
+
+type Request = InlineRequest | InstallRequest | CachedEvaluateRequest;
+
 type WorkerScope = {
   onmessage: ((event: MessageEvent<Request>) => void) | null;
   postMessage: (message: unknown, options?: { transfer?: Transferable[] }) => void;
 };
 const scope = self as unknown as WorkerScope;
 
+// Latest installed dump; deliberately a single slot so stale imports never pin
+// multi-megabyte payloads in worker memory.
+let installed: { installId: string; dump: Dump } | null = null;
+
 scope.onmessage = async (event: MessageEvent<Request>) => {
+  const request = event.data;
+  if (request.kind === "install") {
+    installed = { installId: request.installId, dump: request.dump };
+    scope.postMessage({ ok: true as const, installed: request.installId });
+    return;
+  }
+  if (request.kind === "evaluate") {
+    if (!installed || installed.installId !== request.installId) {
+      scope.postMessage({
+        id: request.id,
+        ok: false as const,
+        unknownInstall: true,
+        error: `no installed dump for ${request.installId}`,
+      });
+      return;
+    }
+    // Evaluation reads the dump without mutating it, except when a curves
+    // payload replaces object curve data in-place. Clone only for that case so
+    // the cached dump stays pristine across evaluations.
+    const dump = request.curves ? structuredClone(installed.dump) : installed.dump;
+    await evaluate(dump, request);
+    return;
+  }
+  await evaluate(request.dump, request);
+};
+
+async function evaluate(dump: Dump, request: EvaluationFields): Promise<void> {
   const {
     id,
-    dump,
     object,
     group,
     modifierIndex,
@@ -47,7 +87,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
     probe,
     frame,
     volumeSampleBudget,
-  } = event.data;
+  } = request;
   try {
     setDenseSdfSampleBudget(volumeSampleBudget ?? null);
     if (curves) {
@@ -144,7 +184,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
     GEOMETRY_PROBE.socket = null;
     GEOMETRY_PROBE.geometry = null;
   }
-};
+}
 
 function transferableSoup(soup: TriSoup): TriSoup {
   return {

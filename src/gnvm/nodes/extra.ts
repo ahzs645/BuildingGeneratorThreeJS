@@ -1565,7 +1565,7 @@ reg("GeometryNodeScaleElements", (api) => {
     : buildTopology(mesh).edges.map((e) => [...e.verts]);
   const selected = elements.map((_, i) => boolOn(selArr[i] ?? 1));
   const groups = selectedElementGroups(elements, selected);
-  const next = mesh.positions.map((p) => [...p] as Vec3);
+  const next = mesh.positions.slice();
   for (const eis of groups.values()) {
     const verts = [...new Set(eis.flatMap((ei) => elements[ei]))];
     const center = centerArr
@@ -2128,7 +2128,7 @@ function exactSubdividedBoxDifference(source: Mesh, box: { min: Vec3; max: Vec3 
   // connector face. Reconstruct those five regions from geometric landmarks.
   const topology = buildTopology(out);
   const boundary = new Mesh();
-  boundary.positions = out.positions.map((point) => [...point] as Vec3);
+  boundary.positions = out.positions.slice();
   boundary.edges = topology.edges
     .filter((edge) => edge.faces.length === 1
       && edge.verts.every((vertex) => Math.abs(out.positions[vertex][cut!.axis] - cut!.coordinate) <= epsilon * 4))
@@ -2470,7 +2470,7 @@ function imprintPlanarDifference(planar: Geometry, cutter: Geometry): Geometry |
   const signed = (point: Vec3) => vdot(vsub(point, frame.point), frame.normal);
   const out = new Mesh();
   out.materialSlots = [...source.materialSlots];
-  out.positions = source.positions.map((point) => [...point] as Vec3);
+  out.positions = source.positions.slice();
   out.faces = source.faces.map((face) => [...face]);
   out.faceMaterial = [...source.faceMaterial];
   out.edges = source.edges.map((edge) => [...edge] as [number, number]);
@@ -2688,7 +2688,7 @@ export function clipToSingleBoxPlaneIntersection(
   } else if (box.min[cut.axis] > sourceMin[cut.axis] + epsilon) return null;
 
   const out = new Mesh();
-  out.positions = source.positions.map((point) => [...point] as Vec3);
+  out.positions = source.positions.slice();
   out.materialSlots = [...source.materialSlots];
   const pointAttributes = new Map<string, Elem[]>();
   const faceAttributes = new Map<string, Elem[]>();
@@ -2967,7 +2967,7 @@ function capBoxClip(clipped: Mesh, source: Mesh, keepFace: boolean[], box: { min
   if (!active.length) return;
 
   const boundary = new Mesh();
-  boundary.positions = clipped.positions.map((p) => [...p] as Vec3);
+  boundary.positions = clipped.positions.slice();
   boundary.edges = active.map((c) => c.edge);
   const loops = meshEdgesToChains(boundary)
     .filter((c) => c.spline.cyclic && c.verts.length >= 3);
@@ -4186,11 +4186,14 @@ function openSweptDifference(source: Mesh, cutter: Mesh): Mesh | null {
   for (const [a, b] of retainedEdges) {
     const midpoint = vscale(vadd(out.positions[a], out.positions[b]), 0.5);
     const vertex = appendPoint(midpoint, null);
-    for (const face of out.faces) {
+    for (let fi = 0; fi < out.faces.length; fi++) {
+      const face = out.faces[fi];
       for (let corner = 0; corner < face.length; corner++) {
         const next = (corner + 1) % face.length;
         if ((face[corner] === a && face[next] === b) || (face[corner] === b && face[next] === a)) {
-          face.splice(next, 0, vertex);
+          // Replace the row instead of splicing in place: the rows are shared
+          // with `clean` through the structural-sharing clone.
+          out.faces[fi] = [...face.slice(0, next), vertex, ...face.slice(next)];
           break;
         }
       }
