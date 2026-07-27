@@ -712,67 +712,86 @@ export function notePositionsReplaced(mesh: Mesh, oldPositions: Vec3[]): void {
  * that the full pass is the better call. Bit-exact vs computeVertexNormals
  * (see the hint contract comment above).
  */
+// Reusable scratch tables for incrementalVertexNormals (module is
+// single-threaded and the function is non-reentrant, like the edge-dedup
+// scratch below). dirtyMask/affected are re-cleared per call; acc slots are
+// zeroed only for affected vertices before accumulation.
+let incNormalsDirtyMask = new Uint8Array(0);
+let incNormalsAffected = new Uint8Array(0);
+let incNormalsIncident = new Uint8Array(0);
+let incNormalsAcc = new Float64Array(0);
+
 function incrementalVertexNormals(mesh: Mesh, hint: NormalsDeltaHint): Vec3[] | null {
   const vertCount = mesh.positions.length;
   const faces = mesh.faces;
   if (hint.baseNormals.length < hint.baseVertCount) return null;
-  const affected = new Uint8Array(vertCount);
+  for (const vi of hint.dirty) if (vi >= vertCount) return null; // contract breach
+  if (incNormalsDirtyMask.length < vertCount) {
+    incNormalsDirtyMask = new Uint8Array(vertCount);
+    incNormalsAffected = new Uint8Array(vertCount);
+    incNormalsIncident = new Uint8Array(vertCount);
+    incNormalsAcc = new Float64Array(vertCount * 3);
+  }
+  const dirtyMask = incNormalsDirtyMask;
+  const affected = incNormalsAffected;
+  dirtyMask.fill(0, 0, vertCount);
+  affected.fill(0, 0, vertCount);
+  for (const vi of hint.dirty) dirtyMask[vi] = 1;
   let affectedCount = 0;
   for (let vi = hint.baseVertCount; vi < vertCount; vi++) {
     affected[vi] = 1;
     affectedCount++;
   }
-  for (let fi = hint.baseFaceCount; fi < faces.length; fi++) {
-    for (const vi of faces[fi]) {
-      if (!affected[vi]) { affected[vi] = 1; affectedCount++; }
-    }
-  }
-  const corners = vertexCornersOf(mesh);
-  const cm = cornerMapsOf(mesh);
-  for (const vi of hint.dirty) {
-    if (vi >= vertCount) return null; // contract breach — bail to full pass
-    if (!affected[vi]) { affected[vi] = 1; affectedCount++; }
-    for (const c of corners[vi]) {
-      for (const u of faces[cm.face[c]]) {
-        if (!affected[u]) { affected[u] = 1; affectedCount++; }
+  // One flat scan marks every vertex whose incident-face geometry changed:
+  // all vertices of appended faces, and all vertices of any pre-existing face
+  // containing a moved vertex (its face normal and corner angles changed).
+  const scanDirty = hint.dirty.size > 0;
+  for (let fi = 0; fi < faces.length; fi++) {
+    const face = faces[fi];
+    if (fi < hint.baseFaceCount) {
+      if (!scanDirty) continue;
+      let touched = false;
+      for (let k = 0; k < face.length; k++) {
+        if (dirtyMask[face[k]]) { touched = true; break; }
       }
+      if (!touched) continue;
+    }
+    for (let k = 0; k < face.length; k++) {
+      const vi = face[k];
+      if (!affected[vi]) { affected[vi] = 1; affectedCount++; }
     }
   }
   if (affectedCount * 3 > vertCount) return null;
 
-  const out: Vec3[] = new Array(vertCount);
-  const baseNormals = hint.baseNormals;
-  for (let vi = 0; vi < hint.baseVertCount; vi++) out[vi] = baseNormals[vi];
-  // Face normals are pure per-face; compute each affected face once (the full
-  // pass computes every face once — identical values for the ones we touch).
-  const faceNormalMemo = new Map<number, Vec3>();
-  const faceNormalOf = (fi: number): Vec3 => {
-    let n = faceNormalMemo.get(fi);
-    if (!n) {
-      n = faceNormalBlenderFloat(mesh, faces[fi]);
-      faceNormalMemo.set(fi, n);
-    }
-    return n;
-  };
+  // Restricted full pass: identical face-major iteration and inlined float32
+  // arithmetic as computeVertexNormals — an affected vertex's accumulator sees
+  // exactly the same f32-rounded addition sequence as in the full pass, and
+  // unaffected vertices keep their base normals (their incident corner
+  // geometry is untouched by construction of the affected set).
+  const incident = incNormalsIncident;
+  const acc = incNormalsAcc;
   for (let vi = 0; vi < vertCount; vi++) {
-    if (!affected[vi]) continue;
-    const cs = corners[vi];
-    if (!cs.length) {
-      out[vi] = normalizeBlenderFloat(mesh.positions[vi]);
-      continue;
+    if (affected[vi]) {
+      incident[vi] = 0;
+      const at = vi * 3;
+      acc[at] = 0; acc[at + 1] = 0; acc[at + 2] = 0;
     }
-    // Same inlined float32 arithmetic and per-vertex accumulation order as
-    // computeVertexNormals: ascending corner order, f32 rounding after every
-    // addition.
-    let accX = 0, accY = 0, accZ = 0;
-    for (const c of cs) {
-      const fi = cm.face[c];
-      const face = faces[fi];
-      const k = c - cm.faceStart[fi];
-      const n = faceNormalOf(fi);
-      const p = mesh.positions[face[k]];
-      const prev = mesh.positions[face[(k - 1 + face.length) % face.length]];
-      const next = mesh.positions[face[(k + 1) % face.length]];
+  }
+  for (let fi = 0; fi < faces.length; fi++) {
+    const f = faces[fi];
+    let touched = false;
+    for (let k = 0; k < f.length; k++) {
+      if (affected[f[k]]) { touched = true; break; }
+    }
+    if (!touched) continue;
+    const n = faceNormalBlenderFloat(mesh, f);
+    for (let k = 0; k < f.length; k++) {
+      const vi = f[k];
+      if (!affected[vi]) continue;
+      incident[vi] = 1;
+      const p = mesh.positions[vi];
+      const prev = mesh.positions[f[(k - 1 + f.length) % f.length]];
+      const next = mesh.positions[f[(k + 1) % f.length]];
       let ax = f32(prev[0] - p[0]);
       let ay = f32(prev[1] - p[1]);
       let az = f32(prev[2] - p[2]);
@@ -793,11 +812,22 @@ function incrementalVertexNormals(mesh: Mesh, hint: NormalsDeltaHint): Vec3[] | 
       }
       const dot = f32(f32(f32(ax * bx) + f32(ay * by)) + f32(az * bz));
       const angle = safeAcosApproxBlenderFloat(dot);
-      accX = f32(accX + f32(n[0] * angle));
-      accY = f32(accY + f32(n[1] * angle));
-      accZ = f32(accZ + f32(n[2] * angle));
+      const at = vi * 3;
+      acc[at] = f32(acc[at] + f32(n[0] * angle));
+      acc[at + 1] = f32(acc[at + 1] + f32(n[1] * angle));
+      acc[at + 2] = f32(acc[at + 2] + f32(n[2] * angle));
     }
-    out[vi] = normalizeBlenderFloat([accX, accY, accZ]);
+  }
+  const out: Vec3[] = new Array(vertCount);
+  const baseNormals = hint.baseNormals;
+  for (let vi = 0; vi < vertCount; vi++) {
+    if (!affected[vi]) {
+      out[vi] = baseNormals[vi];
+      continue;
+    }
+    out[vi] = incident[vi]
+      ? normalizeBlenderFloat([acc[vi * 3], acc[vi * 3 + 1], acc[vi * 3 + 2]])
+      : normalizeBlenderFloat(mesh.positions[vi]);
   }
   return out;
 }
