@@ -14,7 +14,10 @@ export type StudioPanelRect = { x: number; y: number; width: number; height: num
 // Must match the mobile breakpoint in studio-shell.css. Docks and the bottom
 // sheet are exclusive render paths (never CSS-hidden duplicates) so hidden
 // file inputs, ids, and event handlers inside dock content exist exactly once.
-const MOBILE_STUDIO_QUERY = "(max-width: 820px)";
+// The second clause keeps touch phones on the sheet in landscape (e.g.
+// 844x390), where desktop docks and floating panels would swallow the screen;
+// fine-pointer desktops never match it.
+const MOBILE_STUDIO_QUERY = "(max-width: 820px), ((pointer: coarse) and (max-height: 500px))";
 
 function subscribeToMobileStudio(onChange: () => void): () => void {
   const media = window.matchMedia(MOBILE_STUDIO_QUERY);
