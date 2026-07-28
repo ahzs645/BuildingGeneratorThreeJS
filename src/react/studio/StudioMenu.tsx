@@ -18,9 +18,7 @@ export const STUDIO_TOOLS: StudioSection[] = [
   {
     title: "Create",
     items: [
-      { href: "/vegetation-generator", title: "Vegetation Generator", badge: "WebGPU", desc: "Paint ivy or grow a banyan tree with live procedural controls" },
-      { href: "/geometry-painter", title: "Geometry Painter", badge: "WebGPU", desc: "Paint crystal, molten, aurora, and reef growth onto a sphere" },
-      { href: "/surface-draw", title: "Draw on a Model", desc: "Upload a mesh and run a Blender-authored brush along your stroke" },
+      { href: "/paint", title: "Surface Painting Studio", badge: "WebGPU", desc: "Paint ivy, a banyan tree, crystal, molten, aurora, or reef growth onto any model — or switch to the Blender brush lab and run authored brushes along your stroke" },
       { href: "/building", title: "Hong Kong Building", desc: "592-node build system hand-ported to TypeScript, 18 parameters" },
     ],
   },
@@ -58,6 +56,18 @@ type DevPresetGroup = { tool: string; presets: DevPreset[] };
 // clicks remount the target runtime even when it is the current tool
 // (useToolRuntime depends on the router search string).
 const DEV_PRESETS: DevPresetGroup[] = [
+  {
+    tool: "Surface painting",
+    presets: [
+      { label: "ivy", href: "/paint?mode=ivy" },
+      { label: "banyan tree", href: "/paint?mode=tree" },
+      { label: "crystals", href: "/paint?mode=crystals" },
+      { label: "molten fissures", href: "/paint?mode=fissures" },
+      { label: "aurora silk", href: "/paint?mode=aurora" },
+      { label: "reef", href: "/paint?mode=reef" },
+      { label: "blender brush lab", href: "/paint?engine=blender" },
+    ],
+  },
   {
     tool: "Bubble Vase",
     presets: [

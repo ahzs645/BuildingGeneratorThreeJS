@@ -52,21 +52,22 @@ The static production bundle contains the studio UI and runtime, but direct `.bl
 extraction still needs the local Vite middleware (or a future hosted Blender worker).
 
 The interface is a single Vite + React application. Routes such as `/building`,
-`/geometry-painter`, `/vegetation-generator`, `/gallery`, `/bin`, and `/vase`
-lazy-load their Three.js runtimes from one HTML
-bootstrap. Previous `.html` URLs redirect to the corresponding React route.
+`/paint`, `/gallery`, `/bin`, and `/vase` lazy-load their Three.js runtimes from
+one HTML bootstrap. Previous `.html` URLs redirect to the corresponding React
+route, as do the retired `/vegetation-generator`, `/geometry-painter`, and
+`/surface-draw` routes.
 
-`/vegetation-generator` contains the integrated Three.js WebGPU Vegetation
-Generator. It supports surface-painted, wind-reactive ivy; interactive banyan
-trees; flower and fig brushes; procedural growth controls; local GLB uploads;
-and the original bark texture set. Its source and MIT license live under
-`src/vegetation-generator`, with runtime assets under `public/vegetation`.
-
-`/geometry-painter` contains the integrated Three.js WebGPU Geometry Painter.
-Drag across its floating sphere to grow crystal veins, molten fissures, aurora
-silk, or bioluminescent reef colonies. Its renderer, painting runtime, four mode
-implementations, live controls, and original MIT license live together under
-`src/geometry-painter`.
+`/paint` is the unified Surface Painting Studio. Its procedural engine (Three.js
+WebGPU, `src/surface-painter`) hosts every stroke-driven generator behind one
+option set — surface-painted, wind-reactive ivy; the interactive banyan tree with
+flower/fig brushes; and crystal veins, molten fissures, aurora silk, and
+bioluminescent reef colonies — all with shared model presets, local GLB uploads,
+model scaling, and the studio bloom pipeline. The generator implementations and
+their MIT licenses remain under `src/vegetation-generator` and
+`src/geometry-painter` (runtime assets under `public/vegetation`). Its second
+engine, the Blender brush lab (`/paint?engine=blender`), evaluates
+Blender-authored brushes (Chrome Crayon, Periodic Brush) through the GN-VM along
+a stroke projected onto an uploaded mesh, with fixed Blender parity paths.
 
 `/bin` is the synchronized Dojo Bin parity workspace: one Bin Select control
 drives a baked Blender-truth variant and a fresh GN-VM evaluation, with overlay,

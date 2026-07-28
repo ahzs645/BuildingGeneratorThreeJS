@@ -15,16 +15,18 @@ const CrayonComparePage = lazy(() => import("./pages/CrayonComparePage"));
 const TypewriterPage = lazy(() => import("./pages/TypewriterPage"));
 const PeriodicBrushPage = lazy(() => import("./pages/PeriodicBrushPage"));
 const ChromeAssetsPage = lazy(() => import("./pages/ChromeAssetsPage"));
-const SurfaceDrawPage = lazy(() => import("./pages/SurfaceDrawPage"));
+const SurfacePaintPage = lazy(() => import("./pages/SurfacePaintPage"));
 const MaterialXLabPage = lazy(() => import("./pages/MaterialXLabPage"));
-const GeometryPainterPage = lazy(() => import("./pages/GeometryPainterPage"));
-const VegetationGeneratorPage = lazy(() => import("./pages/VegetationGeneratorPage"));
 
-// Old entry points (pre-router .html files and renamed routes) → current
-// routes, preserving the query string.
+// Old entry points (pre-router .html files, renamed routes, and the three
+// painting tools now unified under /paint) → current routes. Incoming query
+// params are preserved; params baked into the target act as defaults.
 const LEGACY_ROUTES: Record<string, string> = {
   "/blendbridge": "/",
   "/gnvm": "/bin",
+  "/vegetation-generator": "/paint?mode=ivy",
+  "/geometry-painter": "/paint?mode=crystals",
+  "/surface-draw": "/paint?engine=blender",
   "/blend-import.html": "/",
   "/building.html": "/building",
   "/dojo-viewer.html": "/dojo",
@@ -33,13 +35,21 @@ const LEGACY_ROUTES: Record<string, string> = {
   "/bin-live.html": "/bin/live",
   "/gnvm-viewer.html": "/bin",
   "/vase-compare.html": "/vase",
-  "/geometry-painter.html": "/geometry-painter",
-  "/vegetation-generator.html": "/vegetation-generator",
+  "/geometry-painter.html": "/paint?mode=crystals",
+  "/vegetation-generator.html": "/paint?mode=ivy",
 };
 
 function LegacyRedirect({ to }: { to: string }): React.JSX.Element {
   const { search } = useLocation();
-  return <Navigate replace to={`${to}${search}`} />;
+  const [path, targetQuery] = to.split("?");
+  const params = new URLSearchParams(search);
+  if (targetQuery) {
+    for (const [key, value] of new URLSearchParams(targetQuery)) {
+      if (!params.has(key)) params.set(key, value);
+    }
+  }
+  const query = params.toString();
+  return <Navigate replace to={`${path}${query ? `?${query}` : ""}`} />;
 }
 
 function NotFound(): React.JSX.Element {
@@ -65,10 +75,8 @@ function StudioRoutes(): React.JSX.Element {
           <Route path="/typewriter" element={<TypewriterPage />} />
           <Route path="/periodic-brush" element={<PeriodicBrushPage />} />
           <Route path="/chrome-assets" element={<ChromeAssetsPage />} />
-          <Route path="/surface-draw" element={<SurfaceDrawPage />} />
+          <Route path="/paint" element={<SurfacePaintPage />} />
           <Route path="/materialx" element={<MaterialXLabPage />} />
-          <Route path="/geometry-painter" element={<GeometryPainterPage />} />
-          <Route path="/vegetation-generator" element={<VegetationGeneratorPage />} />
 
           {Object.entries(LEGACY_ROUTES).map(([from, to]) =>
             <Route key={from} path={from} element={<LegacyRedirect to={to} />} />)}
