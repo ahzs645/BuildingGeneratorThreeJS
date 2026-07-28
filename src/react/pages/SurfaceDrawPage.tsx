@@ -1,4 +1,3 @@
-import { StudioLink } from "../StudioLink";
 import { useToolRuntime } from "../page-runtime";
 import "./surface-draw.css";
 
@@ -8,7 +7,6 @@ export default function SurfaceDrawPage(): React.JSX.Element {
   useToolRuntime("Surface Draw Lab · browser Geometry Nodes", loadSurfaceDraw);
   return <main className="surface-shell">
     <canvas id="surface-canvas" />
-    <StudioLink />
     <header className="surface-head">
       <p>Node Dojo · projected curve workflow</p>
       <h1>Draw on a Model</h1>

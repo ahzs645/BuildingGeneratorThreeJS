@@ -1,4 +1,3 @@
-import { StudioLink } from "../StudioLink";
 import { useToolRuntime } from "../page-runtime";
 import "./periodic-brush.css";
 
@@ -8,7 +7,6 @@ export default function PeriodicBrushPage(): React.JSX.Element {
   useToolRuntime("Node Dojo Periodic Brush · browser Geometry Nodes", loadPeriodicBrush);
   return <main className="periodic-shell">
     <canvas id="periodic-canvas" />
-    <StudioLink />
     <header className="periodic-head">
       <p>Chrome Asset Library · browser port</p>
       <h1>Periodic Brush</h1>

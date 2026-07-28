@@ -1,0 +1,26 @@
+/* Height of the persistent studio nav bar. Page chrome anchored to the top of
+   the viewport must offset itself with calc(var(--studio-nav-h) + gap). */
+:root { --studio-nav-h: 46px; }
+
+/* z-index 48: above page HUDs/heads (≤31), docks (35), and the StudioShell
+   brand (45); below floating studio panels (50) and the menu backdrop (220). */
+.studio-nav{position:fixed;z-index:48;top:0;left:0;right:0;height:var(--studio-nav-h);display:flex;align-items:center;gap:12px;box-sizing:border-box;padding:0 10px 0 8px;border-bottom:1px solid rgba(255,255,255,.1);background:rgba(9,11,14,.78);backdrop-filter:blur(16px);color:#d7dbe0;font-family:Inter,system-ui,sans-serif}
+.studio-nav-mark{display:grid;width:30px;height:30px;flex:0 0 auto;place-items:center;border:0;border-radius:8px;background:linear-gradient(145deg,#3b8fbc,#5b5eb5);color:#fff;cursor:pointer;font:800 10px/1 ui-monospace,monospace;letter-spacing:.04em}
+.studio-nav-crumb{display:flex;min-width:0;align-items:baseline;gap:8px;border:0;background:none;padding:0;color:inherit;cursor:pointer;text-align:left;white-space:nowrap;font-family:inherit}
+.studio-nav-crumb span{color:#73818c;font:700 8px/1 ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase}
+.studio-nav-crumb strong{overflow:hidden;text-overflow:ellipsis;color:#f1f4f6;font-size:13px;font-weight:650;letter-spacing:-.01em}
+.studio-nav-crumb:hover strong{color:#8fcfff}
+.studio-nav-siblings{display:flex;min-width:0;flex:1;justify-content:center;gap:4px;overflow-x:auto;scrollbar-width:none}
+.studio-nav-siblings::-webkit-scrollbar{display:none}
+.studio-nav-siblings a{flex:0 0 auto;padding:6px 10px;border:1px solid transparent;border-radius:999px;color:#93a1ad;text-decoration:none;font:600 10px/1 ui-monospace,monospace;letter-spacing:.03em}
+.studio-nav-siblings a:hover{color:#eaf2f8;border-color:rgba(143,207,255,.4)}
+.studio-nav-siblings a.current{color:#d8f1fc;border-color:rgba(143,207,255,.32);background:rgba(143,207,255,.1)}
+.studio-nav-all{margin-left:auto;display:inline-flex;flex:0 0 auto;align-items:center;gap:6px;padding:7px 10px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(20,24,29,.6);color:#9fb4c7;cursor:pointer;font:600 10px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase}
+.studio-nav-all kbd{padding:1px 4px;border:1px solid rgba(255,255,255,.14);border-radius:4px;background:#181b20;font:inherit}
+.studio-nav-all:hover{color:#eaf2f8;border-color:rgba(143,207,255,.5)}
+/* lil-gui panels autoplaced by tool runtimes (vegetation generator, geometry
+   painter) default to top:0 and would cover the bar; lil-gui's stylesheet
+   loads later (lazy tool import), so this rule wins on specificity. */
+.lil-gui.root.autoPlace{top:calc(var(--studio-nav-h,46px) + 10px);max-height:calc(100% - var(--studio-nav-h,46px) - 20px)}
+@media (max-width:1180px){.studio-nav-siblings{display:none}}
+@media (max-width:520px){.studio-nav-crumb span{display:none}.studio-nav-all kbd{display:none}}

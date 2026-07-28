@@ -1,4 +1,3 @@
-import { StudioLink } from "../StudioLink";
 import { useToolRuntime } from "../page-runtime";
 import "./vase-compare.css";
 
@@ -8,7 +7,7 @@ export default function VaseComparePage(): React.JSX.Element {
   useToolRuntime("Bubble Vase · Blender vs GN-VM", loadVase);
   return (
     <main className="vase-compare-page">
-      <canvas id="app"></canvas><StudioLink />
+      <canvas id="app"></canvas>
       <div id="hud"><b>Vase compare</b> · <span className="truth">red wire = Blender truth</span> · <span className="vm">blue wire = GN-VM</span> · <span id="stat">loading…</span>
         <div className="compare-controls" aria-label="Vase comparison controls">
           <button id="toggle-truth" className="truth-toggle" type="button" aria-pressed="true">Blender</button><button id="toggle-vm" type="button" aria-pressed="true">GN-VM</button><button id="view-overlay" type="button" aria-pressed="true">Overlay</button><button id="view-side-by-side" type="button" aria-pressed="false">Side by side</button><button id="toggle-vm-style" type="button" aria-pressed="false">VM solid</button><button id="reframe" type="button">Reframe</button>

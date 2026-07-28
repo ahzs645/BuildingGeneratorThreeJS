@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { appHref } from "../base-url";
+import { StudioNav } from "./studio/StudioNav";
 import "./shell.css";
 
 const BlendBridgePage = lazy(() => import("./pages/BlendBridgePage"));
@@ -18,6 +19,23 @@ const SurfaceDrawPage = lazy(() => import("./pages/SurfaceDrawPage"));
 const MaterialXLabPage = lazy(() => import("./pages/MaterialXLabPage"));
 const GeometryPainterPage = lazy(() => import("./pages/GeometryPainterPage"));
 const VegetationGeneratorPage = lazy(() => import("./pages/VegetationGeneratorPage"));
+
+// Old entry points (pre-router .html files and renamed routes) → current
+// routes, preserving the query string.
+const LEGACY_ROUTES: Record<string, string> = {
+  "/blendbridge": "/",
+  "/gnvm": "/bin",
+  "/blend-import.html": "/",
+  "/building.html": "/building",
+  "/dojo-viewer.html": "/dojo",
+  "/dojo-gallery.html": "/gallery",
+  "/bin-studio.html": "/bin",
+  "/bin-live.html": "/bin/live",
+  "/gnvm-viewer.html": "/bin",
+  "/vase-compare.html": "/vase",
+  "/geometry-painter.html": "/geometry-painter",
+  "/vegetation-generator.html": "/vegetation-generator",
+};
 
 function LegacyRedirect({ to }: { to: string }): React.JSX.Element {
   const { search } = useLocation();
@@ -37,13 +55,11 @@ function StudioRoutes(): React.JSX.Element {
     // never be rebuilt on a canvas that React kept alive.
     <Routes location={location} key={`${location.pathname}?${location.search}`}>
           <Route path="/" element={<BlendBridgePage />} />
-          <Route path="/blendbridge" element={<LegacyRedirect to="/" />} />
           <Route path="/building" element={<BuildingPage />} />
           <Route path="/dojo" element={<DojoViewerPage />} />
           <Route path="/gallery" element={<DojoGalleryPage />} />
           <Route path="/bin" element={<BinComparePage />} />
           <Route path="/bin/live" element={<BinLivePage />} />
-          <Route path="/gnvm" element={<LegacyRedirect to="/bin" />} />
           <Route path="/vase" element={<VaseComparePage />} />
           <Route path="/crayon" element={<CrayonComparePage />} />
           <Route path="/typewriter" element={<TypewriterPage />} />
@@ -54,16 +70,8 @@ function StudioRoutes(): React.JSX.Element {
           <Route path="/geometry-painter" element={<GeometryPainterPage />} />
           <Route path="/vegetation-generator" element={<VegetationGeneratorPage />} />
 
-          <Route path="/blend-import.html" element={<LegacyRedirect to="/" />} />
-          <Route path="/building.html" element={<LegacyRedirect to="/building" />} />
-          <Route path="/dojo-viewer.html" element={<LegacyRedirect to="/dojo" />} />
-          <Route path="/dojo-gallery.html" element={<LegacyRedirect to="/gallery" />} />
-          <Route path="/bin-studio.html" element={<LegacyRedirect to="/bin" />} />
-          <Route path="/bin-live.html" element={<LegacyRedirect to="/bin/live" />} />
-          <Route path="/gnvm-viewer.html" element={<LegacyRedirect to="/bin" />} />
-          <Route path="/vase-compare.html" element={<LegacyRedirect to="/vase" />} />
-          <Route path="/geometry-painter.html" element={<LegacyRedirect to="/geometry-painter" />} />
-          <Route path="/vegetation-generator.html" element={<LegacyRedirect to="/vegetation-generator" />} />
+          {Object.entries(LEGACY_ROUTES).map(([from, to]) =>
+            <Route key={from} path={from} element={<LegacyRedirect to={to} />} />)}
           <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -72,6 +80,8 @@ function StudioRoutes(): React.JSX.Element {
 export default function App(): React.JSX.Element {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
+      {/* Outside the keyed Routes: the nav bar survives every navigation. */}
+      <StudioNav />
       <Suspense fallback={<div className="route-loading">Loading procedural tool…</div>}>
         <StudioRoutes />
       </Suspense>

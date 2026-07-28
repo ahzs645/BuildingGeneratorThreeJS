@@ -26,8 +26,10 @@ toggle…) are exposed as live sliders.
 ## Geometry Nodes studio
 
 The studio is the app's root: open `http://127.0.0.1:5173/` while the dev server
-is running (`/blendbridge` redirects there). Every other tool is reachable from
-the studio menu — the `PS` / `☰ studio` button on any page, or <kbd>⌘K</kbd>. You
+is running (`/blendbridge` redirects there). A persistent navigation bar sits at
+the top of every page: it shows the current section and tool, links to the sibling
+tools of that section, and opens the full tool directory via the `PS` mark, the
+**All tools** button, or <kbd>⌘K</kbd>. You
 can drop in a `.blend` file, choose either a Geometry Nodes modifier or a reusable
 asset-only node group, edit its graph and exposed inputs, preview it in Three.js,
 and export the edited portable graph JSON. Asset groups can be seeded with a cube,

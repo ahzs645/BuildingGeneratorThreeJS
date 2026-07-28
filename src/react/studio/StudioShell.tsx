@@ -6,7 +6,6 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import { StudioMenuButton } from "./StudioMenu";
 import "./studio-shell.css";
 
 export type StudioPanelRect = { x: number; y: number; width: number; height: number };
@@ -70,7 +69,6 @@ export function StudioShell({
   return <main className={`studio-shell ${docksOpen ? "docks-open" : "docks-closed"}`}>
     <div className="studio-viewport">{children}</div>
     <header className="studio-brand">
-      <StudioMenuButton className="studio-home" title="Studio tools (⌘K)">PS</StudioMenuButton>
       <div>
         <span>{eyebrow}</span>
         <strong>{title}</strong>

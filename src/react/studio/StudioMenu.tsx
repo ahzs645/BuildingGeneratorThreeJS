@@ -1,14 +1,14 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
 import "./studio-menu.css";
 
-type Tool = { href: string; title: string; desc: string; badge?: string };
-type Section = { title: string; items: Tool[] };
+export type StudioTool = { href: string; title: string; desc: string; badge?: string };
+export type StudioSection = { title: string; items: StudioTool[] };
 
 // Every routed tool in the app. The studio workspace is the root route; the
 // Dev section carries the experiments that were never on the old landing page.
-export const STUDIO_TOOLS: Section[] = [
+export const STUDIO_TOOLS: StudioSection[] = [
   {
     title: "Studio",
     items: [
@@ -214,31 +214,11 @@ export function StudioMenu({ open, onClose }: { open: boolean; onClose: () => vo
   );
 }
 
-type StudioMenuButtonProps = {
-  id?: string;
-  className?: string;
-  title?: string;
-  children: ReactNode;
-};
-
-export function StudioMenuButton({ id, className, title, children }: StudioMenuButtonProps): React.JSX.Element {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent): void => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setOpen((value) => !value);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-  return (
-    <>
-      <button type="button" id={id} className={className} title={title ?? "Studio tools (⌘K)"} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
-        {children}
-      </button>
-      <StudioMenu open={open} onClose={() => setOpen(false)} />
-    </>
-  );
+/** Locate the section + tool entry that owns a router pathname. */
+export function findStudioTool(pathname: string): { section: StudioSection; tool: StudioTool } | null {
+  for (const section of STUDIO_TOOLS) {
+    const tool = section.items.find((item) => item.href === pathname);
+    if (tool) return { section, tool };
+  }
+  return null;
 }

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { StudioLink } from "../StudioLink";
 import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import { useToolRuntime } from "../page-runtime";
 import "./chrome-assets.css";
@@ -59,7 +58,6 @@ export default function ChromeAssetsPage(): React.JSX.Element {
   };
 
   return <main className={`assets-shell ${showTypePixelBrushGraph && graphOpen ? "graph-open" : ""} ${shaderCapture ? "shader-capture" : ""}`}>
-    <StudioLink />
     <header className="assets-head"><p>Node Dojo coverage lab</p><h1>Live Asset Library</h1><div id="assets-status">Loading catalog…</div></header>
     <section className="assets-compare">
       <figure className="assets-pane"><figcaption><span>Blender reference</span><strong id="assets-blender-count">—</strong></figcaption><img id="assets-reference" alt="Isolated Blender reference render" /></figure>

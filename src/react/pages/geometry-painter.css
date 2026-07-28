@@ -30,26 +30,6 @@ body.orbit .geometry-painter-page #geometry-painter-app:active {
   cursor: grabbing;
 }
 
-.geometry-painter-page #geometry-painter-title {
-  position: fixed;
-  left: 96px;
-  top: 14px;
-  z-index: 3;
-  color: #eef0f6;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  pointer-events: none;
-  opacity: 0.92;
-}
-
-.geometry-painter-page #geometry-painter-title small {
-  margin-left: 5px;
-  opacity: 0.55;
-  font-size: 13px;
-  font-weight: 400;
-}
-
 .geometry-painter-page #drawFrame {
   position: fixed;
   inset: 0;
@@ -177,7 +157,7 @@ body.orbit .geometry-painter-page #modeBtn .key {
 .geometry-painter-page #toast {
   position: fixed;
   left: 50%;
-  top: 64px;
+  top: calc(var(--studio-nav-h, 46px) + 16px);
   z-index: 5;
   padding: 8px 16px;
   transform: translateX(-50%) translateY(-8px);
@@ -213,16 +193,7 @@ body.orbit .geometry-painter-page #modeBtn .key {
   font-size: 14px;
 }
 
-.geometry-painter-page .studio-link {
-  left: 16px;
-  top: 14px;
-}
-
 @media (max-width: 720px) {
-  .geometry-painter-page #geometry-painter-title {
-    display: none;
-  }
-
   .geometry-painter-page #hud {
     right: 12px;
     bottom: 70px;

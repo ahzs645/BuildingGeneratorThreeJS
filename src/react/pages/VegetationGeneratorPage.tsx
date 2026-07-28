@@ -1,4 +1,3 @@
-import { StudioLink } from "../StudioLink";
 import { useToolRuntime } from "../page-runtime";
 import "./vegetation-generator.css";
 
@@ -11,9 +10,6 @@ export default function VegetationGeneratorPage(): React.JSX.Element {
     <main className="vegetation-generator-page">
       <div id="vegetation-generator-app" />
       <div id="drawFrame" />
-      <div id="vegetation-generator-title">
-        <span aria-hidden="true">🌿</span> Vegetation Generator <small>three.js WebGPU</small>
-      </div>
       <button id="modeBtn" type="button" aria-label="Toggle the active vegetation interaction mode">
         <span className="dot" />
         <span className="label">Draw mode</span>
@@ -21,7 +17,6 @@ export default function VegetationGeneratorPage(): React.JSX.Element {
       </button>
       <div id="hud" />
       <div id="toast" role="status" aria-live="polite" />
-      <StudioLink />
     </main>
   );
 }

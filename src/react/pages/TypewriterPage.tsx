@@ -1,4 +1,3 @@
-import { StudioLink } from "../StudioLink";
 import { useToolRuntime } from "../page-runtime";
 import "./typewriter.css";
 
@@ -8,7 +7,6 @@ export default function TypewriterPage(): React.JSX.Element {
   useToolRuntime("Node Dojo Typewriter · browser Geometry Nodes", loadTypewriter);
   return <main className="typewriter-shell">
     <canvas id="typewriter-canvas" />
-    <StudioLink />
     <header className="typewriter-head">
       <p>Node Dojo portability lab</p>
       <h1>Procedural Typewriter</h1>
