@@ -683,6 +683,13 @@ bit-identical or every source dependency exists.
   mean-luminance error after equivalent Blender/WebGL key compositing. The
   remaining residual is subpixel raster coverage and internal-edge
   interpolation.
+- Recursive Bin's two authored materials (`3D`, `3D.004`) have a durable
+  Wave/Noise/Bump shader contract in
+  [`bin-material-parity.json`](../public/dojo/bin-material-parity.json),
+  probed against Blender 5.1.2 Emission renders to 0.0059169212 max absolute
+  scalar delta and enforced by `src/materials/bin-authored-material.test.ts`.
+  It is a material-semantic reconstruction, not a pixel-identical render; the
+  file's own `rendererApproximation` block defines that scope.
 - Nodes Node UI assets retain small glyph-position and Workbench
   lighting/cavity differences despite topology-and-bounds closure.
 - Hat bill/front exact material parity is blocked by seven missing external
