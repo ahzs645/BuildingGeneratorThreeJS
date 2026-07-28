@@ -8,6 +8,10 @@
     "test": "tsx --test src/**/*.test.ts",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "blend:decode": "tsx tools/blend-decode.ts",
+    "blend:introspect": "tsx tools/blend-introspect.ts",
+    "blend:parity": "tsx tools/blend-parity.ts",
+    "blend:calibrate": "tsx tools/blend-calibrate-enums.ts",
     "materialx:extract": "node tools/materialx/run_node_dojo_blender.mjs chrome-assets tools/materialx/extract_blender_material.py -- --material chrome.003 --geometry-contract public/materialx/chrome-crayon-geometry-contract.json --output public/materialx/chrome-crayon-native.mtlx --report public/materialx/chrome-crayon-native.report.json",
     "materialx:render:blender": "node tools/materialx/run_blender.mjs 'Chrome Crayon Surface Draw Test.blend' tools/materialx/render_blender_references.py -- --runtime-dir public/materialx/references --evidence-dir docs/materialx-evidence/current",
     "materialx:render:25d": "node tools/materialx/run_node_dojo_blender.mjs chrome-assets tools/materialx/render_25d_chrome_reference.py --",
@@ -38,6 +42,7 @@
   "dependencies": {
     "@gltf-transform/core": "^4.4.1",
     "@xyflow/react": "^12.11.2",
+    "fzstd": "^0.1.1",
     "lil-gui": "^0.20.0",
     "manifold-3d": "^3.5.1",
     "react": "^19.2.7",

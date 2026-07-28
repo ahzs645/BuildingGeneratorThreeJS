@@ -51,6 +51,7 @@ import {
   type BlendStudioPointMeasurementSnapshot,
   type BlendStudioRuntimeSnapshot,
 } from "../../blend-studio/runtime";
+import type { PortableGap } from "../../blend/index";
 import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import { useBlendStudioRuntime } from "../blend-studio/useBlendStudioRuntime";
 import { usePageRuntime } from "../page-runtime";
@@ -190,6 +191,7 @@ export default function BlendBridgePage(): React.JSX.Element {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [importMessage, setImportMessage] = useState("Drop a Blender file or load the included sample");
+  const [decoderGaps, setDecoderGaps] = useState<PortableGap[] | null>(null);
   const [sourceDump, setSourceDump] = useState<ImportedDump | null>(null);
   const [workingDump, setWorkingDump] = useState<Dump | null>(null);
   const [sourceName, setSourceName] = useState("");
@@ -664,18 +666,23 @@ export default function BlendBridgePage(): React.JSX.Element {
   }, [isMobile]);
 
   const importFile = useCallback(async (file: File): Promise<void> => {
+    const isJson = file.name.toLowerCase().endsWith(".json");
+    // Blender extracts strictly more than the browser can (base meshes, node
+    // properties, packed resources), so prefer it whenever it is reachable and
+    // fall back to the in-browser DNA decoder everywhere else.
+    const useBlender = !isJson && !isStaticDeploy && health?.available === true;
     setBusy(true);
-    setImportMessage(file.name.toLowerCase().endsWith(".json")
+    setDecoderGaps(null);
+    setImportMessage(isJson
       ? "Reading portable graph…"
-      : "Blender is extracting nodes, objects, dependencies, and materials…");
+      : useBlender
+        ? "Blender is extracting nodes, objects, dependencies, and materials…"
+        : "Decoding the Blender file in your browser…");
     try {
       let dump: ImportedDump;
-      if (file.name.toLowerCase().endsWith(".json")) {
+      if (isJson) {
         dump = JSON.parse(await file.text()) as ImportedDump;
-      } else {
-        if (isStaticDeploy) {
-          throw new Error("Direct .blend extraction needs the local app; extracted JSON still works here");
-        }
+      } else if (useBlender) {
         const response = await fetch("/api/blend-import", {
           method: "POST",
           headers: {
@@ -687,6 +694,11 @@ export default function BlendBridgePage(): React.JSX.Element {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error ?? `Import failed (${response.status})`);
         dump = body as ImportedDump;
+      } else {
+        const { decodeBlend } = await import("../../blend/index");
+        const decoded = await decodeBlend(new Uint8Array(await file.arrayBuffer()), { filename: file.name });
+        dump = decoded.dump as ImportedDump;
+        setDecoderGaps(decoded.gaps);
       }
       installDump(dump, file.name, file.size);
     } catch (error) {
@@ -694,10 +706,11 @@ export default function BlendBridgePage(): React.JSX.Element {
     } finally {
       setBusy(false);
     }
-  }, [installDump]);
+  }, [health?.available, installDump]);
 
   const loadSample = useCallback(async (): Promise<void> => {
     setBusy(true);
+    setDecoderGaps(null);
     setImportMessage("Loading included procedural bin graph…");
     try {
       const response = await fetch(publicUrl("dojo/dump_bin.json"));
@@ -796,8 +809,18 @@ export default function BlendBridgePage(): React.JSX.Element {
       <button className="blend-secondary-button" type="button" disabled={busy} onClick={() => void loadSample()}>Try included bin sample</button>
       <div className="blend-source-status">
         <span className={health?.available ? "ready" : ""} />
-        <div><b>{sourceName || (health?.available ? "Blender ready" : "Portable JSON mode")}</b><small>{sourceName ? `${humanBytes(sourceBytes)} · Blender ${sourceDump?.blender_version ?? "unknown"}` : importMessage}</small></div>
+        <div><b>{sourceName || (health?.available ? "Blender ready" : "Browser decoder ready")}</b><small>{sourceName ? `${humanBytes(sourceBytes)} · Blender ${sourceDump?.blender_version ?? "unknown"}${decoderGaps ? " · decoded in browser" : ""}` : importMessage}</small></div>
       </div>
+      {decoderGaps && decoderGaps.length > 0 && <details className="blend-decoder-gaps">
+        <summary>{decoderGaps.length} capabilities Blender supplies that this file cannot</summary>
+        <ul>
+          {decoderGaps.map((gap) => <li key={gap.code}>
+            <b>{gap.code.toLowerCase().replace(/_/g, " ")}</b>
+            <span>{gap.detail}</span>
+            {gap.subjects?.length ? <em>{gap.subjects.slice(0, 6).join(", ")}{gap.subjects.length > 6 ? " …" : ""}</em> : null}
+          </li>)}
+        </ul>
+      </details>}
     </section>
     <section>
       <label className="blend-field">

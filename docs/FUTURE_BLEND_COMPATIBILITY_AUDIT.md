@@ -21,9 +21,16 @@ future Blender files. The distinction matters: exact results on known fixtures
 prove implemented semantics, while a compatibility boundary must also reject,
 isolate, or precisely describe semantics it does not understand.
 
-This document does not propose parsing `.blend` bytes in JavaScript. Blender
-remains the authoritative extractor. The browser contract begins at the
-portable dump.
+Blender remains the authoritative extractor: it is the only source of base
+meshes, evaluated matrices, node properties, packed images, and font outlines.
+
+Since this audit was written, a second producer of the same portable dump
+exists: `src/blend` decodes `.blend` bytes directly in the browser, so a machine
+without Blender can still load, browse, and edit a graph. See
+[BLEND_CLIENT_DECODER.md](BLEND_CLIENT_DECODER.md) for what it reproduces
+exactly, how that is verified against Blender field by field, and which
+capabilities it declares as gaps. Everything below still applies to both
+producers, because the browser contract still begins at the portable dump.
 
 ## Evidence from the current repository
 
