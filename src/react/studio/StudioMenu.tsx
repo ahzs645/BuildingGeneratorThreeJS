@@ -25,14 +25,14 @@ export const STUDIO_TOOLS: StudioSection[] = [
   {
     title: "Node studies",
     items: [
-      { href: "/typewriter", title: "Procedural Typewriter", desc: "Editable text through the authored Typewriter graph" },
+      { href: "/typewriter", title: "Procedural Typewriter", desc: "Editable text through the authored Typewriter graph, with animation playback — also loadable from the asset library" },
       { href: "/gallery", title: "Node Dojo Gallery", badge: "baked", desc: "Frozen Blender-evaluated GLB exports with their original materials — the live versions of these assets live in the asset library" },
     ],
   },
   {
     title: "Blender parity",
     items: [
-      { href: "/chrome-assets", title: "Live Asset Library", badge: "101 assets", desc: "Blender reference renders beside live VM output · every asset also loads into the Studio" },
+      { href: "/chrome-assets", title: "Live Asset Library", badge: "102 assets", desc: "Blender reference renders beside live VM output · every asset also loads into the Studio" },
       { href: "/bin", title: "Dojo Bin Compare", desc: "Deep parity workspace for the recursive bin — the same graph as the studio's included sample" },
       { href: "/vase", title: "Bubble Vase Compare", desc: "Overlay and side-by-side parity for the bubble vase" },
       { href: "/materialx", title: "MaterialX Parity Lab", badge: "prototype", desc: "Capability-gated Blender → MaterialX shader experiment" },
