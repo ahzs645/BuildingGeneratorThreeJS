@@ -8,3 +8,4 @@
 .assets-shell.graph-open .assets-pane figcaption{bottom:auto;top:150px}
 .assets-shell .graph-toggle{left:24px}
 .assets-picker>div{display:grid;grid-template-columns:34px minmax(0,1fr) 34px;gap:7px}.assets-panel .assets-picker button{width:34px;padding:9px 0;font-size:14px}.assets-panel .assets-picker input{box-sizing:border-box;width:100%;min-width:0;padding:9px;border:1px solid #343b35;border-radius:8px;background:#121612;color:#eff5ec}
+.assets-head .assets-open-studio{pointer-events:auto;display:inline-block;margin-top:10px;margin-left:8px;padding:6px 9px;border:1px solid rgba(143,207,255,.35);border-radius:99px;background:#0c0f0dcc;color:#8fcfff;text-decoration:none;font:700 9px/1 ui-monospace,monospace}.assets-head .assets-open-studio:hover{border-color:#8fcfff;color:#c9e7fa}

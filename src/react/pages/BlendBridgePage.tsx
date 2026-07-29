@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { isStaticDeploy, publicUrl } from "../../base-url";
 import { animationFrameRange, type Dump } from "../../gnvm";
 import {
@@ -53,6 +54,12 @@ import {
 } from "../../blend-studio/runtime";
 import type { PortableGap } from "../../blend/index";
 import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
+import {
+  AssetLibraryOverlay,
+  fetchAssetCatalog,
+  libraryAssetStats,
+  type LibraryAsset,
+} from "../blend-studio/AssetLibrary";
 import { useBlendStudioRuntime } from "../blend-studio/useBlendStudioRuntime";
 import { usePageRuntime } from "../page-runtime";
 import { FloatingStudioPanel, StudioShell, useMobileStudio, type StudioPanelRect } from "../studio/StudioShell";
@@ -178,6 +185,7 @@ function seedFromValue(value: string): BlendStudioSeed {
 
 export default function BlendBridgePage(): React.JSX.Element {
   usePageRuntime("Procedural Studio · Blender Geometry Nodes on the web");
+  const { search } = useLocation();
   const fileInput = useRef<HTMLInputElement>(null);
   const workpieceInput = useRef<HTMLInputElement>(null);
   const importSerial = useRef(0);
@@ -190,6 +198,8 @@ export default function BlendBridgePage(): React.JSX.Element {
   const [health, setHealth] = useState<Health | null>(null);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [libraryAsset, setLibraryAsset] = useState<LibraryAsset | null>(null);
   const [importMessage, setImportMessage] = useState("Drop a Blender file or load the included sample");
   const [decoderGaps, setDecoderGaps] = useState<PortableGap[] | null>(null);
   const [sourceDump, setSourceDump] = useState<ImportedDump | null>(null);
@@ -648,6 +658,9 @@ export default function BlendBridgePage(): React.JSX.Element {
     }
     const installed = structuredClone(dump);
     const nextTargets = discoverBlendStudioTargets(installed);
+    // Library loads re-assert their asset right after this call; direct
+    // imports leave the studio in plain .blend/.json mode.
+    setLibraryAsset(null);
     setSourceDump(installed);
     setWorkingDump(installed);
     setSourceName(dump.import_meta?.filename || filename);
@@ -723,6 +736,60 @@ export default function BlendBridgePage(): React.JSX.Element {
       setBusy(false);
     }
   }, [installDump]);
+
+  const loadLibraryAsset = useCallback(async (asset: LibraryAsset): Promise<void> => {
+    setLibraryOpen(false);
+    setBusy(true);
+    setDecoderGaps(null);
+    setImportMessage(`Loading ${asset.title} from the asset library…`);
+    try {
+      const [dumpResponse, shaderMetadata] = await Promise.all([
+        fetch(publicUrl(asset.dump), { cache: "no-store" }),
+        asset.shaderMetadata
+          ? fetch(publicUrl(asset.shaderMetadata), { cache: "no-store" })
+              .then((response) => response.ok ? response.json() : null)
+              .catch(() => null)
+          : Promise.resolve(null),
+      ]);
+      if (!dumpResponse.ok) throw new Error(`Asset dump failed (${dumpResponse.status})`);
+      const dump = Object.assign(
+        await dumpResponse.json() as ImportedDump,
+        shaderMetadata ?? {},
+      );
+      installDump(dump, asset.title, Number(dumpResponse.headers.get("content-length")) || 0);
+      // Prefer the asset's authored modifier object over the first discovered
+      // target so the studio opens on the same geometry the library shows.
+      const authoredTarget = discoverBlendStudioTargets(dump).find((candidate) =>
+        candidate.kind === "object" && candidate.objectName === asset.object);
+      if (authoredTarget) setTargetId(authoredTarget.id);
+      setLibraryAsset(asset);
+    } catch (error) {
+      setImportMessage(`Asset failed · ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setBusy(false);
+    }
+  }, [installDump]);
+
+  // Deep link from the parity lab (and shared URLs): /?asset=<catalog-id>
+  // loads that library asset straight into the studio.
+  const requestedLibraryAsset = useMemo(
+    () => new URLSearchParams(search).get("asset"),
+    [search],
+  );
+  const handledLibraryAssetParam = useRef<string | null>(null);
+  useEffect(() => {
+    if (!requestedLibraryAsset || handledLibraryAssetParam.current === requestedLibraryAsset) return;
+    handledLibraryAssetParam.current = requestedLibraryAsset;
+    let cancelled = false;
+    fetchAssetCatalog().then((catalog) => {
+      const asset = catalog.find((item) => item.id === requestedLibraryAsset);
+      if (!cancelled && asset) void loadLibraryAsset(asset);
+      else if (!cancelled && !asset) setImportMessage(`Unknown library asset · ${requestedLibraryAsset}`);
+    }).catch(() => {
+      if (!cancelled) setImportMessage("Asset catalog failed to load");
+    });
+    return () => { cancelled = true; };
+  }, [loadLibraryAsset, requestedLibraryAsset]);
 
   const loadMeasurementSubject = useCallback(async (
     file: File,
@@ -807,10 +874,19 @@ export default function BlendBridgePage(): React.JSX.Element {
         }}
       />
       <button className="blend-secondary-button" type="button" disabled={busy} onClick={() => void loadSample()}>Try included bin sample</button>
+      <button className="blend-secondary-button blend-library-button" type="button" disabled={busy} onClick={() => setLibraryOpen(true)}>Browse the live asset library</button>
       <div className="blend-source-status">
         <span className={health?.available ? "ready" : ""} />
         <div><b>{sourceName || (health?.available ? "Blender ready" : "Browser decoder ready")}</b><small>{sourceName ? `${humanBytes(sourceBytes)} · Blender ${sourceDump?.blender_version ?? "unknown"}${decoderGaps ? " · decoded in browser" : ""}` : importMessage}</small></div>
       </div>
+      {libraryAsset && <div className="blend-library-asset">
+        <img src={publicUrl(libraryAsset.authoredReference ?? libraryAsset.reference)} alt={`${libraryAsset.title} Blender reference render`} />
+        <div>
+          <b>{libraryAsset.title}</b>
+          <small>Blender · {libraryAssetStats(libraryAsset)}</small>
+          <Link to={`/chrome-assets?asset=${libraryAsset.id}`}>Side-by-side Blender compare →</Link>
+        </div>
+      </div>}
       {decoderGaps && decoderGaps.length > 0 && <details className="blend-decoder-gaps">
         <summary>{decoderGaps.length} capabilities Blender supplies that this file cannot</summary>
         <ul>
@@ -1333,6 +1409,7 @@ export default function BlendBridgePage(): React.JSX.Element {
       <div className="blend-empty-orbit" />
       <h1>Bring a Geometry Nodes tool into the studio.</h1>
       <p>{importMessage}</p>
+      <button type="button" className="blend-empty-library" disabled={busy} onClick={() => setLibraryOpen(true)}>Browse the live asset library</button>
     </div>}
     {!graphOpen && workingDump && <button className="graph-toggle" type="button" onClick={() => setGraphOpen(true)}>{isMobile ? "Node graph" : "Show Geometry Nodes workspace"}</button>}
     {graphOpen && graphSource && target && <FloatingStudioPanel
@@ -1361,5 +1438,11 @@ export default function BlendBridgePage(): React.JSX.Element {
         onDumpChange={setWorkingDump}
       />
     </FloatingStudioPanel>}
+    <AssetLibraryOverlay
+      open={libraryOpen}
+      activeAssetId={libraryAsset?.id}
+      onClose={() => setLibraryOpen(false)}
+      onSelect={(asset) => void loadLibraryAsset(asset)}
+    />
   </StudioShell>;
 }

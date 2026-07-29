@@ -12,7 +12,7 @@ export const STUDIO_TOOLS: StudioSection[] = [
   {
     title: "Studio",
     items: [
-      { href: "/", title: "Procedural Studio", desc: "Import a .blend, inspect and edit its Geometry Nodes graph, evaluate it in the browser VM" },
+      { href: "/", title: "Procedural Studio", badge: "asset library", desc: "Import a .blend or browse the ported asset library, inspect and edit its Geometry Nodes graph, evaluate it in the browser VM" },
     ],
   },
   {
@@ -32,7 +32,7 @@ export const STUDIO_TOOLS: StudioSection[] = [
   {
     title: "Blender parity",
     items: [
-      { href: "/chrome-assets", title: "Live Asset Library", badge: "101 assets", desc: "Blender reference renders beside live VM output" },
+      { href: "/chrome-assets", title: "Live Asset Library", badge: "101 assets", desc: "Blender reference renders beside live VM output · every asset also loads into the Studio" },
       { href: "/bin", title: "Dojo Bin Compare", desc: "Synchronized Blender truth and browser VM workspace" },
       { href: "/vase", title: "Bubble Vase Compare", desc: "Overlay and side-by-side parity for the bubble vase" },
       { href: "/materialx", title: "MaterialX Parity Lab", badge: "prototype", desc: "Capability-gated Blender → MaterialX shader experiment" },
