@@ -12,7 +12,7 @@ export const STUDIO_TOOLS: StudioSection[] = [
   {
     title: "Studio",
     items: [
-      { href: "/", title: "Procedural Studio", desc: "Import a .blend, inspect and edit its Geometry Nodes graph, evaluate it in the browser VM" },
+      { href: "/", title: "Procedural Studio", badge: "asset library", desc: "Import a .blend or browse the ported asset library, inspect and edit its Geometry Nodes graph, evaluate it in the browser VM" },
     ],
   },
   {
@@ -25,15 +25,15 @@ export const STUDIO_TOOLS: StudioSection[] = [
   {
     title: "Node studies",
     items: [
-      { href: "/typewriter", title: "Procedural Typewriter", desc: "Editable text through the authored Typewriter graph" },
-      { href: "/gallery", title: "Node Dojo Gallery", desc: "Crayon, gyroid, P-surface, hat, and bin in one viewer" },
+      { href: "/typewriter", title: "Procedural Typewriter", desc: "Editable text through the authored Typewriter graph, with animation playback — also loadable from the asset library" },
+      { href: "/gallery", title: "Node Dojo Gallery", badge: "baked", desc: "Frozen Blender-evaluated GLB exports with their original materials — the live versions of these assets live in the asset library" },
     ],
   },
   {
     title: "Blender parity",
     items: [
-      { href: "/chrome-assets", title: "Live Asset Library", badge: "101 assets", desc: "Blender reference renders beside live VM output" },
-      { href: "/bin", title: "Dojo Bin Compare", desc: "Synchronized Blender truth and browser VM workspace" },
+      { href: "/chrome-assets", title: "Live Asset Library", badge: "102 assets", desc: "Blender reference renders beside live VM output · every asset also loads into the Studio" },
+      { href: "/bin", title: "Dojo Bin Compare", desc: "Deep parity workspace for the recursive bin — the same graph as the studio's included sample" },
       { href: "/vase", title: "Bubble Vase Compare", desc: "Overlay and side-by-side parity for the bubble vase" },
       { href: "/materialx", title: "MaterialX Parity Lab", badge: "prototype", desc: "Capability-gated Blender → MaterialX shader experiment" },
     ],
@@ -42,9 +42,7 @@ export const STUDIO_TOOLS: StudioSection[] = [
     title: "Dev",
     items: [
       { href: "/crayon", title: "Chrome Crayon Compare", desc: "Single-asset parity workspace with the Blender-style graph" },
-      { href: "/dojo", title: "Dojo Viewer", desc: "Single Node Dojo study viewer" },
       { href: "/bin/live", title: "Bin Live", desc: "Live-evaluated recursive bin (needs the local bake bridge)" },
-      { href: "/periodic-brush", title: "Periodic Brush", desc: "Periodic surface brush experiment" },
     ],
   },
 ];

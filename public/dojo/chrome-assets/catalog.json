@@ -1990,5 +1990,87 @@
   "workbenchColor": [0.8, 0.8, 0.8],
   "note": "The 212-node mesh-modeling study matches Blender exactly at 1,860 vertices, 1,609 faces, and 3,502 triangles with identical bounds. Blender-flat Grid, Cone, Cylinder, and Convex Hull defaults restore the exact 169 sharp / 1,440 smooth face split; positions, indices, groups, and topology remain unchanged.",
   "controls": []
-}
+},
+  {
+    "id": "typewriter",
+    "title": "Procedural Typewriter",
+    "object": "_Typewriter Node Container",
+    "dump": "dojo/typewriter/dump.json",
+    "reference": "dojo/typewriter/references/frame-240-blender.png",
+    "blenderStats": {
+      "verts": 4743,
+      "faces": 33
+    },
+    "note": "Live '_Typewriter Nodes' graph with the text, typography, and playback sockets exposed on the modifier interface for this port (tools/expose-typewriter-inputs.mjs; the authored file keeps them inside the nested group). Glyph outlines come from the embedded Blender-extracted BlurMedium atlas, so no font file is needed at runtime. The Blender reference and its 4,743-vert / 33-face counts were captured at frame 240 with the presentation board hidden; enable 'Show presentation board' to join the authored demo board (5,393 verts). Also available as the dedicated Procedural Typewriter tool with animation playback.",
+    "controls": [
+      {
+        "type": "text",
+        "name": "Text input",
+        "label": "Text",
+        "value": "NODE DOJO TYPEWRITER \u2014 now running entirely in the browser."
+      },
+      {
+        "name": "__frame",
+        "label": "Animation frame",
+        "min": 0,
+        "max": 240,
+        "step": 1,
+        "value": 240
+      },
+      {
+        "name": "Type Speed",
+        "label": "Type speed",
+        "min": 1,
+        "max": 30,
+        "step": 0.1,
+        "value": 6.299999713897705
+      },
+      {
+        "name": "Size",
+        "label": "Glyph size",
+        "min": 0.05,
+        "max": 1,
+        "step": 0.01,
+        "value": 0.25999927520751953
+      },
+      {
+        "name": "Character Spacing",
+        "label": "Character spacing",
+        "min": 0.2,
+        "max": 3,
+        "step": 0.01,
+        "value": 1.1799999475479126
+      },
+      {
+        "name": "Word Spacing",
+        "label": "Word spacing",
+        "min": 0.2,
+        "max": 3,
+        "step": 0.01,
+        "value": 1.1099998950958252
+      },
+      {
+        "name": "Line Spacing",
+        "label": "Line spacing",
+        "min": 0.2,
+        "max": 3,
+        "step": 0.01,
+        "value": 0.8100000619888306
+      },
+      {
+        "name": "Text Box Width",
+        "label": "Text box width",
+        "min": 0.5,
+        "max": 12,
+        "step": 0.05,
+        "value": 4.1999993324279785
+      },
+      {
+        "type": "checkbox",
+        "name": "Show presentation board",
+        "label": "Show presentation board",
+        "value": false
+      }
+    ]
+  }
 ]

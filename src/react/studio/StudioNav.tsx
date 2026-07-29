@@ -42,6 +42,9 @@ export function StudioNav(): React.JSX.Element | null {
         <strong>{entry?.tool.title ?? "Procedural Studio"}</strong>
       </button>
       {entry && entry.section.items.length > 1 && <nav className="studio-nav-siblings" aria-label={`${entry.section.title} tools`}>
+        {/* Labelled so sibling tools read as section neighbours, not tabs of
+            the current tool. */}
+        <span className="studio-nav-section" aria-hidden="true">{entry.section.title}</span>
         {entry.section.items.map((item) => {
           const current = item.href === pathname;
           return <Link key={item.href} to={item.href} className={current ? "current" : ""} aria-current={current ? "page" : undefined}>{item.title}</Link>;

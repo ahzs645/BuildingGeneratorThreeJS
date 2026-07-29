@@ -6,30 +6,31 @@ import "./shell.css";
 
 const BlendBridgePage = lazy(() => import("./pages/BlendBridgePage"));
 const BuildingPage = lazy(() => import("./pages/BuildingPage"));
-const DojoViewerPage = lazy(() => import("./pages/DojoViewerPage"));
 const DojoGalleryPage = lazy(() => import("./pages/DojoGalleryPage"));
 const BinComparePage = lazy(() => import("./pages/BinComparePage"));
 const BinLivePage = lazy(() => import("./pages/BinLivePage"));
 const VaseComparePage = lazy(() => import("./pages/VaseComparePage"));
 const CrayonComparePage = lazy(() => import("./pages/CrayonComparePage"));
 const TypewriterPage = lazy(() => import("./pages/TypewriterPage"));
-const PeriodicBrushPage = lazy(() => import("./pages/PeriodicBrushPage"));
 const ChromeAssetsPage = lazy(() => import("./pages/ChromeAssetsPage"));
 const SurfacePaintPage = lazy(() => import("./pages/SurfacePaintPage"));
 const MaterialXLabPage = lazy(() => import("./pages/MaterialXLabPage"));
 
-// Old entry points (pre-router .html files, renamed routes, and the three
-// painting tools now unified under /paint) → current routes. Incoming query
-// params are preserved; params baked into the target act as defaults.
+// Old entry points (pre-router .html files, renamed routes, the three
+// painting tools now unified under /paint, and retired single-asset viewers
+// consolidated into the gallery / asset library) → current routes. Incoming
+// query params are preserved; params baked into the target act as defaults.
 const LEGACY_ROUTES: Record<string, string> = {
   "/blendbridge": "/",
   "/gnvm": "/bin",
+  "/dojo": "/gallery?model=dojo-bin",
+  "/periodic-brush": "/chrome-assets?asset=periodic-brush",
   "/vegetation-generator": "/paint?mode=ivy",
   "/geometry-painter": "/paint?mode=crystals",
   "/surface-draw": "/paint?engine=blender",
   "/blend-import.html": "/",
   "/building.html": "/building",
-  "/dojo-viewer.html": "/dojo",
+  "/dojo-viewer.html": "/gallery?model=dojo-bin",
   "/dojo-gallery.html": "/gallery",
   "/bin-studio.html": "/bin",
   "/bin-live.html": "/bin/live",
@@ -66,14 +67,12 @@ function StudioRoutes(): React.JSX.Element {
     <Routes location={location} key={`${location.pathname}?${location.search}`}>
           <Route path="/" element={<BlendBridgePage />} />
           <Route path="/building" element={<BuildingPage />} />
-          <Route path="/dojo" element={<DojoViewerPage />} />
           <Route path="/gallery" element={<DojoGalleryPage />} />
           <Route path="/bin" element={<BinComparePage />} />
           <Route path="/bin/live" element={<BinLivePage />} />
           <Route path="/vase" element={<VaseComparePage />} />
           <Route path="/crayon" element={<CrayonComparePage />} />
           <Route path="/typewriter" element={<TypewriterPage />} />
-          <Route path="/periodic-brush" element={<PeriodicBrushPage />} />
           <Route path="/chrome-assets" element={<ChromeAssetsPage />} />
           <Route path="/paint" element={<SurfacePaintPage />} />
           <Route path="/materialx" element={<MaterialXLabPage />} />

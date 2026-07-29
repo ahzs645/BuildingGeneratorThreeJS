@@ -13,6 +13,7 @@
 .studio-nav-siblings{display:flex;min-width:0;flex:1;justify-content:center;gap:4px;overflow-x:auto;scrollbar-width:none}
 .studio-nav-siblings::-webkit-scrollbar{display:none}
 .studio-nav-siblings a{flex:0 0 auto;padding:6px 10px;border:1px solid transparent;border-radius:999px;color:#93a1ad;text-decoration:none;font:600 10px/1 ui-monospace,monospace;letter-spacing:.03em}
+.studio-nav-section{flex:0 0 auto;align-self:center;margin-right:6px;padding-right:10px;border-right:1px solid rgba(255,255,255,.12);color:#5b6873;font:700 8px/1 ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase}
 .studio-nav-siblings a:hover{color:#eaf2f8;border-color:rgba(143,207,255,.4)}
 .studio-nav-siblings a.current{color:#d8f1fc;border-color:rgba(143,207,255,.32);background:rgba(143,207,255,.1)}
 .studio-nav-all{margin-left:auto;display:inline-flex;flex:0 0 auto;align-items:center;gap:6px;padding:7px 10px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(20,24,29,.6);color:#9fb4c7;cursor:pointer;font:600 10px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase}

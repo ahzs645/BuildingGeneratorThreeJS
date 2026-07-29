@@ -144,7 +144,11 @@ test("course sidecars preserve the authored material libraries", () => {
   ], [[74, 11], [83, 10], [77, 12]]);
 });
 
-test("all 101 catalog assets now load portable shader metadata", () => {
-  assert.equal(catalog.length, 101);
+test("all 102 catalog assets load portable shader metadata", () => {
+  assert.equal(catalog.length, 102);
   assert.equal(catalog.filter((asset: any) => typeof asset.shaderMetadata === "string").length, 101);
+  // The typewriter port needs no sidecar: its dump carries Material.003/.004
+  // inline, extracted alongside the graph.
+  const inline = catalog.filter((asset: any) => asset.shaderMetadata === undefined);
+  assert.deepEqual(inline.map((asset: any) => asset.id), ["typewriter"]);
 });
