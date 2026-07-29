@@ -12,7 +12,8 @@ export default function DojoGalleryPage(): React.JSX.Element {
       <aside id="panel">
         <div id="models"></div>
         <div className="controls" aria-label="View style">
-          <button type="button" data-style="original">original</button><button type="button" data-style="studio" className="active">studio</button><button type="button" data-style="wireframe">wire</button><button type="button" id="spin" className="active">spin</button><button type="button" id="reset">reset</button>
+          {/* "original" is the runtime's initial viewStyle (dojo-gallery.ts). */}
+          <button type="button" data-style="original" className="active">original</button><button type="button" data-style="studio">studio</button><button type="button" data-style="wireframe">wire</button><button type="button" id="spin" className="active">spin</button><button type="button" id="reset">reset</button>
         </div>
       </aside>
       <div id="status">loading…</div>

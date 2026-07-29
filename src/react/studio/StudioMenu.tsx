@@ -26,7 +26,7 @@ export const STUDIO_TOOLS: StudioSection[] = [
     title: "Node studies",
     items: [
       { href: "/typewriter", title: "Procedural Typewriter", desc: "Editable text through the authored Typewriter graph" },
-      { href: "/gallery", title: "Node Dojo Gallery", desc: "Crayon, gyroid, P-surface, hat, and bin in one viewer" },
+      { href: "/gallery", title: "Node Dojo Gallery", badge: "baked", desc: "Frozen Blender-evaluated GLB exports with their original materials — the live versions of these assets live in the asset library" },
     ],
   },
   {
@@ -42,9 +42,7 @@ export const STUDIO_TOOLS: StudioSection[] = [
     title: "Dev",
     items: [
       { href: "/crayon", title: "Chrome Crayon Compare", desc: "Single-asset parity workspace with the Blender-style graph" },
-      { href: "/dojo", title: "Dojo Viewer", desc: "Single Node Dojo study viewer" },
       { href: "/bin/live", title: "Bin Live", desc: "Live-evaluated recursive bin (needs the local bake bridge)" },
-      { href: "/periodic-brush", title: "Periodic Brush", desc: "Periodic surface brush experiment" },
     ],
   },
 ];
