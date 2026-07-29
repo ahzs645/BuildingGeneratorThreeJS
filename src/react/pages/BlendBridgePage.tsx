@@ -132,9 +132,11 @@ function persistEvaluationRun(
   return blendStudioEvaluationRunsForKey(next, key);
 }
 
+// Sized so the 3D preview stays visible above the panel — the workspace is a
+// tool alongside the viewport, not a takeover.
 function defaultGraphRect(): StudioPanelRect {
   const width = Math.min(1120, Math.max(640, window.innerWidth - 650));
-  const height = Math.min(620, Math.max(420, window.innerHeight - 180));
+  const height = Math.min(480, Math.max(360, window.innerHeight - 430));
   return {
     x: Math.max(304, Math.round((window.innerWidth - width) / 2)),
     y: Math.max(92, window.innerHeight - height - 28),
@@ -752,11 +754,15 @@ export default function BlendBridgePage(): React.JSX.Element {
           : Promise.resolve(null),
       ]);
       if (!dumpResponse.ok) throw new Error(`Asset dump failed (${dumpResponse.status})`);
+      const dumpText = await dumpResponse.text();
       const dump = Object.assign(
-        await dumpResponse.json() as ImportedDump,
+        JSON.parse(dumpText) as ImportedDump,
         shaderMetadata ?? {},
       );
-      installDump(dump, asset.title, Number(dumpResponse.headers.get("content-length")) || 0);
+      installDump(dump, asset.title, dumpText.length);
+      // Library loads are about seeing and modulating the asset; the node
+      // workspace stays one click away instead of covering the preview.
+      setGraphOpen(false);
       // Prefer the asset's authored modifier object over the first discovered
       // target so the studio opens on the same geometry the library shows.
       const authoredTarget = discoverBlendStudioTargets(dump).find((candidate) =>
@@ -875,15 +881,17 @@ export default function BlendBridgePage(): React.JSX.Element {
       />
       <button className="blend-secondary-button" type="button" disabled={busy} onClick={() => void loadSample()}>Try included bin sample</button>
       <button className="blend-secondary-button blend-library-button" type="button" disabled={busy} onClick={() => setLibraryOpen(true)}>Browse the live asset library</button>
-      <div className="blend-source-status">
+      {/* One source card at a time: the library card supersedes the generic
+          import status row for catalog assets. */}
+      {!libraryAsset && <div className="blend-source-status">
         <span className={health?.available ? "ready" : ""} />
         <div><b>{sourceName || (health?.available ? "Blender ready" : "Browser decoder ready")}</b><small>{sourceName ? `${humanBytes(sourceBytes)} · Blender ${sourceDump?.blender_version ?? "unknown"}${decoderGaps ? " · decoded in browser" : ""}` : importMessage}</small></div>
-      </div>
+      </div>}
       {libraryAsset && <div className="blend-library-asset">
         <img src={publicUrl(libraryAsset.authoredReference ?? libraryAsset.reference)} alt={`${libraryAsset.title} Blender reference render`} />
         <div>
           <b>{libraryAsset.title}</b>
-          <small>Blender · {libraryAssetStats(libraryAsset)}</small>
+          <small>{libraryAssetStats(libraryAsset)} · Blender {sourceDump?.blender_version ?? "unknown"}</small>
           <Link to={`/chrome-assets?asset=${libraryAsset.id}`}>Side-by-side Blender compare →</Link>
         </div>
       </div>}
@@ -1395,7 +1403,7 @@ export default function BlendBridgePage(): React.JSX.Element {
   </>;
 
   return <StudioShell
-    eyebrow="Procedural Studio"
+    eyebrow={libraryAsset ? "Asset library" : sourceName ? "Imported source" : "Procedural Studio"}
     title={sourceName || "Geometry Nodes Studio"}
     subtitle={target ? <>{target.kind === "object" ? "Modifier object" : "Reusable group"} · {target.label}</> : "Import · inspect · edit · evaluate"}
     docksOpen={docksOpen}

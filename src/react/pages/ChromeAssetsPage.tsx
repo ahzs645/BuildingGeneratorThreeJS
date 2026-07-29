@@ -23,7 +23,9 @@ export default function ChromeAssetsPage(): React.JSX.Element {
   useToolRuntime("Node Dojo Asset Library · Blender vs browser", loadChromeAssets);
   const query = new URLSearchParams(location.search);
   const [activeAssetId, setActiveAssetId] = useState(() => query.get("asset") ?? "");
-  const [graphOpen, setGraphOpen] = useState(true);
+  // The comparison is the page's purpose; the node workspace (which covers the
+  // Blender reference pane) opens on demand via the toggle.
+  const [graphOpen, setGraphOpen] = useState(false);
   const [graphMaximized, setGraphMaximized] = useState(false);
   const showTypePixelBrushGraph = activeAssetId === "type-pixel-brush";
   const captureMode = query.get("capture");
