@@ -1,28 +1,30 @@
+/* The ⌘K directory. Same behaviour as before, restyled onto the kit: 13px
+   titles, 12px descriptions (was 11px/8.5px), --st-panel surfaces, 12px radii. */
 .studio-menu-backdrop{position:fixed;inset:0;z-index:220;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:8vh 16px 6vh;background:rgba(5,7,9,.62);backdrop-filter:blur(7px)}
-.studio-menu{width:min(640px,100%);overflow:hidden;border:1px solid rgba(255,255,255,.13);border-radius:16px;background:rgba(11,13,17,.97);box-shadow:0 30px 90px rgba(0,0,0,.6);color:#d7dbe0;font-family:Inter,system-ui,sans-serif}
-.studio-menu>header{display:flex;align-items:baseline;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.1)}
-.studio-menu>header b{font:700 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.16em;text-transform:uppercase;color:#8fcfff}
-.studio-menu>header span{color:#66727e;font:10px/1 ui-monospace,monospace}
-.studio-menu>header kbd{padding:2px 5px;border:1px solid rgba(255,255,255,.14);border-radius:4px;background:#181b20;font:inherit}
-.studio-menu section{padding:10px 10px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.studio-menu{width:min(680px,100%);overflow:hidden;border:1px solid var(--st-line-2);border-radius:var(--st-r-lg);background:var(--st-panel);box-shadow:0 30px 90px rgba(0,0,0,.6);color:var(--st-ink);font-family:var(--st-font)}
+.studio-menu>header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--st-line)}
+.studio-menu>header b{font:700 var(--st-fs-micro)/1 var(--st-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--st-accent)}
+.studio-menu>header span{color:var(--st-ink-3);font:500 var(--st-fs-micro)/1 var(--st-mono)}
+.studio-menu kbd{padding:2px 5px;border:1px solid var(--st-line-2);border-radius:5px;background:#12161A;font:inherit}
+.studio-menu section{padding:10px 10px 12px;border-bottom:1px solid var(--st-line)}
 .studio-menu section:last-child{border-bottom:0}
-.studio-menu h2{margin:0;padding:5px 10px 7px;color:#7c8794;font:700 9px/1 ui-monospace,monospace;letter-spacing:.2em;text-transform:uppercase}
-.studio-menu-items{display:grid;gap:2px;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
-.studio-menu a{display:block;padding:8px 10px;border-radius:9px;color:inherit;text-decoration:none}
-.studio-menu a:hover{background:rgba(143,207,255,.08)}
-.studio-menu a.current{background:rgba(143,207,255,.11);box-shadow:inset 0 0 0 1px rgba(143,207,255,.32)}
-.studio-menu a b{display:flex;align-items:baseline;gap:7px;font-size:13px;font-weight:620;letter-spacing:-.01em}
-.studio-menu a em{padding:2px 6px;border:1px solid rgba(159,224,164,.3);border-radius:999px;color:#9fe0a4;font:600 8.5px/1 ui-monospace,monospace;font-style:normal;letter-spacing:.08em}
-.studio-menu a small{display:block;margin-top:3px;color:#7c8794;font-size:11px;line-height:1.45}
+.studio-menu h2{margin:0;padding:5px 10px 8px;color:#8A95A0;font:700 var(--st-fs-micro)/1 var(--st-mono);letter-spacing:.1em;text-transform:uppercase}
+.studio-menu-items{display:grid;gap:2px;grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
+.studio-menu a{display:block;padding:9px 10px;border-radius:var(--st-r-md);color:inherit;text-decoration:none}
+.studio-menu a:hover{background:rgba(127,196,232,.08)}
+.studio-menu a.current{background:var(--st-accent-wash);box-shadow:inset 0 0 0 1px rgba(127,196,232,.32)}
+.studio-menu a b{display:flex;align-items:center;gap:7px;font-size:var(--st-fs-title);font-weight:600;letter-spacing:-.01em}
+.studio-menu a em{padding:2px 6px;border:1px solid rgba(126,215,158,.3);border-radius:999px;color:var(--st-ok);font:500 var(--st-fs-micro)/1 var(--st-mono);font-style:normal;letter-spacing:.04em}
+.studio-menu a small{display:block;margin-top:4px;color:var(--st-ink-3);font-size:var(--st-fs-ui);line-height:1.45}
 .studio-menu-dev{margin-top:6px;padding:0 10px}
-.studio-menu-dev-toggle{display:block;width:100%;padding:7px 0;border:0;background:none;color:#7c8794;cursor:pointer;text-align:left;font:700 9px/1 ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase}
-.studio-menu-dev-toggle:hover{color:#8fcfff}
+.studio-menu-dev-toggle{display:block;width:100%;padding:8px 0;border:0;background:none;color:var(--st-ink-3);cursor:pointer;text-align:left;font:700 var(--st-fs-micro)/1 var(--st-mono);letter-spacing:.1em;text-transform:uppercase}
+.studio-menu-dev-toggle:hover{color:var(--st-accent)}
 .studio-menu-dev-body{padding:4px 0 6px;display:grid;gap:12px}
-.studio-menu-status{display:flex;flex-wrap:wrap;gap:6px 16px;color:#9aa7b2;font:10px/1.6 ui-monospace,monospace}
+.studio-menu-status{display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--st-ink-2);font:500 var(--st-fs-micro)/1.6 var(--st-mono)}
 .studio-menu-status span{white-space:nowrap}
-.studio-menu-presets>span,.studio-menu-cli>span{display:block;margin-bottom:5px;color:#66727e;font:700 8.5px/1 ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase}
+.studio-menu-presets>span,.studio-menu-cli>span{display:block;margin-bottom:6px;color:var(--st-ink-3);font:700 var(--st-fs-micro)/1 var(--st-mono);letter-spacing:.1em;text-transform:uppercase}
 .studio-menu-presets>div{display:flex;flex-wrap:wrap;gap:5px}
-.studio-menu-presets a{padding:4px 8px;border:1px solid rgba(255,255,255,.13);border-radius:999px;color:#a9b6c1;text-decoration:none;font:600 9.5px/1 ui-monospace,monospace}
-.studio-menu-presets a:hover{border-color:rgba(143,207,255,.45);color:#eaf2f8;background:rgba(143,207,255,.07)}
-.studio-menu-cli div{color:#7c8794;font:10px/1.7 ui-monospace,monospace}
-.studio-menu-cli code{color:#9fc6e8;background:#161a20;border-radius:4px;padding:1px 5px;margin-right:6px}
+.studio-menu-presets a{padding:5px 9px;border:1px solid var(--st-line-2);border-radius:999px;color:#B6C1CA;text-decoration:none;font:500 var(--st-fs-micro)/1 var(--st-mono)}
+.studio-menu-presets a:hover{border-color:rgba(127,196,232,.45);color:var(--st-ink);background:var(--st-accent-wash)}
+.studio-menu-cli div{color:var(--st-ink-3);font:500 var(--st-fs-micro)/1.7 var(--st-mono)}
+.studio-menu-cli code{color:var(--st-accent);background:var(--st-sunken);border-radius:4px;padding:1px 5px;margin-right:6px}

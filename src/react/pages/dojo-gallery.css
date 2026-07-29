@@ -1,25 +1,26 @@
-.dojo-gallery-page { color-scheme: dark; --accent: #8fcfff; --panel: rgba(10, 13, 17, .86); --line: rgba(255,255,255,.1); }
-.dojo-gallery-page, .dojo-gallery-page * { box-sizing: border-box; }
-.dojo-gallery-page { position: fixed; inset: 0; width: 100%; height: 100%; margin: 0; overflow: hidden; background: #080a0d; color: #dfe7ed; font-family: Inter, system-ui, sans-serif; }
-.dojo-gallery-page #app { width: 100vw; height: 100vh; display: block; }
-.dojo-gallery-page .top { position: fixed; z-index: 10; top: calc(var(--studio-nav-h, 46px) + 14px); left: 22px; pointer-events: none; text-shadow: 0 2px 8px #000; }
-.dojo-gallery-page .eyebrow { color: var(--accent); font: 700 10px/1 ui-monospace, monospace; letter-spacing: .2em; text-transform: uppercase; }
-.dojo-gallery-page h1 { margin: 8px 0 5px; font-size: clamp(22px, 3vw, 34px); letter-spacing: -.035em; }
-.dojo-gallery-page #subtitle { max-width: 55ch; color: #92a0ad; font-size: 12px; line-height: 1.5; }
-.dojo-gallery-page #panel { position: fixed; z-index: 20; top: calc(var(--studio-nav-h, 46px) + 12px); right: 18px; width: min(330px, calc(100vw - 36px)); max-height: calc(100vh - var(--studio-nav-h, 46px) - 30px); overflow: auto; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); backdrop-filter: blur(18px); box-shadow: 0 18px 55px rgba(0,0,0,.35); }
+/* The gallery keeps only its model rows and the per-model accent. The .top
+   eyebrow + 34px h1 + subtitle stack and the floating #panel are gone: the nav
+   names the tool and the dock holds the list. */
+
+.dojo-gallery-page { --accent: #8FCFFF; }
+.dojo-gallery-page #app { display: block; width: 100%; height: 100%; }
+.dojo-gallery-page #subtitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* dojo-gallery.ts builds these rows imperatively, so they are styled to match
+   .st-card rather than composed from it. */
 .dojo-gallery-page #models { display: grid; gap: 7px; }
-.dojo-gallery-page .model { width: 100%; text-align: left; color: #aab5be; background: rgba(255,255,255,.025); border: 1px solid transparent; border-radius: 10px; padding: 10px 11px; cursor: pointer; }
-.dojo-gallery-page .model:hover { color: #fff; border-color: rgba(255,255,255,.14); }
-.dojo-gallery-page .model.active { color: #fff; border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 9%, transparent); }
-.dojo-gallery-page .model strong { display: block; font-size: 13px; font-weight: 650; }
-.dojo-gallery-page .model span { display: block; margin-top: 3px; color: #71808c; font: 10px/1.35 ui-monospace, monospace; }
-.dojo-gallery-page .controls { display: flex; gap: 6px; margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--line); }
-.dojo-gallery-page #status { position: fixed; z-index: 10; left: 22px; bottom: 18px; color: #8795a0; font: 11px/1.5 ui-monospace, monospace; text-shadow: 0 2px 8px #000; }
-.dojo-gallery-page #status .ok { color: #9fe0a4; }
-.dojo-gallery-page #status .err { color: #ff9b9b; }
-@media (max-width: 700px) {
-  .dojo-gallery-page .top { top: calc(var(--studio-nav-h, 46px) + 10px); left: 14px; }
-  .dojo-gallery-page .top #subtitle { display: none; }
-  .dojo-gallery-page #panel { top: auto; right: 10px; bottom: 10px; left: 10px; width: auto; max-height: 44vh; }
-  .dojo-gallery-page #status { left: 14px; bottom: calc(44vh + 22px); }
+.dojo-gallery-page .model {
+  display: grid; width: 100%; gap: 3px;
+  padding: 9px 10px;
+  border: 1px solid var(--st-line); border-radius: var(--st-r-md);
+  background: var(--st-sunken); color: var(--st-ink-2);
+  cursor: pointer; text-align: left;
 }
+.dojo-gallery-page .model:hover { color: var(--st-ink); border-color: var(--st-line-2); }
+.dojo-gallery-page .model.active { color: var(--st-ink); border-color: rgba(127,196,232,.55); background: var(--st-accent-wash); }
+.dojo-gallery-page .model strong { font-size: var(--st-fs-ui); font-weight: 600; }
+.dojo-gallery-page .model span { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.35 var(--st-mono); }
+
+/* The runtime writes the leading word as .ok / .err inside the status bar. */
+.dojo-gallery-page #status .ok { color: var(--st-ok); }
+.dojo-gallery-page #status .err { color: var(--st-err); }

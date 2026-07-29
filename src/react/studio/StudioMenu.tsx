@@ -4,19 +4,40 @@ import { Link, useLocation } from "react-router-dom";
 import "./studio-menu.css";
 
 export type StudioTool = { href: string; title: string; desc: string; badge?: string };
-export type StudioSection = { title: string; items: StudioTool[] };
+
+/**
+ * The rail's geometric marks. Pure CSS shapes — no icon assets, no icon
+ * library — so a section is identifiable at 13px without a glyph font.
+ */
+export type StudioMark = "square" | "circle-outline" | "diamond" | "square-outline" | "dot";
+
+export type StudioSection = {
+  title: string;
+  /** Short form for the nav section switcher and the tool rail. */
+  label: string;
+  mark: StudioMark;
+  /** Draws the rail's `hr` above this section (the parity group). */
+  railBreak?: boolean;
+  items: StudioTool[];
+};
 
 // Every routed tool in the app. The studio workspace is the root route; the
 // Dev section carries the experiments that were never on the old landing page.
+// `label` + `mark` also drive the nav section switcher and the tool rail, so a
+// new section appears in all three places at once.
 export const STUDIO_TOOLS: StudioSection[] = [
   {
     title: "Studio",
+    label: "Studio",
+    mark: "square",
     items: [
       { href: "/", title: "Procedural Studio", badge: "asset library", desc: "Import a .blend or browse the ported asset library, inspect and edit its Geometry Nodes graph, evaluate it in the browser VM" },
     ],
   },
   {
     title: "Create",
+    label: "Create",
+    mark: "circle-outline",
     items: [
       { href: "/paint", title: "Surface Painting Studio", badge: "WebGPU", desc: "Paint ivy, a banyan tree, crystal, molten, aurora, or reef growth onto any model — or switch to the Blender brush lab and run authored brushes along your stroke" },
       { href: "/building", title: "Hong Kong Building", desc: "592-node build system hand-ported to TypeScript, 18 parameters" },
@@ -24,6 +45,8 @@ export const STUDIO_TOOLS: StudioSection[] = [
   },
   {
     title: "Node studies",
+    label: "Studies",
+    mark: "diamond",
     items: [
       { href: "/typewriter", title: "Procedural Typewriter", desc: "Editable text through the authored Typewriter graph, with animation playback — also loadable from the asset library" },
       { href: "/gallery", title: "Node Dojo Gallery", badge: "baked", desc: "Frozen Blender-evaluated GLB exports with their original materials — the live versions of these assets live in the asset library" },
@@ -31,6 +54,9 @@ export const STUDIO_TOOLS: StudioSection[] = [
   },
   {
     title: "Blender parity",
+    label: "Parity",
+    mark: "square-outline",
+    railBreak: true,
     items: [
       { href: "/chrome-assets", title: "Live Asset Library", badge: "102 assets", desc: "Blender reference renders beside live VM output · every asset also loads into the Studio" },
       { href: "/bin", title: "Dojo Bin Compare", desc: "Deep parity workspace for the recursive bin — the same graph as the studio's included sample" },
@@ -40,6 +66,8 @@ export const STUDIO_TOOLS: StudioSection[] = [
   },
   {
     title: "Dev",
+    label: "Dev",
+    mark: "dot",
     items: [
       { href: "/crayon", title: "Chrome Crayon Compare", desc: "Single-asset parity workspace with the Blender-style graph" },
       { href: "/bin/live", title: "Bin Live", desc: "Live-evaluated recursive bin (needs the local bake bridge)" },
@@ -189,9 +217,9 @@ export function StudioMenu({ open, onClose }: { open: boolean; onClose: () => vo
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
   if (!open) return null;
-  // Portaled to <body>: triggers live inside fixed, backdrop-filtered chrome
-  // (e.g. .studio-brand), which would otherwise become the containing block
-  // for this fixed overlay and collapse it into the header box.
+  // Portaled to <body>: the trigger lives inside .st-shell, a fixed-position
+  // grid that would otherwise become the containing block for this fixed
+  // overlay and clip it to the nav row.
   return createPortal(
     <div className="studio-menu-backdrop" onClick={onClose} role="presentation">
       <nav className="studio-menu" aria-label="Studio tools" onClick={(event) => event.stopPropagation()}>

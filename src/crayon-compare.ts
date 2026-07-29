@@ -3,6 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import { canvasBox, observeCanvasBox } from "./canvas-viewport";
 import type { Dump, TriSoup } from "./gnvm/index";
 
 export type CrayonWorkerReply =
@@ -63,12 +64,13 @@ const emit = (patch: Partial<CrayonRuntimeSnapshot>): void => {
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setSize(innerWidth, innerHeight);
+const viewport = canvasBox(canvas);
+renderer.setSize(viewport.width, viewport.height, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, .01, 4000);
+const camera = new THREE.PerspectiveCamera(38, viewport.width / viewport.height, .01, 4000);
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 const room = new RoomEnvironment();
@@ -318,8 +320,12 @@ async function main(): Promise<void> {
   await update();
 }
 
-const resize = (): void => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); };
-addEventListener("resize", resize);
+// The canvas is a grid column of the studio shell, not the whole window.
+const stopObservingCanvas = observeCanvasBox(canvas, (width, height) => {
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height, false);
+});
 renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
 void main().catch((error) => {
   if (!disposed) emit({ state: "error", message: `Runtime failed · ${error instanceof Error ? error.message : String(error)}` });
@@ -359,7 +365,7 @@ return {
     activeEvaluation?.reject(new DOMException("Runtime disposed", "AbortError"));
     activeEvaluation = null;
     window.clearTimeout(queuedEvaluation);
-    removeEventListener("resize", resize);
+    stopObservingCanvas();
     renderer.setAnimationLoop(null);
     controls.dispose();
     clearGroupGeometry(truthGroup);

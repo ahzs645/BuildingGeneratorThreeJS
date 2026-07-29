@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 /**
@@ -16,6 +16,43 @@ export function usePageRuntime(title: string): void {
   useEffect(() => {
     document.title = title;
   }, [title]);
+}
+
+/**
+ * useToolRuntime for tools whose React dock drives the runtime: identical
+ * lifecycle, but the created handle is returned so the page can call into it.
+ * Null until the lazy module has loaded, and again after disposal.
+ */
+export function useToolController<Handle extends ToolHandle>(
+  title: string,
+  load: () => Promise<{ createTool(): Handle | Promise<Handle> }>,
+): Handle | null {
+  const { search } = useLocation();
+  const [handle, setHandle] = useState<Handle | null>(null);
+  useEffect(() => {
+    document.title = title;
+    let disposed = false;
+    let created: Handle | null = null;
+    load()
+      .then(async (mod) => {
+        const tool = await mod.createTool();
+        if (disposed) tool.dispose();
+        else {
+          created = tool;
+          setHandle(tool);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!disposed) console.error("Studio tool failed to start", error);
+      });
+    return () => {
+      disposed = true;
+      created?.dispose();
+      created = null;
+      setHandle(null);
+    };
+  }, [load, search, title]);
+  return handle;
 }
 
 /**

@@ -62,7 +62,8 @@ import {
 } from "../blend-studio/AssetLibrary";
 import { useBlendStudioRuntime } from "../blend-studio/useBlendStudioRuntime";
 import { usePageRuntime } from "../page-runtime";
-import { FloatingStudioPanel, StudioShell, useMobileStudio, type StudioPanelRect } from "../studio/StudioShell";
+import { useStudioStatusChips, type StudioTone } from "../studio/StudioChrome";
+import { StudioOverlay, StudioShell, useMobileStudio } from "../studio/StudioShell";
 import "./crayon-compare.css";
 import "./blend-studio.css";
 
@@ -93,8 +94,16 @@ const editorConfig = {
   downloadFileName: "blend-studio-edited.json",
 } as const;
 
-const UI_STORAGE_KEY = "procedural-studio.blendbridge.ui";
 const EVALUATION_HISTORY_STORAGE_KEY = "procedural-studio.blendbridge.evaluation-history";
+
+/** The kit's four status tones, resolved from the worker's run state. */
+const RUNTIME_TONE: Record<BlendStudioRuntimeSnapshot["state"], StudioTone> = {
+  idle: "idle",
+  queued: "busy",
+  evaluating: "busy",
+  ready: "ready",
+  error: "error",
+};
 
 function loadEvaluationHistoryStore(): unknown {
   try {
@@ -132,37 +141,6 @@ function persistEvaluationRun(
   return blendStudioEvaluationRunsForKey(next, key);
 }
 
-// Sized so the 3D preview stays visible above the panel — the workspace is a
-// tool alongside the viewport, not a takeover.
-function defaultGraphRect(): StudioPanelRect {
-  const width = Math.min(1120, Math.max(640, window.innerWidth - 650));
-  const height = Math.min(480, Math.max(360, window.innerHeight - 430));
-  return {
-    x: Math.max(304, Math.round((window.innerWidth - width) / 2)),
-    y: Math.max(92, window.innerHeight - height - 28),
-    width,
-    height,
-  };
-}
-
-function initialGraphRect(): StudioPanelRect {
-  try {
-    const saved = JSON.parse(localStorage.getItem(UI_STORAGE_KEY) ?? "{}") as {
-      graphRect?: Partial<StudioPanelRect>;
-    };
-    const rect = saved.graphRect;
-    if (
-      rect
-      && [rect.x, rect.y, rect.width, rect.height].every((value) => Number.isFinite(value))
-      && Number(rect.width) >= 480
-      && Number(rect.height) >= 320
-    ) return rect as StudioPanelRect;
-  } catch {
-    // UI persistence is optional.
-  }
-  return defaultGraphRect();
-}
-
 function humanBytes(value = 0): string {
   if (!value) return "0 B";
   const units = ["B", "KB", "MB", "GB"];
@@ -192,11 +170,11 @@ export default function BlendBridgePage(): React.JSX.Element {
   const workpieceInput = useRef<HTMLInputElement>(null);
   const importSerial = useRef(0);
   const isMobile = useMobileStudio();
-  const [docksOpen, setDocksOpen] = useState(true);
+  const [sourceTab, setSourceTab] = useState<"source" | "parameters">("source");
+  const [inspectorTab, setInspectorTab] = useState<"compatibility" | "runtime" | "info">("compatibility");
   // Mobile starts with the graph overlay closed; the FAB is its entry point.
   const [graphOpen, setGraphOpen] = useState(!isMobile);
   const [graphMaximized, setGraphMaximized] = useState(false);
-  const [graphRect, setGraphRect] = useState(initialGraphRect);
   const [health, setHealth] = useState<Health | null>(null);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -761,7 +739,7 @@ export default function BlendBridgePage(): React.JSX.Element {
       );
       installDump(dump, asset.title, dumpText.length);
       // Library loads are about seeing and modulating the asset; the node
-      // workspace stays one click away instead of covering the preview.
+      // workspace stays one click away instead of taking a third of the column.
       setGraphOpen(false);
       // Prefer the asset's authored modifier object over the first discovered
       // target so the studio opens on the same geometry the library shows.
@@ -846,14 +824,33 @@ export default function BlendBridgePage(): React.JSX.Element {
     ...visibleDatablockControls.map((control) => control.panelPath.join(" › ")),
   ])];
 
-  const leftDock = <>
-    <header className="studio-dock-header"><span>Source</span><small>local Blender bridge</small></header>
-    <section>
-      <p className="blend-studio-copy">Import a `.blend` to extract its complete Geometry Nodes closure, then edit and evaluate it without changing the source file.</p>
+  const exportBaseName = (sourceName || "blend-graph")
+    .replace(/\.blend$/i, "")
+    .replace(/[^a-z0-9._-]+/gi, "-");
+
+  useStudioStatusChips([
+    { id: "gnvm", label: `GN-VM ${runtime.snapshot.state}`, tone: RUNTIME_TONE[runtime.snapshot.state] },
+    health?.available
+      ? { id: "bridge", label: "Blender bridge", tone: "ready" as const }
+      : { id: "bridge", label: "Browser decoder", tone: "idle" as const },
+  ]);
+
+  const resultStats = runtime.snapshot.stats;
+  const triangleReadout = resultStats?.tris
+    ? `${resultStats.tris.toLocaleString()} tris`
+    : runtime.snapshot.lineStats
+      ? `${runtime.snapshot.lineStats.segments.toLocaleString()} segments`
+      : runtime.snapshot.pointStats
+        ? `${runtime.snapshot.pointStats.points.toLocaleString()} points`
+        : "—";
+
+  const sourceSection = <>
+    <div className="st-section">
       <button
-        className={`blend-dropzone ${dragging ? "dragging" : ""}`}
+        className={`st-dropzone ${dragging ? "dragging" : ""}`}
         type="button"
         disabled={busy}
+        title="Extraction is local; the .blend on disk is never written to"
         onClick={() => fileInput.current?.click()}
         onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
         onDragOver={(event) => event.preventDefault()}
@@ -866,7 +863,7 @@ export default function BlendBridgePage(): React.JSX.Element {
         }}
       >
         <b>{busy ? "Extracting…" : "Drop .blend or .json"}</b>
-        <span>Local extraction · source remains untouched</span>
+        <span>source file is never modified</span>
       </button>
       <input
         ref={fileInput}
@@ -879,17 +876,24 @@ export default function BlendBridgePage(): React.JSX.Element {
           event.target.value = "";
         }}
       />
-      <button className="blend-secondary-button" type="button" disabled={busy} onClick={() => void loadSample()}>Try included bin sample</button>
-      <button className="blend-secondary-button blend-library-button" type="button" disabled={busy} onClick={() => setLibraryOpen(true)}>Browse the live asset library</button>
+      <div className="st-btn-row st-btn-row-even">
+        <button className="st-btn" type="button" disabled={busy} onClick={() => void loadSample()}>Bin sample</button>
+        <button className="st-btn" type="button" disabled={busy} onClick={() => setLibraryOpen(true)}>Asset library</button>
+      </div>
       {/* One source card at a time: the library card supersedes the generic
           import status row for catalog assets. */}
-      {!libraryAsset && <div className="blend-source-status">
-        <span className={health?.available ? "ready" : ""} />
-        <div><b>{sourceName || (health?.available ? "Blender ready" : "Browser decoder ready")}</b><small>{sourceName ? `${humanBytes(sourceBytes)} · Blender ${sourceDump?.blender_version ?? "unknown"}${decoderGaps ? " · decoded in browser" : ""}` : importMessage}</small></div>
+      {!libraryAsset && <div className="st-card">
+        <span className={`st-dot ${health?.available ? "ready" : ""}`} />
+        <div className="blend-card-copy">
+          <b>{sourceName || (health?.available ? "Blender ready" : "Browser decoder ready")}</b>
+          <small>{sourceName
+            ? `${humanBytes(sourceBytes)} · Blender ${sourceDump?.blender_version ?? "unknown"}${decoderGaps ? " · decoded in browser" : ""} · ${targets.length} targets discovered`
+            : importMessage}</small>
+        </div>
       </div>}
-      {libraryAsset && <div className="blend-library-asset">
-        <img src={publicUrl(libraryAsset.authoredReference ?? libraryAsset.reference)} alt={`${libraryAsset.title} Blender reference render`} />
-        <div>
+      {libraryAsset && <div className="st-card">
+        <img className="st-thumb" src={publicUrl(libraryAsset.authoredReference ?? libraryAsset.reference)} alt={`${libraryAsset.title} Blender reference render`} />
+        <div className="blend-card-copy">
           <b>{libraryAsset.title}</b>
           <small>{libraryAssetStats(libraryAsset)} · Blender {sourceDump?.blender_version ?? "unknown"}</small>
           <Link to={`/chrome-assets?asset=${libraryAsset.id}`}>Side-by-side Blender compare →</Link>
@@ -905,11 +909,13 @@ export default function BlendBridgePage(): React.JSX.Element {
           </li>)}
         </ul>
       </details>}
-    </section>
-    <section>
-      <label className="blend-field">
-        <span>Execution target</span>
+    </div>
+    <div className="st-section">
+      <div className="st-section-title">Execution target</div>
+      <label className="st-field">
+        <span>Target</span>
         <select
+          className="st-select"
           disabled={!targets.length}
           value={target?.id ?? ""}
           onChange={(event) => {
@@ -924,9 +930,9 @@ export default function BlendBridgePage(): React.JSX.Element {
           </option>)}
         </select>
       </label>
-      {target && connectedGeometryInputs.length > 0 && <label className="blend-field">
-        <span>Apply graph to</span>
-        <select value={seedValue} onChange={(event) => setSeedValue(event.target.value)}>
+      {target && connectedGeometryInputs.length > 0 && <label className="st-field">
+        <span>Apply to</span>
+        <select className="st-select" value={seedValue} onChange={(event) => setSeedValue(event.target.value)}>
           {target.kind === "object" && <option value="authored">Authored object · {target.objectName}</option>}
           <option value="cube">Primitive · Cube</option>
           <option value="plane">Primitive · Plane</option>
@@ -935,24 +941,25 @@ export default function BlendBridgePage(): React.JSX.Element {
           {seedObjects.map((name) => <option key={name} value={`object:${name}`}>Object · {name}</option>)}
         </select>
       </label>}
-      {target && connectedGeometryInputs.length > 1 && <label className="blend-field">
+      {target && connectedGeometryInputs.length > 1 && <label className="st-field">
         <span>Input socket</span>
-        <select value={geometryInput} onChange={(event) => setGeometryInput(event.target.value)}>
+        <select className="st-select" value={geometryInput} onChange={(event) => setGeometryInput(event.target.value)}>
           {connectedGeometryInputs.map((item) => <option key={item.identifier} value={item.identifier}>{item.name}</option>)}
         </select>
       </label>}
       {target && geometryInputs.length > 0 && connectedGeometryInputs.length === 0
-        && <p className="blend-studio-copy">Pure generator · its exposed Geometry socket is disconnected, so output is driven by node parameters.</p>}
-      {target && (geometryOutputs.length > 1 || viewerPreviews.length > 0) && <label className="blend-field">
-        <span>Preview output</span>
-        <select value={geometryOutput} onChange={(event) => setGeometryOutput(event.target.value)}>
+        && <div className="st-chip">Pure generator · the exposed Geometry socket is disconnected, so node parameters drive the output</div>}
+      {target && (geometryOutputs.length > 1 || viewerPreviews.length > 0) && <label className="st-field">
+        <span>Output</span>
+        <select className="st-select" value={geometryOutput} onChange={(event) => setGeometryOutput(event.target.value)}>
           {geometryOutputs.map((item) => <option key={item.identifier} value={item.identifier}>{item.name}</option>)}
           {viewerPreviews.map((preview) =>
             <option key={preview.id} value={`viewer:${preview.id}`}>Viewer · {preview.label}</option>)}
         </select>
       </label>}
-      <div className="blend-button-row">
+      <div className="st-btn-row">
         <button
+          className="st-btn-primary"
           type="button"
           disabled={!workingDump || !target || runtime.snapshot.state === "evaluating"}
           onClick={() => {
@@ -961,60 +968,50 @@ export default function BlendBridgePage(): React.JSX.Element {
             void runtime.evaluate(withProgressivePreview(evaluation)).catch(() => {});
           }}
         >Apply to preview</button>
-        <button type="button" disabled={!interpretedDump} onClick={() => {
-          if (!interpretedDump) return;
-          const base = (sourceName || "blend-graph").replace(/\.blend$/i, "").replace(/[^a-z0-9._-]+/gi, "-");
-          download(
-            `${base}${measurementContract?.display ? ".interpreted" : ""}.nodes.json`,
-            JSON.stringify(interpretedDump),
-          );
-        }}>Export JSON</button>
-        <button className="blend-dependency-export" type="button" disabled={!workingDump} onClick={() => {
-          if (!workingDump) return;
-          const base = (sourceName || "blend-graph").replace(/\.blend$/i, "").replace(/[^a-z0-9._-]+/gi, "-");
-          void dependencyExtractionPackage(workingDump).then((extractionPackage) => {
-            download(`${base}.dependencies.json`, JSON.stringify(extractionPackage, null, 2));
-          });
-        }}>Export dependencies</button>
+        <details className="blend-export">
+          <summary className="st-btn">Export ▾</summary>
+          <div>
+            <button type="button" disabled={!interpretedDump} onClick={() => {
+              if (!interpretedDump) return;
+              download(
+                `${exportBaseName}${measurementContract?.display ? ".interpreted" : ""}.nodes.json`,
+                JSON.stringify(interpretedDump),
+              );
+            }}>Portable graph JSON</button>
+            <button type="button" disabled={!workingDump} onClick={() => {
+              if (!workingDump) return;
+              void dependencyExtractionPackage(workingDump).then((extractionPackage) => {
+                download(`${exportBaseName}.dependencies.json`, JSON.stringify(extractionPackage, null, 2));
+              });
+            }}>Dependency package</button>
+          </div>
+        </details>
       </div>
-    </section>
-    {animatedFrameRange && <section>
-      <div className="section-title">
-        <span>Animation</span>
-        <small>{`${animatedFrameRange[0]}–${animatedFrameRange[1]}`}</small>
-      </div>
-      <label className="blend-positive-measure">
+    </div>
+  </>;
+
+  const parameterSection = <>
+    {animatedFrameRange && <div className="st-section">
+      <div className="st-section-title">Animation<small>{`${animatedFrameRange[0]}–${animatedFrameRange[1]}`}</small></div>
+      <label className="st-row" title="Extracted Blender node-tree F-curves are evaluated at this frame before Geometry Nodes run">
         <span>Frame</span>
         <input
-          type="number"
+          type="range"
           min={animatedFrameRange[0]}
           max={animatedFrameRange[1]}
           step={1}
           value={animationFrame}
           onChange={(event) => setAnimationFrame(Number(event.target.value))}
         />
+        <output>{animationFrame}</output>
       </label>
-      <input
-        className="blend-measurement-slider"
-        type="range"
-        min={animatedFrameRange[0]}
-        max={animatedFrameRange[1]}
-        step={1}
-        value={animationFrame}
-        onChange={(event) => setAnimationFrame(Number(event.target.value))}
-      />
-      <p className="blend-studio-copy">
-        Extracted Blender node-tree F-curves are evaluated at this frame before Geometry Nodes run.
-      </p>
-    </section>}
-    {hasVolumeBoundary && <section>
-      <div className="section-title">
-        <span>Volume fidelity</span>
-        <small>manual preview</small>
-      </div>
-      <label className="blend-field">
-        <span>Dense sample ceiling</span>
+    </div>}
+    {hasVolumeBoundary && <div className="st-section">
+      <div className="st-section-title">Volume fidelity<small>manual</small></div>
+      <label className="st-field" title="Higher settings preserve the authored voxel spacing for larger grids, but stay manual because memory and evaluation time rise sharply">
+        <span>Samples</span>
         <select
+          className="st-select"
           value={volumeSampleBudget}
           onChange={(event) => setVolumeSampleBudget(Number(event.target.value))}
         >
@@ -1024,23 +1021,16 @@ export default function BlendBridgePage(): React.JSX.Element {
           <option value={16_000_000}>Maximum · 16 million</option>
         </select>
       </label>
-      <p className="blend-studio-copy">
-        Higher settings preserve the authored voxel spacing for larger grids,
-        but intentionally remain manual because memory and evaluation time rise sharply.
-      </p>
-    </section>}
-    {measurementContract && <section className="blend-measurement-tool">
-      <div className="section-title">
-        <span>Caliper measurement</span>
-        <small>{measurementContract.display
-          ? "LCD graph interpreted"
-          : "Linear Gizmo detected"}</small>
-      </div>
+    </div>}
+    {measurementContract && <div className="st-section blend-measurement-tool">
+      <div className="st-section-title">Caliper<small>{measurementContract.display
+        ? "LCD interpreted"
+        : "Linear Gizmo"}</small></div>
       <div className="blend-measurement-readout">
         <strong>{displayedMeasurement.toFixed(3)}</strong>
         <span>{measurementUnit}</span>
       </div>
-      <div className="blend-segmented" aria-label="Measurement unit">
+      <div className="st-segmented" aria-label="Measurement unit">
         {(["mm", "in"] as const).map((unit) => <button
           className={measurementUnit === unit ? "active" : ""}
           key={unit}
@@ -1048,9 +1038,22 @@ export default function BlendBridgePage(): React.JSX.Element {
           onClick={() => setMeasurementUnit(unit)}
         >{unit}</button>)}
       </div>
-      <label className="blend-positive-measure">
-        <span>Positive opening</span>
+      <label className="st-row">
+        <span>Opening</span>
         <input
+          type="range"
+          min={0}
+          max={modeledCapacityMm}
+          step={.05}
+          value={Math.min(modeledCapacityMm, physicalMeasurementMm)}
+          onChange={(event) => setPhysicalMeasurementMm(Number(event.target.value))}
+        />
+        <output>{Number.isFinite(displayedMeasurement) ? displayedMeasurement.toFixed(2) : "0"}</output>
+      </label>
+      <label className="st-field">
+        <span>Exact {measurementUnit}</span>
+        <input
+          className="st-input"
           type="number"
           min={0}
           max={measurementDistanceForDisplay(modeledCapacityMm, measurementUnit)}
@@ -1063,32 +1066,29 @@ export default function BlendBridgePage(): React.JSX.Element {
             + measurementZeroMm,
           )}
         />
-        <span>{measurementUnit}</span>
       </label>
-      <input
-        className="blend-measurement-slider"
-        type="range"
-        min={0}
-        max={modeledCapacityMm}
-        step={.05}
-        value={Math.min(modeledCapacityMm, physicalMeasurementMm)}
-        onChange={(event) => setPhysicalMeasurementMm(Number(event.target.value))}
-      />
       <div className="blend-measurement-actions">
-        <button type="button" onClick={() => {
+        <button className="st-btn" type="button" onClick={() => {
           setMeasurementZeroMm(0);
           setPhysicalMeasurementMm(0);
         }}>Close &amp; zero</button>
-        <button type="button" onClick={() =>
+        <button className="st-btn" type="button" onClick={() =>
           setMeasurementZeroMm(physicalMeasurementMm)
         }>Zero here</button>
         <button
+          className="st-btn"
           type="button"
           disabled={measurementZeroMm === 0}
           onClick={() => setMeasurementZeroMm(0)}
         >Clear zero</button>
       </div>
-      <div className="blend-segmented blend-measurement-modes" aria-label="Measurement mode">
+      <div
+        className="st-segmented"
+        aria-label="Measurement mode"
+        title={measurementMode === "jaw"
+          ? "Drag the mint handle in the viewport. The positive value maps back to Blender’s authored negative socket."
+          : "Pick two surfaces in the viewport to drive the jaw opening from their distance."}
+      >
         <button
           className={measurementMode === "jaw" ? "active" : ""}
           type="button"
@@ -1100,17 +1100,15 @@ export default function BlendBridgePage(): React.JSX.Element {
           onClick={() => setMeasurementMode("points")}
         >Pick 2 points</button>
       </div>
-      <p className="blend-studio-copy">
-        {measurementMode === "jaw"
-          ? "Drag the mint handle in the viewport. The positive value is mapped back to Blender’s authored negative socket."
-          : pointMeasurement.missed
-            ? "No workpiece surface at that point · pick directly on the shaded reference mesh."
-            : pointMeasurement.points.length === 0
-            ? "Pick two surfaces in the viewport to drive the jaw opening from their distance."
+      {measurementMode === "points" && <div className={`st-chip ${pointMeasurement.missed ? "warn" : "ok"}`}>
+        {pointMeasurement.missed
+          ? "No workpiece surface there · pick on the shaded reference mesh"
+          : pointMeasurement.points.length === 0
+            ? "Pick two surfaces in the viewport"
             : pointMeasurement.points.length === 1
-              ? "First point set · pick the second point."
-              : `Measured ${pointMeasurement.distanceMm?.toFixed(3)} mm between the selected points.`}
-      </p>
+              ? "First point set · pick the second"
+              : `Measured ${pointMeasurement.distanceMm?.toFixed(3)} mm`}
+      </div>}
       <div className="blend-workpiece">
         <input
           ref={workpieceInput}
@@ -1123,12 +1121,10 @@ export default function BlendBridgePage(): React.JSX.Element {
             event.target.value = "";
           }}
         />
-        <button type="button" onClick={() => workpieceInput.current?.click()}>
-          {measurementSubject ? "Replace workpiece" : "Load workpiece"}
-        </button>
-        <label>
+        <label className="st-field">
           <span>File units</span>
           <select
+            className="st-select"
             value={workpieceMillimetersPerUnit}
             onChange={(event) => {
               const scale = Number(event.target.value);
@@ -1143,23 +1139,29 @@ export default function BlendBridgePage(): React.JSX.Element {
             <option value={1_000}>metres / GLB</option>
           </select>
         </label>
+        <div className="blend-measurement-actions">
+          <button className="st-btn" type="button" onClick={() => workpieceInput.current?.click()}>
+            {measurementSubject ? "Replace workpiece" : "Load workpiece"}
+          </button>
+          {measurementSubject && <>
+            <button
+              className="st-btn"
+              type="button"
+              onClick={() => setPhysicalMeasurementMm(measurementSubject.dimensionsMm[0])}
+            >Fit X span</button>
+            <button className="st-btn" type="button" onClick={() => {
+              runtime.clearMeasurementSubject();
+              setMeasurementSubject(null);
+              setMeasurementSubjectFile(null);
+              setMeasurementSubjectMessage("Optional · load a GLB, OBJ, or STL workpiece");
+              setPointMeasurement({ points: [] });
+            }}>Remove</button>
+          </>}
+        </div>
         <small>{measurementSubjectMessage}</small>
-        {measurementSubject && <div className="blend-measurement-actions">
-          <button
-            type="button"
-            onClick={() => setPhysicalMeasurementMm(measurementSubject.dimensionsMm[0])}
-          >Fit X span</button>
-          <button type="button" onClick={() => {
-            runtime.clearMeasurementSubject();
-            setMeasurementSubject(null);
-            setMeasurementSubjectFile(null);
-            setMeasurementSubjectMessage("Optional · load a GLB, OBJ, or STL workpiece");
-            setPointMeasurement({ points: [] });
-          }}>Remove</button>
-        </div>}
       </div>
-      {batteryControl && <div className="blend-battery-control">
-        <div><span>Battery insertion</span><output>{Math.round(batteryValue * 100)}%</output></div>
+      {batteryControl && <label className="st-row">
+        <span>Battery</span>
         <input
           type="range"
           min={batteryControl.min}
@@ -1171,281 +1173,314 @@ export default function BlendBridgePage(): React.JSX.Element {
             [batteryControl.identifier]: Number(event.target.value),
           }))}
         />
-        <div className="blend-measurement-actions">
-          <button type="button" onClick={() => setOverrides((current) => ({
-            ...current,
-            [batteryControl.identifier]: 0,
-          }))}>Eject</button>
-          <button type="button" onClick={() => setOverrides((current) => ({
-            ...current,
-            [batteryControl.identifier]: 1,
-          }))}>Install</button>
-        </div>
-      </div>}
-      <p className="blend-measurement-truth">
-        {measurementContract.display
-          ? "The modeled LCD is evaluated from reversible zero-offset and unit-scale Geometry Nodes added by BlendBridge. The source Blender graph remains untouched."
-          : "This graph exposes jaw measurement but no traceable modeled LCD branch; mm/in and tare remain studio readout features."}
-      </p>
-    </section>}
-    {gizmoContracts.length > 0 && <section>
-      <div className="section-title">
-        <span>Graph gizmos</span>
-        <small>{gizmoContracts.length} bound</small>
+        <output>{Math.round(batteryValue * 100)}%</output>
+      </label>}
+      <div className="st-chip warn" title={measurementContract.display
+        ? "The modeled LCD is evaluated from reversible zero-offset and unit-scale Geometry Nodes added by BlendBridge. The source Blender graph remains untouched."
+        : "This graph exposes jaw measurement but no traceable modeled LCD branch; mm/in and tare remain studio readout features."}>
+        {measurementContract.display ? "Interpreted LCD · source untouched" : "Studio readout · no modeled LCD branch"}
       </div>
-      <p className="blend-studio-copy">
-        These controls follow Blender’s Linear and Dial gizmo links back to the
-        root graph inputs, including nested groups and rotation components.
-        Matching handles can also be dragged directly in the 3D viewport.
-      </p>
-      <div className="blend-controls">
-        {gizmoContracts.map((contract) => {
-          const raw = overrides[contract.rootInputIdentifier] ?? contract.rootValue;
-          const value = contract.component === undefined
-            ? Number(raw)
-            : Number(Array.isArray(raw) ? raw[contract.component] : contract.value);
-          const display = contract.kind === "dial"
-            ? `${(value * 180 / Math.PI).toFixed(1)}°`
-            : value.toFixed(3);
-          return <label key={contract.id} title={`${contract.groupName} · ${contract.nodeName}`}>
-            <span>{contract.rootInputName} · {contract.kind}</span>
-            <input
-              type="range"
-              min={contract.min}
-              max={contract.max}
-              step={contract.step}
-              value={value}
-              onChange={(event) => setOverrides((current) =>
-                setGizmoValue(current, contract, Number(event.target.value)))}
-            />
-            <output>{display}</output>
-          </label>;
-        })}
+    </div>}
+    {gizmoContracts.length > 0 && <div className="st-section">
+      <div className="st-section-title">Graph gizmos<small>{gizmoContracts.length} bound</small></div>
+      {gizmoContracts.map((contract) => {
+        const raw = overrides[contract.rootInputIdentifier] ?? contract.rootValue;
+        const value = contract.component === undefined
+          ? Number(raw)
+          : Number(Array.isArray(raw) ? raw[contract.component] : contract.value);
+        const display = contract.kind === "dial"
+          ? `${(value * 180 / Math.PI).toFixed(1)}°`
+          : value.toFixed(3);
+        return <label
+          className="st-row"
+          key={contract.id}
+          title={`${contract.groupName} · ${contract.nodeName} · the matching handle can also be dragged in the viewport`}
+        >
+          <span>{contract.rootInputName}</span>
+          <input
+            type="range"
+            min={contract.min}
+            max={contract.max}
+            step={contract.step}
+            value={value}
+            onChange={(event) => setOverrides((current) =>
+              setGizmoValue(current, contract, Number(event.target.value)))}
+          />
+          <output>{display}</output>
+        </label>;
+      })}
+    </div>}
+    <div className="st-section">
+      <div className="st-section-title">
+        Parameters
+        <small>{visibleOrdinaryControls.length + visibleDatablockControls.length} editable</small>
       </div>
-    </section>}
-    <section>
-      <div className="section-title"><span>Exposed inputs</span><small>{visibleOrdinaryControls.length + visibleDatablockControls.length} editable</small></div>
-      {hiddenControlCount > 0 && <label className="blend-hidden-toggle">
+      {hiddenControlCount > 0 && <label className="st-row st-row-wide">
+        <span>Blender-hidden</span>
         <input
           type="checkbox"
           checked={showHiddenControls}
           onChange={(event) => setShowHiddenControls(event.target.checked)}
+          title={`Show ${hiddenControlCount} ${hiddenControlCount === 1 ? "control" : "controls"} hidden in the Blender modifier`}
         />
-        <span>Show {hiddenControlCount} Blender-hidden {hiddenControlCount === 1 ? "control" : "controls"}</span>
       </label>}
-      <div className="blend-controls">
-        {visibleOrdinaryControls.length === 0 && visibleDatablockControls.length === 0
-          && <p>No additional portable inputs are exposed by this target.</p>}
-        {controlPanelKeys.map((panelKey) => <div className="blend-control-panel" key={panelKey || "General"}>
-          {panelKey && <h4>{panelKey}</h4>}
-          {visibleOrdinaryControls
-            .filter((control) => control.panelPath.join(" › ") === panelKey)
-            .map((control) => <label key={control.identifier}>
-              <span>{control.name}</span>
-              {control.socketType === "NodeSocketBool"
+      {visibleOrdinaryControls.length === 0 && visibleDatablockControls.length === 0
+        && <div className="st-chip">No additional portable inputs are exposed by this target.</div>}
+      {controlPanelKeys.map((panelKey) => <div className="blend-control-panel" key={panelKey || "General"}>
+        {panelKey && <h4>{panelKey}</h4>}
+        {visibleOrdinaryControls
+          .filter((control) => control.panelPath.join(" › ") === panelKey)
+          .map((control) => <label className="st-row" key={control.identifier}>
+            <span>{control.name}</span>
+            {control.socketType === "NodeSocketBool"
+              ? <input
+                  type="checkbox"
+                  checked={Boolean(overrides[control.identifier])}
+                  onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: event.target.checked }))}
+                />
+              : control.socketType === "NodeSocketString"
                 ? <input
-                    type="checkbox"
-                    checked={Boolean(overrides[control.identifier])}
-                    onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: event.target.checked }))}
+                    className="st-input blend-span-control"
+                    type="text"
+                    value={String(overrides[control.identifier] ?? control.value)}
+                    onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: event.target.value }))}
                   />
-                : control.socketType === "NodeSocketString"
-                  ? <input
-                      className="blend-string-input"
-                      type="text"
-                      value={String(overrides[control.identifier] ?? control.value)}
-                      onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: event.target.value }))}
+                : <>
+                    <input
+                      type="range"
+                      min={control.min}
+                      max={control.max}
+                      step={control.step}
+                      value={Number(overrides[control.identifier] ?? control.value)}
+                      onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: Number(event.target.value) }))}
                     />
-                  : <>
-                      <input
-                        type="range"
-                        min={control.min}
-                        max={control.max}
-                        step={control.step}
-                        value={Number(overrides[control.identifier] ?? control.value)}
-                        onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: Number(event.target.value) }))}
-                      />
-                      <output>{Number(overrides[control.identifier] ?? control.value).toFixed(control.step === 1 ? 0 : 3)}</output>
-                    </>}
-            </label>)}
-          {visibleDatablockControls
-            .filter((control) => control.panelPath.join(" › ") === panelKey)
-            .map((control) => {
-              const value = overrides[control.identifier] as { name?: string } | null | undefined;
-              return <label key={control.identifier}>
-                <span>{control.name}</span>
-                <select
-                  value={value?.name ?? ""}
-                  onChange={(event) => setOverrides((current) => ({
-                    ...current,
-                    [control.identifier]: event.target.value
-                      ? { datablock: control.datablock, name: event.target.value }
-                      : null,
-                  }))}
-                >
-                  <option value="">Unbound</option>
-                  {control.options.map((name) =>
-                    <option key={name} value={name}>{control.datablock} · {name}</option>)}
-                </select>
-              </label>;
-            })}
-        </div>)}
-      </div>
-    </section>
+                    <output>{Number(overrides[control.identifier] ?? control.value).toFixed(control.step === 1 ? 0 : 3)}</output>
+                  </>}
+          </label>)}
+        {visibleDatablockControls
+          .filter((control) => control.panelPath.join(" › ") === panelKey)
+          .map((control) => {
+            const value = overrides[control.identifier] as { name?: string } | null | undefined;
+            return <label className="st-row" key={control.identifier}>
+              <span>{control.name}</span>
+              <select
+                className="st-select blend-span-control"
+                value={value?.name ?? ""}
+                onChange={(event) => setOverrides((current) => ({
+                  ...current,
+                  [control.identifier]: event.target.value
+                    ? { datablock: control.datablock, name: event.target.value }
+                    : null,
+                }))}
+              >
+                <option value="">Unbound</option>
+                {control.options.map((name) =>
+                  <option key={name} value={name}>{control.datablock} · {name}</option>)}
+              </select>
+            </label>;
+          })}
+      </div>)}
+      {autoEvaluation && <div
+        className="st-segmented"
+        aria-label="Evaluation policy"
+        title={`${autoEvaluation.reason}${autoEvaluation.enabled ? "" : ". Use Apply to preview to run it explicitly."}${
+          progressivePreviewApplies && progressiveContract
+            ? ` Previews start with a quick low-${progressiveContract.control.name} pass and refine once you pause.`
+            : ""}`}
+      >
+        {/* Read-out, not a switch: the gate is measured from real run times. */}
+        <button type="button" disabled aria-pressed={autoEvaluation.enabled} className={autoEvaluation.enabled ? "active" : ""}>Live</button>
+        <button type="button" disabled aria-pressed={!autoEvaluation.enabled} className={autoEvaluation.enabled ? "" : "active"}>Manual</button>
+      </div>}
+    </div>
   </>;
 
-  const rightDock = <>
-    <header className="studio-dock-header"><span>Compatibility</span><small>static + executed</small></header>
-    <section>
-      <div className={`blend-runtime-status ${runtime.snapshot.state}${runtime.snapshot.preview ? " preview" : ""}`}>
-        <span />
-        <div><b>{runtime.snapshot.state}</b><small>{runtime.snapshot.message}</small></div>
+  const leftDock = <>
+    <div className="st-tabs" role="tablist" aria-label="Source and parameters">
+      <button type="button" role="tab" aria-selected={sourceTab === "source"} onClick={() => setSourceTab("source")}>Source</button>
+      <button type="button" role="tab" aria-selected={sourceTab === "parameters"} onClick={() => setSourceTab("parameters")}>Parameters</button>
+    </div>
+    {sourceTab === "source" ? sourceSection : parameterSection}
+  </>;
+
+  const compatibilityPanel = <>
+    {compatibility && <div className="st-section">
+      <div className="st-score">
+        <strong>{compatibility.score}%</strong>
+        <div>
+          <b>Reachable records recognized</b>
+          <small>{compatibility.recognizedNodes}/{compatibility.totalNodes} nodes · {compatibility.report.reachableGroups.length} groups</small>
+        </div>
       </div>
-      {target && <p className="blend-target-detail">{target.groupName}<br />{target.kind === "object" ? target.objectName : "Direct reusable group"}</p>}
-    </section>
-    <section className="blend-metrics">
-      <article><strong>{inventory.objects}</strong><span>modifier targets</span></article>
-      <article><strong>{inventory.groups}</strong><span>node groups</span></article>
-      <article><strong>{inventory.nodes.toLocaleString()}</strong><span>all nodes</span></article>
-      <article><strong>{inventory.materials}</strong><span>materials</span></article>
-    </section>
-    {compatibility && <section>
-      <div className="blend-compat-score"><strong>{compatibility.score}%</strong><div><b>reachable records recognized</b><span>{compatibility.recognizedNodes}/{compatibility.totalNodes} nodes · {compatibility.report.reachableGroups.length} groups</span></div></div>
-      {autoEvaluation && <p className="blend-studio-copy">
-        {autoEvaluation.reason}. {!autoEvaluation.enabled && "Use Apply to preview the partial result explicitly."}
-        {progressivePreviewApplies && progressiveContract
-          && ` Previews start with a quick low-${progressiveContract.control.name} pass and refine to full quality once you pause.`}
-      </p>}
-      <div className="blend-gaps">
-        {compatibility.gaps.length
-          ? compatibility.gaps.map((gap) => <span key={gap}>{gap}</span>)
-          : <p>No statically unsupported nodes in this target closure.</p>}
+      <div className="st-metrics">
+        <div className="st-metric"><strong>{inventory.nodes.toLocaleString()}</strong><span>Nodes</span></div>
+        <div className="st-metric"><strong>{inventory.groups}</strong><span>Groups</span></div>
+        <div className="st-metric"><strong>{runtime.snapshot.runtimeSeconds?.toFixed(2) ?? "—"}</strong><span>Last eval · s</span></div>
+        <div className="st-metric"><strong>{resultStats?.tris ? resultStats.tris.toLocaleString() : "—"}</strong><span>Triangles</span></div>
       </div>
-    </section>}
-    {presetContract && <section>
-      <div className="section-title"><span>Input contract</span><small>{presetContract.mode.replaceAll("-", " ")}</small></div>
-      <p className="blend-studio-copy">{presetContract.reason}</p>
-      {sourceUnits && <p className="blend-studio-copy">
-        Scene units · {sourceUnits.system.toLowerCase()} · {sourceUnits.lengthUnit.toLowerCase().replaceAll("_", " ")}
-        {" · "}{sourceUnits.millimetersPerBlenderUnit.toLocaleString()} mm per Blender unit
-      </p>}
-      {presetContract.unboundDatablockInputs.length > 0 && <div className="blend-gaps">
-        {presetContract.unboundDatablockInputs.map((name) =>
-          <span key={name}>Unbound datablock input · {name}</span>)}
-      </div>}
-    </section>}
-    {(dependencySummary || extractionWarnings.length > 0) && <section>
-      <div className="section-title">
-        <span>Source packaging</span>
+    </div>}
+    {compatibility && <div className="st-section">
+      <div className="st-section-title">Approximated<small>{compatibility.gaps.length}</small></div>
+      {compatibility.gaps.length
+        ? compatibility.gaps.map((gap) => <div className="st-chip warn" key={gap}>{gap}</div>)
+        : <div className="st-chip ok">No statically unsupported nodes in this target closure</div>}
+    </div>}
+    {presetContract && <div className="st-section">
+      <div className="st-section-title">Input contract<small>{presetContract.mode.replaceAll("-", " ")}</small></div>
+      <div className="st-chip" title={presetContract.reason}>{presetContract.reason}</div>
+      {presetContract.unboundDatablockInputs.map((name) =>
+        <div className="st-chip warn" key={name}>Unbound datablock · {name}</div>)}
+    </div>}
+  </>;
+
+  const runtimePanel = <>
+    {runtime.snapshot.stats || runtime.snapshot.lineStats || runtime.snapshot.pointStats
+      ? <div className="st-section">
+          <div className="st-section-title">Last valid result<small>{runtime.snapshot.runtimeSeconds?.toFixed(2)}s</small></div>
+          <div className="st-metrics">
+            {runtime.snapshot.stats && (runtime.snapshot.stats.verts || runtime.snapshot.stats.faces) ? <>
+              <div className="st-metric"><strong>{runtime.snapshot.stats.verts.toLocaleString()}</strong><span>Vertices</span></div>
+              <div className="st-metric"><strong>{runtime.snapshot.stats.faces.toLocaleString()}</strong><span>Faces</span></div>
+            </> : runtime.snapshot.lineStats ? <>
+              <div className="st-metric"><strong>{runtime.snapshot.lineStats.evaluatedPoints.toLocaleString()}</strong><span>Curve points</span></div>
+              <div className="st-metric"><strong>{runtime.snapshot.lineStats.splines.toLocaleString()}</strong><span>Splines</span></div>
+            </> : runtime.snapshot.pointStats ? <>
+              <div className="st-metric"><strong>{runtime.snapshot.pointStats.points.toLocaleString()}</strong><span>Points</span></div>
+              <div className="st-metric"><strong>—</strong><span>Faces</span></div>
+            </> : null}
+          </div>
+          {runtime.snapshot.preview && <div className="st-chip warn">Low-resolution preview · full quality refining</div>}
+          {(runtime.snapshot.missingTypes ?? []).map((entry) =>
+            <div className="st-chip warn" key={entry.type}>{entry.type}<b>×{entry.count}</b></div>)}
+          {(runtime.snapshot.approximateTypes ?? []).map((entry) =>
+            <div className="st-chip warn" key={entry.type}>Bounded approximation · {entry.type}<b>×{entry.count}</b></div>)}
+        </div>
+      : <div className="st-section"><div className="st-chip">{runtime.snapshot.message}</div></div>}
+    {(runtime.snapshot.details?.length ?? 0) > 0 && <div className="st-section">
+      <div className="st-section-title">
+        Runtime details
+        <small>{runtime.snapshot.details!.filter((detail) => detail.severity === "warning").length} warnings</small>
+      </div>
+      {runtime.snapshot.details!.map((detail, index) =>
+        <div
+          className={`st-chip ${detail.severity === "warning" ? "warn" : ""}`}
+          key={`${detail.kind}:${detail.stage}:${index}`}
+          title={detail.kind === "volume-grid-budget"
+            ? `${detail.message} · requested ${detail.requestedSampleCount.toLocaleString()} · effective ${detail.effectiveSampleCount.toLocaleString()} · spacing ${detail.effectiveSpacing.map((value) => value.toPrecision(4)).join(" × ")}`
+            : detail.message}
+        >
+          {detail.kind === "volume-grid-budget"
+            ? "Volume grid allocation"
+            : detail.kind === "bounded-grid-adaptivity"
+              ? "Bounded adaptivity"
+              : `${detail.warningType} · ${detail.nodeName}`}
+          <b>{detail.stage.replaceAll("-", " ")}</b>
+        </div>)}
+    </div>}
+    {(dependencySummary || extractionWarnings.length > 0) && <div className="st-section">
+      <div className="st-section-title">
+        Source packaging
         <small>{dependencySummary
           ? `${dependencySummary.unresolved} unresolved`
           : `${extractionWarnings.length} warnings`}</small>
       </div>
-      {dependencySummary && <div className="blend-packaging-summary">
-        <span><b>{dependencySummary.fontsRecovered + dependencySummary.imagesRecovered}</b>recovered</span>
-        <span><b>{dependencySummary.referenced}</b>extractable refs</span>
-        <span className={dependencySummary.unresolved ? "warning" : ""}><b>{dependencySummary.unresolved}</b>unresolved</span>
+      {dependencySummary && <div className="st-metrics blend-packaging">
+        <div className="st-metric"><strong>{dependencySummary.fontsRecovered + dependencySummary.imagesRecovered}</strong><span>Recovered</span></div>
+        <div className="st-metric"><strong>{dependencySummary.referenced}</strong><span>Extractable</span></div>
+        <div className="st-metric"><strong>{dependencySummary.unresolved}</strong><span>Unresolved</span></div>
       </div>}
-      {extractionWarnings.length > 0 && <div className="blend-gaps">
-        {extractionWarnings.slice(0, 8).map((warning, index) =>
-          <span key={`${warning.code}:${index}`}>{warning.message}</span>)}
-        {extractionWarnings.length > 8
-          && <p>{extractionWarnings.length - 8} additional extraction warnings are retained in the exported JSON.</p>}
-      </div>}
-    </section>}
-    {runtime.snapshot.stats && <section className="blend-result">
-      <span className="panel-label">Last valid result</span>
-      {runtime.snapshot.stats.verts || runtime.snapshot.stats.faces
-        ? <>
-            <strong>{runtime.snapshot.stats.verts.toLocaleString()} vertices</strong>
-            <b>{runtime.snapshot.stats.faces.toLocaleString()} faces · {runtime.snapshot.stats.tris.toLocaleString()} triangles</b>
-          </>
-        : runtime.snapshot.lineStats
-          ? <>
-              <strong>{runtime.snapshot.lineStats.evaluatedPoints.toLocaleString()} curve points</strong>
-              <b>{runtime.snapshot.lineStats.segments.toLocaleString()} segments · {runtime.snapshot.lineStats.splines.toLocaleString()} splines</b>
-            </>
-          : runtime.snapshot.pointStats
-            ? <strong>{runtime.snapshot.pointStats.points.toLocaleString()} point-cloud points</strong>
-          : <strong>Empty geometry output</strong>}
-      <small>{runtime.snapshot.runtimeSeconds?.toFixed(2)}s in worker</small>
-      {runtime.snapshot.preview && <em>Low-resolution preview · full quality refining</em>}
-      {(runtime.snapshot.missingTypes ?? []).map((entry) =>
-        <em key={entry.type}>{entry.type} ×{entry.count}</em>)}
-      {(runtime.snapshot.approximateTypes ?? []).map((entry) =>
-        <em key={entry.type}>Bounded approximation · {entry.type} ×{entry.count}</em>)}
-    </section>}
-    {(runtime.snapshot.details?.length ?? 0) > 0 && <section>
-      <div className="section-title">
-        <span>Runtime details</span>
-        <small>{runtime.snapshot.details!.filter((detail) => detail.severity === "warning").length} warnings</small>
-      </div>
-      <div className="blend-runtime-details">
-        {runtime.snapshot.details!.map((detail, index) =>
-          <article className={detail.severity} key={`${detail.kind}:${detail.stage}:${index}`}>
-            <b>{detail.kind === "volume-grid-budget"
-              ? "Volume grid allocation"
-              : detail.kind === "bounded-grid-adaptivity"
-                ? "Bounded adaptivity"
-                : `${detail.warningType} · ${detail.nodeName}`}</b>
-            <span>{detail.stage.replaceAll("-", " ")}</span>
-            <p>{detail.message}</p>
-            {detail.kind === "volume-grid-budget" && <small>
-              Requested {detail.requestedSampleCount.toLocaleString()} · effective {detail.effectiveSampleCount.toLocaleString()} · spacing {detail.effectiveSpacing.map((value) => value.toPrecision(4)).join(" × ")}
-            </small>}
-          </article>)}
-      </div>
-    </section>}
-    <section className="blend-note">
-      <span className="panel-label">Truth contract</span>
-      <p>Static coverage means a handler exists. Only a Blender parity fixture proves that its behavior matches the authored tool.</p>
-      <p>Failed edits retain the previous valid viewport result.</p>
-    </section>
+      {extractionWarnings.slice(0, 8).map((warning, index) =>
+        <div className="st-chip warn" key={`${warning.code}:${index}`}>{warning.message}</div>)}
+      {extractionWarnings.length > 8
+        && <div className="st-chip">{extractionWarnings.length - 8} more warnings are retained in the exported JSON</div>}
+    </div>}
   </>;
 
+  const infoPanel = <div className="st-section">
+    <div className="st-section-title">Scene</div>
+    <div className="blend-info-row"><span>Group</span><b>{target?.groupName ?? "—"}</b></div>
+    <div className="blend-info-row"><span>Target</span><b>{target ? (target.kind === "object" ? target.objectName : "Direct reusable group") : "—"}</b></div>
+    <div className="blend-info-row"><span>Modifier targets</span><b>{inventory.objects}</b></div>
+    <div className="blend-info-row"><span>Materials</span><b>{inventory.materials}</b></div>
+    {sourceUnits && <div className="blend-info-row">
+      <span>Units</span>
+      <b>{sourceUnits.lengthUnit.toLowerCase().replaceAll("_", " ")} · {sourceUnits.millimetersPerBlenderUnit.toLocaleString()} mm/BU</b>
+    </div>}
+    {animatedFrameRange && <div className="blend-info-row">
+      <span>Frames</span><b>{animatedFrameRange[0]}–{animatedFrameRange[1]}</b>
+    </div>}
+    <div className="st-chip" title="Static coverage means a handler exists. Only a Blender parity fixture proves that its behaviour matches the authored tool. Failed edits retain the previous valid viewport result.">
+      Blender remains semantic truth
+    </div>
+  </div>;
+
+  const rightDock = <>
+    <div className="st-tabs" role="tablist" aria-label="Inspector">
+      <button type="button" role="tab" aria-selected={inspectorTab === "compatibility"} onClick={() => setInspectorTab("compatibility")}>Compatibility</button>
+      <button type="button" role="tab" aria-selected={inspectorTab === "runtime"} onClick={() => setInspectorTab("runtime")}>Runtime</button>
+      <button type="button" role="tab" aria-selected={inspectorTab === "info"} onClick={() => setInspectorTab("info")}>Info</button>
+    </div>
+    {inspectorTab === "compatibility" ? compatibilityPanel : inspectorTab === "runtime" ? runtimePanel : infoPanel}
+  </>;
+
+  const nodeEditor = graphSource && target
+    ? <GeometryNodesEditor config={editorConfig} source={graphSource} onDumpChange={setWorkingDump} />
+    : null;
+
   return <StudioShell
-    eyebrow={libraryAsset ? "Asset library" : sourceName ? "Imported source" : "Procedural Studio"}
-    title={sourceName || "Geometry Nodes Studio"}
-    subtitle={target ? <>{target.kind === "object" ? "Modifier object" : "Reusable group"} · {target.label}</> : "Import · inspect · edit · evaluate"}
-    docksOpen={docksOpen}
-    onToggleDocks={() => setDocksOpen((open) => !open)}
+    className="blend-studio-page"
     leftDock={leftDock}
     rightDock={rightDock}
-    footer={<>Three.js viewport · Blender remains semantic truth</>}
+    sheetTabs={[
+      { id: "parameters", label: "Parameters", content: parameterSection },
+      { id: "source", label: "Source", content: sourceSection },
+      { id: "results", label: "Results", content: rightDock },
+    ]}
+    toolbar={<>
+      <span>{target ? target.label : "No target"}</span>
+      {animatedFrameRange && <>
+        <span className="st-sep" />
+        <span>Frame {animationFrame} / {animatedFrameRange[1]}</span>
+      </>}
+      <span className="st-spacer" />
+      <span>{triangleReadout}</span>
+      {!isMobile && workingDump && <button
+        className="st-btn"
+        type="button"
+        onClick={() => setGraphOpen((open) => !open)}
+      >{graphOpen ? "Hide node editor" : "Show node editor"}</button>}
+    </>}
+    status={<>
+      <span className={`st-dot ${RUNTIME_TONE[runtime.snapshot.state]}`} />
+      <span>{runtime.snapshot.message}</span>
+      <span className="st-sep" />
+      <span className="st-muted">{inventory.groups} groups · {inventory.nodes.toLocaleString()} nodes · {inventory.materials} materials</span>
+      <span className="st-spacer" />
+      <span className="st-muted">{health?.available ? "Blender bridge · localhost" : "Browser DNA decoder"}</span>
+    </>}
+    nodeDock={!isMobile && graphOpen && nodeEditor && <section className={`st-node-dock ${graphMaximized ? "maximized" : ""}`}>
+      <header>
+        <b>Geometry Nodes</b>
+        <small>{target?.groupName}</small>
+        <div>
+          <button className="st-btn" type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Full screen"}</button>
+          <button className="st-btn" type="button" onClick={() => { setGraphMaximized(false); setGraphOpen(false); }}>Collapse</button>
+        </div>
+      </header>
+      <div className="st-node-dock-body">{nodeEditor}</div>
+    </section>}
   >
     <canvas ref={runtime.canvasRef} id="blend-studio-canvas" />
-    {!workingDump && <div className="blend-empty-state">
-      <div className="blend-empty-orbit" />
-      <h1>Bring a Geometry Nodes tool into the studio.</h1>
-      <p>{importMessage}</p>
-      <button type="button" className="blend-empty-library" disabled={busy} onClick={() => setLibraryOpen(true)}>Browse the live asset library</button>
+    {!workingDump && <div className="st-watermark">
+      <div className="blend-watermark-orbit" />
+      <span>3D viewport · evaluated geometry</span>
     </div>}
-    {!graphOpen && workingDump && <button className="graph-toggle" type="button" onClick={() => setGraphOpen(true)}>{isMobile ? "Node graph" : "Show Geometry Nodes workspace"}</button>}
-    {graphOpen && graphSource && target && <FloatingStudioPanel
-      className="crayon-graph blend-graph"
-      rect={graphRect}
-      onRectChange={(rect) => {
-        setGraphRect(rect);
-        try {
-          localStorage.setItem(UI_STORAGE_KEY, JSON.stringify({ graphRect: rect }));
-        } catch {
-          // UI persistence is optional.
-        }
-      }}
-      maximized={graphMaximized}
-      title={`Geometry Nodes · ${target.label}`}
-      actions={<>
-        <span>{target.groupName}</span>
-        {!isMobile && <button type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Maximize"}</button>}
-        <button type="button" onClick={() => { setGraphMaximized(false); setGraphOpen(false); }}>Hide</button>
-      </>}
+    {isMobile && !graphOpen && workingDump && <button className="graph-toggle" type="button" onClick={() => setGraphOpen(true)}>Open node editor</button>}
+    {isMobile && graphOpen && nodeEditor && <StudioOverlay
+      className="blend-graph"
+      title={`Geometry Nodes · ${target?.label ?? ""}`}
       onClose={() => { setGraphMaximized(false); setGraphOpen(false); }}
-    >
-      <GeometryNodesEditor
-        config={editorConfig}
-        source={graphSource}
-        onDumpChange={setWorkingDump}
-      />
-    </FloatingStudioPanel>}
+    >{nodeEditor}</StudioOverlay>}
     <AssetLibraryOverlay
       open={libraryOpen}
       activeAssetId={libraryAsset?.id}

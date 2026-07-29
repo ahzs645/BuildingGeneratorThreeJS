@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useToolRuntime } from "../page-runtime";
+import { StudioShell } from "../studio/StudioShell";
 import "./surface-painter.css";
 import "./surface-draw.css";
 
@@ -30,21 +31,35 @@ export default function SurfacePaintPage(): React.JSX.Element {
   return engine === "blender" ? <BlenderBrushLab /> : <ProceduralPainter />;
 }
 
+/** The engine switch is a kit segmented control living in the toolbar. */
 function EngineSwitch({ engine }: { engine: Engine }): React.JSX.Element {
   return (
-    <nav className="paint-engine-switch" aria-label="Painting engine">
-      <Link to="/paint" className={engine === "procedural" ? "current" : ""} aria-current={engine === "procedural" ? "page" : undefined}>Procedural painter</Link>
-      <Link to="/paint?engine=blender" className={engine === "blender" ? "current" : ""} aria-current={engine === "blender" ? "page" : undefined}>Blender brush lab</Link>
+    <nav className="st-segmented paint-engine-switch" aria-label="Painting engine">
+      <Link to="/paint" aria-current={engine === "procedural" ? "page" : undefined}>Procedural painter</Link>
+      <Link to="/paint?engine=blender" aria-current={engine === "blender" ? "page" : undefined}>Blender brush lab</Link>
     </nav>
   );
 }
 
+/**
+ * The WebGPU painter builds its own lil-gui panel and HUD, so the shell hands
+ * it a bare viewport rather than docks it would duplicate.
+ */
 function ProceduralPainter(): React.JSX.Element {
+  // buildGui() mounts the painter's lil-gui into this container, so the panel
+  // is an inspector column instead of a sheet floating over the paint target.
+  const rightDock = <>
+    <div className="st-tabs"><button type="button" aria-selected="true">Painter</button></div>
+    <div id="surface-painter-gui-dock" className="surface-painter-gui-dock" />
+  </>;
   return (
-    <main className="surface-painter-page">
+    <StudioShell
+      className="surface-painter-page"
+      rightDock={rightDock}
+      toolbar={<><EngineSwitch engine="procedural" /><span className="st-spacer" /><span>D toggles draw / orbit</span></>}
+    >
       <div id="surface-painter-app" />
       <div id="drawFrame" />
-      <EngineSwitch engine="procedural" />
       <button id="modeBtn" type="button" aria-label="Toggle the active painting interaction mode">
         <span className="dot" />
         <span className="label">Draw mode</span>
@@ -52,85 +67,96 @@ function ProceduralPainter(): React.JSX.Element {
       </button>
       <div id="hud" />
       <div id="toast" role="status" aria-live="polite" />
-    </main>
+    </StudioShell>
   );
 }
 
 function BlenderBrushLab(): React.JSX.Element {
-  return <main className="surface-shell">
+  const leftDock = <>
+    <div className="st-tabs"><button type="button" aria-selected="true">Brush lab</button></div>
+    <div className="st-section">
+      <div className="st-section-title">1 · Surface</div>
+      <label className="st-dropzone surface-upload">
+        <input id="surface-file" type="file" accept=".glb,.gltf,.obj,.stl,model/gltf-binary,model/gltf+json" />
+        <b>Upload GLB, OBJ, or STL</b>
+        <span id="surface-file-name">Using generated demo surface</span>
+      </label>
+      <div className="st-btn-row st-btn-row-even">
+        <button id="surface-demo" className="st-btn" type="button">Curved demo</button>
+        <button id="surface-flat" className="st-btn" type="button">Flat parity</button>
+      </div>
+      <button id="surface-sample" className="st-btn" type="button">Sample GLB</button>
+    </div>
+    <div className="st-section">
+      <div className="st-section-title">2 · Interaction</div>
+      <div className="st-segmented" title="Select an area and click the model to place a local drawing patch. Draw samples are restricted to that patch and raycast onto the mesh.">
+        <button id="surface-orbit" type="button">Orbit</button>
+        <button id="surface-area" type="button">Select area</button>
+        <button id="surface-draw" className="active" type="button">Draw</button>
+      </div>
+      <label className="st-row"><span>Area size</span><input id="surface-area-size" type="range" min="0.6" max="4" step="0.1" defaultValue="2.4" /><output id="surface-area-size-output">2.4</output></label>
+      <div className="st-btn-row st-btn-row-even">
+        <button id="surface-undo" className="st-btn" type="button">Undo stroke</button>
+        <button id="surface-clear" className="st-btn" type="button">Clear</button>
+      </div>
+      <button id="surface-clear-area" className="st-btn" type="button">Remove drawing area</button>
+      <button id="surface-area-doodle" className="st-btn" type="button">Add demo doodle inside area</button>
+      <button id="surface-parity-path" className="st-btn" type="button">Load fixed Blender parity path</button>
+      <button id="surface-curved-parity-path" className="st-btn" type="button">Load same curved Blender test</button>
+    </div>
+    <div className="st-section">
+      <div className="st-section-title">3 · Blender brush</div>
+      <select id="surface-brush" className="st-select" defaultValue="crayon"><option value="crayon">Chrome Crayon</option><option value="periodic">Periodic Brush</option></select>
+      <div id="surface-periodic-controls" className="surface-controls" hidden>
+        <label className="st-row"><span>Spacing</span><input id="surface-spacing" type="range" min="0.12" max="1.2" step="0.01" defaultValue="0.38" /><output id="surface-spacing-output">0.38</output></label>
+        <label className="st-row"><span>Size</span><input id="surface-size" type="range" min="0.002" max="0.08" step="0.001" defaultValue="0.012" /><output id="surface-size-output">0.012</output></label>
+      </div>
+      <div id="surface-crayon-controls" className="surface-controls">
+        <select id="surface-crayon-preset" className="st-select" defaultValue="adapted"><option value="adapted">Drawn line · live GN-VM</option><option value="exact">Original seven-spline stamp · not the line</option></select>
+        <label className="st-row"><span>Thickness</span><input id="surface-thickness" type="range" min="0.6" max="30" step="0.1" defaultValue="6" /><output id="surface-thickness-output">6.0</output></label>
+        <label className="st-row"><span>Peak</span><input id="surface-peak" type="range" min="0.5" max="450" step="0.1" defaultValue="10" /><output id="surface-peak-output">10.0</output></label>
+        <label className="st-row"><span>Sigilize</span><input id="surface-sigilize" type="range" min="0" max="800" step="1" defaultValue="0" /><output id="surface-sigilize-output">0</output></label>
+        <label className="st-row"><span>Soften</span><input id="surface-soften" type="range" min="0" max="10" step="1" defaultValue="0" /><output id="surface-soften-output">0</output></label>
+        <label className="st-row"><span>Resolution</span><input id="surface-resolution" type="range" min="0.2" max="1" step="0.005" defaultValue="0.8" /><output id="surface-resolution-output">0.800</output></label>
+        <label className="st-row"><span>SPIRO</span><input id="surface-spiro" type="range" min="0" max="3" step="1" defaultValue="1" /><output id="surface-spiro-output">1</output></label>
+        <label className="st-row"><span>Extrude</span><input id="surface-extrude" type="range" min="0.1" max="3" step="0.1" defaultValue="1" /><output id="surface-extrude-output">1.0</output></label>
+        <label className="st-row st-row-wide"><span>Flatten stroke</span><input id="surface-flatten" type="checkbox" /></label>
+        <button id="surface-sigil" className="st-btn" type="button" title="Sigilize reconnects the stroke into a generated stamp; SPIRO changes its curve construction.">Auto-connect into a unique sigil</button>
+      </div>
+    </div>
+    <div className="st-section">
+      <div className="st-section-title">Evaluated stroke</div>
+      <div className="st-metric"><strong id="surface-points">0 projected points</strong><span id="surface-runtime">Draw a stroke to evaluate GN-VM</span></div>
+      <small id="surface-bounds" className="surface-bounds">Bounds appear after evaluation</small>
+    </div>
+  </>;
+
+  const rightDock = <>
+    <div className="st-tabs"><button type="button" aria-selected="true">Blender parity</button></div>
+    <div className="st-section">
+      <div className="st-section-title">Flat parity</div>
+      <img className="surface-reference-image" src={`${import.meta.env.BASE_URL}dojo/references/crayon-flat-path.png`} alt="Blender render of the fixed flat Chrome Crayon path" />
+      <p className="st-finding">Same 7-point POLY curve and controls: 1,744 verts · 1,746 faces · evaluated positions match within 0.000006 Blender units.</p>
+    </div>
+    <div className="st-section">
+      <div className="st-section-title">Curved parity</div>
+      <img className="surface-reference-image" src={`${import.meta.env.BASE_URL}dojo/references/crayon-curved-path.png`} alt="Blender render of the fixed Chrome Crayon path wrapped onto the curved test surface" />
+      <p className="st-finding">Same generated mesh, path frames, and curved target used by the browser test.</p>
+    </div>
+    <div className="st-section">
+      <div className="st-chip warn">Drawn line evaluates your projected curve through GN-VM. The optional seven-spline stamp is a separate Blender reference asset, not the line you drew.</div>
+    </div>
+  </>;
+
+  return <StudioShell
+    className="surface-shell"
+    leftDock={leftDock}
+    rightDock={rightDock}
+    toolbar={<><EngineSwitch engine="blender" /><span className="st-spacer" /><span>select area: click model · draw: drag inside patch · wheel: zoom</span></>}
+    status={<>
+      <span id="surface-status"><span className="st-dot ready" />Ready on the demo surface</span>
+    </>}
+  >
     <canvas id="surface-canvas" />
-    <EngineSwitch engine="blender" />
-    <header className="surface-head">
-      <p>Node Dojo · projected curve workflow</p>
-      <h1>Draw on a Model</h1>
-      <div id="surface-status"><span />Ready on the demo surface</div>
-    </header>
-    <aside className="surface-panel">
-      <section>
-        <span className="surface-label">1 · Surface</span>
-        <label className="surface-upload">
-          <input id="surface-file" type="file" accept=".glb,.gltf,.obj,.stl,model/gltf-binary,model/gltf+json" />
-          <b>Upload GLB, OBJ, or STL</b>
-          <small id="surface-file-name">Using generated demo surface</small>
-        </label>
-        <div className="surface-actions"><button id="surface-demo" type="button">Curved demo</button><button id="surface-flat" type="button">Flat parity</button></div>
-        <button id="surface-sample" type="button">Sample GLB</button>
-      </section>
-      <section>
-        <span className="surface-label">2 · Interaction</span>
-        <div className="surface-segment">
-          <button id="surface-orbit" type="button">Orbit</button>
-          <button id="surface-area" type="button">Select area</button>
-          <button id="surface-draw" className="active" type="button">Draw</button>
-        </div>
-        <p>Select an area and click the model to place a local drawing patch. Draw samples are restricted to that patch and raycast onto the mesh.</p>
-        <label className="surface-range surface-area-size"><span>Area size</span><input id="surface-area-size" type="range" min="0.6" max="4" step="0.1" defaultValue="2.4" /><output id="surface-area-size-output">2.4</output></label>
-        <div className="surface-actions">
-          <button id="surface-undo" type="button">Undo stroke</button>
-          <button id="surface-clear" type="button">Clear</button>
-        </div>
-        <button id="surface-clear-area" type="button">Remove drawing area</button>
-        <button id="surface-area-doodle" type="button">Add demo doodle inside area</button>
-        <button id="surface-parity-path" type="button">Load fixed Blender parity path</button>
-        <button id="surface-curved-parity-path" type="button">Load same curved Blender test</button>
-      </section>
-      <section>
-        <span className="surface-label">3 · Blender brush</span>
-        <select id="surface-brush" className="surface-select" defaultValue="crayon"><option value="crayon">Chrome Crayon</option><option value="periodic">Periodic Brush</option></select>
-        <div id="surface-periodic-controls" className="surface-controls" hidden>
-          <label className="surface-range"><span>Spacing</span><input id="surface-spacing" type="range" min="0.12" max="1.2" step="0.01" defaultValue="0.38" /><output id="surface-spacing-output">0.38</output></label>
-          <label className="surface-range"><span>Size</span><input id="surface-size" type="range" min="0.002" max="0.08" step="0.001" defaultValue="0.012" /><output id="surface-size-output">0.012</output></label>
-        </div>
-        <div id="surface-crayon-controls" className="surface-controls">
-          <span className="surface-mode-label">Geometry source</span>
-          <select id="surface-crayon-preset" className="surface-select surface-preset" defaultValue="adapted"><option value="adapted">Drawn line · live GN-VM</option><option value="exact">Original seven-spline stamp · not the line</option></select>
-          <label className="surface-range"><span>Thickness</span><input id="surface-thickness" type="range" min="0.6" max="30" step="0.1" defaultValue="6" /><output id="surface-thickness-output">6.0</output></label>
-          <label className="surface-range"><span>Peak</span><input id="surface-peak" type="range" min="0.5" max="450" step="0.1" defaultValue="10" /><output id="surface-peak-output">10.0</output></label>
-          <label className="surface-range"><span>Sigilize</span><input id="surface-sigilize" type="range" min="0" max="800" step="1" defaultValue="0" /><output id="surface-sigilize-output">0</output></label>
-          <label className="surface-range"><span>Soften</span><input id="surface-soften" type="range" min="0" max="10" step="1" defaultValue="0" /><output id="surface-soften-output">0</output></label>
-          <label className="surface-range"><span>Resolution</span><input id="surface-resolution" type="range" min="0.2" max="1" step="0.005" defaultValue="0.8" /><output id="surface-resolution-output">0.800</output></label>
-          <label className="surface-range"><span>SPIRO</span><input id="surface-spiro" type="range" min="0" max="3" step="1" defaultValue="1" /><output id="surface-spiro-output">1</output></label>
-          <label className="surface-range"><span>Extrude</span><input id="surface-extrude" type="range" min="0.1" max="3" step="0.1" defaultValue="1" /><output id="surface-extrude-output">1.0</output></label>
-          <label className="surface-check"><input id="surface-flatten" type="checkbox" /><span>Flatten generated stroke</span></label>
-          <button id="surface-sigil" type="button">Auto-connect into a unique sigil</button>
-          <p className="surface-control-note">Sigilize reconnects the stroke into a generated stamp; SPIRO changes its curve construction.</p>
-        </div>
-        <div className="surface-metrics"><b id="surface-points">0 projected points</b><small id="surface-runtime">Draw a stroke to evaluate GN-VM</small><small id="surface-bounds">Bounds appear after evaluation</small></div>
-      </section>
-      <section className="surface-reference">
-        <span className="surface-label">Flat parity · Blender</span>
-        <img src={`${import.meta.env.BASE_URL}dojo/references/crayon-flat-path.png`} alt="Blender render of the fixed flat Chrome Crayon path" />
-        <p>Same 7-point POLY curve and controls: 1,744 verts · 1,746 faces · evaluated positions match within 0.000006 Blender units.</p>
-      </section>
-      <section className="surface-reference">
-        <span className="surface-label">Curved parity · Blender</span>
-        <img src={`${import.meta.env.BASE_URL}dojo/references/crayon-curved-path.png`} alt="Blender render of the fixed Chrome Crayon path wrapped onto the curved test surface" />
-        <p>Same generated mesh, path frames, and curved target used by the browser test.</p>
-      </section>
-      <section className="surface-note">
-        <b>Drawn line</b> evaluates your projected curve through GN-VM. The optional original seven-spline stamp is a separate Blender reference asset and does not represent the line you drew.
-      </section>
-    </aside>
-    <div className="surface-help">Select area: click model · Draw: drag inside patch · Orbit: rotate · wheel: zoom</div>
-  </main>;
+  </StudioShell>;
 }

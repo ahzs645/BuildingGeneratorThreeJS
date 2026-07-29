@@ -1,26 +1,6 @@
-.vase-compare-page {
-  color-scheme: dark;
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  background: #0b0d10;
-}
-.vase-compare-page, .vase-compare-page * { margin: 0; padding: 0; box-sizing: border-box; }
-.vase-compare-page #app { width: 100vw; height: 100vh; display: block; }
-.vase-compare-page #hud {
-  position: fixed; left: 16px; top: calc(var(--studio-nav-h, 46px) + 12px); z-index: 10; max-width: 80ch;
-  font: 12px/1.6 ui-monospace, Menlo, monospace; color: #9fb4c7;
-  letter-spacing: .03em; pointer-events: none; text-shadow: 0 1px 2px #000;
-}
-.vase-compare-page #hud b { color: #eaf2f8; text-transform: uppercase; }
-.vase-compare-page #hud .truth { color: #ff9d9d; }
-.vase-compare-page #hud .vm { color: #8fcfff; }
-.vase-compare-page .compare-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; pointer-events: auto; }
-.vase-compare-page .compare-controls button {
-  appearance: none; cursor: pointer; color: #aebecd; background: rgba(11,13,16,.72);
-  border: 1px solid rgba(255,255,255,.16); border-radius: 999px; padding: 5px 9px;
-  font: 600 10px/1 ui-monospace, monospace; letter-spacing: .06em; text-transform: uppercase;
-}
-.vase-compare-page .compare-controls button:hover { color: #eaf2f8; border-color: rgba(143,207,255,.5); }
-.vase-compare-page .compare-controls button[aria-pressed="true"] { color: #eaf2f8; background: rgba(94,180,255,.16); border-color: rgba(94,180,255,.62); }
-.vase-compare-page .compare-controls button.truth-toggle[aria-pressed="true"] { color: #ffd0d0; background: rgba(255,107,107,.14); border-color: rgba(255,107,107,.62); }
+/* The fixed HUD and its pill buttons are gone; the dock holds the controls and
+   the toolbar carries the two tint legends. */
+.vase-compare-page #app { display: block; width: 100%; height: 100%; }
+.vase-compare-page .st-viewport { background: radial-gradient(circle at 46% 36%, #17202A, #07090C 66%); }
+/* The Blender side of the comparison keeps its own tint when enabled. */
+.vase-compare-page .vase-truth-toggle[aria-pressed="true"] { background: rgba(255,102,95,.16); color: #FFD0D0; }
