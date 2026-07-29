@@ -6,6 +6,7 @@ import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from "three-mesh-bvh";
 import { publicUrl } from "./base-url";
+import { canvasBox, observeCanvasBox } from "./canvas-viewport";
 import type { Dump, TriSoup } from "./gnvm/index";
 import type { ToolHandle } from "./react/page-runtime";
 
@@ -93,11 +94,12 @@ export function createTool(): ToolHandle {
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setSize(innerWidth, innerHeight);
+  const viewport = canvasBox(canvas);
+  renderer.setSize(viewport.width, viewport.height, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, .01, 200);
+  const camera = new THREE.PerspectiveCamera(40, viewport.width / viewport.height, .01, 200);
   camera.position.set(6.7, -8.5, 5.6);
   const controls = new OrbitControls(camera, canvas); controls.enableDamping = true; controls.target.set(0, 0, 0);
   const room = new RoomEnvironment(); const pmrem = new THREE.PMREMGenerator(renderer); const envTexture = pmrem.fromScene(room, .04).texture; scene.environment = envTexture; room.dispose(); pmrem.dispose();
@@ -671,7 +673,13 @@ export function createTool(): ToolHandle {
     crayonControls.hidden = !crayon; periodicControls.hidden = crayon;
     clearObject(brushRoot); queueEvaluation();
   }, { signal });
-  window.addEventListener("resize", () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); }, { signal });
+  // The canvas is a grid column of the studio shell, not the whole window.
+  const stopObservingCanvas = observeCanvasBox(canvas, (width, height) => {
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height, false);
+  });
+  signal.addEventListener("abort", stopObservingCanvas);
   renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
 
   setMode("draw"); applyCrayonPreset(); demoSurface();

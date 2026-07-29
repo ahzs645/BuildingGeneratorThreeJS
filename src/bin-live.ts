@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import GUI from "lil-gui";
+import { canvasBox, observeCanvasBox } from "./canvas-viewport";
 import { BIN_PARAMETERS } from "./bin-params";
 import type { ToolHandle } from "./react/page-runtime";
 
@@ -17,13 +18,14 @@ export function createTool(): ToolHandle {
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setSize(innerWidth, innerHeight);
+  const viewport = canvasBox(canvas);
+  renderer.setSize(viewport.width, viewport.height, false);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0b0d10);
-  const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.01, 1000);
+  const camera = new THREE.PerspectiveCamera(45, viewport.width / viewport.height, 0.01, 1000);
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.autoRotate = true;
@@ -122,8 +124,12 @@ export function createTool(): ToolHandle {
     await bake(); // initial
   }
 
-  const onResize = () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); };
-  addEventListener("resize", onResize);
+  // The canvas is a grid column of the studio shell, not the whole window.
+  const stopObservingCanvas = observeCanvasBox(canvas, (width, height) => {
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height, false);
+  });
   renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
   void main();
 
@@ -131,7 +137,7 @@ export function createTool(): ToolHandle {
     dispose() {
       disposed = true;
       clearTimeout(debounce);
-      removeEventListener("resize", onResize);
+      stopObservingCanvas();
       renderer.setAnimationLoop(null);
       gui?.destroy();
       gui = null;

@@ -12,7 +12,11 @@ import { GENERATORS, type App, type Generator, type ModelKind } from './app';
  * from strokes).
  */
 export function buildGui(app: App): GUI {
-  const gui = new GUI({ title: 'Surface Painter' });
+  // Dock into the studio inspector column when the page provides one, so the
+  // panel is a shell column rather than a sheet floating over the paint target.
+  const dock = document.getElementById('surface-painter-gui-dock');
+  const gui = new GUI({ title: 'Surface Painter', ...(dock ? { container: dock } : {}) });
+  gui.domElement.classList.add('surface-painter-gui');
   const s = app.settings;
   const t = app.treeParams;
   const c = app.crystal;

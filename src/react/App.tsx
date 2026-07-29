@@ -1,6 +1,12 @@
+// The shared shell + control kit, first: CSS is injected in module-evaluation
+// order, so every other stylesheet in the app — the nav's own overrides, the
+// shell's, and each lazily imported page's — loads after it and can override
+// kit rules at equal specificity. Never move this below a component import.
+import "./studio/studio-kit.css";
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { appHref } from "../base-url";
+import { StudioChromeProvider } from "./studio/StudioChrome";
 import { StudioNav } from "./studio/StudioNav";
 import "./shell.css";
 
@@ -87,11 +93,16 @@ function StudioRoutes(): React.JSX.Element {
 export default function App(): React.JSX.Element {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      {/* Outside the keyed Routes: the nav bar survives every navigation. */}
-      <StudioNav />
-      <Suspense fallback={<div className="route-loading">Loading procedural tool…</div>}>
-        <StudioRoutes />
-      </Suspense>
+      {/* The provider renders .st-shell: a two-row grid of nav + route body.
+          Both live inside it, so the nav is a grid row rather than a fixed bar
+          floating over the tools. */}
+      <StudioChromeProvider>
+        {/* Outside the keyed Routes: the nav bar survives every navigation. */}
+        <StudioNav />
+        <Suspense fallback={<div className="route-loading">Loading procedural tool…</div>}>
+          <StudioRoutes />
+        </Suspense>
+      </StudioChromeProvider>
     </BrowserRouter>
   );
 }

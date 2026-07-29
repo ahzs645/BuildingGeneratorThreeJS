@@ -1,128 +1,64 @@
-/* All selectors are scoped under .building-page (the route's root element) or
-   .building-gui (the lil-gui panel, which lil-gui appends to <body>, outside the
-   page root — main.ts adds the class to the panel). In the SPA this stylesheet
-   stays loaded after leaving the route, so nothing here may match other pages. */
+/* Every selector is scoped under .building-page (the shell body class) or
+   .building-gui (the atmosphere panel). In the SPA this stylesheet stays
+   loaded after leaving the route, so nothing here may match other pages.
 
-.building-page,
-.building-page * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+   The generator parameters are kit rows in the left dock now; what stays here
+   is the letterbox rig, the kit-loading overlay, and the lil-gui atmosphere
+   panel restyled to sit inside the inspector column. */
 
-/* the former html/body styles: the page root covers the viewport itself */
-.building-page {
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  background: #000;
-  color-scheme: dark;
-  --accent: #8fcfff; /* icy cinematic blue */
-}
+.building-page #app { position: absolute; inset: 0; }
+.building-page #app canvas { display: block; width: 100%; height: 100%; }
+.building-page .st-viewport { background: #000; }
 
-.building-page #app { width: 100%; height: 100%; display: block; }
-
-/* Letterbox bars */
+/* Letterbox bars — driven by the cinematic folder. */
 .building-page .bar {
-  position: fixed;
-  left: 0;
-  width: 100%;
-  height: 0;
-  background: #000;
-  z-index: 50;
-  pointer-events: none;
-  transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute; left: 0; width: 100%; height: 0;
+  background: #000; z-index: 50; pointer-events: none;
+  transition: height .5s cubic-bezier(.4, 0, .2, 1);
 }
 .building-page .bar.top { top: 0; }
 .building-page .bar.bottom { bottom: 0; }
 
 .building-page #loading {
-  position: fixed;
-  inset: 0;
-  z-index: 70;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font: 11px/1.5 ui-monospace, "SF Mono", monospace;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
-  pointer-events: none;
-  user-select: none;
-  transition: opacity 0.4s;
+  position: absolute; inset: 0; z-index: 70;
+  display: grid; place-items: center;
+  font: 500 var(--st-fs-micro)/1.5 var(--st-mono);
+  letter-spacing: .18em; text-transform: uppercase;
+  color: var(--st-ink-4);
+  pointer-events: none; user-select: none;
+  transition: opacity .4s;
 }
 
-.building-page .credit {
-  position: fixed;
-  left: 16px;
-  bottom: 14px;
-  z-index: 60;
-  font: 11px/1.5 ui-monospace, "SF Mono", monospace;
-  letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.4);
-  text-transform: uppercase;
-  pointer-events: none;
-  user-select: none;
-}
-.building-page .credit b { color: var(--accent); font-weight: 600; }
-
-/* ---- Stylized lil-gui panel (lives on <body>; scoped via .building-gui) ---- */
+/* ---- The atmosphere panel: lil-gui mounted into the inspector column ---- */
+.building-gui-dock { min-height: 0; flex: 1; overflow: auto; }
 .lil-gui.building-gui {
-  --accent: #8fcfff; /* re-declared: the panel is outside .building-page */
-  --background-color: rgba(18, 21, 28, 0.55);
-  --widget-color: rgba(255, 255, 255, 0.07);
-  --hover-color: rgba(255, 255, 255, 0.13);
-  --focus-color: rgba(143, 207, 255, 0.35);
-  --number-color: var(--accent);
-  --string-color: #9fd6c2;
-  --text-color: #d7d8dd;
-  --title-background-color: rgba(0, 0, 0, 0.35);
-  --title-text-color: #ffffff;
-  --font-family: "Inter", system-ui, -apple-system, sans-serif;
-  --font-size: 11px;
-  --input-font-size: 11px;
+  --background-color: var(--st-panel);
+  --widget-color: rgba(255,255,255,.07);
+  --hover-color: rgba(255,255,255,.13);
+  --focus-color: rgba(127,196,232,.35);
+  --number-color: var(--st-accent);
+  --string-color: #9FD6C2;
+  --text-color: var(--st-ink);
+  --title-background-color: rgba(0,0,0,.28);
+  --title-text-color: var(--st-ink);
+  --font-family: var(--st-font);
+  --font-size: var(--st-fs-ui);
+  --input-font-size: var(--st-fs-ui);
   --widget-height: 24px;
-  --padding: 6px;
-  --spacing: 5px;
-  --slider-knob-color: var(--accent);
-  --slider-input-min-width: 42px;
+  --padding: 8px;
+  --spacing: 6px;
+  --slider-knob-color: var(--st-accent);
+  --slider-input-min-width: 46px;
+  width: 100%;
 }
-.lil-gui.building-gui.root {
-  right: 14px;
-  top: calc(var(--studio-nav-h, 46px) + 12px);
-  width: 312px;
-  border-radius: 14px;
-  overflow: hidden;
-  backdrop-filter: blur(18px) saturate(1.2);
-  -webkit-backdrop-filter: blur(18px) saturate(1.2);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-.lil-gui.building-gui.root > .title {
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  padding: 11px 12px;
-  color: var(--accent);
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-.lil-gui.building-gui .title {
-  transition: color 0.15s ease;
-}
+/* The dock tab already names the panel. */
+.lil-gui.building-gui.root > .title { display: none; }
 .lil-gui.building-gui .children { padding-bottom: 2px; }
 .lil-gui.building-gui .controller { --gap: 6px; }
 .lil-gui.building-gui .controller.string input,
-.lil-gui.building-gui .controller.number input { border-radius: 6px; }
-.lil-gui.building-gui .slider {
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-}
-.lil-gui.building-gui .slider .fill {
-  background: var(--accent);
-  opacity: 0.85;
-}
+.lil-gui.building-gui .controller.number input { border-radius: var(--st-r-sm); }
+.lil-gui.building-gui .slider { border-radius: var(--st-r-sm); background: var(--st-active); }
+.lil-gui.building-gui .slider .fill { background: var(--st-accent); opacity: .85; }
 .lil-gui.building-gui button:hover,
-.lil-gui.building-gui .controller:hover { --background-color: rgba(255, 255, 255, 0.03); }
-.lil-gui.building-gui .folder > .title:hover { color: var(--accent); }
+.lil-gui.building-gui .controller:hover { --background-color: rgba(255,255,255,.03); }
+.lil-gui.building-gui .folder > .title:hover { color: var(--st-accent); }

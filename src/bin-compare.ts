@@ -3,6 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import { canvasBox, observeCanvasBox } from "./canvas-viewport";
 import { makeBinAuthoredMaterial } from "./bin-authored-material";
 import type { FilamentBounds } from "./filament-material";
 import type { Dump, TriSoup } from "./gnvm/index";
@@ -162,15 +163,16 @@ export function createTool(): ToolHandle {
   const truthButton = document.querySelector<HTMLButtonElement>("#show-truth")!;
   const vmButton = document.querySelector<HTMLButtonElement>("#show-vm")!;
 
+  const viewport = canvasBox(canvas);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setSize(innerWidth, innerHeight);
+  renderer.setSize(viewport.width, viewport.height, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.001, 100);
+  const camera = new THREE.PerspectiveCamera(40, viewport.width / viewport.height, 0.001, 100);
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.autoRotate = false;
@@ -532,7 +534,13 @@ export function createTool(): ToolHandle {
     if (event.key === "2") { resultView = "vm"; syncView(true); }
     if (event.key === "3") { resultView = "both"; syncView(true); }
   }) as EventListener);
-  listen(window, "resize", () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+  // The viewport is a grid column between the docks, so the canvas box — not
+  // the window — is what the renderer has to match.
+  cleanups.push(observeCanvasBox(canvas, (width, height) => {
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height, false);
+  }));
   renderer.setAnimationLoop(() => { controls.update(); if (mode === "split") positionGroups(); renderer.render(scene, camera); });
   void main();
 

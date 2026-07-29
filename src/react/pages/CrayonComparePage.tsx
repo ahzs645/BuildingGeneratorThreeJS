@@ -3,7 +3,8 @@ import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import type { GeometryNodesPreset } from "../geometry-nodes/GraphPresetLibrary";
 import { usePageRuntime } from "../page-runtime";
 import { useCrayonRuntime } from "../crayon/useCrayonRuntime";
-import { FloatingStudioPanel, StudioShell, useMobileStudio, type StudioPanelRect } from "../studio/StudioShell";
+import { useStudioStatusChips } from "../studio/StudioChrome";
+import { StudioOverlay, StudioShell, useMobileStudio } from "../studio/StudioShell";
 import "./crayon-compare.css";
 
 const editorConfig = {
@@ -60,25 +61,10 @@ const crayonPresets: GeometryNodesPreset[] = [
 
 const UI_STORAGE_KEY = "procedural-studio.crayon.ui";
 
-type CrayonUiState = {
-  docksOpen: boolean;
-  graphOpen: boolean;
-  graphRect: StudioPanelRect;
-};
-
-function defaultGraphRect(): StudioPanelRect {
-  const width = Math.min(1120, Math.max(640, window.innerWidth - 650));
-  const height = Math.min(620, Math.max(420, window.innerHeight - 180));
-  return {
-    x: Math.max(304, Math.round((window.innerWidth - width) / 2)),
-    y: Math.max(92, window.innerHeight - height - 28),
-    width,
-    height,
-  };
-}
+type CrayonUiState = { graphOpen: boolean };
 
 function loadUiState(): CrayonUiState {
-  const defaults = { docksOpen: true, graphOpen: true, graphRect: defaultGraphRect() };
+  const defaults = { graphOpen: true };
   try {
     const stored = localStorage.getItem(UI_STORAGE_KEY);
     return stored ? { ...defaults, ...JSON.parse(stored) as Partial<CrayonUiState> } : defaults;
@@ -91,11 +77,9 @@ export default function CrayonComparePage(): React.JSX.Element {
   usePageRuntime("Chrome Crayon · Blender vs browser Geometry Nodes");
   const isMobile = useMobileStudio();
   const [initialUi] = useState(loadUiState);
-  const [docksOpen, setDocksOpen] = useState(initialUi.docksOpen);
   // Mobile starts with the graph overlay closed regardless of the persisted
   // desktop preference; the FAB is its entry point.
   const [graphOpen, setGraphOpen] = useState(!isMobile && initialUi.graphOpen);
-  const [graphRect, setGraphRect] = useState(initialUi.graphRect);
   const [graphMaximized, setGraphMaximized] = useState(false);
   const [overrides, setOverrides] = useState<Record<string, number>>(initialOverrides);
   const [layout, setLayoutState] = useState<"split" | "overlay">("split");
@@ -103,16 +87,11 @@ export default function CrayonComparePage(): React.JSX.Element {
   const runtime = useCrayonRuntime(initialOverrides);
   const persistUi = useCallback((patch: Partial<CrayonUiState>) => {
     try {
-      const current = loadUiState();
-      localStorage.setItem(UI_STORAGE_KEY, JSON.stringify({ ...current, ...patch }));
+      localStorage.setItem(UI_STORAGE_KEY, JSON.stringify({ ...loadUiState(), ...patch }));
     } catch {
       // Persistence is a convenience; authoring remains usable without storage.
     }
   }, []);
-  const updateGraphRect = useCallback((rect: StudioPanelRect) => {
-    setGraphRect(rect);
-    persistUi({ graphRect: rect });
-  }, [persistUi]);
   useEffect(() => {
     if (!graphMaximized) return;
     const restore = (event: KeyboardEvent): void => {
@@ -131,6 +110,12 @@ export default function CrayonComparePage(): React.JSX.Element {
     return () => window.clearTimeout(timer);
   }, [overrides, runtime.evaluate]);
 
+  useStudioStatusChips([{
+    id: "gnvm",
+    label: `GN-VM ${runtime.snapshot.state}`,
+    tone: runtime.snapshot.state === "ready" ? "ready" : runtime.snapshot.state === "error" ? "error" : "busy",
+  }]);
+
   const closeGraph = (): void => {
     setGraphMaximized(false);
     setGraphOpen(false);
@@ -139,63 +124,92 @@ export default function CrayonComparePage(): React.JSX.Element {
   };
 
   const leftDock = <>
-    <header className="studio-dock-header"><span>Generator</span><small>GN-VM inputs</small></header>
-    <section><div className="section-title"><span>Exposed group inputs</span><small>live values</small></div>
-        <div className="crayon-inputs">{controls.map((control) => <label key={control.name}><span>{control.name}</span><input type="range" min={control.min} max={control.max} step={control.step} value={overrides[control.name]} onChange={(event) => setOverrides((current) => ({ ...current, [control.name]: Number(event.target.value) }))} /><output>{overrides[control.name].toFixed(control.step === 1 ? 0 : 2)}</output></label>)}</div>
-        <button id="crayon-update" type="button" disabled={runtime.snapshot.state === "evaluating"} onClick={() => void runtime.evaluate(overrides)}>Evaluate now</button>
-    </section>
-    <section><span className="panel-label">Viewport</span><div className="crayon-segment"><button className={layout === "split" ? "active" : ""} type="button" onClick={() => { setLayoutState("split"); runtime.setLayout("split"); }}>Side by side</button><button className={layout === "overlay" ? "active" : ""} type="button" onClick={() => { setLayoutState("overlay"); runtime.setLayout("overlay"); }}>Overlay</button></div></section>
-    <section><span className="panel-label">Shader</span><div className="crayon-segment shader-segment"><button className={shader === "diagnostic" ? "active" : ""} type="button" onClick={() => { setShaderState("diagnostic"); runtime.setShader("diagnostic"); }}>Diagnostic</button><button className={shader === "chrome" ? "active" : ""} type="button" onClick={() => { setShaderState("chrome"); runtime.setShader("chrome"); }}>WebGL chrome</button></div><p className="shader-caption">Shared WebGL reconstruction applied to both meshes; this does not compare Blender shader output.</p></section>
+    <div className="st-tabs"><button type="button" aria-selected="true">Generator</button></div>
+    <div className="st-section">
+      <div className="st-section-title">Exposed group inputs<small>live</small></div>
+      {controls.map((control) => <label className="st-row" key={control.name}>
+        <span>{control.name}</span>
+        <input type="range" min={control.min} max={control.max} step={control.step} value={overrides[control.name]} onChange={(event) => setOverrides((current) => ({ ...current, [control.name]: Number(event.target.value) }))} />
+        <output>{overrides[control.name].toFixed(control.step === 1 ? 0 : 2)}</output>
+      </label>)}
+      <button className="st-btn-primary" type="button" disabled={runtime.snapshot.state === "evaluating"} onClick={() => void runtime.evaluate(overrides)}>Evaluate now</button>
+    </div>
+    <div className="st-section">
+      <div className="st-section-title">Viewport</div>
+      <div className="st-segmented">
+        <button className={layout === "split" ? "active" : ""} type="button" onClick={() => { setLayoutState("split"); runtime.setLayout("split"); }}>Side by side</button>
+        <button className={layout === "overlay" ? "active" : ""} type="button" onClick={() => { setLayoutState("overlay"); runtime.setLayout("overlay"); }}>Overlay</button>
+      </div>
+      <div className="st-section-title">Shader</div>
+      <div className="st-segmented" title="Shared WebGL reconstruction applied to both meshes; this does not compare Blender shader output.">
+        <button className={shader === "diagnostic" ? "active" : ""} type="button" onClick={() => { setShaderState("diagnostic"); runtime.setShader("diagnostic"); }}>Diagnostic</button>
+        <button className={shader === "chrome" ? "active" : ""} type="button" onClick={() => { setShaderState("chrome"); runtime.setShader("chrome"); }}>WebGL chrome</button>
+      </div>
+    </div>
   </>;
 
   const rightDock = <>
-    <header className="studio-dock-header"><span>Analysis</span><small>last valid result</small></header>
-    <section>
-      <div className={`crayon-status ${runtime.snapshot.state === "ready" ? "ready" : ""} ${runtime.snapshot.state === "error" ? "error" : ""}`}><span />{runtime.snapshot.message}</div>
-      <div className="crayon-selection">{runtime.snapshot.selectionMessage}</div>
-    </section>
-    <section className="crayon-metrics">
-        <article><span>Blender baseline</span><strong>{runtime.snapshot.truthStats ? `${runtime.snapshot.truthStats.verts.toLocaleString()} verts · ${runtime.snapshot.truthStats.faces.toLocaleString()} faces` : "—"}</strong><small>evaluated .blend export</small></article>
-        <article><span>Browser GN-VM</span><strong>{runtime.snapshot.vmStats ? `${runtime.snapshot.vmStats.verts.toLocaleString()} verts · ${runtime.snapshot.vmStats.faces.toLocaleString()} faces` : "—"}</strong><small>{runtime.snapshot.runtimeSeconds ? `${runtime.snapshot.runtimeSeconds.toFixed(2)}s · Web Worker` : "Web Worker"}</small></article>
-        <article><span>Gap vs baseline</span><strong>{runtime.snapshot.faceDelta == null ? "—" : `${runtime.snapshot.faceDelta >= 0 ? "+" : ""}${runtime.snapshot.faceDelta.toLocaleString()} faces`}</strong><small>{runtime.snapshot.coverageMessage ?? "checking nodes…"}</small></article>
-    </section>
-    <section className="crayon-note"><span className="panel-label">Semantic contract</span><p>Blender remains the behavior oracle. GN-VM commits a new viewport result only after the edited graph evaluates successfully.</p><p>Click a node with a geometry output to request an amber intermediate preview. Double-click group nodes to enter their nested tree.</p></section>
+    <div className="st-tabs"><button type="button" aria-selected="true">Results</button></div>
+    <div className="st-section">
+      <div className="st-result-row truth">
+        <span>Blender baseline</span>
+        <strong>{runtime.snapshot.truthStats ? runtime.snapshot.truthStats.faces.toLocaleString() : "—"}</strong>
+        <small>faces · {runtime.snapshot.truthStats ? `${runtime.snapshot.truthStats.verts.toLocaleString()} verts` : "evaluated .blend export"}</small>
+      </div>
+      <div className="st-result-row vm">
+        <span>Browser GN-VM</span>
+        <strong>{runtime.snapshot.vmStats ? runtime.snapshot.vmStats.faces.toLocaleString() : "—"}</strong>
+        <small>faces · {runtime.snapshot.runtimeSeconds ? `${runtime.snapshot.runtimeSeconds.toFixed(2)}s in worker` : "Web Worker"}</small>
+      </div>
+      <div className="st-result-row delta">
+        <span>Gap vs baseline</span>
+        <strong>{runtime.snapshot.faceDelta == null ? "—" : `${runtime.snapshot.faceDelta >= 0 ? "+" : ""}${runtime.snapshot.faceDelta.toLocaleString()}`}</strong>
+        <small>{runtime.snapshot.coverageMessage ?? "checking nodes…"}</small>
+      </div>
+    </div>
+    <div className="st-section">
+      <div className="st-section-title">Semantic contract</div>
+      <p className="st-finding">Blender remains the behaviour oracle. GN-VM commits a new viewport result only after the edited graph evaluates successfully. Click a node with a geometry output to request an amber intermediate preview; double-click group nodes to enter their nested tree.</p>
+    </div>
   </>;
 
+  const nodeEditor = <GeometryNodesEditor config={editorConfig} onDumpChange={runtime.setDump} onPreviewChange={runtime.setProbe} presets={crayonPresets} />;
+
   return <StudioShell
-    eyebrow="Geometry Nodes portability lab"
-    title="Chrome Crayon"
-    subtitle={<>Blender truth <b className="truth-text">red</b> · GN-VM <b className="vm-text">blue</b></>}
-    docksOpen={docksOpen}
-    onToggleDocks={() => {
-      setDocksOpen((open) => {
-        persistUi({ docksOpen: !open });
-        return !open;
-      });
-    }}
+    className="crayon-page"
     leftDock={leftDock}
     rightDock={rightDock}
-    footer={<>Three.js viewport · drag to orbit · scroll to zoom</>}
+    toolbar={<>
+      <span className="st-swatch truth" aria-hidden="true" /><span>Blender truth</span>
+      <span className="st-swatch vm" aria-hidden="true" /><span>GN-VM</span>
+      <span className="st-spacer" />
+      <span>{runtime.snapshot.selectionMessage}</span>
+      {!isMobile && <button className="st-btn" type="button" onClick={() => {
+        const next = !graphOpen;
+        setGraphOpen(next);
+        persistUi({ graphOpen: next });
+      }}>{graphOpen ? "Hide node editor" : "Show node editor"}</button>}
+    </>}
+    status={<>
+      <span className={`st-dot ${runtime.snapshot.state === "ready" ? "ready" : runtime.snapshot.state === "error" ? "error" : "busy"}`} />
+      <span>{runtime.snapshot.message}</span>
+      <span className="st-sep" />
+      <span className="st-muted">drag to orbit · scroll to zoom · F3 search in the graph</span>
+    </>}
+    nodeDock={!isMobile && graphOpen && <section className={`st-node-dock ${graphMaximized ? "maximized" : ""}`}>
+      <header>
+        <b>Geometry Nodes</b>
+        <small>pan · zoom · box-select · F3 search</small>
+        <div>
+          <button className="st-btn" type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Full screen"}</button>
+          <button className="st-btn" type="button" onClick={closeGraph}>Collapse</button>
+        </div>
+      </header>
+      <div className="st-node-dock-body">{nodeEditor}</div>
+    </section>}
   >
     <canvas ref={runtime.canvasRef} id="crayon-canvas" />
-    {!graphOpen && <button className="graph-toggle" type="button" onClick={() => {
-      setGraphOpen(true);
-      if (!isMobile) persistUi({ graphOpen: true });
-    }}>{isMobile ? "Node graph" : "Show Geometry Nodes workspace"}</button>}
-    {graphOpen && <FloatingStudioPanel
-      className="crayon-graph"
-      rect={graphRect}
-      onRectChange={updateGraphRect}
-      maximized={graphMaximized}
-      title="Geometry Nodes"
-      actions={<>
-        <span>pan · zoom · box-select · F3 search</span>
-        {!isMobile && <button type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Maximize"}</button>}
-        <button type="button" onClick={closeGraph}>Hide</button>
-      </>}
-      onClose={closeGraph}
-    >
-      <GeometryNodesEditor config={editorConfig} onDumpChange={runtime.setDump} onPreviewChange={runtime.setProbe} presets={crayonPresets} />
-    </FloatingStudioPanel>}
+    {isMobile && !graphOpen && <button className="graph-toggle" type="button" onClick={() => setGraphOpen(true)}>Open node editor</button>}
+    {isMobile && graphOpen && <StudioOverlay title="Geometry Nodes" onClose={closeGraph}>{nodeEditor}</StudioOverlay>}
   </StudioShell>;
 }

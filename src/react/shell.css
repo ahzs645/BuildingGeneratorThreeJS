@@ -1,5 +1,9 @@
 :root { color-scheme: dark; }
 html, body, #root { width: 100%; min-height: 100%; margin: 0; }
-.route-loading { min-height: 100vh; display: grid; place-items: center; background: #0b0d10; color: #8fcfff; font: 11px/1 ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; }
-.not-found { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #0b0d10; color: #d7dbe0; font-family: Inter, system-ui, sans-serif; text-align: center; }
-.not-found a { color: #8fcfff; }
+/* Both are grid rows of .st-shell, so they fill the body row rather than the
+   viewport — the nav stays visible while a route loads or 404s. */
+.route-loading { min-height: 0; display: grid; place-items: center; background: var(--st-bg); color: var(--st-accent); font: 500 var(--st-fs-micro)/1 var(--st-mono); letter-spacing: .16em; text-transform: uppercase; }
+.not-found { min-height: 0; display: grid; place-items: center; padding: 24px; background: var(--st-bg); color: var(--st-ink); font-family: var(--st-font); text-align: center; }
+.not-found h1 { margin: 0 0 8px; font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
+.not-found p { margin: 0; font-size: var(--st-fs-ui); color: var(--st-ink-2); }
+.not-found a { color: var(--st-accent); }

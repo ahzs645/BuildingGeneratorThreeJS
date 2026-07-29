@@ -3,6 +3,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import { canvasBox, observeCanvasBox } from "./canvas-viewport";
 import type { ToolHandle } from "./react/page-runtime";
 
 type Example = {
@@ -30,7 +31,8 @@ export function createTool(): ToolHandle {
   const accentHost = canvas.closest<HTMLElement>(".dojo-gallery-page") ?? document.documentElement;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setSize(innerWidth, innerHeight);
+  const viewport = canvasBox(canvas);
+  renderer.setSize(viewport.width, viewport.height, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -47,7 +49,7 @@ export function createTool(): ToolHandle {
   pmrem.dispose();
   const fog = new THREE.FogExp2(0x080a0d, 0.018);
   scene.fog = fog;
-  const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.001, 10000);
+  const camera = new THREE.PerspectiveCamera(42, viewport.width / viewport.height, 0.001, 10000);
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.autoRotate = true;
@@ -218,12 +220,13 @@ export function createTool(): ToolHandle {
   const onResetClick = () => root && frameObject(root);
   resetButton.addEventListener("click", onResetClick);
   buttonCleanups.push(() => resetButton.removeEventListener("click", onResetClick));
-  const onResize = () => {
-    camera.aspect = innerWidth / innerHeight;
+  // The viewport is a grid column beside the dock, so track the canvas box
+  // rather than the window.
+  const stopObservingCanvas = observeCanvasBox(canvas, (width, height) => {
+    camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
-  };
-  addEventListener("resize", onResize);
+    renderer.setSize(width, height, false);
+  });
   renderer.setAnimationLoop(() => {
     controls.update();
     renderer.render(scene, camera);
@@ -237,7 +240,7 @@ export function createTool(): ToolHandle {
       disposed = true;
       loadToken++;
       renderer.setAnimationLoop(null);
-      removeEventListener("resize", onResize);
+      stopObservingCanvas();
       for (const cleanup of buttonCleanups) cleanup();
       buttonCleanups.length = 0;
       for (const button of modelButtons) button.remove();

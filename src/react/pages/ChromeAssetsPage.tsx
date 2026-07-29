@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import { useToolRuntime } from "../page-runtime";
+import { StudioShell } from "../studio/StudioShell";
 import "./chrome-assets.css";
 import "./crayon-compare.css";
 
@@ -23,8 +24,7 @@ export default function ChromeAssetsPage(): React.JSX.Element {
   useToolRuntime("Node Dojo Asset Library · Blender vs browser", loadChromeAssets);
   const query = new URLSearchParams(location.search);
   const [activeAssetId, setActiveAssetId] = useState(() => query.get("asset") ?? "");
-  // The comparison is the page's purpose; the node workspace (which covers the
-  // Blender reference pane) opens on demand via the toggle.
+  // The comparison is the page's purpose; the node workspace opens on demand.
   const [graphOpen, setGraphOpen] = useState(false);
   const [graphMaximized, setGraphMaximized] = useState(false);
   const showTypePixelBrushGraph = activeAssetId === "type-pixel-brush";
@@ -55,33 +55,54 @@ export default function ChromeAssetsPage(): React.JSX.Element {
     return () => window.cancelAnimationFrame(frame);
   }, [graphMaximized, graphOpen, showTypePixelBrushGraph]);
 
-  const closeGraph = (): void => {
-    setGraphMaximized(false);
-    setGraphOpen(false);
-  };
-
-  return <main className={`assets-shell ${showTypePixelBrushGraph && graphOpen ? "graph-open" : ""} ${shaderCapture ? "shader-capture" : ""}`}>
-    <header className="assets-head"><p>Node Dojo coverage lab</p><h1>Live Asset Library</h1><div id="assets-status">Loading catalog…</div>
+  const rightDock = <>
+    <div className="st-tabs"><button type="button" aria-selected="true">Asset</button></div>
+    <div className="st-section">
+      <label className="st-field assets-picker">
+        <span>Ported asset</span>
+        <div>
+          <button id="assets-previous" className="st-btn" type="button" aria-label="Previous ported asset" title="Previous asset">←</button>
+          <input id="assets-select" className="st-input" type="text" list="assets-options" autoComplete="off" aria-label="Ported asset" placeholder="Search assets…" />
+          <datalist id="assets-options" />
+          <button id="assets-next" className="st-btn" type="button" aria-label="Next ported asset" title="Next asset">→</button>
+        </div>
+      </label>
+      <div id="assets-font-status" hidden />
+      <p id="assets-note" className="st-finding" />
       {activeAssetId && <Link className="assets-open-studio" to={`/?asset=${activeAssetId}`}>Modulate in Procedural Studio →</Link>}
-    </header>
+    </div>
+    <div className="st-section">
+      <div className="st-section-title">Authored inputs</div>
+      <div id="assets-controls" />
+      <button id="assets-reset" className="st-btn" type="button">Reset authored values</button>
+    </div>
+  </>;
+
+  return <StudioShell
+    className={`assets-shell ${shaderCapture ? "shader-capture" : ""}`}
+    rightDock={rightDock}
+    status={<>
+      <span className="st-dot busy" />
+      <span id="assets-status">Loading catalog…</span>
+      <span className="st-spacer" />
+      <span id="assets-runtime" className="st-muted">Worker idle</span>
+    </>}
+    nodeDock={showTypePixelBrushGraph && graphOpen && <section className={`st-node-dock ${graphMaximized ? "maximized" : ""}`}>
+      <header>
+        <b>Geometry Nodes</b>
+        <small>Type Pixel Brush · double-click groups to enter</small>
+        <div>
+          <button className="st-btn" type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Full screen"}</button>
+          <button className="st-btn" type="button" onClick={() => { setGraphMaximized(false); setGraphOpen(false); }}>Collapse</button>
+        </div>
+      </header>
+      <div className="st-node-dock-body"><GeometryNodesEditor config={typePixelBrushEditorConfig} /></div>
+    </section>}
+  >
     <section className="assets-compare">
       <figure className="assets-pane"><figcaption><span>Blender reference</span><strong id="assets-blender-count">—</strong></figcaption><img id="assets-reference" alt="Isolated Blender reference render" /></figure>
       <figure className="assets-pane"><figcaption><span>Browser GN-VM · WebGL preview</span><strong id="assets-vm-count">—</strong></figcaption><canvas id="assets-canvas" /></figure>
     </section>
-    <aside className="assets-panel">
-      <label className="assets-picker"><span>Ported asset</span><div>
-        <button id="assets-previous" type="button" aria-label="Previous ported asset" title="Previous asset">←</button>
-        <input id="assets-select" type="text" list="assets-options" autoComplete="off" aria-label="Ported asset" placeholder="Search assets…" />
-        <datalist id="assets-options" />
-        <button id="assets-next" type="button" aria-label="Next ported asset" title="Next asset">→</button>
-      </div></label>
-      <div id="assets-font-status" hidden />
-      <p id="assets-note" />
-      <div id="assets-controls" />
-      <button id="assets-reset" type="button">Reset authored values</button>
-      <small id="assets-runtime">Worker idle</small>
-    </aside>
-    {showTypePixelBrushGraph && !graphOpen && <button className="graph-toggle" type="button" onClick={() => setGraphOpen(true)}>Show Geometry Nodes workspace</button>}
-    {showTypePixelBrushGraph && graphOpen && <section className={`crayon-graph ${graphMaximized ? "maximized" : ""}`}><header><b>Geometry Nodes · Type Pixel Brush</b><div className="graph-window-actions"><span>pan · zoom · box-select · reconnect noodles · F3 search · double-click groups</span><button type="button" onClick={() => setGraphMaximized((maximized) => !maximized)} title={graphMaximized ? "Restore workspace" : "Maximize workspace"}>{graphMaximized ? "Restore" : "Maximize"}</button><button type="button" onClick={closeGraph} title="Hide workspace">Hide</button></div></header><GeometryNodesEditor config={typePixelBrushEditorConfig} /></section>}
-  </main>;
+    {showTypePixelBrushGraph && !graphOpen && <button className="graph-toggle st-btn" type="button" onClick={() => setGraphOpen(true)}>Show Geometry Nodes workspace</button>}
+  </StudioShell>;
 }

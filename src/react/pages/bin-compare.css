@@ -1,47 +1,34 @@
-.bin-compare-shell { color-scheme: dark; --truth: #ff665f; --vm: #55b6ff; --ink: #edf2f7; --muted: #8895a3; --line: rgba(255,255,255,.11); }
-.bin-compare-shell, .bin-compare-shell * { box-sizing: border-box; }
-.bin-compare-shell { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hidden; color: var(--ink); font-family: Inter, system-ui, sans-serif; background: radial-gradient(circle at 45% 36%, #17202a, #07090c 64%) #07090c; }
-.bin-compare-shell #app { width: 100%; height: 100%; display: block; }
-.bin-compare-shell .compare-head { position: fixed; left: 24px; top: calc(var(--studio-nav-h, 46px) + 14px); z-index: 12; pointer-events: none; }
-.bin-compare-shell .compare-head .kicker { margin: 0 0 6px; color: #9aa8b6; font: 700 9px/1 ui-monospace, monospace; letter-spacing: .19em; text-transform: uppercase; }
-.bin-compare-shell .compare-head h1 { margin: 0; font-size: 32px; letter-spacing: -.045em; }
-.bin-compare-shell .compare-head p { margin: 6px 0 0; color: var(--muted); font-size: 11px; }
-.bin-compare-shell .truth-key { color: var(--truth); } .bin-compare-shell .vm-key { color: var(--vm); }
-.bin-compare-shell .compare-status { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 999px; background: rgba(8,10,13,.7); color: #9ba7b3; font: 10px/1 ui-monospace, monospace; backdrop-filter: blur(12px); }
-.bin-compare-shell .compare-status span { width: 6px; height: 6px; border-radius: 50%; background: #f4bf65; box-shadow: 0 0 0 3px rgba(244,191,101,.12); }
-.bin-compare-shell .compare-status.ready span { background: #a9f477; box-shadow: 0 0 0 3px rgba(169,244,119,.12); }
-.bin-compare-shell .compare-panel { position: fixed; z-index: 20; top: calc(var(--studio-nav-h, 46px) + 12px); right: 18px; width: 310px; max-height: calc(100vh - var(--studio-nav-h, 46px) - 30px); overflow: auto; border: 1px solid var(--line); border-radius: 16px; background: rgba(10,13,17,.9); backdrop-filter: blur(18px); box-shadow: 0 24px 70px rgba(0,0,0,.45); }
-.bin-compare-shell .compare-panel section { padding: 15px; border-bottom: 1px solid var(--line); }
-.bin-compare-shell .compare-panel section:last-child { border: 0; }
-.bin-compare-shell .section-head { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font: 700 9px/1 ui-monospace, monospace; letter-spacing: .13em; text-transform: uppercase; }
-.bin-compare-shell .section-head output { color: #fff; font-size: 17px; letter-spacing: -.04em; }
-.bin-compare-shell .parameter-section { max-height: 48vh; overflow: auto; }
-.bin-compare-shell .parameter-grid { display: grid; gap: 9px; margin-top: 13px; }
-.bin-compare-shell .parameter-row { display: grid; grid-template-columns: 112px 1fr; align-items: center; gap: 8px; margin: 0; color: #bac4ce; font-size: 10px; font-weight: 650; }
-.bin-compare-shell .parameter-control { display: grid; grid-template-columns: 1fr 48px; align-items: center; gap: 7px; }
-.bin-compare-shell .parameter-control input { width: 100%; min-width: 0; accent-color: #e9f1f7; }
-.bin-compare-shell .parameter-control output { color: #fff; text-align: right; font: 9px/1 ui-monospace, monospace; font-variant-numeric: tabular-nums; }
-.bin-compare-shell .boolean-row input { justify-self: end; accent-color: #7ac9ff; }
-.bin-compare-shell .update-comparison { width: 100%; margin-top: 13px; border: 1px solid rgba(103,190,255,.35); border-radius: 8px; padding: 9px; color: #dff2ff; background: rgba(52,132,190,.18); cursor: pointer; font: 700 10px/1 ui-monospace, monospace; }
-.bin-compare-shell .update-comparison:hover { background: rgba(52,132,190,.28); }
-.bin-compare-shell .update-comparison:disabled { opacity: .45; cursor: wait; }
-.bin-compare-shell .panel-label { display: block; margin-bottom: 10px; color: var(--muted); font: 700 9px/1 ui-monospace, monospace; letter-spacing: .13em; text-transform: uppercase; }
-.bin-compare-shell .segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; background: #07090c; border: 1px solid var(--line); border-radius: 9px; }
-.bin-compare-shell .segmented.secondary { margin-top: 8px; }
-.bin-compare-shell .bin-shader-status { margin: 9px 2px 0; color: #758490; font: 8px/1.45 ui-monospace, monospace; }
-.bin-compare-shell .segmented.result-filter { grid-template-columns: repeat(3, 1fr); margin-top: 8px; }
-.bin-compare-shell .segmented button { border: 0; border-radius: 6px; padding: 8px; background: transparent; color: #758391; cursor: pointer; font: 650 10px/1 ui-monospace, monospace; }
-.bin-compare-shell .segmented button.active { color: #fff; background: #252b33; }
-.bin-compare-shell .live-blender-link { display: block; margin-top: 11px; color: #9fcfff; font: 650 10px/1.3 ui-monospace, monospace; text-decoration: none; }
-.bin-compare-shell .live-blender-link:hover { color: #fff; }
-.bin-compare-shell .metrics { display: grid; gap: 8px; }
-.bin-compare-shell .metric { padding: 11px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.025); }
-.bin-compare-shell .metric span, .bin-compare-shell .metric small { display: block; color: var(--muted); font: 9px/1.35 ui-monospace, monospace; }
-.bin-compare-shell .metric strong { display: block; margin: 5px 0 4px; font-size: 18px; letter-spacing: -.04em; }
-.bin-compare-shell .truth-metric strong { color: var(--truth); } .bin-compare-shell .vm-metric strong { color: var(--vm); } .bin-compare-shell .delta-metric strong { color: #f5d46f; }
-.bin-compare-shell .finding p { margin: 0; color: #aab5c0; font-size: 11px; line-height: 1.55; }
-.bin-compare-shell .viewport-label { position: fixed; z-index: 8; bottom: 54px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: rgba(7,9,12,.72); font: 700 9px/1 ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; opacity: 0; transition: opacity .2s; }
-.bin-compare-shell .viewport-label.show { opacity: 1; } .bin-compare-shell .truth-label { left: 29%; color: var(--truth); } .bin-compare-shell .vm-label { left: 67%; color: var(--vm); }
-.bin-compare-shell .compare-help { position: fixed; left: 24px; bottom: 20px; z-index: 10; color: #697784; font: 9px/1 ui-monospace, monospace; letter-spacing: .04em; }
-.bin-compare-shell .compare-help b { color: #b7c1ca; }
-@media (max-width: 760px) { .bin-compare-shell .compare-head { left: 14px; top: calc(var(--studio-nav-h, 46px) + 10px); } .bin-compare-shell .compare-head h1 { font-size: 25px; } .bin-compare-shell .compare-head p { display: none; } .bin-compare-shell .compare-panel { top: auto; left: 10px; right: 10px; bottom: 10px; width: auto; max-height: 46vh; } .bin-compare-shell .compare-help { display: none; } }
+/* What survived: the split-view viewport labels and the two parity tints.
+   .compare-head, .compare-status, .compare-help, .segmented, .parameter-row,
+   .metric, .panel-label and .compare-panel are gone — the nav names the tool,
+   the kit owns the controls, and one status bar carries state. Both tints now
+   read from --st-truth / --st-vm rather than a local --truth/--vm pair. */
+
+.bin-compare-page #app { display: block; width: 100%; height: 100%; }
+.bin-compare-page .st-viewport { background: radial-gradient(circle at 45% 36%, #17202A, #07090C 64%); }
+
+.bin-card-copy { display: grid; min-width: 0; gap: 3px; }
+.bin-card-copy > b { font-size: var(--st-fs-ui); font-weight: 600; }
+.bin-card-copy > small { font: 400 var(--st-fs-micro)/1 var(--st-mono); color: var(--st-ink-3); }
+.bin-live-link { color: var(--st-accent); font: 500 var(--st-fs-ui)/1.3 var(--st-font); text-decoration: none; }
+.bin-live-link:hover { text-decoration: underline; }
+.bin-result-filter { grid-template-columns: repeat(3, 1fr); }
+
+/* The runtime toggles `.ready` on the status item and rewrites its last text
+   node, so the dot has to be a child element rather than a ::before. */
+.bin-compare-page #compare-status { display: flex; align-items: center; gap: 8px; }
+.bin-compare-page #compare-status > .st-dot { background: var(--st-warn); box-shadow: 0 0 0 3px rgba(224,164,112,.14); }
+.bin-compare-page #compare-status.ready > .st-dot { background: var(--st-ok); box-shadow: 0 0 0 3px rgba(126,215,158,.14); }
+
+/* Split view: one label over each half of the viewport. */
+.bin-compare-page .viewport-label {
+  position: absolute; z-index: 8; bottom: 16px;
+  padding: 6px 10px;
+  border: 1px solid var(--st-line-2); border-radius: 999px;
+  background: rgba(7,9,12,.72);
+  font: 700 var(--st-fs-micro)/1 var(--st-mono); letter-spacing: .1em; text-transform: uppercase;
+  opacity: 0; transition: opacity .2s;
+}
+.bin-compare-page .viewport-label.show { opacity: 1; }
+.bin-compare-page .truth-label { left: 24%; color: var(--st-truth); }
+.bin-compare-page .vm-label { left: 66%; color: var(--st-vm); }

@@ -1,49 +1,145 @@
-.studio-shell{position:fixed;inset:0;overflow:hidden;background:#07090c;color:#edf4f8;font-family:Inter,system-ui,sans-serif;--studio-dock-width:286px;--studio-right-width:310px}
-.studio-viewport{position:absolute;inset:0}.studio-viewport>canvas{width:100%;height:100%;display:block}
-.studio-brand{position:fixed;z-index:45;left:14px;top:calc(var(--studio-nav-h,46px) + 10px);display:flex;align-items:center;gap:10px;min-width:310px;padding:8px 10px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(10,12,15,.84);box-shadow:0 14px 42px rgba(0,0,0,.35);backdrop-filter:blur(16px)}
-.studio-brand>div{display:flex;min-width:0;flex:1;flex-direction:column}.studio-brand span{color:#73818c;font:700 7.5px/1.2 ui-monospace,monospace;letter-spacing:.13em;text-transform:uppercase}.studio-brand strong{margin-top:2px;color:#f1f4f6;font-size:13px;letter-spacing:-.02em}.studio-brand small{max-width:190px;margin-top:2px;overflow:hidden;color:#8d99a3;font-size:8.5px;text-overflow:ellipsis;white-space:nowrap}
-.studio-brand button,.floating-studio-panel>header button{border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:6px 8px;background:#24282d;color:#bcc6cd;cursor:pointer;font:700 8px/1 ui-monospace,monospace}.studio-brand button:hover,.floating-studio-panel>header button:hover{border-color:#5a6570;color:#fff}
-.studio-dock{position:fixed;z-index:35;top:calc(var(--studio-nav-h,46px) + 72px);bottom:16px;width:var(--studio-dock-width);overflow:auto;border:1px solid rgba(255,255,255,.11);background:rgba(9,12,16,.9);box-shadow:0 20px 60px rgba(0,0,0,.35);backdrop-filter:blur(17px);transition:transform .2s ease,opacity .2s ease}
-.studio-dock-left{left:14px;border-radius:12px}.studio-dock-right{right:14px;width:var(--studio-right-width);border-radius:12px}.docks-closed .studio-dock-left{transform:translateX(calc(-100% - 20px));opacity:0;pointer-events:none}.docks-closed .studio-dock-right{transform:translateX(calc(100% + 20px));opacity:0;pointer-events:none}
-.studio-dock-header{position:sticky;z-index:2;top:0;display:flex;align-items:center;justify-content:space-between;height:38px;padding:0 12px;border-bottom:1px solid rgba(255,255,255,.1);background:#111419;color:#d8dfe4;font:700 9px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase}.studio-dock-header small{color:#65727d;font-size:7.5px}
-.studio-dock section{padding:14px;border-bottom:1px solid rgba(255,255,255,.09)}.studio-dock section:last-child{border-bottom:0}
-.studio-footer{position:fixed;z-index:12;right:20px;bottom:12px;color:#5f6c76;font:8px/1 ui-monospace,monospace;pointer-events:none}
-.floating-studio-panel{position:fixed;z-index:50;display:flex;overflow:hidden;flex-direction:column;border:1px solid rgba(255,255,255,.15);border-radius:10px;background:#15171a;box-shadow:0 24px 80px rgba(0,0,0,.56)}
-.floating-studio-panel.is-gesturing{user-select:none;will-change:left,top,width,height;box-shadow:0 18px 48px rgba(0,0,0,.42)}
-.floating-studio-panel>header{position:relative;display:flex;height:38px;flex:0 0 38px;align-items:center;gap:9px;padding:0 9px 0 12px;border-bottom:1px solid #101214;background:#202226;color:#dce1e5;cursor:grab;font:9px/1 ui-monospace,monospace}.floating-studio-panel>header:active{cursor:grabbing}.floating-studio-panel>header b{font-size:10px}.floating-studio-panel>header>div{display:flex;align-items:center;gap:6px;margin-left:auto}.panel-grip{position:absolute;left:50%;transform:translateX(-50%);color:#555d65;letter-spacing:2px}
-.floating-studio-panel-body{min-height:0;flex:1}.floating-studio-panel-body>.blender-flow-wrap{height:100%}
-.panel-resize{position:absolute;z-index:5;display:block}.panel-resize-n,.panel-resize-s{right:10px;left:10px;height:7px;cursor:ns-resize}.panel-resize-e,.panel-resize-w{top:10px;bottom:10px;width:7px;cursor:ew-resize}.panel-resize-n{top:-3px}.panel-resize-s{bottom:-3px}.panel-resize-e{right:-3px}.panel-resize-w{left:-3px}.panel-resize-ne,.panel-resize-se,.panel-resize-sw,.panel-resize-nw{width:13px;height:13px}.panel-resize-ne{right:-3px;top:-3px;cursor:nesw-resize}.panel-resize-se{right:-3px;bottom:-3px;cursor:nwse-resize}.panel-resize-sw{left:-3px;bottom:-3px;cursor:nesw-resize}.panel-resize-nw{left:-3px;top:-3px;cursor:nwse-resize}
-@media (max-width:820px),((pointer:coarse) and (max-height:500px)){.studio-brand{right:10px;left:10px;min-width:0}.studio-brand small{display:none}.studio-dock{display:none}.studio-footer{display:none}.floating-studio-panel{display:none}}
-@media (max-width:820px),((pointer:coarse) and (max-height:500px)){
-.studio-sheet{position:fixed;z-index:46;right:0;bottom:0;left:0;display:flex;overflow:hidden;flex-direction:column;border-top:1px solid rgba(255,255,255,.14);border-radius:14px 14px 0 0;background:rgba(9,12,16,.96);box-shadow:0 -18px 48px rgba(0,0,0,.5);backdrop-filter:blur(16px);padding-bottom:env(safe-area-inset-bottom,0px)}
-.studio-sheet.is-open{height:calc(62vh + env(safe-area-inset-bottom,0px))}
-.studio-sheet-handle{display:flex;width:100%;min-height:46px;flex:0 0 auto;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:0;background:transparent;color:#aeb9c1;cursor:pointer;font:700 9px/1 ui-monospace,monospace;letter-spacing:.09em;text-transform:uppercase}
-@media (max-height:500px){.studio-sheet-handle{min-height:34px;gap:4px}}
-.studio-sheet-grip{width:46px;height:4px;border-radius:99px;background:#39424b}
-.studio-sheet.is-open .studio-sheet-grip{background:#5c6771}
-.studio-sheet-body{display:flex;min-height:0;flex:1;flex-direction:column}
-.studio-sheet-body[hidden]{display:none}
-.studio-sheet-tabs{display:grid;flex:0 0 auto;grid-template-columns:1fr 1fr;gap:7px;padding:0 12px 10px}
-.studio-sheet-tabs button{min-height:38px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:#171c21;color:#8b98a2;cursor:pointer;font:700 9px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase}
-.studio-sheet-tabs button.active{border-color:#3f7f9f;background:#1d4457;color:#d8f1fc}
-.studio-sheet-panel{min-height:0;flex:1;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
-.studio-sheet-panel[hidden]{display:none}
-.studio-sheet-panel section{padding:14px;border-bottom:1px solid rgba(255,255,255,.09)}
-.studio-sheet-panel section:last-child{border-bottom:0}
-.studio-sheet-panel button,.studio-sheet-panel select{min-height:36px}
-.studio-sheet-panel input[type=range]{height:34px}
-.studio-sheet-panel input[type=checkbox]{width:19px;height:19px}
-.studio-sheet-panel input[type=number],.studio-sheet-panel input[type=text]{min-height:34px}
-/* Node-graph entry point: a thumb-sized FAB floating above the sheet handle. Extra .studio-viewport specificity outranks the pages' desktop .graph-toggle placement rules, which load later. */
-.studio-shell .studio-viewport .graph-toggle{position:fixed;top:auto;left:auto;right:14px;bottom:calc(60px + env(safe-area-inset-bottom,0px));transform:none;z-index:44;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border:1px solid rgba(98,185,223,.5);border-radius:99px;background:rgba(16,36,48,.94);color:#a9dcf5;box-shadow:0 12px 34px rgba(0,0,0,.5);backdrop-filter:blur(10px);cursor:pointer;font:700 10px/1 ui-monospace,monospace;letter-spacing:.07em;text-transform:uppercase}
-.studio-shell:has(.studio-sheet.is-open) .studio-viewport .graph-toggle{display:none}
-/* Full-screen graph overlay: sits above the sheet (46) and brand bar (45), owns its scrolling so graph pans never rubber-band the page. The `section` tag bumps specificity to (0,3,1) so page-level panel rules that also key on viewport height (e.g. crayon-compare.css `@media(max-height:720px) .studio-shell .crayon-graph:not(.maximized){top:auto}`, which landscape phones match) can never carve up the overlay geometry. */
-.studio-shell section.floating-studio-panel.mobile-overlay{display:flex;position:fixed;inset:0;z-index:70;width:auto;height:auto;min-height:0;border:0;border-radius:0;box-shadow:none;background:#101215;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);overscroll-behavior:contain}
-.studio-shell .floating-studio-panel.mobile-overlay>header{height:50px;flex:0 0 50px;gap:8px;cursor:default}
-.studio-shell .floating-studio-panel.mobile-overlay>header>div{gap:8px}
-.studio-shell .floating-studio-panel.mobile-overlay>header>div>span{display:none}
-.studio-shell .floating-studio-panel.mobile-overlay>header button{min-height:36px;padding:0 12px;font-size:9px}
-.studio-shell .floating-studio-panel.mobile-overlay .panel-mobile-close{border-color:#3f7f9f;background:#1d4457;color:#d8f1fc}
-.studio-shell .floating-studio-panel.mobile-overlay .floating-studio-panel-body{overscroll-behavior:contain}
-.studio-shell .floating-studio-panel.mobile-overlay .blender-flow-toolbar{overflow-x:auto;overscroll-behavior-x:contain}
+/* What survived the move to studio-kit.css: the grid modifiers the shell sets
+   from its props, and the mobile sheet + full-screen overlay, rewritten
+   against the kit tokens. Everything else (.studio-brand, .studio-dock*,
+   .floating-studio-panel*, .panel-resize*, .studio-footer) is gone — the nav
+   owns identity, docks are grid columns, and one .st-statusbar carries state. */
+
+/* Column collapse. A dock the page did not supply must not leave a 300px hole.
+   Motion is the only animation left in the shell: 160ms on the track sizes. */
+.st-body { transition: grid-template-columns .16s ease; }
+.st-body.no-left { grid-template-columns: var(--st-rail-w) 0 minmax(0,1fr) var(--st-inspector-w); }
+.st-body.no-right { grid-template-columns: var(--st-rail-w) var(--st-dock-w) minmax(0,1fr) 0; }
+.st-body.no-left.no-right { grid-template-columns: var(--st-rail-w) 0 minmax(0,1fr) 0; }
+/* The kit's .st-shell.docks-closed rule and the modifiers above collide at the
+   same specificity, so the collapsed state is restated one class stronger. */
+.st-shell.docks-closed .st-body.has-left,
+.st-shell.docks-closed .st-body.has-right,
+.st-shell.docks-closed .st-body.no-left,
+.st-shell.docks-closed .st-body.no-right,
+.st-shell.docks-closed .st-body.no-left.no-right { grid-template-columns: var(--st-rail-w) 0 minmax(0,1fr) 0; }
+
+/* Explicit tracks, not auto-placement: a page without a left dock renders no
+   element for column 2, and auto-placement would slide the viewport into the
+   collapsed 0-width track. */
+.st-body.has-rail > .st-rail { grid-column: 1; }
+.st-body.has-rail > .st-dock-left { grid-column: 2; }
+.st-body.has-rail > .st-viewport-col { grid-column: 3; }
+.st-body.has-rail > .st-dock-right { grid-column: 4; }
+
+/* Mobile and ?capture: one column, no rail, no docks. Parity screenshots must
+   show the tool alone, so the flag drops the same chrome the phone does. */
+.st-body.st-body-plain { grid-template-columns: minmax(0,1fr); }
+.st-shell.is-capture { grid-template-rows: minmax(0,1fr); }
+/* Docks, toolbar, and status bar stay mounted under ?capture so runtimes can
+   still find their controls and readouts; only their pixels go away. */
+.st-shell.is-capture .st-dock,
+.st-shell.is-capture .st-toolbar,
+.st-shell.is-capture .st-statusbar { display: none; }
+
+/* Toolbar and status bar are single-line strips: their items never wrap. */
+.st-toolbar > *, .st-statusbar > * { flex: 0 0 auto; white-space: nowrap; }
+.st-toolbar > .st-spacer, .st-statusbar > .st-spacer { flex: 1 1 auto; }
+/* Runtime-written status text may be long; it truncates rather than pushing. */
+.st-statusbar > span:not(.st-sep):not(.st-spacer):not(.st-dot) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* min-height:0 — without it the column's grid item sizes to its content and
+   the 250px node dock pushes the status bar off the bottom of the shell.
+   position:relative anchors the maximized node dock. */
+.st-viewport-col { position: relative; min-height: 0; }
+/* The score card's copy stacks; the kit only sizes the hero number. */
+.st-score > div { display: grid; min-width: 0; gap: 3px; }
+.st-score b { font-size: var(--st-fs-ui); font-weight: 600; color: var(--st-ink); }
+.st-score small { font: 400 var(--st-fs-micro)/1.35 var(--st-mono); color: var(--st-ink-3); }
+.st-viewport > canvas, .st-viewport > #app { display: block; width: 100%; height: 100%; }
+/* One viewport surface for every tool. Runtimes that clear to an opaque colour
+   simply cover it; the ones with alpha canvases inherit the studio backdrop. */
+.st-viewport {
+  background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,.018) 0 10px, transparent 10px 20px),
+    radial-gradient(circle at 50% 42%, #171B23 0, #0C0E12 58%, #08090B 100%);
+}
+
+/* Tab panels whose content an imperative runtime owns stay in the DOM and hide
+   with [hidden]; the kit gives .st-section display:flex, which would win. */
+.st-section[hidden], .st-tabs[hidden] { display: none; }
+
+/* Docked node editor: the editor sizes to the dock, never to the window. */
+.st-node-dock { overflow: hidden; }
+.st-node-dock > header b { color: var(--st-ink); }
+.st-node-dock-body {
+  min-height: 0; flex: 1; overflow: hidden;
+  background: #0C0F13;
+  background-image:
+    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+/* Parity patterns shared by every Blender-vs-GN-VM tool. The three tints are
+   the kit's --st-truth / --st-vm / --st-delta and nothing else may use them. */
+.st-swatch { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 2px; background: currentColor; }
+.st-swatch.truth { color: var(--st-truth); }
+.st-swatch.vm { color: var(--st-vm); }
+/* Stacked, not two columns: the imperative parity runtimes write the unit into
+   the number itself ("110,286 tris"), which a side-by-side row would wrap. */
+.st-result-row { display: grid; gap: 3px; }
+.st-result-row > span { font: 700 var(--st-fs-micro)/1 var(--st-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--st-ink-3); }
+.st-result-row > strong { font: 500 20px/1.2 var(--st-mono); font-variant-numeric: tabular-nums; color: var(--st-ink); }
+.st-result-row > small { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.3 var(--st-mono); }
+.st-result-row.truth > strong { color: var(--st-truth); }
+.st-result-row.vm > strong { color: var(--st-vm); }
+.st-result-row.delta > strong { color: var(--st-delta); }
+/* The one place prose survives: it is the tool's output, not an explanation. */
+.st-finding { margin: 0; font-size: var(--st-fs-ui); line-height: 1.55; color: var(--st-ink-2); }
+
+@media (max-width: 820px), ((pointer: coarse) and (max-height: 500px)) {
+  .st-sheet { box-shadow: 0 -18px 48px rgba(0,0,0,.5); }
+  .st-sheet-handle {
+    display: flex; width: 100%; min-height: var(--st-touch); flex: 0 0 auto;
+    flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    border: 0; background: transparent; color: var(--st-ink-2); cursor: pointer;
+    font: 500 var(--st-fs-micro)/1 var(--st-mono);
+  }
+  @media (max-height: 500px) { .st-sheet-handle { min-height: 34px; gap: 4px; } }
+  .st-sheet.is-open .st-sheet-grip { background: #5C6771; }
+  .st-sheet-body { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 10px; padding: 0 12px 10px; }
+  .st-sheet-body[hidden] { display: none; }
+  .st-sheet-panel { min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .st-sheet-panel[hidden] { display: none; }
+  .st-sheet-panel .st-tabs { position: sticky; top: 0; z-index: 2; background: var(--st-panel); }
+  .st-sheet input[type=range] { height: 32px; }
+
+  /* Full-screen node inspection. Above the sheet (46), owns its scrolling so
+     graph pans never rubber-band the page. */
+  section.st-overlay {
+    position: fixed; inset: 0; z-index: 70;
+    display: flex; flex-direction: column; overflow: hidden;
+    background: #101215; overscroll-behavior: contain;
+    padding: env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+    font-family: var(--st-font);
+  }
+  .st-overlay > header {
+    display: flex; align-items: center; gap: 8px;
+    height: 50px; flex: 0 0 50px; padding: 0 12px;
+    border-bottom: 1px solid var(--st-line); background: var(--st-chrome);
+  }
+  .st-overlay > header b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 var(--st-fs-micro)/1 var(--st-mono); letter-spacing: .1em; text-transform: uppercase; }
+  .st-overlay > header > div { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .st-overlay > header > div > span { display: none; }
+  .st-overlay > header .st-btn { min-height: 36px; }
+  .st-overlay-close { border-color: var(--st-accent-edge); background: var(--st-accent-fill); color: #E9F6FD; }
+  .st-overlay-body { min-height: 0; flex: 1; overscroll-behavior: contain; }
+  .st-overlay-body > .blender-flow-wrap { height: 100%; }
+  .st-overlay .blender-flow-toolbar { overflow-x: auto; overscroll-behavior-x: contain; }
+
+  /* Node-graph entry point: a thumb-sized FAB above the sheet handle. */
+  .st-viewport .graph-toggle {
+    position: fixed; right: 14px; bottom: calc(60px + env(safe-area-inset-bottom,0px)); z-index: 44;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: var(--st-touch); padding: 0 18px;
+    border: 1px solid var(--st-accent-edge); border-radius: 999px;
+    background: var(--st-accent-fill); color: #E9F6FD; cursor: pointer;
+    font: 600 var(--st-fs-ui)/1 var(--st-font);
+  }
+  .st-shell:has(.st-sheet.is-open) .st-viewport .graph-toggle { display: none; }
 }

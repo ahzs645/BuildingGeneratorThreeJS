@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import { canvasBox, observeCanvasBox } from "./canvas-viewport";
 import type { ToolHandle } from "./react/page-runtime";
 import type { Dump, TriSoup } from "./gnvm/index";
 
@@ -39,11 +40,12 @@ export function createTool(): ToolHandle {
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setSize(innerWidth, innerHeight);
+  const viewport = canvasBox(canvas);
+  renderer.setSize(viewport.width, viewport.height, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, .01, 5000);
+  const camera = new THREE.PerspectiveCamera(42, viewport.width / viewport.height, .01, 5000);
   const controls = new OrbitControls(camera, canvas); controls.enableDamping = true;
   const room = new RoomEnvironment();
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -170,7 +172,6 @@ export function createTool(): ToolHandle {
   const onFrameInput = (): void => { frameOutput.value = frameInput.value; queueUpdate(); };
   const onEvaluate = (): void => void update();
   const onPlay = (): void => { playing = !playing; playButton.classList.toggle("active", playing); playButton.textContent = playing ? "Pause" : "Play"; };
-  const onResize = (): void => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); };
   const onFontFileChange = (): void => void onFontFile();
 
   fontFileEl.addEventListener("change", onFontFileChange);
@@ -178,7 +179,12 @@ export function createTool(): ToolHandle {
   textInput.addEventListener("input", queueUpdate);
   evaluateButton.addEventListener("click", onEvaluate);
   playButton.addEventListener("click", onPlay);
-  addEventListener("resize", onResize);
+  // The canvas is a grid column of the studio shell, not the whole window.
+  const stopObservingCanvas = observeCanvasBox(canvas, (width, height) => {
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height, false);
+  });
 
   renderer.setAnimationLoop((time) => {
     if (playing && time - lastPlay > 100) {
@@ -201,7 +207,7 @@ export function createTool(): ToolHandle {
       evaluateButton.removeEventListener("click", onEvaluate);
       playButton.removeEventListener("click", onPlay);
       fontFileEl.removeEventListener("change", onFontFileChange);
-      removeEventListener("resize", onResize);
+      stopObservingCanvas();
       for (const worker of liveWorkers) worker.terminate();
       liveWorkers.clear();
       renderer.setAnimationLoop(null);

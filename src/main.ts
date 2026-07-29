@@ -17,7 +17,29 @@ import { createSnowAccumUniforms, createSnowShellMaterial } from "./snowAccum";
 import { createRain } from "./rain";
 import { createWetUniforms, applyWet } from "./wet";
 import { publicUrl } from "./base-url";
+import { canvasBox, observeCanvasBox } from "./canvas-viewport";
 import type { ToolHandle } from "./react/page-runtime";
+
+/** Live generator parameters, pushed whenever anything but the dock changes them. */
+export type BuildingParamsListener = (params: BuildingParams) => void;
+
+/** Asset-kit load state, surfaced by the studio status bar. */
+export type BuildingStatus = { state: "loading" | "ready" | "error"; message: string };
+
+/**
+ * The building runtime. The 18 generator parameters are owned by the studio
+ * dock (BuildingPage) rather than by lil-gui, so the tool exposes them here;
+ * the atmosphere folders — environment, snow, rain, cinematic — stay in a
+ * lil-gui panel, docked into the shell's inspector column.
+ */
+export type BuildingToolHandle = ToolHandle & {
+  getParams(): BuildingParams;
+  setParam(name: keyof BuildingParams, value: number): void;
+  getEmissive(): number;
+  setEmissive(value: number): void;
+  subscribe(listener: BuildingParamsListener): () => void;
+  subscribeStatus(listener: (status: BuildingStatus) => void): () => void;
+};
 
 // ---- debug isolation modes (root-cause hunting, driven via window.__debug) ----
 // "albedo":  unlit textures — if facades differ here, the difference is in the texture
@@ -31,7 +53,7 @@ const lightDefaults = {
   key: 3.0, fill: 0.6, rim: 120, ambColor: 0x223044, amb: 0.4,
 };
 
-export function createTool(): ToolHandle {
+export function createTool(): BuildingToolHandle {
   const app = document.getElementById("app")!;
   // logarithmicDepthBuffer spreads depth precision so near-coplanar surfaces (posters
   // on walls, glass in frames, awnings flush to the facade) stop z-fighting
@@ -41,7 +63,8 @@ export function createTool(): ToolHandle {
     logarithmicDepthBuffer: true,
   });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(innerWidth, innerHeight);
+  const viewport = canvasBox(app);
+  renderer.setSize(viewport.width, viewport.height, false);
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
   renderer.outputColorSpace = SRGBColorSpace;
@@ -51,7 +74,7 @@ export function createTool(): ToolHandle {
 
   // tight near/far ratio = far more usable depth precision (building is ~15u, orbit
   // distance is clamped to [3, 120] below), which kills most of the z-fighting
-  const camera = new PerspectiveCamera(30, innerWidth / innerHeight, 0.5, 600);
+  const camera = new PerspectiveCamera(30, viewport.width / viewport.height, 0.5, 600);
   camera.position.set(12, 7, 14);
 
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -375,38 +398,28 @@ export function createTool(): ToolHandle {
   }
 
   // ---- GUI ----
-  const gui = new GUI({ title: "hong kong building" });
-  // scope hook for the building route's stylesheet (the panel lives on body,
-  // outside the page root, so it needs its own page-specific class)
+  // The 18 generator parameters live in the studio dock; what remains here is
+  // the atmosphere rig. The panel mounts into the shell's inspector column
+  // when the page provides one, and only falls back to lil-gui's floating
+  // placement if it is somehow absent.
+  const guiDock = document.getElementById("building-gui-dock");
+  const gui = new GUI({ title: "atmosphere", ...(guiDock ? { container: guiDock } : {}) });
+  // scope hook for the building route's stylesheet
   gui.domElement.classList.add("building-gui");
 
-  // --- building settings (top of the list): every generator param, flat ---
-  const fBuild = gui.addFolder("building settings");
-  fBuild.add(params, "floor", 3, 40, 1);
-  fBuild.add(params, "length", 2, 40, 1);
-  fBuild.add(params, "width", 2, 40, 1);
-  fBuild.add(params, "acUnit", 0, 1, 0.01).name("AC unit");
-  fBuild.add(params, "roofProbability", 0, 1, 0.01).name("window awning");
-  fBuild.add(params, "clothlineProbability", 0, 1, 0.01).name("clothline");
-  fBuild.add(params, "windowType", 0, 1, 0.01).name("window type");
-  fBuild.add(params, "windowOpenAmount", 0, 1, 0.01).name("window open");
-  fBuild.add(params, "curtainClose", 0, 1, 0.01).name("curtain close");
-  fBuild.add(params, "closedOpenStore", 0, 1, 0.01).name("open store");
-  fBuild.add(params, "roofOnStore", 0, 1, 0.01).name("roof on store");
-  fBuild.add(params, "objectOnGround", 0, 1, 0.01).name("ground objects");
-  fBuild.add(params, "storeSign", 0, 1, 0.01).name("store sign");
-  fBuild.add(params, "objectOnRoof", 0, 1, 0.01).name("roof objects");
-  // floor emissive multiplier (glowing signage) — a material tweak, so it updates the
-  // floor material live instead of rebuilding the instanced meshes
+  // Floor emissive multiplier (glowing signage) is a material tweak, so it
+  // updates the floor material live instead of rebuilding the instanced meshes.
   const emissiveParams = { emissive: 1 };
-  const emissiveCtrl = fBuild.add(emissiveParams, "emissive", 1, 50, 1).name("emissive")
-    .onChange((v: number) => kit.setFloorEmissive(v));
-  fBuild.add(params, "randomise", 0, 1000, 1).name("seed");
-  // any building-settings change regenerates the mesh — except the emissive slider,
-  // which only nudges the floor material (no need to rebuild ~900 instanced meshes)
-  fBuild.onChange(ev => {
-    if (ev.controller !== emissiveCtrl) regenerate();
-  });
+  const paramListeners = new Set<BuildingParamsListener>();
+  const publishParams = (): void => {
+    for (const listener of paramListeners) listener({ ...params });
+  };
+  const statusListeners = new Set<(status: BuildingStatus) => void>();
+  let status: BuildingStatus = { state: "loading", message: "Loading asset kit…" };
+  const publishStatus = (next: BuildingStatus): void => {
+    status = next;
+    for (const listener of statusListeners) listener(next);
+  };
 
   // --- fps counter (debug) — a small corner overlay, updated ~twice a second ---
   const fpsState = { enabled: false };
@@ -552,7 +565,7 @@ export function createTool(): ToolHandle {
   };
   devWindow.__setParams = p => {
     Object.assign(params, p);
-    gui.controllersRecursive().forEach(c => c.updateDisplay());
+    publishParams();
     regenerate();
   };
   devWindow.__setCamera = (px, py, pz, tx, ty, tz) => {
@@ -584,6 +597,7 @@ export function createTool(): ToolHandle {
   kit.load(publicUrl("assets/kit.glb"), publicUrl("assets/kit_manifest.json")).then(() => {
     if (disposed) return;
     document.getElementById("loading")?.remove();
+    publishStatus({ state: "ready", message: "592-node build system · hand-ported" });
     // inject the wet-surface shader into the building materials once (inert while
     // uWet = 0; the rain toggle raises it to 1). No shell geometry — it lives in the
     // building/floor materials themselves.
@@ -598,16 +612,17 @@ export function createTool(): ToolHandle {
     if (disposed) return;
     const el = document.getElementById("loading");
     if (el) el.textContent = `FAILED TO LOAD KIT: ${err}`;
+    publishStatus({ state: "error", message: `Asset kit failed · ${err}` });
     console.error(err);
   });
 
-  const onResize = (): void => {
-    camera.aspect = innerWidth / innerHeight;
+  // The viewport is a grid column of the studio shell, not the whole window.
+  const stopObservingCanvas = observeCanvasBox(app, (width, height) => {
+    camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
-    post.setSize(innerWidth, innerHeight);
-  };
-  addEventListener("resize", onResize);
+    renderer.setSize(width, height, false);
+    post.setSize(width, height);
+  });
 
   const clock = new Clock();
   renderer.setAnimationLoop(() => {
@@ -630,15 +645,37 @@ export function createTool(): ToolHandle {
   });
 
   return {
+    getParams: () => ({ ...params }),
+    setParam(name, value) {
+      params[name] = value;
+      publishParams();
+      regenerate();
+    },
+    getEmissive: () => emissiveParams.emissive,
+    setEmissive(value) {
+      emissiveParams.emissive = value;
+      kit.setFloorEmissive(value);
+    },
+    subscribe(listener) {
+      paramListeners.add(listener);
+      return () => paramListeners.delete(listener);
+    },
+    subscribeStatus(listener) {
+      statusListeners.add(listener);
+      listener(status);
+      return () => statusListeners.delete(listener);
+    },
     dispose(): void {
       if (disposed) return;
       disposed = true;
+      paramListeners.clear();
+      statusListeners.clear();
 
       // stop the render loop before tearing anything down
       renderer.setAnimationLoop(null);
 
       // listeners
-      removeEventListener("resize", onResize);
+      stopObservingCanvas();
       renderer.domElement.removeEventListener("pointermove", onPointerMove);
       renderer.domElement.removeEventListener("pointerleave", onPointerLeave);
 
