@@ -21,7 +21,6 @@
 }
 
 .building-page #app { width: 100%; height: 100%; display: block; }
-.building-page .studio-link { left: 16px; top: 14px; }
 
 /* Letterbox bars */
 .building-page .bar {
@@ -90,7 +89,7 @@
 }
 .lil-gui.building-gui.root {
   right: 14px;
-  top: 14px;
+  top: calc(var(--studio-nav-h, 46px) + 12px);
   width: 312px;
   border-radius: 14px;
   overflow: hidden;

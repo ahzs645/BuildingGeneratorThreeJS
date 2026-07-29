@@ -2,11 +2,11 @@
 .dojo-gallery-page, .dojo-gallery-page * { box-sizing: border-box; }
 .dojo-gallery-page { position: fixed; inset: 0; width: 100%; height: 100%; margin: 0; overflow: hidden; background: #080a0d; color: #dfe7ed; font-family: Inter, system-ui, sans-serif; }
 .dojo-gallery-page #app { width: 100vw; height: 100vh; display: block; }
-.dojo-gallery-page .top { position: fixed; z-index: 10; top: 20px; left: 22px; pointer-events: none; text-shadow: 0 2px 8px #000; }
+.dojo-gallery-page .top { position: fixed; z-index: 10; top: calc(var(--studio-nav-h, 46px) + 14px); left: 22px; pointer-events: none; text-shadow: 0 2px 8px #000; }
 .dojo-gallery-page .eyebrow { color: var(--accent); font: 700 10px/1 ui-monospace, monospace; letter-spacing: .2em; text-transform: uppercase; }
 .dojo-gallery-page h1 { margin: 8px 0 5px; font-size: clamp(22px, 3vw, 34px); letter-spacing: -.035em; }
 .dojo-gallery-page #subtitle { max-width: 55ch; color: #92a0ad; font-size: 12px; line-height: 1.5; }
-.dojo-gallery-page #panel { position: fixed; z-index: 20; top: 18px; right: 18px; width: min(330px, calc(100vw - 36px)); max-height: calc(100vh - 36px); overflow: auto; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); backdrop-filter: blur(18px); box-shadow: 0 18px 55px rgba(0,0,0,.35); }
+.dojo-gallery-page #panel { position: fixed; z-index: 20; top: calc(var(--studio-nav-h, 46px) + 12px); right: 18px; width: min(330px, calc(100vw - 36px)); max-height: calc(100vh - var(--studio-nav-h, 46px) - 30px); overflow: auto; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); backdrop-filter: blur(18px); box-shadow: 0 18px 55px rgba(0,0,0,.35); }
 .dojo-gallery-page #models { display: grid; gap: 7px; }
 .dojo-gallery-page .model { width: 100%; text-align: left; color: #aab5be; background: rgba(255,255,255,.025); border: 1px solid transparent; border-radius: 10px; padding: 10px 11px; cursor: pointer; }
 .dojo-gallery-page .model:hover { color: #fff; border-color: rgba(255,255,255,.14); }
@@ -18,10 +18,8 @@
 .dojo-gallery-page #status .ok { color: #9fe0a4; }
 .dojo-gallery-page #status .err { color: #ff9b9b; }
 @media (max-width: 700px) {
-  .dojo-gallery-page .top { top: 14px; left: 14px; }
+  .dojo-gallery-page .top { top: calc(var(--studio-nav-h, 46px) + 10px); left: 14px; }
   .dojo-gallery-page .top #subtitle { display: none; }
   .dojo-gallery-page #panel { top: auto; right: 10px; bottom: 10px; left: 10px; width: auto; max-height: 44vh; }
   .dojo-gallery-page #status { left: 14px; bottom: calc(44vh + 22px); }
 }
-
-.dojo-gallery-page .studio-link { left: 22px; bottom: 52px; }

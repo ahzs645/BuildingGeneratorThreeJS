@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { StudioLink } from "../StudioLink";
 import { usePageRuntime } from "../page-runtime";
 import "./materialx-lab.css";
 
@@ -25,7 +24,6 @@ export default function MaterialXLabPage(): React.JSX.Element {
   const capture = new URLSearchParams(location.search).get("capture") === "1";
   const threeLabel = import.meta.env.VITE_MATERIALX_THREE_LABEL || "Three.js 0.185.1 baseline";
   return <main ref={rootRef} className={`materialx-lab ${capture ? "capture" : ""}`}>
-    {!capture && <StudioLink />}
     <section className="materialx-viewport">
       <canvas id="materialx-canvas" aria-label="MaterialX shader comparison render" />
       <div className="materialx-label"><span>{threeLabel}</span><strong id="materialx-status">Initializing isolated renderer…</strong></div>

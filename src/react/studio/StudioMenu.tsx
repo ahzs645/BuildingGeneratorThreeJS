@@ -1,14 +1,14 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
 import "./studio-menu.css";
 
-type Tool = { href: string; title: string; desc: string; badge?: string };
-type Section = { title: string; items: Tool[] };
+export type StudioTool = { href: string; title: string; desc: string; badge?: string };
+export type StudioSection = { title: string; items: StudioTool[] };
 
 // Every routed tool in the app. The studio workspace is the root route; the
 // Dev section carries the experiments that were never on the old landing page.
-export const STUDIO_TOOLS: Section[] = [
+export const STUDIO_TOOLS: StudioSection[] = [
   {
     title: "Studio",
     items: [
@@ -18,9 +18,7 @@ export const STUDIO_TOOLS: Section[] = [
   {
     title: "Create",
     items: [
-      { href: "/vegetation-generator", title: "Vegetation Generator", badge: "WebGPU", desc: "Paint ivy or grow a banyan tree with live procedural controls" },
-      { href: "/geometry-painter", title: "Geometry Painter", badge: "WebGPU", desc: "Paint crystal, molten, aurora, and reef growth onto a sphere" },
-      { href: "/surface-draw", title: "Draw on a Model", desc: "Upload a mesh and run a Blender-authored brush along your stroke" },
+      { href: "/paint", title: "Surface Painting Studio", badge: "WebGPU", desc: "Paint ivy, a banyan tree, crystal, molten, aurora, or reef growth onto any model — or switch to the Blender brush lab and run authored brushes along your stroke" },
       { href: "/building", title: "Hong Kong Building", desc: "592-node build system hand-ported to TypeScript, 18 parameters" },
     ],
   },
@@ -58,6 +56,18 @@ type DevPresetGroup = { tool: string; presets: DevPreset[] };
 // clicks remount the target runtime even when it is the current tool
 // (useToolRuntime depends on the router search string).
 const DEV_PRESETS: DevPresetGroup[] = [
+  {
+    tool: "Surface painting",
+    presets: [
+      { label: "ivy", href: "/paint?mode=ivy" },
+      { label: "banyan tree", href: "/paint?mode=tree" },
+      { label: "crystals", href: "/paint?mode=crystals" },
+      { label: "molten fissures", href: "/paint?mode=fissures" },
+      { label: "aurora silk", href: "/paint?mode=aurora" },
+      { label: "reef", href: "/paint?mode=reef" },
+      { label: "blender brush lab", href: "/paint?engine=blender" },
+    ],
+  },
   {
     tool: "Bubble Vase",
     presets: [
@@ -214,31 +224,11 @@ export function StudioMenu({ open, onClose }: { open: boolean; onClose: () => vo
   );
 }
 
-type StudioMenuButtonProps = {
-  id?: string;
-  className?: string;
-  title?: string;
-  children: ReactNode;
-};
-
-export function StudioMenuButton({ id, className, title, children }: StudioMenuButtonProps): React.JSX.Element {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent): void => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setOpen((value) => !value);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-  return (
-    <>
-      <button type="button" id={id} className={className} title={title ?? "Studio tools (⌘K)"} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
-        {children}
-      </button>
-      <StudioMenu open={open} onClose={() => setOpen(false)} />
-    </>
-  );
+/** Locate the section + tool entry that owns a router pathname. */
+export function findStudioTool(pathname: string): { section: StudioSection; tool: StudioTool } | null {
+  for (const section of STUDIO_TOOLS) {
+    const tool = section.items.find((item) => item.href === pathname);
+    if (tool) return { section, tool };
+  }
+  return null;
 }

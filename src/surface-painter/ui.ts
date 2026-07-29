@@ -1,0 +1,252 @@
+import GUI from 'lil-gui';
+import type { CrystalPaletteName } from '../geometry-painter/modes/crystals';
+import type { AuroraPaletteName } from '../geometry-painter/modes/aurora';
+import type { ReefPaletteName } from '../geometry-painter/modes/reef';
+import { windSettings } from '../vegetation-generator/wind';
+import { GENERATORS, type App, type Generator, type ModelKind } from './app';
+
+/**
+ * One GUI for every generator. Folders scope to the active generator; the
+ * Model, Drawing, Look, and Growth folders are shared by all of them (the
+ * banyan hides the model/drawing folders — it grows from the ground, not
+ * from strokes).
+ */
+export function buildGui(app: App): GUI {
+  const gui = new GUI({ title: 'Surface Painter' });
+  const s = app.settings;
+  const t = app.treeParams;
+  const c = app.crystal;
+  const f = app.fissure;
+  const a = app.aurora;
+  const r = app.reef;
+
+  // Live edits snap existing strokes to fully grown / update them in place, scoped so
+  // dragging one generator's slider never rebuilds another's output.
+  const liveIvy = () => app.scheduleRegrow('instant', 'ivy');
+  const liveTree = () => app.scheduleRegrow('instant', 'tree');
+  const liveVegetation = () => app.scheduleRegrow('instant', 'vegetation');
+  const liveCrystal = () => app.updateModeSettings('Crystals');
+  const liveFissure = () => app.updateModeSettings('Molten fissures');
+  const liveAurora = () => app.updateModeSettings('Aurora silk');
+  const liveReef = () => app.updateModeSettings('Bioluminescent reef');
+
+  const paintFolders: GUI[] = [];  // shared by every stroke generator (hidden for Tree)
+  const perGenerator: Partial<Record<Generator, GUI[]>> = {};
+  const folderFor = (g: Generator, folder: GUI): void => {
+    (perGenerator[g] ??= []).push(folder);
+  };
+
+  gui.add(s, 'generator', GENERATORS).name('Generator').onChange((g: Generator) => {
+    app.setGenerator(g);
+    syncFolders(g);
+  });
+
+  // ---------- shared: model + drawing ----------
+
+  const fModel = gui.addFolder('Model');
+  fModel
+    .add(s, 'model', ['Sphere', 'Torus Knot', 'Box', 'Cylinder'] satisfies ModelKind[])
+    .name('Preset')
+    .onChange((v: ModelKind) => app.setModel(v));
+  fModel.add({ load: () => pickGlb(app) }, 'load').name('Load .glb…');
+  // Rescaling the surface invalidates painted strokes, so this clears them on change.
+  fModel.add(s, 'modelScale', 0.2, 3).name('Model scale (clears strokes)').listen()
+    .onChange((v: number) => app.setModelScale(v));
+  paintFolders.push(fModel);
+
+  const fDraw = gui.addFolder('Drawing');
+  fDraw.add(s, 'drawMode').name('Draw mode (D)').listen().onChange(() => app.applyModes());
+  fDraw.add({ undo: () => app.undoLast() }, 'undo').name('Undo last stroke');
+  fDraw.add({ clear: () => app.clearAll() }, 'clear').name('Clear all strokes');
+  paintFolders.push(fDraw);
+
+  // ---------- ivy ----------
+
+  const fShape = gui.addFolder('Ivy shape (live)');
+  fShape.add(s, 'stemRadius', 0.003, 0.03).name('Stem radius').onChange(liveIvy);
+  fShape.add(s, 'branchDensity', 0, 14, 1).name('Branches / unit').onChange(liveIvy);
+  fShape.add(s, 'branchLength', 0.1, 1.5).name('Branch length').onChange(liveIvy);
+  fShape.add(s, 'wander', 0, 1).name('Wildness').onChange(liveIvy);
+  fShape.add(s, 'extend', 0, 3).name('Overgrow past stroke').onChange(liveIvy);
+  folderFor('Ivy', fShape);
+
+  const fIvyLeaves = gui.addFolder('Ivy leaves (live)');
+  fIvyLeaves.add(s, 'leafDensity', 0, 30).name('Density').onChange(liveIvy);
+  // Size is a pure rescale of existing instances — instant, no regrow.
+  fIvyLeaves.add(s, 'leafSize', 0.03, 0.25).name('Size').onChange((v: number) => app.setIvyLeafSize(v));
+  folderFor('Ivy', fIvyLeaves);
+
+  // Flower sites regrow live; blooming itself happens with the F brush (hover the ivy).
+  const fFlowers = gui.addFolder('Flowers (F to brush)');
+  fFlowers.add(s, 'flowerDensity', 0, 8).name('Bud sites / unit').onChange(liveIvy);
+  fFlowers.add(s, 'flowerSize', 0.05, 0.3).name('Size').onChange((v: number) => app.setIvyFlowerSize(v));
+  fFlowers.add(s, 'flowerBrush', 0.08, 0.6).name('Brush radius');
+  fFlowers.add({ bloom: () => app.bloomAll() }, 'bloom').name('🌼 Bloom all');
+  fFlowers.add({ reset: () => app.resetBlooms() }, 'reset').name('Reset blooms');
+  folderFor('Ivy', fFlowers);
+
+  // ---------- banyan tree ----------
+
+  const fTrunk = gui.addFolder('Trunk & limbs (live)');
+  fTrunk.add(t, 'trunkHeight', 0.4, 2).name('Trunk height').onChange(liveTree);
+  fTrunk.add(t, 'trunkGirth', 0.08, 0.4).name('Trunk girth').onChange(liveTree);
+  fTrunk.add(t, 'buttress', 0, 1).name('Buttress roots').onChange(liveTree);
+  fTrunk.add(t, 'limbs', 2, 8, 1).name('Main limbs').onChange(liveTree);
+  fTrunk.add(t, 'limbLength', 0.6, 2.4).name('Limb length').onChange(liveTree);
+  fTrunk.add(t, 'spread', 0, 1).name('Crown spread').onChange(liveTree);
+  fTrunk.add(t, 'gnarl', 0, 1).name('Gnarl').onChange(liveTree);
+  fTrunk.add(t, 'splits', 1, 3, 1).name('Fork generations').onChange(liveTree);
+  folderFor('Tree', fTrunk);
+
+  const fCanopy = gui.addFolder('Canopy (live)');
+  fCanopy.add(t, 'clumpSize', 0.15, 0.8).name('Clump size').onChange((v: number) => app.setTreeClumpSize(v));
+  fCanopy.add(t, 'clumpDensity', 0, 140, 1).name('Sprigs per clump').onChange(liveTree);
+  // Size and hue update existing instances in place — instant, no regrow.
+  fCanopy.add(t, 'leafSize', 0.06, 0.35).name('Sprig size').onChange((v: number) => app.setTreeLeafSize(v));
+  fCanopy.add(t, 'leafHue', 0.05, 0.35).name('Hue (autumn ↔ green)').onChange((v: number) => app.setTreeLeafHue(v));
+  folderFor('Tree', fCanopy);
+
+  const fVines = gui.addFolder('Hanging vines (live)');
+  fVines.add(t, 'vineCount', 0, 60, 1).name('Count').onChange(liveTree);
+  fVines.add(t, 'vineLength', 0.2, 2).name('Length').onChange(liveTree);
+  folderFor('Tree', fVines);
+
+  // A banyan is a ficus — its flowers ARE the figs. F-brush the twigs to ripen them.
+  const fFigs = gui.addFolder('Figs (F to brush)');
+  fFigs.add(t, 'figDensity', 0, 8, 1).name('Figs per twig').onChange(liveTree);
+  fFigs.add(t, 'figSize', 0.02, 0.12).name('Size').onChange((v: number) => app.setTreeFigSize(v));
+  fFigs.add(s, 'flowerBrush', 0.08, 0.6).name('Brush radius');
+  fFigs.add({ ripen: () => app.ripenAll() }, 'ripen').name('🍈 Ripen all');
+  fFigs.add({ reset: () => app.resetRipe() }, 'reset').name('Reset figs');
+  folderFor('Tree', fFigs);
+
+  // Read at pointer-time — no regrow, acts immediately on the next push.
+  const fInteract = gui.addFolder('Interaction (live)');
+  fInteract.add(s, 'pushForce', 0.1, 4).name('Push force');
+  folderFor('Tree', fInteract);
+
+  // ---------- crystals ----------
+
+  const fCrystal = gui.addFolder('Crystals (live)');
+  const palettes: CrystalPaletteName[] = ['Amethyst', 'Ice', 'Emerald', 'Citrine', 'Rose', 'Prism'];
+  fCrystal.add(c, 'palette', palettes).name('Palette').onChange(liveCrystal);
+  fCrystal.add(c, 'clusterDensity', 1, 16).name('Clusters / unit').onChange(liveCrystal);
+  fCrystal.add(c, 'crystalSize', 0.06, 0.4).name('Crystal size').onChange(liveCrystal);
+  fCrystal.add(c, 'shards', 0, 16, 1).name('Shards / cluster').onChange(liveCrystal);
+  fCrystal.add(c, 'spread', 0.3, 2.5).name('Cluster spread').onChange(liveCrystal);
+  fCrystal.add(c, 'tilt', 0, 1).name('Lean / wildness').onChange(liveCrystal);
+  fCrystal.add(c, 'sizeJitter', 0, 1).name('Size variety').onChange(liveCrystal);
+  fCrystal.add(c, 'clearMix', 0, 1).name('Clear crystal mix').onChange(liveCrystal);
+  // Glow retints shared materials in place — instant, no regrow.
+  fCrystal.add(c, 'glow', 0, 2).name('Inner glow').onChange((v: number) => app.setGlow(v));
+  fCrystal.add(c, 'growthSpeed', 0.2, 4).name('Growth speed').onChange(liveCrystal);
+  folderFor('Crystals', fCrystal);
+
+  // ---------- molten fissures ----------
+
+  const fFissure = gui.addFolder('Molten fissures (live)');
+  fFissure.add(f, 'width', 0.02, 0.16).name('Crack width').onChange(liveFissure);
+  fFissure.add(f, 'heat', 0.2, 3).name('Heat').onChange(liveFissure);
+  fFissure.add(f, 'pulseSpeed', 0, 3).name('Pulse speed').onChange(liveFissure);
+  fFissure.add(f, 'branchDensity', 0, 8).name('Branches / unit').onChange(liveFissure);
+  fFissure.add(f, 'branchLength', 0.05, 0.6).name('Branch length').onChange(liveFissure);
+  fFissure.add(f, 'emberRate', 0, 80).name('Embers').onChange(liveFissure);
+  fFissure.add(f, 'rockDensity', 0, 30).name('Rock lips / unit').onChange(liveFissure);
+  fFissure.add(f, 'rockSize', 0.03, 0.2).name('Rock size').onChange(liveFissure);
+  fFissure.add(f, 'lightSpill', 0, 3).name('Light spill').onChange(liveFissure);
+  fFissure.add(f, 'growthSpeed', 0.5, 6).name('Crack speed').onChange(liveFissure);
+  folderFor('Molten fissures', fFissure);
+
+  // ---------- aurora silk ----------
+
+  const fAurora = gui.addFolder('Aurora silk (live)');
+  const auroraPalettes: AuroraPaletteName[] = ['Borealis', 'Twilight', 'Ember', 'Spectrum'];
+  fAurora.add(a, 'palette', auroraPalettes).name('Palette').onChange(liveAurora);
+  fAurora.add(a, 'height', 0.15, 1.3).name('Curtain height').onChange(liveAurora);
+  fAurora.add(a, 'wave', 0, 1).name('Billow').onChange(liveAurora);
+  fAurora.add(a, 'flow', 0, 3).name('Flow speed').onChange(liveAurora);
+  fAurora.add(a, 'rays', 0, 1).name('Ray streaks').onChange(liveAurora);
+  fAurora.add(a, 'brightness', 0.2, 2.5).name('Brightness').onChange(liveAurora);
+  fAurora.add(a, 'sparkles', 0, 240, 1).name('Star motes').onChange(liveAurora);
+  fAurora.add(a, 'lightSpill', 0, 3).name('Light spill').onChange(liveAurora);
+  fAurora.add(a, 'growthSpeed', 0.3, 4).name('Unfurl speed').onChange(liveAurora);
+  folderFor('Aurora silk', fAurora);
+
+  // ---------- bioluminescent reef ----------
+
+  const fReef = gui.addFolder('Bioluminescent reef (live)');
+  const reefPalettes: ReefPaletteName[] = ['Abyss', 'Tropic', 'Ghost', 'Toxic'];
+  fReef.add(r, 'palette', reefPalettes).name('Palette').onChange(liveReef);
+  fReef.add(r, 'colonySize', 0.08, 0.35).name('Colony size').onChange(liveReef);
+  fReef.add(r, 'density', 2, 14).name('Colonies / unit').onChange(liveReef);
+  fReef.add(r, 'branching', 0, 1).name('Branching').onChange(liveReef);
+  fReef.add(r, 'tendrils', 0, 14, 1).name('Anemone arms').onChange(liveReef);
+  fReef.add(r, 'glow', 0, 2.5).name('Bioluminescence').onChange(liveReef);
+  fReef.add(r, 'pulseSpeed', 0, 3).name('Pulse speed').onChange(liveReef);
+  fReef.add(r, 'sway', 0, 1).name('Current sway').onChange(liveReef);
+  fReef.add(r, 'plankton', 0, 220, 1).name('Plankton').onChange(liveReef);
+  fReef.add(r, 'lightSpill', 0, 3).name('Light spill').onChange(liveReef);
+  fReef.add(r, 'growthSpeed', 0.3, 4).name('Bloom speed').onChange(liveReef);
+  folderFor('Bioluminescent reef', fReef);
+
+  // ---------- shared: wind (vegetation), look, growth ----------
+
+  // Wind is read by every plant each frame — sliders act immediately, no regrow needed.
+  const fWind = gui.addFolder('Wind (live)');
+  fWind.add(windSettings, 'strength', 0, 1).name('Strength');
+  fWind.add(windSettings, 'speed', 0.1, 3).name('Speed');
+  fWind.add(windSettings, 'directionDeg', 0, 360, 1).name('Direction (°)');
+  folderFor('Ivy', fWind);
+  folderFor('Tree', fWind);
+
+  const fLook = gui.addFolder('Look (live)');
+  fLook
+    .add(s, 'quality', { 'Low poly': 'low', 'Realistic (high poly)': 'high' })
+    .name('Vegetation style')
+    .onChange(liveVegetation);
+  fLook.add(s, 'exposure', 0.4, 2.2).name('Exposure').onChange((v: number) => app.setExposure(v));
+  fLook.add(s, 'seed', 0, 999, 1).name('Seed').listen().onChange(() => app.scheduleRegrow('instant'));
+  fLook.add({ random: () => app.randomizeSeed() }, 'random').name('🎲 Random seed');
+
+  // The decor family renders on the dark studio stage with a bloom pass — these
+  // sliders drive that stage's rig and post chain.
+  const fStudio = gui.addFolder('Studio light & bloom (live)');
+  fStudio.add(s, 'envIntensity', 0, 2.5).name('Studio light').onChange((v: number) => app.setEnvIntensity(v));
+  fStudio.add(s, 'backlight', 0, 2.5).name('Backlight').onChange((v: number) => app.setBacklight(v));
+  fStudio.add(s, 'bloomStrength', 0, 1.5).name('Bloom').onChange((v: number) => app.setBloomStrength(v));
+  fStudio.add(s, 'bloomThreshold', 0.2, 1.5).name('Bloom threshold').onChange((v: number) => app.setBloomThreshold(v));
+  folderFor('Crystals', fStudio);
+  folderFor('Molten fissures', fStudio);
+  folderFor('Aurora silk', fStudio);
+  folderFor('Bioluminescent reef', fStudio);
+
+  // Growth speed only shows while a plant animates, so it is NOT live — press Replay to preview.
+  const fGrowth = gui.addFolder('Growth animation');
+  fGrowth.add(s, 'growthSpeed', 0.1, 3).name('Vegetation speed');
+  fGrowth.add({ redraw: () => app.scheduleRegrow('animate') }, 'redraw').name('▶ Replay growth');
+
+  function syncFolders(active: Generator): void {
+    for (const folder of paintFolders) (active === 'Tree' ? folder.hide() : folder.show());
+    const shown = new Set(perGenerator[active] ?? []);
+    for (const g of GENERATORS) {
+      for (const folder of perGenerator[g] ?? []) {
+        if (shown.has(folder)) folder.show();
+        else folder.hide();
+      }
+    }
+  }
+  syncFolders(s.generator);
+
+  return gui;
+}
+
+function pickGlb(app: App): void {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.glb,.gltf';
+  input.onchange = () => {
+    const file = input.files?.[0];
+    if (file) void app.loadGlbFile(file);
+  };
+  input.click();
+}

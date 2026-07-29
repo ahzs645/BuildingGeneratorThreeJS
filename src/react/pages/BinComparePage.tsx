@@ -1,4 +1,3 @@
-import { StudioLink } from "../StudioLink";
 import { useToolRuntime } from "../page-runtime";
 import { appHref } from "../../base-url";
 import { BIN_PARAMETERS } from "../../bin-params";
@@ -11,7 +10,6 @@ export default function BinComparePage(): React.JSX.Element {
   return (
     <div className="bin-compare-shell">
       <canvas id="app"></canvas>
-      <StudioLink />
       <header className="compare-head">
         <div><p className="kicker">Node Dojo · parity lab</p><h1>Bin Compare</h1><p>Live Blender truth <span className="truth-key">red</span> against live browser GN-VM <span className="vm-key">blue</span>, driven by the same inputs.</p></div>
         <div id="compare-status" className="compare-status"><span></span>Loading both pipelines…</div>

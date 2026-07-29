@@ -1,14 +1,65 @@
-import { StudioLink } from "../StudioLink";
+import { Link, useLocation } from "react-router-dom";
 import { useToolRuntime } from "../page-runtime";
+import "./surface-painter.css";
 import "./surface-draw.css";
 
+const loadSurfacePainter = () => import("../../surface-painter/main");
 const loadSurfaceDraw = () => import("../../surface-draw");
 
-export default function SurfaceDrawPage(): React.JSX.Element {
-  useToolRuntime("Surface Draw Lab · browser Geometry Nodes", loadSurfaceDraw);
+type Engine = "procedural" | "blender";
+
+/**
+ * The unified surface-painting studio. One route hosts both engines:
+ *  - Procedural painter: the merged WebGPU app (ivy, banyan tree, crystals,
+ *    molten fissures, aurora silk, bioluminescent reef) with shared model
+ *    presets, .glb import, and studio look controls.
+ *  - Blender brush lab: the GN-VM parity tool that evaluates Blender-authored
+ *    brushes (Chrome Crayon, Periodic Brush) along your projected stroke.
+ * Switching engines navigates the query string, which remounts the runtime
+ * through the router's existing keying — the same lifecycle as a page change.
+ */
+export default function SurfacePaintPage(): React.JSX.Element {
+  const { search } = useLocation();
+  const engine: Engine = new URLSearchParams(search).get("engine") === "blender" ? "blender" : "procedural";
+  useToolRuntime(
+    engine === "blender"
+      ? "Surface Painting Studio · Blender brush lab"
+      : "Surface Painting Studio · three.js WebGPU",
+    engine === "blender" ? loadSurfaceDraw : loadSurfacePainter,
+  );
+  return engine === "blender" ? <BlenderBrushLab /> : <ProceduralPainter />;
+}
+
+function EngineSwitch({ engine }: { engine: Engine }): React.JSX.Element {
+  return (
+    <nav className="paint-engine-switch" aria-label="Painting engine">
+      <Link to="/paint" className={engine === "procedural" ? "current" : ""} aria-current={engine === "procedural" ? "page" : undefined}>Procedural painter</Link>
+      <Link to="/paint?engine=blender" className={engine === "blender" ? "current" : ""} aria-current={engine === "blender" ? "page" : undefined}>Blender brush lab</Link>
+    </nav>
+  );
+}
+
+function ProceduralPainter(): React.JSX.Element {
+  return (
+    <main className="surface-painter-page">
+      <div id="surface-painter-app" />
+      <div id="drawFrame" />
+      <EngineSwitch engine="procedural" />
+      <button id="modeBtn" type="button" aria-label="Toggle the active painting interaction mode">
+        <span className="dot" />
+        <span className="label">Draw mode</span>
+        <span className="key">D</span>
+      </button>
+      <div id="hud" />
+      <div id="toast" role="status" aria-live="polite" />
+    </main>
+  );
+}
+
+function BlenderBrushLab(): React.JSX.Element {
   return <main className="surface-shell">
     <canvas id="surface-canvas" />
-    <StudioLink />
+    <EngineSwitch engine="blender" />
     <header className="surface-head">
       <p>Node Dojo · projected curve workflow</p>
       <h1>Draw on a Model</h1>

@@ -1,0 +1,299 @@
+/* Unified Surface Painter page (procedural engine). Merges the former
+   vegetation-generator.css and geometry-painter.css — the two files were
+   structural twins; the lime "draw" accent survives from the vegetation
+   original. The Blender engine keeps its own surface-draw.css. */
+
+.surface-painter-page,
+#surface-painter-app {
+  position: fixed;
+  inset: 0;
+}
+
+.surface-painter-page {
+  overflow: hidden;
+  background: #14181d;
+  color: #eceff1;
+  font-family: system-ui, sans-serif;
+}
+
+#surface-painter-app canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+body.draw #surface-painter-app,
+body.flower #surface-painter-app {
+  cursor: crosshair;
+}
+
+body.orbit #surface-painter-app {
+  cursor: grab;
+}
+
+body.orbit #surface-painter-app:active {
+  cursor: grabbing;
+}
+
+/* Engine switch: shared by both engines of the /paint route. */
+.paint-engine-switch {
+  position: fixed;
+  left: 50%;
+  top: calc(var(--studio-nav-h, 46px) + 10px);
+  z-index: 30;
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(10, 13, 16, 0.78);
+  backdrop-filter: blur(12px);
+}
+
+.paint-engine-switch a {
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: #93a1ad;
+  text-decoration: none;
+  font: 600 10px/1 ui-monospace, monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.paint-engine-switch a:hover {
+  color: #eaf2f8;
+}
+
+.paint-engine-switch a.current {
+  color: #0e1206;
+  background: linear-gradient(180deg, #cdff6a, #a6e84a);
+}
+
+.surface-shell .paint-engine-switch a.current {
+  color: #081007;
+  background: linear-gradient(180deg, #b8f292, #9ee879);
+}
+
+.surface-painter-page #drawFrame {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  border: 2px solid rgba(174, 255, 94, 0.9);
+  box-shadow:
+    inset 0 0 60px rgba(150, 230, 70, 0.3),
+    inset 0 0 12px rgba(174, 255, 94, 0.45);
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+body.draw .surface-painter-page #drawFrame {
+  opacity: 1;
+  animation: surface-painter-frame-pulse 2.4s ease-in-out infinite;
+}
+
+body.flower .surface-painter-page #drawFrame {
+  opacity: 1;
+  border-color: rgba(242, 255, 205, 0.85);
+  box-shadow:
+    inset 0 0 60px rgba(235, 250, 185, 0.25),
+    inset 0 0 12px rgba(242, 255, 205, 0.4);
+  animation: surface-painter-frame-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes surface-painter-frame-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.surface-painter-page #modeBtn {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px 9px 12px;
+  transform: translateX(-50%);
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #cdff6a, #a6e84a);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.35),
+    0 0 0 4px rgba(174, 255, 94, 0.14);
+  color: #0e1206;
+  font: 600 13.5px/1 system-ui, sans-serif;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.2s ease;
+}
+
+.surface-painter-page #modeBtn:hover {
+  transform: translateX(-50%) translateY(-1px);
+}
+
+.surface-painter-page #modeBtn:active {
+  transform: translateX(-50%) translateY(1px);
+}
+
+.surface-painter-page #modeBtn .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #16240a;
+  box-shadow: 0 0 8px #16240a;
+}
+
+.surface-painter-page #modeBtn .key {
+  margin-left: 2px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(14, 18, 6, 0.22);
+  color: #16240a;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+body.flower .surface-painter-page #modeBtn {
+  background: linear-gradient(180deg, #f6ffd6, #dff0ab);
+  color: #2a3110;
+}
+
+body.flower .surface-painter-page #modeBtn .dot {
+  background: #4a5a18;
+  box-shadow: 0 0 8px #4a5a18;
+}
+
+body.flower .surface-painter-page #modeBtn .key {
+  background: rgba(40, 50, 12, 0.2);
+  color: #2a3110;
+}
+
+body.orbit .surface-painter-page #modeBtn {
+  background: rgba(24, 30, 40, 0.85);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(120, 150, 190, 0.25);
+  color: #dbe7f5;
+}
+
+body.orbit .surface-painter-page #modeBtn .dot {
+  background: #6ea8ff;
+  box-shadow: 0 0 8px #6ea8ff;
+}
+
+body.orbit .surface-painter-page #modeBtn .key {
+  background: rgba(255, 255, 255, 0.1);
+  color: #dbe7f5;
+}
+
+.surface-painter-page #hud {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 3;
+  max-width: 340px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(10, 14, 18, 0.55);
+  color: #cfd8dc;
+  font-size: 13px;
+  line-height: 1.5;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+}
+
+.surface-painter-page #hud b {
+  color: #b6f56a;
+}
+
+.surface-painter-page #hud .sub {
+  margin-top: 6px;
+  opacity: 0.5;
+  font-size: 12px;
+}
+
+.surface-painter-page #toast {
+  position: fixed;
+  left: 50%;
+  top: calc(var(--studio-nav-h, 46px) + 56px);
+  z-index: 5;
+  padding: 8px 16px;
+  transform: translateX(-50%) translateY(-8px);
+  border-radius: 999px;
+  background: rgba(24, 40, 12, 0.9);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  color: #eaffd0;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.surface-painter-page #toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.surface-painter-page .fatal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 6;
+  max-width: 480px;
+  padding: 16px 22px;
+  transform: translate(-50%, -50%);
+  border-radius: 10px;
+  background: rgba(20, 8, 8, 0.85);
+  color: #ff8a80;
+  font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  /* The procedural engine's lil-gui swallows the top-center on phones — dock the
+     switch to the left edge as a column instead. */
+  .paint-engine-switch {
+    left: 8px;
+    flex-direction: column;
+    align-items: stretch;
+    transform: none;
+    border-radius: 14px;
+  }
+
+  /* The Blender lab keeps its top-left page head; slot the switch just below it. */
+  .surface-shell .paint-engine-switch {
+    top: calc(var(--studio-nav-h, 46px) + 124px);
+    left: 14px;
+    flex-direction: row;
+  }
+
+  .paint-engine-switch a {
+    padding: 7px 9px;
+    font-size: 9px;
+  }
+
+  .surface-painter-page #hud {
+    right: 12px;
+    bottom: 70px;
+    left: 12px;
+    max-width: none;
+  }
+
+  .surface-painter-page #modeBtn {
+    bottom: 16px;
+  }
+}

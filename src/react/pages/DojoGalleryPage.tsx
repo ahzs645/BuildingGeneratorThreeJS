@@ -1,4 +1,3 @@
-import { StudioLink } from "../StudioLink";
 import { useToolRuntime } from "../page-runtime";
 import "./dojo-gallery.css";
 
@@ -17,7 +16,6 @@ export default function DojoGalleryPage(): React.JSX.Element {
         </div>
       </aside>
       <div id="status">loading…</div>
-      <StudioLink />
     </main>
   );
 }

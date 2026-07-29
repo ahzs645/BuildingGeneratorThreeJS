@@ -5,7 +5,7 @@
 }
 .bin-live-page #app { width: 100vw; height: 100vh; display: block; }
 .bin-live-page #hud {
-  position: fixed; left: 16px; top: 14px; z-index: 10; max-width: 74ch;
+  position: fixed; left: 16px; top: calc(var(--studio-nav-h, 46px) + 12px); z-index: 10; max-width: 74ch;
   font: 12px/1.6 ui-monospace, Menlo, monospace; color: #9fb4c7;
   letter-spacing: .03em; pointer-events: none; text-shadow: 0 1px 2px #000;
 }
@@ -20,10 +20,3 @@
   transition: opacity 0.15s;
 }
 .bin-live-page #busy.on { opacity: 0.95; }
-.bin-live-page #home {
-  position: fixed; left: 16px; bottom: 14px; z-index: 20;
-  font: 600 11px/1 ui-monospace, Menlo, monospace; letter-spacing: 0.1em; text-transform: uppercase;
-  color: #9fb4c7; text-decoration: none; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 999px; background: rgba(11,13,16,0.6);
-}
-.bin-live-page #home:hover { color: #eaf2f8; border-color: rgba(143,207,255,0.5); }

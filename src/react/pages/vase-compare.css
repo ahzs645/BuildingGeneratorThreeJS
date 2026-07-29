@@ -8,7 +8,7 @@
 .vase-compare-page, .vase-compare-page * { margin: 0; padding: 0; box-sizing: border-box; }
 .vase-compare-page #app { width: 100vw; height: 100vh; display: block; }
 .vase-compare-page #hud {
-  position: fixed; left: 16px; top: 14px; z-index: 10; max-width: 80ch;
+  position: fixed; left: 16px; top: calc(var(--studio-nav-h, 46px) + 12px); z-index: 10; max-width: 80ch;
   font: 12px/1.6 ui-monospace, Menlo, monospace; color: #9fb4c7;
   letter-spacing: .03em; pointer-events: none; text-shadow: 0 1px 2px #000;
 }
@@ -24,10 +24,3 @@
 .vase-compare-page .compare-controls button:hover { color: #eaf2f8; border-color: rgba(143,207,255,.5); }
 .vase-compare-page .compare-controls button[aria-pressed="true"] { color: #eaf2f8; background: rgba(94,180,255,.16); border-color: rgba(94,180,255,.62); }
 .vase-compare-page .compare-controls button.truth-toggle[aria-pressed="true"] { color: #ffd0d0; background: rgba(255,107,107,.14); border-color: rgba(255,107,107,.62); }
-.vase-compare-page #home {
-  position: fixed; left: 16px; bottom: 14px; z-index: 20;
-  font: 600 11px/1 ui-monospace, Menlo, monospace; letter-spacing: 0.1em; text-transform: uppercase;
-  color: #9fb4c7; text-decoration: none; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 999px; background: rgba(11,13,16,0.6); backdrop-filter: blur(6px);
-}
-.vase-compare-page #home:hover { color: #eaf2f8; border-color: rgba(143,207,255,0.5); }

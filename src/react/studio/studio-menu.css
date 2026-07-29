@@ -14,8 +14,6 @@
 .studio-menu a b{display:flex;align-items:baseline;gap:7px;font-size:13px;font-weight:620;letter-spacing:-.01em}
 .studio-menu a em{padding:2px 6px;border:1px solid rgba(159,224,164,.3);border-radius:999px;color:#9fe0a4;font:600 8.5px/1 ui-monospace,monospace;font-style:normal;letter-spacing:.08em}
 .studio-menu a small{display:block;margin-top:3px;color:#7c8794;font-size:11px;line-height:1.45}
-button.studio-link{cursor:pointer}
-button.studio-home{border:0;cursor:pointer}
 .studio-menu-dev{margin-top:6px;padding:0 10px}
 .studio-menu-dev-toggle{display:block;width:100%;padding:7px 0;border:0;background:none;color:#7c8794;cursor:pointer;text-align:left;font:700 9px/1 ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase}
 .studio-menu-dev-toggle:hover{color:#8fcfff}
