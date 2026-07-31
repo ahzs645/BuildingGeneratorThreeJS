@@ -83,7 +83,7 @@ function BlenderBrushLab(): React.JSX.Element {
       </label>
       <div className="st-btn-row st-btn-row-even">
         <button id="surface-demo" className="st-btn" type="button">Curved demo</button>
-        <button id="surface-flat" className="st-btn" type="button">Flat parity</button>
+        <button id="surface-flat" className="st-btn" type="button">Flat canvas</button>
       </div>
       <button id="surface-sample" className="st-btn" type="button">Sample GLB</button>
     </div>
@@ -93,7 +93,9 @@ function BlenderBrushLab(): React.JSX.Element {
         <button id="surface-orbit" type="button">Orbit</button>
         <button id="surface-area" type="button">Select area</button>
         <button id="surface-draw" className="active" type="button">Draw</button>
+        <button id="surface-select" type="button">Select / move</button>
       </div>
+      <p className="surface-edit-hint">Draw a stroke, then select it to move the whole shape. Click a visible control point to reshape it.</p>
       <label className="st-row"><span>Area size</span><input id="surface-area-size" type="range" min="0.6" max="4" step="0.1" defaultValue="2.4" /><output id="surface-area-size-output">2.4</output></label>
       <div className="st-btn-row st-btn-row-even">
         <button id="surface-undo" className="st-btn" type="button">Undo stroke</button>
@@ -116,8 +118,8 @@ function BlenderBrushLab(): React.JSX.Element {
         <label className="st-row"><span>Thickness</span><input id="surface-thickness" type="range" min="0.6" max="30" step="0.1" defaultValue="6" /><output id="surface-thickness-output">6.0</output></label>
         <label className="st-row"><span>Peak</span><input id="surface-peak" type="range" min="0.5" max="450" step="0.1" defaultValue="10" /><output id="surface-peak-output">10.0</output></label>
         <label className="st-row"><span>Sigilize</span><input id="surface-sigilize" type="range" min="0" max="800" step="1" defaultValue="0" /><output id="surface-sigilize-output">0</output></label>
-        <label className="st-row"><span>Soften</span><input id="surface-soften" type="range" min="0" max="10" step="1" defaultValue="0" /><output id="surface-soften-output">0</output></label>
-        <label className="st-row"><span>Resolution</span><input id="surface-resolution" type="range" min="0.2" max="1" step="0.005" defaultValue="0.8" /><output id="surface-resolution-output">0.800</output></label>
+        <label className="st-row" title="Smooths the generated volume boundary. Set to 0 only when comparing raw Blender parity topology."><span>Edge smoothing</span><input id="surface-soften" type="range" min="0" max="10" step="1" defaultValue="3" /><output id="surface-soften-output">3</output></label>
+        <label className="st-row"><span>Resolution</span><input id="surface-resolution" type="range" min="0.2" max="1" step="0.005" defaultValue="0.835" /><output id="surface-resolution-output">0.835</output></label>
         <label className="st-row"><span>SPIRO</span><input id="surface-spiro" type="range" min="0" max="3" step="1" defaultValue="1" /><output id="surface-spiro-output">1</output></label>
         <label className="st-row"><span>Extrude</span><input id="surface-extrude" type="range" min="0.1" max="3" step="0.1" defaultValue="1" /><output id="surface-extrude-output">1.0</output></label>
         <label className="st-row st-row-wide"><span>Flatten stroke</span><input id="surface-flatten" type="checkbox" /></label>
@@ -152,7 +154,7 @@ function BlenderBrushLab(): React.JSX.Element {
     className="surface-shell"
     leftDock={leftDock}
     rightDock={rightDock}
-    toolbar={<><EngineSwitch engine="blender" /><span className="st-spacer" /><span>select area: click model · draw: drag inside patch · wheel: zoom</span></>}
+    toolbar={<><EngineSwitch engine="blender" /><span className="st-spacer" /><span>draw: drag · select/move: drag stroke or point · wheel: zoom</span></>}
     status={<>
       <span id="surface-status"><span className="st-dot ready" />Ready on the demo surface</span>
     </>}

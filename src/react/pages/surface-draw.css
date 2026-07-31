@@ -10,6 +10,7 @@
 .surface-controls[hidden] { display: none; }
 .surface-bounds { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.45 var(--st-mono); word-break: break-word; }
 .surface-reference-image { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid var(--st-line); border-radius: var(--st-r-md); background: #000; }
+.surface-edit-hint { margin: 0; color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.45 var(--st-sans); }
 
 /* surface-draw.ts toggles `busy` and rewrites the status line's last text node. */
 .surface-shell #surface-status { display: flex; align-items: center; gap: 8px; }

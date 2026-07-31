@@ -68,6 +68,12 @@ their MIT licenses remain under `src/vegetation-generator` and
 engine, the Blender brush lab (`/paint?engine=blender`), evaluates
 Blender-authored brushes (Chrome Crayon, Periodic Brush) through the GN-VM along
 a stroke projected onto an uploaded mesh, with fixed Blender parity paths.
+Pen strokes remain editable source curves: select and move a whole stroke or an
+individual control point and the combined drawing re-evaluates through Chrome
+Crayon, preserving proximity/merge interaction between crossings on flat and
+local curved-surface patches. The reusable authoring and backend-adapter
+contract is documented in
+[`docs/EDITABLE_CURVE_FRAMEWORK.md`](docs/EDITABLE_CURVE_FRAMEWORK.md).
 
 `/bin` is the synchronized Dojo Bin parity workspace: one Bin Select control
 drives a baked Blender-truth variant and a fresh GN-VM evaluation, with overlay,
