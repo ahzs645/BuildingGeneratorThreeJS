@@ -1,0 +1,110 @@
+{
+  "blender": "5.1.2",
+  "generator": "tools/uv_blender_parity_probe.py",
+  "checked_in_inventory": {
+    "public/dojo/nodes-node/dump.json": [
+      { "group": "_GLYPH PLAYER", "type": "GeometryNodeUVUnwrap", "output_linked": true },
+      { "group": "_PATCH.Chenille.from image plane", "type": "GeometryNodeUVUnwrap", "output_linked": false }
+    ],
+    "public/dojo/math-clay/dump.json": [
+      { "group": "_GLYPH PLAYER", "type": "GeometryNodeUVUnwrap", "output_linked": true }
+    ]
+  },
+  "reachable_catalog_assets": [],
+  "authored_grid_40x40_conformal": {
+    "parameters": {
+      "size_x": 5.410000324249268,
+      "size_y": 5.230000019073486,
+      "vertices_x": 40,
+      "vertices_y": 40,
+      "selection": true,
+      "seam": false,
+      "margin": 0.0,
+      "fill_holes": true,
+      "method": "Conformal",
+      "iterations": 10,
+      "no_flip": false
+    },
+    "corner_count": 6084,
+    "all_corner_analytical_max_delta": 1.1267168731343702e-7,
+    "all_corner_quantized_decimals": 4,
+    "all_corner_quantized_sha256": "8cd3f0ff3b425b97aa2609d48d3e95628865f8a5222401e77c30bef6ed783cc3",
+    "analytical_quantized_sha256": "8cd3f0ff3b425b97aa2609d48d3e95628865f8a5222401e77c30bef6ed783cc3",
+    "bounds": {
+      "min": [0.0, -4.225703520432944e-8],
+      "max": [0.9667282700538635, 1.0]
+    },
+    "samples": {
+      "0": [8.778136617593191e-8, 1.0, 0.0],
+      "1": [8.666055606454393e-8, 0.9743589758872986, 0.0],
+      "2": [0.024787992238998413, 0.9743589758872986, 0.0],
+      "3": [0.024787994101643562, 1.0, 0.0],
+      "3042": [0.4957581162452698, 0.4871794581413269, 0.0],
+      "6080": [0.9419403672218323, 0.025640971958637238, 0.0],
+      "6081": [0.9419403672218323, -4.1173521481141506e-8, 0.0],
+      "6082": [0.9667282700538635, -4.225703520432944e-8, 0.0],
+      "6083": [0.9667282700538635, 0.02564097009599209, 0.0]
+    }
+  },
+  "input_sensitivity": {
+    "open_cube_fill_holes_true_vs_false_max_delta": 0.2677459120750427,
+    "planar_two_quad_fill_holes_true_vs_false_max_delta": 0.0,
+    "planar_two_quad_iterations_1_vs_10_max_delta": 0.0,
+    "planar_two_quad_no_flip_false_vs_true_max_delta": 0.0,
+    "seam_cube_iterations_1_vs_10_max_delta": 0.0,
+    "seam_cube_no_flip_false_vs_true_max_delta": 0.0
+  },
+  "two_island_pack": {
+    "parameters": {
+      "margin": 0.001,
+      "bottom_left": [0.0, 0.0],
+      "top_right": [1.0, 1.0]
+    },
+    "values": [
+      [0.00014137673133518547, 0.9995758533477783, 0.0],
+      [0.0001413330464856699, 0.00014130226918496192, 0.0],
+      [0.4998585879802704, 0.00014128042676020414, 0.0],
+      [0.49985864758491516, 0.9995757937431335, 0.0],
+      [0.5001412630081177, 0.00014136184472590685, 0.0],
+      [0.999858558177948, 0.00014136184472590685, 0.0],
+      [0.999858558177948, 0.9995759129524231, 0.0],
+      [0.5001412630081177, 0.9995759129524231, 0.0]
+    ]
+  },
+  "single_rectangle_pack": {
+    "0": [
+      [-7.549789415861596e-8, 1.0000001192092896, 0.0],
+      [-1.1920928244535389e-7, 1.1920928955078125e-7, 0.0],
+      [0.49999988079071045, 9.735359896012596e-8, 0.0],
+      [0.49999991059303284, 1.0000001192092896, 0.0]
+    ],
+    "0.001": [
+      [0.00007072482549119741, 0.9999294281005859, 0.0],
+      [0.00007068111881380901, 0.00007080030627548695, 0.0],
+      [0.5, 0.00007077844929881394, 0.0],
+      [0.5000000596046448, 0.9999293684959412, 0.0]
+    ],
+    "0.1": [
+      [0.006972515489906073, 0.9930277466773987, 0.0],
+      [0.00697247264906764, 0.006972648203372955, 0.0],
+      [0.5, 0.006972626782953739, 0.0],
+      [0.5000000596046448, 0.9930276870727539, 0.0]
+    ]
+  },
+  "classification": {
+    "GeometryNodeUVUnwrap": {
+      "general": "bounded",
+      "exact": [
+        "checked-in _GLYPH PLAYER 40x40 Conformal grid signature",
+        "canonical two-orthogonal-island Angle Based Blender fixture"
+      ],
+      "inventory_only": "_PATCH.Chenille.from image plane / Angle Based output is unlinked"
+    },
+    "GeometryNodeUVPackIslands": {
+      "general": "bounded",
+      "exact": "one axis-aligned rectangular island at probed margins 0, 0.001, or 0.1",
+      "checked_in_occurrences": 0
+    },
+    "reason": "General modes remain bounded because the portable solver does not reproduce Blender's ABF/LSCM Fill Holes behavior or silhouette packer for arbitrary topology."
+  }
+}

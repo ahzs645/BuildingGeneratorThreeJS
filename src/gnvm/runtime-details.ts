@@ -54,12 +54,17 @@ function volumeGridDetails(diagnostic: VolumeGridDiagnostics): RunDetail[] {
   }];
 
   const adaptivity = diagnostic.requestedAdaptivity ?? 0;
-  if (diagnostic.stage === "grid-to-mesh" && adaptivity > 0 && diagnostic.adaptivityApplied === true) {
+  if (
+    (diagnostic.stage === "grid-to-mesh" || diagnostic.stage === "volume-to-mesh")
+    && adaptivity > 0
+    && diagnostic.adaptivityApplied === true
+  ) {
+    const label = diagnostic.stage === "grid-to-mesh" ? "Grid to Mesh" : "Volume to Mesh";
     result.push({
       kind: "bounded-grid-adaptivity",
       severity: "warning",
-      stage: "grid-to-mesh",
-      message: `Grid to Mesh used bounded dense surface-net decimation at adaptivity ${decimal(adaptivity)}; intermediate topology is not exact OpenVDB parity.`,
+      stage: diagnostic.stage,
+      message: `${label} used bounded dense surface-net decimation at adaptivity ${decimal(adaptivity)}; intermediate topology is not exact OpenVDB parity.`,
       requestedAdaptivity: adaptivity,
       implementation: "dense-surface-net-decimation",
     });

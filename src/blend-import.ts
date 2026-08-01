@@ -7,6 +7,7 @@ import {
   EVALUATOR_NATIVE_NODE_TYPES,
   REGISTRY,
   type Dump,
+  type DumpModifierBakeState,
   type ProgramCapabilityReport,
   type TriSoup,
 } from "./gnvm/index";
@@ -25,6 +26,7 @@ type ImportedDump = Omit<Dump, "objects" | "node_groups" | "materials"> & {
       show_render?: boolean;
       node_group?: string;
       input_values?: Record<string, unknown>;
+      bake_states?: DumpModifierBakeState[];
     }>;
   }>;
   node_groups: Record<string, RawGroup>;
@@ -35,7 +37,11 @@ type RawSocket = { name: string; identifier: string; socket_type?: string; in_ou
 type RawNode = { name: string; type: string; label?: string | null; ui?: { mute?: boolean }; inputs?: Array<{ name: string; identifier: string; linked: boolean; value: unknown }> };
 type RawGroup = { name?: string; interface?: RawSocket[]; nodes?: RawNode[]; links?: unknown[] };
 type RawMaterial = { nodes?: RawNode[] };
-type GnObject = NonNullable<ImportedDump["objects"]>[number] & { group: string; saved: Record<string, unknown> };
+type GnObject = NonNullable<ImportedDump["objects"]>[number] & {
+  group: string;
+  modifierIndex: number;
+  saved: Record<string, unknown>;
+};
 type WorkerReply =
   | {
       id: number;
@@ -276,7 +282,13 @@ function nodeInventory(): RawNode[] {
 
 function activeCapabilities(): ProgramCapabilityReport | null {
   if (!dump || !activeObject) return null;
-  return analyzeProgramCapabilities(dump.node_groups as unknown as Program, activeObject.group);
+  const modifier = activeObject.modifiers?.[activeObject.modifierIndex];
+  return analyzeProgramCapabilities(
+    dump.node_groups as unknown as Program,
+    activeObject.group,
+    REGISTRY,
+    { bakeStates: modifier?.bake_states ?? [] },
+  );
 }
 
 function renderCompatibility(): number {
@@ -298,6 +310,8 @@ function renderCompatibility(): number {
     `${recognized}/${recordCount} reachable records recognized · ${report.reachableGroups.length} groups`;
   const gaps = [
     ...report.unsupportedNodeTypes.map((entry) => `${entry.type} ×${entry.count}`),
+    ...report.runtimeConditionalNodeTypes.map((entry) =>
+      `runtime-conditional ${entry.type} ×${entry.count}`),
     ...report.approximatedNodeTypes.map((entry) =>
       `bounded approximation ${entry.type} ×${entry.count}`),
     ...report.missingGroups.map((entry) => `missing group ${entry.group}`),
@@ -345,9 +359,14 @@ function renderGroups(query = ""): void {
 function graphObjects(value: ImportedDump): GnObject[] {
   const found: GnObject[] = [];
   for (const object of value.objects ?? []) {
-    for (const modifier of object.modifiers ?? []) {
+    for (const [modifierIndex, modifier] of (object.modifiers ?? []).entries()) {
       if (modifier.type === "NODES" && modifier.node_group && value.node_groups[modifier.node_group]) {
-        found.push({ ...object, group: modifier.node_group, saved: modifier.input_values ?? {} });
+        found.push({
+          ...object,
+          group: modifier.node_group,
+          modifierIndex,
+          saved: modifier.input_values ?? {},
+        });
         break;
       }
     }
@@ -547,7 +566,14 @@ function buildPreview(): void {
     };
   };
   worker.onerror = (event) => { cancelEvaluation(`Evaluation worker failed · ${event.message}`); };
-  worker.postMessage({ id, dump, object: activeObject.name, overrides: params });
+  worker.postMessage({
+    id,
+    dump,
+    object: activeObject.name,
+    group: activeObject.group,
+    modifierIndex: activeObject.modifierIndex,
+    overrides: params,
+  });
 }
 
 dropzone.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") fileInput.click(); });

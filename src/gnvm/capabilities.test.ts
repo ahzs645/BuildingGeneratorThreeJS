@@ -87,7 +87,7 @@ test("capability analysis is portable when every reachable node is supported", (
   assert.equal(analyzeProgramCapabilities(program, "Root", registry).portable, true);
 });
 
-test("capability analysis distinguishes runnable approximations from exact support", () => {
+test("capability analysis distinguishes runtime-conditional handlers from exact support", () => {
   const program: Program = {
     Root: group("Root", [
       node("UV", "GeometryNodeUVUnwrap"),
@@ -98,9 +98,10 @@ test("capability analysis distinguishes runnable approximations from exact suppo
   const report = analyzeProgramCapabilities(program, "Root", registry);
   assert.equal(report.portable, true);
   assert.equal(report.exact, false);
-  assert.deepEqual(report.approximatedNodeTypes, [
+  assert.deepEqual(report.runtimeConditionalNodeTypes, [
     { type: "GeometryNodeUVUnwrap", count: 1 },
   ]);
+  assert.deepEqual(report.approximatedNodeTypes, []);
 });
 
 test("legacy NURBS Curve Offset helpers use the exact Set Position handler", () => {
@@ -124,7 +125,7 @@ test("legacy NURBS Curve Offset helpers use the exact Set Position handler", () 
   assert.deepEqual(report.approximatedNodeTypes, []);
 });
 
-test("capability analysis classifies dense volume creation and resampling as bounded", () => {
+test("capability analysis classifies conditionally exact volume handlers separately", () => {
   const program: Program = {
     Root: group("Root", [
       node("Volume Cube", "GeometryNodeVolumeCube"),
@@ -139,10 +140,11 @@ test("capability analysis classifies dense volume creation and resampling as bou
   const report = analyzeProgramCapabilities(program, "Root", registry);
   assert.equal(report.portable, true);
   assert.equal(report.exact, false);
-  assert.deepEqual(report.approximatedNodeTypes, [
+  assert.deepEqual(report.runtimeConditionalNodeTypes, [
     { type: "GeometryNodeVolumeCube", count: 1 },
     { type: "GeometryNodeVolumeToMesh", count: 1 },
   ]);
+  assert.deepEqual(report.approximatedNodeTypes, []);
 });
 
 test("Set Mesh Normal is exact only for the implemented sharpness mode", () => {

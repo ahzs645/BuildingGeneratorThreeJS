@@ -7,6 +7,7 @@ import {
   BLEND_STUDIO_LIVE_EVALUATION_DISABLE_SECONDS,
   blendStudioEvaluationHistoryKey,
   blendStudioEvaluationRunsForKey,
+  boundedApproximationBadgeLabel,
   compatibilityForBlendStudioTarget,
   connectedGeometryInputsForBlendStudioTarget,
   controlsForBlendStudioTarget,
@@ -1353,7 +1354,7 @@ export default function BlendBridgePage(): React.JSX.Element {
           {(runtime.snapshot.missingTypes ?? []).map((entry) =>
             <div className="st-chip warn" key={entry.type}>{entry.type}<b>×{entry.count}</b></div>)}
           {(runtime.snapshot.approximateTypes ?? []).map((entry) =>
-            <div className="st-chip warn" key={entry.type}>Bounded approximation · {entry.type}<b>×{entry.count}</b></div>)}
+            <div className="st-chip warn" key={entry.type}>{boundedApproximationBadgeLabel(entry)}</div>)}
         </div>
       : <div className="st-section"><div className="st-chip">{runtime.snapshot.message}</div></div>}
     {(runtime.snapshot.details?.length ?? 0) > 0 && <div className="st-section">

@@ -377,6 +377,8 @@ export interface DumpModifier {
   show_render?: boolean;
   node_group?: string;
   input_values?: Record<string, any>;
+  /** Cache state is instance-specific even when node_group is shared. */
+  bake_states?: DumpModifierBakeState[];
   object?: string;
   vertex_indices?: number[];
   matrix_inverse?: number[][];
@@ -387,6 +389,27 @@ export interface DumpModifier {
   vertex_group?: string;
   invert_vertex_group?: boolean;
   [key: string]: unknown;
+}
+
+export interface DumpModifierBakeState {
+  /** Blender's stable nested-node id within this modifier. */
+  bake_id: number;
+  /** Owning nested group and node name disambiguate equal names across groups. */
+  node_group: string;
+  node: string;
+  status: "unbaked" | "packed" | "disk-backed" | "unknown";
+  bake_target?: string;
+  bake_mode?: string;
+  /** Inclusive Blender cache range for animation bakes when it is known. */
+  frame_start?: number;
+  frame_end?: number;
+  /** Authored Blender path only; resolved host filesystem paths are not exported. */
+  directory?: string;
+  reason?: string;
+  /** Portable evaluated data, when attached, belongs to this modifier instance. */
+  snapshot?: BakeSnapshot;
+  /** Frame-addressed portable cache. Preferred over the legacy single snapshot. */
+  snapshots?: BakeSnapshot[];
 }
 
 export interface DumpObject {
@@ -562,6 +585,47 @@ function validateMeshSmoothness(value: unknown, path: string, issues: DumpValida
   }
 }
 
+const MODIFIER_BAKE_STATUSES = new Set(["unbaked", "packed", "disk-backed", "unknown"]);
+
+function validateModifierBakeStates(
+  modifier: Record<string, unknown>,
+  path: string,
+  issues: DumpValidationIssue[],
+): void {
+  if (modifier.bake_states === undefined) return;
+  if (!Array.isArray(modifier.bake_states)) {
+    issues.push({
+      code: "EXPECTED_ARRAY",
+      path: `${path}.bake_states`,
+      message: "expected an array",
+    });
+    return;
+  }
+  for (const [index, state] of modifier.bake_states.entries()) {
+    const statePath = `${path}.bake_states[${index}]`;
+    if (!isRecord(state)) {
+      issues.push({ code: "EXPECTED_OBJECT", path: statePath, message: "expected a bake-state object" });
+      continue;
+    }
+    if (!Number.isInteger(state.bake_id) || Number(state.bake_id) < 0) {
+      issues.push({
+        code: "EXPECTED_NONNEGATIVE_INTEGER",
+        path: `${statePath}.bake_id`,
+        message: "expected Blender's non-negative nested bake id",
+      });
+    }
+    requireString(state, "node_group", statePath, issues);
+    requireString(state, "node", statePath, issues);
+    if (typeof state.status !== "string" || !MODIFIER_BAKE_STATUSES.has(state.status)) {
+      issues.push({
+        code: "INVALID_BAKE_STATUS",
+        path: `${statePath}.status`,
+        message: "expected unbaked, packed, disk-backed, or unknown",
+      });
+    }
+  }
+}
+
 /** Return structural problems without rejecting unknown, forward-compatible data. */
 export function validateDump(value: unknown): DumpValidationIssue[] {
   const issues: DumpValidationIssue[] = [];
@@ -586,6 +650,16 @@ export function validateDump(value: unknown): DumpValidationIssue[] {
       requireString(object, "name", path, issues);
       if (object.modifiers !== undefined && !Array.isArray(object.modifiers))
         issues.push({ code: "EXPECTED_ARRAY", path: `${path}.modifiers`, message: "expected an array" });
+      if (Array.isArray(object.modifiers)) {
+        for (const [modifierIndex, modifier] of object.modifiers.entries()) {
+          const modifierPath = `${path}.modifiers[${modifierIndex}]`;
+          if (!isRecord(modifier)) {
+            issues.push({ code: "EXPECTED_OBJECT", path: modifierPath, message: "expected a modifier object" });
+            continue;
+          }
+          validateModifierBakeStates(modifier, modifierPath, issues);
+        }
+      }
       validateMeshSmoothness(object.mesh, `${path}.mesh`, issues);
       validateMeshSmoothness(object.evaluated_mesh, `${path}.evaluated_mesh`, issues);
     }

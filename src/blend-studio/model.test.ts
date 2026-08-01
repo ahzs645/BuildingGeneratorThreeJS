@@ -214,7 +214,7 @@ test("only offers geometry inputs that the root graph actually consumes", () => 
   );
 });
 
-test("surfaces bounded node implementations without treating them as unsupported", () => {
+test("surfaces runtime-conditional node implementations without treating them as unsupported", () => {
   const dump = fixture();
   const target = discoverBlendStudioTargets(dump)[0];
   dump.node_groups.Assigned.nodes.push({
@@ -228,11 +228,11 @@ test("surfaces bounded node implementations without treating them as unsupported
   assert.equal(compatibility.score, 100);
   assert.deepEqual(compatibility.report.unsupportedNodeTypes, []);
   assert.deepEqual(compatibility.gaps, [
-    "Bounded approximation · GeometryNodeUVUnwrap ×1",
+    "Runtime-conditional · GeometryNodeUVUnwrap ×1",
   ]);
   assert.deepEqual(autoEvaluationPolicyForBlendStudioTarget(dump, target), {
     enabled: true,
-    reason: "Live evaluation enabled with reported bounded approximations",
+    reason: "Live evaluation enabled; evaluated inputs determine exact versus bounded execution",
   });
 });
 

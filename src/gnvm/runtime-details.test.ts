@@ -53,3 +53,22 @@ test("reports active bounded Grid to Mesh adaptivity alongside allocation detail
     implementation: "dense-surface-net-decimation",
   });
 });
+
+test("reports bounded Volume to Mesh adaptivity instead of hiding the fallback mode", () => {
+  const details = runtimeDetailsFromVolumeGridDiagnostics({
+    ...base,
+    stage: "volume-to-mesh",
+    budgetAdjusted: false,
+    requestedSampleCount: 1_000_000,
+    requestedAdaptivity: .25,
+    adaptivityApplied: true,
+  });
+  assert.deepEqual(details[1], {
+    kind: "bounded-grid-adaptivity",
+    severity: "warning",
+    stage: "volume-to-mesh",
+    message: "Volume to Mesh used bounded dense surface-net decimation at adaptivity 0.25; intermediate topology is not exact OpenVDB parity.",
+    requestedAdaptivity: .25,
+    implementation: "dense-surface-net-decimation",
+  });
+});

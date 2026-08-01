@@ -1247,6 +1247,7 @@ class Invocation {
     };
     return {
       node,
+      group: this.group.name,
       scope: `${this.scope}/${node.name}${this.repeatEpoch ? `@${this.repeatEpoch & 1}` : ""}`,
       input: (name) => self.pull(node, name),
       inputs: (name) => self.pullMulti(node, name),

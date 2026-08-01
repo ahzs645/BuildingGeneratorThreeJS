@@ -4,7 +4,7 @@
 import { Field, Vec3, Domain, Elem } from "./core";
 import { Geometry } from "./geometry";
 import { MatrixValue } from "./matrix";
-import type { DataRef, DumpObject, FontAtlas, RawNode } from "./dump-schema";
+import type { DataRef, DumpModifier, DumpObject, FontAtlas, RawNode } from "./dump-schema";
 
 export type {
   DataRef,
@@ -82,6 +82,8 @@ export type SockVal =
 
 export interface EvalAPI {
   node: RawNode;
+  /** Concrete node group containing node, including nested group execution. */
+  group?: string;
   // Stable expanded-node path for anonymous attributes. The same node inside
   // a repeat zone keeps one identity across iterations, while separate nested
   // group-node instances receive distinct paths.
@@ -118,6 +120,8 @@ export const DUMP_CONTEXT: {
   images: { name: string; filepath?: string; size: number[]; pixels_rgba8?: string; channels?: number; decoded?: Uint8Array }[];
   fonts: Record<string, FontAtlas>;
   activeObject?: DumpObject;
+  /** Modifier instance whose node tree is currently being evaluated. */
+  activeModifier?: DumpModifier;
   evaluatedObjects: Map<string, Geometry>;
   evaluatingObjects: Set<string>;
   legacyCurvePassthroughObjects: Set<string>;

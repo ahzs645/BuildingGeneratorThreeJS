@@ -39,7 +39,7 @@ export type RunDetail =
   | {
       kind: "bounded-grid-adaptivity";
       severity: "warning";
-      stage: "grid-to-mesh";
+      stage: "grid-to-mesh" | "volume-to-mesh";
       message: string;
       requestedAdaptivity: number;
       implementation: "dense-surface-net-decimation";

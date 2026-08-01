@@ -204,6 +204,9 @@ function prepareDumpContext(dump: Dump, activeObjectName: string | undefined, fr
   DUMP_CONTEXT.activeObject = activeObjectName
     ? DUMP_CONTEXT.objects.find((object) => object.name === activeObjectName)
     : undefined;
+  // Asset-group execution has no owning Blender modifier, so Bake state must
+  // come from an explicitly embedded standalone snapshot.
+  DUMP_CONTEXT.activeModifier = undefined;
   DUMP_CONTEXT.evaluatedObjects.clear();
   DUMP_CONTEXT.evaluatingObjects.clear();
   DUMP_CONTEXT.legacyCurvePassthroughObjects.clear();
@@ -272,6 +275,7 @@ export async function runNodeGroup(dump: Dump, options: RunNodeGroupOptions): Pr
     };
   } finally {
     endRuntimeDetailCollection();
+    DUMP_CONTEXT.activeModifier = undefined;
     DUMP_CONTEXT.evaluatingObjects.clear();
   }
 }

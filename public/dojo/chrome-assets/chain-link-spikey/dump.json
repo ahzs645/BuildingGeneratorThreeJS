@@ -144731,7 +144731,18 @@
      "name": "GeometryNodes",
      "type": "NODES",
      "node_group": "chain link_spikey",
-     "input_values": {}
+     "input_values": {},
+     "bake_states": [
+      {
+       "bake_id": 1633186642,
+       "node_group": "chain link_spikey",
+       "node": "Bake",
+       "status": "unbaked",
+       "bake_target": "DISK",
+       "bake_mode": "STILL",
+       "directory": "//blendcache_lighter holders/Cube46484850_GeometryNodes/1633186642"
+      }
+     ]
     }
    ],
    "materials": [],

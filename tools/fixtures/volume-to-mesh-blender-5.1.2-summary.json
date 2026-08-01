@@ -1,0 +1,296 @@
+{
+  "blender": "5.1.2",
+  "generator": "tools/blender_volume_to_mesh_topology_probe.py",
+  "volume_cube": {
+    "background": 0.0,
+    "resolution": [
+      16,
+      16,
+      16
+    ],
+    "min": [
+      -1.0,
+      -1.0,
+      -1.0
+    ],
+    "max": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "radius": 0.7
+  },
+  "cases": {
+    "grid_zero": {
+      "inputs": {
+        "resolution_mode": "Grid",
+        "voxel_size": 0.3,
+        "voxel_amount": 64.0,
+        "threshold": 0.0,
+        "adaptivity": 0.0,
+        "volume_resolution": 16
+      },
+      "vertices": 530,
+      "edges": 1056,
+      "faces": 528,
+      "face_sizes": {
+        "4": 528
+      },
+      "signed_volume": -1.378305796464447,
+      "radial_orientation": {
+        "outward": 0,
+        "inward": 528
+      },
+      "bbox": {
+        "min": [
+          -0.6935685873031616,
+          -0.6935685873031616,
+          -0.6935685873031616
+        ],
+        "max": [
+          0.6935685873031616,
+          0.6935685873031616,
+          0.6935685873031616
+        ]
+      },
+      "position_moments": {
+        "abs": [
+          185.76966446638107,
+          185.76966446638107,
+          185.76966433227062
+        ],
+        "squared": [
+          85.19041231554831,
+          85.19041231554831,
+          85.19041228233208
+        ]
+      }
+    },
+    "grid_nonzero": {
+      "inputs": {
+        "resolution_mode": "Grid",
+        "voxel_size": 0.3,
+        "voxel_amount": 64.0,
+        "threshold": 0.125,
+        "adaptivity": 0.0,
+        "volume_resolution": 16
+      },
+      "vertices": 2260,
+      "edges": 4512,
+      "faces": 2256,
+      "face_sizes": {
+        "4": 2256
+      },
+      "signed_volume": 8.232346867455366,
+      "radial_orientation": {
+        "outward": 1536,
+        "inward": 720
+      },
+      "bbox": {
+        "min": [
+          -1.1158783435821533,
+          -1.1158783435821533,
+          -1.1158783435821533
+        ],
+        "max": [
+          1.1158783435821533,
+          1.1158783435821533,
+          1.1158783435821533
+        ]
+      },
+      "position_moments": {
+        "abs": [
+          1407.9693022966385,
+          1407.9693022966385,
+          1407.9693008065224
+        ],
+        "squared": [
+          1169.7315644351472,
+          1169.7315644351472,
+          1169.7315636308733
+        ]
+      }
+    },
+    "size_zero": {
+      "inputs": {
+        "resolution_mode": "Size",
+        "voxel_size": 0.08,
+        "voxel_amount": 64.0,
+        "threshold": 0.0,
+        "adaptivity": 0.0,
+        "volume_resolution": 16
+      },
+      "vertices": 1442,
+      "edges": 2880,
+      "faces": 1440,
+      "face_sizes": {
+        "4": 1440
+      },
+      "signed_volume": -1.3903210080999584,
+      "radial_orientation": {
+        "outward": 0,
+        "inward": 1440
+      },
+      "bbox": {
+        "min": [
+          -0.6935547590255737,
+          -0.6935547590255737,
+          -0.6935548186302185
+        ],
+        "max": [
+          0.6935547590255737,
+          0.6935547590255737,
+          0.6935547590255737
+        ]
+      },
+      "position_moments": {
+        "abs": [
+          501.6466906443238,
+          501.6466909311712,
+          501.6466903798282
+        ],
+        "squared": [
+          231.3169202738095,
+          231.3169205961315,
+          231.31692088624564
+        ]
+      }
+    },
+    "amount_zero": {
+      "inputs": {
+        "resolution_mode": "Amount",
+        "voxel_size": 0.3,
+        "voxel_amount": 20.0,
+        "threshold": 0.0,
+        "adaptivity": 0.0,
+        "volume_resolution": 16
+      },
+      "vertices": 872,
+      "edges": 1740,
+      "faces": 870,
+      "face_sizes": {
+        "4": 870
+      },
+      "signed_volume": -1.3784644618686706,
+      "radial_orientation": {
+        "outward": 0,
+        "inward": 870
+      },
+      "bbox": {
+        "min": [
+          -0.6871457695960999,
+          -0.6871457695960999,
+          -0.6871457695960999
+        ],
+        "max": [
+          0.6871458292007446,
+          0.6871458292007446,
+          0.6871458292007446
+        ]
+      },
+      "position_moments": {
+        "abs": [
+          307.8432997614145,
+          307.8432999551296,
+          307.84329967200756
+        ],
+        "squared": [
+          139.47298388840025,
+          139.47298402881103,
+          139.47298390311252
+        ]
+      }
+    },
+    "grid_adapt_half": {
+      "inputs": {
+        "resolution_mode": "Grid",
+        "voxel_size": 0.3,
+        "voxel_amount": 64.0,
+        "threshold": 0.0,
+        "adaptivity": 0.5,
+        "volume_resolution": 16
+      },
+      "vertices": 44,
+      "edges": 87,
+      "faces": 45,
+      "face_sizes": {
+        "3": 6,
+        "4": 39
+      },
+      "signed_volume": -1.0192652025386146,
+      "radial_orientation": {
+        "outward": 0,
+        "inward": 45
+      },
+      "bbox": {
+        "min": [
+          -0.5981948375701904,
+          -0.5981948375701904,
+          -0.5981948375701904
+        ],
+        "max": [
+          0.6369541883468628,
+          0.6369541883468628,
+          0.6369541883468628
+        ]
+      },
+      "position_moments": {
+        "abs": [
+          15.547596223652363,
+          15.547596223652363,
+          15.547596223652363
+        ],
+        "squared": [
+          6.715476400632002,
+          6.715476400632002,
+          6.715476400632002
+        ]
+      }
+    },
+    "grid_zero_resolution_30": {
+      "inputs": {
+        "resolution_mode": "Grid",
+        "voxel_size": 0.3,
+        "voxel_amount": 64.0,
+        "threshold": 0.0,
+        "adaptivity": 0.0,
+        "volume_resolution": 30
+      },
+      "vertices": 1994,
+      "edges": 3984,
+      "faces": 1992,
+      "face_sizes": {
+        "4": 1992
+      },
+      "signed_volume": -1.420897250370848,
+      "radial_orientation": {
+        "outward": 0,
+        "inward": 1992
+      },
+      "bbox": {
+        "min": [
+          -0.6982952952384949,
+          -0.6982952952384949,
+          -0.6982952952384949
+        ],
+        "max": [
+          0.6982952952384949,
+          0.6982952952384949,
+          0.6982952952384949
+        ]
+      },
+      "position_moments": {
+        "abs": [
+          701.3862129151821,
+          701.3862129151821,
+          701.3862136304379
+        ],
+        "squared": [
+          324.3071338449843,
+          324.3071338449843,
+          324.30713358409474
+        ]
+      }
+    }
+  }
+}

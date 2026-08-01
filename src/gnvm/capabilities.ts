@@ -1,4 +1,10 @@
 import type { Program } from "./evaluator";
+import {
+  findBakeInstanceState,
+  hasCompleteBakeSnapshot,
+  hasCompleteBakeStateSnapshotCoverage,
+  type BakeInstanceState,
+} from "./bake-snapshot";
 import { hasEmbeddedStlPayload } from "./import-stl-payload";
 import { REGISTRY, type Handler, type RawNode } from "./registry";
 
@@ -46,9 +52,22 @@ export const BOUNDED_APPROXIMATION_NODE_TYPES = new Set([
   "GeometryNodeUVUnwrap",
 ]);
 
+/**
+ * Handlers whose runtime can prove an exact narrow contract from evaluated
+ * geometry and socket values. Static analysis cannot see those values, so it
+ * must distinguish "runtime-conditional" from an unconditional approximation.
+ */
+export const RUNTIME_CONDITIONAL_NODE_TYPES = new Set([
+  "GeometryNodeUVPackIslands",
+  "GeometryNodeUVUnwrap",
+  "GeometryNodeVolumeCube",
+  "GeometryNodeVolumeToMesh",
+]);
+
 export type NodeSupport =
   | "native"
   | "handler"
+  | "runtime-conditional"
   | "bounded-approximation"
   | "editor-only"
   | "muted-passthrough"
@@ -72,6 +91,7 @@ export interface ProgramCapabilityReport {
   missingGroups: MissingGroupReference[];
   nodeTypes: NodeCapabilityCount[];
   unsupportedNodeTypes: { type: string; count: number }[];
+  runtimeConditionalNodeTypes: { type: string; count: number }[];
   approximatedNodeTypes: { type: string; count: number }[];
   portable: boolean;
   exact: boolean;
@@ -79,10 +99,19 @@ export interface ProgramCapabilityReport {
 
 type HandlerRegistry = ReadonlyMap<string, Handler>;
 
+export interface ProgramCapabilityContext {
+  /**
+   * Modifier-instance Bake states. An explicit empty array means extraction
+   * checked this modifier but could not associate a Bake with portable state.
+   */
+  bakeStates?: readonly BakeInstanceState[];
+}
+
 function supportOf(
   node: RawNode,
   registry: HandlerRegistry,
   groupName: string,
+  context: ProgramCapabilityContext,
 ): NodeSupport {
   if (node.ui?.mute) return "muted-passthrough";
   if (EVALUATOR_NATIVE_NODE_TYPES.has(node.type)) return "native";
@@ -96,11 +125,27 @@ function supportOf(
     && (node.props?.mode ?? "SHARPNESS") !== "SHARPNESS"
     && registry.has(node.type)
   ) return "bounded-approximation";
+  // Bake state belongs to a modifier instance, not its shared node group.
+  // Exactness therefore requires either a confirmed unbaked/live state or one
+  // complete portable snapshot for this exact modifier/node tuple.
+  if (node.type === "GeometryNodeBake" && registry.has(node.type)) {
+    if (context.bakeStates !== undefined) {
+      const state = findBakeInstanceState(context.bakeStates, groupName, node);
+      if (state?.status === "unbaked") return "handler";
+      if (state && hasCompleteBakeStateSnapshotCoverage(node, state)) return "handler";
+      return "bounded-approximation";
+    }
+    // Reusable group assets have no modifier owner. Retain explicitly attached
+    // legacy snapshots, but never infer that a missing cache means unbaked.
+    return hasCompleteBakeSnapshot(node) ? "handler" : "bounded-approximation";
+  }
   // Import STL is portable only when extraction embedded the exact authored
   // triangle payload. A registered handler must not turn a missing local file
   // into a false static support claim.
   if (node.type === "GeometryNodeImportSTL" && !hasEmbeddedStlPayload(node))
     return "unsupported";
+  if (RUNTIME_CONDITIONAL_NODE_TYPES.has(node.type) && registry.has(node.type))
+    return "runtime-conditional";
   if (BOUNDED_APPROXIMATION_NODE_TYPES.has(node.type) && registry.has(node.type))
     return "bounded-approximation";
   if (registry.has(node.type)) return "handler";
@@ -118,6 +163,7 @@ export function analyzeProgramCapabilities(
   program: Program,
   rootGroup: string,
   registry: HandlerRegistry = REGISTRY,
+  context: ProgramCapabilityContext = {},
 ): ProgramCapabilityReport {
   const staticallyReachableGroups = new Set<string>();
   const groupStack = [rootGroup];
@@ -149,7 +195,7 @@ export function analyzeProgramCapabilities(
     reachableGroups.push(current.group);
 
     for (const node of group.nodes ?? []) {
-      const support = supportOf(node, registry, current.group);
+      const support = supportOf(node, registry, current.group, context);
       const bySupport = counts.get(node.type) ?? new Map<NodeSupport, number>();
       bySupport.set(support, (bySupport.get(support) ?? 0) + 1);
       counts.set(node.type, bySupport);
@@ -182,6 +228,10 @@ export function analyzeProgramCapabilities(
     .filter((entry) => entry.support === "bounded-approximation")
     .map(({ type, count }) => ({ type, count }))
     .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));
+  const runtimeConditionalNodeTypes = nodeTypes
+    .filter((entry) => entry.support === "runtime-conditional")
+    .map(({ type, count }) => ({ type, count }))
+    .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));
 
   return {
     rootGroup,
@@ -189,10 +239,12 @@ export function analyzeProgramCapabilities(
     missingGroups,
     nodeTypes,
     unsupportedNodeTypes,
+    runtimeConditionalNodeTypes,
     approximatedNodeTypes,
     portable: missingGroups.length === 0 && unsupportedNodeTypes.length === 0,
     exact: missingGroups.length === 0
       && unsupportedNodeTypes.length === 0
+      && runtimeConditionalNodeTypes.length === 0
       && approximatedNodeTypes.length === 0,
   };
 }

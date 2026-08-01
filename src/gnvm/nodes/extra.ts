@@ -19,11 +19,18 @@ import {
   vnorm,
 } from "../core";
 import { Geometry, Mesh, mergeMeshInto, ownAttributeData, realizeInstances, rotateEulerXYZ, Spline, buildTopology, triangulateFaceIndices, setUniformFaceSharpness } from "../geometry";
-import { bakeSnapshotValue } from "../bake-snapshot";
+import {
+  bakeSnapshotAtFrame,
+  bakeSnapshotValue,
+  bakeStatesOfModifier,
+  findBakeInstanceState,
+  hasCompleteBakeSnapshot,
+} from "../bake-snapshot";
 import { fillCurves, meshEdgesToChains, splineLength, splineSegments, splineFrames } from "../curves";
 import { makeFieldCtx } from "../evaluator";
 import {
   ClosureValue,
+  DUMP_CONTEXT,
   EMPTY_CLOSURE,
   recordApproximation,
   reg,
@@ -1127,25 +1134,40 @@ reg("ShaderNodeVectorRotate", (api) => {
   };
 });
 
-// Bake is an evaluation cache boundary; live browser evaluation passes every
-// dynamic item through unchanged. Persistent Blender bake/cache semantics are
-// intentionally classified as bounded by the capability layer.
+// Bake is an evaluation cache boundary owned by a modifier instance. A live
+// pass-through is exact only when extraction explicitly observed it unbaked;
+// packed/disk/unknown caches require a complete portable snapshot.
 reg("GeometryNodeBake", (api) => {
+  const hasModifierContext = Boolean(DUMP_CONTEXT.activeModifier);
+  const state = findBakeInstanceState(
+    bakeStatesOfModifier(DUMP_CONTEXT.activeModifier),
+    api.group,
+    api.node,
+  );
+  // A node-level snapshot predates modifier-instance metadata. It remains
+  // usable for standalone group assets, but is unsafe for shared modifiers.
+  const snapshot = bakeSnapshotAtFrame(state, DUMP_CONTEXT.frame)
+    ?? (hasModifierContext ? undefined : api.node.bake_snapshot);
+  const completeSnapshot = hasCompleteBakeSnapshot(api.node, snapshot);
+  const exactLivePassthrough = state?.status === "unbaked";
   const outputs: Record<string, SockVal> = {};
-  let usedSnapshot = false;
   for (const output of api.node.outputs) {
     if (!output.identifier || output.identifier === "__extend__") continue;
-    const snapshot = bakeSnapshotValue(api.node, output.identifier);
-    if (snapshot) {
-      outputs[output.identifier] = snapshot.value;
-      usedSnapshot = true;
+    const restored = exactLivePassthrough
+      ? null
+      : bakeSnapshotValue(api.node, output.identifier, snapshot);
+    if (restored) {
+      outputs[output.identifier] = restored.value;
       continue;
     }
     const input = api.node.inputs.find((socket) =>
       socket.identifier === output.identifier);
     if (input) outputs[output.identifier] = api.input(input.identifier);
   }
-  if (!usedSnapshot) recordApproximation(api.node.type);
+  // Partial snapshots may preserve some authored cached values, but their
+  // live fallbacks do not represent one coherent Blender bake.
+  if (!exactLivePassthrough && !completeSnapshot)
+    recordApproximation(api.node.type);
   return outputs;
 });
 

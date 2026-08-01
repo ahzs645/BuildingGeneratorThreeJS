@@ -1,9 +1,11 @@
 """Dump geometry node trees, objects, and materials from a .blend to JSON."""
 import bpy
 import base64
+import ctypes
 import hashlib
 import json
 import os
+import re
 import struct
 import sys
 
@@ -116,6 +118,245 @@ def apply_font_override():
 
 apply_font_override()
 
+
+_BLENDER_BAKE_META_FILE = re.compile(r"^-?\d+_\d+\.json$")
+
+
+class _NodesModifierBake43(ctypes.Structure):
+    """Stable DNA prefix used only to detect Blender 4.3-5.x packed bakes.
+
+    Blender deliberately does not expose the packed pointer through RNA. The
+    layout below is the public NodesModifierBake DNA layout in Blender 4.3
+    through 5.x. Version and bake-id checks keep newer/unknown ABIs on the
+    conservative ``unknown`` path instead of guessing.
+    """
+
+    _fields_ = [
+        ("bake_id", ctypes.c_int),
+        ("flag", ctypes.c_uint32),
+        ("bake_mode", ctypes.c_uint8),
+        ("bake_target", ctypes.c_int8),
+        ("_pad", ctypes.c_char * 6),
+        ("directory", ctypes.c_void_p),
+        ("frame_start", ctypes.c_int),
+        ("frame_end", ctypes.c_int),
+        ("data_blocks_num", ctypes.c_int),
+        ("active_data_block", ctypes.c_int),
+        ("data_blocks", ctypes.c_void_p),
+        ("packed", ctypes.c_void_p),
+    ]
+
+
+class _NodesModifierBakeFile(ctypes.Structure):
+    _fields_ = [
+        ("name", ctypes.c_char_p),
+        ("packed_file", ctypes.c_void_p),
+    ]
+
+
+class _NodesModifierPackedBake(ctypes.Structure):
+    _fields_ = [
+        ("meta_files_num", ctypes.c_int),
+        ("blob_files_num", ctypes.c_int),
+        ("meta_files", ctypes.POINTER(_NodesModifierBakeFile)),
+        ("blob_files", ctypes.POINTER(_NodesModifierBakeFile)),
+    ]
+
+
+def bake_frame_from_meta_name(name):
+    if not isinstance(name, str) or not _BLENDER_BAKE_META_FILE.match(name):
+        return None
+    try:
+        return float(name[:-5].replace("_", "."))
+    except ValueError:
+        return None
+
+
+def packed_bake_frames(bake):
+    """Read only packed metadata filenames; Blender's blob payload stays opaque."""
+    if packed_bake_presence(bake) is not True:
+        return []
+    try:
+        raw = _NodesModifierBake43.from_address(bake.as_pointer())
+        packed = _NodesModifierPackedBake.from_address(raw.packed)
+        if packed.meta_files_num < 0 or packed.meta_files_num > 100000:
+            return None
+        frames = []
+        for index in range(packed.meta_files_num):
+            raw_name = packed.meta_files[index].name
+            name = raw_name.decode("utf-8") if raw_name else ""
+            frame = bake_frame_from_meta_name(name)
+            if frame is None:
+                return None
+            frames.append(frame)
+        return sorted(set(frames))
+    except Exception:
+        return None
+
+
+def disk_bake_frames(resolved_root):
+    if not resolved_root:
+        return []
+    meta_dir = os.path.join(resolved_root, "meta")
+    try:
+        if not os.path.isdir(meta_dir):
+            return []
+        frames = []
+        with os.scandir(meta_dir) as entries:
+            for entry in entries:
+                if not entry.is_file():
+                    continue
+                frame = bake_frame_from_meta_name(entry.name)
+                if frame is not None:
+                    frames.append(frame)
+        return sorted(set(frames))
+    except OSError:
+        return None
+
+
+def packed_bake_presence(bake):
+    """Return True/False when this Blender ABI can prove packed-cache state."""
+    version = tuple(bpy.app.version[:2])
+    # Packed Geometry Nodes bakes were added to DNA in Blender 4.3. Older
+    # versions can only recover bake data from disk.
+    if version < (4, 3):
+        return False
+    # Do not read private memory after the last layout verified above.
+    if version >= (6, 0):
+        return None
+    try:
+        raw = _NodesModifierBake43.from_address(bake.as_pointer())
+        if raw.bake_id != int(bake.bake_id):
+            return None
+        return bool(raw.packed)
+    except Exception:
+        return None
+
+
+def bake_disk_root(obj, modifier, bake):
+    """Resolve Blender's BakePath root for one modifier-instance bake."""
+    if bool(getattr(bake, "use_custom_path", False)):
+        authored_root = str(getattr(bake, "directory", "") or "")
+    else:
+        modifier_root = str(getattr(modifier, "bake_directory", "") or "")
+        authored_root = os.path.join(modifier_root, str(int(bake.bake_id))) if modifier_root else ""
+    if not authored_root:
+        return authored_root, None
+    try:
+        return authored_root, bpy.path.abspath(
+            authored_root,
+            library=getattr(obj, "library", None),
+        )
+    except Exception:
+        return authored_root, None
+
+
+def disk_bake_presence(resolved_root):
+    """Return True/False/None for a usable Blender BakePath meta directory."""
+    if not resolved_root:
+        return False
+    meta_dir = os.path.join(resolved_root, "meta")
+    try:
+        if not os.path.isdir(meta_dir):
+            return False
+        with os.scandir(meta_dir) as entries:
+            return any(
+                entry.is_file() and _BLENDER_BAKE_META_FILE.match(entry.name)
+                for entry in entries
+            )
+    except OSError:
+        return None
+
+
+def dump_modifier_bake_states(obj, modifier):
+    """Describe effective Bake-node cache state for this modifier instance."""
+    states = []
+    for bake in getattr(modifier, "bakes", []):
+        node = getattr(bake, "node", None)
+        if node is None or getattr(node, "bl_idname", "") != "GeometryNodeBake":
+            continue
+        packed = packed_bake_presence(bake)
+        authored_root, resolved_root = bake_disk_root(obj, modifier, bake)
+        authored_target = str(getattr(bake, "bake_target", "INHERIT"))
+        modifier_target = str(getattr(modifier, "bake_target", "DISK"))
+        effective_target = modifier_target if authored_target == "INHERIT" else authored_target
+        # A DISK target with no inspectable root is not proof of an unbaked
+        # node: older/default-location files or an unreadable external cache
+        # may still exist. Keep that state conservative.
+        on_disk = (
+            None
+            if effective_target == "DISK" and resolved_root is None
+            else disk_bake_presence(resolved_root)
+        )
+        if packed is True:
+            status = "packed"
+            reason = (
+                "Blender's packed cache was detected, but no validated "
+                "portable output snapshot was exported."
+            )
+        elif on_disk is True:
+            status = "disk-backed"
+            reason = (
+                "Blender's disk cache was detected, but no validated portable "
+                "output snapshot was exported."
+            )
+        elif packed is False and on_disk is False:
+            # This is Blender's effective live state: no packed payload and no
+            # frame metadata that try_find_baked_data can load from disk.
+            status = "unbaked"
+            reason = None
+        else:
+            status = "unknown"
+            reason = (
+                "Blender's packed-cache ABI or disk bake directory could not "
+                "be inspected safely."
+            )
+        state = {
+            "bake_id": int(bake.bake_id),
+            "node_group": node.id_data.name,
+            "node": node.name,
+            "status": status,
+            "bake_target": effective_target,
+            "bake_mode": str(getattr(bake, "bake_mode", "ANIMATION")),
+        }
+        if state["bake_mode"] == "STILL":
+            state["frame_start"] = int(bpy.context.scene.frame_current)
+            state["frame_end"] = int(bpy.context.scene.frame_current)
+        elif bool(getattr(bake, "use_custom_simulation_frame_range", False)):
+            state["frame_start"] = int(bake.frame_start)
+            state["frame_end"] = int(bake.frame_end)
+        else:
+            state["frame_start"] = int(bpy.context.scene.frame_start)
+            state["frame_end"] = int(bpy.context.scene.frame_end)
+        if authored_root:
+            state["directory"] = authored_root
+        if reason:
+            state["reason"] = reason
+        if status in ("packed", "disk-backed"):
+            frames = (
+                packed_bake_frames(bake)
+                if status == "packed"
+                else disk_bake_frames(resolved_root)
+            )
+            if state["bake_mode"] == "STILL" and frames is not None and len(frames) == 1:
+                state["frame_start"] = frames[0]
+                state["frame_end"] = frames[0]
+            snapshots, snapshot_reason = extract_modifier_bake_snapshots(
+                obj,
+                modifier,
+                bake,
+                frames,
+            )
+            if snapshots:
+                state["snapshots"] = snapshots
+                if len(snapshots) == 1:
+                    state["snapshot"] = snapshots[0]
+                state.pop("reason", None)
+            elif snapshot_reason:
+                state["reason"] = snapshot_reason
+        states.append(state)
+    return states
+
 def socket_value(sock):
     try:
         if not hasattr(sock, "default_value"):
@@ -166,6 +407,167 @@ def dump_mesh_attributes(mesh, include_uv=False):
             "data": [[float(item.uv[0]), float(item.uv[1]), 0.0] for item in active_uv.data],
         }
     return attrs
+
+
+def mesh_only_bake_output_contract(obj, modifier, bake):
+    """Prove the narrow geometry-set shape we can serialize without guessing.
+
+    Blender's evaluated-object API exposes only a mesh, not the full Geometry
+    Set. For now exact automatic extraction is limited to a root-level Bake
+    whose every item is the modifier's original mesh geometry directly from
+    Group Input and whose modifier has no enabled predecessor. Curves,
+    instances, point clouds, grease pencil, volumes, nested/ambiguous paths,
+    and literal items remain bounded until Blender exposes those cached values.
+    """
+    node = getattr(bake, "node", None)
+    if (
+        node is None
+        or obj.type != "MESH"
+        or node.id_data != modifier.node_group
+        or obj.name not in bpy.context.view_layer.objects
+    ):
+        return False
+    enabled_before = []
+    for candidate in obj.modifiers:
+        if candidate == modifier:
+            break
+        if bool(getattr(candidate, "show_viewport", True)):
+            enabled_before.append(candidate)
+    if enabled_before:
+        return False
+    geometry_inputs = [
+        item for item in modifier.node_group.interface.items_tree
+        if item.item_type == "SOCKET"
+        and item.in_out == "INPUT"
+        and item.socket_type == "NodeSocketGeometry"
+    ]
+    if len(geometry_inputs) != 1:
+        return False
+    concrete_outputs = [
+        output for output in node.outputs
+        if output.identifier and output.identifier != "__extend__"
+    ]
+    if not concrete_outputs or any(output.bl_idname != "NodeSocketGeometry" for output in concrete_outputs):
+        return False
+    for output in concrete_outputs:
+        source_input = next(
+            (item for item in node.inputs if item.identifier == output.identifier),
+            None,
+        )
+        if source_input is None or len(source_input.links) != 1:
+            return False
+        link = source_input.links[0]
+        if (
+            link.from_node.bl_idname != "NodeGroupInput"
+            or link.from_socket.identifier != geometry_inputs[0].identifier
+        ):
+            return False
+    return True
+
+
+def snapshot_mesh_payload(mesh):
+    payload = {
+        "positions": [[float(value) for value in vertex.co] for vertex in mesh.vertices],
+        "edges": [[int(edge.vertices[0]), int(edge.vertices[1])] for edge in mesh.edges],
+        "faces": [[int(index) for index in polygon.vertices] for polygon in mesh.polygons],
+        "face_material": [int(polygon.material_index) for polygon in mesh.polygons],
+        "material_slots": [material.name if material else None for material in mesh.materials],
+    }
+    attributes = dump_mesh_attributes(mesh, include_uv=True)
+    if "sharp_face" not in attributes and any(not polygon.use_smooth for polygon in mesh.polygons):
+        attributes["sharp_face"] = {
+            "domain": "FACE",
+            "data": [1.0 if not polygon.use_smooth else 0.0 for polygon in mesh.polygons],
+        }
+    if "sharp_edge" not in attributes and any(
+        bool(getattr(edge, "use_edge_sharp", False)) for edge in mesh.edges
+    ):
+        attributes["sharp_edge"] = {
+            "domain": "EDGE",
+            "data": [
+                1.0 if bool(getattr(edge, "use_edge_sharp", False)) else 0.0
+                for edge in mesh.edges
+            ],
+        }
+    if attributes:
+        payload["attributes"] = attributes
+    return payload
+
+
+def extract_modifier_bake_snapshots(obj, modifier, bake, frames):
+    """Evaluate safe cached geometry outputs through a temporary group route."""
+    if frames is None:
+        return [], "Bake metadata frame names could not be decoded safely."
+    if not frames:
+        return [], "No cached Bake frames were available for portable extraction."
+    if not mesh_only_bake_output_contract(obj, modifier, bake):
+        return [], (
+            "Blender does not expose complete cached Geometry Sets through RNA. "
+            "Automatic snapshots currently require a root-level, mesh-only Bake "
+            "fed directly by the modifier's sole Geometry input."
+        )
+    tree = modifier.node_group
+    node = bake.node
+    group_output = next(
+        (candidate for candidate in tree.nodes
+         if candidate.bl_idname == "NodeGroupOutput" and candidate.is_active_output),
+        None,
+    )
+    target = next(
+        (socket for socket in group_output.inputs if socket.bl_idname == "NodeSocketGeometry"),
+        None,
+    ) if group_output else None
+    outputs = [
+        output for output in node.outputs
+        if output.identifier and output.identifier != "__extend__"
+    ]
+    if target is None:
+        return [], "The modifier group has no Geometry output for evaluated cache extraction."
+    original_sources = [link.from_socket for link in target.links]
+    original_frame = bpy.context.scene.frame_current
+    original_subframe = bpy.context.scene.frame_subframe
+    snapshots_by_frame = {
+        frame: {
+            "schema_version": 2,
+            "source": "blender-evaluated",
+            "frame": frame,
+            "items": {},
+        }
+        for frame in frames
+    }
+    try:
+        for output in outputs:
+            for link in list(target.links):
+                tree.links.remove(link)
+            tree.links.new(output, target)
+            for frame in frames:
+                whole_frame = int(frame // 1)
+                bpy.context.scene.frame_set(whole_frame, subframe=float(frame - whole_frame))
+                obj.update_tag()
+                bpy.context.view_layer.update()
+                depsgraph = bpy.context.evaluated_depsgraph_get()
+                depsgraph.update()
+                evaluated = obj.evaluated_get(depsgraph)
+                mesh = evaluated.to_mesh()
+                try:
+                    snapshots_by_frame[frame]["items"][output.identifier] = {
+                        "socket_type": "NodeSocketGeometry",
+                        "value_contract": "geometry-set",
+                        "geometry": {"mesh": snapshot_mesh_payload(mesh)},
+                    }
+                finally:
+                    evaluated.to_mesh_clear()
+    except Exception as error:
+        return [], f"Blender evaluated Bake snapshot extraction failed: {error!r}"
+    finally:
+        for link in list(target.links):
+            tree.links.remove(link)
+        for source in original_sources:
+            tree.links.new(source, target)
+        bpy.context.scene.frame_set(original_frame, subframe=original_subframe)
+        obj.update_tag()
+        bpy.context.view_layer.update()
+    return [snapshots_by_frame[frame] for frame in frames], None
 
 def dump_node(node):
     def socket_meta(socket):
@@ -1050,6 +1452,12 @@ for obj in bpy.data.objects:
                 m["matrix_inverse"] = matrix_float32_json(mod.matrix_inverse)
         if mod.type == "NODES" and mod.node_group:
             m["node_group"] = mod.node_group.name
+            # Bake caches belong to the modifier instance, even when several
+            # objects share the same root/nested node groups. Never infer this
+            # state from the shared GeometryNodeBake node dump.
+            bake_states = dump_modifier_bake_states(obj, mod)
+            if bake_states:
+                m["bake_states"] = bake_states
             if target_object is None or obj.name == target_object or obj.name in dependency_object_names:
                 trees_to_dump[mod.node_group.name] = mod.node_group
             # modifier input overrides
@@ -1630,7 +2038,7 @@ def build_extraction_metadata(payload):
 
     return {
         "schema_version": 1,
-        "extractor": {"name": "tools/dump_blend.py", "version": "1.6", "blender_version": bpy.app.version_string},
+        "extractor": {"name": "tools/dump_blend.py", "version": "1.8", "blender_version": bpy.app.version_string},
         "source": source,
         "roots": {"objects": roots, "node_groups": root_groups},
         "provenance": {

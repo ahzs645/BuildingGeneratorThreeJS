@@ -1,11 +1,14 @@
 import {
   analyzeProgramCapabilities,
+  REGISTRY,
   type DataRef,
   type Dump,
   type DumpInterfaceItem,
+  type DumpModifierBakeState,
   type ProgramCapabilityReport,
   type RunDetail,
 } from "../gnvm";
+import { resolveObjectDependencyOrder } from "../gnvm/dependency-metadata";
 
 export type BlendStudioRuntimeDetailSummary = {
   warningCount: number;
@@ -84,6 +87,25 @@ export type BlendStudioCompatibility = {
   gaps: string[];
 };
 
+export type BlendStudioApproximationCount = {
+  type: string;
+  count: number;
+};
+
+/** Canonical warning-chip text shared by static compatibility and live runs. */
+export function boundedApproximationBadgeLabel(
+  entry: BlendStudioApproximationCount,
+): string {
+  return `Bounded approximation · ${entry.type} ×${entry.count}`;
+}
+
+/** Static warning for nodes whose evaluated inputs decide exactness. */
+export function runtimeConditionalBadgeLabel(
+  entry: BlendStudioApproximationCount,
+): string {
+  return `Runtime-conditional · ${entry.type} ×${entry.count}`;
+}
+
 export type BlendStudioAutoEvaluationPolicy = {
   enabled: boolean;
   reason: string;
@@ -130,17 +152,42 @@ export function executedGeometryNodeRootsForBlendStudioTarget(
   dump: Dump,
   target: BlendStudioTarget,
 ): string[] {
-  if (target.kind === "group") return [target.groupName];
+  return executedGeometryNodeModifiersForBlendStudioTarget(dump, target)
+    .map(({ root }) => root);
+}
+
+function executedGeometryNodeModifiersForBlendStudioTarget(
+  dump: Dump,
+  target: BlendStudioTarget,
+): { root: string; bakeStates?: DumpModifierBakeState[] }[] {
+  if (target.kind === "group") return [{ root: target.groupName }];
   const object = objectForTarget(dump, target);
-  if (!object) return [target.groupName];
-  return (object.modifiers ?? [])
+  if (!object) return [{ root: target.groupName, bakeStates: [] }];
+  const targetModifiers = (object.modifiers ?? [])
     .slice(0, target.modifierIndex + 1)
     .flatMap((modifier) =>
       modifier.type === "NODES"
         && modifier.node_group
         && (modifier.show_viewport !== false || modifier === object.modifiers?.[target.modifierIndex])
-        ? [modifier.node_group]
+        ? [{ root: modifier.node_group, bakeStates: modifier.bake_states ?? [] }]
         : []);
+  // runGenerator cooks referenced Object Info dependencies before the target
+  // stack. Include the same modifier-instance closures here so a packed or
+  // unknown Bake in a dependency cannot disappear from the Studio warning UI.
+  const dependencyNames = [...new Set(targetModifiers.flatMap(({ root }) =>
+    resolveObjectDependencyOrder(dump, root, object.name)))];
+  const dependencyModifiers = dependencyNames.flatMap((name) => {
+    const dependency = dump.objects?.find((candidate) => candidate.name === name);
+    const modifier = dependency?.modifiers?.find((candidate) =>
+      candidate.type === "NODES"
+      && candidate.node_group
+      && candidate.show_viewport !== false
+      && Boolean(dump.node_groups[candidate.node_group]));
+    return modifier?.node_group
+      ? [{ root: modifier.node_group, bakeStates: modifier.bake_states ?? [] }]
+      : [];
+  });
+  return [...dependencyModifiers, ...targetModifiers];
 }
 
 /**
@@ -222,8 +269,9 @@ export function aggregateCapabilityReportForBlendStudioTarget(
   dump: Dump,
   target: BlendStudioTarget,
 ): ProgramCapabilityReport {
-  const roots = executedGeometryNodeRootsForBlendStudioTarget(dump, target);
-  const reports = roots.map((root) => analyzeProgramCapabilities(dump.node_groups, root));
+  const roots = executedGeometryNodeModifiersForBlendStudioTarget(dump, target);
+  const reports = roots.map(({ root, bakeStates }) =>
+    analyzeProgramCapabilities(dump.node_groups, root, REGISTRY, { bakeStates }));
   const nodeCounts = new Map<string, ProgramCapabilityReport["nodeTypes"][number]>();
   for (const report of reports) {
     for (const entry of report.nodeTypes) {
@@ -244,6 +292,10 @@ export function aggregateCapabilityReportForBlendStudioTarget(
     .filter((entry) => entry.support === "bounded-approximation")
     .map(({ type, count }) => ({ type, count }))
     .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));
+  const runtimeConditionalNodeTypes = nodeTypes
+    .filter((entry) => entry.support === "runtime-conditional")
+    .map(({ type, count }) => ({ type, count }))
+    .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));
   const missingGroups = reports.flatMap((report) => report.missingGroups);
   const stackIssues = modifierStackIssuesForBlendStudioTarget(dump, target);
   return {
@@ -253,10 +305,12 @@ export function aggregateCapabilityReportForBlendStudioTarget(
     missingGroups,
     nodeTypes,
     unsupportedNodeTypes,
+    runtimeConditionalNodeTypes,
     approximatedNodeTypes,
     portable: !missingGroups.length && !unsupportedNodeTypes.length && !stackIssues.length,
     exact: !missingGroups.length
       && !unsupportedNodeTypes.length
+      && !runtimeConditionalNodeTypes.length
       && !approximatedNodeTypes.length
       && !stackIssues.length,
   };
@@ -524,8 +578,8 @@ export function compatibilityForBlendStudioTarget(
     score,
     gaps: [
       ...report.unsupportedNodeTypes.map((entry) => `${entry.type} ×${entry.count}`),
-      ...report.approximatedNodeTypes.map((entry) =>
-        `Bounded approximation · ${entry.type} ×${entry.count}`),
+      ...report.runtimeConditionalNodeTypes.map(runtimeConditionalBadgeLabel),
+      ...report.approximatedNodeTypes.map(boundedApproximationBadgeLabel),
       ...report.missingGroups.map((entry) => `Missing group ${entry.group}`),
       ...stackIssues.map((entry) =>
         `Unsupported modifier ${entry.modifierType} at stack position ${entry.modifierIndex + 1} · ${entry.reason}`),
@@ -711,7 +765,10 @@ export function autoEvaluationPolicyForBlendStudioTarget(
       reason: `${report.unsupportedNodeTypes.length} unsupported ${report.unsupportedNodeTypes.length === 1 ? "node type requires" : "node types require"} explicit preview`,
     };
   }
-  const resourceBounded = report.approximatedNodeTypes.filter((entry) =>
+  const resourceBounded = [
+    ...report.approximatedNodeTypes,
+    ...report.runtimeConditionalNodeTypes,
+  ].filter((entry) =>
     entry.type === "GeometryNodeGridToMesh"
     || entry.type === "GeometryNodeMeshToSDFGrid"
     || entry.type === "GeometryNodePointsToSDFGrid"
@@ -764,6 +821,12 @@ export function autoEvaluationPolicyForBlendStudioTarget(
     return {
       enabled: true,
       reason: "Live evaluation enabled with reported bounded approximations",
+    };
+  }
+  if (report.runtimeConditionalNodeTypes.length) {
+    return {
+      enabled: true,
+      reason: "Live evaluation enabled; evaluated inputs determine exact versus bounded execution",
     };
   }
   return {

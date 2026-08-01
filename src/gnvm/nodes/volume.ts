@@ -349,7 +349,6 @@ function boundedVolumeResolution(
 export const boundedVolumeResolutionForTest = boundedVolumeResolution;
 
 reg("GeometryNodeVolumeCube", (api) => {
-  recordApproximation("GeometryNodeVolumeCube");
   const min = api.vec("Min");
   const max = api.vec("Max");
   const requested: Vec3 = [
@@ -406,6 +405,11 @@ reg("GeometryNodeVolumeCube", (api) => {
     budgetAdjusted: layout.budgetAdjusted,
     sampleBudget: layout.sampleBudget,
   };
+  // The dense representation preserves Blender's authored lattice exactly
+  // while it fits the configured allocation ceiling. Only the safety-budget
+  // stride changes node semantics; do not report every Volume Cube execution
+  // as approximate when no coarsening occurred.
+  if (layout.budgetAdjusted) recordApproximation("GeometryNodeVolumeCube");
   volumeGridDiagnosticSink?.({
     stage: "volume-cube",
     background,
@@ -1586,15 +1590,30 @@ reg("GeometryNodeGridToMesh", (api) => {
 });
 
 reg("GeometryNodeVolumeToMesh", (api) => {
-  recordApproximation("GeometryNodeVolumeToMesh");
   const volume = api.input("Volume");
-  if (!isVolumeGrid(volume)) return { Mesh: new Geometry() };
+  if (!isVolumeGrid(volume)) {
+    // Native Blender volume components are not yet portable SockVals. An
+    // empty fallback is necessarily approximate even when an upstream missing
+    // handler has already reported its own coverage gap.
+    recordApproximation("GeometryNodeVolumeToMesh");
+    return { Mesh: new Geometry() };
+  }
 
   const sampleSpacing = Math.max(...volume.voxelSize);
   const resolutionMode = api.str("Resolution Mode").toUpperCase();
+  const amountMode = resolutionMode === "AMOUNT" || resolutionMode === "VOXEL AMOUNT";
+  const supportedResolutionMode = resolutionMode === "GRID" || resolutionMode === "SIZE" || amountMode;
+  // Blender's Volume to Mesh Amount mode defines the approximate resolution
+  // along the longest active-grid dimension (not its diagonal). For a dense
+  // Volume Cube the authored min/max are the active bounds, so amount 20 over
+  // [-1, 1]^3 produces the observed 0.1 world-space voxel size.
+  const amountSpacing = Math.max(...volume.max.map((maximum, axis) =>
+    Math.abs(maximum - volume.min[axis]))) / Math.max(1, api.num("Voxel Amount"));
   const requestedSpacing = resolutionMode === "SIZE"
     ? Math.max(1e-6, api.num("Voxel Size") || sampleSpacing)
-    : sampleSpacing;
+    : amountMode
+      ? Math.max(1e-6, amountSpacing || sampleSpacing)
+      : sampleSpacing;
   // OpenVDB's GridTransformer keeps the source transform's translation and
   // scales only its voxel basis. Preserve that minimum-bound origin instead of
   // re-centering the target lattice. For anisotropic grids Blender chooses the
@@ -1603,15 +1622,21 @@ reg("GeometryNodeVolumeToMesh", (api) => {
   const { values: sampledGrid, resolution, origin, spacing } = resampled;
 
   const threshold = api.num("Threshold");
-  // Zero-level SDF surfaces must reach OpenVDB verbatim: Modern Pipe's first
-  // resampled FloatGrid is native-bit-identical, and a negative epsilon loses
-  // eight vertices/faces. Keep the established sub-voxel compatibility bias
-  // for nonzero isovalues, where TPMS.016's 163^3 native OpenVDB runs vary at
-  // the boundary and the biased result remains inside Blender's observed
-  // scheduling range.
-  const isolation = threshold === 0
-    ? 0
-    : threshold - Math.max(1e-7, Math.max(...spacing) * 1e-6);
+  const requestedAdaptivity = Math.max(0, Math.min(1, api.num("Adaptivity")));
+  // Pass the authored isovalue through verbatim. Blender 5.1.2 fixtures cover
+  // both zero and nonzero thresholds, including the sparse active-grid shell;
+  // adding a compatibility epsilon moves every extracted vertex and is not the
+  // node's authored semantics even when native parallel meshing is variable.
+  const isolation = threshold;
+  // GRID/SIZE/AMOUNT zero-adaptivity extraction is supported by checked
+  // Blender/OpenVDB parity fixtures. Keep bounded status for the allocation
+  // fallback, unknown modes, and authored adaptivity, whose browser-safe dense
+  // decimator does not reproduce OpenVDB's exact collapse topology.
+  if (
+    resampled.budgetAdjusted
+    || !supportedResolutionMode
+    || requestedAdaptivity > 0
+  ) recordApproximation("GeometryNodeVolumeToMesh");
   volumeGridDiagnosticSink?.({
     stage: "volume-to-mesh",
     background: volume.background,
@@ -1625,10 +1650,19 @@ reg("GeometryNodeVolumeToMesh", (api) => {
     sampleCount: sampledGrid.length,
     sampleBudget: resampled.sampleBudget,
     budgetAdjusted: resampled.budgetAdjusted,
+    requestedAdaptivity,
+    adaptivityApplied: requestedAdaptivity > 0,
     isolation,
     values: sampledGrid,
   });
-  const mesh = surfaceNets(sampledGrid, resolution, isolation, origin, spacing);
+  const surface = surfaceNets(sampledGrid, resolution, isolation, origin, spacing);
+  // The dense batch decimator preserves a closed surface and honors the
+  // authored reduction direction, but is intentionally still reported as a
+  // bounded approximation: OpenVDB's adaptive mesher chooses a different set
+  // of collapses and mixed polygons on curved fields.
+  const mesh = requestedAdaptivity > 0
+    ? adaptSurfaceMesh(surface, requestedAdaptivity, spacing)
+    : surface;
   mesh.materialSlots = [null];
   const geometry = new Geometry();
   geometry.mesh = mesh;

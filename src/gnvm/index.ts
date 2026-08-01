@@ -80,6 +80,7 @@ export type {
   DumpMesh,
   DumpMeshAttribute,
   DumpModifier,
+  DumpModifierBakeState,
   DumpNodeGroup,
   DumpNodeEditorView,
   DumpObject,
@@ -102,11 +103,13 @@ export {
   BOUNDED_APPROXIMATION_NODE_TYPES,
   EDITOR_ONLY_NODE_TYPES,
   EVALUATOR_NATIVE_NODE_TYPES,
+  RUNTIME_CONDITIONAL_NODE_TYPES,
 } from "./capabilities";
 export type {
   MissingGroupReference,
   NodeCapabilityCount,
   NodeSupport,
+  ProgramCapabilityContext,
   ProgramCapabilityReport,
 } from "./capabilities";
 export { ensureManifold, isManifoldReady } from "./boolean";
@@ -254,6 +257,7 @@ export async function runGenerator(
   DUMP_CONTEXT.collections = dump.collections ?? [];
   DUMP_CONTEXT.images = dump.images ?? [];
   DUMP_CONTEXT.fonts = dump.fonts ?? {};
+  DUMP_CONTEXT.activeModifier = undefined;
   DUMP_CONTEXT.evaluatedObjects.clear();
   DUMP_CONTEXT.evaluatingObjects.clear();
   DUMP_CONTEXT.legacyCurvePassthroughObjects.clear();
@@ -327,6 +331,7 @@ export async function runGenerator(
         if (base) dependencyInputs[geometrySocket.identifier] = tagGeometryFingerprint(base, `base:${object.name}`);
       }
       DUMP_CONTEXT.activeObject = object;
+      DUMP_CONTEXT.activeModifier = modifier;
       DUMP_CONTEXT.evaluatingObjects.add(object.name);
       let dependencyGeometry: Geometry;
       try {
@@ -350,6 +355,7 @@ export async function runGenerator(
         DUMP_CONTEXT.evaluatedObjects.set(object.name, dependencyGeometry);
     }
     DUMP_CONTEXT.activeObject = activeObject;
+    DUMP_CONTEXT.activeModifier = undefined;
     if (opts.geometry && opts.seed) throw new Error("choose either geometry or seed, not both");
     const replacementGeometry = opts.geometry ?? opts.seed;
     let incomingGeometry = baseGeometryOf(dump, found.objectName);
@@ -357,6 +363,7 @@ export async function runGenerator(
     if (incomingGeometry) tagGeometryFingerprint(incomingGeometry, `base:${found.objectName}`);
     let geometry = new Geometry();
     for (const { modifier, index } of modifierStack) {
+      DUMP_CONTEXT.activeModifier = modifier;
       const groupName = modifier.node_group!;
       const groupDef = dump.node_groups[groupName];
       const selected = index === targetModifierIndex;
@@ -399,6 +406,7 @@ export async function runGenerator(
     };
   } finally {
     endRuntimeDetailCollection();
+    DUMP_CONTEXT.activeModifier = undefined;
     DUMP_CONTEXT.evaluatingObjects.clear();
   }
 }
