@@ -207,6 +207,17 @@ function BlenderBrushLab(): React.JSX.Element {
         <button id="surface-select" type="button">Select / move</button>
       </div>
       <p className="surface-edit-hint">Draw a stroke, then select it to move the whole shape. Click a visible control point to reshape it.</p>
+      <div className="surface-area-transform" aria-label="Drawing area transform">
+        <span>Yellow selector</span>
+        <div className="st-segmented">
+          <button id="surface-gizmo-move" className="active" type="button" title="Move drawing area (G)">Move · G</button>
+          <button id="surface-gizmo-rotate" type="button" title="Rotate drawing area (R)">Rotate · R</button>
+          <button id="surface-gizmo-scale" type="button" title="Scale drawing area (S)">Scale · S</button>
+        </div>
+        <label className="st-row surface-projection-height"><span>Projection height</span><input id="surface-projection-height" type="range" min="0.1" max="2.5" step="0.05" defaultValue="0.85" /><output id="surface-projection-height-output">0.85</output></label>
+        <button id="surface-drop-area" className="st-btn surface-drop-area" type="button">Drop / project to surface</button>
+        <small>The white source grid stays above the mesh; the yellow result is ray-projected onto it.</small>
+      </div>
       <label className="st-row"><span>Area size</span><input id="surface-area-size" type="range" min="0.6" max="4" step="0.1" defaultValue="2.4" /><output id="surface-area-size-output">2.4</output></label>
       <div className="st-btn-row st-btn-row-even">
         <button id="surface-undo" className="st-btn" type="button">Undo stroke</button>

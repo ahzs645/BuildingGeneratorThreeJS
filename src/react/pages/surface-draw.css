@@ -60,6 +60,14 @@
 .surface-target-picker > small { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.35 var(--st-mono); }
 .surface-target-pick { border-color: rgba(255,226,69,.42); color: #fff09a; }
 .surface-target-pick:hover { border-color: rgba(255,235,92,.78); background: rgba(255,222,45,.1); }
+.surface-area-transform { display: grid; gap: 7px; padding: 10px; border: 1px solid rgba(255,226,69,.32); border-radius: var(--st-r-md); background: rgba(255,222,45,.04); }
+.surface-area-transform > span { color: #fff09a; font: 600 var(--st-fs-micro)/1.2 var(--st-sans); }
+.surface-area-transform > small { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.35 var(--st-sans); }
+.surface-area-transform .st-segmented button { min-width: 0; padding-inline: 6px; font-size: 10px; }
+.surface-area-transform .surface-projection-height { grid-template-columns: 1fr 76px 34px; padding-block: 2px; }
+.surface-drop-area { border-color: rgba(122,255,112,.42); color: #caffb8; background: rgba(73,180,79,.08); }
+.surface-drop-area:hover { border-color: rgba(132,255,116,.78); background: rgba(73,180,79,.16); }
+.surface-drop-area.projected { border-color: rgba(255,232,75,.72); color: #fff18a; background: rgba(255,222,45,.12); }
 /* display:contents so the brush rows join the section's flex column directly;
    [hidden] still has to win, hence the explicit none. */
 .surface-controls { display: contents; }

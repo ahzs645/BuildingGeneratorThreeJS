@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -39,7 +40,7 @@ type NewSample = Omit<EditableCurvePoint, "id">;
 type SurfaceHit = NewSample & { target: THREE.Mesh };
 type StrokeSamples = EditableCurvePoint[];
 type CrayonLayout = { stroke: StrokeSamples; start: number; length: number };
-type DrawingArea = { center: THREE.Vector3; normal: THREE.Vector3; u: THREE.Vector3; v: THREE.Vector3; size: number };
+type DrawingArea = { center: THREE.Vector3; normal: THREE.Vector3; u: THREE.Vector3; v: THREE.Vector3; sizeU: number; sizeV: number };
 type CurveFrame = Pick<DrawingArea, "center" | "normal" | "u" | "v">;
 type WorkerReply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 type WorkerInstallReply = { ok: true; installed: string };
@@ -91,6 +92,12 @@ export function createTool(): ToolHandle {
   const clearButton = document.querySelector<HTMLButtonElement>("#surface-clear")!;
   const clearAreaButton = document.querySelector<HTMLButtonElement>("#surface-clear-area")!;
   const areaDoodleButton = document.querySelector<HTMLButtonElement>("#surface-area-doodle")!;
+  const gizmoMoveButton = document.querySelector<HTMLButtonElement>("#surface-gizmo-move")!;
+  const gizmoRotateButton = document.querySelector<HTMLButtonElement>("#surface-gizmo-rotate")!;
+  const gizmoScaleButton = document.querySelector<HTMLButtonElement>("#surface-gizmo-scale")!;
+  const projectionHeight = document.querySelector<HTMLInputElement>("#surface-projection-height")!;
+  const projectionHeightOutput = document.querySelector<HTMLOutputElement>("#surface-projection-height-output")!;
+  const dropAreaButton = document.querySelector<HTMLButtonElement>("#surface-drop-area")!;
   const areaSize = document.querySelector<HTMLInputElement>("#surface-area-size")!;
   const areaSizeOutput = document.querySelector<HTMLOutputElement>("#surface-area-size-output")!;
   const brushSelect = document.querySelector<HTMLSelectElement>("#surface-brush")!;
@@ -138,6 +145,10 @@ export function createTool(): ToolHandle {
   perspectiveCamera.position.set(6.7, -8.5, 5.6);
   flatCamera.position.set(0, 0, 10);
   const controls = new OrbitControls<THREE.Camera>(camera, canvas); controls.enableDamping = true; controls.target.set(0, 0, 0);
+  const areaAnchor = new THREE.Object3D(); areaAnchor.name = "Chrome Crayon drawing area"; scene.add(areaAnchor);
+  const areaTransform = new TransformControls(camera, canvas);
+  areaTransform.setSpace("local"); areaTransform.setSize(.72); areaTransform.enabled = false;
+  const areaTransformHelper = areaTransform.getHelper(); areaTransformHelper.visible = false; scene.add(areaTransformHelper);
   const room = new RoomEnvironment(); const pmrem = new THREE.PMREMGenerator(renderer); const envTexture = pmrem.fromScene(room, .04).texture; scene.environment = envTexture; room.dispose(); pmrem.dispose();
   scene.add(new THREE.HemisphereLight(0xe9f4ed, 0x172019, 1.6));
   const key = new THREE.DirectionalLight(0xffffff, 2.4); key.position.set(-5, -7, 9); scene.add(key);
@@ -155,11 +166,15 @@ export function createTool(): ToolHandle {
   const sigilMaterial = new THREE.MeshPhysicalMaterial({ color: 0x91c8ff, metalness: 1, roughness: .08, clearcoat: 1, clearcoatRoughness: .06, side: THREE.DoubleSide });
   const previewMaterial = new THREE.LineBasicMaterial({ color: 0xe8ffd8, depthTest: false, transparent: true, opacity: .9 });
   const selectedPreviewMaterial = new THREE.LineBasicMaterial({ color: 0xffbd59, depthTest: false, transparent: true, opacity: 1 });
-  const areaFillMaterial = new THREE.MeshBasicMaterial({ color: 0xffdd2d, depthTest: false, depthWrite: false, transparent: true, opacity: .26, side: THREE.DoubleSide });
-  const areaMaterial = new THREE.LineBasicMaterial({ color: 0xffff54, depthTest: false, transparent: true, opacity: .96 });
+  const areaGlowMaterial = new THREE.MeshBasicMaterial({ color: 0xffc400, depthTest: false, depthWrite: false, transparent: true, opacity: .34, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, toneMapped: false });
+  const areaFillMaterial = new THREE.MeshBasicMaterial({ color: 0xffff32, depthTest: false, depthWrite: false, transparent: true, opacity: .68, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, toneMapped: false });
+  const areaMaterial = new THREE.LineBasicMaterial({ color: 0xffffb0, depthTest: false, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, toneMapped: false });
+  const sourceAreaMaterial = new THREE.LineBasicMaterial({ color: 0xdce5e3, depthTest: false, transparent: true, opacity: .74 });
+  const projectionRayMaterial = new THREE.MeshBasicMaterial({ color: 0x65ff74, depthTest: false, depthWrite: false, transparent: true, opacity: .94 });
   const handleMaterial = new THREE.PointsMaterial({ color: 0xfff2c2, size: .13, sizeAttenuation: true, depthTest: false });
   const selectedHandleMaterial = new THREE.PointsMaterial({ color: 0xff713d, size: .2, sizeAttenuation: true, depthTest: false });
   const raycaster = new THREE.Raycaster(); raycaster.firstHitOnly = true;
+  const projectionRaycaster = new THREE.Raycaster(); projectionRaycaster.firstHitOnly = true;
   const curveRaycaster = new THREE.Raycaster();
   curveRaycaster.params.Line = { threshold: .12 };
   curveRaycaster.params.Points = { threshold: .17 };
@@ -170,6 +185,7 @@ export function createTool(): ToolHandle {
   let selectingArea = false;
   let selectingCurve = false;
   let drawingArea: DrawingArea | null = null;
+  let areaDropped = false;
   let targetSurfaces: TargetSurface[] = [];
   const dumps: Partial<Record<"periodic" | "crayon", Dump>> = {};
   let crayonGraphReceived = false;
@@ -187,6 +203,9 @@ export function createTool(): ToolHandle {
   let activeObjectUrl: string | null = null;
   let disposed = false;
   let curveDrag: { pointerId: number; lastSurfacePoint: THREE.Vector3 } | null = null;
+  let areaBaseSizeU = Number(areaSize.value);
+  let areaBaseSizeV = Number(areaSize.value);
+  let syncingAreaTransform = false;
 
   function evaluationWorker(): Worker {
     if (!activeWorker) {
@@ -221,6 +240,7 @@ export function createTool(): ToolHandle {
   function useCamera(next: THREE.PerspectiveCamera | THREE.OrthographicCamera): void {
     camera = next;
     controls.object = next;
+    areaTransform.camera = next;
     controls.target.set(0, 0, 0);
     controls.update();
   }
@@ -389,8 +409,7 @@ export function createTool(): ToolHandle {
     const sample = surfaceHit(event); if (!sample) return;
     if (drawingArea) {
       const delta = sample.point.clone().sub(drawingArea.center);
-      const half = drawingArea.size * .5;
-      if (Math.abs(delta.dot(drawingArea.u)) > half || Math.abs(delta.dot(drawingArea.v)) > half) return;
+      if (Math.abs(delta.dot(drawingArea.u)) > drawingArea.sizeU * .5 || Math.abs(delta.dot(drawingArea.v)) > drawingArea.sizeV * .5) return;
       sample.local = [delta.dot(drawingArea.u), delta.dot(drawingArea.v)];
     }
     const previous = activeStroke.points.at(-1);
@@ -657,15 +676,53 @@ export function createTool(): ToolHandle {
 
   function removeDrawingArea(): void {
     drawingArea = null;
+    areaDropped = false;
+    dropAreaButton.classList.remove("projected");
+    dropAreaButton.textContent = "Drop / project to surface";
+    areaTransform.detach();
+    areaTransform.enabled = false;
+    areaTransformHelper.visible = false;
     clearObject(areaRoot);
   }
 
   function renderDrawingArea(): void {
     clearObject(areaRoot);
     if (!drawingArea) return;
-    const grid = 10, samples = 18, half = drawingArea.size * .5;
+    const grid = 10, samples = 18, halfU = drawingArea.sizeU * .5, halfV = drawingArea.sizeV * .5;
+    const sourceCenter = drawingArea.center.clone().addScaledVector(drawingArea.normal, Number(projectionHeight.value));
+    const addSourceLine = (points: THREE.Vector3[]): void => {
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), sourceAreaMaterial);
+      line.renderOrder = 11; areaRoot.add(line);
+    };
+    for (let index = 0; index <= grid; index++) {
+      const x = -halfU + drawingArea.sizeU * index / grid;
+      const y = -halfV + drawingArea.sizeV * index / grid;
+      addSourceLine([
+        sourceCenter.clone().addScaledVector(drawingArea.u, x).addScaledVector(drawingArea.v, -halfV),
+        sourceCenter.clone().addScaledVector(drawingArea.u, x).addScaledVector(drawingArea.v, halfV),
+      ]);
+      addSourceLine([
+        sourceCenter.clone().addScaledVector(drawingArea.u, -halfU).addScaledVector(drawingArea.v, y),
+        sourceCenter.clone().addScaledVector(drawingArea.u, halfU).addScaledVector(drawingArea.v, y),
+      ]);
+    }
+    const rayStart = sourceCenter.clone().addScaledVector(drawingArea.normal, .35);
+    const rayEnd = drawingArea.center.clone().addScaledVector(drawingArea.normal, -.12);
+    const rayDirection = rayEnd.clone().sub(rayStart);
+    const ray = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, rayDirection.length(), 8), projectionRayMaterial);
+    ray.position.copy(rayStart).add(rayEnd).multiplyScalar(.5);
+    ray.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), rayDirection.normalize());
+    ray.renderOrder = 12; areaRoot.add(ray);
+    if (!areaDropped) return;
     const projectPoint = (x: number, y: number, offset = .02): THREE.Vector3 => {
       const guess = drawingArea!.center.clone().addScaledVector(drawingArea!.u, x).addScaledVector(drawingArea!.v, y);
+      const sourcePoint = sourceCenter.clone().addScaledVector(drawingArea!.u, x).addScaledVector(drawingArea!.v, y);
+      projectionRaycaster.set(sourcePoint.clone().addScaledVector(drawingArea!.normal, .02), drawingArea!.normal.clone().negate());
+      const hit = projectionRaycaster.intersectObjects(selectedTargetSurfaces().map((surface) => surface.mesh), false)[0];
+      if (hit?.face) {
+        const hitNormal = hit.face.normal.clone().applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld)).normalize();
+        return hit.point.clone().addScaledVector(hitNormal, offset);
+      }
       const surface = closestTargetSurface(guess);
       return (surface?.point ?? guess).addScaledVector(surface?.normal ?? drawingArea!.normal, offset);
     };
@@ -673,9 +730,9 @@ export function createTool(): ToolHandle {
     const patchPoints: THREE.Vector3[] = [];
     const patchIndices: number[] = [];
     for (let row = 0; row <= samples; row++) {
-      const y = -half + drawingArea.size * row / samples;
+      const y = -halfV + drawingArea.sizeV * row / samples;
       for (let column = 0; column <= samples; column++) {
-        const x = -half + drawingArea.size * column / samples;
+        const x = -halfU + drawingArea.sizeU * column / samples;
         patchPoints.push(projectPoint(x, y, .016));
       }
     }
@@ -688,12 +745,15 @@ export function createTool(): ToolHandle {
     }
     const patchGeometry = new THREE.BufferGeometry().setFromPoints(patchPoints);
     patchGeometry.setIndex(patchIndices);
+    const glow = new THREE.Mesh(patchGeometry.clone(), areaGlowMaterial); glow.renderOrder = 7; areaRoot.add(glow);
     const patch = new THREE.Mesh(patchGeometry, areaFillMaterial); patch.renderOrder = 8; areaRoot.add(patch);
 
     const makeLine = (constant: number, swap: boolean) => {
       const points: THREE.Vector3[] = [];
       for (let index = 0; index <= samples; index++) {
-        const variable = -half + drawingArea!.size * index / samples;
+        const variable = swap
+          ? -halfU + drawingArea!.sizeU * index / samples
+          : -halfV + drawingArea!.sizeV * index / samples;
         const x = swap ? variable : constant, y = swap ? constant : variable;
         points.push(projectPoint(x, y, .024));
       }
@@ -701,9 +761,66 @@ export function createTool(): ToolHandle {
       const line = new THREE.Line(geometry, areaMaterial); line.renderOrder = 9; areaRoot.add(line);
     };
     for (let index = 0; index <= grid; index++) {
-      const constant = -half + drawingArea.size * index / grid;
-      makeLine(constant, false); makeLine(constant, true);
+      makeLine(-halfU + drawingArea.sizeU * index / grid, false);
+      makeLine(-halfV + drawingArea.sizeV * index / grid, true);
     }
+  }
+
+  function setAreaTransformMode(mode: "translate" | "rotate" | "scale"): void {
+    areaTransform.setMode(mode);
+    gizmoMoveButton.classList.toggle("active", mode === "translate");
+    gizmoRotateButton.classList.toggle("active", mode === "rotate");
+    gizmoScaleButton.classList.toggle("active", mode === "scale");
+    if (drawingArea) setStatus(`${mode === "translate" ? "Move" : mode === "rotate" ? "Rotate" : "Scale"} the yellow selector with its viewport handles`);
+  }
+
+  function syncAreaAnchor(): void {
+    if (!drawingArea) return;
+    syncingAreaTransform = true;
+    areaAnchor.position.copy(drawingArea.center);
+    const basis = new THREE.Matrix4().makeBasis(drawingArea.u, drawingArea.v, drawingArea.normal);
+    areaAnchor.quaternion.setFromRotationMatrix(basis);
+    areaAnchor.scale.set(1, 1, 1);
+    areaBaseSizeU = drawingArea.sizeU;
+    areaBaseSizeV = drawingArea.sizeV;
+    areaTransform.attach(areaAnchor);
+    areaTransform.enabled = true;
+    areaTransformHelper.visible = true;
+    areaTransformHelper.renderOrder = 20;
+    syncingAreaTransform = false;
+  }
+
+  function updateDrawingAreaFromAnchor(): void {
+    if (!drawingArea || syncingAreaTransform) return;
+    const oldU = drawingArea.u.clone(), oldV = drawingArea.v.clone();
+    const oldCenter = drawingArea.center.clone();
+    const oldSizeU = Math.max(drawingArea.sizeU, 1e-6), oldSizeV = Math.max(drawingArea.sizeV, 1e-6);
+    const nextU = new THREE.Vector3(1, 0, 0).applyQuaternion(areaAnchor.quaternion).normalize();
+    const nextV = new THREE.Vector3(0, 1, 0).applyQuaternion(areaAnchor.quaternion).normalize();
+    const nextNormal = new THREE.Vector3(0, 0, 1).applyQuaternion(areaAnchor.quaternion).normalize();
+    const nextSizeU = Math.max(.15, areaBaseSizeU * Math.abs(areaAnchor.scale.x));
+    const nextSizeV = Math.max(.15, areaBaseSizeV * Math.abs(areaAnchor.scale.y));
+
+    const editableStrokes = [...strokes, ...(curveDocument.activeStroke ? [curveDocument.activeStroke] : [])];
+    for (const stroke of editableStrokes) for (const sample of stroke.points) {
+      const previousLocal = sample.local ?? [
+        sample.point.clone().sub(oldCenter).dot(oldU),
+        sample.point.clone().sub(oldCenter).dot(oldV),
+      ];
+      const nextLocal: [number, number] = [previousLocal[0] / oldSizeU * nextSizeU, previousLocal[1] / oldSizeV * nextSizeV];
+      const guess = areaAnchor.position.clone().addScaledVector(nextU, nextLocal[0]).addScaledVector(nextV, nextLocal[1]);
+      const surface = closestTargetSurface(guess);
+      sample.normal.copy(surface?.normal ?? nextNormal);
+      sample.point.copy(surface?.point ?? guess).addScaledVector(sample.normal, currentBrushOffset());
+      sample.local = nextLocal;
+    }
+
+    drawingArea.center.copy(areaAnchor.position);
+    drawingArea.u.copy(nextU); drawingArea.v.copy(nextV); drawingArea.normal.copy(nextNormal);
+    drawingArea.sizeU = nextSizeU; drawingArea.sizeV = nextSizeV;
+    areaSize.value = String(Math.min(4, Math.max(.6, (nextSizeU + nextSizeV) * .5)));
+    areaSizeOutput.value = `${nextSizeU.toFixed(1)} × ${nextSizeV.toFixed(1)}`;
+    renderDrawingArea(); renderPreviews(); updateMetrics(); queueEvaluation();
   }
 
   function placeDrawingArea(sample: NewSample): void {
@@ -711,13 +828,20 @@ export function createTool(): ToolHandle {
     u.addScaledVector(sample.normal, -u.dot(sample.normal)).normalize();
     if (u.lengthSq() < 1e-9) u = new THREE.Vector3(0, 1, 0).cross(sample.normal).normalize();
     const v = sample.normal.clone().cross(u).normalize();
-    drawingArea = { center: sample.point.clone(), normal: sample.normal.clone(), u, v, size: Number(areaSize.value) };
+    const initialSize = Number(areaSize.value);
+    drawingArea = { center: sample.point.clone(), normal: sample.normal.clone(), u, v, sizeU: initialSize, sizeV: initialSize };
+    areaDropped = false;
+    dropAreaButton.classList.remove("projected");
+    dropAreaButton.textContent = "Drop / project to surface";
     renderDrawingArea();
-    setStatus("Drawing area placed · draw inside the yellow patch");
+    syncAreaAnchor();
+    setAreaTransformMode("translate");
+    setStatus("Source grid placed above the mesh · adjust it, then drop it to the surface");
   }
 
   function addAreaDoodle(): void {
     if (!drawingArea) { setStatus("Select an area on the model first"); return; }
+    if (!areaDropped) { setStatus("Drop the source grid to the surface before drawing"); return; }
     // Same proportions as the verified Blender parity doodle, normalized into
     // the selected patch. The narrow Y range is what produces the long barbs.
     const shape: [number, number][] = [
@@ -727,13 +851,13 @@ export function createTool(): ToolHandle {
     const stroke: NewSample[] = [];
     for (const [x, y] of shape) {
       const guess = drawingArea.center.clone()
-        .addScaledVector(drawingArea.u, x * drawingArea.size * .5)
-        .addScaledVector(drawingArea.v, y * drawingArea.size * .5);
+        .addScaledVector(drawingArea.u, x * drawingArea.sizeU * .5)
+        .addScaledVector(drawingArea.v, y * drawingArea.sizeV * .5);
       const surface = closestTargetSurface(guess);
       stroke.push({
         point: (surface?.point ?? guess).addScaledVector(surface?.normal ?? drawingArea.normal, .055),
         normal: (surface?.normal ?? drawingArea.normal).clone(),
-        local: [x * drawingArea.size * .5, y * drawingArea.size * .5],
+        local: [x * drawingArea.sizeU * .5, y * drawingArea.sizeV * .5],
       });
     }
     curveDocument.addStroke(stroke); previewRoot.visible = true; renderPreviews(); updateMetrics(); queueEvaluation();
@@ -775,7 +899,7 @@ export function createTool(): ToolHandle {
     }
     const span = Math.max(max[0] - min[0], max[1] - min[1], 1e-9);
     const heightSpan = Math.max(max[2] - min[2], 1e-9);
-    const stampScale = (drawingArea ? drawingArea.size * .82 : Math.min(layout.length * .72, 2.6)) / span;
+    const stampScale = (drawingArea ? Math.min(drawingArea.sizeU, drawingArea.sizeV) * .82 : Math.min(layout.length * .72, 2.6)) / span;
     const centerX = (min[0] + max[0]) * .5, centerY = (min[1] + max[1]) * .5;
     const frame = drawingArea
       ? { point: drawingArea.center, tangent: drawingArea.u, lateral: drawingArea.v, normal: drawingArea.normal }
@@ -1026,6 +1150,7 @@ export function createTool(): ToolHandle {
 
   canvas.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
+    if (areaTransform.enabled && (areaTransform.dragging || areaTransform.axis !== null)) return;
     if (selectingArea) {
       const sample = surfaceHit(event, false);
       if (sample) {
@@ -1045,6 +1170,7 @@ export function createTool(): ToolHandle {
       return;
     }
     if (!drawing) return;
+    if (drawingArea && !areaDropped) { setStatus("Drop / project the source grid to the surface before drawing"); return; }
     parityPathMode = "none"; previewRoot.visible = true;
     try { canvas.setPointerCapture(event.pointerId); } catch { /* Pointer capture is optional in embedded/test browsers. */ }
     curveDocument.beginStroke(); addSample(event);
@@ -1067,6 +1193,16 @@ export function createTool(): ToolHandle {
     renderPreviews(); updateMetrics(); queueEvaluation();
   }, { signal });
   canvas.addEventListener("pointercancel", () => { curveDrag = null; curveDocument.cancelStroke(); renderPreviews(); }, { signal });
+  areaTransform.addEventListener("mouseDown", () => {
+    controls.enabled = false;
+    canvas.style.cursor = "grabbing";
+  });
+  areaTransform.addEventListener("mouseUp", () => {
+    controls.enabled = orbitButton.classList.contains("active");
+    canvas.style.cursor = selectingArea ? "cell" : selectingCurve ? "default" : drawing ? "crosshair" : "grab";
+    setStatus("Yellow selector updated · projected strokes follow its surface frame");
+  });
+  areaTransform.addEventListener("objectChange", updateDrawingAreaFromAnchor);
   fileInput.addEventListener("change", () => { const file = fileInput.files?.[0]; if (file) void loadFile(file).catch((error) => setStatus(error instanceof Error ? error.message : String(error))); }, { signal });
   targetSelect.addEventListener("change", () => {
     removeDrawingArea();
@@ -1094,9 +1230,39 @@ export function createTool(): ToolHandle {
   areaButton.addEventListener("click", () => { setMode("area"); setStatus("Click the model to place the drawing area"); }, { signal });
   clearAreaButton.addEventListener("click", () => { removeDrawingArea(); setStatus("Drawing area removed · drawing is unrestricted"); }, { signal });
   areaDoodleButton.addEventListener("click", addAreaDoodle, { signal });
+  gizmoMoveButton.addEventListener("click", () => setAreaTransformMode("translate"), { signal });
+  gizmoRotateButton.addEventListener("click", () => setAreaTransformMode("rotate"), { signal });
+  gizmoScaleButton.addEventListener("click", () => setAreaTransformMode("scale"), { signal });
+  projectionHeight.addEventListener("input", () => {
+    projectionHeightOutput.value = Number(projectionHeight.value).toFixed(2);
+    renderDrawingArea();
+    setStatus(areaDropped ? "Projection height changed · yellow result remains on the target" : "Source grid height changed · ready to drop");
+  }, { signal });
+  dropAreaButton.addEventListener("click", () => {
+    if (!drawingArea) { setMode("area"); setStatus("Click an object first to place the floating source grid"); return; }
+    areaDropped = true;
+    dropAreaButton.classList.add("projected");
+    dropAreaButton.textContent = "Projected onto surface ✓";
+    renderDrawingArea();
+    setStatus("Dropped to surface · yellow geometry is the conformed projection");
+  }, { signal });
   areaSize.addEventListener("input", () => {
     areaSizeOutput.value = Number(areaSize.value).toFixed(1);
-    if (drawingArea) { drawingArea.size = Number(areaSize.value); renderDrawingArea(); }
+    if (drawingArea) {
+      areaBaseSizeU = Number(areaSize.value); areaBaseSizeV = Number(areaSize.value);
+      areaAnchor.scale.set(1, 1, 1);
+      updateDrawingAreaFromAnchor();
+    }
+  }, { signal });
+  window.addEventListener("keydown", (event) => {
+    if (!drawingArea || event.metaKey || event.ctrlKey || event.altKey) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.matches("input, select, textarea, [contenteditable='true']")) return;
+    if (event.key.toLowerCase() === "g") setAreaTransformMode("translate");
+    else if (event.key.toLowerCase() === "r") setAreaTransformMode("rotate");
+    else if (event.key.toLowerCase() === "s") setAreaTransformMode("scale");
+    else return;
+    event.preventDefault();
   }, { signal });
   undoButton.addEventListener("click", () => { curveDocument.undo(); renderPreviews(); updateMetrics(); queueEvaluation(); }, { signal }); clearButton.addEventListener("click", clearStrokes, { signal });
   for (const input of [spacing, size]) input.addEventListener("input", () => { spacingOutput.value = Number(spacing.value).toFixed(2); sizeOutput.value = Number(size.value).toFixed(3); queueEvaluation(); }, { signal });
@@ -1170,9 +1336,11 @@ export function createTool(): ToolHandle {
       renderer.setAnimationLoop(null);
       controls.dispose();
       removeDrawingArea();
+      areaTransform.dispose();
+      scene.remove(areaTransformHelper, areaAnchor);
       clearObject(targetRoot); clearObject(brushRoot); clearObject(previewRoot); clearObject(handleRoot);
       envTexture.dispose();
-      for (const material of [targetMaterial, inactiveTargetMaterial, flatTargetMaterial, brushMaterial, chromeMaterial, sigilMaterial, previewMaterial, selectedPreviewMaterial, areaFillMaterial, areaMaterial, handleMaterial, selectedHandleMaterial]) material.dispose();
+      for (const material of [targetMaterial, inactiveTargetMaterial, flatTargetMaterial, brushMaterial, chromeMaterial, sigilMaterial, previewMaterial, selectedPreviewMaterial, areaGlowMaterial, areaFillMaterial, areaMaterial, sourceAreaMaterial, projectionRayMaterial, handleMaterial, selectedHandleMaterial]) material.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       canvas.style.cursor = "";
