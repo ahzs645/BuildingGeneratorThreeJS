@@ -3,6 +3,56 @@
    thumbnails, and the runtime's `busy` status state remain page-specific. */
 #surface-canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 .surface-shell .st-viewport { background: radial-gradient(circle at 45% 35%, #26312D, #080B0A 67%); }
+.surface-flat-overlay {
+  position: absolute; inset: 0; z-index: 3;
+  overflow: hidden; pointer-events: none; color: rgba(244,246,242,.78);
+  font: 500 12px/1 var(--st-mono); letter-spacing: .08em;
+}
+.surface-flat-overlay[hidden], .surface-brush-reticle[hidden] { display: none; }
+.surface-canvas-frame {
+  position: absolute; left: 50%; top: 50%; width: min(42vw, 430px); height: min(48vh, 400px);
+  transform: translate(-50%, -50%); opacity: .82; transition: opacity .2s ease;
+}
+.surface-canvas-frame i { position: absolute; width: 54px; height: 58px; }
+.surface-canvas-frame .top-left { left: 0; top: 0; border-left: 1px solid currentColor; border-top: 1px solid currentColor; }
+.surface-canvas-frame .top-right { right: 0; top: 0; border-right: 2px solid #d8d430; border-top: 1px solid currentColor; }
+.surface-canvas-frame .bottom-left { left: 0; bottom: 0; border-left: 1px solid currentColor; border-bottom: 2px solid #d8d430; }
+.surface-canvas-frame .bottom-right { right: 0; bottom: 0; border-right: 2px solid #d8d430; border-bottom: 2px solid #d8d430; }
+.surface-brush-reticle {
+  position: absolute; left: 50%; top: 50%; width: 88px; height: 88px;
+  transform: translate(-50%, -50%); will-change: left, top;
+}
+.surface-reticle-grid {
+  position: absolute; left: 50%; top: 50%; width: 156px; height: 156px;
+  transform: translate(-50%, -50%);
+  background-image:
+    linear-gradient(rgba(245,247,244,.25) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,247,244,.25) 1px, transparent 1px);
+  background-size: 24px 24px; mask-image: radial-gradient(circle, #000 0 58%, transparent 75%);
+}
+.surface-reticle-ring {
+  position: absolute; inset: 0; border: 3px solid rgba(20,22,21,.95); border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(244,246,242,.94), inset 0 0 0 2px rgba(244,246,242,.94), inset 0 0 0 4px rgba(20,22,21,.94);
+}
+.surface-reticle-ring::before, .surface-reticle-ring::after {
+  content: ""; position: absolute; left: 50%; top: 50%; background: rgba(245,247,244,.72); transform: translate(-50%, -50%);
+}
+.surface-reticle-ring::before { width: 1px; height: 62%; }
+.surface-reticle-ring::after { width: 62%; height: 1px; }
+.surface-brush-label {
+  position: absolute; left: 104px; top: 38px; width: 260px;
+  color: rgba(246,247,245,.76); text-shadow: 0 1px 2px rgba(0,0,0,.45); white-space: nowrap;
+}
+.surface-canvas-empty-label {
+  position: absolute; left: 50%; top: calc(50% + min(24vh, 200px) + 24px);
+  transform: translateX(-50%); color: rgba(245,247,244,.46); transition: opacity .2s ease;
+}
+.surface-flat-overlay[data-empty="false"] .surface-canvas-frame,
+.surface-flat-overlay[data-empty="false"] .surface-canvas-empty-label { opacity: 0; }
+@media (max-width: 820px) {
+  .surface-canvas-frame { width: 72vw; height: 52vh; }
+  .surface-brush-label { display: none; }
+}
 .surface-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 /* display:contents so the brush rows join the section's flex column directly;
    [hidden] still has to win, hence the explicit none. */

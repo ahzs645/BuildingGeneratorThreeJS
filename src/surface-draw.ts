@@ -34,6 +34,10 @@ type WorkerReply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: f
 type WorkerInstallReply = { ok: true; installed: string };
 
 const CRAYON_SCALE = 20;
+// Curved targets must remain visibly below the generated shell. GN output can
+// straddle its input plane, so surface projection rebases its lowest Z to this
+// clearance instead of allowing negative vertices to sink into the target.
+const SURFACE_CLEARANCE = .018;
 
 // Pure fetched/parsed brush assets may persist across remounts; everything
 // DOM/GPU/listener-bound is created fresh inside createTool().
@@ -53,6 +57,9 @@ function loadBrushAssets(): Promise<BrushAssets> {
 
 export function createTool(): ToolHandle {
   const canvas = document.querySelector<HTMLCanvasElement>("#surface-canvas")!;
+  const flatOverlay = document.querySelector<HTMLElement>("#surface-flat-overlay")!;
+  const brushReticle = document.querySelector<HTMLElement>("#surface-brush-reticle")!;
+  const brushLabel = document.querySelector<HTMLElement>("#surface-brush-label")!;
   const fileInput = document.querySelector<HTMLInputElement>("#surface-file")!;
   const fileName = document.querySelector<HTMLElement>("#surface-file-name")!;
   const status = document.querySelector<HTMLElement>("#surface-status")!;
@@ -110,9 +117,12 @@ export function createTool(): ToolHandle {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = .82;
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(40, viewport.width / viewport.height, .01, 200);
-  camera.position.set(6.7, -8.5, 5.6);
-  const controls = new OrbitControls(camera, canvas); controls.enableDamping = true; controls.target.set(0, 0, 0);
+  const perspectiveCamera = new THREE.PerspectiveCamera(40, viewport.width / viewport.height, .01, 200);
+  const flatCamera = new THREE.OrthographicCamera(-4, 4, 4, -4, .01, 200);
+  let camera: THREE.PerspectiveCamera | THREE.OrthographicCamera = perspectiveCamera;
+  perspectiveCamera.position.set(6.7, -8.5, 5.6);
+  flatCamera.position.set(0, 0, 10);
+  const controls = new OrbitControls<THREE.Camera>(camera, canvas); controls.enableDamping = true; controls.target.set(0, 0, 0);
   const room = new RoomEnvironment(); const pmrem = new THREE.PMREMGenerator(renderer); const envTexture = pmrem.fromScene(room, .04).texture; scene.environment = envTexture; room.dispose(); pmrem.dispose();
   scene.add(new THREE.HemisphereLight(0xe9f4ed, 0x172019, 1.6));
   const key = new THREE.DirectionalLight(0xffffff, 2.4); key.position.set(-5, -7, 9); scene.add(key);
@@ -123,7 +133,7 @@ export function createTool(): ToolHandle {
   const areaRoot = new THREE.Group(); scene.add(areaRoot);
   const handleRoot = new THREE.Group(); scene.add(handleRoot);
   const targetMaterial = new THREE.MeshPhysicalMaterial({ color: 0x53645b, metalness: .08, roughness: .46, clearcoat: .28, side: THREE.DoubleSide });
-  const flatTargetMaterial = new THREE.MeshPhysicalMaterial({ color: 0x18211d, metalness: 0, roughness: .94, side: THREE.DoubleSide });
+  const flatTargetMaterial = new THREE.MeshBasicMaterial({ color: 0x696d6a, side: THREE.DoubleSide });
   const brushMaterial = new THREE.MeshPhysicalMaterial({ color: 0xb9ff8c, emissive: 0x13260b, metalness: .18, roughness: .27, clearcoat: .48, side: THREE.DoubleSide });
   const chromeMaterial = new THREE.MeshPhysicalMaterial({ color: 0xb7c3c0, metalness: 1, roughness: .22, envMapIntensity: .8, side: THREE.DoubleSide });
   const sigilMaterial = new THREE.MeshPhysicalMaterial({ color: 0x91c8ff, metalness: 1, roughness: .08, clearcoat: 1, clearcoatRoughness: .06, side: THREE.DoubleSide });
@@ -144,6 +154,7 @@ export function createTool(): ToolHandle {
   let selectingCurve = false;
   let drawingArea: DrawingArea | null = null;
   const dumps: Partial<Record<"periodic" | "crayon", Dump>> = {};
+  let crayonGraphReceived = false;
   let authoredTemplate: THREE.Group | null = null;
   let requestId = 0;
   let updateTimer = 0;
@@ -189,6 +200,40 @@ export function createTool(): ToolHandle {
 
   function setStatus(message: string, busy = false): void { if (disposed) return; status.classList.toggle("busy", busy); status.lastChild!.textContent = message; }
 
+  function useCamera(next: THREE.PerspectiveCamera | THREE.OrthographicCamera): void {
+    camera = next;
+    controls.object = next;
+    controls.target.set(0, 0, 0);
+    controls.update();
+  }
+
+  function sizeCameras(width: number, height: number): void {
+    const aspect = width / height;
+    perspectiveCamera.aspect = aspect;
+    perspectiveCamera.updateProjectionMatrix();
+    const halfHeight = 4.5;
+    flatCamera.left = -halfHeight * aspect;
+    flatCamera.right = halfHeight * aspect;
+    flatCamera.top = halfHeight;
+    flatCamera.bottom = -halfHeight;
+    flatCamera.updateProjectionMatrix();
+  }
+
+  function showFlatWorkspace(show: boolean): void {
+    flatOverlay.hidden = !show;
+    if (show) {
+      brushReticle.style.left = "50%";
+      brushReticle.style.top = "50%";
+    }
+  }
+
+  function positionBrushReticle(event: PointerEvent): void {
+    if (flatOverlay.hidden) return;
+    const rect = canvas.getBoundingClientRect();
+    brushReticle.style.left = `${event.clientX - rect.left}px`;
+    brushReticle.style.top = `${event.clientY - rect.top}px`;
+  }
+
   function prepareTarget(root: THREE.Object3D, material: THREE.Material = targetMaterial): void {
     root.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
@@ -217,8 +262,9 @@ export function createTool(): ToolHandle {
 
   function demoSurface(): void {
     surfaceKind = "curved";
+    showFlatWorkspace(false);
     removeDrawingArea();
-    camera.position.set(6.7, -8.5, 5.6); controls.target.set(0, 0, 0); controls.update();
+    perspectiveCamera.position.set(6.7, -8.5, 5.6); useCamera(perspectiveCamera);
     clearObject(targetRoot);
     const geometry = new THREE.SphereGeometry(3, 96, 64);
     const position = geometry.getAttribute("position") as THREE.BufferAttribute;
@@ -233,15 +279,17 @@ export function createTool(): ToolHandle {
   }
 
   function flatSurface(): void {
-    surfaceKind = "flat"; removeDrawingArea(); clearObject(targetRoot);
-    camera.position.set(0, 0, 10); controls.target.set(0, 0, 0); controls.update();
-    const geometry = new THREE.PlaneGeometry(8, 8, 32, 32);
+    surfaceKind = "flat"; showFlatWorkspace(true); removeDrawingArea(); clearObject(targetRoot);
+    flatCamera.position.set(0, 0, 10); flatCamera.zoom = 1; useCamera(flatCamera);
+    const geometry = new THREE.PlaneGeometry(200, 200);
     const mesh = new THREE.Mesh(geometry, flatTargetMaterial); targetRoot.add(mesh); prepareTarget(targetRoot, flatTargetMaterial);
-    fileName.textContent = "Flat XY parity surface"; setStatus("Flat parity surface ready"); clearStrokes();
+    fileName.textContent = "Infinite XY drawing canvas"; setStatus("Flat canvas ready · draw anywhere"); clearStrokes();
   }
 
   async function loadTarget(url: string, ext: string, label: string, readText?: () => Promise<string>, readBuffer?: () => Promise<ArrayBuffer>): Promise<void> {
       surfaceKind = "curved";
+      showFlatWorkspace(false);
+      useCamera(perspectiveCamera);
       removeDrawingArea();
       setStatus(`Loading ${label}…`, true);
       let loaded: THREE.Object3D;
@@ -347,7 +395,7 @@ export function createTool(): ToolHandle {
       [peak, peakOutput, 10, 1],
       [sigilize, sigilizeOutput, 0, 0],
       [soften, softenOutput, 0, 0],
-      [resolution, resolutionOutput, .835, 3],
+      [resolution, resolutionOutput, .8, 3],
       [spiro, spiroOutput, 1, 0],
       [extrude, extrudeOutput, 1, 1],
     ] as const;
@@ -522,12 +570,14 @@ export function createTool(): ToolHandle {
       if (!geometry.boundsTree) return;
       const localQuery = item.worldToLocal(worldPoint.clone());
       const hit = geometry.boundsTree.closestPointToPoint(localQuery);
-      const point = item.localToWorld(hit.point.clone());
+      const localPoint = hit.point.clone();
+      const point = item.localToWorld(localPoint.clone());
       const distance = point.distanceTo(worldPoint);
       if (closest && distance >= closest.distance) return;
       let normal = point.clone().normalize();
       if (hit.faceIndex !== undefined) {
         const positions = geometry.getAttribute("position") as THREE.BufferAttribute;
+        const vertexNormals = geometry.getAttribute("normal") as THREE.BufferAttribute | undefined;
         const index = geometry.index;
         const offset = hit.faceIndex * 3;
         const a = index ? index.getX(offset) : offset;
@@ -538,7 +588,15 @@ export function createTool(): ToolHandle {
           new THREE.Vector3().fromBufferAttribute(positions, b),
           new THREE.Vector3().fromBufferAttribute(positions, c),
         );
-        normal = triangle.getNormal(new THREE.Vector3()).applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(item.matrixWorld)).normalize();
+        const barycentric = vertexNormals ? triangle.getBarycoord(localPoint, new THREE.Vector3()) : null;
+        if (vertexNormals && barycentric) {
+          normal = new THREE.Vector3().fromBufferAttribute(vertexNormals, a).multiplyScalar(barycentric.x)
+            .addScaledVector(new THREE.Vector3().fromBufferAttribute(vertexNormals, b), barycentric.y)
+            .addScaledVector(new THREE.Vector3().fromBufferAttribute(vertexNormals, c), barycentric.z);
+        } else {
+          normal = triangle.getNormal(new THREE.Vector3());
+        }
+        normal.applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(item.matrixWorld)).normalize();
       }
       closest = { point, normal, distance };
     });
@@ -608,6 +666,9 @@ export function createTool(): ToolHandle {
   function projectLocalSoup(soup: TriSoup, frame: CurveFrame): void {
     const positions = soup.positions;
     const normals = soup.normals;
+    let minHeight = Infinity;
+    for (let index = 2; index < positions.length; index += 3) minHeight = Math.min(minHeight, positions[index]);
+    if (!Number.isFinite(minHeight)) minHeight = 0;
     for (let index = 0; index < positions.length; index += 3) {
       const planePoint = frame.center.clone()
         .addScaledVector(frame.u, positions[index] / CRAYON_SCALE)
@@ -615,7 +676,8 @@ export function createTool(): ToolHandle {
       const surface = closestTargetSurface(planePoint);
       const point = surface?.point ?? planePoint;
       const normal = surface?.normal ?? frame.normal;
-      point.addScaledVector(normal, positions[index + 2] / CRAYON_SCALE);
+      const height = (positions[index + 2] - minHeight) / CRAYON_SCALE + SURFACE_CLEARANCE;
+      point.addScaledVector(normal, height);
       positions[index] = point.x;
       positions[index + 1] = point.y;
       positions[index + 2] = point.z;
@@ -699,10 +761,15 @@ export function createTool(): ToolHandle {
   function updateMetrics(): void {
     const count = curveDocument.pointCount;
     pointCount.textContent = `${count} projected point${count === 1 ? "" : "s"}`;
+    flatOverlay.dataset.empty = count === 0 ? "true" : "false";
   }
 
-  function soupMesh(soup: TriSoup, material: THREE.Material): THREE.Mesh {
-    const geometry = new THREE.BufferGeometry(); geometry.setAttribute("position", new THREE.BufferAttribute(soup.positions, 3)); geometry.setAttribute("normal", new THREE.BufferAttribute(soup.normals, 3)); geometry.setIndex(new THREE.BufferAttribute(soup.indices, 1));
+  function soupMesh(soup: TriSoup, material: THREE.Material, rebuildNormals = false): THREE.Mesh {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(soup.positions, 3));
+    geometry.setIndex(new THREE.BufferAttribute(soup.indices, 1));
+    if (rebuildNormals) geometry.computeVertexNormals();
+    else geometry.setAttribute("normal", new THREE.BufferAttribute(soup.normals, 3));
     return new THREE.Mesh(geometry, material);
   }
 
@@ -762,8 +829,14 @@ export function createTool(): ToolHandle {
     else if (editableSurface) projectLocalSoup(result.soup, localFrame!);
     else if (brush === "crayon") wrapCrayonSoup(result.soup, crayon.layouts);
     const bounds = soupBounds(result.soup);
-    previewRoot.visible = !sigilStamp;
-    clearObject(brushRoot); brushRoot.add(soupMesh(result.soup, sigilStamp ? sigilMaterial : brush === "crayon" ? chromeMaterial : brushMaterial));
+    // The curve is an editing guide, not part of the finished render. Keeping
+    // it visible over chrome reads as a material seam, so reveal it only while
+    // drawing or selecting. Chrome normals are rebuilt from the final GN mesh:
+    // the graph's Soften stage changes positions/topology after its normal data
+    // was captured, which otherwise leaves bright triangular shading wedges.
+    previewRoot.visible = !sigilStamp && (selectingCurve || curveDocument.activeStroke !== null);
+    const material = sigilStamp ? sigilMaterial : brush === "crayon" ? chromeMaterial : brushMaterial;
+    clearObject(brushRoot); brushRoot.add(soupMesh(result.soup, material, brush === "crayon"));
     runtime.textContent = `${result.soup.stats.verts.toLocaleString()} verts · ${result.soup.stats.faces.toLocaleString()} faces · ${((performance.now() - started) / 1000).toFixed(2)}s`;
     boundsText.textContent = `min ${bounds.min.map((value) => value.toFixed(3)).join(", ")} · max ${bounds.max.map((value) => value.toFixed(3)).join(", ")}`;
     const brushName = authored ? "authored Chrome Crayon motif" : directFlat ? "flat direct Chrome Crayon" : sigilStamp ? "projected unique Sigilize stamp" : brush === "crayon" && parityPathMode === "curved" ? "curved Blender parity Chrome Crayon" : brush === "crayon" ? "adapted Chrome Crayon" : "Periodic Brush";
@@ -811,6 +884,8 @@ export function createTool(): ToolHandle {
     drawing = next === "draw"; selectingCurve = next === "select"; selectingArea = next === "area"; controls.enabled = next === "orbit";
     drawButton.classList.toggle("active", drawing); selectButton.classList.toggle("active", selectingCurve); areaButton.classList.toggle("active", selectingArea); orbitButton.classList.toggle("active", next === "orbit");
     canvas.style.cursor = selectingArea ? "cell" : selectingCurve ? "default" : drawing ? "crosshair" : "grab";
+    brushReticle.hidden = !drawing;
+    previewRoot.visible = selectingCurve || curveDocument.activeStroke !== null;
     renderPreviews();
   }
 
@@ -892,6 +967,7 @@ export function createTool(): ToolHandle {
     curveDocument.beginStroke(); addSample(event);
   }, { signal });
   canvas.addEventListener("pointermove", (event) => {
+    positionBrushReticle(event);
     if (curveDrag) moveCurveDrag(event);
     else if (drawing && curveDocument.activeStroke) addSample(event);
   }, { signal });
@@ -952,13 +1028,23 @@ export function createTool(): ToolHandle {
   }, { signal });
   brushSelect.addEventListener("change", () => {
     const crayon = brushSelect.value === "crayon";
+    brushLabel.textContent = crayon ? "Chrome Crayon · draw anywhere" : "Periodic Brush · draw anywhere";
     crayonControls.hidden = !crayon; periodicControls.hidden = crayon;
     clearObject(brushRoot); queueEvaluation();
   }, { signal });
+  window.addEventListener("crayon-graph-change", (event) => {
+    const nextDump = (event as CustomEvent<{ dump?: Dump }>).detail?.dump;
+    if (!nextDump) return;
+    crayonGraphReceived = true;
+    dumps.crayon = nextDump;
+    installedWorkerDump = null;
+    installedWorkerId = "";
+    setStatus("Chrome Crayon node graph updated · re-evaluating the canvas");
+    queueEvaluation();
+  }, { signal });
   // The canvas is a grid column of the studio shell, not the whole window.
   const stopObservingCanvas = observeCanvasBox(canvas, (width, height) => {
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
+    sizeCameras(width, height);
     renderer.setSize(width, height, false);
   });
   signal.addEventListener("abort", stopObservingCanvas);
@@ -968,7 +1054,9 @@ export function createTool(): ToolHandle {
   loadBrushAssets()
     .then((assets) => {
       if (disposed) return;
-      dumps.periodic = assets.periodic; dumps.crayon = assets.crayon; authoredTemplate = assets.authored;
+      dumps.periodic = assets.periodic;
+      if (!crayonGraphReceived) dumps.crayon = assets.crayon;
+      authoredTemplate = assets.authored;
     })
     .catch((error) => setStatus(String(error)));
 

@@ -1,6 +1,10 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
+import { chromeCrayonEditorConfig } from "../geometry-nodes/chrome-crayon-editor";
 import { useToolRuntime } from "../page-runtime";
-import { StudioShell } from "../studio/StudioShell";
+import { StudioOverlay, StudioShell, useMobileStudio } from "../studio/StudioShell";
+import "./crayon-compare.css";
 import "./surface-painter.css";
 import "./surface-draw.css";
 
@@ -72,6 +76,29 @@ function ProceduralPainter(): React.JSX.Element {
 }
 
 function BlenderBrushLab(): React.JSX.Element {
+  const isMobile = useMobileStudio();
+  const [graphOpen, setGraphOpen] = useState(false);
+  const [graphMaximized, setGraphMaximized] = useState(false);
+
+  useEffect(() => {
+    if (!graphMaximized) return;
+    const restore = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") setGraphMaximized(false);
+    };
+    window.addEventListener("keydown", restore);
+    return () => window.removeEventListener("keydown", restore);
+  }, [graphMaximized]);
+  useEffect(() => {
+    if (!graphOpen) return;
+    const frame = window.requestAnimationFrame(() => window.dispatchEvent(new CustomEvent(chromeCrayonEditorConfig.events.resize)));
+    return () => window.cancelAnimationFrame(frame);
+  }, [graphMaximized, graphOpen]);
+
+  const closeGraph = (): void => {
+    setGraphMaximized(false);
+    setGraphOpen(false);
+  };
+
   const leftDock = <>
     <div className="st-tabs"><button type="button" aria-selected="true">Brush lab</button></div>
     <div className="st-section">
@@ -150,15 +177,47 @@ function BlenderBrushLab(): React.JSX.Element {
     </div>
   </>;
 
+  const nodeEditor = <GeometryNodesEditor config={chromeCrayonEditorConfig} />;
+
   return <StudioShell
     className="surface-shell"
     leftDock={leftDock}
     rightDock={rightDock}
-    toolbar={<><EngineSwitch engine="blender" /><span className="st-spacer" /><span>draw: drag · select/move: drag stroke or point · wheel: zoom</span></>}
+    toolbar={<>
+      <EngineSwitch engine="blender" />
+      <span className="st-spacer" />
+      <span>drag to draw · wheel to zoom</span>
+      {!isMobile && <button className="st-btn" type="button" onClick={() => setGraphOpen((open) => !open)}>{graphOpen ? "Hide node editor" : "Show node editor"}</button>}
+    </>}
     status={<>
       <span id="surface-status"><span className="st-dot ready" />Ready on the demo surface</span>
     </>}
+    nodeDock={!isMobile && graphOpen && <section className={`st-node-dock ${graphMaximized ? "maximized" : ""}`}>
+      <header>
+        <b>Geometry Nodes</b>
+        <small>Chrome Crayon · edits re-evaluate this canvas</small>
+        <div>
+          <button className="st-btn" type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Full screen"}</button>
+          <button className="st-btn" type="button" onClick={closeGraph}>Collapse</button>
+        </div>
+      </header>
+      <div className="st-node-dock-body">{nodeEditor}</div>
+    </section>}
   >
     <canvas id="surface-canvas" />
+    <div id="surface-flat-overlay" className="surface-flat-overlay" data-empty="true" hidden aria-hidden="true">
+      <div className="surface-canvas-frame">
+        <i className="top-left" /><i className="top-right" />
+        <i className="bottom-left" /><i className="bottom-right" />
+      </div>
+      <div id="surface-brush-reticle" className="surface-brush-reticle">
+        <span className="surface-reticle-grid" />
+        <span className="surface-reticle-ring" />
+        <span id="surface-brush-label" className="surface-brush-label">Chrome Crayon · draw anywhere</span>
+      </div>
+      <span className="surface-canvas-empty-label">DRAW ON THE CANVAS</span>
+    </div>
+    {isMobile && !graphOpen && <button className="graph-toggle st-btn" type="button" onClick={() => setGraphOpen(true)}>Open node editor</button>}
+    {isMobile && graphOpen && <StudioOverlay title="Chrome Crayon · Geometry Nodes" onClose={closeGraph}>{nodeEditor}</StudioOverlay>}
   </StudioShell>;
 }

@@ -1,24 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import type { GeometryNodesPreset } from "../geometry-nodes/GraphPresetLibrary";
+import { chromeCrayonEditorConfig as editorConfig } from "../geometry-nodes/chrome-crayon-editor";
 import { usePageRuntime } from "../page-runtime";
 import { useCrayonRuntime } from "../crayon/useCrayonRuntime";
 import { useStudioStatusChips } from "../studio/StudioChrome";
 import { StudioOverlay, StudioShell, useMobileStudio } from "../studio/StudioShell";
 import "./crayon-compare.css";
-
-const editorConfig = {
-  dumpUrl: "dojo/crayon/dump.json",
-  objectName: "CHROME CRAYON OBJECT",
-  rootGroupName: "CHROME CRAYON 3D _4.3_DEC2024",
-  events: {
-    change: "crayon-graph-change",
-    nodeSelect: "crayon-node-select",
-    resize: "crayon-graph-resize",
-  },
-  storageKey: "crayon-gnvm-draft",
-  downloadFileName: "chrome-crayon-edited.json",
-} as const;
 
 const controls = [
   { name: "Sigilize", min: 3, max: 50, step: 1, value: 20 },
