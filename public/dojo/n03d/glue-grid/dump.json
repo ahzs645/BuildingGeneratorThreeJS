@@ -536986,11 +536986,11 @@
        353.91845703125,
        -3.001347064971924
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537056,11 +537056,11 @@
        -422.9368896484375,
        -13.005837440490723
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537123,11 +537123,11 @@
        171.8178253173828,
        61.52760696411133
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537217,11 +537217,11 @@
        -52.310489654541016,
        -71.49789428710938
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537326,11 +537326,11 @@
        -295.6124572753906,
        -142.8103485107422
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537455,11 +537455,11 @@
        -478.6851501464844,
        -196.21412658691406
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537515,11 +537515,11 @@
        -299.33843994140625,
        -332.1048583984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537691,6 +537691,10 @@
      "from_type": "NodeSocketVector",
      "to_type": "NodeSocketVectorTranslation"
     }
+   ],
+   "view_center": [
+    -56.99945068359375,
+    -281.5398864746094
    ]
   },
   "mm value": {
@@ -537727,18 +537731,18 @@
      "label": null,
      "ui": {
       "location": [
-       -200.0,
-       0.0
+       -200,
+       0
       ],
       "location_absolute": [
-       -200.0,
-       0.0
+       -200,
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537794,18 +537798,18 @@
      "label": null,
      "ui": {
       "location": [
-       190.0,
-       0.0
+       190,
+       0
       ],
       "location_absolute": [
-       190.0,
-       0.0
+       190,
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537869,6 +537873,10 @@
      "from_type": "NodeSocketFloatDistance",
      "to_type": "NodeSocketFloatDistance"
     }
+   ],
+   "view_center": [
+    -6.103515625e-05,
+    0
    ]
   },
   "grid layout": {
@@ -537913,17 +537921,17 @@
      "ui": {
       "location": [
        1391.4176025390625,
-       0.0
+       0
       ],
       "location_absolute": [
        1391.4176025390625,
-       0.0
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537989,11 +537997,11 @@
        583.523681640625,
        -158.3695068359375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538138,11 +538146,11 @@
        400.6580505371094,
        -231.883056640625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538251,11 +538259,11 @@
        220.80044555664062,
        -263.6309814453125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538371,11 +538379,11 @@
        155.58877563476562,
        92.6051025390625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538520,11 +538528,11 @@
        322.3476257324219,
        114.8258056640625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538626,11 +538634,11 @@
        -214.39129638671875,
        -3.4635009765625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538775,11 +538783,11 @@
        -38.0020751953125,
        30.030029296875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538881,11 +538889,11 @@
        -487.2547302246094,
        316.8790283203125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538999,11 +539007,11 @@
        -655.646728515625,
        269.224609375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -539117,11 +539125,11 @@
        -1341.7718505859375,
        -79.6879653930664
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -539195,11 +539203,11 @@
        -1101.304931640625,
        -303.3427734375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -539269,11 +539277,11 @@
        -649.3148803710938,
        -44.98938751220703
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -539387,11 +539395,11 @@
        -477.1629638671875,
        0.39924052357673645
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -539505,11 +539513,11 @@
        -417.4935607910156,
        -158.948486328125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -539602,11 +539610,11 @@
        -890.0433349609375,
        96.52411651611328
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -539697,11 +539705,11 @@
        -1088.9658203125,
        54.29780578613281
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -539771,11 +539779,11 @@
        -868.4498291015625,
        -162.45697021484375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -539866,11 +539874,11 @@
        821.276123046875,
        -137.51397705078125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -540135,6 +540143,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    826.2786865234375,
+    -132.841064453125
    ]
   },
   "NodeGroup.013": {
@@ -540168,17 +540180,17 @@
      "ui": {
       "location": [
        -282.11212158203125,
-       0.0
+       0
       ],
       "location_absolute": [
        -282.11212158203125,
-       0.0
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -540241,11 +540253,11 @@
        278.6487731933594,
        128.6931915283203
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -540332,11 +540344,11 @@
        283.9749755859375,
        -15.092768669128418
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -540423,11 +540435,11 @@
        -100.76111602783203,
        25.29559326171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -540529,11 +540541,11 @@
        73.231689453125,
        39.49679183959961
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -540640,11 +540652,11 @@
        438.1702575683594,
        21.27165985107422
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -540735,11 +540747,11 @@
        439.7889099121094,
        181.92156982421875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -540830,11 +540842,11 @@
        635.1807861328125,
        134.01869201660156
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -540925,11 +540937,11 @@
        804.3953247070312,
        144.6737060546875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541065,6 +541077,10 @@
      "from_type": "NodeSocketVector",
      "to_type": "NodeSocketVector"
     }
+   ],
+   "view_center": [
+    420.4808349609375,
+    26.141983032226562
    ]
   },
   ".old annotations": {
@@ -541079,17 +541095,17 @@
      "ui": {
       "location": [
        1560.587158203125,
-       0.0
+       0
       ],
       "location_absolute": [
        1560.587158203125,
-       0.0
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541137,17 +541153,17 @@
      "ui": {
       "location": [
        -1570.587158203125,
-       0.0
+       0
       ],
       "location_absolute": [
        -1570.587158203125,
-       0.0
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541199,11 +541215,11 @@
        -272.50189208984375,
        212.4747314453125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541295,10 +541311,10 @@
        118.3773193359375
       ],
       "width": 151.5401153564453,
-      "height": 100.0,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541376,11 +541392,11 @@
        366.2447814941406,
        264.9410400390625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541457,11 +541473,11 @@
        356.6424255371094,
        370.7591552734375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541524,11 +541540,11 @@
        676.2196655273438,
        218.8834228515625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541605,11 +541621,11 @@
        611.9215087890625,
        22.1793212890625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541686,11 +541702,11 @@
        390.1287841796875,
        -123.3941650390625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541744,10 +541760,10 @@
        224.9056396484375
       ],
       "width": 149.33737182617188,
-      "height": 100.0,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541825,11 +541841,11 @@
        390.8735656738281,
        -41.34375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541882,11 +541898,11 @@
        -263.86480712890625,
        53.1925048828125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541977,11 +541993,11 @@
        -989.591552734375,
        -264.0625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -542220,11 +542236,11 @@
        -1369.489013671875,
        -142.8515625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -542358,11 +542374,11 @@
        -1195.39794921875,
        -75.41845703125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -542449,11 +542465,11 @@
        -1370.587158203125,
        -350.358642578125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -542587,11 +542603,11 @@
        -1203.084716796875,
        -370.7591552734375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -542678,11 +542694,11 @@
        -752.123291015625,
        -5.807373046875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -542773,11 +542789,11 @@
        -803.7333374023438,
        -323.1065673828125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -542868,11 +542884,11 @@
        -990.0230712890625,
        -0.3179931640625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543111,11 +543127,11 @@
        1370.587158203125,
        302.0377197265625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543224,11 +543240,11 @@
        1203.5263671875,
        328.8463134765625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543329,11 +543345,11 @@
        975.8641967773438,
        318.4862060546875
       ],
-      "width": 190.0,
-      "height": 100.0,
+      "width": 190,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543582,10 +543598,10 @@
        62.3829345703125
       ],
       "width": 149.33737182617188,
-      "height": 100.0,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543664,10 +543680,10 @@
        139.6622314453125
       ],
       "width": 147.6774139404297,
-      "height": 100.0,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543720,11 +543736,11 @@
        148.2069549560547,
        -0.28515625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543995,6 +544011,10 @@
      "from_type": "NodeSocketFloat",
      "to_type": "NodeSocketFloat"
     }
+   ],
+   "view_center": [
+    -6.103515625e-05,
+    0
    ]
   },
   "NodeGroup.019": {
@@ -544017,17 +544037,17 @@
      "ui": {
       "location": [
        1055.94091796875,
-       0.0
+       0
       ],
       "location_absolute": [
        1055.94091796875,
-       0.0
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -544087,17 +544107,17 @@
      "ui": {
       "location": [
        -1065.94091796875,
-       0.0
+       0
       ],
       "location_absolute": [
        -1065.94091796875,
-       0.0
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -544149,11 +544169,11 @@
        865.9410400390625,
        -354.171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -544218,11 +544238,11 @@
        -63.5419921875,
        165.976318359375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -544367,11 +544387,11 @@
        532.659423828125,
        210.3505859375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -544436,11 +544456,11 @@
        323.541748046875,
        127.0029296875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -544577,11 +544597,11 @@
        156.1578369140625,
        199.867431640625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -544646,11 +544666,11 @@
        -865.9409790039062,
        221.24609375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -544764,11 +544784,11 @@
        -544.6829223632812,
        354.171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -544882,11 +544902,11 @@
        -378.9835205078125,
        -12.1689453125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -545081,6 +545101,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    0,
+    -6.103515625e-05
    ]
   },
   "Geometry Nodes.012": {
@@ -545116,11 +545140,11 @@
        -287.48858642578125,
        12.038375854492188
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -545183,11 +545207,11 @@
        2719.988525390625,
        613.1652221679688
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -545253,11 +545277,11 @@
        205.73252868652344,
        -18.59550666809082
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -545394,11 +545418,11 @@
        357.5961608886719,
        22.74904441833496
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -545463,11 +545487,11 @@
        537.67041015625,
        -15.13093090057373
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -545604,11 +545628,11 @@
        536.1611938476562,
        -98.40376281738281
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -545685,11 +545709,11 @@
        723.9301147460938,
        21.686641693115234
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -545754,11 +545778,11 @@
        943.6046752929688,
        69.96054077148438
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -545867,11 +545891,11 @@
        1104.6510009765625,
        72.22440338134766
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -545961,11 +545985,11 @@
        2453.487548828125,
        636.7205810546875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546035,11 +546059,11 @@
        2064.731689453125,
        543.7223510742188
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -546104,11 +546128,11 @@
        1217.4473876953125,
        592.37841796875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546190,11 +546214,11 @@
        1459.081787109375,
        603.5297241210938
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546296,11 +546320,11 @@
        1838.015380859375,
        505.7022705078125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546445,11 +546469,11 @@
        3133.55908203125,
        1298.1019287109375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546551,11 +546575,11 @@
        1292.3990478515625,
        1013.0840454101562
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546600,11 +546624,11 @@
        1249.9061279296875,
        1126.9873046875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546661,11 +546685,11 @@
        2279.8916015625,
        596.0189208984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546767,11 +546791,11 @@
        158.1714324951172,
        -26.14094352722168
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546837,11 +546861,11 @@
        2048.800048828125,
        481.3714294433594
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -547088,6 +547112,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    909.4483642578125,
+    19.0601806640625
    ]
   }
  },
@@ -612992,5 +613020,17 @@
    }
   }
  },
- "dependency_objects": []
+ "dependency_objects": [],
+ "authoring_refresh": {
+  "schema_version": 1,
+  "source_project": "n03d-printing",
+  "source_sha256": "6a0ede9dc9f8f097740716bffba6781acaca71caabd1591614f4a74863d304ca",
+  "decoder": "src/blend/to-dump.ts",
+  "fields": [
+   "node-layout",
+   "frame-parenting",
+   "view-center",
+   "annotations"
+  ]
+ }
 }

@@ -536418,18 +536418,18 @@
      "label": null,
      "ui": {
       "location": [
-       -340.0,
-       0.0
+       -340,
+       0
       ],
       "location_absolute": [
-       -340.0,
-       0.0
+       -340,
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -536486,17 +536486,17 @@
      "ui": {
       "location": [
        788.3431396484375,
-       0.0
+       0
       ],
       "location_absolute": [
        788.3431396484375,
-       0.0
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -536562,11 +536562,11 @@
        536.323974609375,
        11.042577743530273
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -536671,11 +536671,11 @@
        330.7244873046875,
        -57.835426330566406
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -536752,11 +536752,11 @@
        104.31333923339844,
        -158.22360229492188
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -536881,11 +536881,11 @@
        -51.0203857421875,
        -363.0575256347656
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537010,11 +537010,11 @@
        -630.0170288085938,
        -153.38787841796875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537101,11 +537101,11 @@
        -463.6688232421875,
        -126.20573425292969
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537198,11 +537198,11 @@
        -346.31488037109375,
        -668.047607421875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537424,11 +537424,11 @@
        -696.2494506835938,
        -408.0913391113281
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537658,11 +537658,11 @@
        293.6046447753906,
        -186.16343688964844
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537752,11 +537752,11 @@
        -922.2649536132812,
        -371.3207092285156
       ],
-      "width": 150.0,
-      "height": 100.0,
+      "width": 150,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -537913,11 +537913,11 @@
        -1101.739013671875,
        -502.09246826171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538002,11 +538002,11 @@
        -1300.4801025390625,
        -547.7959594726562
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538062,11 +538062,11 @@
        843.49658203125,
        -306.51123046875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538150,11 +538150,11 @@
        -918.4561767578125,
        -669.9953002929688
       ],
-      "width": 150.0,
-      "height": 100.0,
+      "width": 150,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538311,11 +538311,11 @@
        -1097.9302978515625,
        -800.76708984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538400,11 +538400,11 @@
        -1296.67138671875,
        -846.4705810546875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538460,11 +538460,11 @@
        -1187.7154541015625,
        -645.2958374023438
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538555,11 +538555,11 @@
        -671.1117553710938,
        -631.3355102539062
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -538789,11 +538789,11 @@
        -490.96209716796875,
        -402.20477294921875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -539037,11 +539037,11 @@
        -860.2398681640625,
        -578.2532348632812
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -539093,11 +539093,11 @@
        -836.0225219726562,
        -230.93594360351562
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -539169,11 +539169,11 @@
        517.0309448242188,
        -220.26895141601562
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -539498,6 +539498,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    322.7867431640625,
+    250.15716552734375
    ]
   }
  },
@@ -600215,5 +600219,17 @@
   }
  ],
  "fonts": {},
- "dependency_objects": []
+ "dependency_objects": [],
+ "authoring_refresh": {
+  "schema_version": 1,
+  "source_project": "n03d-printing",
+  "source_sha256": "6a0ede9dc9f8f097740716bffba6781acaca71caabd1591614f4a74863d304ca",
+  "decoder": "src/blend/to-dump.ts",
+  "fields": [
+   "node-layout",
+   "frame-parenting",
+   "view-center",
+   "annotations"
+  ]
+ }
 }

@@ -153138,18 +153138,18 @@
      "label": null,
      "ui": {
       "location": [
-       -600.0,
-       -40.0
+       -600,
+       -40
       ],
       "location_absolute": [
-       -600.0,
-       -40.0
+       -600,
+       -40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -153267,18 +153267,18 @@
      "label": null,
      "ui": {
       "location": [
-       -420.0,
-       -80.0
+       -420,
+       -80
       ],
       "location_absolute": [
-       -420.0,
-       -80.0
+       -420,
+       -80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -153358,18 +153358,18 @@
      "label": null,
      "ui": {
       "location": [
-       -600.0,
-       -200.0
+       -600,
+       -200
       ],
       "location_absolute": [
-       -600.0,
-       -200.0
+       -600,
+       -200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -153449,18 +153449,18 @@
      "label": null,
      "ui": {
       "location": [
-       -600.0,
-       -340.0
+       -600,
+       -340
       ],
       "location_absolute": [
-       -600.0,
-       -340.0
+       -600,
+       -340
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -153540,18 +153540,18 @@
      "label": null,
      "ui": {
       "location": [
-       -780.0,
-       -40.0
+       -780,
+       -40
       ],
       "location_absolute": [
-       -780.0,
-       -40.0
+       -780,
+       -40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -153665,18 +153665,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1100.0,
-       -200.0
+       -1100,
+       -200
       ],
       "location_absolute": [
-       -1100.0,
-       -200.0
+       -1100,
+       -200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -153776,18 +153776,18 @@
      "label": null,
      "ui": {
       "location": [
-       900.0,
-       -40.0
+       900,
+       -40
       ],
       "location_absolute": [
-       900.0,
-       -40.0
+       900,
+       -40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -153846,18 +153846,18 @@
      "label": null,
      "ui": {
       "location": [
-       460.0,
-       -120.0
+       460,
+       -120
       ],
       "location_absolute": [
-       460.0,
-       -120.0
+       460,
+       -120
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -153975,18 +153975,18 @@
      "label": null,
      "ui": {
       "location": [
-       660.0,
-       -20.0
+       660,
+       -20
       ],
       "location_absolute": [
-       660.0,
-       -20.0
+       660,
+       -20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -154112,18 +154112,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1380.0,
-       -20.0
+       -1380,
+       -20
       ],
       "location_absolute": [
-       -1380.0,
-       -20.0
+       -1380,
+       -20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -154190,18 +154190,18 @@
      "label": null,
      "ui": {
       "location": [
-       -180.0,
-       -420.0
+       -180,
+       -420
       ],
       "location_absolute": [
-       -180.0,
-       -420.0
+       -180,
+       -420
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -154287,18 +154287,18 @@
      "label": null,
      "ui": {
       "location": [
-       -180.0,
-       -300.0
+       -180,
+       -300
       ],
       "location_absolute": [
-       -180.0,
-       -300.0
+       -180,
+       -300
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -154384,18 +154384,18 @@
      "label": null,
      "ui": {
       "location": [
-       -180.0,
-       -180.0
+       -180,
+       -180
       ],
       "location_absolute": [
-       -180.0,
-       -180.0
+       -180,
+       -180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -154481,18 +154481,18 @@
      "label": null,
      "ui": {
       "location": [
-       -180.0,
-       -60.0
+       -180,
+       -60
       ],
       "location_absolute": [
-       -180.0,
-       -60.0
+       -180,
+       -60
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -154578,18 +154578,18 @@
      "label": null,
      "ui": {
       "location": [
-       -180.0,
-       60.0
+       -180,
+       60
       ],
       "location_absolute": [
-       -180.0,
-       60.0
+       -180,
+       60
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -154675,18 +154675,18 @@
      "label": null,
      "ui": {
       "location": [
-       -180.0,
-       180.0
+       -180,
+       180
       ],
       "location_absolute": [
-       -180.0,
-       180.0
+       -180,
+       180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -154772,18 +154772,18 @@
      "label": null,
      "ui": {
       "location": [
-       240.0,
-       -120.0
+       240,
+       -120
       ],
       "location_absolute": [
-       240.0,
-       -120.0
+       240,
+       -120
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -155353,6 +155353,10 @@
      "from_type": "NodeSocketMenu",
      "to_type": "NodeSocketMenu"
     }
+   ],
+   "view_center": [
+    -775.0628662109375,
+    -204.1845703125
    ]
   },
   "Mesh Island Measure.001": {
@@ -155434,18 +155438,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1500.0,
-       220.0
+       -1500,
+       220
       ],
       "location_absolute": [
-       -1500.0,
-       220.0
+       -1500,
+       220
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -155559,18 +155563,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1500.0,
-       440.0
+       -1500,
+       440
       ],
       "location_absolute": [
-       -1500.0,
-       440.0
+       -1500,
+       440
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -155654,18 +155658,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1680.0,
-       540.0
+       -1680,
+       540
       ],
       "location_absolute": [
-       -1680.0,
-       540.0
+       -1680,
+       540
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -155749,18 +155753,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1300.0,
-       220.0
+       -1300,
+       220
       ],
       "location_absolute": [
-       -1300.0,
-       220.0
+       -1300,
+       220
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -155844,18 +155848,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1320.0,
-       620.0
+       -1320,
+       620
       ],
       "location_absolute": [
-       -1320.0,
-       620.0
+       -1320,
+       620
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -156078,18 +156082,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1860.0,
-       80.0
+       -1860,
+       80
       ],
       "location_absolute": [
-       -1860.0,
-       80.0
+       -1860,
+       80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -156203,18 +156207,18 @@
      "label": null,
      "ui": {
       "location": [
-       -2280.0,
-       0.0
+       -2280,
+       0
       ],
       "location_absolute": [
-       -2280.0,
-       0.0
+       -2280,
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -156298,18 +156302,18 @@
      "label": null,
      "ui": {
       "location": [
-       -2080.0,
-       180.0
+       -2080,
+       180
       ],
       "location_absolute": [
-       -2080.0,
-       180.0
+       -2080,
+       180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -156385,18 +156389,18 @@
      "label": null,
      "ui": {
       "location": [
-       -2080.0,
-       360.0
+       -2080,
+       360
       ],
       "location_absolute": [
-       -2080.0,
-       360.0
+       -2080,
+       360
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -156472,18 +156476,18 @@
      "label": null,
      "ui": {
       "location": [
-       -2280.0,
-       180.0
+       -2280,
+       180
       ],
       "location_absolute": [
-       -2280.0,
-       180.0
+       -2280,
+       180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -156567,18 +156571,18 @@
      "label": null,
      "ui": {
       "location": [
-       -2540.0,
-       260.0
+       -2540,
+       260
       ],
       "location_absolute": [
-       -2540.0,
-       260.0
+       -2540,
+       260
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -156627,18 +156631,18 @@
      "label": null,
      "ui": {
       "location": [
-       -2080.0,
-       0.0
+       -2080,
+       0
       ],
       "location_absolute": [
-       -2080.0,
-       0.0
+       -2080,
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -156714,18 +156718,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1720.0,
-       -240.0
+       -1720,
+       -240
       ],
       "location_absolute": [
-       -1720.0,
-       -240.0
+       -1720,
+       -240
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -156839,18 +156843,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1720.0,
-       -80.0
+       -1720,
+       -80
       ],
       "location_absolute": [
-       -1720.0,
-       -80.0
+       -1720,
+       -80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -156964,18 +156968,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1540.0,
-       -140.0
+       -1540,
+       -140
       ],
       "location_absolute": [
-       -1540.0,
-       -140.0
+       -1540,
+       -140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -157089,18 +157093,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1180.0,
-       -140.0
+       -1180,
+       -140
       ],
       "location_absolute": [
-       -1180.0,
-       -140.0
+       -1180,
+       -140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -157184,18 +157188,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1180.0,
-       -340.0
+       -1180,
+       -340
       ],
       "location_absolute": [
-       -1180.0,
-       -340.0
+       -1180,
+       -340
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -157309,18 +157313,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1340.0,
-       -340.0
+       -1340,
+       -340
       ],
       "location_absolute": [
-       -1340.0,
-       -340.0
+       -1340,
+       -340
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -157434,18 +157438,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1680.0,
-       360.0
+       -1680,
+       360
       ],
       "location_absolute": [
-       -1680.0,
-       360.0
+       -1680,
+       360
       ],
-      "width": 150.0,
-      "height": 100.0,
+      "width": 150,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -157501,18 +157505,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1360.0,
-       -140.0
+       -1360,
+       -140
       ],
       "location_absolute": [
-       -1360.0,
-       -140.0
+       -1360,
+       -140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -157630,18 +157634,18 @@
      "label": null,
      "ui": {
       "location": [
-       480.0,
-       680.0
+       480,
+       680
       ],
       "location_absolute": [
-       480.0,
-       680.0
+       480,
+       680
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -157748,18 +157752,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1060.0,
-       480.0
+       -1060,
+       480
       ],
       "location_absolute": [
-       -1060.0,
-       480.0
+       -1060,
+       480
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -157842,18 +157846,18 @@
      "label": null,
      "ui": {
       "location": [
-       -340.0,
-       760.0
+       -340,
+       760
       ],
       "location_absolute": [
-       -340.0,
-       760.0
+       -340,
+       760
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -157947,18 +157951,18 @@
      "label": null,
      "ui": {
       "location": [
-       -340.0,
-       520.0
+       -340,
+       520
       ],
       "location_absolute": [
-       -340.0,
-       520.0
+       -340,
+       520
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -158052,18 +158056,18 @@
      "label": null,
      "ui": {
       "location": [
-       220.0,
-       20.0
+       220,
+       20
       ],
       "location_absolute": [
-       220.0,
-       20.0
+       220,
+       20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -158177,18 +158181,18 @@
      "label": null,
      "ui": {
       "location": [
-       -340.0,
-       300.0
+       -340,
+       300
       ],
       "location_absolute": [
-       -340.0,
-       300.0
+       -340,
+       300
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -158294,18 +158298,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       200.0
+       -140,
+       200
       ],
       "location_absolute": [
-       -140.0,
-       200.0
+       -140,
+       200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -158419,18 +158423,18 @@
      "label": null,
      "ui": {
       "location": [
-       -340.0,
-       -140.0
+       -340,
+       -140
       ],
       "location_absolute": [
-       -340.0,
-       -140.0
+       -340,
+       -140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -158536,18 +158540,18 @@
      "label": null,
      "ui": {
       "location": [
-       -540.0,
-       -140.0
+       -540,
+       -140
       ],
       "location_absolute": [
-       -540.0,
-       -140.0
+       -540,
+       -140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -158665,18 +158669,18 @@
      "label": null,
      "ui": {
       "location": [
-       -700.0,
-       -140.0
+       -700,
+       -140
       ],
       "location_absolute": [
-       -700.0,
-       -140.0
+       -700,
+       -140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -158794,18 +158798,18 @@
      "label": null,
      "ui": {
       "location": [
-       -540.0,
-       -360.0
+       -540,
+       -360
       ],
       "location_absolute": [
-       -540.0,
-       -360.0
+       -540,
+       -360
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -158896,18 +158900,18 @@
      "label": null,
      "ui": {
       "location": [
-       -720.0,
-       -400.0
+       -720,
+       -400
       ],
       "location_absolute": [
-       -720.0,
-       -400.0
+       -720,
+       -400
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -159025,18 +159029,18 @@
      "label": null,
      "ui": {
       "location": [
-       -880.0,
-       -400.0
+       -880,
+       -400
       ],
       "location_absolute": [
-       -880.0,
-       -400.0
+       -880,
+       -400
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -159154,18 +159158,18 @@
      "label": null,
      "ui": {
       "location": [
-       -340.0,
-       -360.0
+       -340,
+       -360
       ],
       "location_absolute": [
-       -340.0,
-       -360.0
+       -340,
+       -360
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -159271,18 +159275,18 @@
      "label": null,
      "ui": {
       "location": [
-       0.0,
-       -400.0
+       0,
+       -400
       ],
       "location_absolute": [
-       0.0,
-       -400.0
+       0,
+       -400
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -159396,18 +159400,18 @@
      "label": null,
      "ui": {
       "location": [
-       -340.0,
-       80.0
+       -340,
+       80
       ],
       "location_absolute": [
-       -340.0,
-       80.0
+       -340,
+       80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -159501,18 +159505,18 @@
      "label": null,
      "ui": {
       "location": [
-       -840.0,
-       200.0
+       -840,
+       200
       ],
       "location_absolute": [
-       -840.0,
-       200.0
+       -840,
+       200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -159568,18 +159572,18 @@
      "label": null,
      "ui": {
       "location": [
-       -560.0,
-       200.0
+       -560,
+       200
       ],
       "location_absolute": [
-       -560.0,
-       200.0
+       -560,
+       200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -159628,18 +159632,18 @@
      "label": null,
      "ui": {
       "location": [
-       -540.0,
-       380.0
+       -540,
+       380
       ],
       "location_absolute": [
-       -540.0,
-       380.0
+       -540,
+       380
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -159684,18 +159688,18 @@
      "label": null,
      "ui": {
       "location": [
-       -2420.0,
-       440.0
+       -2420,
+       440
       ],
       "location_absolute": [
-       -2420.0,
-       440.0
+       -2420,
+       440
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -159755,18 +159759,18 @@
      "label": null,
      "ui": {
       "location": [
-       -2600.0,
-       440.0
+       -2600,
+       440
       ],
       "location_absolute": [
-       -2600.0,
-       440.0
+       -2600,
+       440
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -159859,18 +159863,18 @@
      "label": null,
      "ui": {
       "location": [
-       -2500.0,
-       140.0
+       -2500,
+       140
       ],
       "location_absolute": [
-       -2500.0,
-       140.0
+       -2500,
+       140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -160478,6 +160482,10 @@
      "from_type": "NodeSocketVector",
      "to_type": "NodeSocketVector"
     }
+   ],
+   "view_center": [
+    -1034.412109375,
+    -11.26531982421875
    ]
   },
   "Set Center.004": {
@@ -160514,18 +160522,18 @@
      "label": null,
      "ui": {
       "location": [
-       -600.0,
-       -40.0
+       -600,
+       -40
       ],
       "location_absolute": [
-       -600.0,
-       -40.0
+       -600,
+       -40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -160643,18 +160651,18 @@
      "label": null,
      "ui": {
       "location": [
-       -420.0,
-       -80.0
+       -420,
+       -80
       ],
       "location_absolute": [
-       -420.0,
-       -80.0
+       -420,
+       -80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -160734,18 +160742,18 @@
      "label": null,
      "ui": {
       "location": [
-       -600.0,
-       -200.0
+       -600,
+       -200
       ],
       "location_absolute": [
-       -600.0,
-       -200.0
+       -600,
+       -200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -160825,18 +160833,18 @@
      "label": null,
      "ui": {
       "location": [
-       -600.0,
-       -340.0
+       -600,
+       -340
       ],
       "location_absolute": [
-       -600.0,
-       -340.0
+       -600,
+       -340
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -160916,18 +160924,18 @@
      "label": null,
      "ui": {
       "location": [
-       -780.0,
-       -40.0
+       -780,
+       -40
       ],
       "location_absolute": [
-       -780.0,
-       -40.0
+       -780,
+       -40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -161041,18 +161049,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1100.0,
-       -200.0
+       -1100,
+       -200
       ],
       "location_absolute": [
-       -1100.0,
-       -200.0
+       -1100,
+       -200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -161152,18 +161160,18 @@
      "label": null,
      "ui": {
       "location": [
-       900.0,
-       -40.0
+       900,
+       -40
       ],
       "location_absolute": [
-       900.0,
-       -40.0
+       900,
+       -40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -161222,18 +161230,18 @@
      "label": null,
      "ui": {
       "location": [
-       460.0,
-       -120.0
+       460,
+       -120
       ],
       "location_absolute": [
-       460.0,
-       -120.0
+       460,
+       -120
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -161351,18 +161359,18 @@
      "label": null,
      "ui": {
       "location": [
-       660.0,
-       -20.0
+       660,
+       -20
       ],
       "location_absolute": [
-       660.0,
-       -20.0
+       660,
+       -20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -161488,18 +161496,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1380.0,
-       -20.0
+       -1380,
+       -20
       ],
       "location_absolute": [
-       -1380.0,
-       -20.0
+       -1380,
+       -20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -161566,18 +161574,18 @@
      "label": null,
      "ui": {
       "location": [
-       -180.0,
-       -420.0
+       -180,
+       -420
       ],
       "location_absolute": [
-       -180.0,
-       -420.0
+       -180,
+       -420
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -161663,18 +161671,18 @@
      "label": null,
      "ui": {
       "location": [
-       -180.0,
-       -300.0
+       -180,
+       -300
       ],
       "location_absolute": [
-       -180.0,
-       -300.0
+       -180,
+       -300
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -161760,18 +161768,18 @@
      "label": null,
      "ui": {
       "location": [
-       -180.0,
-       -180.0
+       -180,
+       -180
       ],
       "location_absolute": [
-       -180.0,
-       -180.0
+       -180,
+       -180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -161857,18 +161865,18 @@
      "label": null,
      "ui": {
       "location": [
-       -180.0,
-       -60.0
+       -180,
+       -60
       ],
       "location_absolute": [
-       -180.0,
-       -60.0
+       -180,
+       -60
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -161954,18 +161962,18 @@
      "label": null,
      "ui": {
       "location": [
-       -180.0,
-       60.0
+       -180,
+       60
       ],
       "location_absolute": [
-       -180.0,
-       60.0
+       -180,
+       60
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -162051,18 +162059,18 @@
      "label": null,
      "ui": {
       "location": [
-       -180.0,
-       180.0
+       -180,
+       180
       ],
       "location_absolute": [
-       -180.0,
-       180.0
+       -180,
+       180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -162148,18 +162156,18 @@
      "label": null,
      "ui": {
       "location": [
-       240.0,
-       -120.0
+       240,
+       -120
       ],
       "location_absolute": [
-       240.0,
-       -120.0
+       240,
+       -120
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -162729,6 +162737,10 @@
      "from_type": "NodeSocketMenu",
      "to_type": "NodeSocketMenu"
     }
+   ],
+   "view_center": [
+    -775.0628662109375,
+    -204.1845703125
    ]
   },
   ".reset string instances.001": {
@@ -162757,18 +162769,18 @@
      "label": null,
      "ui": {
       "location": [
-       1520.0,
-       400.0
+       1520,
+       400
       ],
       "location_absolute": [
-       1520.0,
-       400.0
+       1520,
+       400
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -162827,18 +162839,18 @@
      "label": null,
      "ui": {
       "location": [
-       -960.0,
-       120.0
+       -960,
+       120
       ],
       "location_absolute": [
-       -960.0,
-       120.0
+       -960,
+       120
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -162894,18 +162906,18 @@
      "label": null,
      "ui": {
       "location": [
-       60.0,
-       180.0
+       60,
+       180
       ],
       "location_absolute": [
-       60.0,
-       180.0
+       60,
+       180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -163014,11 +163026,11 @@
        1136.0982666015625,
        108.96038818359375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -163100,11 +163112,11 @@
        984.3632202148438,
        112.4869384765625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -163206,11 +163218,11 @@
        1451.3101806640625,
        83.49029541015625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -163311,11 +163323,11 @@
        806.2850341796875,
        18.497833251953125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -163432,11 +163444,11 @@
        195.7734375,
        -155.44097900390625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -163488,11 +163500,11 @@
        1290.2916259765625,
        107.487548828125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -163594,11 +163606,11 @@
        31.754547119140625,
        -129.80712890625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -163639,11 +163651,11 @@
        625.9998779296875,
        59.69622802734375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -163745,11 +163757,11 @@
        -536.5780639648438,
        -219.71900939941406
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -163805,11 +163817,11 @@
        -349.82781982421875,
        -196.9786376953125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -163896,11 +163908,11 @@
        -160.30015563964844,
        -174.23825073242188
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -163984,18 +163996,18 @@
      "label": null,
      "ui": {
       "location": [
-       -580.0,
-       160.0
+       -580,
+       160
       ],
       "location_absolute": [
-       -580.0,
-       160.0
+       -580,
+       160
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -164090,18 +164102,18 @@
      "label": null,
      "ui": {
       "location": [
-       -580.0,
-       400.0
+       -580,
+       400
       ],
       "location_absolute": [
-       -580.0,
-       400.0
+       -580,
+       400
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -164207,18 +164219,18 @@
      "label": null,
      "ui": {
       "location": [
-       -740.0,
-       180.0
+       -740,
+       180
       ],
       "location_absolute": [
-       -740.0,
-       180.0
+       -740,
+       180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -164328,18 +164340,18 @@
      "label": null,
      "ui": {
       "location": [
-       -740.0,
-       40.0
+       -740,
+       40
       ],
       "location_absolute": [
-       -740.0,
-       40.0
+       -740,
+       40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -164385,17 +164397,17 @@
      "ui": {
       "location": [
        -200.0000457763672,
-       160.0
+       160
       ],
       "location_absolute": [
        -200.0000457763672,
-       160.0
+       160
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -164489,18 +164501,18 @@
      "label": null,
      "ui": {
       "location": [
-       620.0,
-       766.0
+       620,
+       766
       ],
       "location_absolute": [
-       620.0,
-       766.0
+       620,
+       766
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -164582,17 +164594,17 @@
      "ui": {
       "location": [
        -380.00006103515625,
-       180.0
+       180
       ],
       "location_absolute": [
        -380.00006103515625,
-       180.0
+       180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -164706,18 +164718,18 @@
      "label": null,
      "ui": {
       "location": [
-       60.0,
-       540.0
+       60,
+       540
       ],
       "location_absolute": [
-       60.0,
-       540.0
+       60,
+       540
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -164855,18 +164867,18 @@
      "label": null,
      "ui": {
       "location": [
-       -220.0,
-       400.0
+       -220,
+       400
       ],
       "location_absolute": [
-       -220.0,
-       400.0
+       -220,
+       400
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -164964,18 +164976,18 @@
      "label": null,
      "ui": {
       "location": [
-       -760.0,
-       580.0
+       -760,
+       580
       ],
       "location_absolute": [
-       -760.0,
-       580.0
+       -760,
+       580
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -165081,17 +165093,17 @@
      "ui": {
       "location": [
        440.0000305175781,
-       660.0
+       660
       ],
       "location_absolute": [
        440.0000305175781,
-       660.0
+       660
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -165179,17 +165191,17 @@
      "ui": {
       "location": [
        -1220.0648193359375,
-       520.0
+       520
       ],
       "location_absolute": [
        -1220.0648193359375,
-       520.0
+       520
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -165245,18 +165257,18 @@
      "label": null,
      "ui": {
       "location": [
-       -420.0,
-       640.0
+       -420,
+       640
       ],
       "location_absolute": [
-       -420.0,
-       640.0
+       -420,
+       640
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -165338,18 +165350,18 @@
      "label": null,
      "ui": {
       "location": [
-       -580.0,
-       700.0
+       -580,
+       700
       ],
       "location_absolute": [
-       -580.0,
-       700.0
+       -580,
+       700
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -165572,18 +165584,18 @@
      "label": null,
      "ui": {
       "location": [
-       -760.0,
-       640.0
+       -760,
+       640
       ],
       "location_absolute": [
-       -760.0,
-       640.0
+       -760,
+       640
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -165628,18 +165640,18 @@
      "label": null,
      "ui": {
       "location": [
-       -260.0,
-       740.0
+       -260,
+       740
       ],
       "location_absolute": [
-       -260.0,
-       740.0
+       -260,
+       740
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -165734,18 +165746,18 @@
      "label": null,
      "ui": {
       "location": [
-       -100.0,
-       720.0
+       -100,
+       720
       ],
       "location_absolute": [
-       -100.0,
-       720.0
+       -100,
+       720
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -165820,18 +165832,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1000.0,
-       440.0
+       -1000,
+       440
       ],
       "location_absolute": [
-       -1000.0,
-       440.0
+       -1000,
+       440
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -165957,17 +165969,17 @@
      "ui": {
       "location": [
        280.0000305175781,
-       660.0
+       660
       ],
       "location_absolute": [
        280.0000305175781,
-       660.0
+       660
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -166025,18 +166037,18 @@
      "label": null,
      "ui": {
       "location": [
-       80.0,
-       720.0
+       80,
+       720
       ],
       "location_absolute": [
-       80.0,
-       720.0
+       80,
+       720
       ],
-      "width": 160.0,
-      "height": 100.0,
+      "width": 160,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -166415,6 +166427,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    820.6842651367188,
+    273.0242919921875
    ]
   },
   ".fill.001": {
@@ -166451,18 +166467,18 @@
      "label": null,
      "ui": {
       "location": [
-       704.0,
-       60.0
+       704,
+       60
       ],
       "location_absolute": [
-       704.0,
-       60.0
+       704,
+       60
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -166521,18 +166537,18 @@
      "label": null,
      "ui": {
       "location": [
-       -700.0,
-       -40.0
+       -700,
+       -40
       ],
       "location_absolute": [
-       -700.0,
-       -40.0
+       -700,
+       -40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -166599,18 +166615,18 @@
      "label": null,
      "ui": {
       "location": [
-       -260.0,
-       20.0
+       -260,
+       20
       ],
       "location_absolute": [
-       -260.0,
-       20.0
+       -260,
+       20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -166705,18 +166721,18 @@
      "label": null,
      "ui": {
       "location": [
-       120.0,
-       -80.0
+       120,
+       -80
       ],
       "location_absolute": [
-       120.0,
-       -80.0
+       120,
+       -80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -166810,18 +166826,18 @@
      "label": null,
      "ui": {
       "location": [
-       60.0,
-       180.0
+       60,
+       180
       ],
       "location_absolute": [
-       60.0,
-       180.0
+       60,
+       180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -166916,17 +166932,17 @@
      "ui": {
       "location": [
        479.9999694824219,
-       80.0
+       80
       ],
       "location_absolute": [
        479.9999694824219,
-       80.0
+       80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -167048,18 +167064,18 @@
      "label": null,
      "ui": {
       "location": [
-       -440.0,
-       120.0
+       -440,
+       120
       ],
       "location_absolute": [
-       -440.0,
-       120.0
+       -440,
+       120
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -167169,18 +167185,18 @@
      "label": null,
      "ui": {
       "location": [
-       -700.0,
-       40.0
+       -700,
+       40
       ],
       "location_absolute": [
-       -700.0,
-       40.0
+       -700,
+       40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -167225,18 +167241,18 @@
      "label": null,
      "ui": {
       "location": [
-       -100.0,
-       -40.0
+       -100,
+       -40
       ],
       "location_absolute": [
-       -100.0,
-       -40.0
+       -100,
+       -40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -167346,18 +167362,18 @@
      "label": null,
      "ui": {
       "location": [
-       60.0,
-       60.0
+       60,
+       60
       ],
       "location_absolute": [
-       60.0,
-       60.0
+       60,
+       60
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -167402,18 +167418,18 @@
      "label": null,
      "ui": {
       "location": [
-       300.0,
-       -60.0
+       300,
+       -60
       ],
       "location_absolute": [
-       300.0,
-       -60.0
+       300,
+       -60
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -167507,18 +167523,18 @@
      "label": null,
      "ui": {
       "location": [
-       280.0,
-       180.0
+       280,
+       180
       ],
       "location_absolute": [
-       280.0,
-       180.0
+       280,
+       180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -167619,11 +167635,11 @@
        -443.58184814453125,
        -1.4533309936523438
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -167849,6 +167865,10 @@
      "from_type": "NodeSocketInt",
      "to_type": "NodeSocketInt"
     }
+   ],
+   "view_center": [
+    -373.6229248046875,
+    -35.429718017578125
    ]
   },
   "flat color material.003": {
@@ -167908,11 +167928,11 @@
        478.84271240234375,
        88.00536346435547
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -167978,11 +167998,11 @@
        -270.75360107421875,
        88.00536346435547
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -168072,11 +168092,11 @@
        288.8427734375,
        90.78094482421875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -168168,11 +168188,11 @@
        -70.1905288696289,
        126.6226577758789
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -168275,11 +168295,11 @@
        119.51824951171875,
        90.22429656982422
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -168425,6 +168445,10 @@
      "from_type": "NodeSocketColor",
      "to_type": "NodeSocketColor"
     }
+   ],
+   "view_center": [
+    225.0836181640625,
+    -14.5
    ]
   },
   "Curve Point Angle": {
@@ -168450,18 +168474,18 @@
      "label": null,
      "ui": {
       "location": [
-       500.0,
-       -160.0
+       500,
+       -160
       ],
       "location_absolute": [
-       500.0,
-       -160.0
+       500,
+       -160
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -168575,18 +168599,18 @@
      "label": null,
      "ui": {
       "location": [
-       680.0,
-       -160.0
+       680,
+       -160
       ],
       "location_absolute": [
-       680.0,
-       -160.0
+       680,
+       -160
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -168670,18 +168694,18 @@
      "label": null,
      "ui": {
       "location": [
-       1080.0,
-       -20.0
+       1080,
+       -20
       ],
       "location_absolute": [
-       1080.0,
-       -20.0
+       1080,
+       -20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -168740,18 +168764,18 @@
      "label": null,
      "ui": {
       "location": [
-       -80.0,
-       -20.0
+       -80,
+       -20
       ],
       "location_absolute": [
-       -80.0,
-       -20.0
+       -80,
+       -20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -168827,18 +168851,18 @@
      "label": null,
      "ui": {
       "location": [
-       100.0,
-       -20.0
+       100,
+       -20
       ],
       "location_absolute": [
-       100.0,
-       -20.0
+       100,
+       -20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -168952,18 +168976,18 @@
      "label": null,
      "ui": {
       "location": [
-       280.0,
-       -20.0
+       280,
+       -20
       ],
       "location_absolute": [
-       280.0,
-       -20.0
+       280,
+       -20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -169081,18 +169105,18 @@
      "label": null,
      "ui": {
       "location": [
-       -260.0,
-       -160.0
+       -260,
+       -160
       ],
       "location_absolute": [
-       -260.0,
-       -160.0
+       -260,
+       -160
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -169141,18 +169165,18 @@
      "label": null,
      "ui": {
       "location": [
-       -260.0,
-       -20.0
+       -260,
+       -20
       ],
       "location_absolute": [
-       -260.0,
-       -20.0
+       -260,
+       -20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -169233,18 +169257,18 @@
      "label": null,
      "ui": {
       "location": [
-       880.0,
-       -20.0
+       880,
+       -20
       ],
       "location_absolute": [
-       880.0,
-       -20.0
+       880,
+       -20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -169327,18 +169351,18 @@
      "label": null,
      "ui": {
       "location": [
-       -260.0,
-       80.0
+       -260,
+       80
       ],
       "location_absolute": [
-       -260.0,
-       80.0
+       -260,
+       80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -169383,18 +169407,18 @@
      "label": null,
      "ui": {
       "location": [
-       -80.0,
-       -240.0
+       -80,
+       -240
       ],
       "location_absolute": [
-       -80.0,
-       -240.0
+       -80,
+       -240
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -169470,18 +169494,18 @@
      "label": null,
      "ui": {
       "location": [
-       -260.0,
-       -240.0
+       -260,
+       -240
       ],
       "location_absolute": [
-       -260.0,
-       -240.0
+       -260,
+       -240
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -169562,18 +169586,18 @@
      "label": null,
      "ui": {
       "location": [
-       100.0,
-       -240.0
+       100,
+       -240
       ],
       "location_absolute": [
-       100.0,
-       -240.0
+       100,
+       -240
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -169687,18 +169711,18 @@
      "label": null,
      "ui": {
       "location": [
-       280.0,
-       -240.0
+       280,
+       -240
       ],
       "location_absolute": [
-       280.0,
-       -240.0
+       280,
+       -240
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -169816,18 +169840,18 @@
      "label": null,
      "ui": {
       "location": [
-       500.0,
-       -20.0
+       500,
+       -20
       ],
       "location_absolute": [
-       500.0,
-       -20.0
+       500,
+       -20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -170056,6 +170080,10 @@
      "from_type": "NodeSocketFloat",
      "to_type": "NodeSocketFloat"
     }
+   ],
+   "view_center": [
+    413.9425964355469,
+    -177.5229949951172
    ]
   },
   "Decimate Curve": {
@@ -170106,18 +170134,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1100.0,
-       300.0
+       -1100,
+       300
       ],
       "location_absolute": [
-       -1100.0,
-       300.0
+       -1100,
+       300
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -170227,18 +170255,18 @@
      "label": null,
      "ui": {
       "location": [
-       -340.0,
-       300.0
+       -340,
+       300
       ],
       "location_absolute": [
-       -340.0,
-       300.0
+       -340,
+       300
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -170310,18 +170338,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1780.0,
-       200.0
+       -1780,
+       200
       ],
       "location_absolute": [
-       -1780.0,
-       200.0
+       -1780,
+       200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -170399,18 +170427,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1380.0,
-       300.0
+       -1380,
+       300
       ],
       "location_absolute": [
-       -1380.0,
-       300.0
+       -1380,
+       300
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -170520,18 +170548,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1380.0,
-       100.0
+       -1380,
+       100
       ],
       "location_absolute": [
-       -1380.0,
-       100.0
+       -1380,
+       100
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -170576,18 +170604,18 @@
      "label": null,
      "ui": {
       "location": [
-       -860.0,
-       -20.0
+       -860,
+       -20
       ],
       "location_absolute": [
-       -860.0,
-       -20.0
+       -860,
+       -20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -170658,18 +170686,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1080.0,
-       -120.0
+       -1080,
+       -120
       ],
       "location_absolute": [
-       -1080.0,
-       -120.0
+       -1080,
+       -120
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -170739,18 +170767,18 @@
      "label": null,
      "ui": {
       "location": [
-       -860.0,
-       60.0
+       -860,
+       60
       ],
       "location_absolute": [
-       -860.0,
-       60.0
+       -860,
+       60
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -170795,18 +170823,18 @@
      "label": null,
      "ui": {
       "location": [
-       -640.0,
-       60.0
+       -640,
+       60
       ],
       "location_absolute": [
-       -640.0,
-       60.0
+       -640,
+       60
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -170889,18 +170917,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1080.0,
-       60.0
+       -1080,
+       60
       ],
       "location_absolute": [
-       -1080.0,
-       60.0
+       -1080,
+       60
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -171123,18 +171151,18 @@
      "label": null,
      "ui": {
       "location": [
-       -280.0,
-       -140.0
+       -280,
+       -140
       ],
       "location_absolute": [
-       -280.0,
-       -140.0
+       -280,
+       -140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -171217,18 +171245,18 @@
      "label": null,
      "ui": {
       "location": [
-       -480.0,
-       -300.0
+       -480,
+       -300
       ],
       "location_absolute": [
-       -480.0,
-       -300.0
+       -480,
+       -300
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -171299,18 +171327,18 @@
      "label": null,
      "ui": {
       "location": [
-       -640.0,
-       -120.0
+       -640,
+       -120
       ],
       "location_absolute": [
-       -640.0,
-       -120.0
+       -640,
+       -120
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -171377,18 +171405,18 @@
      "label": null,
      "ui": {
       "location": [
-       -640.0,
-       -220.0
+       -640,
+       -220
       ],
       "location_absolute": [
-       -640.0,
-       -220.0
+       -640,
+       -220
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -171458,18 +171486,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1380.0,
-       -60.0
+       -1380,
+       -60
       ],
       "location_absolute": [
-       -1380.0,
-       -60.0
+       -1380,
+       -60
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -171519,18 +171547,18 @@
      "label": null,
      "ui": {
       "location": [
-       460.0,
-       320.0
+       460,
+       320
       ],
       "location_absolute": [
-       460.0,
-       320.0
+       460,
+       320
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -171628,18 +171656,18 @@
      "label": null,
      "ui": {
       "location": [
-       660.0,
-       320.0
+       660,
+       320
       ],
       "location_absolute": [
-       660.0,
-       320.0
+       660,
+       320
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -171698,18 +171726,18 @@
      "label": null,
      "ui": {
       "location": [
-       -60.0,
-       180.0
+       -60,
+       180
       ],
       "location_absolute": [
-       -60.0,
-       180.0
+       -60,
+       180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -171863,18 +171891,18 @@
      "label": null,
      "ui": {
       "location": [
-       -60.0,
-       -120.0
+       -60,
+       -120
       ],
       "location_absolute": [
-       -60.0,
-       -120.0
+       -60,
+       -120
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -171923,18 +171951,18 @@
      "label": null,
      "ui": {
       "location": [
-       -60.0,
-       -200.0
+       -60,
+       -200
       ],
       "location_absolute": [
-       -60.0,
-       -200.0
+       -60,
+       -200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -172157,18 +172185,18 @@
      "label": null,
      "ui": {
       "location": [
-       160.0,
-       100.0
+       160,
+       100
       ],
       "location_absolute": [
-       160.0,
-       100.0
+       160,
+       100
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -172494,6 +172522,10 @@
      "from_type": "NodeSocketVector",
      "to_type": "NodeSocketVector"
     }
+   ],
+   "view_center": [
+    -165.46859741210938,
+    -14.520263671875
    ]
   },
   "to circle": {
@@ -172523,17 +172555,17 @@
      "ui": {
       "location": [
        841.4010009765625,
-       0.0
+       0
       ],
       "location_absolute": [
        841.4010009765625,
-       0.0
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -172593,17 +172625,17 @@
      "ui": {
       "location": [
        -851.4010009765625,
-       0.0
+       0
       ],
       "location_absolute": [
        -851.4010009765625,
-       0.0
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -172660,17 +172692,17 @@
      "ui": {
       "location": [
        411.4010314941406,
-       90.0
+       90
       ],
       "location_absolute": [
        411.4010314941406,
-       90.0
+       90
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -172757,17 +172789,17 @@
      "ui": {
       "location": [
        191.40103149414062,
-       110.0
+       110
       ],
       "location_absolute": [
        191.40103149414062,
-       110.0
+       110
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -172852,17 +172884,17 @@
      "ui": {
       "location": [
        651.4010009765625,
-       230.0
+       230
       ],
       "location_absolute": [
        651.4010009765625,
-       230.0
+       230
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -172961,17 +172993,17 @@
      "ui": {
       "location": [
        -8.598968505859375,
-       110.0
+       110
       ],
       "location_absolute": [
        -8.598968505859375,
-       110.0
+       110
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -173056,17 +173088,17 @@
      "ui": {
       "location": [
        -8.598968505859375,
-       -30.0
+       -30
       ],
       "location_absolute": [
        -8.598968505859375,
-       -30.0
+       -30
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -173151,17 +173183,17 @@
      "ui": {
       "location": [
        -8.598968505859375,
-       -170.0
+       -170
       ],
       "location_absolute": [
        -8.598968505859375,
-       -170.0
+       -170
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -173246,17 +173278,17 @@
      "ui": {
       "location": [
        -228.59896850585938,
-       30.0
+       30
       ],
       "location_absolute": [
        -228.59896850585938,
-       30.0
+       30
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -173341,17 +173373,17 @@
      "ui": {
       "location": [
        -228.59896850585938,
-       -150.0
+       -150
       ],
       "location_absolute": [
        -228.59896850585938,
-       -150.0
+       -150
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -173412,17 +173444,17 @@
      "ui": {
       "location": [
        -428.5989685058594,
-       -230.0
+       -230
       ],
       "location_absolute": [
        -428.5989685058594,
-       -230.0
+       -230
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -173468,17 +173500,17 @@
      "ui": {
       "location": [
        -448.5989685058594,
-       10.0
+       10
       ],
       "location_absolute": [
        -448.5989685058594,
-       10.0
+       10
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -173569,11 +173601,11 @@
        -626.1773681640625,
        5.412662506103516
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -173647,11 +173679,11 @@
        -651.4010009765625,
        -144.90882873535156
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -173829,6 +173861,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    480.9602966308594,
+    88.926025390625
    ]
   },
   "3D Fill Curve": {
@@ -173886,11 +173922,11 @@
        648.5714721679688,
        230.32151794433594
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -173991,11 +174027,11 @@
        830.7359619140625,
        223.4405059814453
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -174094,17 +174130,17 @@
      "ui": {
       "location": [
        1688.571533203125,
-       180.0
+       180
       ],
       "location_absolute": [
        1688.571533203125,
-       180.0
+       180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -174170,11 +174206,11 @@
        1011.2449951171875,
        183.21519470214844
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -174275,11 +174311,11 @@
        1278.8902587890625,
        362.7112121582031
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -174369,11 +174405,11 @@
        -20.76088523864746,
        257.7063293457031
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -174458,11 +174494,11 @@
        291.97430419921875,
        -39.49616241455078
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -174518,11 +174554,11 @@
        498.8533935546875,
        100.00004577636719
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -174618,11 +174654,11 @@
        296.1417236328125,
        -95.87814331054688
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -174674,11 +174710,11 @@
        1020.0100708007812,
        480.5291748046875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -174762,11 +174798,11 @@
        208.78836059570312,
        185.71595764160156
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -174942,6 +174978,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    1952.6923828125,
+    373.0320739746094
    ]
   },
   "Dojo_STRING TO TEXT.002": {
@@ -175051,18 +175091,18 @@
      "label": null,
      "ui": {
       "location": [
-       -760.0,
-       100.0
+       -760,
+       100
       ],
       "location_absolute": [
-       -760.0,
-       100.0
+       -760,
+       100
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -175207,17 +175247,17 @@
      "ui": {
       "location": [
        1940.000244140625,
-       80.0
+       80
       ],
       "location_absolute": [
        1940.000244140625,
-       80.0
+       80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -175277,17 +175317,17 @@
      "ui": {
       "location": [
        1180.0001220703125,
-       -40.0
+       -40
       ],
       "location_absolute": [
        1180.0001220703125,
-       -40.0
+       -40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -175382,18 +175422,18 @@
      "label": null,
      "ui": {
       "location": [
-       1380.0,
-       160.0
+       1380,
+       160
       ],
       "location_absolute": [
-       1380.0,
-       160.0
+       1380,
+       160
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -175468,18 +175508,18 @@
      "label": null,
      "ui": {
       "location": [
-       -520.0,
-       300.0
+       -520,
+       300
       ],
       "location_absolute": [
-       -520.0,
-       300.0
+       -520,
+       300
       ],
-      "width": 190.0,
-      "height": 100.0,
+      "width": 190,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -175721,17 +175761,17 @@
      "ui": {
       "location": [
        1580.0003662109375,
-       80.0
+       80
       ],
       "location_absolute": [
        1580.0003662109375,
-       80.0
+       80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -175876,18 +175916,18 @@
      "label": null,
      "ui": {
       "location": [
-       1380.0,
-       0.0
+       1380,
+       0
       ],
       "location_absolute": [
-       1380.0,
-       0.0
+       1380,
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -175962,18 +176002,18 @@
      "label": null,
      "ui": {
       "location": [
-       1380.0,
-       -140.0
+       1380,
+       -140
       ],
       "location_absolute": [
-       1380.0,
-       -140.0
+       1380,
+       -140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -176048,18 +176088,18 @@
      "label": null,
      "ui": {
       "location": [
-       80.0,
-       360.0
+       80,
+       360
       ],
       "location_absolute": [
-       80.0,
-       360.0
+       80,
+       360
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -176203,18 +176243,18 @@
      "label": null,
      "ui": {
       "location": [
-       780.0,
-       140.0
+       780,
+       140
       ],
       "location_absolute": [
-       780.0,
-       140.0
+       780,
+       140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -176359,17 +176399,17 @@
      "ui": {
       "location": [
        779.9999389648438,
-       420.0
+       420
       ],
       "location_absolute": [
        779.9999389648438,
-       420.0
+       420
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -176433,17 +176473,17 @@
      "ui": {
       "location": [
        819.9999389648438,
-       300.0
+       300
       ],
       "location_absolute": [
        819.9999389648438,
-       300.0
+       300
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -176526,18 +176566,18 @@
      "label": null,
      "ui": {
       "location": [
-       20.0,
-       140.0
+       20,
+       140
       ],
       "location_absolute": [
-       20.0,
-       140.0
+       20,
+       140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -176681,18 +176721,18 @@
      "label": null,
      "ui": {
       "location": [
-       460.0,
-       320.0
+       460,
+       320
       ],
       "location_absolute": [
-       460.0,
-       320.0
+       460,
+       320
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -176767,18 +176807,18 @@
      "label": null,
      "ui": {
       "location": [
-       1340.0,
-       -80.0
+       1340,
+       -80
       ],
       "location_absolute": [
-       1340.0,
-       -80.0
+       1340,
+       -80
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -176838,17 +176878,17 @@
      "ui": {
       "location": [
        1000.0001831054688,
-       100.0
+       100
       ],
       "location_absolute": [
        1000.0001831054688,
-       100.0
+       100
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -176958,18 +176998,18 @@
      "label": null,
      "ui": {
       "location": [
-       20.0,
-       40.0
+       20,
+       40
       ],
       "location_absolute": [
-       20.0,
-       40.0
+       20,
+       40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -177015,17 +177055,17 @@
      "ui": {
       "location": [
        1760.00048828125,
-       60.0
+       60
       ],
       "location_absolute": [
        1760.00048828125,
-       60.0
+       60
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -177117,18 +177157,18 @@
      "label": null,
      "ui": {
       "location": [
-       -80.0,
-       280.0
+       -80,
+       280
       ],
       "location_absolute": [
-       -80.0,
-       280.0
+       -80,
+       280
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -177226,18 +177266,18 @@
      "label": null,
      "ui": {
       "location": [
-       -380.0,
-       -140.0
+       -380,
+       -140
       ],
       "location_absolute": [
-       -380.0,
-       -140.0
+       -380,
+       -140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -177355,18 +177395,18 @@
      "label": null,
      "ui": {
       "location": [
-       -290.0,
-       300.0
+       -290,
+       300
       ],
       "location_absolute": [
-       -290.0,
-       300.0
+       -290,
+       300
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -177461,18 +177501,18 @@
      "label": null,
      "ui": {
       "location": [
-       -560.0,
-       -160.0
+       -560,
+       -160
       ],
       "location_absolute": [
-       -560.0,
-       -160.0
+       -560,
+       -160
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -177537,18 +177577,18 @@
      "label": null,
      "ui": {
       "location": [
-       100.0,
-       280.0
+       100,
+       280
       ],
       "location_absolute": [
-       100.0,
-       280.0
+       100,
+       280
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -177635,18 +177675,18 @@
      "label": null,
      "ui": {
       "location": [
-       660.0,
-       586.0
+       660,
+       586
       ],
       "location_absolute": [
-       660.0,
-       586.0
+       660,
+       586
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -177724,17 +177764,17 @@
      "ui": {
       "location": [
        279.9999694824219,
-       260.0
+       260
       ],
       "location_absolute": [
        279.9999694824219,
-       260.0
+       260
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -177840,18 +177880,18 @@
      "label": null,
      "ui": {
       "location": [
-       480.0,
-       480.0
+       480,
+       480
       ],
       "location_absolute": [
-       480.0,
-       480.0
+       480,
+       480
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -178231,6 +178271,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    -416.35406494140625,
+    174.18377685546875
    ]
   }
  },
@@ -246516,5 +246560,17 @@
    }
   }
  },
- "dependency_objects": []
+ "dependency_objects": [],
+ "authoring_refresh": {
+  "schema_version": 1,
+  "source_project": "chrome-assets",
+  "source_sha256": "5e310d5c14a27abe3e9d5b2890031596308cbbc6a88c6c47768ebc6b9d411738",
+  "decoder": "src/blend/to-dump.ts",
+  "fields": [
+   "node-layout",
+   "frame-parenting",
+   "view-center",
+   "annotations"
+  ]
+ }
 }

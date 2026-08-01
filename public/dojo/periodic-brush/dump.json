@@ -137720,11 +137720,11 @@
        -516.9244995117188,
        -81.22930145263672
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -137831,11 +137831,11 @@
        1665.44580078125,
        47.152854919433594
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -137901,11 +137901,11 @@
        86.73196411132812,
        -47.432716369628906
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138046,11 +138046,11 @@
        -197.20867919921875,
        66.0110855102539
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138164,11 +138164,11 @@
        282.5849304199219,
        -14.65097427368164
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138273,11 +138273,11 @@
        279.4996643066406,
        -157.47825622558594
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138370,11 +138370,11 @@
        86.72422790527344,
        -374.6684875488281
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138426,11 +138426,11 @@
        271.6352233886719,
        -282.0553894042969
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138521,11 +138521,11 @@
        551.6270141601562,
        -29.164630889892578
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138609,11 +138609,11 @@
        -150.1622314453125,
        -359.48846435546875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138665,11 +138665,11 @@
        -24.597322463989258,
        -157.65957641601562
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138735,11 +138735,11 @@
        -229.54644775390625,
        -123.1613998413086
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138829,11 +138829,11 @@
        -154.83432006835938,
        -263.451416015625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -139000,6 +139000,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    -2772.416259765625,
+    -121.5
    ]
   }
  },
@@ -185656,5 +185660,17 @@
     256
    ]
   }
- ]
+ ],
+ "authoring_refresh": {
+  "schema_version": 1,
+  "source_project": "chrome-assets",
+  "source_sha256": "5e310d5c14a27abe3e9d5b2890031596308cbbc6a88c6c47768ebc6b9d411738",
+  "decoder": "src/blend/to-dump.ts",
+  "fields": [
+   "node-layout",
+   "frame-parenting",
+   "view-center",
+   "annotations"
+  ]
+ }
 }

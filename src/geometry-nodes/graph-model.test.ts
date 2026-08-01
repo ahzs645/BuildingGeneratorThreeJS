@@ -51,6 +51,33 @@ test("frames and reroutes retain authored relationships", () => {
   assert.equal(reroutes[0].outputs[0].identifier, "Output");
 });
 
+test("local-only nested frames recursively reconstruct authored absolute positions", () => {
+  const localOnly: Dump = {
+    node_groups: {
+      Lesson: {
+        name: "Lesson",
+        type: "GeometryNodeTree",
+        interface: [],
+        links: [],
+        nodes: [
+          { name: "Outer", type: "NodeFrame", label: "Outer note", ui: { location: [100, 50], width: 80, height: 60 }, inputs: [], outputs: [], props: { label_size: 28 } },
+          { name: "Inner", type: "NodeFrame", label: "Inner note", ui: { location: [20, -10], width: 42, height: 30, parent: "Outer" }, inputs: [], outputs: [] },
+          { name: "Value", type: "ShaderNodeValue", label: null, ui: { location: [5, -7], width: 68, parent: "Inner" }, inputs: [], outputs: [] },
+        ],
+      },
+    },
+  };
+  const graph = dumpGroupToEditorGraph(localOnly, "Lesson");
+  const inner = graph.nodes.find((node) => node.sourceName === "Inner");
+  const value = graph.nodes.find((node) => node.sourceName === "Value");
+  assert.deepEqual(inner?.position, { x: 20, y: 10 });
+  assert.deepEqual(inner?.absolutePosition, { x: 120, y: -40 });
+  assert.deepEqual(value?.position, { x: 5, y: 7 });
+  assert.deepEqual(value?.absolutePosition, { x: 125, y: -33 });
+  assert.equal(inner?.width, 42);
+  assert.equal(inner?.parentId, "Lesson::Outer");
+});
+
 test("nested group traversal produces Blender-style breadcrumbs", () => {
   assert.deepEqual(graphGroupPath(dump, root, ["Group"]), [root, "_Bounding Box.002"]);
   assert.deepEqual(graphGroupPath(dump, root, ["Group.001"]), [root, "_autosmooth"]);
@@ -64,6 +91,15 @@ test("search spans every group and retains navigation context", () => {
   const internalMatches = searchEditorGraphs(dump, "vector math");
   assert.ok(internalMatches.some((match) => match.groupName === "_Bounding Box.002"));
   assert.ok(internalMatches.every((match) => match.node.kind !== "frame"));
+  const frameMatches = searchEditorGraphs({
+    node_groups: {
+      Lesson: {
+        name: "Lesson", type: "GeometryNodeTree", interface: [], links: [],
+        nodes: [{ name: "Frame", type: "NodeFrame", label: "Boolean both objects", inputs: [], outputs: [] }],
+      },
+    },
+  }, "boolean both");
+  assert.equal(frameMatches[0]?.node.kind, "frame");
   assert.deepEqual(searchEditorGraphs(dump, "   "), []);
 });
 

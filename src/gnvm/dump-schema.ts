@@ -198,6 +198,66 @@ export interface RawNode {
   [key: string]: unknown;
 }
 
+/** One legacy Blender annotation point, kept compact for large lesson graphs. */
+export type DumpAnnotationPoint = [
+  x: number,
+  y: number,
+  z: number,
+  pressure: number,
+  strength: number,
+  time?: number,
+  flags?: number,
+];
+
+export type DumpAnnotationSpace = "VIEW2D" | "IMAGE" | "SCREEN" | "WORLD";
+
+export interface DumpAnnotationStroke {
+  flags: number;
+  space: DumpAnnotationSpace;
+  cyclic: boolean;
+  thickness: number;
+  caps?: [number, number];
+  points: DumpAnnotationPoint[];
+}
+
+export interface DumpAnnotationFrame {
+  number: number;
+  flags?: number;
+  strokes: DumpAnnotationStroke[];
+}
+
+export interface DumpAnnotationLayer {
+  name: string;
+  flags?: number;
+  hidden?: boolean;
+  locked?: boolean;
+  active?: boolean;
+  frame_locked?: boolean;
+  color: [number, number, number];
+  opacity: number;
+  thickness: number;
+  active_frame?: number | null;
+  frames: DumpAnnotationFrame[];
+}
+
+export interface DumpAnnotation {
+  name: string;
+  onion?: boolean;
+  layers: DumpAnnotationLayer[];
+}
+
+/** A node-editor camera exported only when its saved tree path matches the group. */
+export interface DumpNodeEditorView {
+  workspace?: string;
+  screen?: string;
+  tree: string;
+  path?: string[];
+  region_size?: [number, number];
+  view_rect: { xmin: number; xmax: number; ymin: number; ymax: number };
+  active?: boolean;
+  show_annotations?: boolean;
+}
+
 export interface DumpLink {
   from_node: string;
   from_socket: string;
@@ -236,6 +296,10 @@ export interface DumpNodeGroup {
   links: DumpLink[];
   interface: DumpInterfaceItem[];
   animation?: DumpAnimation;
+  /** Name of a shared entry in Dump.annotations. */
+  annotation?: string;
+  /** Blender node-tree center in authored graph coordinates. */
+  view_center?: [number, number];
   [key: string]: unknown;
 }
 
@@ -377,6 +441,8 @@ export interface Dump {
   objects?: DumpObject[];
   materials?: Record<string, DumpNodeGroup>;
   shader_node_groups?: Record<string, DumpNodeGroup>;
+  annotations?: Record<string, DumpAnnotation>;
+  node_editor_views?: DumpNodeEditorView[];
   [key: string]: unknown;
 }
 

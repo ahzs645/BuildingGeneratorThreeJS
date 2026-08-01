@@ -78,6 +78,72 @@ function float32(value: number): number {
   return Math.fround(value);
 }
 
+export interface StoredNodeLayout {
+  name: string;
+  parent?: string | null;
+  /** Blender 5+ local node location. */
+  location?: number[];
+  /** Blender 4.x stored coordinates and frame offsets. */
+  locx?: number;
+  locy?: number;
+  offsetx?: number;
+  offsety?: number;
+}
+
+export interface ResolvedNodeLayout {
+  location: [number, number];
+  location_absolute: [number, number];
+}
+
+/**
+ * Normalize node coordinates without keying behavior to a Blender version.
+ * Modern DNA carries `location`; legacy DNA carries locx/locy plus frame
+ * offsets. Blender's versioning code subtracts the parent frame offset from a
+ * child while upgrading, after which absolute positions are a recursive sum.
+ */
+export function resolveStoredNodeLayouts(
+  records: StoredNodeLayout[],
+): Map<string, ResolvedNodeLayout> {
+  const byName = new Map(records.map((record) => [record.name, record]));
+  const resolved = new Map<string, ResolvedNodeLayout>();
+  const resolving = new Set<string>();
+
+  const localOf = (record: StoredNodeLayout): [number, number] => {
+    if (record.location && record.location.length >= 2) {
+      return [Number(record.location[0]) || 0, Number(record.location[1]) || 0];
+    }
+    const parent = record.parent ? byName.get(record.parent) : undefined;
+    return [
+      (Number(record.locx) || 0) + (Number(record.offsetx) || 0) - (Number(parent?.offsetx) || 0),
+      (Number(record.locy) || 0) + (Number(record.offsety) || 0) - (Number(parent?.offsety) || 0),
+    ];
+  };
+
+  const visit = (record: StoredNodeLayout): ResolvedNodeLayout => {
+    const cached = resolved.get(record.name);
+    if (cached) return cached;
+    const location = localOf(record);
+    if (resolving.has(record.name)) {
+      const cyclic = { location, location_absolute: location } satisfies ResolvedNodeLayout;
+      resolved.set(record.name, cyclic);
+      return cyclic;
+    }
+    resolving.add(record.name);
+    const parent = record.parent ? byName.get(record.parent) : undefined;
+    const parentAbsolute = parent ? visit(parent).location_absolute : [0, 0];
+    resolving.delete(record.name);
+    const result: ResolvedNodeLayout = {
+      location,
+      location_absolute: [location[0] + parentAbsolute[0], location[1] + parentAbsolute[1]],
+    };
+    resolved.set(record.name, result);
+    return result;
+  };
+
+  for (const record of records) visit(record);
+  return resolved;
+}
+
 function multiply(a: number[][], b: number[][]): number[][] {
   const out: number[][] = [];
   for (let row = 0; row < 4; row += 1) {
@@ -334,10 +400,84 @@ export function buildPortableDump(
     return entries;
   };
 
+  const annotations: Record<string, Json> = {};
+  const decodedAnnotationPointers = new Map<string, string>();
+  const GP_LAYER_HIDE = 1 << 0;
+  const GP_LAYER_LOCKED = 1 << 1;
+  const GP_LAYER_ACTIVE = 1 << 2;
+  const GP_LAYER_FRAMELOCK = 1 << 11;
+  const GP_STROKE_3DSPACE = 1 << 0;
+  const GP_STROKE_2DSPACE = 1 << 1;
+  const GP_STROKE_2DIMAGE = 1 << 2;
+  const GP_STROKE_CYCLIC = 1 << 7;
+
+  const decodeAnnotation = (gpd: BlendStruct | null): string | null => {
+    if (!gpd) return null;
+    const pointerKey = gpd.address.toString();
+    const cached = decodedAnnotationPointers.get(pointerKey);
+    if (cached) return cached;
+    const name = idName(gpd) || `Annotation@${pointerKey}`;
+    decodedAnnotationPointers.set(pointerKey, name);
+    annotations[name] = {
+      name,
+      onion: Boolean(gpd.number("onion_flag")),
+      layers: gpd.list("layers").map((layer) => {
+        const flags = layer.number("flag");
+        const activeFrame = layer.follow("actframe");
+        return {
+          name: layer.string("info") || "Note",
+          flags,
+          hidden: (flags & GP_LAYER_HIDE) !== 0,
+          locked: (flags & GP_LAYER_LOCKED) !== 0,
+          active: (flags & GP_LAYER_ACTIVE) !== 0,
+          frame_locked: (flags & GP_LAYER_FRAMELOCK) !== 0,
+          color: layer.numbers("color").slice(0, 3),
+          opacity: layer.has("opacity") ? layer.number("opacity") : 1,
+          thickness: layer.has("thickness") ? layer.number("thickness") : 3,
+          active_frame: activeFrame ? activeFrame.number("framenum") : null,
+          frames: layer.list("frames").map((frame) => ({
+            number: frame.number("framenum"),
+            flags: frame.number("flag"),
+            strokes: frame.list("strokes").map((stroke) => {
+              const strokeFlags = stroke.number("flag");
+              const pointCount = Math.max(0, stroke.number("totpoints"));
+              const points = stroke.followArray("points").slice(0, pointCount).map((point) => [
+                point.number("x"),
+                point.number("y"),
+                point.number("z"),
+                point.has("pressure") ? point.number("pressure") : 1,
+                point.has("strength") ? point.number("strength") : 1,
+                point.has("time") ? point.number("time") : 0,
+                point.has("flag") ? point.number("flag") : 0,
+              ]);
+              const space = (strokeFlags & GP_STROKE_2DSPACE) !== 0
+                ? "VIEW2D"
+                : (strokeFlags & GP_STROKE_2DIMAGE) !== 0
+                  ? "IMAGE"
+                  : (strokeFlags & GP_STROKE_3DSPACE) !== 0
+                    ? "WORLD"
+                    : "SCREEN";
+              return {
+                flags: strokeFlags,
+                space,
+                cyclic: (strokeFlags & GP_STROKE_CYCLIC) !== 0,
+                thickness: stroke.has("thickness") ? stroke.number("thickness") : 0,
+                ...(stroke.has("caps") ? { caps: stroke.numbers("caps").slice(0, 2) } : {}),
+                points,
+              };
+            }),
+          })),
+        };
+      }),
+    };
+    return name;
+  };
+
   const nodeDump = (
     node: BlendStruct,
     linkedSockets: Set<string>,
     nodesByIdentifier: Map<number, BlendStruct>,
+    layout: ResolvedNodeLayout,
   ): Record<string, Json> => {
     const flag = node.number("flag");
     const type = node.string("idname");
@@ -348,7 +488,8 @@ export function buildPortableDump(
       type,
       label: node.string("label") || null,
       ui: {
-        location: node.numbers("location"),
+        location: layout.location,
+        location_absolute: layout.location_absolute,
         width: node.number("width"),
         height: node.number("height"),
         hide: (flag & NODE_HIDDEN) !== 0,
@@ -367,6 +508,12 @@ export function buildPortableDump(
       })),
     };
     const storage = node.follow("storage");
+    if (type === "NodeFrame" && storage) {
+      entry.props = {
+        label_size: storage.has("label_size") ? storage.number("label_size") : 20,
+        shrink: (storage.number("flag") & 1) !== 0,
+      };
+    }
     if (storage?.has("output_node_id")) {
       const paired = nodesByIdentifier.get(storage.number("output_node_id"));
       if (paired) entry.paired_output = paired.string("name");
@@ -396,6 +543,18 @@ export function buildPortableDump(
     const name = idName(tree);
     const nodes = tree.list("nodes");
     const links = tree.list("links");
+    const layoutByName = resolveStoredNodeLayouts(nodes.map((node) => {
+      const parent = node.follow("parent");
+      return {
+        name: node.string("name"),
+        parent: parent ? parent.string("name") : null,
+        ...(node.has("location") ? { location: node.numbers("location") } : {}),
+        locx: node.number("locx"),
+        locy: node.number("locy"),
+        offsetx: node.number("offsetx"),
+        offsety: node.number("offsety"),
+      };
+    }));
     const nodesByIdentifier = new Map<number, BlendStruct>();
     const socketIndex = new Map<string, { node: string; identifier: string; type: string; index: number }>();
     for (const node of nodes) {
@@ -449,12 +608,20 @@ export function buildPortableDump(
       );
     }
 
+    const annotation = decodeAnnotation(tree.follow("gpd"));
     return {
       name,
       type: tree.string("idname"),
       interface: interfaceItems(tree),
-      nodes: nodes.map((node) => nodeDump(node, linkedSocketAddresses, nodesByIdentifier)),
+      nodes: nodes.map((node) => nodeDump(
+        node,
+        linkedSocketAddresses,
+        nodesByIdentifier,
+        layoutByName.get(node.string("name")) ?? { location: [0, 0], location_absolute: [0, 0] },
+      )),
       links: linkEntries,
+      ...(annotation ? { annotation } : {}),
+      ...(tree.has("view_center") ? { view_center: tree.numbers("view_center").slice(0, 2) } : {}),
     };
   };
 
@@ -647,11 +814,22 @@ export function buildPortableDump(
   // `FileGlobal` records the exact Blender build that wrote the file, which is
   // the only thing that makes the version-upgrade gap below actionable.
   const global = file.idBlocks("GLOB").map((block) => file.structOf(block))[0] ?? null;
+  const sceneBlock = file.idBlocks("SC").map((block) => file.structOf(block))[0] ?? null;
+  const renderData = sceneBlock?.child("r") ?? null;
   const subversion = global?.number("subversion") ?? 0;
   const authoredBy = `${file.header.version}.${subversion}`;
 
   const dump: Record<string, Json> = {
     blender_version: file.header.version,
+    ...(renderData ? {
+      scene: {
+        frame_current: renderData.number("cfra"),
+        frame_start: renderData.number("sfra"),
+        frame_end: renderData.number("efra"),
+        fps: renderData.number("frs_sec"),
+        fps_base: renderData.has("frs_sec_base") ? renderData.number("frs_sec_base") : 1,
+      },
+    } : {}),
     extraction_source: {
       extractor: "blend-decode-ts",
       file_format: file.header.fileFormat,
@@ -667,6 +845,7 @@ export function buildPortableDump(
     node_groups: nodeGroups,
     shader_node_groups: shaderNodeGroups,
     materials,
+    annotations,
     images,
     fonts: {},
     dependency_objects: [],

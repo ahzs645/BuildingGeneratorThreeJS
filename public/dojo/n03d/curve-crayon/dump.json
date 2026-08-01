@@ -539964,18 +539964,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       1040.0
+       -140,
+       1040
       ],
       "location_absolute": [
-       -140.0,
-       1040.0
+       -140,
+       1040
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -540198,18 +540198,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       880.0
+       -140,
+       880
       ],
       "location_absolute": [
-       -140.0,
-       880.0
+       -140,
+       880
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -540432,18 +540432,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       720.0
+       -140,
+       720
       ],
       "location_absolute": [
-       -140.0,
-       720.0
+       -140,
+       720
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -540666,18 +540666,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       560.0
+       -140,
+       560
       ],
       "location_absolute": [
-       -140.0,
-       560.0
+       -140,
+       560
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -540900,18 +540900,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       240.0
+       -140,
+       240
       ],
       "location_absolute": [
-       -140.0,
-       240.0
+       -140,
+       240
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541134,18 +541134,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       80.0
+       -140,
+       80
       ],
       "location_absolute": [
-       -140.0,
-       80.0
+       -140,
+       80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541368,18 +541368,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       400.0
+       -140,
+       400
       ],
       "location_absolute": [
-       -140.0,
-       400.0
+       -140,
+       400
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541602,18 +541602,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       -400.0
+       -140,
+       -400
       ],
       "location_absolute": [
-       -140.0,
-       -400.0
+       -140,
+       -400
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -541836,18 +541836,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       -560.0
+       -140,
+       -560
       ],
       "location_absolute": [
-       -140.0,
-       -560.0
+       -140,
+       -560
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -542070,18 +542070,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       -720.0
+       -140,
+       -720
       ],
       "location_absolute": [
-       -140.0,
-       -720.0
+       -140,
+       -720
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -542304,18 +542304,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       -880.0
+       -140,
+       -880
       ],
       "location_absolute": [
-       -140.0,
-       -880.0
+       -140,
+       -880
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -542538,18 +542538,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       -240.0
+       -140,
+       -240
       ],
       "location_absolute": [
-       -140.0,
-       -240.0
+       -140,
+       -240
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -542772,18 +542772,18 @@
      "label": null,
      "ui": {
       "location": [
-       120.0,
-       1040.0
+       120,
+       1040
       ],
       "location_absolute": [
-       120.0,
-       1040.0
+       120,
+       1040
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -542866,18 +542866,18 @@
      "label": null,
      "ui": {
       "location": [
-       300.0,
-       980.0
+       300,
+       980
       ],
       "location_absolute": [
-       300.0,
-       980.0
+       300,
+       980
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -542960,18 +542960,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       -80.0
+       -140,
+       -80
       ],
       "location_absolute": [
-       -140.0,
-       -80.0
+       -140,
+       -80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543194,18 +543194,18 @@
      "label": null,
      "ui": {
       "location": [
-       480.0,
-       920.0
+       480,
+       920
       ],
       "location_absolute": [
-       480.0,
-       920.0
+       480,
+       920
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543288,18 +543288,18 @@
      "label": null,
      "ui": {
       "location": [
-       660.0,
-       860.0
+       660,
+       860
       ],
       "location_absolute": [
-       660.0,
-       860.0
+       660,
+       860
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543382,18 +543382,18 @@
      "label": null,
      "ui": {
       "location": [
-       840.0,
-       800.0
+       840,
+       800
       ],
       "location_absolute": [
-       840.0,
-       800.0
+       840,
+       800
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543476,18 +543476,18 @@
      "label": null,
      "ui": {
       "location": [
-       1020.0,
-       740.0
+       1020,
+       740
       ],
       "location_absolute": [
-       1020.0,
-       740.0
+       1020,
+       740
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543570,18 +543570,18 @@
      "label": null,
      "ui": {
       "location": [
-       1200.0,
-       680.0
+       1200,
+       680
       ],
       "location_absolute": [
-       1200.0,
-       680.0
+       1200,
+       680
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543664,18 +543664,18 @@
      "label": null,
      "ui": {
       "location": [
-       1380.0,
-       620.0
+       1380,
+       620
       ],
       "location_absolute": [
-       1380.0,
-       620.0
+       1380,
+       620
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543758,18 +543758,18 @@
      "label": null,
      "ui": {
       "location": [
-       1560.0,
-       560.0
+       1560,
+       560
       ],
       "location_absolute": [
-       1560.0,
-       560.0
+       1560,
+       560
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543852,18 +543852,18 @@
      "label": null,
      "ui": {
       "location": [
-       1740.0,
-       500.0
+       1740,
+       500
       ],
       "location_absolute": [
-       1740.0,
-       500.0
+       1740,
+       500
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -543946,18 +543946,18 @@
      "label": null,
      "ui": {
       "location": [
-       1920.0,
-       440.0
+       1920,
+       440
       ],
       "location_absolute": [
-       1920.0,
-       440.0
+       1920,
+       440
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -544040,18 +544040,18 @@
      "label": null,
      "ui": {
       "location": [
-       2100.0,
-       380.0
+       2100,
+       380
       ],
       "location_absolute": [
-       2100.0,
-       380.0
+       2100,
+       380
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -544134,18 +544134,18 @@
      "label": null,
      "ui": {
       "location": [
-       2280.0,
-       320.0
+       2280,
+       320
       ],
       "location_absolute": [
-       2280.0,
-       320.0
+       2280,
+       320
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -544228,18 +544228,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       -1040.0
+       -140,
+       -1040
       ],
       "location_absolute": [
-       -140.0,
-       -1040.0
+       -140,
+       -1040
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -544462,18 +544462,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       -1200.0
+       -140,
+       -1200
       ],
       "location_absolute": [
-       -140.0,
-       -1200.0
+       -140,
+       -1200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -544696,18 +544696,18 @@
      "label": null,
      "ui": {
       "location": [
-       -140.0,
-       -1360.0
+       -140,
+       -1360
       ],
       "location_absolute": [
-       -140.0,
-       -1360.0
+       -140,
+       -1360
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -544930,18 +544930,18 @@
      "label": null,
      "ui": {
       "location": [
-       2460.0,
-       260.0
+       2460,
+       260
       ],
       "location_absolute": [
-       2460.0,
-       260.0
+       2460,
+       260
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -545024,18 +545024,18 @@
      "label": null,
      "ui": {
       "location": [
-       2640.0,
-       200.0
+       2640,
+       200
       ],
       "location_absolute": [
-       2640.0,
-       200.0
+       2640,
+       200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -545118,18 +545118,18 @@
      "label": null,
      "ui": {
       "location": [
-       -580.0,
-       1040.0
+       -580,
+       1040
       ],
       "location_absolute": [
-       -580.0,
-       1040.0
+       -580,
+       1040
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -545361,18 +545361,18 @@
      "label": null,
      "ui": {
       "location": [
-       2820.0,
-       140.0
+       2820,
+       140
       ],
       "location_absolute": [
-       2820.0,
-       140.0
+       2820,
+       140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -545455,18 +545455,18 @@
      "label": null,
      "ui": {
       "location": [
-       3040.0,
-       140.0
+       3040,
+       140
       ],
       "location_absolute": [
-       3040.0,
-       140.0
+       3040,
+       140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546097,6 +546097,10 @@
      "from_type": "NodeSocketInt",
      "to_type": "NodeSocketInt"
     }
+   ],
+   "view_center": [
+    163.29852294921875,
+    -61.262481689453125
    ]
   },
   "NodeGroupSampleSquare.001": {
@@ -546182,18 +546186,18 @@
      "label": null,
      "ui": {
       "location": [
-       -1700.0,
-       0.0
+       -1700,
+       0
       ],
       "location_absolute": [
-       -1700.0,
-       0.0
+       -1700,
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546282,18 +546286,18 @@
      "label": null,
      "ui": {
       "location": [
-       680.0,
-       610.0
+       680,
+       610
       ],
       "location_absolute": [
-       680.0,
-       610.0
+       680,
+       610
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546365,18 +546369,18 @@
      "label": null,
      "ui": {
       "location": [
-       680.0,
-       450.0
+       680,
+       450
       ],
       "location_absolute": [
-       680.0,
-       450.0
+       680,
+       450
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546448,18 +546452,18 @@
      "label": null,
      "ui": {
       "location": [
-       860.0,
-       450.0
+       860,
+       450
       ],
       "location_absolute": [
-       860.0,
-       450.0
+       860,
+       450
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546543,18 +546547,18 @@
      "label": null,
      "ui": {
       "location": [
-       860.0,
-       610.0
+       860,
+       610
       ],
       "location_absolute": [
-       860.0,
-       610.0
+       860,
+       610
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546638,18 +546642,18 @@
      "label": null,
      "ui": {
       "location": [
-       1040.0,
-       590.0
+       1040,
+       590
       ],
       "location_absolute": [
-       1040.0,
-       590.0
+       1040,
+       590
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546733,18 +546737,18 @@
      "label": null,
      "ui": {
       "location": [
-       1040.0,
-       270.0
+       1040,
+       270
       ],
       "location_absolute": [
-       1040.0,
-       270.0
+       1040,
+       270
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546828,18 +546832,18 @@
      "label": null,
      "ui": {
       "location": [
-       860.0,
-       130.0
+       860,
+       130
       ],
       "location_absolute": [
-       860.0,
-       130.0
+       860,
+       130
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -546923,18 +546927,18 @@
      "label": null,
      "ui": {
       "location": [
-       860.0,
-       290.0
+       860,
+       290
       ],
       "location_absolute": [
-       860.0,
-       290.0
+       860,
+       290
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -547018,18 +547022,18 @@
      "label": null,
      "ui": {
       "location": [
-       680.0,
-       290.0
+       680,
+       290
       ],
       "location_absolute": [
-       680.0,
-       290.0
+       680,
+       290
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -547101,18 +547105,18 @@
      "label": null,
      "ui": {
       "location": [
-       680.0,
-       130.0
+       680,
+       130
       ],
       "location_absolute": [
-       680.0,
-       130.0
+       680,
+       130
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -547184,18 +547188,18 @@
      "label": null,
      "ui": {
       "location": [
-       260.0,
-       -610.0
+       260,
+       -610
       ],
       "location_absolute": [
-       260.0,
-       -610.0
+       260,
+       -610
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -547279,18 +547283,18 @@
      "label": null,
      "ui": {
       "location": [
-       680.0,
-       -50.0
+       680,
+       -50
       ],
       "location_absolute": [
-       680.0,
-       -50.0
+       680,
+       -50
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -547366,18 +547370,18 @@
      "label": null,
      "ui": {
       "location": [
-       260.0,
-       -130.0
+       260,
+       -130
       ],
       "location_absolute": [
-       260.0,
-       -130.0
+       260,
+       -130
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -547461,18 +547465,18 @@
      "label": null,
      "ui": {
       "location": [
-       260.0,
-       -290.0
+       260,
+       -290
       ],
       "location_absolute": [
-       260.0,
-       -290.0
+       260,
+       -290
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -547556,18 +547560,18 @@
      "label": null,
      "ui": {
       "location": [
-       260.0,
-       -450.0
+       260,
+       -450
       ],
       "location_absolute": [
-       260.0,
-       -450.0
+       260,
+       -450
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -547651,18 +547655,18 @@
      "label": null,
      "ui": {
       "location": [
-       680.0,
-       -210.0
+       680,
+       -210
       ],
       "location_absolute": [
-       680.0,
-       -210.0
+       680,
+       -210
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -547738,18 +547742,18 @@
      "label": null,
      "ui": {
       "location": [
-       680.0,
-       -370.0
+       680,
+       -370
       ],
       "location_absolute": [
-       680.0,
-       -370.0
+       680,
+       -370
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -547825,18 +547829,18 @@
      "label": null,
      "ui": {
       "location": [
-       680.0,
-       -530.0
+       680,
+       -530
       ],
       "location_absolute": [
-       680.0,
-       -530.0
+       680,
+       -530
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -547912,18 +547916,18 @@
      "label": null,
      "ui": {
       "location": [
-       260.0,
-       -50.0
+       260,
+       -50
       ],
       "location_absolute": [
-       260.0,
-       -50.0
+       260,
+       -50
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -547972,18 +547976,18 @@
      "label": null,
      "ui": {
       "location": [
-       -40.0,
-       -160.0
+       -40,
+       -160
       ],
       "location_absolute": [
-       -40.0,
-       -160.0
+       -40,
+       -160
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -548076,18 +548080,18 @@
      "label": null,
      "ui": {
       "location": [
-       1680.0,
-       320.0
+       1680,
+       320
       ],
       "location_absolute": [
-       1680.0,
-       320.0
+       1680,
+       320
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -548326,18 +548330,18 @@
      "label": null,
      "ui": {
       "location": [
-       2000.0,
-       160.0
+       2000,
+       160
       ],
       "location_absolute": [
-       2000.0,
-       160.0
+       2000,
+       160
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -548408,18 +548412,18 @@
      "label": null,
      "ui": {
       "location": [
-       1680.0,
-       80.0
+       1680,
+       80
       ],
       "location_absolute": [
-       1680.0,
-       80.0
+       1680,
+       80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -548658,18 +548662,18 @@
      "label": null,
      "ui": {
       "location": [
-       1460.0,
-       80.0
+       1460,
+       80
       ],
       "location_absolute": [
-       1460.0,
-       80.0
+       1460,
+       80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -548752,18 +548756,18 @@
      "label": null,
      "ui": {
       "location": [
-       1460.0,
-       300.0
+       1460,
+       300
       ],
       "location_absolute": [
-       1460.0,
-       300.0
+       1460,
+       300
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -548846,18 +548850,18 @@
      "label": null,
      "ui": {
       "location": [
-       -640.0,
-       -660.0
+       -640,
+       -660
       ],
       "location_absolute": [
-       -640.0,
-       -660.0
+       -640,
+       -660
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -549112,18 +549116,18 @@
      "label": null,
      "ui": {
       "location": [
-       -500.0,
-       -660.0
+       -500,
+       -660
       ],
       "location_absolute": [
-       -500.0,
-       -660.0
+       -500,
+       -660
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -549378,18 +549382,18 @@
      "label": null,
      "ui": {
       "location": [
-       -340.0,
-       -660.0
+       -340,
+       -660
       ],
       "location_absolute": [
-       -340.0,
-       -660.0
+       -340,
+       -660
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -549644,18 +549648,18 @@
      "label": null,
      "ui": {
       "location": [
-       -200.0,
-       -660.0
+       -200,
+       -660
       ],
       "location_absolute": [
-       -200.0,
-       -660.0
+       -200,
+       -660
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -550374,6 +550378,10 @@
      "from_type": "NodeSocketBool",
      "to_type": "NodeSocketBool"
     }
+   ],
+   "view_center": [
+    -242.99591064453125,
+    -743.4736328125
    ]
   },
   "Marching Squares Surface.001": {
@@ -550440,18 +550448,18 @@
      "label": null,
      "ui": {
       "location": [
-       4960.0,
-       180.0
+       4960,
+       180
       ],
       "location_absolute": [
-       4960.0,
-       180.0
+       4960,
+       180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -550509,18 +550517,18 @@
      "label": null,
      "ui": {
       "location": [
-       4960.0,
-       400.0
+       4960,
+       400
       ],
       "location_absolute": [
-       4960.0,
-       400.0
+       4960,
+       400
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -550603,18 +550611,18 @@
      "label": null,
      "ui": {
       "location": [
-       4280.0,
-       20.0
+       4280,
+       20
       ],
       "location_absolute": [
-       4280.0,
-       20.0
+       4280,
+       20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -550728,18 +550736,18 @@
      "label": null,
      "ui": {
       "location": [
-       4100.0,
-       20.0
+       4100,
+       20
       ],
       "location_absolute": [
-       4100.0,
-       20.0
+       4100,
+       20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -550853,18 +550861,18 @@
      "label": null,
      "ui": {
       "location": [
-       3800.0,
-       120.0
+       3800,
+       120
       ],
       "location_absolute": [
-       3800.0,
-       120.0
+       3800,
+       120
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -550958,18 +550966,18 @@
      "label": null,
      "ui": {
       "location": [
-       3800.0,
-       -80.0
+       3800,
+       -80
       ],
       "location_absolute": [
-       3800.0,
-       -80.0
+       3800,
+       -80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -551063,18 +551071,18 @@
      "label": null,
      "ui": {
       "location": [
-       3800.0,
-       300.0
+       3800,
+       300
       ],
       "location_absolute": [
-       3800.0,
-       300.0
+       3800,
+       300
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -551146,18 +551154,18 @@
      "label": null,
      "ui": {
       "location": [
-       4640.0,
-       500.0
+       4640,
+       500
       ],
       "location_absolute": [
-       4640.0,
-       500.0
+       4640,
+       500
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -551412,18 +551420,18 @@
      "label": null,
      "ui": {
       "location": [
-       3540.0,
-       220.0
+       3540,
+       220
       ],
       "location_absolute": [
-       3540.0,
-       220.0
+       3540,
+       220
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -551533,18 +551541,18 @@
      "label": null,
      "ui": {
       "location": [
-       3280.0,
-       0.0
+       3280,
+       0
       ],
       "location_absolute": [
-       3280.0,
-       0.0
+       3280,
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -551604,18 +551612,18 @@
      "label": null,
      "ui": {
       "location": [
-       3280.0,
-       -220.0
+       3280,
+       -220
       ],
       "location_absolute": [
-       3280.0,
-       -220.0
+       3280,
+       -220
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -551699,18 +551707,18 @@
      "label": null,
      "ui": {
       "location": [
-       3440.0,
-       -220.0
+       3440,
+       -220
       ],
       "location_absolute": [
-       3440.0,
-       -220.0
+       3440,
+       -220
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -551933,18 +551941,18 @@
      "label": null,
      "ui": {
       "location": [
-       2880.0,
-       -200.0
+       2880,
+       -200
       ],
       "location_absolute": [
-       2880.0,
-       -200.0
+       2880,
+       -200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -552015,18 +552023,18 @@
      "label": null,
      "ui": {
       "location": [
-       3060.0,
-       -400.0
+       3060,
+       -400
       ],
       "location_absolute": [
-       3060.0,
-       -400.0
+       3060,
+       -400
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -552097,18 +552105,18 @@
      "label": null,
      "ui": {
       "location": [
-       2500.0,
-       -160.0
+       2500,
+       -160
       ],
       "location_absolute": [
-       2500.0,
-       -160.0
+       2500,
+       -160
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -552331,18 +552339,18 @@
      "label": null,
      "ui": {
       "location": [
-       2500.0,
-       -660.0
+       2500,
+       -660
       ],
       "location_absolute": [
-       2500.0,
-       -660.0
+       2500,
+       -660
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -552565,18 +552573,18 @@
      "label": null,
      "ui": {
       "location": [
-       2500.0,
-       -500.0
+       2500,
+       -500
       ],
       "location_absolute": [
-       2500.0,
-       -500.0
+       2500,
+       -500
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -552799,18 +552807,18 @@
      "label": null,
      "ui": {
       "location": [
-       2700.0,
-       -500.0
+       2700,
+       -500
       ],
       "location_absolute": [
-       2700.0,
-       -500.0
+       2700,
+       -500
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -552881,18 +552889,18 @@
      "label": null,
      "ui": {
       "location": [
-       2500.0,
-       -840.0
+       2500,
+       -840
       ],
       "location_absolute": [
-       2500.0,
-       -840.0
+       2500,
+       -840
       ],
-      "width": 150.0,
-      "height": 100.0,
+      "width": 150,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -552948,18 +552956,18 @@
      "label": null,
      "ui": {
       "location": [
-       2700.0,
-       -720.0
+       2700,
+       -720
       ],
       "location_absolute": [
-       2700.0,
-       -720.0
+       2700,
+       -720
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -553182,18 +553190,18 @@
      "label": null,
      "ui": {
       "location": [
-       1240.0,
-       -380.0
+       1240,
+       -380
       ],
       "location_absolute": [
-       1240.0,
-       -380.0
+       1240,
+       -380
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -553277,18 +553285,18 @@
      "label": null,
      "ui": {
       "location": [
-       1420.0,
-       -380.0
+       1420,
+       -380
       ],
       "location_absolute": [
-       1420.0,
-       -380.0
+       1420,
+       -380
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -553372,18 +553380,18 @@
      "label": null,
      "ui": {
       "location": [
-       1060.0,
-       -460.0
+       1060,
+       -460
       ],
       "location_absolute": [
-       1060.0,
-       -460.0
+       1060,
+       -460
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -553428,18 +553436,18 @@
      "label": null,
      "ui": {
       "location": [
-       1060.0,
-       -540.0
+       1060,
+       -540
       ],
       "location_absolute": [
-       1060.0,
-       -540.0
+       1060,
+       -540
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -553499,18 +553507,18 @@
      "label": null,
      "ui": {
       "location": [
-       880.0,
-       -540.0
+       880,
+       -540
       ],
       "location_absolute": [
-       880.0,
-       -540.0
+       880,
+       -540
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -553603,18 +553611,18 @@
      "label": null,
      "ui": {
       "location": [
-       1600.0,
-       -380.0
+       1600,
+       -380
       ],
       "location_absolute": [
-       1600.0,
-       -380.0
+       1600,
+       -380
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -553697,18 +553705,18 @@
      "label": null,
      "ui": {
       "location": [
-       1780.0,
-       -380.0
+       1780,
+       -380
       ],
       "location_absolute": [
-       1780.0,
-       -380.0
+       1780,
+       -380
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -553768,18 +553776,18 @@
      "label": null,
      "ui": {
       "location": [
-       1960.0,
-       -380.0
+       1960,
+       -380
       ],
       "location_absolute": [
-       1960.0,
-       -380.0
+       1960,
+       -380
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -553863,18 +553871,18 @@
      "label": null,
      "ui": {
       "location": [
-       3060.0,
-       -200.0
+       3060,
+       -200
       ],
       "location_absolute": [
-       3060.0,
-       -200.0
+       3060,
+       -200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -553945,18 +553953,18 @@
      "label": null,
      "ui": {
       "location": [
-       2220.0,
-       20.0
+       2220,
+       20
       ],
       "location_absolute": [
-       2220.0,
-       20.0
+       2220,
+       20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -554066,18 +554074,18 @@
      "label": null,
      "ui": {
       "location": [
-       2700.0,
-       -200.0
+       2700,
+       -200
       ],
       "location_absolute": [
-       2700.0,
-       -200.0
+       2700,
+       -200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -554148,18 +554156,18 @@
      "label": null,
      "ui": {
       "location": [
-       2500.0,
-       -320.0
+       2500,
+       -320
       ],
       "location_absolute": [
-       2500.0,
-       -320.0
+       2500,
+       -320
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -554382,18 +554390,18 @@
      "label": null,
      "ui": {
       "location": [
-       6820.0,
-       420.0
+       6820,
+       420
       ],
       "location_absolute": [
-       6820.0,
-       420.0
+       6820,
+       420
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -554507,18 +554515,18 @@
      "label": null,
      "ui": {
       "location": [
-       7000.0,
-       420.0
+       7000,
+       420
       ],
       "location_absolute": [
-       7000.0,
-       420.0
+       7000,
+       420
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -554632,18 +554640,18 @@
      "label": null,
      "ui": {
       "location": [
-       7180.0,
-       420.0
+       7180,
+       420
       ],
       "location_absolute": [
-       7180.0,
-       420.0
+       7180,
+       420
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -554757,18 +554765,18 @@
      "label": null,
      "ui": {
       "location": [
-       6640.0,
-       420.0
+       6640,
+       420
       ],
       "location_absolute": [
-       6640.0,
-       420.0
+       6640,
+       420
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -554882,18 +554890,18 @@
      "label": null,
      "ui": {
       "location": [
-       6460.0,
-       420.0
+       6460,
+       420
       ],
       "location_absolute": [
-       6460.0,
-       420.0
+       6460,
+       420
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -555007,18 +555015,18 @@
      "label": null,
      "ui": {
       "location": [
-       6280.0,
-       420.0
+       6280,
+       420
       ],
       "location_absolute": [
-       6280.0,
-       420.0
+       6280,
+       420
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -555132,18 +555140,18 @@
      "label": null,
      "ui": {
       "location": [
-       6820.0,
-       220.0
+       6820,
+       220
       ],
       "location_absolute": [
-       6820.0,
-       220.0
+       6820,
+       220
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -555230,18 +555238,18 @@
      "label": null,
      "ui": {
       "location": [
-       7000.0,
-       220.0
+       7000,
+       220
       ],
       "location_absolute": [
-       7000.0,
-       220.0
+       7000,
+       220
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -555328,18 +555336,18 @@
      "label": null,
      "ui": {
       "location": [
-       6640.0,
-       220.0
+       6640,
+       220
       ],
       "location_absolute": [
-       6640.0,
-       220.0
+       6640,
+       220
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -555426,18 +555434,18 @@
      "label": null,
      "ui": {
       "location": [
-       6640.0,
-       40.0
+       6640,
+       40
       ],
       "location_absolute": [
-       6640.0,
-       40.0
+       6640,
+       40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -555524,18 +555532,18 @@
      "label": null,
      "ui": {
       "location": [
-       6280.0,
-       220.0
+       6280,
+       220
       ],
       "location_absolute": [
-       6280.0,
-       220.0
+       6280,
+       220
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -555622,18 +555630,18 @@
      "label": null,
      "ui": {
       "location": [
-       5600.0,
-       -120.0
+       5600,
+       -120
       ],
       "location_absolute": [
-       5600.0,
-       -120.0
+       5600,
+       -120
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -555717,18 +555725,18 @@
      "label": null,
      "ui": {
       "location": [
-       5600.0,
-       -280.0
+       5600,
+       -280
       ],
       "location_absolute": [
-       5600.0,
-       -280.0
+       5600,
+       -280
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -555812,18 +555820,18 @@
      "label": null,
      "ui": {
       "location": [
-       5600.0,
-       -440.0
+       5600,
+       -440
       ],
       "location_absolute": [
-       5600.0,
-       -440.0
+       5600,
+       -440
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -555907,18 +555915,18 @@
      "label": null,
      "ui": {
       "location": [
-       6020.0,
-       -40.0
+       6020,
+       -40
       ],
       "location_absolute": [
-       6020.0,
-       -40.0
+       6020,
+       -40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -555994,18 +556002,18 @@
      "label": null,
      "ui": {
       "location": [
-       6020.0,
-       -200.0
+       6020,
+       -200
       ],
       "location_absolute": [
-       6020.0,
-       -200.0
+       6020,
+       -200
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -556081,18 +556089,18 @@
      "label": null,
      "ui": {
       "location": [
-       5600.0,
-       -40.0
+       5600,
+       -40
       ],
       "location_absolute": [
-       5600.0,
-       -40.0
+       5600,
+       -40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -556141,18 +556149,18 @@
      "label": null,
      "ui": {
       "location": [
-       6020.0,
-       -360.0
+       6020,
+       -360
       ],
       "location_absolute": [
-       6020.0,
-       -360.0
+       6020,
+       -360
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -556228,18 +556236,18 @@
      "label": null,
      "ui": {
       "location": [
-       6460.0,
-       220.0
+       6460,
+       220
       ],
       "location_absolute": [
-       6460.0,
-       220.0
+       6460,
+       220
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -556326,18 +556334,18 @@
      "label": null,
      "ui": {
       "location": [
-       5160.0,
-       -540.0
+       5160,
+       -540
       ],
       "location_absolute": [
-       5160.0,
-       -540.0
+       5160,
+       -540
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -556592,18 +556600,18 @@
      "label": null,
      "ui": {
       "location": [
-       5320.0,
-       -600.0
+       5320,
+       -600
       ],
       "location_absolute": [
-       5320.0,
-       -600.0
+       5320,
+       -600
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -556858,18 +556866,18 @@
      "label": null,
      "ui": {
       "location": [
-       6100.0,
-       420.0
+       6100,
+       420
       ],
       "location_absolute": [
-       6100.0,
-       420.0
+       6100,
+       420
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -556979,18 +556987,18 @@
      "label": null,
      "ui": {
       "location": [
-       5900.0,
-       420.0
+       5900,
+       420
       ],
       "location_absolute": [
-       5900.0,
-       420.0
+       5900,
+       420
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -557100,18 +557108,18 @@
      "label": null,
      "ui": {
       "location": [
-       5180.0,
-       -260.0
+       5180,
+       -260
       ],
       "location_absolute": [
-       5180.0,
-       -260.0
+       5180,
+       -260
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -557204,18 +557212,18 @@
      "label": null,
      "ui": {
       "location": [
-       9580.0,
-       440.0
+       9580,
+       440
       ],
       "location_absolute": [
-       9580.0,
-       440.0
+       9580,
+       440
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -557273,18 +557281,18 @@
      "label": null,
      "ui": {
       "location": [
-       9580.0,
-       320.0
+       9580,
+       320
       ],
       "location_absolute": [
-       9580.0,
-       320.0
+       9580,
+       320
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -557355,18 +557363,18 @@
      "label": null,
      "ui": {
       "location": [
-       10020.0,
-       440.0
+       10020,
+       440
       ],
       "location_absolute": [
-       10020.0,
-       440.0
+       10020,
+       440
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -557425,18 +557433,18 @@
      "label": null,
      "ui": {
       "location": [
-       9340.0,
-       340.0
+       9340,
+       340
       ],
       "location_absolute": [
-       9340.0,
-       340.0
+       9340,
+       340
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -557534,18 +557542,18 @@
      "label": null,
      "ui": {
       "location": [
-       9800.0,
-       440.0
+       9800,
+       440
       ],
       "location_absolute": [
-       9800.0,
-       440.0
+       9800,
+       440
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -557639,18 +557647,18 @@
      "label": null,
      "ui": {
       "location": [
-       9100.0,
-       320.0
+       9100,
+       320
       ],
       "location_absolute": [
-       9100.0,
-       320.0
+       9100,
+       320
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -557745,18 +557753,18 @@
      "label": null,
      "ui": {
       "location": [
-       8880.0,
-       440.0
+       8880,
+       440
       ],
       "location_absolute": [
-       8880.0,
-       440.0
+       8880,
+       440
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -557894,18 +557902,18 @@
      "label": null,
      "ui": {
       "location": [
-       8940.0,
-       -180.0
+       8940,
+       -180
       ],
       "location_absolute": [
-       8940.0,
-       -180.0
+       8940,
+       -180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -557992,18 +558000,18 @@
      "label": null,
      "ui": {
       "location": [
-       9120.0,
-       -260.0
+       9120,
+       -260
       ],
       "location_absolute": [
-       9120.0,
-       -260.0
+       9120,
+       -260
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -558090,18 +558098,18 @@
      "label": null,
      "ui": {
       "location": [
-       8140.0,
-       20.0
+       8140,
+       20
       ],
       "location_absolute": [
-       8140.0,
-       20.0
+       8140,
+       20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -558324,18 +558332,18 @@
      "label": null,
      "ui": {
       "location": [
-       8140.0,
-       -140.0
+       8140,
+       -140
       ],
       "location_absolute": [
-       8140.0,
-       -140.0
+       8140,
+       -140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -558558,18 +558566,18 @@
      "label": null,
      "ui": {
       "location": [
-       8140.0,
-       -300.0
+       8140,
+       -300
       ],
       "location_absolute": [
-       8140.0,
-       -300.0
+       8140,
+       -300
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -558792,18 +558800,18 @@
      "label": null,
      "ui": {
       "location": [
-       8140.0,
-       -460.0
+       8140,
+       -460
       ],
       "location_absolute": [
-       8140.0,
-       -460.0
+       8140,
+       -460
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -559026,18 +559034,18 @@
      "label": null,
      "ui": {
       "location": [
-       8140.0,
-       -620.0
+       8140,
+       -620
       ],
       "location_absolute": [
-       8140.0,
-       -620.0
+       8140,
+       -620
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -559260,18 +559268,18 @@
      "label": null,
      "ui": {
       "location": [
-       8400.0,
-       80.0
+       8400,
+       80
       ],
       "location_absolute": [
-       8400.0,
-       80.0
+       8400,
+       80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -559358,18 +559366,18 @@
      "label": null,
      "ui": {
       "location": [
-       8580.0,
-       0.0
+       8580,
+       0
       ],
       "location_absolute": [
-       8580.0,
-       0.0
+       8580,
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -559456,18 +559464,18 @@
      "label": null,
      "ui": {
       "location": [
-       8760.0,
-       -80.0
+       8760,
+       -80
       ],
       "location_absolute": [
-       8760.0,
-       -80.0
+       8760,
+       -80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -559554,18 +559562,18 @@
      "label": null,
      "ui": {
       "location": [
-       7680.0,
-       -100.0
+       7680,
+       -100
       ],
       "location_absolute": [
-       7680.0,
-       -100.0
+       7680,
+       -100
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -559610,18 +559618,18 @@
      "label": null,
      "ui": {
       "location": [
-       7880.0,
-       20.0
+       7880,
+       20
       ],
       "location_absolute": [
-       7880.0,
-       20.0
+       7880,
+       20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -559731,18 +559739,18 @@
      "label": null,
      "ui": {
       "location": [
-       7680.0,
-       20.0
+       7680,
+       20
       ],
       "location_absolute": [
-       7680.0,
-       20.0
+       7680,
+       20
       ],
-      "width": 160.0,
-      "height": 100.0,
+      "width": 160,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -559800,18 +559808,18 @@
      "label": null,
      "ui": {
       "location": [
-       7200.0,
-       -40.0
+       7200,
+       -40
       ],
       "location_absolute": [
-       7200.0,
-       -40.0
+       7200,
+       -40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -559882,18 +559890,18 @@
      "label": null,
      "ui": {
       "location": [
-       7200.0,
-       -180.0
+       7200,
+       -180
       ],
       "location_absolute": [
-       7200.0,
-       -180.0
+       7200,
+       -180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -559964,18 +559972,18 @@
      "label": null,
      "ui": {
       "location": [
-       7200.0,
-       100.0
+       7200,
+       100
       ],
       "location_absolute": [
-       7200.0,
-       100.0
+       7200,
+       100
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -560046,18 +560054,18 @@
      "label": null,
      "ui": {
       "location": [
-       7200.0,
-       -320.0
+       7200,
+       -320
       ],
       "location_absolute": [
-       7200.0,
-       -320.0
+       7200,
+       -320
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -560128,18 +560136,18 @@
      "label": null,
      "ui": {
       "location": [
-       7200.0,
-       -460.0
+       7200,
+       -460
       ],
       "location_absolute": [
-       7200.0,
-       -460.0
+       7200,
+       -460
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -560210,18 +560218,18 @@
      "label": null,
      "ui": {
       "location": [
-       7400.0,
-       -360.0
+       7400,
+       -360
       ],
       "location_absolute": [
-       7400.0,
-       -360.0
+       7400,
+       -360
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -560279,18 +560287,18 @@
      "label": null,
      "ui": {
       "location": [
-       7200.0,
-       -600.0
+       7200,
+       -600
       ],
       "location_absolute": [
-       7200.0,
-       -600.0
+       7200,
+       -600
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -560361,18 +560369,18 @@
      "label": null,
      "ui": {
       "location": [
-       7400.0,
-       -600.0
+       7400,
+       -600
       ],
       "location_absolute": [
-       7400.0,
-       -600.0
+       7400,
+       -600
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -560442,18 +560450,18 @@
      "label": null,
      "ui": {
       "location": [
-       8660.0,
-       440.0
+       8660,
+       440
       ],
       "location_absolute": [
-       8660.0,
-       440.0
+       8660,
+       440
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -560552,18 +560560,18 @@
      "label": null,
      "ui": {
       "location": [
-       3440.0,
-       -500.0
+       3440,
+       -500
       ],
       "location_absolute": [
-       3440.0,
-       -500.0
+       3440,
+       -500
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -560647,18 +560655,18 @@
      "label": null,
      "ui": {
       "location": [
-       5000.0,
-       -480.0
+       5000,
+       -480
       ],
       "location_absolute": [
-       5000.0,
-       -480.0
+       5000,
+       -480
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -560913,18 +560921,18 @@
      "label": null,
      "ui": {
       "location": [
-       4640.0,
-       20.0
+       4640,
+       20
       ],
       "location_absolute": [
-       4640.0,
-       20.0
+       4640,
+       20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -561034,18 +561042,18 @@
      "label": null,
      "ui": {
       "location": [
-       4460.0,
-       20.0
+       4460,
+       20
       ],
       "location_absolute": [
-       4460.0,
-       20.0
+       4460,
+       20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -561155,18 +561163,18 @@
      "label": null,
      "ui": {
       "location": [
-       3800.0,
-       -360.0
+       3800,
+       -360
       ],
       "location_absolute": [
-       3800.0,
-       -360.0
+       3800,
+       -360
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -561284,18 +561292,18 @@
      "label": null,
      "ui": {
       "location": [
-       600.0,
-       80.0
+       600,
+       80
       ],
       "location_absolute": [
-       600.0,
-       80.0
+       600,
+       80
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -561405,18 +561413,18 @@
      "label": null,
      "ui": {
       "location": [
-       5260.0,
-       140.0
+       5260,
+       140
       ],
       "location_absolute": [
-       5260.0,
-       140.0
+       5260,
+       140
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -561534,18 +561542,18 @@
      "label": null,
      "ui": {
       "location": [
-       880.0,
-       -180.0
+       880,
+       -180
       ],
       "location_absolute": [
-       880.0,
-       -180.0
+       880,
+       -180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -561768,18 +561776,18 @@
      "label": null,
      "ui": {
       "location": [
-       1080.0,
-       -300.0
+       1080,
+       -300
       ],
       "location_absolute": [
-       1080.0,
-       -300.0
+       1080,
+       -300
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -561850,18 +561858,18 @@
      "label": null,
      "ui": {
       "location": [
-       1280.0,
-       -160.0
+       1280,
+       -160
       ],
       "location_absolute": [
-       1280.0,
-       -160.0
+       1280,
+       -160
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -561944,18 +561952,18 @@
      "label": null,
      "ui": {
       "location": [
-       200.0,
-       -100.0
+       200,
+       -100
       ],
       "location_absolute": [
-       200.0,
-       -100.0
+       200,
+       -100
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -563480,6 +563488,10 @@
      "from_type": "NodeSocketBool",
      "to_type": "NodeSocketBool"
     }
+   ],
+   "view_center": [
+    991.8663330078125,
+    -183.4735565185547
    ]
   },
   "NodeGroup.036": {
@@ -563528,11 +563540,11 @@
        329.10870361328125,
        12.78127670288086
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -563598,11 +563610,11 @@
        -368.80218505859375,
        2.1302127838134766
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -563681,11 +563693,11 @@
        95.76507568359375,
        100.8253402709961
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -563778,10 +563790,10 @@
        72.4272232055664
       ],
       "width": 188.9777374267578,
-      "height": 100.0,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -563909,6 +563921,10 @@
      "from_type": "NodeSocketColor",
      "to_type": "NodeSocketColor"
     }
+   ],
+   "view_center": [
+    -49.60441589355469,
+    -51.15496826171875
    ]
   },
   "G_Set Shade AutoSmooth": {
@@ -563982,11 +563998,11 @@
        619.7237548828125,
        178.5379638671875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -564076,11 +564092,11 @@
        -387.7402038574219,
        -17.48065185546875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -564310,11 +564326,11 @@
        970.7953491210938,
        134.2288055419922
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -564380,11 +564396,11 @@
        -1001.2708129882812,
        -88.2349853515625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -564447,11 +564463,11 @@
        -617.333984375,
        -96.73131561279297
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -564541,11 +564557,11 @@
        -804.3250732421875,
        -41.73021697998047
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -564775,11 +564791,11 @@
        -619.3970336914062,
        -142.86669921875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -564870,11 +564886,11 @@
        -1049.30224609375,
        110.211181640625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -564981,11 +564997,11 @@
        806.8157348632812,
        165.66311645507812
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -565075,11 +565091,11 @@
        260.6750183105469,
        60.83710479736328
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -565157,11 +565173,11 @@
        31.075328826904297,
        -0.9187421798706055
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -565239,11 +565255,11 @@
        -167.99998474121094,
        8.422317504882812
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -565454,6 +565470,10 @@
      "from_type": "NodeSocketBool",
      "to_type": "NodeSocketBool"
     }
+   ],
+   "view_center": [
+    715.9102783203125,
+    -133.202392578125
    ]
   },
   "peak emboss": {
@@ -565494,17 +565514,17 @@
      "ui": {
       "location": [
        486.0799560546875,
-       0.0
+       0
       ],
       "location_absolute": [
        486.0799560546875,
-       0.0
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -565564,17 +565584,17 @@
      "ui": {
       "location": [
        -496.080078125,
-       0.0
+       0
       ],
       "location_absolute": [
        -496.080078125,
-       0.0
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -565648,11 +565668,11 @@
        -296.080078125,
        153.69338989257812
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -565757,11 +565777,11 @@
        74.0645751953125,
        167.6171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -565854,11 +565874,11 @@
        -108.2965087890625,
        163.82138061523438
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -565983,11 +566003,11 @@
        -98.7137451171875,
        -167.61720275878906
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -566092,11 +566112,11 @@
        296.0799560546875,
        -52.32548522949219
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -566234,6 +566254,10 @@
      "from_type": "NodeSocketFloat",
      "to_type": "NodeSocketFloat"
     }
+   ],
+   "view_center": [
+    -0.0001220703125,
+    0
    ]
   },
   "ETK_Mesh Boundary.001": {
@@ -566306,11 +566330,11 @@
        548.3076782226562,
        60.923095703125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -566549,11 +566573,11 @@
        731.076904296875,
        60.923095703125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -566631,11 +566655,11 @@
        365.5384521484375,
        60.923095703125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -566767,11 +566791,11 @@
        203.07684326171875,
        60.923038482666016
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -566850,11 +566874,11 @@
        40.61538314819336,
        60.92307662963867
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -567084,11 +567108,11 @@
        40.61538314819336,
        -121.84615325927734
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -567173,11 +567197,11 @@
        -121.84615325927734,
        60.92307662963867
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -567299,6 +567323,10 @@
      "from_type": "NodeSocketInt",
      "to_type": "NodeSocketInt"
     }
+   ],
+   "view_center": [
+    516.6521606445312,
+    -94.3974609375
    ]
   },
   "peak emboss.001": {
@@ -567372,17 +567400,17 @@
      "ui": {
       "location": [
        486.0799560546875,
-       0.0
+       0
       ],
       "location_absolute": [
        486.0799560546875,
-       0.0
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -567460,11 +567488,11 @@
        -478.2020263671875,
        -20.858915328979492
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -567560,11 +567588,11 @@
        -296.080078125,
        153.69338989257812
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -567669,11 +567697,11 @@
        74.0645751953125,
        167.6171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -567766,11 +567794,11 @@
        -108.2965087890625,
        163.82138061523438
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -567895,11 +567923,11 @@
        8.393523216247559,
        -52.450225830078125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -568083,6 +568111,10 @@
      "from_type": "NodeSocketFloat",
      "to_type": "NodeSocketFloat"
     }
+   ],
+   "view_center": [
+    4.742431640625,
+    0
    ]
   },
   "Marching Squares N++": {
@@ -568248,11 +568280,11 @@
        7646.8154296875,
        2156.029052734375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -568355,11 +568387,11 @@
        -3603.494384765625,
        -726.273193359375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -568462,11 +568494,11 @@
        -4132.34228515625,
        3928.267333984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -568587,11 +568619,11 @@
        -5279.13671875,
        -627.18701171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -568720,11 +568752,11 @@
        -3632.172119140625,
        4063.357666015625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -568829,11 +568861,11 @@
        -3635.892822265625,
        2505.7763671875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -568938,11 +568970,11 @@
        -3846.269775390625,
        -31.52685546875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -569073,11 +569105,11 @@
        -5755.3115234375,
        -2236.52978515625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -569307,11 +569339,11 @@
        -5498.84912109375,
        -1468.49951171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -569541,11 +569573,11 @@
        -4553.91845703125,
        3510.1259765625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -569775,11 +569807,11 @@
        -5509.50634765625,
        -3848.40576171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -570009,11 +570041,11 @@
        -4699.314453125,
        -3430.9189453125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -570134,11 +570166,11 @@
        -5742.6181640625,
        -3215.712890625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -570216,11 +570248,11 @@
        -5537.509765625,
        -2018.08447265625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -570349,11 +570381,11 @@
        -5537.509765625,
        -2435.162109375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -570482,11 +570514,11 @@
        -4745.86279296875,
        4051.177978515625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -570564,11 +570596,11 @@
        -3838.22607421875,
        2442.42919921875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -570699,11 +570731,11 @@
        -4336.1171875,
        3526.4443359375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -570832,11 +570864,11 @@
        -4748.302734375,
        3859.4755859375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -570888,11 +570920,11 @@
        -3638.6435546875,
        2123.302978515625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -570997,11 +571029,11 @@
        -4334.20556640625,
        3928.880615234375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -571130,11 +571162,11 @@
        -4472.84814453125,
        -623.329833984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -571255,11 +571287,11 @@
        -5281.04736328125,
        -1029.6220703125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -571388,11 +571420,11 @@
        -5289.79296875,
        -3429.650390625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -571521,11 +571553,11 @@
        -5949.6962890625,
        -1887.1796875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -571577,11 +571609,11 @@
        -5498.84912109375,
        -1260.892578125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -571811,11 +571843,11 @@
        -3641.326416015625,
        1414.4736328125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -571920,11 +571952,11 @@
        -3635.892822265625,
        3466.785400390625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -572029,11 +572061,11 @@
        -5755.3115234375,
        -2034.404296875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -572263,11 +572295,11 @@
        -5755.3115234375,
        -2912.40576171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -572497,11 +572529,11 @@
        -3638.5322265625,
        1721.093994140625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -572606,11 +572638,11 @@
        -4553.91845703125,
        3712.252197265625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -572840,11 +572872,11 @@
        -4509.37939453125,
        -1824.74169921875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -572965,11 +572997,11 @@
        -5077.2724609375,
        -627.798583984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -573090,11 +573122,11 @@
        -3908.44580078125,
        1733.010009765625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -573225,11 +573257,11 @@
        -5498.84912109375,
        -667.08544921875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -573459,11 +573491,11 @@
        -5947.255859375,
        -1695.4775390625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -573541,11 +573573,11 @@
        -3838.22607421875,
        3403.43798828125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -573676,11 +573708,11 @@
        -5509.50634765625,
        -3469.548828125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -573910,11 +573942,11 @@
        -4336.1171875,
        3728.57080078125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -574043,11 +574075,11 @@
        -5500.744140625,
        655.47119140625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -574125,11 +574157,11 @@
        -3649.9775390625,
        1126.1907958984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -574234,11 +574266,11 @@
        -5291.703125,
        -3629.95947265625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -574367,11 +574399,11 @@
        -4875.86474609375,
        -3431.2314453125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -574492,11 +574524,11 @@
        -3616.74072265625,
        3049.652099609375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -574601,11 +574633,11 @@
        -5333.7353515625,
        -1818.388671875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -574726,11 +574758,11 @@
        -4945.1201171875,
        -1819.04296875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -574851,11 +574883,11 @@
        -5755.3115234375,
        -2451.48046875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -575085,11 +575117,11 @@
        -3837.3759765625,
        -467.486083984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -575220,11 +575252,11 @@
        -3920.27685546875,
        3927.29931640625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -575345,11 +575377,11 @@
        -3638.5322265625,
        3750.510009765625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -575454,11 +575486,11 @@
        -5703.89013671875,
        -3499.0546875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -575510,11 +575542,11 @@
        -5281.04736328125,
        -1452.1806640625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -575643,11 +575675,11 @@
        -4553.91845703125,
        3888.982177734375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -575877,11 +575909,11 @@
        -5537.509765625,
        -2654.09716796875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -576010,11 +576042,11 @@
        -5498.84912109375,
        -1045.941650390625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -576244,11 +576276,11 @@
        -4688.65673828125,
        -628.454833984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -576369,11 +576401,11 @@
        -5121.669921875,
        -1819.35546875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -576494,11 +576526,11 @@
        -5509.50634765625,
        -3646.279296875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -576728,11 +576760,11 @@
        -5509.50634765625,
        -4063.357421875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -576962,11 +576994,11 @@
        -5537.509765625,
        -2220.21044921875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -577095,11 +577127,11 @@
        -4729.310546875,
        -1813.91796875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -577220,11 +577252,11 @@
        -3625.818603515625,
        2751.906005859375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -577329,11 +577361,11 @@
        -5755.3115234375,
        -2659.08935546875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -577563,11 +577595,11 @@
        -3908.44580078125,
        3762.426025390625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -577698,11 +577730,11 @@
        -3829.706787109375,
        2088.84326171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -577833,11 +577865,11 @@
        -5498.84912109375,
        -843.814208984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -578067,11 +578099,11 @@
        -3875.45654296875,
        1140.8798828125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -578202,11 +578234,11 @@
        -5535.59912109375,
        -1817.7734375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -578335,11 +578367,11 @@
        -5537.509765625,
        -2896.0859375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -578468,11 +578500,11 @@
        -4865.20751953125,
        -628.76806640625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -578593,11 +578625,11 @@
        -5281.04736328125,
        -1244.57421875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -578726,11 +578758,11 @@
        -3908.44580078125,
        3035.095947265625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -578861,11 +578893,11 @@
        -5755.3115234375,
        -1857.673828125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -579095,11 +579127,11 @@
        -5281.04736328125,
        -827.496337890625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -579228,11 +579260,11 @@
        -5291.703125,
        -4047.0390625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -579361,11 +579393,11 @@
        -5087.93017578125,
        -3430.26416015625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -579486,11 +579518,11 @@
        -5291.703125,
        -3832.0869140625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -579619,11 +579651,11 @@
        -2567.060791015625,
        2969.056640625
       ],
-      "width": 160.0,
-      "height": 100.0,
+      "width": 160,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -579688,11 +579720,11 @@
        -3651.60009765625,
        815.08544921875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -579797,11 +579829,11 @@
        -3642.706787109375,
        -427.6064453125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -579906,11 +579938,11 @@
        -3628.494384765625,
        -726.273193359375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -580026,11 +580058,11 @@
        -3651.60009765625,
        8.352783203125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -580135,11 +580167,11 @@
        -3859.42529296875,
        384.347900390625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -580270,11 +580302,11 @@
        -3646.51416015625,
        446.09033203125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -580379,11 +580411,11 @@
        699.573974609375,
        2816.15576171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -580606,11 +580638,11 @@
        57.4814453125,
        2184.08154296875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -580735,11 +580767,11 @@
        54.2744140625,
        2033.2835693359375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -580864,11 +580896,11 @@
        18.12091064453125,
        2115.6396484375
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -580938,11 +580970,11 @@
        -2105.5576171875,
        3022.356201171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -581063,11 +581095,11 @@
        -2333.138671875,
        2854.260986328125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -581123,11 +581155,11 @@
        -530.4498291015625,
        2638.15087890625
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -581193,11 +581225,11 @@
        -523.5084838867188,
        2146.0234375
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -581263,11 +581295,11 @@
        410.15948486328125,
        2475.290283203125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -581392,11 +581424,11 @@
        -582.4761962890625,
        2783.5068359375
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -581462,11 +581494,11 @@
        -5693.2333984375,
        -696.590087890625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -581518,11 +581550,11 @@
        996.62109375,
        3252.59326171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -581643,11 +581675,11 @@
        -754.3064575195312,
        2331.78759765625
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -581713,11 +581745,11 @@
        -796.2604370117188,
        2148.55078125
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -581783,11 +581815,11 @@
        -1748.0234375,
        3635.489501953125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -581898,11 +581930,11 @@
        -1318.547607421875,
        3536.96435546875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -582009,11 +582041,11 @@
        -1139.7978515625,
        3558.86279296875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -582134,11 +582166,11 @@
        -1497.4224853515625,
        3485.923095703125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -582203,11 +582235,11 @@
        -1099.498291015625,
        2563.747802734375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -582300,11 +582332,11 @@
        -1555.650146484375,
        3208.066650390625
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -582370,11 +582402,11 @@
        -1551.877197265625,
        3229.35498046875
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -582440,11 +582472,11 @@
        407.57568359375,
        2230.894287109375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -582674,11 +582706,11 @@
        570.1633911132812,
        2158.28759765625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -582756,11 +582788,11 @@
        -457.9742736816406,
        3447.274658203125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -582850,11 +582882,11 @@
        -1459.2098388671875,
        4140.7255859375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -582986,11 +583018,11 @@
        -1254.6505126953125,
        4063.42724609375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -583081,11 +583113,11 @@
        -630.749267578125,
        3597.667236328125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -583163,11 +583195,11 @@
        -871.9273681640625,
        3800.36865234375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -583397,11 +583429,11 @@
        -871.3146362304688,
        3606.822998046875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -583631,11 +583663,11 @@
        -1459.2098388671875,
        3805.869140625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -583767,11 +583799,11 @@
        -1459.2098388671875,
        3946.171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -583903,11 +583935,11 @@
        -1552.596923828125,
        3366.376220703125
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -583973,11 +584005,11 @@
        -1064.868408203125,
        3923.412109375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -584068,11 +584100,11 @@
        995.1242065429688,
        3366.346435546875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -584124,11 +584156,11 @@
        -1074.0391845703125,
        2871.4990234375
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -584194,11 +584226,11 @@
        -1937.756591796875,
        3248.556640625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -584375,11 +584407,11 @@
        -799.8662109375,
        2842.0283203125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -584470,11 +584502,11 @@
        -1107.6571044921875,
        2826.04150390625
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -584540,11 +584572,11 @@
        -803.5685424804688,
        2679.3896484375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -584635,11 +584667,11 @@
        -755.9410400390625,
        2464.933837890625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -584685,17 +584717,17 @@
      "ui": {
       "location": [
        -139.99996948242188,
-       2920.0
+       2920
       ],
       "location_absolute": [
        -139.99996948242188,
-       2920.0
+       2920
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -584806,11 +584838,11 @@
        516.58203125,
        2722.490966796875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -584903,11 +584935,11 @@
        302.84466552734375,
        2630.162353515625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -584998,11 +585030,11 @@
        219.4908905029297,
        2414.986083984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -585095,11 +585127,11 @@
        129.3717803955078,
        2599.13818359375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -585190,11 +585222,11 @@
        317.15252685546875,
        2800.3681640625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -585285,11 +585317,11 @@
        -407.94708251953125,
        2848.652099609375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -585380,11 +585412,11 @@
        53.66289138793945,
        2583.4462890625
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -585450,11 +585482,11 @@
        -168.452880859375,
        2612.394287109375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -585545,11 +585577,11 @@
        937.4737548828125,
        2972.9892578125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -585654,11 +585686,11 @@
        1350.364990234375,
        2640.685791015625
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -585728,11 +585760,11 @@
        1409.243896484375,
        3141.952392578125
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -585798,11 +585830,11 @@
        1520.547119140625,
        3057.745849609375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -585943,11 +585975,11 @@
        1207.7843017578125,
        3253.22412109375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -586064,11 +586096,11 @@
        1743.1142578125,
        3064.943603515625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -586170,11 +586202,11 @@
        737.3223266601562,
        2278.45947265625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -586264,11 +586296,11 @@
        3698.104248046875,
        2365.750244140625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -586355,11 +586387,11 @@
        3725.86669921875,
        2776.582275390625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -586589,11 +586621,11 @@
        3937.544189453125,
        2315.07763671875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -586823,11 +586855,11 @@
        3727.353515625,
        2610.32177734375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -586918,11 +586950,11 @@
        6424.0263671875,
        3004.078369140625
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -586988,11 +587020,11 @@
        6331.4990234375,
        2960.28857421875
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -587058,11 +587090,11 @@
        6754.0498046875,
        3139.8701171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -587153,11 +587185,11 @@
        6751.2529296875,
        3315.274169921875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -587248,11 +587280,11 @@
        6405.0693359375,
        2893.396240234375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -587369,11 +587401,11 @@
        6864.8154296875,
        2428.701416015625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -587451,11 +587483,11 @@
        8073.8642578125,
        2062.720458984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -587596,11 +587628,11 @@
        8243.572265625,
        2061.8486328125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -587702,11 +587734,11 @@
        7621.8154296875,
        2156.029052734375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -587822,11 +587854,11 @@
        7791.2080078125,
        2168.31689453125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -587905,11 +587937,11 @@
        7311.0986328125,
        1875.986572265625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -588000,11 +588032,11 @@
        7309.57666015625,
        2040.3970947265625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -588095,11 +588127,11 @@
        6019.60498046875,
        2927.32861328125
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -588165,11 +588197,11 @@
        6762.265625,
        2942.3603515625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -588274,11 +588306,11 @@
        6979.8173828125,
        3244.042724609375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -588369,11 +588401,11 @@
        8252.4326171875,
        3119.76416015625
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -588439,11 +588471,11 @@
        8486.0654296875,
        2773.25732421875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -588495,11 +588527,11 @@
        8685.1064453125,
        2658.9755859375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -588729,11 +588761,11 @@
        8876.3203125,
        2756.06884765625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -588811,11 +588843,11 @@
        8485.6201171875,
        3096.39208984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -588905,11 +588937,11 @@
        9164.927734375,
        3184.032958984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -588999,11 +589031,11 @@
        9967.849609375,
        3061.63232421875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -589105,11 +589137,11 @@
        8685.1064453125,
        2817.34033203125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -589339,11 +589371,11 @@
        9391.0390625,
        3168.400146484375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -589422,11 +589454,11 @@
        8914.224609375,
        3051.915771484375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -589527,11 +589559,11 @@
        9144.037109375,
        2869.439208984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -589610,11 +589642,11 @@
        9298.884765625,
        2871.347412109375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -589693,11 +589725,11 @@
        8131.5341796875,
        2998.90576171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -589802,11 +589834,11 @@
        7878.6513671875,
        2856.47509765625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -589931,11 +589963,11 @@
        7574.28759765625,
        2752.109130859375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -590026,11 +590058,11 @@
        7292.0517578125,
        2716.79833984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -590121,11 +590153,11 @@
        6198.51513671875,
        2865.75927734375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -590230,11 +590262,11 @@
        5988.60107421875,
        2714.642333984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -590359,11 +590391,11 @@
        4122.2314453125,
        3271.29443359375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -590593,11 +590625,11 @@
        4122.2314453125,
        3091.8583984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -590827,11 +590859,11 @@
        4308.4755859375,
        3214.240478515625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -590909,11 +590941,11 @@
        4044.30517578125,
        3151.0576171875
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -590979,11 +591011,11 @@
        4042.173095703125,
        3179.21435546875
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -591049,11 +591081,11 @@
        4053.517578125,
        2979.828369140625
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -591119,11 +591151,11 @@
        4031.540283203125,
        2941.281494140625
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -591189,11 +591221,11 @@
        4867.78466796875,
        2724.236572265625
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -591259,11 +591291,11 @@
        4598.2158203125,
        3077.23779296875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -591341,11 +591373,11 @@
        4630.32763671875,
        2773.685791015625
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -591411,11 +591443,11 @@
        5531.95654296875,
        2946.1708984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -591517,11 +591549,11 @@
        5214.5361328125,
        2942.39697265625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -591622,11 +591654,11 @@
        4857.44189453125,
        2366.755615234375
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -591696,11 +591728,11 @@
        4933.408203125,
        2702.00927734375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -591825,11 +591857,11 @@
        4924.75830078125,
        2945.50341796875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -591966,11 +591998,11 @@
        4179.1767578125,
        2399.911865234375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -592063,11 +592095,11 @@
        4368.3271484375,
        2510.777587890625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -592188,11 +592220,11 @@
        3937.544189453125,
        2352.746337890625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -592422,11 +592454,11 @@
        4552.83935546875,
        2371.08935546875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -592553,11 +592585,11 @@
        3385.970703125,
        2040.4056396484375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -592648,11 +592680,11 @@
        3543.647216796875,
        2328.086181640625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -592777,11 +592809,11 @@
        1766.473388671875,
        2184.35498046875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -592833,11 +592865,11 @@
        1830.057861328125,
        1832.164306640625
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -592903,11 +592935,11 @@
        2185.06689453125,
        1873.2841796875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -592998,11 +593030,11 @@
        2185.06689453125,
        2051.8408203125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -593093,11 +593125,11 @@
        2012.455810546875,
        2051.8408203125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -593188,11 +593220,11 @@
        2185.06689453125,
        2222.70263671875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -593283,11 +593315,11 @@
        2546.159423828125,
        2060.14599609375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -593378,11 +593410,11 @@
        2546.159423828125,
        1883.2265625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -593473,11 +593505,11 @@
        2546.159423828125,
        2222.70263671875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -593568,11 +593600,11 @@
        2357.909423828125,
        2227.209228515625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -593651,11 +593683,11 @@
        2357.909423828125,
        2056.34716796875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -593734,11 +593766,11 @@
        2357.909423828125,
        1877.7904052734375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -593817,11 +593849,11 @@
        2732.719482421875,
        2002.767578125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -593912,11 +593944,11 @@
        2732.719482421875,
        2291.049072265625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -594007,11 +594039,11 @@
        2168.45703125,
        2355.555419921875
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -594077,11 +594109,11 @@
        1963.551513671875,
        3053.250244140625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -594198,11 +594230,11 @@
        1068.154052734375,
        1917.7369384765625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -594295,11 +594327,11 @@
        887.1339721679688,
        1943.6331787109375
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -594365,11 +594397,11 @@
        876.5035400390625,
        1761.997314453125
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -594435,11 +594467,11 @@
        1497.3280029296875,
        2175.9208984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -594560,11 +594592,11 @@
        1480.547119140625,
        3057.745849609375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -594633,11 +594665,11 @@
        8033.8642578125,
        2062.720458984375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -594706,11 +594738,11 @@
        4884.75830078125,
        2945.50341796875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -597906,6 +597938,10 @@
      "from_type": "NodeSocketRotation",
      "to_type": "NodeSocketRotation"
     }
+   ],
+   "view_center": [
+    11481.5,
+    3394.080078125
    ]
   },
   "marching_dojo.001": {
@@ -598018,11 +598054,11 @@
        -293.94146728515625,
        -102.40528106689453
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -598162,11 +598198,11 @@
        882.72509765625,
        -72.30889129638672
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -598232,11 +598268,11 @@
        -0.04591238871216774,
        11.808013916015625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -598352,11 +598388,11 @@
        995.642578125,
        -406.47222900390625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -598440,11 +598476,11 @@
        648.0657348632812,
        -204.93685913085938
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -598671,11 +598707,11 @@
        -653.265625,
        37.18853759765625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -598727,11 +598763,11 @@
        -335.9533996582031,
        263.91650390625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -598871,11 +598907,11 @@
        -119.5541000366211,
        176.2991943359375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -598966,11 +599002,11 @@
        216.0507049560547,
        -357.9019470214844
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -599086,11 +599122,11 @@
        -156.63101196289062,
        -865.5444946289062
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -599181,11 +599217,11 @@
        -424.9339294433594,
        -996.6526489257812
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -599237,11 +599273,11 @@
        -355.2401123046875,
        -383.2467956542969
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -599332,11 +599368,11 @@
        -733.7865600585938,
        -575.4468383789062
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -599476,11 +599512,11 @@
        224.58485412597656,
        -630.5805053710938
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -599571,11 +599607,11 @@
        -73.05085754394531,
        -1012.9006958007812
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -599627,11 +599663,11 @@
        206.8137969970703,
        -868.7587890625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -599722,11 +599758,11 @@
        429.951416015625,
        -590.0986328125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -599817,11 +599853,11 @@
        -52.692691802978516,
        -283.80731201171875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -599912,11 +599948,11 @@
        -18.502147674560547,
        -487.2410888671875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -600007,11 +600043,11 @@
        -302.4622802734375,
        -608.76123046875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -600295,6 +600331,10 @@
      "from_type": "NodeSocketFloatDistance",
      "to_type": "NodeSocketFloat"
     }
+   ],
+   "view_center": [
+    75.9569091796875,
+    -724.220458984375
    ]
   },
   "_Bounding Box.002": {
@@ -600419,11 +600459,11 @@
        -0.55169677734375,
        25.343643188476562
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -600544,11 +600584,11 @@
        7.27093505859375,
        -138.1607208251953
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -600669,11 +600709,11 @@
        507.7769470214844,
        -148.3412628173828
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -600764,11 +600804,11 @@
        171.9661865234375,
        28.407272338867188
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -600893,11 +600933,11 @@
        167.5709228515625,
        -136.70677185058594
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -600984,11 +601024,11 @@
        754.06005859375,
        125.85830688476562
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -601138,11 +601178,11 @@
        332.5345458984375,
        -63.437469482421875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -601233,11 +601273,11 @@
        -486.208740234375,
        52.16973876953125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -601300,11 +601340,11 @@
        -196.16957092285156,
        121.78357696533203
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -601411,11 +601451,11 @@
        48.72392272949219,
        225.38351440429688
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -601668,6 +601708,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    493.1739501953125,
+    -102.72381591796875
    ]
   },
   "crayon curve": {
@@ -601811,11 +601855,11 @@
        -1845.2972412109375,
        -98.91871643066406
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -601997,18 +602041,18 @@
      "label": null,
      "ui": {
       "location": [
-       655.07275390625,
+       655.0726318359375,
        -65.9573974609375
       ],
       "location_absolute": [
-       5720.44384765625,
+       5720.4437255859375,
        288.8711242675781
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -602068,17 +602112,17 @@
      "ui": {
       "location": [
        713.36279296875,
-       -335.57373046875
+       -335.57372283935547
       ],
       "location_absolute": [
        3051.6484375,
-       172.85482788085938
+       172.8548355102539
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -602190,17 +602234,17 @@
      "ui": {
       "location": [
        620.669189453125,
-       -189.22491455078125
+       -189.22488403320312
       ],
       "location_absolute": [
        2328.783447265625,
-       668.91796875
+       668.9179992675781
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -602309,18 +602353,18 @@
      "label": null,
      "ui": {
       "location": [
-       34.144775390625,
-       -222.83734130859375
+       34.14471435546875,
+       -222.8373565673828
       ],
       "location_absolute": [
-       1742.259033203125,
-       635.3055419921875
+       1742.2589721679688,
+       635.3055267333984
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -602479,11 +602523,11 @@
        2156.787109375,
        564.4837036132812
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -602574,11 +602618,11 @@
        2159.30859375,
        524.5638427734375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -602669,11 +602713,11 @@
        2626.59912109375,
        47.92486572265625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -602799,17 +602843,17 @@
      "ui": {
       "location": [
        278.4486083984375,
-       -70.94305419921875
+       -70.94302368164062
       ],
       "location_absolute": [
        1986.5628662109375,
-       787.1998291015625
+       787.1998596191406
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -602900,11 +602944,11 @@
        1987.6923828125,
        751.73681640625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -602989,17 +603033,17 @@
      "ui": {
       "location": [
        189.06298828125,
-       -288.6268310546875
+       -288.62681579589844
       ],
       "location_absolute": [
        3760.948486328125,
        88.14457702636719
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -603104,11 +603148,11 @@
        2733.71484375,
        160.66427612304688
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -603297,11 +603341,11 @@
        1126.9697265625,
        109.93402099609375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -603395,18 +603439,18 @@
      "label": null,
      "ui": {
       "location": [
-       793.5908203125,
+       793.5909423828125,
        -160.88311767578125
       ],
       "location_absolute": [
-       2501.705078125,
+       2501.7052001953125,
        697.259765625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -603504,18 +603548,18 @@
      "label": null,
      "ui": {
       "location": [
-       28.70947265625,
+       28.7093505859375,
        -234.03887939453125
       ],
       "location_absolute": [
-       5094.08056640625,
+       5094.0804443359375,
        120.78964233398438
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -603573,18 +603617,18 @@
      "label": null,
      "ui": {
       "location": [
-       363.23388671875,
-       -329.7080078125
+       363.2340087890625,
+       -329.70799255371094
       ],
       "location_absolute": [
-       2071.34814453125,
-       528.4348754882812
+       2071.3482666015625,
+       528.4348907470703
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -603643,18 +603687,18 @@
      "label": null,
      "ui": {
       "location": [
-       619.640625,
+       619.6405029296875,
        -137.9195556640625
       ],
       "location_absolute": [
-       2327.7548828125,
+       2327.7547607421875,
        720.2233276367188
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -603747,11 +603791,11 @@
        1993.1922607421875,
        703.2913818359375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -603831,18 +603875,18 @@
      "label": null,
      "ui": {
       "location": [
-       882.31494140625,
-       -299.9145202636719
+       882.3150634765625,
+       -299.91451263427734
       ],
       "location_absolute": [
-       3220.6005859375,
-       208.5140380859375
+       3220.6007080078125,
+       208.51404571533203
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -603943,11 +603987,11 @@
        1736.87744140625,
        818.7058715820312
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -604129,18 +604173,18 @@
      "label": null,
      "ui": {
       "location": [
-       421.50439453125,
+       421.50445556640625,
        -629.9198608398438
       ],
       "location_absolute": [
-       1946.532958984375,
+       1946.5330200195312,
        -591.8912963867188
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -604185,18 +604229,18 @@
      "label": null,
      "ui": {
       "location": [
-       589.018310546875,
+       589.0183715820312,
        -367.207275390625
       ],
       "location_absolute": [
-       2114.046875,
+       2114.0469360351562,
        -329.1787109375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -604268,18 +604312,18 @@
      "label": null,
      "ui": {
       "location": [
-       429.793701171875,
+       429.79364013671875,
        -478.9064636230469
       ],
       "location_absolute": [
-       1954.822265625,
+       1954.8222045898438,
        -440.8778991699219
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -604509,11 +604553,11 @@
        1525.028564453125,
        38.028564453125
       ],
-      "width": 788.0,
-      "height": 793.0,
+      "width": 788,
+      "height": 793,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -604549,18 +604593,18 @@
      "label": null,
      "ui": {
       "location": [
-       59.9365234375,
+       59.9366455078125,
        -268.7804870605469
       ],
       "location_absolute": [
-       5125.3076171875,
+       5125.3077392578125,
        86.04803466796875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -604749,11 +604793,11 @@
        5347.5908203125,
        82.8553466796875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -604835,11 +604879,11 @@
        5346.0205078125,
        219.75656127929688
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -604925,17 +604969,17 @@
      "ui": {
       "location": [
        196.31201171875,
-       -50.556396484375
+       -50.55641174316406
       ],
       "location_absolute": [
        4849.56884765625,
-       296.72930908203125
+       296.7292938232422
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -605053,11 +605097,11 @@
        -1626.4124755859375,
        -29.07877540588379
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": true,
@@ -605135,11 +605179,11 @@
        5526.185546875,
        200.35385131835938
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -605229,11 +605273,11 @@
        5342.54052734375,
        315.5437927246094
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -605415,18 +605459,18 @@
      "label": null,
      "ui": {
       "location": [
-       29.12939453125,
+       29.129638671875,
        -39.56036376953125
       ],
       "location_absolute": [
-       4198.9580078125,
+       4198.958251953125,
        392.06817626953125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -605508,11 +605552,11 @@
        1553.7989501953125,
        -572.911376953125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -605575,11 +605619,11 @@
        1782.31201171875,
        -325.5553283691406
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -605711,11 +605755,11 @@
        1778.9368896484375,
        -498.16424560546875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -605954,11 +605998,11 @@
        1553.7989501953125,
        -661.6320190429688
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -606140,18 +606184,18 @@
      "label": null,
      "ui": {
       "location": [
-       619.183349609375,
+       619.1832275390625,
        -124.63864135742188
       ],
       "location_absolute": [
-       2144.2119140625,
+       2144.2117919921875,
        -86.61007690429688
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -606241,11 +606285,11 @@
        2128.722900390625,
        -1.3565673828125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -606437,8 +606481,8 @@
       "width": 823.65771484375,
       "height": 491.28564453125,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -606474,18 +606518,18 @@
      "label": null,
      "ui": {
       "location": [
-       198.679443359375,
+       198.6795654296875,
        -109.43692016601562
       ],
       "location_absolute": [
-       4214.22216796875,
+       4214.2222900390625,
        96.59165954589844
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -606595,18 +606639,18 @@
      "label": null,
      "ui": {
       "location": [
-       409.627685546875,
+       409.6275634765625,
        -201.5572509765625
       ],
       "location_absolute": [
-       4425.17041015625,
+       4425.1702880859375,
        4.4713287353515625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -606704,18 +606748,18 @@
      "label": null,
      "ui": {
       "location": [
-       199.336181640625,
-       -310.311279296875
+       199.3363037109375,
+       -310.31127166748047
       ],
       "location_absolute": [
-       4214.87890625,
+       4214.8790283203125,
        -104.2826919555664
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -606802,18 +606846,18 @@
      "label": null,
      "ui": {
       "location": [
-       28.626708984375,
-       -363.04278564453125
+       28.6265869140625,
+       -363.0428009033203
       ],
       "location_absolute": [
-       4044.16943359375,
+       4044.1693115234375,
        -157.01422119140625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -606862,18 +606906,18 @@
      "label": null,
      "ui": {
       "location": [
-       414.460205078125,
+       414.4600830078125,
        -39.60369873046875
       ],
       "location_absolute": [
-       4430.0029296875,
+       4430.0028076171875,
        166.4248809814453
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -607103,11 +607147,11 @@
        4683.8857421875,
        247.27198791503906
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -607239,8 +607283,8 @@
       "width": 197.599609375,
       "height": 183.3999786376953,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -607286,8 +607330,8 @@
       "width": 582.971435546875,
       "height": 475.5142822265625,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -607323,18 +607367,18 @@
      "label": null,
      "ui": {
       "location": [
-       28.953125,
-       -39.1851806640625
+       28.952880859375,
+       -39.18519592285156
       ],
       "location_absolute": [
-       4682.2099609375,
-       308.10052490234375
+       4682.209716796875,
+       308.1005096435547
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -607523,11 +607567,11 @@
        -1025.145751953125,
        -100.20587921142578
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -607605,11 +607649,11 @@
        -375.0141296386719,
        -66.9883804321289
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -607715,11 +607759,11 @@
        -1154.740966796875,
        -305.5653991699219
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -607844,11 +607888,11 @@
        -1569.726806640625,
        -380.3182373046875
       ],
-      "width": 150.0,
-      "height": 100.0,
+      "width": 150,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -608009,11 +608053,11 @@
        -1744.43212890625,
        -525.42578125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -608104,11 +608148,11 @@
        -1396.777099609375,
        -344.0408630371094
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -608233,11 +608277,11 @@
        -1400.3751220703125,
        -203.35792541503906
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -608293,11 +608337,11 @@
        -585.0167236328125,
        -73.6098403930664
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -608403,11 +608447,11 @@
        -964.488525390625,
        -337.7433166503906
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -608526,17 +608570,17 @@
      "ui": {
       "location": [
        28.8524169921875,
-       -286.8447265625
+       -286.84473419189453
       ],
       "location_absolute": [
        580.8524169921875,
        -66.41617584228516
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -608666,18 +608710,18 @@
      "label": null,
      "ui": {
       "location": [
-       241.2381591796875,
-       -257.29974365234375
+       241.23814392089844,
+       -257.2997283935547
       ],
       "location_absolute": [
-       793.2381591796875,
+       793.2381439208984,
        -36.87117004394531
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -608742,11 +608786,11 @@
        951.8767700195312,
        112.26422119140625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -608836,11 +608880,11 @@
        966.10107421875,
        181.06219482421875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -609029,11 +609073,11 @@
        619.8858642578125,
        96.83367156982422
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -609099,11 +609143,11 @@
        -112.82625579833984,
        167.53358459472656
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -609193,11 +609237,11 @@
        -1078.0438232421875,
        190.10316467285156
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -609386,11 +609430,11 @@
        -1223.3876953125,
        -88.25090789794922
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -609504,11 +609548,11 @@
        -1249.100341796875,
        141.5092315673828
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -609622,11 +609666,11 @@
        3764.30078125,
        238.88519287109375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -609720,11 +609764,11 @@
        3772.524169921875,
        337.4686279296875
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -609780,11 +609824,11 @@
        3600.96826171875,
        324.1636962890625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -609976,8 +610020,8 @@
       "width": 369.71435546875,
       "height": 509.1142578125,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -610013,18 +610057,18 @@
      "label": null,
      "ui": {
       "location": [
-       183.123779296875,
+       183.12384033203125,
        -221.51119995117188
       ],
       "location_absolute": [
-       1708.15234375,
+       1708.1524047851562,
        -183.48263549804688
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -610093,8 +610137,8 @@
       "width": 962.17138671875,
       "height": 388.4286193847656,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -610140,8 +610184,8 @@
       "width": 1051.314208984375,
       "height": 626.3713989257812,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -610187,8 +610231,8 @@
       "width": 364.91455078125,
       "height": 266.3714294433594,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -610224,18 +610268,18 @@
      "label": " ",
      "ui": {
       "location": [
-       552.0,
+       552,
        220.42855834960938
       ],
       "location_absolute": [
-       552.0,
+       552,
        220.42855834960938
       ],
       "width": 743.428466796875,
       "height": 622.257080078125,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -610278,11 +610322,11 @@
        -805.1428833007812,
        -78.74624633789062
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -610364,11 +610408,11 @@
        3352.416748046875,
        610.150634765625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -610452,11 +610496,11 @@
        3035.16162109375,
        468.97540283203125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -610610,11 +610654,11 @@
        2366.893310546875,
        414.787109375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -610773,11 +610817,11 @@
        2551.131103515625,
        319.40472412109375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -610861,18 +610905,18 @@
      "label": null,
      "ui": {
       "location": [
-       642.971435546875,
+       642.9713745117188,
        -218.955078125
       ],
       "location_absolute": [
-       2981.257080078125,
+       2981.2570190429688,
        289.4734802246094
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -610938,11 +610982,11 @@
        2716.49755859375,
        321.59478759765625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -611860,6 +611904,10 @@
      "from_type": "NodeSocketFloat",
      "to_type": "NodeSocketFloat"
     }
+   ],
+   "view_center": [
+    636.260009765625,
+    230.67752075195312
    ]
   }
  },
@@ -672577,5 +672625,17 @@
   }
  ],
  "fonts": {},
- "dependency_objects": []
+ "dependency_objects": [],
+ "authoring_refresh": {
+  "schema_version": 1,
+  "source_project": "n03d-printing",
+  "source_sha256": "6a0ede9dc9f8f097740716bffba6781acaca71caabd1591614f4a74863d304ca",
+  "decoder": "src/blend/to-dump.ts",
+  "fields": [
+   "node-layout",
+   "frame-parenting",
+   "view-center",
+   "annotations"
+  ]
+ }
 }

@@ -314,14 +314,87 @@ def dump_node(node):
         d["paired_output"] = node.paired_output.name
     return d
 
+
+annotation_registry = {}
+
+
+def dump_annotation(annotation):
+    """Serialize Blender's legacy node-editor annotation datablock once."""
+    if annotation is None:
+        return None
+    name = annotation.name
+    if name in annotation_registry:
+        return name
+    payload = {
+        "name": name,
+        "onion": bool(getattr(annotation, "use_onion_skinning", False)),
+        "layers": [],
+    }
+    # Install the entry before walking it so shared/cyclic RNA references can
+    # never duplicate a large point payload.
+    annotation_registry[name] = payload
+    for layer in getattr(annotation, "layers", []):
+        active_frame = getattr(layer, "active_frame", None)
+        layer_payload = {
+            "name": getattr(layer, "info", None) or getattr(layer, "name", "Note"),
+            "hidden": bool(getattr(layer, "annotation_hide", False)),
+            "locked": bool(getattr(layer, "lock", False)),
+            "active": bool(getattr(layer, "is_active", False)),
+            "frame_locked": bool(getattr(layer, "lock_frame", False)),
+            "color": [float(value) for value in getattr(layer, "color", (0.8, 0.8, 0.2))[:3]],
+            "opacity": float(getattr(layer, "annotation_opacity", 1.0)),
+            "thickness": float(getattr(layer, "thickness", 3.0)),
+            "active_frame": int(getattr(active_frame, "frame_number", 0)) if active_frame else None,
+            "frames": [],
+        }
+        for frame in getattr(layer, "frames", []):
+            frame_payload = {
+                "number": int(getattr(frame, "frame_number", 0)),
+                "strokes": [],
+            }
+            for stroke in getattr(frame, "strokes", []):
+                points = []
+                for point in getattr(stroke, "points", []):
+                    co = list(getattr(point, "co", (0.0, 0.0, 0.0)))
+                    points.append([
+                        float(co[0]), float(co[1]), float(co[2] if len(co) > 2 else 0.0),
+                        float(getattr(point, "pressure", 1.0)),
+                        float(getattr(point, "strength", 1.0)),
+                        float(getattr(point, "time", 0.0)),
+                        int(getattr(point, "flag", 0)),
+                    ])
+                stroke_payload = {
+                    "flags": int(getattr(stroke, "flag", 2)),
+                    # Annotation strokes exposed through NodeTree.annotation
+                    # are node-editor 2D-space strokes.
+                    "space": "VIEW2D",
+                    "cyclic": bool(getattr(stroke, "draw_cyclic", False)),
+                    "thickness": float(getattr(stroke, "line_width", 0.0)),
+                    "points": points,
+                }
+                start_cap = getattr(stroke, "start_cap_mode", None)
+                end_cap = getattr(stroke, "end_cap_mode", None)
+                if start_cap is not None and end_cap is not None:
+                    stroke_payload["caps"] = [start_cap, end_cap]
+                frame_payload["strokes"].append(stroke_payload)
+            layer_payload["frames"].append(frame_payload)
+        payload["layers"].append(layer_payload)
+    return name
+
+
 def dump_tree(tree):
     d = {
         "name": tree.name,
         "type": tree.bl_idname,
+        "view_center": [float(value) for value in getattr(tree, "view_center", (0.0, 0.0))],
         "interface": [],
         "nodes": [dump_node(n) for n in tree.nodes],
         "links": [],
     }
+    annotation = getattr(tree, "annotation", None) or getattr(tree, "grease_pencil", None)
+    annotation_name = dump_annotation(annotation)
+    if annotation_name:
+        d["annotation"] = annotation_name
     animation_data = getattr(tree, "animation_data", None)
     action = getattr(animation_data, "action", None)
     if action is not None:
@@ -590,7 +663,8 @@ result = {
         },
     },
     "objects": [], "collections": [], "node_groups": {}, "shader_node_groups": {},
-    "materials": {}, "images": [], "fonts": {}, "dependency_objects": []
+    "materials": {}, "annotations": annotation_registry,
+    "images": [], "fonts": {}, "dependency_objects": []
 }
 
 dependency_collection_names = set()

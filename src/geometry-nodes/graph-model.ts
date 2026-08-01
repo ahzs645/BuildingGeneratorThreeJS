@@ -1,4 +1,5 @@
 import type { Dump, RawNode as DumpNode, RawOutput, RawSocket } from "../gnvm/dump-schema";
+import { activeAnnotationLayers, type ActiveAnnotationLayer } from "./annotations";
 
 export type GraphSocketDirection = "input" | "output";
 export type GraphNodeKind = "node" | "frame" | "reroute";
@@ -61,6 +62,8 @@ export interface EditorGraph {
   links: GraphLink[];
   interface: unknown[];
   unresolvedLinks: string[];
+  annotationLayers: ActiveAnnotationLayer[];
+  viewCenter?: { x: number; y: number };
 }
 
 export interface EditorGraphSearchResult {
@@ -167,26 +170,6 @@ export function graphWorkingSetNodeIds(graph: EditorGraph, limit = 18): string[]
   return selected;
 }
 
-type DumpWithEditorGroups = {
-  node_groups: Record<string, {
-    name?: string;
-    type?: string;
-    nodes: DumpNode[];
-    links: {
-      from_node: string;
-      from_socket: string;
-      to_node: string;
-      to_socket: string;
-      from_type?: string;
-      to_type?: string;
-      to_idx?: number | null;
-      multi_input_sort_id?: number | null;
-      muted?: boolean;
-    }[];
-    interface?: unknown[];
-  }>;
-};
-
 const nodeId = (groupName: string, nodeName: string): string => `${groupName}::${nodeName}`;
 
 const socketId = (direction: GraphSocketDirection, identifier: string, occurrence: number): string =>
@@ -221,7 +204,10 @@ function graphSockets(sockets: DumpSocket[] | undefined, direction: GraphSocketD
 
 function estimateHeight(node: DumpNode, inputs: GraphSocket[], outputs: GraphSocket[]): number {
   if (node.type === "NodeReroute") return 18;
-  if (node.type === "NodeFrame") return Math.max(90, Number(node.ui?.height ?? 100));
+  if (node.type === "NodeFrame") {
+    const authored = Number(node.ui?.height ?? 0);
+    return Number.isFinite(authored) && authored > 0 ? authored : 100;
+  }
   const stored = Number(node.ui?.dimensions?.[1] ?? 0) || Number(node.ui?.height ?? 0);
   if (stored > 30) return stored;
   const rows = Math.max(inputs.filter((socket) => socket.visible).length, outputs.filter((socket) => socket.visible).length, 1);
@@ -249,30 +235,58 @@ function chooseSocket(sockets: GraphSocket[], identifier: string, rawIndex?: num
  * explicit provenance for selection, navigation, and eventual round-tripping.
  */
 export function dumpGroupToEditorGraph(rawDump: Dump, groupName: string): EditorGraph {
-  const dump = rawDump as unknown as DumpWithEditorGroups;
+  const dump = rawDump;
   const group = dump.node_groups[groupName];
   if (!group) throw new Error(`Geometry Nodes group not found: ${groupName}`);
 
   const rawByName = new Map(group.nodes.map((node) => [node.name, node]));
+  const absoluteByName = new Map<string, [number, number]>();
+  const resolving = new Set<string>();
+  const localLocation = (node: DumpNode): [number, number] => {
+    const local = node.ui?.location;
+    if (local && local.length >= 2) return [Number(local[0]) || 0, Number(local[1]) || 0];
+    const absolute = node.ui?.location_absolute;
+    return [Number(absolute?.[0]) || 0, Number(absolute?.[1]) || 0];
+  };
+  const absoluteLocation = (node: DumpNode): [number, number] => {
+    const cached = absoluteByName.get(node.name);
+    if (cached) return cached;
+    const authored = node.ui?.location_absolute;
+    if (authored && authored.length >= 2) {
+      const value: [number, number] = [Number(authored[0]) || 0, Number(authored[1]) || 0];
+      absoluteByName.set(node.name, value);
+      return value;
+    }
+    const local = localLocation(node);
+    if (resolving.has(node.name)) return local;
+    resolving.add(node.name);
+    const parent = node.ui?.parent ? rawByName.get(node.ui.parent) : undefined;
+    const parentAbsolute = parent ? absoluteLocation(parent) : [0, 0] as [number, number];
+    resolving.delete(node.name);
+    const value: [number, number] = [local[0] + parentAbsolute[0], local[1] + parentAbsolute[1]];
+    absoluteByName.set(node.name, value);
+    return value;
+  };
   const nodes = group.nodes.map((node): GraphNode => {
     const inputs = graphSockets(node.inputs, "input");
     const outputs = graphSockets(node.outputs, "output");
-    const absoluteX = Number(node.ui?.location_absolute?.[0] ?? node.ui?.location?.[0] ?? 0);
-    const absoluteY = -Number(node.ui?.location_absolute?.[1] ?? node.ui?.location?.[1] ?? 0);
+    const absolute = absoluteLocation(node);
+    const local = localLocation(node);
+    const absoluteX = absolute[0];
+    const absoluteY = -absolute[1];
     const parentName = node.ui?.parent ?? undefined;
     const parent = parentName ? rawByName.get(parentName) : undefined;
-    const parentX = Number(parent?.ui?.location_absolute?.[0] ?? parent?.ui?.location?.[0] ?? 0);
-    const parentY = -Number(parent?.ui?.location_absolute?.[1] ?? parent?.ui?.location?.[1] ?? 0);
     const kind: GraphNodeKind = node.type === "NodeFrame" ? "frame" : node.type === "NodeReroute" ? "reroute" : "node";
+    const authoredWidth = Number(node.ui?.width ?? 0);
     return {
       id: nodeId(groupName, node.name),
       sourceName: node.name,
       sourceType: node.type,
       label: node.label?.trim() || String(node.props?.bl_label ?? node.name),
       kind,
-      position: parent ? { x: absoluteX - parentX, y: absoluteY - parentY } : { x: absoluteX, y: absoluteY },
+      position: parent ? { x: local[0], y: -local[1] } : { x: absoluteX, y: absoluteY },
       absolutePosition: { x: absoluteX, y: absoluteY },
-      width: kind === "reroute" ? 18 : Math.max(kind === "frame" ? 120 : 100, Number(node.ui?.width ?? 140)),
+      width: kind === "reroute" ? 18 : Number.isFinite(authoredWidth) && authoredWidth > 0 ? authoredWidth : 140,
       height: estimateHeight(node, inputs, outputs),
       parentId: parent ? nodeId(groupName, parent.name) : undefined,
       muted: Boolean(node.ui?.mute),
@@ -321,6 +335,10 @@ export function dumpGroupToEditorGraph(rawDump: Dump, groupName: string): Editor
     links,
     interface: group.interface ?? [],
     unresolvedLinks,
+    annotationLayers: activeAnnotationLayers(rawDump, groupName),
+    ...(group.view_center && group.view_center.length >= 2
+      ? { viewCenter: { x: Number(group.view_center[0]) || 0, y: -Number(group.view_center[1]) || 0 } }
+      : {}),
   };
 }
 
@@ -347,7 +365,6 @@ export function searchEditorGraphs(dump: Dump, rawQuery: string, limit = 24): Ed
   for (const groupName of Object.keys(dump.node_groups).sort()) {
     const graph = dumpGroupToEditorGraph(dump, groupName);
     for (const node of graph.nodes) {
-      if (node.kind === "frame") continue;
       const fields = [node.label, node.sourceName, node.sourceType, node.nestedGroup ?? ""].map((field) => field.toLowerCase());
       const exact = fields.some((field) => field === query);
       const prefix = fields.some((field) => field.startsWith(query));

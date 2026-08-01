@@ -14,7 +14,10 @@
    `height:100%` inline on its own root, so only !important can put it in the
    flow beside the toolbar and the status bar. */
 .blender-flow-wrap { display: flex; flex-direction: column; position: relative; height: 100%; overflow: hidden; background: #1B1D20; }
-.blender-flow-wrap > .react-flow { flex: 1 1 auto; min-height: 0; height: auto !important; }
+.blender-flow-stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.blender-flow-stage > .react-flow { width: 100%; height: 100%; }
+.annotation-canvas { position: absolute; z-index: 4; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.annotation-minimap { position: absolute; z-index: 12; right: 10px; bottom: 10px; box-sizing: border-box; width: 130px; height: 84px; border: 1px solid var(--st-line-2); border-radius: 5px; background: var(--st-sunken); cursor: crosshair; }
 .blender-flow-toolbar {
   display: flex; flex: 0 0 38px; align-items: center; gap: 7px;
   height: 38px; padding: 0 8px;
@@ -101,10 +104,9 @@
 .blender-reroute .react-flow__handle { width: 7px; height: 7px; border: 0; background: transparent; }
 .blender-flow-wrap .react-flow__node-blenderFrame { width: 100%; height: 100%; pointer-events: none; }
 .blender-frame { position: relative; width: 100%; height: 100%; border: 1px solid var(--st-line-2); border-radius: 5px; background: rgba(10,11,13,.4); box-shadow: inset 0 0 0 1px rgba(0,0,0,.35); }
-.blender-frame > span { position: absolute; left: 8px; top: -18px; color: #CFD3D6; font: 700 var(--st-fs-micro)/1 var(--st-mono); text-transform: uppercase; letter-spacing: .04em; }
+.blender-frame > span { position: absolute; left: 8px; top: calc(-1 * max(18px, var(--frame-label-size, 20px))); color: #CFD3D6; font: 500 var(--frame-label-size, 20px)/1 var(--st-font); white-space: nowrap; }
 .blender-flow-wrap .react-flow__edge-path { filter: drop-shadow(0 1px 1px rgba(0,0,0,.9)); stroke-linecap: round; }
 .blender-flow-wrap .react-flow__edge.selected .react-flow__edge-path { stroke: #fff !important; stroke-width: 3.2px !important; }
-.blender-flow-wrap .react-flow__minimap { right: 10px; bottom: 10px; width: 130px; height: 84px; border-radius: 5px; background: var(--st-sunken); border: 1px solid var(--st-line-2); }
 .blender-flow-wrap .react-flow__controls { left: 10px; bottom: 10px; border: 1px solid var(--st-line-2); box-shadow: none; }
 .blender-flow-wrap .react-flow__controls-button { background: var(--st-raised); border-bottom-color: var(--st-line-2); color: #D3D8DC; }
 

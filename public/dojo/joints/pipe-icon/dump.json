@@ -773465,11 +773465,11 @@
        459.15924072265625,
        76.19255065917969
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -773535,11 +773535,11 @@
        -290.43707275390625,
        76.19255065917969
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -773640,11 +773640,11 @@
        269.1593017578125,
        78.96813201904297
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -773736,11 +773736,11 @@
        -87.08727264404297,
        149.182861328125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -773843,11 +773843,11 @@
        109.60006713867188,
        88.71568298339844
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -774002,6 +774002,10 @@
      "from_type": "NodeSocketBool",
      "to_type": "NodeSocketBool"
     }
+   ],
+   "view_center": [
+    227.96484375,
+    13.5919189453125
    ]
   },
   "pipe icon.001": {
@@ -774031,17 +774035,17 @@
      "ui": {
       "location": [
        1853.4822998046875,
-       120.0
+       120
       ],
       "location_absolute": [
        1853.4822998046875,
-       120.0
+       120
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -774100,18 +774104,18 @@
      "label": null,
      "ui": {
       "location": [
-       240.0,
-       -40.0
+       240,
+       -40
       ],
       "location_absolute": [
-       240.0,
-       -40.0
+       240,
+       -40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -774240,18 +774244,18 @@
      "label": null,
      "ui": {
       "location": [
-       -220.0,
-       -180.0
+       -220,
+       -180
       ],
       "location_absolute": [
-       -220.0,
-       -180.0
+       -220,
+       -180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -774316,18 +774320,18 @@
      "label": null,
      "ui": {
       "location": [
-       -40.0,
-       -120.0
+       -40,
+       -120
       ],
       "location_absolute": [
-       -40.0,
-       -120.0
+       -40,
+       -120
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -774452,11 +774456,11 @@
        1194.7392578125,
        100.00000762939453
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": true,
       "mute": false,
@@ -774514,18 +774518,18 @@
      "label": null,
      "ui": {
       "location": [
-       1380.0,
-       220.0
+       1380,
+       220
       ],
       "location_absolute": [
-       1380.0,
-       220.0
+       1380,
+       220
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -774619,18 +774623,18 @@
      "label": null,
      "ui": {
       "location": [
-       -620.0,
-       360.0
+       -620,
+       360
       ],
       "location_absolute": [
-       -620.0,
-       360.0
+       -620,
+       360
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -774767,11 +774771,11 @@
        -194.51426696777344,
        96.89087677001953
       ],
-      "width": 16.0,
-      "height": 100.0,
+      "width": 16,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -774830,18 +774834,18 @@
      "label": null,
      "ui": {
       "location": [
-       -560.0,
-       40.0
+       -560,
+       40
       ],
       "location_absolute": [
-       -560.0,
-       40.0
+       -560,
+       40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -774898,17 +774902,17 @@
      "ui": {
       "location": [
        975.8821411132812,
-       260.0
+       260
       ],
       "location_absolute": [
        975.8821411132812,
-       260.0
+       260
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -774994,17 +774998,17 @@
      "ui": {
       "location": [
        595.1964111328125,
-       280.0
+       280
       ],
       "location_absolute": [
        595.1964111328125,
-       280.0
+       280
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -775102,18 +775106,18 @@
      "label": null,
      "ui": {
       "location": [
-       180.0,
-       180.0
+       180,
+       180
       ],
       "location_absolute": [
-       180.0,
-       180.0
+       180,
+       180
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -775231,18 +775235,18 @@
      "label": null,
      "ui": {
       "location": [
-       20.0,
-       120.0
+       20,
+       120
       ],
       "location_absolute": [
-       20.0,
-       120.0
+       20,
+       120
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -775308,17 +775312,17 @@
      "ui": {
       "location": [
        835.8822021484375,
-       -40.0
+       -40
       ],
       "location_absolute": [
        835.8822021484375,
-       -40.0
+       -40
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -775423,17 +775427,17 @@
      "ui": {
       "location": [
        795.8821411132812,
-       260.0
+       260
       ],
       "location_absolute": [
        795.8821411132812,
-       260.0
+       260
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -775504,17 +775508,17 @@
      "ui": {
       "location": [
        415.4248962402344,
-       300.0
+       300
       ],
       "location_absolute": [
        415.4248962402344,
-       300.0
+       300
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -775609,17 +775613,17 @@
      "ui": {
       "location": [
        -84.11792755126953,
-       320.0
+       320
       ],
       "location_absolute": [
        -84.11792755126953,
-       320.0
+       320
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": true,
@@ -775690,17 +775694,17 @@
      "ui": {
       "location": [
        515.882080078125,
-       20.0
+       20
       ],
       "location_absolute": [
        515.882080078125,
-       20.0
+       20
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -775758,18 +775762,18 @@
      "label": null,
      "ui": {
       "location": [
-       -380.0,
-       60.0
+       -380,
+       60
       ],
       "location_absolute": [
-       -380.0,
-       60.0
+       -380,
+       60
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -776032,6 +776036,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    6973.09326171875,
+    -1736.3668212890625
    ]
   }
  },
@@ -835538,5 +835546,17 @@
  "fonts": {},
  "dependency_objects": [
   "pipe icon"
- ]
+ ],
+ "authoring_refresh": {
+  "schema_version": 1,
+  "source_project": "joint-generators",
+  "source_sha256": "781c04bc02848d3c2a945a680327706eb64d70f0da93a566fd45394e5208f519",
+  "decoder": "src/blend/to-dump.ts",
+  "fields": [
+   "node-layout",
+   "frame-parenting",
+   "view-center",
+   "annotations"
+  ]
+ }
 }

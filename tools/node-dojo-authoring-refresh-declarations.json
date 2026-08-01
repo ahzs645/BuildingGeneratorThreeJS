@@ -1,0 +1,26 @@
+{
+  "dojo/course-modules/intro-chalkboard/dump.json": {
+    "additions": ["annotations"],
+    "note": "Raw SDNA restores the annotation registry referenced by the saved node tree."
+  },
+  "dojo/course-modules/intro-node-dojo/dump.json": {
+    "additions": ["annotations"],
+    "note": "Raw SDNA restores the annotation registry referenced by the saved node tree."
+  },
+  "dojo/course-modules/intro-room-material-stage/dump.json": {
+    "additions": ["annotations"],
+    "note": "Raw SDNA restores the annotation registry referenced by the saved node tree."
+  },
+  "dojo/course-modules/intro-room-stage-b/dump.json": {
+    "additions": ["annotations"],
+    "note": "The source contains an empty shared annotation block referenced by the saved node tree."
+  },
+  "dojo/dump_bin.json": {
+    "additions": ["annotations"],
+    "note": "Raw SDNA restores the annotation registry referenced by the saved node tree."
+  },
+  "dojo/nodes-node/dump.json": {
+    "additions": ["annotations"],
+    "note": "The source contains an empty shared annotation block referenced by the saved node tree."
+  }
+}

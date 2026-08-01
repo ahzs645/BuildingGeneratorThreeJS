@@ -1,0 +1,39 @@
+{
+  "id": "course-intro-possibilities",
+  "source": "INTRO MODULE_ The Basics of Nodes and Node Dojo_2MAY2024.blend",
+  "object": "Cube.010",
+  "root": "Geometry Nodes.005",
+  "reachableGroups": 1,
+  "reachableNodes": 19,
+  "coverage": "100%",
+  "status": "native-boolean-topology-delta",
+  "referenceFrame": 1405,
+  "lessonGraph": {
+    "frames": 6,
+    "annotation": "Annotations.006",
+    "annotationFrame": 235,
+    "annotationStrokes": 468,
+    "annotationPoints": 11790,
+    "visualReference": "public/dojo/references/course-modules/intro-possibilities.png"
+  },
+  "blender": {
+    "version": "5.1.2",
+    "verts": 232,
+    "faces": 196,
+    "triangles": 480,
+    "bbox": {
+      "min": [-0.7749999761581421, -0.7749999761581421, -0.7749999761581421],
+      "max": [0.7749999761581421, 0.7749999761581421, 0.7749999761581421]
+    }
+  },
+  "gnvm": {
+    "verts": 226,
+    "faces": 196,
+    "triangles": 468,
+    "bbox": {
+      "min": [-0.7749999761581421, -0.7749999761581421, -0.7749999761581421],
+      "max": [0.7749999761581421, 0.7749999761581421, 0.7749999761581421]
+    }
+  },
+  "validation": "The lesson graph, nested frame composition, frame labels, active locked annotation frame, stroke count, pressure-bearing point count, authored center, and bounds are preserved. The geometry bounds and polygon count match Blender; the disclosed Boolean topology delta is 6 vertices and 12 triangles."
+}

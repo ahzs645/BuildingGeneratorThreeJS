@@ -137560,18 +137560,18 @@
      "label": null,
      "ui": {
       "location": [
-       -340.0,
-       0.0
+       -340,
+       0
       ],
       "location_absolute": [
-       -340.0,
-       0.0
+       -340,
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -137634,11 +137634,11 @@
        1303.5731201171875,
        244.37539672851562
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -137704,11 +137704,11 @@
        -171.6558380126953,
        132.684814453125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -137935,11 +137935,11 @@
        368.57147216796875,
        49.99051284790039
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138076,11 +138076,11 @@
        188.22860717773438,
        74.62043762207031
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138191,11 +138191,11 @@
        8.571432113647461,
        117.44141387939453
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138296,11 +138296,11 @@
        574.9049682617188,
        164.08837890625
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138365,11 +138365,11 @@
        759.975830078125,
        70.21266174316406
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138506,11 +138506,11 @@
        1311.19970703125,
        145.37142944335938
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138594,11 +138594,11 @@
        935.4912109375,
        84.218505859375
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138709,11 +138709,11 @@
        1121.4727783203125,
        152.27566528320312
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -138868,6 +138868,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    -11.8265380859375,
+    -104.56644439697266
    ]
   },
   "flat color material": {
@@ -138935,11 +138939,11 @@
        459.15924072265625,
        76.19255065917969
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -139005,11 +139009,11 @@
        -290.43707275390625,
        76.19255065917969
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -139110,11 +139114,11 @@
        269.1593017578125,
        78.96813201904297
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -139206,11 +139210,11 @@
        -87.08727264404297,
        149.182861328125
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -139313,11 +139317,11 @@
        109.60006713867188,
        88.71568298339844
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -139472,6 +139476,10 @@
      "from_type": "NodeSocketBool",
      "to_type": "NodeSocketBool"
     }
+   ],
+   "view_center": [
+    227.96484375,
+    13.5919189453125
    ]
   }
  },
@@ -186128,5 +186136,17 @@
     256
    ]
   }
- ]
+ ],
+ "authoring_refresh": {
+  "schema_version": 1,
+  "source_project": "chrome-assets",
+  "source_sha256": "5e310d5c14a27abe3e9d5b2890031596308cbbc6a88c6c47768ebc6b9d411738",
+  "decoder": "src/blend/to-dump.ts",
+  "fields": [
+   "node-layout",
+   "frame-parenting",
+   "view-center",
+   "annotations"
+  ]
+ }
 }

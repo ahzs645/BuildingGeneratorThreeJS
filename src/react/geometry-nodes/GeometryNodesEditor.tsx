@@ -5,7 +5,6 @@ import {
   Background,
   Controls,
   Handle,
-  MiniMap,
   Position,
   ReactFlow,
   type Connection,
@@ -18,6 +17,7 @@ import {
   type OnReconnect,
   type NodeProps,
   type ReactFlowInstance,
+  type Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { publicUrl } from "../../base-url";
@@ -34,6 +34,7 @@ import {
   type GraphNodeTemplate,
   type GraphSocket,
 } from "../../geometry-nodes/graph-model";
+import { documentBounds } from "../../geometry-nodes/annotations";
 import {
   resolveEditorRootGroup,
   type GeometryNodesEditorConfig,
@@ -41,6 +42,7 @@ import {
   type GeometryNodesEditorSource,
 } from "./editor-config";
 import { GraphPresetLibrary, type GeometryNodesPreset } from "./GraphPresetLibrary";
+import { AnnotationCanvas, AnnotationMiniMap } from "./AnnotationCanvas";
 import { useMobileStudio } from "../studio/StudioShell";
 
 type NodeCardData = {
@@ -55,7 +57,7 @@ type NodeCardData = {
    */
   onOpenNestedGroup?: (node: GraphNode) => void;
 };
-type FrameData = { title: string; color?: string };
+type FrameData = { title: string; color?: string; labelSize: number; shrink: boolean };
 type Breadcrumb = { group: string; via?: string };
 export type GeometryNodesEditorProps = {
   config: GeometryNodesEditorConfig;
@@ -195,7 +197,14 @@ function NodeCard({ data }: NodeProps<Node<NodeCardData>>): React.JSX.Element {
 }
 
 function Frame({ data }: NodeProps<Node<FrameData>>): React.JSX.Element {
-  return <div className="blender-frame" style={data.color ? { borderColor: data.color } : undefined}><span>{data.title}</span></div>;
+  const style = {
+    ...(data.color ? {
+      borderColor: data.color,
+      background: `color-mix(in srgb, ${data.color} 13%, rgba(10,11,13,.4))`,
+    } : {}),
+    "--frame-label-size": `${Math.max(8, data.labelSize)}px`,
+  } as React.CSSProperties;
+  return <div className={`blender-frame ${data.shrink ? "shrink" : ""}`} style={style}><span>{data.title}</span></div>;
 }
 
 const nodeTypes = { blenderNode: NodeCard, blenderFrame: Frame };
@@ -256,6 +265,8 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
   const [pendingFocus, setPendingFocus] = useState<{ groupName: string; nodeId: string } | null>(null);
   const [installedSourceIdentity, setInstalledSourceIdentity] = useState<string | null>(null);
   const [flow, setFlow] = useState<ReactFlowInstance | null>(null);
+  const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 1 });
+  const [inkVisible, setInkVisible] = useState(true);
   const fileInput = useRef<HTMLInputElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
   const pendingDraft = useRef<{ key: string; dump: Dump } | null>(null);
@@ -344,6 +355,8 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     setLibraryOpen(false);
     setPendingFocus(null);
     setInstalledSourceIdentity(null);
+    setViewport({ x: 0, y: 0, zoom: 1 });
+    setInkVisible(true);
     framedGroup.current = "";
     connecting.current = null;
     reconnectSucceeded.current = false;
@@ -440,14 +453,36 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     if (!dump || !groupName) return;
     const nextGraph = dumpGroupToEditorGraph(dump, groupName);
     const scale = 1;
-    const byKind = [...nextGraph.nodes].sort((a, b) => Number(a.kind !== "frame") - Number(b.kind !== "frame"));
-    const nextNodes: Node[] = byKind.map((node) => {
+    const graphById = new Map(nextGraph.nodes.map((node) => [node.id, node]));
+    const depths = new Map<string, number>();
+    const depthOf = (node: GraphNode, visiting = new Set<string>()): number => {
+      const cached = depths.get(node.id);
+      if (cached !== undefined) return cached;
+      if (!node.parentId || visiting.has(node.id)) return 0;
+      visiting.add(node.id);
+      const parent = graphById.get(node.parentId);
+      const depth = parent ? depthOf(parent, visiting) + 1 : 0;
+      visiting.delete(node.id);
+      depths.set(node.id, depth);
+      return depth;
+    };
+    // React Flow requires every parent to precede its descendants. This also
+    // keeps nested frames attached instead of silently promoting them to root.
+    const ordered = [...nextGraph.nodes].sort((a, b) =>
+      depthOf(a) - depthOf(b) || Number(a.kind !== "frame") - Number(b.kind !== "frame"));
+    const nextNodes: Node[] = ordered.map((node) => {
       if (node.kind === "frame") return {
         id: node.id,
         type: "blenderFrame",
         position: { x: node.position.x * scale, y: node.position.y * scale },
-        data: { title: node.label, color: node.color },
-        style: { width: Math.max(120, node.width), height: Math.max(90, node.height) },
+        parentId: node.parentId,
+        data: {
+          title: node.label,
+          color: node.color,
+          labelSize: Number(node.properties.label_size ?? 20),
+          shrink: Boolean(node.properties.shrink),
+        },
+        style: { width: Math.max(1, node.width), height: Math.max(1, node.height) },
         selectable: false,
         draggable: false,
         zIndex: -10,
@@ -457,7 +492,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
         type: "blenderNode",
         position: { x: node.position.x * scale, y: node.position.y * scale },
         parentId: node.parentId,
-        data: { node, width: Math.max(120, Math.min(360, node.width)), searchMatch: false, onSocketChange: changeSocket, onOpenNestedGroup: isMobile ? openNestedGroup : undefined },
+        data: { node, width: Math.max(40, Math.min(1200, node.width)), searchMatch: false, onSocketChange: changeSocket, onOpenNestedGroup: isMobile ? openNestedGroup : undefined },
         zIndex: 2,
       };
     });
@@ -498,6 +533,10 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
   }, []);
 
   const groupNames = useMemo(() => Object.keys(dump?.node_groups ?? {}).sort(), [dump]);
+  const graphBounds = useMemo(
+    () => graph ? documentBounds(graph.nodes, inkVisible ? graph.annotationLayers : []) : { x: 0, y: 0, width: 1, height: 1 },
+    [graph, inkVisible],
+  );
   const matches = useMemo(() => dump ? searchEditorGraphs(dump, search, 8) : [], [dump, search]);
   const templates = useMemo(() => dump ? graphNodeTemplates(dump) : [], [dump]);
   const libraryPresets = useMemo(() => savedDraft ? [...presets, {
@@ -549,7 +588,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     setBreadcrumbs([{ group: next }]);
   };
   const frameAll = (): void => {
-    void flow?.fitView({ duration: 320, padding: .12, minZoom: .05, maxZoom: 1.2 });
+    void flow?.fitBounds(graphBounds, { duration: 320, padding: .12 });
   };
   const frameWorkingSet = useCallback((duration = 0): boolean => {
     if (!flow || !graph || !nodes.length) return false;
@@ -564,7 +603,11 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     if (!flow || !graph || !nodes.length || pendingFocus || framedGroup.current === groupName) return;
     framedGroup.current = groupName;
     const frame = window.requestAnimationFrame(() => {
-      frameWorkingSet();
+      if (graph.annotationLayers.length && graph.viewCenter) {
+        void flow.setCenter(graph.viewCenter.x, graph.viewCenter.y, { zoom: .3 });
+      } else {
+        frameWorkingSet();
+      }
     });
     return () => window.cancelAnimationFrame(frame);
   }, [flow, frameWorkingSet, graph, groupName, nodes, pendingFocus]);
@@ -573,14 +616,14 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     let frame = 0;
     const reframe = (): void => {
       window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => frameWorkingSet(240));
+      if (!graph?.annotationLayers.length) frame = window.requestAnimationFrame(() => frameWorkingSet(240));
     };
     window.addEventListener(config.events.resize, reframe);
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener(config.events.resize, reframe);
     };
-  }, [config.events.resize, frameWorkingSet]);
+  }, [config.events.resize, frameWorkingSet, graph?.annotationLayers.length]);
 
   useEffect(() => {
     if (!pendingFocus || pendingFocus.groupName !== groupName || !graph) return;
@@ -907,10 +950,12 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
       <nav className="graph-breadcrumbs" aria-label="Node group path">{breadcrumbs.map((crumb, index) => <span key={`${crumb.group}:${index}`}><button type="button" onClick={() => jumpBreadcrumb(index)} title={crumb.group}>{crumb.via ?? crumb.group}</button>{index < breadcrumbs.length - 1 && <i>›</i>}</span>)}</nav>
       <select aria-label="All node groups" value={groupName} onChange={(event) => chooseGroup(event.target.value)}>{groupNames.map((name) => <option key={name}>{name}</option>)}</select>
       <div className="graph-search"><span>⌕</span><input ref={searchInput} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find all nodes  F3" aria-label="Search nodes" />{matches.length > 0 && <div className="graph-search-results">{matches.map((match) => <button type="button" key={`${match.groupName}:${match.node.id}`} onClick={() => focusSearchResult(match)} title={`${match.groupName} · ${match.node.sourceName}`}><b>{match.node.label}</b><small>{compactType(match.node.sourceType)}{match.node.nestedGroup ? ` → ${match.node.nestedGroup}` : ""}</small><em>{match.groupName}</em></button>)}</div>}</div>
-      <div className="graph-actions"><button type="button" onClick={frameAll} title="Frame the complete node tree">Frame All</button><button type="button" disabled={!undoStack.length} onClick={undo} title="Undo">↶</button><button type="button" disabled={!redoStack.length} onClick={redo} title="Redo">↷</button>{sourceDump && libraryPresets.length > 0 && <button type="button" onClick={() => setLibraryOpen(true)} title="Browse reusable graph presets">Library</button>}<button type="button" onClick={() => fileInput.current?.click()} title="Open portable JSON">Open</button><button type="button" onClick={saveJson} disabled={!dump} title="Save portable JSON">Save</button></div>
+      <div className="graph-actions"><button type="button" onClick={frameAll} title="Frame nodes, frames, and annotations">Frame All</button>{Boolean(graph?.annotationLayers.length) && <button type="button" aria-pressed={inkVisible} onClick={() => setInkVisible((visible) => !visible)} title="Show or hide Blender annotations">Ink</button>}<button type="button" disabled={!undoStack.length} onClick={undo} title="Undo">↶</button><button type="button" disabled={!redoStack.length} onClick={redo} title="Redo">↷</button>{sourceDump && libraryPresets.length > 0 && <button type="button" onClick={() => setLibraryOpen(true)} title="Browse reusable graph presets">Library</button>}<button type="button" onClick={() => fileInput.current?.click()} title="Open portable JSON">Open</button><button type="button" onClick={saveJson} disabled={!dump} title="Save portable JSON">Save</button></div>
       <input ref={fileInput} className="graph-file-input" type="file" accept="application/json,.json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importJson(file).catch((error) => window.alert(error instanceof Error ? error.message : String(error))); event.target.value = ""; }} />
     </div>
-    <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onInit={setFlow}
+    <div className="blender-flow-stage">
+    <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onInit={(instance) => { setFlow(instance); setViewport(instance.getViewport()); }}
+      onMove={(_event, nextViewport) => setViewport(nextViewport)}
       onNodesChange={(changes: NodeChange[]) => setNodes((current) => applyNodeChanges(changes, current))}
       onNodesDelete={(removed) => deleteSelection(removed.map((node) => node.id))}
       onNodeDragStop={(_event, node) => persistNodePosition(node)}
@@ -939,11 +984,22 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     }} onNodeDoubleClick={(_event, flowNode) => {
       const data = flowNode.data as NodeCardData | FrameData;
       if ("node" in data) openNestedGroup(data.node);
-    }} minZoom={.05} maxZoom={2.4} colorMode="dark" selectionOnDrag panOnScroll onlyRenderVisibleElements={isMobile} multiSelectionKeyCode={["Meta", "Control"]}>
+      }} minZoom={.05} maxZoom={2.4} colorMode="dark" selectionOnDrag panOnScroll onlyRenderVisibleElements={isMobile} multiSelectionKeyCode={["Meta", "Control"]}>
       <Background gap={22} size={1.1} color="#30343a" />
-      <MiniMap pannable zoomable nodeColor={(node) => node.type === "blenderFrame" ? "#24272b" : "#567064"} maskColor="rgba(8,9,11,.62)" />
       <Controls showInteractive={false} />
     </ReactFlow>
+    {graph && <>
+      <AnnotationCanvas layers={graph.annotationLayers} viewport={viewport} visible={inkVisible} />
+      <AnnotationMiniMap
+        bounds={graphBounds}
+        nodes={graph.nodes}
+        layers={graph.annotationLayers}
+        viewport={viewport}
+        visible={inkVisible}
+        onCenter={(x, y) => { void flow?.setCenter(x, y, { zoom: viewport.zoom, duration: 220 }); }}
+      />
+    </>}
+    </div>
     {addMenu && <div className="graph-popup graph-add-menu" style={{ left: addMenu.x, top: addMenu.y }}>
       <header><b>{addMenu.pending ? "Add compatible node" : "Add node"}</b><button type="button" onClick={() => setAddMenu(null)}>×</button></header>
       <input autoFocus value={addQuery} onChange={(event) => setAddQuery(event.target.value)} placeholder={addMenu.pending ? "Search compatible nodes…" : "Search authored nodes…"} />

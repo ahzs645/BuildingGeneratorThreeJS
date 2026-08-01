@@ -137560,18 +137560,18 @@
      "label": null,
      "ui": {
       "location": [
-       -340.0,
-       0.0
+       -340,
+       0
       ],
       "location_absolute": [
-       -340.0,
-       0.0
+       -340,
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -137627,18 +137627,18 @@
      "label": null,
      "ui": {
       "location": [
-       200.0,
-       0.0
+       200,
+       0
       ],
       "location_absolute": [
-       200.0,
-       0.0
+       200,
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -137697,18 +137697,18 @@
      "label": null,
      "ui": {
       "location": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "location_absolute": [
-       0.0,
-       0.0
+       0,
+       0
       ],
-      "width": 140.0,
-      "height": 100.0,
+      "width": 140,
+      "height": 100,
       "dimensions": [
-       0.0,
-       0.0
+       0,
+       0
       ],
       "hide": false,
       "mute": false,
@@ -137793,6 +137793,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    4770.84912109375,
+    1033.374267578125
    ]
   }
  },
@@ -184450,5 +184454,17 @@
    ]
   }
  ],
- "dependency_objects": []
+ "dependency_objects": [],
+ "authoring_refresh": {
+  "schema_version": 1,
+  "source_project": "chrome-assets",
+  "source_sha256": "5e310d5c14a27abe3e9d5b2890031596308cbbc6a88c6c47768ebc6b9d411738",
+  "decoder": "src/blend/to-dump.ts",
+  "fields": [
+   "node-layout",
+   "frame-parenting",
+   "view-center",
+   "annotations"
+  ]
+ }
 }

@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Blender-derived graph dumps are reproducible generated artifacts. GitHub may
+# collapse their large diffs while keeping the JSON available for inspection.
+public/dojo/**/dump*.json linguist-generated=true

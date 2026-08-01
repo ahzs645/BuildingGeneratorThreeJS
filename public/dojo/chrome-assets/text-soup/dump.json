@@ -156616,6 +156616,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    493.1739501953125,
+    -102.72381591796875
    ]
   },
   "table.002": {
@@ -162961,6 +162965,10 @@
      "from_type": "NodeSocketInt",
      "to_type": "NodeSocketInt"
     }
+   ],
+   "view_center": [
+    -220.98687744140625,
+    70.95144653320312
    ]
   },
   "sample square grid.002": {
@@ -167238,6 +167246,10 @@
      "from_type": "NodeSocketBool",
      "to_type": "NodeSocketBool"
     }
+   ],
+   "view_center": [
+    -242.99591064453125,
+    -743.4736328125
    ]
   },
   "DOJO_marching square surface.002": {
@@ -180423,6 +180435,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    5540.283203125,
+    -175.36407470703125
    ]
   },
   "Boundary Edge.002": {
@@ -180875,6 +180891,10 @@
      "from_type": "NodeSocketBool",
      "to_type": "NodeSocketBool"
     }
+   ],
+   "view_center": [
+    -6.103515625e-05,
+    -1.52587890625e-05
    ]
   },
   "NodeGroup.015": {
@@ -182950,6 +182970,10 @@
      "from_type": "NodeSocketFloat",
      "to_type": "NodeSocketFloat"
     }
+   ],
+   "view_center": [
+    63.6875,
+    -150.12307739257812
    ]
   },
   "flat crayon color.002": {
@@ -183526,6 +183550,10 @@
      "from_type": "NodeSocketFloat",
      "to_type": "NodeSocketFloat"
     }
+   ],
+   "view_center": [
+    -429.4454345703125,
+    489.46502685546875
    ]
   },
   "Siglize.002": {
@@ -184068,6 +184096,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    0,
+    3.0517578125e-05
    ]
   },
   "Boundary Edge": {
@@ -184520,6 +184552,10 @@
      "from_type": "NodeSocketBool",
      "to_type": "NodeSocketBool"
     }
+   ],
+   "view_center": [
+    -6.103515625e-05,
+    0
    ]
   },
   ".smooth edges": {
@@ -186655,6 +186691,10 @@
      "from_type": "NodeSocketFloat",
      "to_type": "NodeSocketFloat"
     }
+   ],
+   "view_center": [
+    -485.05810546875,
+    -389.4151611328125
    ]
   },
   "_Bounding Box": {
@@ -188028,6 +188068,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    1763.0830078125,
+    516
    ]
   },
   "NodeGroup.017": {
@@ -190686,6 +190730,10 @@
      "from_type": "NodeSocketVector",
      "to_type": "NodeSocketVector"
     }
+   ],
+   "view_center": [
+    -240.40179443359375,
+    -186.43128967285156
    ]
   },
   "reset children": {
@@ -191317,6 +191365,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    0,
+    0
    ]
   },
   "Stick fonts": {
@@ -196021,6 +196073,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    1347.52001953125,
+    -985.6015625
    ]
   },
   "Set Center": {
@@ -199221,6 +199277,10 @@
      "from_type": "NodeSocketInt",
      "to_type": "NodeSocketBool"
     }
+   ],
+   "view_center": [
+    1109.556640625,
+    -91.01028442382812
    ]
   },
   ".sigil text": {
@@ -202430,6 +202490,10 @@
      "from_type": "NodeSocketGeometry",
      "to_type": "NodeSocketGeometry"
     }
+   ],
+   "view_center": [
+    2111.33642578125,
+    721.8902587890625
    ]
   },
   "holdout material": {
@@ -202845,6 +202909,10 @@
      "from_type": "NodeSocketBool",
      "to_type": "NodeSocketBool"
     }
+   ],
+   "view_center": [
+    0.0001220703125,
+    1.52587890625e-05
    ]
   },
   "CHROME text.001": {
@@ -203451,11 +203519,11 @@
      "label": null,
      "ui": {
       "location": [
-       715.5654296875,
+       715.5654907226562,
        -246.38665771484375
       ],
       "location_absolute": [
-       -2239.17724609375,
+       -2239.1771850585938,
        -220.01522827148438
       ],
       "width": 140,
@@ -203735,7 +203803,7 @@
      "ui": {
       "location": [
        28.927978515625,
-       -71.99541473388672
+       -71.99541664123535
       ],
       "location_absolute": [
        -1827.9862060546875,
@@ -204235,11 +204303,11 @@
      "label": null,
      "ui": {
       "location": [
-       912.63623046875,
+       912.6362609863281,
        -39.27854919433594
       ],
       "location_absolute": [
-       -2042.1064453125,
+       -2042.1064147949219,
        -12.907119750976562
       ],
       "width": 140,
@@ -204344,11 +204412,11 @@
      "label": null,
      "ui": {
       "location": [
-       28.9429931640625,
+       28.943023681640625,
        -39.33836364746094
       ],
       "location_absolute": [
-       1946.8857421875,
+       1946.8857727050781,
        -246.1097869873047
       ],
       "width": 140,
@@ -205146,11 +205214,11 @@
      "label": null,
      "ui": {
       "location": [
-       327.74853515625,
+       327.7486572265625,
        -39.10345458984375
       ],
       "location_absolute": [
-       2162.0341796875,
+       2162.0343017578125,
        148.4108428955078
       ],
       "width": 140,
@@ -205240,11 +205308,11 @@
      "label": null,
      "ui": {
       "location": [
-       274.362548828125,
+       274.3625793457031,
        -110.83779907226562
       ],
       "location_absolute": [
-       2108.648193359375,
+       2108.648223876953,
        76.67649841308594
       ],
       "width": 140,
@@ -205825,11 +205893,11 @@
      "ui": {
       "location": [
        28.623291015625,
-       -575.1287841796875
+       -575.1287994384766
       ],
       "location_absolute": [
        -2926.119384765625,
-       -548.7573852539062
+       -548.7573699951172
       ],
       "width": 140,
       "height": 100,
@@ -207398,11 +207466,11 @@
      "ui": {
       "location": [
        308.850830078125,
-       -112.93228912353516
+       -112.93229293823242
       ],
       "location_absolute": [
        -1548.0633544921875,
-       -70.10371398925781
+       -70.10371780395508
       ],
       "width": 140,
       "height": 100,
@@ -208057,11 +208125,11 @@
      "label": null,
      "ui": {
       "location": [
-       383.845703125,
+       383.8455810546875,
        -224.99234008789062
       ],
       "location_absolute": [
-       2218.13134765625,
+       2218.1312255859375,
        -37.47804260253906
       ],
       "width": 140,
@@ -208858,11 +208926,11 @@
      "ui": {
       "location": [
        486.951904296875,
-       -474.3984069824219
+       -474.3983917236328
       ],
       "location_absolute": [
        -2467.790771484375,
-       -448.0269775390625
+       -448.02696228027344
       ],
       "width": 140,
       "height": 100,
@@ -208953,11 +209021,11 @@
      "ui": {
       "location": [
        489.06787109375,
-       -625.037841796875
+       -625.0377960205078
       ],
       "location_absolute": [
        -2465.6748046875,
-       -598.6663818359375
+       -598.6663665771484
       ],
       "width": 140,
       "height": 100,
@@ -209047,12 +209115,12 @@
      "label": null,
      "ui": {
       "location": [
-       394.266845703125,
-       -673.504638671875
+       394.26690673828125,
+       -673.5046539306641
       ],
       "location_absolute": [
-       -2560.475830078125,
-       -647.1332397460938
+       -2560.4757690429688,
+       -647.1332244873047
       ],
       "width": 16,
       "height": 100,
@@ -209118,11 +209186,11 @@
      "ui": {
       "location": [
        216.39013671875,
-       -569.8341064453125
+       -569.8340606689453
       ],
       "location_absolute": [
        -2738.3525390625,
-       -543.462646484375
+       -543.4626312255859
       ],
       "width": 140,
       "height": 100,
@@ -213105,6 +213173,10 @@
      "from_type": "NodeSocketBool",
      "to_type": "NodeSocketBool"
     }
+   ],
+   "view_center": [
+    -2772.416259765625,
+    -121.5
    ]
   }
  },
@@ -271513,5 +271585,17 @@
    }
   }
  },
- "dependency_objects": []
+ "dependency_objects": [],
+ "authoring_refresh": {
+  "schema_version": 1,
+  "source_project": "chrome-assets",
+  "source_sha256": "5e310d5c14a27abe3e9d5b2890031596308cbbc6a88c6c47768ebc6b9d411738",
+  "decoder": "src/blend/to-dump.ts",
+  "fields": [
+   "node-layout",
+   "frame-parenting",
+   "view-center",
+   "annotations"
+  ]
+ }
 }

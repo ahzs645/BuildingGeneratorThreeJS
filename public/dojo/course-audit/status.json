@@ -1805,7 +1805,8 @@
           "exampleObject": "Cube.010",
           "reachableGroups": 1,
           "reachableNodes": 19,
-          "classification": "instructional-step"
+          "classification": "instructional-step",
+          "publishedAsset": "course-intro-possibilities"
         }
       ]
     },

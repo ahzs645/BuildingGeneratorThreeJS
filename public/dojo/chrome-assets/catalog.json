@@ -1860,6 +1860,19 @@
   "controls": []
 },
 {
+  "id": "course-intro-possibilities",
+  "title": "Course Intro · The Possibilities",
+  "object": "Cube.010",
+  "dump": "dojo/course-modules/intro-possibilities/dump.json",
+  "shaderMetadata": "dojo/course-modules/intro-shader-metadata.json",
+  "reference": "dojo/references/course-modules/intro-possibilities.png",
+  "blenderStats": { "verts": 232, "faces": 196 },
+  "localSpace": true,
+  "workbenchColor": [0.8, 0.8, 0.8],
+  "note": "The authored Geometry Nodes.005 lesson is published with its 19-node / 8-link graph, six frame comments, nested frame layout, and the complete Annotations.006 handwriting layer (468 strokes / 11,790 pressure-bearing points). Blender 5.1 evaluates 232 vertices / 196 faces / 480 triangles; the browser currently evaluates 226 vertices / 196 faces / 468 triangles with every reachable node handled natively.",
+  "controls": []
+},
+{
   "id": "course-intro-node-dojo",
   "title": "Course Intro · Node Dojo Emblem",
   "object": "Plane.019",
