@@ -40,10 +40,11 @@ export function buildGui(app: App): GUI {
     (perGenerator[g] ??= []).push(folder);
   };
 
-  gui.add(s, 'generator', GENERATORS).name('Generator').onChange((g: Generator) => {
+  const generatorController = gui.add(s, 'generator', GENERATORS).name('Generator').onChange((g: Generator) => {
     app.setGenerator(g);
     syncFolders(g);
   });
+  generatorController.domElement.classList.add('paint-generator-controller');
 
   // ---------- shared: model + drawing ----------
 
@@ -54,14 +55,16 @@ export function buildGui(app: App): GUI {
     .onChange((v: ModelKind) => app.setModel(v));
   fModel.add({ load: () => pickGlb(app) }, 'load').name('Load .glb…');
   // Rescaling the surface invalidates painted strokes, so this clears them on change.
-  fModel.add(s, 'modelScale', 0.2, 3).name('Model scale (clears strokes)').listen()
+  const modelScaleController = fModel.add(s, 'modelScale', 0.2, 3).name('Model scale').listen()
     .onChange((v: number) => app.setModelScale(v));
+  modelScaleController.domElement.title = 'Changing the model scale clears painted strokes.';
   paintFolders.push(fModel);
 
   const fDraw = gui.addFolder('Drawing');
   fDraw.add(s, 'drawMode').name('Draw mode (D)').listen().onChange(() => app.applyModes());
   fDraw.add({ undo: () => app.undoLast() }, 'undo').name('Undo last stroke');
-  fDraw.add({ clear: () => app.clearAll() }, 'clear').name('Clear all strokes');
+  const clearController = fDraw.add({ clear: () => app.clearAll() }, 'clear').name('Clear all strokes');
+  clearController.domElement.classList.add('paint-destructive-action');
   paintFolders.push(fDraw);
 
   // ---------- ivy ----------
@@ -229,6 +232,34 @@ export function buildGui(app: App): GUI {
   fGrowth.add(s, 'growthSpeed', 0.1, 3).name('Vegetation speed');
   fGrowth.add({ redraw: () => app.scheduleRegrow('animate') }, 'redraw').name('▶ Replay growth');
 
+  // These settings are implemented as procedural stages rather than a
+  // Blender-authored Geometry Nodes graph. Present each stage as a compact
+  // node card so the inspector shares the Studio visual language while the
+  // existing lil-gui controllers keep their proven live-update behavior.
+  decorateNode(fModel, 'Model', 'INPUT', 'source');
+  decorateNode(fDraw, 'Drawing', 'TOOLS', 'interaction');
+  decorateNode(fShape, 'Ivy shape', 'LIVE', 'generator');
+  decorateNode(fIvyLeaves, 'Ivy leaves', 'LIVE', 'generator');
+  decorateNode(fFlowers, 'Flowers', 'BRUSH', 'interaction');
+  decorateNode(fTrunk, 'Trunk & limbs', 'LIVE', 'generator');
+  decorateNode(fCanopy, 'Canopy', 'LIVE', 'generator');
+  decorateNode(fVines, 'Hanging vines', 'LIVE', 'generator');
+  decorateNode(fFigs, 'Figs', 'BRUSH', 'interaction');
+  decorateNode(fInteract, 'Interaction', 'LIVE', 'interaction');
+  decorateNode(fCrystal, 'Crystals', 'LIVE', 'generator');
+  decorateNode(fFissure, 'Molten fissures', 'LIVE', 'generator');
+  decorateNode(fAurora, 'Aurora silk', 'LIVE', 'generator');
+  decorateNode(fReef, 'Bioluminescent reef', 'LIVE', 'generator');
+  decorateNode(fWind, 'Wind', 'LIVE', 'simulation');
+  decorateNode(fLook, 'Look', 'LIVE', 'render');
+  decorateNode(fStudio, 'Studio light & bloom', 'LIVE', 'render');
+  decorateNode(fGrowth, 'Growth animation', 'PLAYBACK', 'animation');
+
+  // Keep the primary construction stages open and tuck secondary/detail
+  // stages away. Their state remains user-controlled after first render.
+  [fIvyLeaves, fFlowers, fCanopy, fVines, fFigs, fInteract, fWind, fLook, fStudio, fGrowth]
+    .forEach((folder) => folder.close());
+
   function syncFolders(active: Generator): void {
     for (const folder of paintFolders) (active === 'Tree' ? folder.hide() : folder.show());
     const shown = new Set(perGenerator[active] ?? []);
@@ -242,6 +273,27 @@ export function buildGui(app: App): GUI {
   syncFolders(s.generator);
 
   return gui;
+}
+
+function decorateNode(
+  folder: GUI,
+  title: string,
+  tag: string,
+  tone: 'source' | 'interaction' | 'generator' | 'simulation' | 'render' | 'animation',
+): void {
+  folder.title(title);
+  folder.domElement.classList.add('paint-node', `paint-node-${tone}`);
+
+  const label = document.createElement('span');
+  label.className = 'paint-node-title';
+  label.textContent = title;
+
+  const badge = document.createElement('span');
+  badge.className = 'paint-node-badge';
+  badge.textContent = tag;
+  badge.setAttribute('aria-hidden', 'true');
+
+  folder.$title.replaceChildren(label, badge);
 }
 
 function pickGlb(app: App): void {

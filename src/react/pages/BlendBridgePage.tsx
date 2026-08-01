@@ -58,6 +58,7 @@ import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import {
   AssetLibraryOverlay,
   fetchAssetCatalog,
+  libraryAssetCompareHref,
   libraryAssetStats,
   type LibraryAsset,
 } from "../blend-studio/AssetLibrary";
@@ -161,7 +162,7 @@ function download(name: string, value: BlobPart): void {
 function seedFromValue(value: string): BlendStudioSeed {
   return value.startsWith("object:")
     ? { kind: "object", objectName: value.slice("object:".length) }
-    : { kind: value as Exclude<BlendStudioSeed["kind"], "object"> };
+    : { kind: value as Exclude<BlendStudioSeed["kind"], "object" | "ico-spheres"> };
 }
 
 export default function BlendBridgePage(): React.JSX.Element {
@@ -181,7 +182,7 @@ export default function BlendBridgePage(): React.JSX.Element {
   const [dragging, setDragging] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [libraryAsset, setLibraryAsset] = useState<LibraryAsset | null>(null);
-  const [importMessage, setImportMessage] = useState("Drop a Blender file or load the included sample");
+  const [importMessage, setImportMessage] = useState("Drop a Blender file or choose an asset from the library");
   const [decoderGaps, setDecoderGaps] = useState<PortableGap[] | null>(null);
   const [sourceDump, setSourceDump] = useState<ImportedDump | null>(null);
   const [workingDump, setWorkingDump] = useState<Dump | null>(null);
@@ -702,22 +703,6 @@ export default function BlendBridgePage(): React.JSX.Element {
     }
   }, [health?.available, installDump]);
 
-  const loadSample = useCallback(async (): Promise<void> => {
-    setBusy(true);
-    setDecoderGaps(null);
-    setImportMessage("Loading included procedural bin graph…");
-    try {
-      const response = await fetch(publicUrl("dojo/dump_bin.json"));
-      if (!response.ok) throw new Error(`Sample failed (${response.status})`);
-      const dump = await response.json() as ImportedDump;
-      installDump(dump, "dojo-bin-sample.json", Number(response.headers.get("content-length")) || 0);
-    } catch (error) {
-      setImportMessage(`Sample failed · ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setBusy(false);
-    }
-  }, [installDump]);
-
   const loadLibraryAsset = useCallback(async (asset: LibraryAsset): Promise<void> => {
     setLibraryOpen(false);
     setBusy(true);
@@ -877,9 +862,8 @@ export default function BlendBridgePage(): React.JSX.Element {
           event.target.value = "";
         }}
       />
-      <div className="st-btn-row st-btn-row-even">
-        <button className="st-btn" type="button" disabled={busy} onClick={() => void loadSample()}>Bin sample</button>
-        <button className="st-btn" type="button" disabled={busy} onClick={() => setLibraryOpen(true)}>Asset library</button>
+      <div className="st-btn-row">
+        <button className="st-btn" type="button" disabled={busy} onClick={() => setLibraryOpen(true)}>Browse asset library</button>
       </div>
       {/* One source card at a time: the library card supersedes the generic
           import status row for catalog assets. */}
@@ -897,7 +881,7 @@ export default function BlendBridgePage(): React.JSX.Element {
         <div className="blend-card-copy">
           <b>{libraryAsset.title}</b>
           <small>{libraryAssetStats(libraryAsset)} · Blender {sourceDump?.blender_version ?? "unknown"}</small>
-          <Link to={`/chrome-assets?asset=${libraryAsset.id}`}>Side-by-side Blender compare →</Link>
+          <Link to={libraryAssetCompareHref(libraryAsset)}>Side-by-side Blender compare →</Link>
         </div>
       </div>}
       {decoderGaps && decoderGaps.length > 0 && <details className="blend-decoder-gaps">
@@ -970,7 +954,7 @@ export default function BlendBridgePage(): React.JSX.Element {
           }}
         >Apply to preview</button>
         <details className="blend-export">
-          <summary className="st-btn">Export ▾</summary>
+          <summary className="st-btn">Export</summary>
           <div>
             <button type="button" disabled={!interpretedDump} onClick={() => {
               if (!interpretedDump) return;

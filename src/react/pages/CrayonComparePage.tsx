@@ -5,7 +5,7 @@ import { chromeCrayonEditorConfig as editorConfig } from "../geometry-nodes/chro
 import { usePageRuntime } from "../page-runtime";
 import { useCrayonRuntime } from "../crayon/useCrayonRuntime";
 import { useStudioStatusChips } from "../studio/StudioChrome";
-import { StudioOverlay, StudioShell, useMobileStudio } from "../studio/StudioShell";
+import { StudioOverlay, StudioPanelHeader, StudioShell, useMobileStudio } from "../studio/StudioShell";
 import "./crayon-compare.css";
 
 const controls = [
@@ -112,7 +112,7 @@ export default function CrayonComparePage(): React.JSX.Element {
   };
 
   const leftDock = <>
-    <div className="st-tabs"><button type="button" aria-selected="true">Generator</button></div>
+    <StudioPanelHeader title="Generator" />
     <div className="st-section">
       <div className="st-section-title">Exposed group inputs<small>live</small></div>
       {controls.map((control) => <label className="st-row" key={control.name}>
@@ -137,7 +137,7 @@ export default function CrayonComparePage(): React.JSX.Element {
   </>;
 
   const rightDock = <>
-    <div className="st-tabs"><button type="button" aria-selected="true">Results</button></div>
+    <StudioPanelHeader title="Results" />
     <div className="st-section">
       <div className="st-result-row truth">
         <span>Blender baseline</span>

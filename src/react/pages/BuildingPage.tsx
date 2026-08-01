@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { defaultParams, type BuildingParams } from "../../params";
-import type { BuildingStatus, BuildingToolHandle } from "../../main";
+import type { BuildingAtmosphere, BuildingStatus, BuildingToolHandle } from "../../main";
 import { useToolController } from "../page-runtime";
-import { StudioShell } from "../studio/StudioShell";
+import { StudioPanelHeader, StudioShell } from "../studio/StudioShell";
 import "./building.css";
 
 const loadBuilding = () => import("../../main");
@@ -35,10 +35,39 @@ const BUILDING_CONTROLS: BuildingControl[] = [
   { name: "randomise", label: "Seed", min: 0, max: 1000, step: 1 },
 ];
 
+const ATMOSPHERE_CONTROLS: Array<{
+  name: keyof BuildingAtmosphere;
+  label: string;
+  group: string;
+  min?: number;
+  max?: number;
+  step?: number;
+}> = [
+  { name: "exposure", label: "Exposure", group: "Lighting", min: 0, max: 3, step: .01 },
+  { name: "envIntensity", label: "Environment", group: "Lighting", min: 0, max: 2, step: .01 },
+  { name: "key", label: "Key light", group: "Lighting", min: 0, max: 8, step: .01 },
+  { name: "fill", label: "Fill light", group: "Lighting", min: 0, max: 4, step: .01 },
+  { name: "rim", label: "Rim light", group: "Lighting", min: 0, max: 400, step: 1 },
+  { name: "fog", label: "Fog", group: "Weather" },
+  { name: "fogDensity", label: "Fog density", group: "Weather", min: 0, max: .03, step: .0005 },
+  { name: "snow", label: "Snow", group: "Weather" },
+  { name: "snowDensity", label: "Snow density", group: "Weather", min: 0, max: 1, step: .01 },
+  { name: "rain", label: "Rain", group: "Weather" },
+  { name: "rainDensity", label: "Rain density", group: "Weather", min: 0, max: 1, step: .01 },
+  { name: "autoOrbit", label: "Auto orbit", group: "Camera" },
+  { name: "orbitSpeed", label: "Orbit speed", group: "Camera", min: -3, max: 3, step: .05 },
+  { name: "fov", label: "Focal / FOV", group: "Camera", min: 18, max: 80, step: 1 },
+  { name: "letterbox", label: "Letterbox", group: "Camera" },
+  { name: "bloom", label: "Bloom", group: "Effects", min: 0, max: 2, step: .01 },
+  { name: "grain", label: "Film grain", group: "Effects", min: 0, max: .25, step: .005 },
+  { name: "vignette", label: "Vignette", group: "Effects", min: 0, max: 1.5, step: .01 },
+];
+
 export default function BuildingPage(): React.JSX.Element {
   const tool = useToolController<BuildingToolHandle>("Hong Kong Building Generator", loadBuilding);
   const [params, setParams] = useState<BuildingParams>(defaultParams);
   const [emissive, setEmissive] = useState(1);
+  const [atmosphere, setAtmosphere] = useState<BuildingAtmosphere | null>(null);
   const [status, setStatus] = useState<BuildingStatus>({ state: "loading", message: "Loading asset kit…" });
 
   // The runtime owns the authoritative values: the headless hook (__setParams)
@@ -48,6 +77,7 @@ export default function BuildingPage(): React.JSX.Element {
     if (!tool) return;
     setParams(tool.getParams());
     setEmissive(tool.getEmissive());
+    setAtmosphere(tool.getAtmosphere());
     const unsubscribeParams = tool.subscribe(setParams);
     const unsubscribeStatus = tool.subscribeStatus(setStatus);
     return () => {
@@ -57,7 +87,7 @@ export default function BuildingPage(): React.JSX.Element {
   }, [tool]);
 
   const leftDock = <>
-    <div className="st-tabs"><button type="button" aria-selected="true">Build system</button></div>
+    <StudioPanelHeader title="Build system" />
     <div className="st-section">
       <div className="st-section-title">Generator<small>{BUILDING_CONTROLS.length} inputs</small></div>
       {BUILDING_CONTROLS.map((control) => (
@@ -99,12 +129,44 @@ export default function BuildingPage(): React.JSX.Element {
     </div>
   </>;
 
-  // The atmosphere rig (environment, snow, rain, cinematic) is still a lil-gui
-  // panel; main.ts mounts it into this container so it docks with the shell
-  // instead of floating over the viewport.
   const rightDock = <>
-    <div className="st-tabs"><button type="button" aria-selected="true">Atmosphere</button></div>
-    <div id="building-gui-dock" className="building-gui-dock" />
+    <StudioPanelHeader title="Atmosphere" />
+    {(["Lighting", "Weather", "Camera", "Effects"] as const).map((group) => <div className="st-section" key={group}>
+      <div className="st-section-title">{group}</div>
+      {ATMOSPHERE_CONTROLS.filter((control) => control.group === group).map((control) => {
+        const value = atmosphere?.[control.name];
+        return <label className="st-row" key={control.name}>
+          <span>{control.label}</span>
+          {typeof value === "boolean" || control.min === undefined ? <input
+            type="checkbox"
+            checked={Boolean(value)}
+            disabled={!tool || !atmosphere}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setAtmosphere((current) => current ? { ...current, [control.name]: next } : current);
+              tool?.setAtmosphere(control.name, next);
+            }}
+          /> : <>
+            <input
+              type="range"
+              min={control.min}
+              max={control.max}
+              step={control.step}
+              value={Number(value ?? 0)}
+              disabled={!tool}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                setAtmosphere((current) => current ? { ...current, [control.name]: next } : current);
+                tool?.setAtmosphere(control.name, next);
+              }}
+            />
+            <output>{Number(value ?? 0).toFixed((control.step ?? 1) < .01 ? 3 : (control.step ?? 1) < 1 ? 2 : 0)}</output>
+          </>}
+        </label>;
+      })}
+    </div>)}
+    {/* Legacy controllers stay detached while capture hooks transition. */}
+    <div id="building-gui-dock" className="building-gui-dock" hidden aria-hidden="true" />
   </>;
 
   return <StudioShell

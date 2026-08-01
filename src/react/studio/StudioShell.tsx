@@ -38,6 +38,24 @@ export function useMobileStudio(): boolean {
 
 export type StudioSheetTab = { id: string; label: string; content: ReactNode };
 
+type StudioPanelHeaderProps = {
+  title: ReactNode;
+  meta?: ReactNode;
+  className?: string;
+};
+
+/** A section label for docks that do not actually switch between tabs. */
+export function StudioPanelHeader({
+  title,
+  meta,
+  className = "",
+}: StudioPanelHeaderProps): React.JSX.Element {
+  return <header className={`st-panel-header ${className}`}>
+    <h2>{title}</h2>
+    {meta && <span>{meta}</span>}
+  </header>;
+}
+
 type StudioShellProps = {
   /** 300px left dock. Omit to collapse the column to 0. */
   leftDock?: ReactNode;

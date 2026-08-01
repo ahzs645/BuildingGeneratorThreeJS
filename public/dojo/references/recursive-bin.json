@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "asset": "recursive-bin",
+  "object": "Procedural Drawer",
+  "rootGroup": "bin generator.001",
+  "reference": "dojo/references/recursive-bin.png",
+  "referenceSha256": "c817eabf2e4bf4f118c9b659a39e90e14b46e9ea9bd6291fd993988262b97ce4",
+  "source": {
+    "project": "recursive-bin",
+    "blend": "Dojo Bin Generator_recursive red bins_v.0.1.1.blend",
+    "sha256": "06e18a50eef8c464d11c0972c372d347ad30ce11ebad044b8d47ea44d1cec8c0"
+  },
+  "blenderVersion": "5.1.2",
+  "render": {
+    "engine": "BLENDER_EEVEE",
+    "resolution": [768, 768],
+    "transparent": true,
+    "authoredMaterial": true,
+    "geometryNodesOnly": true
+  },
+  "geometry": {
+    "verts": 56985,
+    "faces": 55000,
+    "bounds": {
+      "min": [-0.6876335740089417, -0.35800960659980774, 0.09351034462451935],
+      "max": [0.3839999735355377, 0.255499929189682, 0.20651035010814667]
+    }
+  },
+  "fontOverrides": [
+    {
+      "source": "dogica.otf",
+      "sha256": "9fda16b1e7eb905d379579444f9f21ef7848f3ce64490b78176253bac9aeefec",
+      "matchedDatablock": "Dogica Regular.001",
+      "publishedBinary": false
+    },
+    {
+      "source": "Degular Text Semibold.ttf",
+      "sha256": "f83eeb8958d56adfa39ff58dd0186e9b0feccd0340fc5c38157580837dc60460",
+      "matchedDatablock": "Degular Semibold.001",
+      "publishedBinary": false
+    }
+  ],
+  "claim": "The recovered source fonts restore the validated authored 56,985-vertex / 55,000-face result. The image is a Blender reference render; the external font binaries are not redistributed."
+}

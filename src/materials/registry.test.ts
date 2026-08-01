@@ -16,6 +16,9 @@ const geometry = new THREE.BufferGeometry();
 const catalog = JSON.parse(
   readFileSync(new URL("../../public/dojo/chrome-assets/catalog.json", import.meta.url), "utf8"),
 ) as Array<{ id: string; workbenchColor?: [number, number, number]; flatShading?: boolean }>;
+const binDump = JSON.parse(
+  readFileSync(new URL("../../public/dojo/dump_bin.json", import.meta.url), "utf8"),
+) as Dump;
 const context: AuthoredMaterialContext = {
   asset: {},
   dump: {} as Dump,
@@ -58,6 +61,7 @@ test("default registry keeps the authored dispatch order stable", () => {
     "profile-chain-mace",
     "profile-chrome-crayon",
     "profile-attribute-emission",
+    "profile-recursive-bin",
     "attribute-emission",
     "attribute-color-emission",
     "attribute-principled",
@@ -146,6 +150,32 @@ test("chain profile retains its evaluated material-slot fallback", () => {
   ];
   assert.equal(materialNameForGroup({ material: "chain-mace" }, groups[1], groups), "chrome.002");
   assert.equal(materialNameForGroup({}, groups[1], groups), "");
+});
+
+test("recursive bin catalog profile reuses the validated authored shader", () => {
+  const binGeometry = new THREE.BufferGeometry();
+  binGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+    -2, -1, 0,
+    3, -1, 0,
+    0, 4, 2,
+  ], 3));
+  const material = authoredMaterialRegistry.resolve({
+    ...context,
+    asset: { material: "recursive-bin" },
+    dump: binDump,
+    geometry: binGeometry,
+    group: { ...group, material: "3D" },
+    groups: [{ ...group, material: "3D" }],
+    materialName: "3D",
+  });
+  assert.ok(material?.isMeshPhysicalMaterial);
+  assert.equal(material?.userData.authoredLabel, "3D · authored bin Wave/Noise reconstruction");
+  assert.deepEqual(material?.userData.binGeneratedBounds, {
+    min: [-2, -1, 0],
+    max: [3, 4, 2],
+  });
+  material?.dispose();
+  binGeometry.dispose();
 });
 
 test.after(() => geometry.dispose());

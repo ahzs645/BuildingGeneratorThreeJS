@@ -1,5 +1,30 @@
 [
   {
+    "id": "recursive-bin",
+    "title": "Recursive Bin Generator · Add-on",
+    "object": "Procedural Drawer",
+    "dump": "dojo/dump_bin.json",
+    "compareHref": "/bin",
+    "reference": "dojo/references/recursive-bin.png",
+    "authoredReference": "dojo/references/recursive-bin.png",
+    "blenderStats": { "verts": 56985, "faces": 55000 },
+    "material": "recursive-bin",
+    "note": "The original recursive red-bin add-on and former standalone Studio sample. Its complete 685-node reachable graph now shares the asset catalog identity used by Procedural Studio. The authored case is topology-exact at 56,985 / 55,000; 44 unique published-range probes match Blender bounds exactly, and the 15 exported surface cases have zero sampled distance at 0.001-unit precision. Degenerate divider endpoints, fillet values of 8 or more, and gaps above 7 stay outside the published appearance-parity range. Open the dedicated comparison for baked Blender truth across Bin Select 0-11 and the optional local live-Blender bridge. This is distinct from the N03D Stackable Gridfinity Bin.",
+    "controls": [
+      { "name": "Size X", "label": "Size X", "min": 0.1, "max": 3, "step": 0.001, "value": 0.7079999446868896 },
+      { "name": "Size Y", "label": "Size Y", "min": 0.1, "max": 3, "step": 0.001, "value": 0.510999858379364 },
+      { "name": "Size Z", "label": "Size Z", "min": 0, "max": 1, "step": 0.001, "value": 0.11300000548362732 },
+      { "name": "bin gap size", "label": "Bin gap size", "min": 0.2, "max": 7, "step": 0.01, "value": 1.3000000715255737 },
+      { "name": "bin wall thiccness", "label": "Bin wall thickness", "min": 0, "max": 30, "step": 0.01, "value": 1.8079999685287476 },
+      { "name": "fillet", "label": "Fillet", "min": 0, "max": 7.9, "step": 0.01, "value": 0.8109987378120422 },
+      { "name": "divide x", "label": "Divide X", "min": 0.15, "max": 0.85, "step": 0.001, "value": 0.41713136434555054 },
+      { "name": "divide y", "label": "Divide Y", "min": 0.2, "max": 0.9, "step": 0.001, "value": 0.6334825754165649 },
+      { "name": "Bin Select", "label": "Bin Select", "min": 0, "max": 11, "step": 1, "value": 5 },
+      { "name": "print layers", "label": "Print layers", "min": 0, "max": 5, "step": 0.001, "value": 0.05199899151921272 },
+      { "type": "checkbox", "name": "make exportable", "label": "Make exportable", "value": false }
+    ]
+  },
+  {
     "id": "chain-and-mace",
     "title": "Chain and Mace",
     "object": "spikey chain and mace.005",

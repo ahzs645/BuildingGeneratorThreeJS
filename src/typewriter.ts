@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import { fitPerspectiveCameraToObject } from "./camera-fit";
 import { canvasBox, observeCanvasBox } from "./canvas-viewport";
 import type { ToolHandle } from "./react/page-runtime";
 import type { Dump, TriSoup } from "./gnvm/index";
@@ -32,6 +33,7 @@ export function createTool(): ToolHandle {
   const frameOutput = document.querySelector<HTMLOutputElement>("#typewriter-frame-output")!;
   const playButton = document.querySelector<HTMLButtonElement>("#typewriter-play")!;
   const evaluateButton = document.querySelector<HTMLButtonElement>("#typewriter-evaluate")!;
+  const reframeButton = document.querySelector<HTMLButtonElement>("#typewriter-reframe")!;
   const statusEl = document.querySelector<HTMLElement>("#typewriter-status")!;
   const countEl = document.querySelector<HTMLElement>("#typewriter-count")!;
   const runtimeEl = document.querySelector<HTMLElement>("#typewriter-runtime")!;
@@ -66,6 +68,7 @@ export function createTool(): ToolHandle {
   let playing = false;
   let lastPlay = 0;
   let editTimer = 0;
+  let hasFramed = false;
   const liveWorkers = new Set<Worker>();
 
   async function loadDisplayFallback(): Promise<boolean> {
@@ -143,12 +146,7 @@ export function createTool(): ToolHandle {
   }
 
   function frameModel(): void {
-    const box = new THREE.Box3().setFromObject(model);
-    if (box.isEmpty()) return;
-    const center = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
-    const radius = Math.max(size.length() * .5, 1);
-    camera.position.set(center.x, center.y - radius * 1.35, center.z + radius * .75);
-    camera.near = radius / 300; camera.far = radius * 100; camera.updateProjectionMatrix(); controls.target.copy(center); controls.update();
+    hasFramed = fitPerspectiveCameraToObject(camera, controls, model) || hasFramed;
   }
 
   async function update(): Promise<void> {
@@ -159,7 +157,10 @@ export function createTool(): ToolHandle {
       const result = await evaluate();
       if (disposed || result.id < appliedId || result.id !== requested) return;
       appliedId = result.id;
-      clearModel(); model.add(soupMesh(result.soup)); frameModel();
+      clearModel(); model.add(soupMesh(result.soup));
+      // Frame the first successful result only. Later edits preserve the
+      // camera the user established unless they explicitly reframe.
+      if (!hasFramed) frameModel();
       countEl.textContent = `${result.soup.stats.verts.toLocaleString()} verts · ${result.soup.stats.faces.toLocaleString()} faces`;
       runtimeEl.textContent = `${((performance.now() - started) / 1000).toFixed(2)}s · frame ${frameInput.value}`;
       statusEl.classList.add("ready"); statusEl.textContent = "Portable typewriter graph evaluated";
@@ -171,6 +172,7 @@ export function createTool(): ToolHandle {
   function queueUpdate(): void { window.clearTimeout(editTimer); editTimer = window.setTimeout(() => void update(), 140); }
   const onFrameInput = (): void => { frameOutput.value = frameInput.value; queueUpdate(); };
   const onEvaluate = (): void => void update();
+  const onReframe = (): void => frameModel();
   const onPlay = (): void => { playing = !playing; playButton.classList.toggle("active", playing); playButton.textContent = playing ? "Pause" : "Play"; };
   const onFontFileChange = (): void => void onFontFile();
 
@@ -178,6 +180,7 @@ export function createTool(): ToolHandle {
   frameInput.addEventListener("input", onFrameInput);
   textInput.addEventListener("input", queueUpdate);
   evaluateButton.addEventListener("click", onEvaluate);
+  reframeButton.addEventListener("click", onReframe);
   playButton.addEventListener("click", onPlay);
   // The canvas is a grid column of the studio shell, not the whole window.
   const stopObservingCanvas = observeCanvasBox(canvas, (width, height) => {
@@ -205,6 +208,7 @@ export function createTool(): ToolHandle {
       frameInput.removeEventListener("input", onFrameInput);
       textInput.removeEventListener("input", queueUpdate);
       evaluateButton.removeEventListener("click", onEvaluate);
+      reframeButton.removeEventListener("click", onReframe);
       playButton.removeEventListener("click", onPlay);
       fontFileEl.removeEventListener("change", onFontFileChange);
       stopObservingCanvas();

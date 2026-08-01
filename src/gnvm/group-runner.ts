@@ -4,8 +4,8 @@ import type { Vec3 } from "./core";
 import { baseGeometryOf } from "./dump-object-geometry";
 import type { Dump, DumpInterfaceItem } from "./dump-schema";
 import { Evaluator } from "./evaluator";
-import { Geometry, toTriSoup } from "./geometry";
-import { meshCube, meshGrid, meshLine } from "./primitives";
+import { Geometry, Mesh, mergeMeshInto, toTriSoup } from "./geometry";
+import { meshCube, meshGrid, meshIcoSphere, meshLine } from "./primitives";
 import { APPROXIMATIONS, DUMP_CONTEXT, MISSING, REGISTRY } from "./registry";
 import type { RunResult } from "./run-result";
 import {
@@ -74,6 +74,12 @@ export type PrimitiveGeometrySeed =
     kind: "curve-line";
     start?: Vec3;
     end?: Vec3;
+  }
+  | {
+    /** Disconnected authored blobs supplied to volume/remesh style groups. */
+    kind: "ico-spheres";
+    spheres: Array<{ position: Vec3; radius: number }>;
+    subdivisions?: number;
   };
 
 export type GroupGeometrySeed =
@@ -142,6 +148,23 @@ function selectSocket(
 }
 
 export function createPrimitiveGeometry(seed: PrimitiveGeometrySeed): Geometry {
+  if (seed.kind === "ico-spheres") {
+    const geometry = new Geometry();
+    geometry.mesh = new Mesh();
+    const subdivisions = Math.max(1, Math.min(4, Math.floor(seed.subdivisions ?? 2)));
+    for (const sphere of seed.spheres) {
+      const source = meshIcoSphere(Math.max(0, sphere.radius), subdivisions).mesh;
+      if (!source) continue;
+      const translated = source.clone();
+      translated.positions = translated.positions.map((point) => [
+        point[0] + sphere.position[0],
+        point[1] + sphere.position[1],
+        point[2] + sphere.position[2],
+      ]);
+      mergeMeshInto(geometry.mesh, translated);
+    }
+    return geometry;
+  }
   if (seed.kind === "cube") {
     const scalarOrVector = seed.size ?? 1;
     const size = typeof scalarOrVector === "number"

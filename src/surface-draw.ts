@@ -1,8 +1,10 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+import { PLYLoader } from "three/examples/jsm/loaders/PLYLoader.js";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from "three-mesh-bvh";
 import { publicUrl } from "./base-url";
@@ -15,6 +17,14 @@ import {
 } from "./editable-curves";
 import type { Dump, TriSoup } from "./gnvm/index";
 import type { ToolHandle } from "./react/page-runtime";
+import {
+  ALL_TARGET_SURFACES,
+  PICK_TARGET_SURFACE,
+  collectTargetSurfaces,
+  surfacesForTarget,
+  targetLabel,
+  type TargetSurface,
+} from "./surface-targets";
 
 declare module "three" {
   interface BufferGeometry { computeBoundsTree: typeof computeBoundsTree; disposeBoundsTree: typeof disposeBoundsTree }
@@ -26,6 +36,7 @@ THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 type Sample = EditableCurvePoint;
 type NewSample = Omit<EditableCurvePoint, "id">;
+type SurfaceHit = NewSample & { target: THREE.Mesh };
 type StrokeSamples = EditableCurvePoint[];
 type CrayonLayout = { stroke: StrokeSamples; start: number; length: number };
 type DrawingArea = { center: THREE.Vector3; normal: THREE.Vector3; u: THREE.Vector3; v: THREE.Vector3; size: number };
@@ -62,6 +73,10 @@ export function createTool(): ToolHandle {
   const brushLabel = document.querySelector<HTMLElement>("#surface-brush-label")!;
   const fileInput = document.querySelector<HTMLInputElement>("#surface-file")!;
   const fileName = document.querySelector<HTMLElement>("#surface-file-name")!;
+  const targetSelect = document.querySelector<HTMLSelectElement>("#surface-target")!;
+  const targetPickButton = document.querySelector<HTMLButtonElement>("#surface-target-pick")!;
+  const targetSummary = document.querySelector<HTMLElement>("#surface-target-summary")!;
+  const targetPicker = targetSelect.closest<HTMLElement>(".surface-target-picker")!;
   const status = document.querySelector<HTMLElement>("#surface-status")!;
   const orbitButton = document.querySelector<HTMLButtonElement>("#surface-orbit")!;
   const areaButton = document.querySelector<HTMLButtonElement>("#surface-area")!;
@@ -133,13 +148,15 @@ export function createTool(): ToolHandle {
   const areaRoot = new THREE.Group(); scene.add(areaRoot);
   const handleRoot = new THREE.Group(); scene.add(handleRoot);
   const targetMaterial = new THREE.MeshPhysicalMaterial({ color: 0x53645b, metalness: .08, roughness: .46, clearcoat: .28, side: THREE.DoubleSide });
+  const inactiveTargetMaterial = new THREE.MeshPhysicalMaterial({ color: 0x27312d, metalness: 0, roughness: .72, transparent: true, opacity: .24, depthWrite: false, side: THREE.DoubleSide });
   const flatTargetMaterial = new THREE.MeshBasicMaterial({ color: 0x696d6a, side: THREE.DoubleSide });
   const brushMaterial = new THREE.MeshPhysicalMaterial({ color: 0xb9ff8c, emissive: 0x13260b, metalness: .18, roughness: .27, clearcoat: .48, side: THREE.DoubleSide });
   const chromeMaterial = new THREE.MeshPhysicalMaterial({ color: 0xb7c3c0, metalness: 1, roughness: .22, envMapIntensity: .8, side: THREE.DoubleSide });
   const sigilMaterial = new THREE.MeshPhysicalMaterial({ color: 0x91c8ff, metalness: 1, roughness: .08, clearcoat: 1, clearcoatRoughness: .06, side: THREE.DoubleSide });
   const previewMaterial = new THREE.LineBasicMaterial({ color: 0xe8ffd8, depthTest: false, transparent: true, opacity: .9 });
   const selectedPreviewMaterial = new THREE.LineBasicMaterial({ color: 0xffbd59, depthTest: false, transparent: true, opacity: 1 });
-  const areaMaterial = new THREE.LineBasicMaterial({ color: 0xffe56f, depthTest: false, transparent: true, opacity: .72 });
+  const areaFillMaterial = new THREE.MeshBasicMaterial({ color: 0xffdd2d, depthTest: false, depthWrite: false, transparent: true, opacity: .26, side: THREE.DoubleSide });
+  const areaMaterial = new THREE.LineBasicMaterial({ color: 0xffff54, depthTest: false, transparent: true, opacity: .96 });
   const handleMaterial = new THREE.PointsMaterial({ color: 0xfff2c2, size: .13, sizeAttenuation: true, depthTest: false });
   const selectedHandleMaterial = new THREE.PointsMaterial({ color: 0xff713d, size: .2, sizeAttenuation: true, depthTest: false });
   const raycaster = new THREE.Raycaster(); raycaster.firstHitOnly = true;
@@ -153,6 +170,7 @@ export function createTool(): ToolHandle {
   let selectingArea = false;
   let selectingCurve = false;
   let drawingArea: DrawingArea | null = null;
+  let targetSurfaces: TargetSurface[] = [];
   const dumps: Partial<Record<"periodic" | "crayon", Dump>> = {};
   let crayonGraphReceived = false;
   let authoredTemplate: THREE.Group | null = null;
@@ -244,6 +262,37 @@ export function createTool(): ToolHandle {
     });
   }
 
+  function selectedTargetSurfaces(): TargetSurface[] {
+    return surfacesForTarget(targetSurfaces, targetSelect.value);
+  }
+
+  function updateTargetSummary(): void {
+    const count = targetSurfaces.length;
+    targetSummary.textContent = `${count} usable mesh${count === 1 ? "" : "es"} · ${targetLabel(targetSurfaces, targetSelect.value)}`;
+  }
+
+  function applyTargetAppearance(): void {
+    const selected = new Set(selectedTargetSurfaces().map((surface) => surface.id));
+    const isolate = targetSelect.value !== PICK_TARGET_SURFACE && targetSelect.value !== ALL_TARGET_SURFACES;
+    targetPicker.dataset.mode = isolate ? "locked" : targetSelect.value === PICK_TARGET_SURFACE ? "pick" : "all";
+    const activeMaterial = surfaceKind === "flat" ? flatTargetMaterial : targetMaterial;
+    for (const surface of targetSurfaces) {
+      surface.mesh.material = !isolate || selected.has(surface.id) ? activeMaterial : inactiveTargetMaterial;
+    }
+    updateTargetSummary();
+  }
+
+  function refreshTargetInventory(defaultTarget = PICK_TARGET_SURFACE): void {
+    targetSurfaces = collectTargetSurfaces(targetRoot);
+    targetSelect.replaceChildren(
+      new Option("Pick mesh when placing area", PICK_TARGET_SURFACE),
+      new Option("All visible meshes", ALL_TARGET_SURFACES),
+      ...targetSurfaces.map((surface) => new Option(surface.label, surface.id)),
+    );
+    targetSelect.value = targetSurfaces.length === 1 ? targetSurfaces[0].id : defaultTarget;
+    applyTargetAppearance();
+  }
+
   function normalizeTarget(root: THREE.Object3D): void {
     root.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(root);
@@ -274,7 +323,7 @@ export function createTool(): ToolHandle {
       p.multiplyScalar(wobble); position.setXYZ(i, p.x, p.y, p.z);
     }
     position.needsUpdate = true; geometry.computeVertexNormals();
-    const mesh = new THREE.Mesh(geometry, targetMaterial); targetRoot.add(mesh); prepareTarget(targetRoot);
+    const mesh = new THREE.Mesh(geometry, targetMaterial); mesh.name = "Wobbled surface"; targetRoot.add(mesh); prepareTarget(targetRoot); refreshTargetInventory();
     fileName.textContent = "Using generated demo surface"; setStatus("Ready on the demo surface"); clearStrokes();
   }
 
@@ -282,7 +331,7 @@ export function createTool(): ToolHandle {
     surfaceKind = "flat"; showFlatWorkspace(true); removeDrawingArea(); clearObject(targetRoot);
     flatCamera.position.set(0, 0, 10); flatCamera.zoom = 1; useCamera(flatCamera);
     const geometry = new THREE.PlaneGeometry(200, 200);
-    const mesh = new THREE.Mesh(geometry, flatTargetMaterial); targetRoot.add(mesh); prepareTarget(targetRoot, flatTargetMaterial);
+    const mesh = new THREE.Mesh(geometry, flatTargetMaterial); mesh.name = "Flat canvas"; targetRoot.add(mesh); prepareTarget(targetRoot, flatTargetMaterial); refreshTargetInventory(ALL_TARGET_SURFACES);
     fileName.textContent = "Infinite XY drawing canvas"; setStatus("Flat canvas ready · draw anywhere"); clearStrokes();
   }
 
@@ -296,10 +345,14 @@ export function createTool(): ToolHandle {
       if (ext === "glb" || ext === "gltf") loaded = (await new GLTFLoader().loadAsync(url)).scene;
       else if (ext === "obj" && readText) loaded = new OBJLoader().parse(await readText());
       else if (ext === "stl" && readBuffer) loaded = new THREE.Mesh(new STLLoader().parse(await readBuffer()), targetMaterial);
-      else throw new Error("Choose a GLB, GLTF, OBJ, or STL file.");
+      else if (ext === "ply") loaded = new THREE.Mesh(await new PLYLoader().loadAsync(url), targetMaterial);
+      else if (ext === "fbx") loaded = await new FBXLoader().loadAsync(url);
+      else throw new Error("Choose a GLB, GLTF, OBJ, STL, PLY, or FBX file.");
       if (disposed) return;
       clearObject(targetRoot); targetRoot.add(loaded); normalizeTarget(loaded); prepareTarget(loaded);
-      fileName.textContent = label; clearStrokes(); setStatus(`${label} ready · draw on its surface`);
+      refreshTargetInventory();
+      if (!targetSurfaces.length) throw new Error(`${label} does not contain a usable mesh surface.`);
+      fileName.textContent = label; clearStrokes(); setStatus(`${label} ready · ${targetSurfaces.length} projection mesh${targetSurfaces.length === 1 ? "" : "es"}`);
   }
 
   async function loadFile(file: File): Promise<void> {
@@ -320,14 +373,14 @@ export function createTool(): ToolHandle {
       : Math.max(.006, Number(size.value) * .08);
   }
 
-  function surfaceHit(event: PointerEvent, addBrushOffset = true): NewSample | null {
+  function surfaceHit(event: PointerEvent, addBrushOffset = true): SurfaceHit | null {
     updatePointer(event);
     raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObject(targetRoot, true)[0];
+    const hit = raycaster.intersectObjects(selectedTargetSurfaces().map((surface) => surface.mesh), false)[0];
     if (!hit?.face) return null;
     const normal = hit.face.normal.clone().applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld)).normalize();
     const offset = addBrushOffset ? currentBrushOffset() : 0;
-    return { point: hit.point.clone().addScaledVector(normal, offset), normal };
+    return { point: hit.point.clone().addScaledVector(normal, offset), normal, target: hit.object as THREE.Mesh };
   }
 
   function addSample(event: PointerEvent): void {
@@ -562,18 +615,17 @@ export function createTool(): ToolHandle {
 
   function closestTargetSurface(worldPoint: THREE.Vector3): ClosestSurface | null {
     let closest: (ClosestSurface & { distance: number }) | null = null;
-    targetRoot.traverse((item) => {
-      if (!(item instanceof THREE.Mesh)) return;
+    for (const { mesh: item } of selectedTargetSurfaces()) {
       const geometry = item.geometry as THREE.BufferGeometry & {
         boundsTree?: { closestPointToPoint: (point: THREE.Vector3) => { point: THREE.Vector3; distance: number; faceIndex?: number } };
       };
-      if (!geometry.boundsTree) return;
+      if (!geometry.boundsTree) continue;
       const localQuery = item.worldToLocal(worldPoint.clone());
       const hit = geometry.boundsTree.closestPointToPoint(localQuery);
       const localPoint = hit.point.clone();
       const point = item.localToWorld(localPoint.clone());
       const distance = point.distanceTo(worldPoint);
-      if (closest && distance >= closest.distance) return;
+      if (closest && distance >= closest.distance) continue;
       let normal = point.clone().normalize();
       if (hit.faceIndex !== undefined) {
         const positions = geometry.getAttribute("position") as THREE.BufferAttribute;
@@ -599,7 +651,7 @@ export function createTool(): ToolHandle {
         normal.applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(item.matrixWorld)).normalize();
       }
       closest = { point, normal, distance };
-    });
+    }
     return closest;
   }
 
@@ -612,14 +664,38 @@ export function createTool(): ToolHandle {
     clearObject(areaRoot);
     if (!drawingArea) return;
     const grid = 10, samples = 18, half = drawingArea.size * .5;
+    const projectPoint = (x: number, y: number, offset = .02): THREE.Vector3 => {
+      const guess = drawingArea!.center.clone().addScaledVector(drawingArea!.u, x).addScaledVector(drawingArea!.v, y);
+      const surface = closestTargetSurface(guess);
+      return (surface?.point ?? guess).addScaledVector(surface?.normal ?? drawingArea!.normal, offset);
+    };
+
+    const patchPoints: THREE.Vector3[] = [];
+    const patchIndices: number[] = [];
+    for (let row = 0; row <= samples; row++) {
+      const y = -half + drawingArea.size * row / samples;
+      for (let column = 0; column <= samples; column++) {
+        const x = -half + drawingArea.size * column / samples;
+        patchPoints.push(projectPoint(x, y, .016));
+      }
+    }
+    for (let row = 0; row < samples; row++) for (let column = 0; column < samples; column++) {
+      const a = row * (samples + 1) + column;
+      const b = a + 1;
+      const c = a + samples + 1;
+      const d = c + 1;
+      patchIndices.push(a, c, b, b, c, d);
+    }
+    const patchGeometry = new THREE.BufferGeometry().setFromPoints(patchPoints);
+    patchGeometry.setIndex(patchIndices);
+    const patch = new THREE.Mesh(patchGeometry, areaFillMaterial); patch.renderOrder = 8; areaRoot.add(patch);
+
     const makeLine = (constant: number, swap: boolean) => {
       const points: THREE.Vector3[] = [];
       for (let index = 0; index <= samples; index++) {
         const variable = -half + drawingArea!.size * index / samples;
         const x = swap ? variable : constant, y = swap ? constant : variable;
-        const guess = drawingArea!.center.clone().addScaledVector(drawingArea!.u, x).addScaledVector(drawingArea!.v, y);
-        const surface = closestTargetSurface(guess);
-        points.push((surface?.point ?? guess).addScaledVector(surface?.normal ?? drawingArea!.normal, .018));
+        points.push(projectPoint(x, y, .024));
       }
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       const line = new THREE.Line(geometry, areaMaterial); line.renderOrder = 9; areaRoot.add(line);
@@ -952,7 +1028,14 @@ export function createTool(): ToolHandle {
     if (event.button !== 0) return;
     if (selectingArea) {
       const sample = surfaceHit(event, false);
-      if (sample) { placeDrawingArea(sample); setMode("draw"); }
+      if (sample) {
+        if (targetSelect.value === PICK_TARGET_SURFACE) {
+          targetSelect.value = sample.target.uuid;
+          applyTargetAppearance();
+        }
+        placeDrawingArea(sample);
+        setMode("draw");
+      }
       return;
     }
     if (selectingCurve) {
@@ -985,6 +1068,21 @@ export function createTool(): ToolHandle {
   }, { signal });
   canvas.addEventListener("pointercancel", () => { curveDrag = null; curveDocument.cancelStroke(); renderPreviews(); }, { signal });
   fileInput.addEventListener("change", () => { const file = fileInput.files?.[0]; if (file) void loadFile(file).catch((error) => setStatus(error instanceof Error ? error.message : String(error))); }, { signal });
+  targetSelect.addEventListener("change", () => {
+    removeDrawingArea();
+    clearStrokes();
+    applyTargetAppearance();
+    const target = targetLabel(targetSurfaces, targetSelect.value);
+    setStatus(targetSelect.value === PICK_TARGET_SURFACE ? "Click Select area, then click an object to lock its surface" : `Projection target changed · ${target}`);
+  }, { signal });
+  targetPickButton.addEventListener("click", () => {
+    targetSelect.value = PICK_TARGET_SURFACE;
+    removeDrawingArea();
+    clearStrokes();
+    applyTargetAppearance();
+    setMode("area");
+    setStatus("Target picker armed · click the object surface you want");
+  }, { signal });
   demoButton.addEventListener("click", demoSurface, { signal });
   flatButton.addEventListener("click", flatSurface, { signal });
   sampleButton.addEventListener("click", () => void loadTarget(publicUrl("dojo/crayon/00-browser-baseline.glb"), "glb", "Node Dojo Chrome Crayon GLB").catch((error) => setStatus(error instanceof Error ? error.message : String(error))), { signal });
@@ -1074,7 +1172,7 @@ export function createTool(): ToolHandle {
       removeDrawingArea();
       clearObject(targetRoot); clearObject(brushRoot); clearObject(previewRoot); clearObject(handleRoot);
       envTexture.dispose();
-      for (const material of [targetMaterial, flatTargetMaterial, brushMaterial, chromeMaterial, sigilMaterial, previewMaterial, selectedPreviewMaterial, areaMaterial, handleMaterial, selectedHandleMaterial]) material.dispose();
+      for (const material of [targetMaterial, inactiveTargetMaterial, flatTargetMaterial, brushMaterial, chromeMaterial, sigilMaterial, previewMaterial, selectedPreviewMaterial, areaFillMaterial, areaMaterial, handleMaterial, selectedHandleMaterial]) material.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       canvas.style.cursor = "";

@@ -3,15 +3,17 @@ import { Link, useLocation } from "react-router-dom";
 import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import { chromeCrayonEditorConfig } from "../geometry-nodes/chrome-crayon-editor";
 import { useToolRuntime } from "../page-runtime";
-import { StudioOverlay, StudioShell, useMobileStudio } from "../studio/StudioShell";
+import { StudioOverlay, StudioPanelHeader, StudioShell, useMobileStudio } from "../studio/StudioShell";
 import "./crayon-compare.css";
 import "./surface-painter.css";
 import "./surface-draw.css";
+import "./putty-lab.css";
 
 const loadSurfacePainter = () => import("../../surface-painter/main");
 const loadSurfaceDraw = () => import("../../surface-draw");
+const loadPuttyLab = () => import("../../putty-lab");
 
-type Engine = "procedural" | "blender";
+type Engine = "procedural" | "blender" | "putty";
 
 /**
  * The unified surface-painting studio. One route hosts both engines:
@@ -20,19 +22,20 @@ type Engine = "procedural" | "blender";
  *    presets, .glb import, and studio look controls.
  *  - Blender brush lab: the GN-VM parity tool that evaluates Blender-authored
  *    brushes (Chrome Crayon, Periodic Brush) along your projected stroke.
- * Switching engines navigates the query string, which remounts the runtime
- * through the router's existing keying — the same lifecycle as a page change.
+ * Switching engines navigates the query string; useToolRuntime disposes and
+ * restarts only the renderer while the shared shell stays mounted.
  */
 export default function SurfacePaintPage(): React.JSX.Element {
   const { search } = useLocation();
-  const engine: Engine = new URLSearchParams(search).get("engine") === "blender" ? "blender" : "procedural";
+  const requestedEngine = new URLSearchParams(search).get("engine");
+  const engine: Engine = requestedEngine === "blender" || requestedEngine === "putty" ? requestedEngine : "procedural";
   useToolRuntime(
-    engine === "blender"
-      ? "Surface Painting Studio · Blender brush lab"
-      : "Surface Painting Studio · three.js WebGPU",
-    engine === "blender" ? loadSurfaceDraw : loadSurfacePainter,
+    engine === "blender" ? "Surface Painting Studio · Blender brush lab"
+      : engine === "putty" ? "Bubble Putty · editable Blender Geometry Nodes"
+        : "Surface Painting Studio · three.js WebGPU",
+    engine === "blender" ? loadSurfaceDraw : engine === "putty" ? loadPuttyLab : loadSurfacePainter,
   );
-  return engine === "blender" ? <BlenderBrushLab /> : <ProceduralPainter />;
+  return engine === "blender" ? <BlenderBrushLab /> : engine === "putty" ? <BubblePuttyLab /> : <ProceduralPainter />;
 }
 
 /** The engine switch is a kit segmented control living in the toolbar. */
@@ -41,8 +44,70 @@ function EngineSwitch({ engine }: { engine: Engine }): React.JSX.Element {
     <nav className="st-segmented paint-engine-switch" aria-label="Painting engine">
       <Link to="/paint" aria-current={engine === "procedural" ? "page" : undefined}>Procedural painter</Link>
       <Link to="/paint?engine=blender" aria-current={engine === "blender" ? "page" : undefined}>Blender brush lab</Link>
+      <Link to="/paint?engine=putty" aria-current={engine === "putty" ? "page" : undefined}>Bubble Putty</Link>
     </nav>
   );
+}
+
+function BubblePuttyLab(): React.JSX.Element {
+  const leftDock = <>
+    <StudioPanelHeader title="Bubble Putty" meta="Editable blobs" />
+    <div className="st-section">
+      <div className="st-section-title">1 · Interaction</div>
+      <div className="st-segmented">
+        <button id="putty-orbit" type="button">Orbit</button>
+        <button id="putty-move" className="active" type="button">Move putty</button>
+        <button id="putty-add-mode" type="button">Place putty</button>
+      </div>
+      <p className="putty-hint">Select and drag a blob to reshape the shared putty body. Orbit, then return to Move putty to reposition blobs in another screen plane.</p>
+      <div className="st-btn-row st-btn-row-even">
+        <button id="putty-add" className="st-btn-primary" type="button">Add putty</button>
+        <button id="putty-duplicate" className="st-btn" type="button">Duplicate</button>
+      </div>
+      <div className="st-btn-row st-btn-row-even">
+        <button id="putty-delete" className="st-btn" type="button">Delete selected</button>
+        <button id="putty-reset" className="st-btn" type="button">Reset</button>
+      </div>
+      <label className="st-row"><span>Blob size</span><input id="putty-radius" type="range" min=".4" max="4.5" step=".05" defaultValue="2.4" /><output id="putty-radius-output">2.40</output></label>
+    </div>
+    <div className="st-section">
+      <div className="st-section-title">2 · Authored graph</div>
+      <label className="st-row"><span>Puttiness</span><input id="putty-puttiness" type="range" min="0" max="1" step=".01" defaultValue=".635" /><output id="putty-puttiness-output">0.64</output></label>
+      <label className="st-row"><span>Soften</span><input id="putty-soften" type="range" min="0" max="10" step="1" defaultValue="5" /><output id="putty-soften-output">5</output></label>
+      <label className="st-row"><span>Max bubble</span><input id="putty-max-bubble" type="range" min=".25" max="3" step=".01" defaultValue="1.456" /><output id="putty-max-bubble-output">1.46</output></label>
+      <button id="putty-rebuild" className="st-btn-primary" type="button">Rebuild Blender putty</button>
+      <button id="putty-preview" className="st-btn" type="button">Return to interactive preview</button>
+      <p className="putty-hint">The live metaball preview stays responsive while editing. Rebuild runs the complete extracted Bubble Putty graph when the arrangement is ready.</p>
+    </div>
+    <div className="st-section">
+      <div className="st-section-title">Putty document</div>
+      <div className="st-metric"><strong id="putty-count">3 putty blobs</strong><span id="putty-selection">Blob selected</span></div>
+      <small id="putty-runtime" className="putty-runtime">Interactive field preview · exact graph not evaluated yet</small>
+    </div>
+  </>;
+
+  const rightDock = <>
+    <StudioPanelHeader title="Blender source" meta="53-node root" />
+    <div className="st-section">
+      <img className="putty-reference" src={`${import.meta.env.BASE_URL}dojo/references/joints/bubble-putty-authored.png`} alt="Blender-authored Bubble Putty reference" />
+      <p className="st-finding">The source group wraps one shared putty envelope around a collection of movable mesh forms. Added blobs are serialized together so overlaps merge rather than becoming unrelated objects.</p>
+      <Link className="st-btn putty-open-graph" to="/?asset=joint-bubble-putty">Open full node graph in Studio</Link>
+    </div>
+    <div className="st-section">
+      <div className="st-chip warn">The immediate preview is an authoring proxy. “Rebuild Blender putty” evaluates the extracted Geometry Nodes graph and replaces it with the authored result.</div>
+    </div>
+  </>;
+
+  return <StudioShell
+    className="putty-shell"
+    leftDock={leftDock}
+    rightDock={rightDock}
+    toolbar={<><EngineSwitch engine="putty" /><span className="st-spacer" /><span>move: drag blob · place: click canvas · orbit: drag canvas</span></>}
+    status={<span id="putty-status"><span className="st-dot ready" />Move a blob or add more putty</span>}
+  >
+    <canvas id="putty-canvas" />
+    <div className="putty-canvas-help" aria-hidden="true"><b>BUBBLE PUTTY</b><span>editable source blobs · one shared body</span></div>
+  </StudioShell>;
 }
 
 /**
@@ -53,13 +118,23 @@ function ProceduralPainter(): React.JSX.Element {
   // buildGui() mounts the painter's lil-gui into this container, so the panel
   // is an inspector column instead of a sheet floating over the paint target.
   const rightDock = <>
-    <div className="st-tabs"><button type="button" aria-selected="true">Painter</button></div>
+    <StudioPanelHeader title="Generator nodes" meta="Live pipeline" className="paint-node-tabs" />
+    <div className="paint-node-intro">
+      <span className="paint-node-intro-icon" aria-hidden="true">
+        <i /><i /><i />
+      </span>
+      <span>
+        <b>Procedural node stack</b>
+        <small>Each card controls one stage of the active generator.</small>
+      </span>
+    </div>
     <div id="surface-painter-gui-dock" className="surface-painter-gui-dock" />
   </>;
   return (
     <StudioShell
       className="surface-painter-page"
       rightDock={rightDock}
+      sheetTabs={[{ id: "nodes", label: "Nodes", content: rightDock }]}
       toolbar={<><EngineSwitch engine="procedural" /><span className="st-spacer" /><span>D toggles draw / orbit</span></>}
     >
       <div id="surface-painter-app" />
@@ -100,12 +175,12 @@ function BlenderBrushLab(): React.JSX.Element {
   };
 
   const leftDock = <>
-    <div className="st-tabs"><button type="button" aria-selected="true">Brush lab</button></div>
+    <StudioPanelHeader title="Brush lab" />
     <div className="st-section">
       <div className="st-section-title">1 · Surface</div>
       <label className="st-dropzone surface-upload">
-        <input id="surface-file" type="file" accept=".glb,.gltf,.obj,.stl,model/gltf-binary,model/gltf+json" />
-        <b>Upload GLB, OBJ, or STL</b>
+        <input id="surface-file" type="file" accept=".glb,.gltf,.obj,.stl,.ply,.fbx,model/gltf-binary,model/gltf+json" />
+        <b>Upload GLB, GLTF, OBJ, STL, PLY, or FBX</b>
         <span id="surface-file-name">Using generated demo surface</span>
       </label>
       <div className="st-btn-row st-btn-row-even">
@@ -113,6 +188,15 @@ function BlenderBrushLab(): React.JSX.Element {
         <button id="surface-flat" className="st-btn" type="button">Flat canvas</button>
       </div>
       <button id="surface-sample" className="st-btn" type="button">Sample GLB</button>
+      <label className="surface-target-picker">
+        <span>Projection target</span>
+        <select id="surface-target" className="st-select" defaultValue="__pick__">
+          <option value="__pick__">Pick mesh when placing area</option>
+          <option value="__all__">All visible meshes</option>
+        </select>
+        <button id="surface-target-pick" className="st-btn surface-target-pick" type="button">Pick target from viewport</button>
+        <small id="surface-target-summary">Click Select area, then choose a surface</small>
+      </label>
     </div>
     <div className="st-section">
       <div className="st-section-title">2 · Interaction</div>
@@ -161,7 +245,7 @@ function BlenderBrushLab(): React.JSX.Element {
   </>;
 
   const rightDock = <>
-    <div className="st-tabs"><button type="button" aria-selected="true">Blender parity</button></div>
+    <StudioPanelHeader title="Blender parity" />
     <div className="st-section">
       <div className="st-section-title">Flat parity</div>
       <img className="surface-reference-image" src={`${import.meta.env.BASE_URL}dojo/references/crayon-flat-path.png`} alt="Blender render of the fixed flat Chrome Crayon path" />

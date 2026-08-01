@@ -1,13 +1,21 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
+import { STLExporter } from "three/examples/jsm/exporters/STLExporter.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
 import { canvasBox, observeCanvasBox } from "./canvas-viewport";
 import { makeBinAuthoredMaterial } from "./bin-authored-material";
 import type { FilamentBounds } from "./filament-material";
 import type { Dump, TriSoup } from "./gnvm/index";
-import { BIN_DEFAULTS, BIN_PARAMETERS } from "./bin-params";
+import {
+  binPresetFromSearch,
+  binSearchFromValues,
+  BIN_DEFAULTS,
+  BIN_PARAMETERS,
+  BIN_PRESETS,
+} from "./bin-params";
 import type { ToolHandle } from "./react/page-runtime";
 
 type Variant = { id: string; params: Record<string, number>; file: string };
@@ -17,6 +25,9 @@ type WorkerReply =
 type CompareMode = "overlay" | "split";
 type ViewStyle = "wire" | "material";
 type ResultView = "both" | "truth" | "vm";
+type Workspace = "build" | "validate";
+type TruthSource = "live" | "baked" | "unavailable";
+type EvidenceClassification = "exact-topology" | "exact-surface" | "bounds-only" | "unvalidated" | "unsupported";
 
 // Full recovered-font 0..11 sweep: both point-to-surface directions, total
 // triangle counts, and highlighted-material triangle counts match Blender.
@@ -142,12 +153,73 @@ function isDefaultExceptSelection(overrides: Record<string, number | boolean>): 
   });
 }
 
+function sameBinValues(
+  a: Record<string, number | boolean> | null,
+  b: Record<string, number | boolean>,
+): boolean {
+  return Boolean(a) && BIN_PARAMETERS.every((parameter) => a![parameter.name] === b[parameter.name]);
+}
+
+function valuesSummary(values: Record<string, number | boolean>): string {
+  return `Selection ${values["Bin Select"]} · ${Number(values["Size X"]).toFixed(3)} × ${Number(values["Size Y"]).toFixed(3)} × ${Number(values["Size Z"]).toFixed(3)}`;
+}
+
+function classificationLabel(classification: EvidenceClassification): string {
+  if (classification === "exact-topology") return "Exact topology";
+  if (classification === "exact-surface") return "Exact surface · alternate tessellation";
+  if (classification === "bounds-only") return "Bounds-only evidence";
+  if (classification === "unsupported") return "Unsupported setting";
+  return "Unvalidated setting";
+}
+
+function downloadBlob(filename: string, blob: Blob): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  queueMicrotask(() => URL.revokeObjectURL(url));
+}
+
+async function copyText(value: string): Promise<void> {
+  if (navigator.clipboard) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+  const field = document.createElement("textarea");
+  field.value = value;
+  field.style.position = "fixed";
+  field.style.opacity = "0";
+  document.body.append(field);
+  field.select();
+  const copied = document.execCommand("copy");
+  field.remove();
+  if (!copied) throw new Error("Clipboard unavailable");
+}
+
 export function createTool(): ToolHandle {
   const canvas = document.querySelector<HTMLCanvasElement>("#app")!;
   const statusEl = document.querySelector<HTMLElement>("#compare-status")!;
-  const truthSourceEl = document.querySelector<HTMLElement>("#truth-source")!;
   const truthMetricLabel = document.querySelector<HTMLElement>("#truth-metric-label")!;
   const updateButton = document.querySelector<HTMLButtonElement>("#update-comparison")!;
+  const previewButton = document.querySelector<HTMLButtonElement>("#preview-bin")!;
+  const resetButton = document.querySelector<HTMLButtonElement>("#reset-bin")!;
+  const revertButton = document.querySelector<HTMLButtonElement>("#revert-bin")!;
+  const copyLinkButton = document.querySelector<HTMLButtonElement>("#copy-bin-link")!;
+  const frameButtons = ["#frame-bin", "#toolbar-frame-bin"].map((selector) => document.querySelector<HTMLButtonElement>(selector)!);
+  const presetSelect = document.querySelector<HTMLSelectElement>("#bin-preset")!;
+  const presetDescription = document.querySelector<HTMLElement>("#bin-preset-description")!;
+  const previewStateEl = document.querySelector<HTMLElement>("#preview-state")!;
+  const previewStateDot = document.querySelector<HTMLElement>("#preview-state-dot")!;
+  const evaluatedParamsEl = document.querySelector<HTMLElement>("#evaluated-params")!;
+  const capabilityEl = document.querySelector<HTMLElement>("#truth-capability")!;
+  const capabilityDetailEl = document.querySelector<HTMLElement>("#truth-capability-detail")!;
+  const capabilityDot = document.querySelector<HTMLElement>("#truth-capability-dot")!;
+  const classificationEl = document.querySelector<HTMLElement>("#result-classification")!;
+  const freshnessEl = document.querySelector<HTMLElement>("#result-freshness")!;
+  const evidenceEl = document.querySelector<HTMLElement>("#result-evidence")!;
+  const resultsEl = document.querySelector<HTMLElement>("#validate-results")!;
+  const toolbarSourceEl = document.querySelector<HTMLElement>("#toolbar-source")!;
   const findingEl = document.querySelector<HTMLElement>("#finding")!;
   const truthTrisEl = document.querySelector<HTMLElement>("#truth-tris")!;
   const truthRedEl = document.querySelector<HTMLElement>("#truth-red")!;
@@ -162,6 +234,13 @@ export function createTool(): ToolHandle {
   const bothButton = document.querySelector<HTMLButtonElement>("#show-both")!;
   const truthButton = document.querySelector<HTMLButtonElement>("#show-truth")!;
   const vmButton = document.querySelector<HTMLButtonElement>("#show-vm")!;
+  const buildWorkspaceButton = document.querySelector<HTMLButtonElement>("#workspace-build")!;
+  const validateWorkspaceButton = document.querySelector<HTMLButtonElement>("#workspace-validate")!;
+  const exportEngine = document.querySelector<HTMLSelectElement>("#export-engine")!;
+  const blenderExportOption = document.querySelector<HTMLOptionElement>("#export-engine-blender")!;
+  const exportGlbButton = document.querySelector<HTMLButtonElement>("#export-glb")!;
+  const exportStlButton = document.querySelector<HTMLButtonElement>("#export-stl")!;
+  const exportMetadataButton = document.querySelector<HTMLButtonElement>("#export-metadata")!;
 
   const viewport = canvasBox(canvas);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -195,10 +274,19 @@ export function createTool(): ToolHandle {
   let truthWire: THREE.Object3D | null = null;
   let vmSolid: THREE.Object3D | null = null;
   let vmWire: THREE.Object3D | null = null;
-  let mode: CompareMode = "overlay";
-  let style: ViewStyle = "wire";
-  let resultView: ResultView = "both";
+  const initialQuery = new URLSearchParams(location.search);
+  let workspace: Workspace = buildWorkspaceButton.getAttribute("aria-selected") === "true" ? "build" : "validate";
+  let mode: CompareMode = initialQuery.get("layout") === "split" ? "split" : "overlay";
+  let style: ViewStyle = initialQuery.get("style") === "wire" ? "wire" : workspace === "build" ? "material" : "wire";
+  let resultView: ResultView = initialQuery.get("visible") === "truth" ? "truth" : initialQuery.get("visible") === "vm" || workspace === "build" ? "vm" : "both";
+  let classification: EvidenceClassification = "unvalidated";
+  let lastTruthSource: TruthSource = "unavailable";
+  let lastEvaluatedOverrides: Record<string, number | boolean> | null = null;
+  let lastComparedOverrides: Record<string, number | boolean> | null = null;
+  let liveBlenderAvailable = false;
+  let capabilityChecked = false;
   let splitOffset = 0;
+  let lastViewportAspect = viewport.width / viewport.height;
   let runId = 0;
   let worker: Worker | null = null;
   let workerReject: ((error: Error) => void) | null = null;
@@ -213,9 +301,93 @@ export function createTool(): ToolHandle {
     cleanups.push(() => target.removeEventListener(type, handler));
   };
 
-  function setStatus(message: string, ready = false): void {
+  function setStatus(message: string, ready = false, error = false): void {
     statusEl.classList.toggle("ready", ready);
+    statusEl.classList.toggle("error", error);
     statusEl.lastChild!.textContent = message;
+  }
+
+  function setClassification(next: EvidenceClassification, evidence: string): void {
+    classification = next;
+    classificationEl.textContent = classificationLabel(next);
+    classificationEl.dataset.classification = next;
+    evidenceEl.textContent = evidence;
+  }
+
+  function setControls(values: Record<string, number | boolean>): void {
+    for (const parameter of BIN_PARAMETERS) {
+      const value = values[parameter.name] ?? parameter.defaultValue;
+      const control = document.querySelector<HTMLInputElement>(`[data-bin-param="${parameter.name}"]`)!;
+      if (parameter.boolean) control.checked = Boolean(value);
+      else {
+        control.value = String(value);
+        const output = document.querySelector<HTMLInputElement>(`[data-bin-output="${parameter.name}"]`)!;
+        output.value = Number(value).toFixed(parameter.step === 1 ? 0 : 3);
+      }
+    }
+  }
+
+  function syncDraftUrl(values = readOverrides()): void {
+    const search = binSearchFromValues(values, { workspace, layout: mode, style, visible: resultView });
+    history.replaceState(history.state, "", `${location.pathname}${search}${location.hash}`);
+  }
+
+  function hasStaticTruth(values: Record<string, number | boolean>): boolean {
+    const selection = Number(values["Bin Select"]);
+    return isDefaultExceptSelection(values) && variants.some((item) => Number(item.params["Bin Select"]) === selection);
+  }
+
+  function updateTruthCapability(values = readOverrides()): void {
+    capabilityDot.classList.remove("ready", "warn", "error");
+    if (!capabilityChecked) {
+      capabilityEl.textContent = "Checking Blender…";
+      capabilityDetailEl.textContent = "Discovering live and checked-in truth sources";
+      return;
+    }
+    if (liveBlenderAvailable) {
+      capabilityDot.classList.add("ready");
+      capabilityEl.textContent = "Live Blender 5.1.2";
+      capabilityDetailEl.textContent = "Every published control can be evaluated live";
+      toolbarSourceEl.textContent = workspace === "build" ? "GN-VM preview" : "Live Blender available";
+      return;
+    }
+    if (hasStaticTruth(values)) {
+      capabilityDot.classList.add("warn");
+      capabilityEl.textContent = "Checked-in Bake";
+      capabilityDetailEl.textContent = "Current authored settings have Blender truth";
+      toolbarSourceEl.textContent = workspace === "build" ? "GN-VM preview" : "Checked-in Blender bake";
+      return;
+    }
+    capabilityDot.classList.add("error");
+    capabilityEl.textContent = "Truth Unavailable";
+    capabilityDetailEl.textContent = "Preview remains available in GN-VM; Blender comparison needs the local bridge";
+    toolbarSourceEl.textContent = workspace === "build" ? "GN-VM preview" : "Blender truth unavailable";
+  }
+
+  function setExportsEnabled(enabled: boolean): void {
+    exportGlbButton.disabled = !enabled;
+    exportStlButton.disabled = !enabled;
+    exportMetadataButton.disabled = !enabled;
+    blenderExportOption.disabled = !enabled || !truthSolid || lastTruthSource === "unavailable";
+    if (blenderExportOption.disabled && exportEngine.value === "blender") exportEngine.value = "vm";
+  }
+
+  function markDirty(preservePreset = false): void {
+    const values = readOverrides();
+    if (!preservePreset) {
+      presetSelect.value = "custom";
+      presetDescription.textContent = "Custom settings · not yet evaluated";
+    }
+    resultsEl.classList.add("stale");
+    freshnessEl.textContent = "Previous result · inputs changed";
+    previewStateEl.textContent = "Changes not previewed";
+    previewStateDot.classList.remove("ready");
+    evaluatedParamsEl.textContent = lastEvaluatedOverrides ? `Last preview: ${valuesSummary(lastEvaluatedOverrides)}` : "No evaluated preview";
+    revertButton.disabled = !lastEvaluatedOverrides;
+    setExportsEnabled(false);
+    setStatus(workspace === "build" ? "Changes ready to preview" : "Changes not compared with Blender");
+    updateTruthCapability(values);
+    syncDraftUrl(values);
   }
 
   function ankermakeBedTexture(): THREE.CanvasTexture {
@@ -387,6 +559,13 @@ export function createTool(): ToolHandle {
     bothButton.classList.toggle("active", resultView === "both");
     truthButton.classList.toggle("active", resultView === "truth");
     vmButton.classList.toggle("active", resultView === "vm");
+    overlayButton.setAttribute("aria-pressed", String(mode === "overlay"));
+    splitButton.setAttribute("aria-pressed", String(mode === "split"));
+    wireButton.setAttribute("aria-pressed", String(style === "wire"));
+    materialButton.setAttribute("aria-pressed", String(style === "material"));
+    bothButton.setAttribute("aria-pressed", String(resultView === "both"));
+    truthButton.setAttribute("aria-pressed", String(resultView === "truth"));
+    vmButton.setAttribute("aria-pressed", String(resultView === "vm"));
     document.querySelectorAll(".viewport-label").forEach((label) => label.classList.toggle("show", mode === "split" && resultView === "both"));
     const width = Math.max(new THREE.Box3().setFromObject(truthGroup).getSize(new THREE.Vector3()).x, new THREE.Box3().setFromObject(vmGroup).getSize(new THREE.Vector3()).x, .1);
     // Leave a full model-width gutter so the print-bed and drawer components of
@@ -394,6 +573,7 @@ export function createTool(): ToolHandle {
     splitOffset = width * .62;
     positionGroups();
     if (reframe) frameComparison();
+    syncDraftUrl();
   }
 
   function runVm(overrides: Record<string, number | boolean>, id: number): Promise<WorkerReply & { ok: true }> {
@@ -415,8 +595,25 @@ export function createTool(): ToolHandle {
     });
   }
 
-  async function loadBlenderTruth(overrides: Record<string, number | boolean>): Promise<{ root: THREE.Object3D; source: "live" | "baked" }> {
-    if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+  async function preflightBlender(): Promise<void> {
+    if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+      capabilityChecked = true;
+      updateTruthCapability();
+      return;
+    }
+    try {
+      const response = await fetch(`http://${location.hostname}:7801/status`);
+      const status = await response.json() as { ready?: boolean };
+      liveBlenderAvailable = Boolean(response.ok && status.ready);
+    } catch {
+      liveBlenderAvailable = false;
+    }
+    capabilityChecked = true;
+    updateTruthCapability();
+  }
+
+  async function loadBlenderTruth(overrides: Record<string, number | boolean>): Promise<{ root: THREE.Object3D; source: Exclude<TruthSource, "unavailable"> }> {
+    if (liveBlenderAvailable) {
       try {
         const response = await fetch(`http://${location.hostname}:7801/bake`, {
           method: "POST",
@@ -424,72 +621,221 @@ export function createTool(): ToolHandle {
           body: JSON.stringify(overrides),
         });
         if (!response.ok) throw new Error(`${response.status} ${await response.text()}`);
-        const root = (await new GLTFLoader().parseAsync(await response.arrayBuffer(), "")).scene;
-        return { root, source: "live" };
+        return { root: (await new GLTFLoader().parseAsync(await response.arrayBuffer(), "")).scene, source: "live" };
       } catch (error) {
+        liveBlenderAvailable = false;
+        updateTruthCapability(overrides);
         console.warn("Live Blender bake unavailable; checking baked fallback", error);
       }
     }
     const selection = Number(overrides["Bin Select"]);
     const variant = variants.find((item) => Number(item.params["Bin Select"]) === selection);
-    if (!variant || !isDefaultExceptSelection(overrides))
-      throw new Error("Live Blender bridge is required for non-default parameters");
+    if (!variant || !isDefaultExceptSelection(overrides)) throw new Error("Blender truth is unavailable for these inputs");
     return { root: (await new GLTFLoader().loadAsync(publicUrl(`dojo/variants/${variant.file}`))).scene, source: "baked" };
+  }
+
+  function replaceVm(soup: TriSoup): { tris: number; red: number } {
+    clearAndDispose(vmGroup);
+    vmGroup.position.set(0, 0, 0);
+    const generated = vmRoots(soup);
+    vmSolid = generated.solid;
+    vmWire = generated.wire;
+    vmGroup.add(vmSolid, vmWire);
+    vmGroup.updateMatrixWorld(true);
+    const tris = soup.stats.tris;
+    const red = soup.groups.filter((group) => group.material === "3D.004").reduce((sum, group) => sum + group.count / 3, 0);
+    vmTrisEl.textContent = `${tris.toLocaleString()} tris`;
+    vmRedEl.textContent = `${red.toLocaleString()} highlighted red`;
+    return { tris, red };
+  }
+
+  function clearTruth(): void {
+    clearAndDispose(truthGroup);
+    truthSolid = null;
+    truthWire = null;
+    truthTrisEl.textContent = "Unavailable";
+    truthRedEl.textContent = "No Blender payload for current inputs";
+    deltaEnvelopeEl.textContent = "Not compared";
+    deltaTrisEl.textContent = "GN-VM preview only";
+    blenderExportOption.disabled = true;
+  }
+
+  function replaceTruth(root: THREE.Object3D): { tris: number; red: number } {
+    clearAndDispose(truthGroup);
+    truthGroup.position.set(0, 0, 0);
+    const truth = truthRoots(root);
+    truthSolid = truth.solid;
+    truthWire = truth.wire;
+    truthGroup.add(truthSolid, truthWire);
+    truthGroup.updateMatrixWorld(true);
+    const tris = countTriangles(truthSolid);
+    const red = countTriangles(truthSolid, "3D.004");
+    truthTrisEl.textContent = `${tris.toLocaleString()} tris`;
+    truthRedEl.textContent = `${red.toLocaleString()} highlighted red`;
+    return { tris, red };
+  }
+
+  function finishEvaluatedState(overrides: Record<string, number | boolean>, compared: boolean): void {
+    lastEvaluatedOverrides = { ...overrides };
+    if (compared) lastComparedOverrides = { ...overrides };
+    resultsEl.classList.remove("stale");
+    revertButton.disabled = true;
+    previewStateDot.classList.add("ready");
+    previewStateEl.textContent = compared ? "Preview and truth are current" : "GN-VM preview is current";
+    evaluatedParamsEl.textContent = valuesSummary(overrides);
+    freshnessEl.textContent = compared ? "Current inputs · both engines" : "Current inputs · GN-VM only";
+    setExportsEnabled(true);
+    syncDraftUrl(overrides);
+  }
+
+  function evidenceFor(
+    overrides: Record<string, number | boolean>,
+    truthTris: number,
+    vmTris: number,
+    truthRed: number,
+    vmRed: number,
+    envelope: number,
+  ): { classification: EvidenceClassification; evidence: string; surfaceP99?: number } {
+    const selection = Number(overrides["Bin Select"]);
+    const surfaceP99 = isDefaultExceptSelection(overrides) ? measuredSurfaceP99[selection] : undefined;
+    const matchesBoundary = (changes: Record<string, number | boolean>): boolean => BIN_PARAMETERS.every((parameter) => {
+      const expected = changes[parameter.name] ?? BIN_DEFAULTS[parameter.name];
+      const actual = overrides[parameter.name];
+      if (typeof actual === "number" && typeof expected === "number") return Math.abs(actual - expected) <= Math.max(1e-6, (parameter.step ?? 0) / 2 + 1e-9);
+      return actual === expected;
+    });
+    if (surfaceP99 !== undefined && envelope <= 1e-6) {
+      if (truthTris === vmTris && truthRed === vmRed) return {
+        classification: "exact-topology",
+        evidence: `Validated fixture: topology/material counts match; bidirectional p99/max ${surfaceP99.toFixed(3)}.`,
+        surfaceP99,
+      };
+      return {
+        classification: "exact-surface",
+        evidence: `Validated fixture: bidirectional p99/max ${surfaceP99.toFixed(3)}; triangle differences are alternate tessellation.`,
+        surfaceP99,
+      };
+    }
+    if (envelope <= 1e-6 && (
+      matchesBoundary({ "bin gap size": 7 })
+      || matchesBoundary({ "divide x": 0.15, "divide y": 0.9 })
+    )) return {
+      classification: "exact-surface",
+      evidence: "Validated boundary fixture: bidirectional whole-surface and highlighted-material distances are zero; count differences are alternate tessellation.",
+      surfaceP99: 0,
+    };
+    return {
+      classification: "bounds-only",
+      evidence: `Current live result measures an envelope delta of ${envelope.toFixed(4)}; sampled surface parity has not been validated for this combination.`,
+    };
+  }
+
+  async function previewVm(overrides = readOverrides()): Promise<void> {
+    const id = ++runId;
+    previewButton.disabled = true;
+    updateButton.disabled = true;
+    setStatus("Evaluating GN-VM preview…");
+    try {
+      const vm = await runVm(overrides, id);
+      if (id !== runId || disposed) return;
+      clearTruth();
+      const counts = replaceVm(vm.soup);
+      lastTruthSource = "unavailable";
+      lastComparedOverrides = null;
+      setClassification("unvalidated", "GN-VM preview is available; compare with Blender to classify parity evidence.");
+      findingEl.textContent = "This is the browser-evaluated build preview. Open Validate Engines to compare the same parameter snapshot with Blender truth.";
+      truthMetricLabel.textContent = "Blender truth";
+      mode = "overlay";
+      style = "material";
+      resultView = "vm";
+      finishEvaluatedState(overrides, false);
+      syncView(true);
+      setStatus(`GN-VM preview ready · ${counts.tris.toLocaleString()} triangles`, true);
+      (window as typeof window & { __BIN_COMPARE__?: unknown }).__BIN_COMPARE__ = { ready: true, overrides, truthSource: "unavailable", vmTris: counts.tris, vmRed: counts.red, classification, mode, style, resultView };
+    } catch (error) {
+      if (!disposed) {
+        setStatus(`Preview failed · ${error instanceof Error ? error.message : String(error)}`, false, true);
+        previewStateEl.textContent = "Preview failed";
+        setExportsEnabled(false);
+      }
+    } finally {
+      if (id === runId && !disposed) {
+        previewButton.disabled = false;
+        updateButton.disabled = false;
+      }
+    }
   }
 
   async function updateComparison(overrides = readOverrides()): Promise<void> {
     const id = ++runId;
-    const selection = Number(overrides["Bin Select"]);
-    setStatus("Evaluating the same inputs in Blender and GN-VM…");
+    setStatus("Evaluating Blender truth and GN-VM…");
     updateButton.disabled = true;
+    previewButton.disabled = true;
     const started = performance.now();
+    const [blenderResult, vmResult] = await Promise.allSettled([loadBlenderTruth(overrides), runVm(overrides, id)]);
+    if (id !== runId || disposed) {
+      if (blenderResult.status === "fulfilled") disposeObjectTree(blenderResult.value.root);
+      return;
+    }
     try {
-      const [blender, vm] = await Promise.all([loadBlenderTruth(overrides), runVm(overrides, id)]);
-      if (id !== runId || disposed) {
-        disposeObjectTree(blender.root);
+      if (vmResult.status === "rejected") throw vmResult.reason;
+      const vm = replaceVm(vmResult.value.soup);
+      if (blenderResult.status === "rejected") {
+        clearTruth();
+        lastTruthSource = "unavailable";
+        lastComparedOverrides = null;
+        truthMetricLabel.textContent = "Blender truth unavailable";
+        setClassification("unvalidated", "GN-VM evaluated successfully, but no Blender payload exists for these inputs.");
+        findingEl.textContent = "The current GN-VM result is shown. Blender truth was unavailable, so no exact-match claim is being made and previous comparison metrics were cleared.";
+        resultView = "vm";
+        style = "material";
+        finishEvaluatedState(overrides, false);
+        syncView(true);
+        setStatus("GN-VM ready · Blender truth unavailable for current inputs", false, true);
+        (window as typeof window & { __BIN_COMPARE__?: unknown }).__BIN_COMPARE__ = { ready: true, overrides, truthSource: "unavailable", vmTris: vm.tris, vmRed: vm.red, classification, mode, style, resultView };
         return;
       }
-      clearAndDispose(truthGroup);
-      clearAndDispose(vmGroup);
-      // A previous side-by-side view leaves display-only offsets on the groups.
-      // Metrics must always compare the authored meshes in the same origin.
-      truthGroup.position.set(0, 0, 0);
-      vmGroup.position.set(0, 0, 0);
-      const truth = truthRoots(blender.root);
-      const generated = vmRoots(vm.soup);
-      truthSolid = truth.solid; truthWire = truth.wire; vmSolid = generated.solid; vmWire = generated.wire;
-      truthGroup.add(truthSolid, truthWire);
-      vmGroup.add(vmSolid, vmWire);
-      truthGroup.updateMatrixWorld(true);
-      vmGroup.updateMatrixWorld(true);
-
-      const truthTris = countTriangles(truthSolid);
-      const truthRed = countTriangles(truthSolid, "3D.004");
-      const vmTris = vm.soup.stats.tris;
-      const vmRed = vm.soup.groups.filter((group) => group.material === "3D.004").reduce((sum, group) => sum + group.count / 3, 0);
-      const envelope = maxBoundsDelta(new THREE.Box3().setFromObject(truthSolid), new THREE.Box3().setFromObject(vmSolid));
-      truthTrisEl.textContent = `${truthTris.toLocaleString()} tris`;
-      truthRedEl.textContent = `${truthRed.toLocaleString()} highlighted red`;
-      vmTrisEl.textContent = `${vmTris.toLocaleString()} tris`;
-      vmRedEl.textContent = `${vmRed.toLocaleString()} highlighted red`;
+      const blender = blenderResult.value;
+      const truth = replaceTruth(blender.root);
+      lastTruthSource = blender.source;
+      truthMetricLabel.textContent = blender.source === "live" ? "Live Blender truth" : "Checked-in Blender bake";
+      const envelope = maxBoundsDelta(new THREE.Box3().setFromObject(truthSolid!), new THREE.Box3().setFromObject(vmSolid!));
+      const evidence = evidenceFor(overrides, truth.tris, vm.tris, truth.red, vm.red, envelope);
+      setClassification(evidence.classification, evidence.evidence);
+      const triangleDelta = vm.tris - truth.tris;
+      const redDelta = vm.red - truth.red;
       deltaEnvelopeEl.textContent = `${envelope.toFixed(4)} envelope`;
-      const surfaceP99 = isDefaultExceptSelection(overrides) ? measuredSurfaceP99[selection] : undefined;
-      deltaTrisEl.textContent = `${vmTris - truthTris >= 0 ? "+" : ""}${(vmTris - truthTris).toLocaleString()} triangles${surfaceP99 !== undefined ? ` · p99 ${surfaceP99.toFixed(3)}` : ""}`;
-      const redDelta = vmRed - truthRed;
-      findingEl.textContent = surfaceP99 !== undefined
-        ? truthTris === vmTris && redDelta === 0
-          ? `The recovered-font Blender and GN-VM results match at p99/max ${surfaceP99.toFixed(3)}, with identical total and highlighted-material triangle counts.`
-          : `The default-parameter sweep matches at p99/max ${surfaceP99.toFixed(3)}. GN-VM has ${Math.abs(redDelta).toLocaleString()} ${redDelta >= 0 ? "more" : "fewer"} red triangles from alternate tessellation, but the highlighted surface is the same.`
-        : `This live setting has an envelope delta of ${envelope.toFixed(4)} and ${Math.abs(redDelta).toLocaleString()} ${redDelta >= 0 ? "more" : "fewer"} highlighted triangles. Use Overlay for shape parity and Side by side for material inspection.`;
+      deltaTrisEl.textContent = `${triangleDelta >= 0 ? "+" : ""}${triangleDelta.toLocaleString()} triangles${evidence.surfaceP99 !== undefined ? ` · p99 ${evidence.surfaceP99.toFixed(3)}` : ""}`;
+      findingEl.textContent = evidence.classification === "exact-topology"
+        ? "The checked fixture proves the same surface and topology counts for this setting."
+        : evidence.classification === "exact-surface"
+          ? "The checked fixture proves the same surface; count differences are alternate tessellation."
+          : `Only bounds and count evidence are available for this live combination. Highlighted-material triangle delta: ${redDelta}.`;
+      mode = "overlay";
+      style = "wire";
+      resultView = "both";
+      finishEvaluatedState(overrides, true);
       syncView(true);
-      truthSourceEl.textContent = blender.source === "live" ? "live Blender" : "baked fallback";
-      truthMetricLabel.textContent = blender.source === "live" ? "Live Blender truth" : "Blender baked fallback";
-      setStatus(`Both engines updated in ${((performance.now() - started) / 1000).toFixed(2)}s`, true);
-      (window as typeof window & { __BIN_COMPARE__?: unknown }).__BIN_COMPARE__ = { ready: true, overrides, truthSource: blender.source, truthTris, vmTris, truthRed, vmRed, envelope, surfaceP99, mode, style, resultView };
+      updateTruthCapability(overrides);
+      setStatus(`Both engines evaluated in ${((performance.now() - started) / 1000).toFixed(2)}s`, true);
+      (window as typeof window & { __BIN_COMPARE__?: unknown }).__BIN_COMPARE__ = { ready: true, overrides, truthSource: blender.source, truthTris: truth.tris, vmTris: vm.tris, truthRed: truth.red, vmRed: vm.red, envelope, surfaceP99: evidence.surfaceP99, classification, mode, style, resultView };
     } catch (error) {
-      if (!disposed) setStatus(`Comparison failed · ${error instanceof Error ? error.message : String(error)}`);
+      clearTruth();
+      clearAndDispose(vmGroup);
+      vmSolid = vmWire = null;
+      vmTrisEl.textContent = "Failed";
+      vmRedEl.textContent = "No current geometry";
+      setClassification("unvalidated", "Neither a current Blender truth payload nor a GN-VM preview is available.");
+      freshnessEl.textContent = "Current evaluation failed";
+      findingEl.textContent = "No previous exact-match result is being shown for the failed parameter snapshot.";
+      resultsEl.classList.remove("stale");
+      setExportsEnabled(false);
+      setStatus(`Comparison failed · ${error instanceof Error ? error.message : String(error)}`, false, true);
     } finally {
-      if (id === runId && !disposed) updateButton.disabled = false;
+      if (id === runId && !disposed) {
+        updateButton.disabled = false;
+        previewButton.disabled = false;
+      }
     }
   }
 
@@ -502,23 +848,139 @@ export function createTool(): ToolHandle {
     dump = cachedDump;
     variants = cachedVariants;
     if (disposed) return;
-    const rawQuery = new URLSearchParams(location.search).get("select");
-    const query = rawQuery === null ? Number.NaN : Number(rawQuery);
-    if (Number.isInteger(query) && query >= 0 && query <= 20) {
-      const control = document.querySelector<HTMLInputElement>('[data-bin-param="Bin Select"]')!;
-      control.value = String(query);
-      document.querySelector<HTMLOutputElement>('[data-bin-output="Bin Select"]')!.value = String(query);
-    }
-    await updateComparison();
+    setControls({ ...BIN_DEFAULTS, ...binPresetFromSearch(location.search) });
+    await preflightBlender();
+    if (disposed) return;
+    syncView();
+    if (workspace === "validate") await updateComparison();
+    else await previewVm();
+  }
+
+  function evaluatedExportRoot(): { root: THREE.Object3D; engine: "vm" | "blender" } | null {
+    if (!lastEvaluatedOverrides) return null;
+    if (exportEngine.value === "blender" && truthSolid && lastTruthSource !== "unavailable") return { root: truthSolid, engine: "blender" };
+    if (vmSolid) return { root: vmSolid, engine: "vm" };
+    return null;
+  }
+
+  function exportBaseName(engine: "vm" | "blender"): string {
+    return `recursive-bin-selection-${lastEvaluatedOverrides?.["Bin Select"] ?? "unknown"}-${engine}`;
+  }
+
+  async function exportGlb(): Promise<void> {
+    const source = evaluatedExportRoot();
+    if (!source) return;
+    const result = await new GLTFExporter().parseAsync(source.root, { binary: true, onlyVisible: true });
+    const bytes = result instanceof ArrayBuffer ? result : new TextEncoder().encode(JSON.stringify(result));
+    downloadBlob(`${exportBaseName(source.engine)}.glb`, new Blob([bytes], { type: "model/gltf-binary" }));
+  }
+
+  function exportStl(): void {
+    const source = evaluatedExportRoot();
+    if (!source) return;
+    const result = new STLExporter().parse(source.root, { binary: true });
+    downloadBlob(`${exportBaseName(source.engine)}.stl`, new Blob([result.buffer as ArrayBuffer], { type: "model/stl" }));
+  }
+
+  function exportMetadata(): void {
+    const source = evaluatedExportRoot();
+    if (!source || !lastEvaluatedOverrides) return;
+    const metadata = {
+      asset: "Recursive Bin",
+      parameters: lastEvaluatedOverrides,
+      engine: source.engine === "blender" ? "Blender" : "GN-VM",
+      truthSource: lastTruthSource,
+      blenderVersion: "5.1.2",
+      classification,
+      comparedParameters: lastComparedOverrides,
+      evidence: evidenceEl.textContent,
+      evidenceVersion: "2026-08-01",
+    };
+    downloadBlob(`${exportBaseName(source.engine)}.json`, new Blob([`${JSON.stringify(metadata, null, 2)}\n`], { type: "application/json" }));
   }
 
   document.querySelectorAll<HTMLInputElement>("[data-bin-param]").forEach((control) => {
     listen(control, "input", () => {
-      const output = document.querySelector<HTMLOutputElement>(`[data-bin-output="${control.dataset.binParam}"]`);
+      const output = document.querySelector<HTMLInputElement>(`[data-bin-output="${control.dataset.binParam}"]`);
       if (output) output.value = Number(control.value).toFixed(control.step === "1" ? 0 : 3);
+      markDirty();
     });
   });
+  document.querySelectorAll<HTMLInputElement>("[data-bin-output]").forEach((output) => {
+    listen(output, "input", () => {
+      const parameter = BIN_PARAMETERS.find((candidate) => candidate.name === output.dataset.binOutput);
+      const control = document.querySelector<HTMLInputElement>(`[data-bin-param="${output.dataset.binOutput}"]`);
+      if (!parameter || !control) return;
+      if (output.value.trim() === "") return;
+      const value = Number(output.value);
+      if (!Number.isFinite(value)) {
+        output.value = Number(control.value).toFixed(parameter.step === 1 ? 0 : 3);
+        return;
+      }
+      const clamped = Math.min(parameter.max ?? value, Math.max(parameter.min ?? value, value));
+      control.value = String(clamped);
+      output.value = clamped.toFixed(parameter.step === 1 ? 0 : 3);
+      markDirty();
+    });
+  });
+  listen(presetSelect, "change", () => {
+    const selected = BIN_PRESETS.find((preset) => preset.id === presetSelect.value) ?? BIN_PRESETS[0];
+    presetDescription.textContent = selected.description;
+    setControls(selected.values);
+    markDirty(true);
+  });
+  listen(resetButton, "click", () => {
+    presetSelect.value = "authored";
+    presetDescription.textContent = BIN_PRESETS[0].description;
+    setControls(BIN_DEFAULTS);
+    markDirty(true);
+  });
+  listen(revertButton, "click", () => {
+    if (!lastEvaluatedOverrides) return;
+    setControls(lastEvaluatedOverrides);
+    const matchingPreset = BIN_PRESETS.find((preset) => sameBinValues(preset.values, lastEvaluatedOverrides!));
+    presetSelect.value = matchingPreset?.id ?? "custom";
+    presetDescription.textContent = matchingPreset?.description ?? "Custom evaluated settings";
+    resultsEl.classList.remove("stale");
+    freshnessEl.textContent = sameBinValues(lastComparedOverrides, lastEvaluatedOverrides) ? "Current inputs · both engines" : "Current inputs · GN-VM only";
+    previewStateEl.textContent = sameBinValues(lastComparedOverrides, lastEvaluatedOverrides) ? "Preview and truth are current" : "GN-VM preview is current";
+    evaluatedParamsEl.textContent = valuesSummary(lastEvaluatedOverrides);
+    revertButton.disabled = true;
+    setExportsEnabled(true);
+    updateTruthCapability(lastEvaluatedOverrides);
+    syncDraftUrl(lastEvaluatedOverrides);
+    setStatus("Reverted to the last evaluated preview", true);
+  });
+  listen(copyLinkButton, "click", () => {
+    syncDraftUrl();
+    const link = location.href;
+    void copyText(link).then(() => {
+      copyLinkButton.textContent = "Link copied";
+      setTimeout(() => { if (!disposed) copyLinkButton.textContent = "Copy link"; }, 1400);
+    }).catch(() => setStatus("Could not copy link; the URL contains the current settings", false, true));
+  });
+  listen(previewButton, "click", () => void previewVm());
   listen(updateButton, "click", () => void updateComparison());
+  for (const button of frameButtons) listen(button, "click", () => frameComparison());
+  listen(exportGlbButton, "click", () => void exportGlb().catch((error) => setStatus(`GLB export failed · ${String(error)}`, false, true)));
+  listen(exportStlButton, "click", exportStl);
+  listen(exportMetadataButton, "click", exportMetadata);
+  listen(buildWorkspaceButton, "click", () => {
+    workspace = "build";
+    resultView = "vm";
+    style = "material";
+    updateTruthCapability();
+    syncView(true);
+    setStatus(sameBinValues(lastEvaluatedOverrides, readOverrides()) ? "GN-VM preview is current" : "Build settings are ready to preview", Boolean(sameBinValues(lastEvaluatedOverrides, readOverrides())));
+  });
+  listen(validateWorkspaceButton, "click", () => {
+    workspace = "validate";
+    resultView = sameBinValues(lastComparedOverrides, readOverrides()) ? "both" : "vm";
+    style = sameBinValues(lastComparedOverrides, readOverrides()) ? "wire" : "material";
+    updateTruthCapability();
+    syncView(true);
+    setStatus(sameBinValues(lastComparedOverrides, readOverrides()) ? "Comparison is current" : "Compare these inputs with Blender");
+  });
   listen(overlayButton, "click", () => { mode = "overlay"; syncView(true); });
   listen(splitButton, "click", () => { mode = "split"; syncView(true); });
   listen(wireButton, "click", () => { style = "wire"; syncView(); });
@@ -527,19 +989,31 @@ export function createTool(): ToolHandle {
   listen(truthButton, "click", () => { resultView = "truth"; syncView(true); });
   listen(vmButton, "click", () => { resultView = "vm"; syncView(true); });
   listen(window, "keydown", ((event: KeyboardEvent) => {
-    if (event.key.toLowerCase() === "o") { mode = "overlay"; syncView(true); }
-    if (event.key.toLowerCase() === "s") { mode = "split"; syncView(true); }
-    if (event.key.toLowerCase() === "w") { style = style === "wire" ? "material" : "wire"; syncView(); }
-    if (event.key === "1") { resultView = "truth"; syncView(true); }
-    if (event.key === "2") { resultView = "vm"; syncView(true); }
-    if (event.key === "3") { resultView = "both"; syncView(true); }
+    const target = event.target as HTMLElement | null;
+    if (workspace !== "validate" || event.metaKey || event.ctrlKey || event.altKey || target?.isContentEditable || target?.matches("input, textarea, select, button")) return;
+    let handled = true;
+    if (event.key.toLowerCase() === "o") mode = "overlay";
+    else if (event.key.toLowerCase() === "s") mode = "split";
+    else if (event.key.toLowerCase() === "w") style = style === "wire" ? "material" : "wire";
+    else if (event.key === "1") resultView = "truth";
+    else if (event.key === "2") resultView = "vm";
+    else if (event.key === "3") resultView = "both";
+    else handled = false;
+    if (handled) {
+      event.preventDefault();
+      syncView(event.key.toLowerCase() !== "w");
+    }
   }) as EventListener);
   // The viewport is a grid column between the docks, so the canvas box — not
   // the window — is what the renderer has to match.
   cleanups.push(observeCanvasBox(canvas, (width, height) => {
-    camera.aspect = width / height;
+    const nextAspect = width / height;
+    const shouldReframe = Math.abs(nextAspect - lastViewportAspect) / Math.max(lastViewportAspect, .01) > .18;
+    lastViewportAspect = nextAspect;
+    camera.aspect = nextAspect;
     camera.updateProjectionMatrix();
     renderer.setSize(width, height, false);
+    if (shouldReframe && (vmSolid || truthSolid)) frameComparison();
   }));
   renderer.setAnimationLoop(() => { controls.update(); if (mode === "split") positionGroups(); renderer.render(scene, camera); });
   void main();

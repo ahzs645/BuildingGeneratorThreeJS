@@ -26,6 +26,27 @@ export type BuildingParamsListener = (params: BuildingParams) => void;
 /** Asset-kit load state, surfaced by the studio status bar. */
 export type BuildingStatus = { state: "loading" | "ready" | "error"; message: string };
 
+export type BuildingAtmosphere = {
+  exposure: number;
+  envIntensity: number;
+  fog: boolean;
+  fogDensity: number;
+  key: number;
+  fill: number;
+  rim: number;
+  snow: boolean;
+  snowDensity: number;
+  rain: boolean;
+  rainDensity: number;
+  autoOrbit: boolean;
+  orbitSpeed: number;
+  fov: number;
+  letterbox: boolean;
+  bloom: number;
+  grain: number;
+  vignette: number;
+};
+
 /**
  * The building runtime. The 18 generator parameters are owned by the studio
  * dock (BuildingPage) rather than by lil-gui, so the tool exposes them here;
@@ -37,6 +58,8 @@ export type BuildingToolHandle = ToolHandle & {
   setParam(name: keyof BuildingParams, value: number): void;
   getEmissive(): number;
   setEmissive(value: number): void;
+  getAtmosphere(): BuildingAtmosphere;
+  setAtmosphere(name: keyof BuildingAtmosphere, value: number | boolean): void;
   subscribe(listener: BuildingParamsListener): () => void;
   subscribeStatus(listener: (status: BuildingStatus) => void): () => void;
 };
@@ -655,6 +678,50 @@ export function createTool(): BuildingToolHandle {
     setEmissive(value) {
       emissiveParams.emissive = value;
       kit.setFloorEmissive(value);
+    },
+    getAtmosphere: () => ({
+      exposure: env.settings.exposure,
+      envIntensity: env.settings.envIntensity,
+      fog: env.settings.fog,
+      fogDensity: env.settings.fogDensity,
+      key: env.key.intensity,
+      fill: env.fill.intensity,
+      rim: env.rim.intensity,
+      snow: snowState.enabled,
+      snowDensity: snowState.density,
+      rain: rainState.enabled,
+      rainDensity: rainState.density,
+      autoOrbit: cine.autoOrbit,
+      orbitSpeed: cine.orbitSpeed,
+      fov: cine.fov,
+      letterbox: cine.letterbox,
+      bloom: post.bloom.strength,
+      grain: post.gradeUniforms["uGrain"].value,
+      vignette: post.gradeUniforms["uVignette"].value,
+    }),
+    setAtmosphere(name, value) {
+      const numeric = Number(value);
+      switch (name) {
+        case "exposure": env.settings.exposure = numeric; env.refresh(); break;
+        case "envIntensity": env.settings.envIntensity = numeric; env.refresh(); break;
+        case "fog": env.settings.fog = Boolean(value); env.refresh(); break;
+        case "fogDensity": env.settings.fogDensity = numeric; env.refresh(); break;
+        case "key": env.key.intensity = numeric; break;
+        case "fill": env.fill.intensity = numeric; break;
+        case "rim": env.rim.intensity = numeric; break;
+        case "snow": snowState.enabled = Boolean(value); applySnowEnabled(Boolean(value)); break;
+        case "snowDensity": snowState.density = numeric; snow.setDensity(numeric); break;
+        case "rain": rainState.enabled = Boolean(value); applyRainEnabled(Boolean(value)); break;
+        case "rainDensity": rainState.density = numeric; rain.setDensity(numeric); break;
+        case "autoOrbit": cine.autoOrbit = Boolean(value); controls.autoRotate = Boolean(value); break;
+        case "orbitSpeed": cine.orbitSpeed = numeric; controls.autoRotateSpeed = numeric; break;
+        case "fov": cine.fov = numeric; camera.fov = numeric; camera.updateProjectionMatrix(); break;
+        case "letterbox": cine.letterbox = Boolean(value); applyLetterbox(); break;
+        case "bloom": post.bloom.strength = numeric; break;
+        case "grain": post.gradeUniforms["uGrain"].value = numeric; break;
+        case "vignette": post.gradeUniforms["uVignette"].value = numeric; break;
+      }
+      gui.controllersRecursive().forEach((controller) => controller.updateDisplay());
     },
     subscribe(listener) {
       paramListeners.add(listener);

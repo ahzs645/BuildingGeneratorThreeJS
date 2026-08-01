@@ -1,5 +1,6 @@
 import { useToolRuntime } from "../page-runtime";
-import { StudioShell } from "../studio/StudioShell";
+import { StudioPanelHeader, StudioShell } from "../studio/StudioShell";
+import { ToolStateOverlay } from "../studio/ToolStateOverlay";
 import "./dojo-gallery.css";
 
 const loadGallery = () => import("../../dojo-gallery");
@@ -10,9 +11,9 @@ const loadGallery = () => import("../../dojo-gallery");
  * dojo-gallery.ts writes into them by id.
  */
 export default function DojoGalleryPage(): React.JSX.Element {
-  useToolRuntime("Node Dojo Gallery · Blender Geometry Nodes in the browser", loadGallery);
+  const runtimeState = useToolRuntime("Node Dojo Gallery · Blender Geometry Nodes in the browser", loadGallery);
   const leftDock = <>
-    <div className="st-tabs"><button type="button" aria-selected="true">Models</button></div>
+    <StudioPanelHeader title="Baked models" meta="GLB gallery" />
     <div className="st-section">
       {/* #title is the selected model; #subtitle rides in the toolbar. */}
       <div className="st-section-title"><span id="title">Gallery</span></div>
@@ -41,6 +42,7 @@ export default function DojoGalleryPage(): React.JSX.Element {
       status={<span id="status">loading…</span>}
     >
       <canvas id="app"></canvas>
+      <ToolStateOverlay state={runtimeState} />
     </StudioShell>
   );
 }

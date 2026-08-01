@@ -1,0 +1,28 @@
+# Two independent meshes used to verify per-object projection targeting.
+o Rounded_Block
+v -1.8 -0.9 -0.8
+v -0.3 -0.9 -0.8
+v -0.3  0.9 -0.8
+v -1.8  0.9 -0.8
+v -1.8 -0.9  0.8
+v -0.3 -0.9  0.8
+v -0.3  0.9  0.8
+v -1.8  0.9  0.8
+f 1 4 3 2
+f 5 6 7 8
+f 1 5 8 4
+f 2 3 7 6
+f 1 2 6 5
+f 4 8 7 3
+
+o Pyramid_Roof
+v 0.3 -0.9 -0.8
+v 1.9 -0.9 -0.8
+v 1.9  0.9 -0.8
+v 0.3  0.9 -0.8
+v 1.1  0.0  1.2
+f 9 12 11 10
+f 9 10 13
+f 10 11 13
+f 11 12 13
+f 12 9 13

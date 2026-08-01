@@ -25,7 +25,7 @@
 .assets-control input[type=text], .assets-control input[type=number], .assets-control select {
   box-sizing: border-box; min-width: 0; width: 100%; height: var(--st-control-h); padding: 0 9px;
   border: 1px solid var(--st-line-2); border-radius: var(--st-r-sm);
-  background: var(--st-sunken); color: #DDE5EB; font: 500 var(--st-fs-ui)/1 var(--st-mono);
+  background-color: var(--st-sunken); color: #DDE5EB; font: 500 var(--st-fs-ui)/1 var(--st-mono);
 }
 
 #assets-font-status { padding: 9px 10px; border: 1px solid var(--st-line-2); border-radius: var(--st-r-sm); background: var(--st-sunken); color: var(--st-ink-2); font: 400 var(--st-fs-micro)/1.45 var(--st-mono); }

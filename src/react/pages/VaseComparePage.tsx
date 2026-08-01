@@ -1,5 +1,6 @@
 import { useToolRuntime } from "../page-runtime";
-import { StudioShell } from "../studio/StudioShell";
+import { StudioPanelHeader, StudioShell } from "../studio/StudioShell";
+import { ToolStateOverlay } from "../studio/ToolStateOverlay";
 import "./vase-compare.css";
 
 const loadVase = () => import("../../vase-compare");
@@ -10,9 +11,9 @@ const loadVase = () => import("../../vase-compare");
  * styles — so the buttons keep their ids and lose their bespoke pill CSS.
  */
 export default function VaseComparePage(): React.JSX.Element {
-  useToolRuntime("Bubble Vase · Blender vs GN-VM", loadVase);
+  const runtimeState = useToolRuntime("Bubble Vase · Blender vs GN-VM", loadVase);
   const leftDock = <>
-    <div className="st-tabs"><button type="button" aria-selected="true">Comparison</button></div>
+    <StudioPanelHeader title="Comparison" />
     <div className="st-section">
       <div className="st-section-title">Engines</div>
       <div className="st-segmented">
@@ -54,5 +55,6 @@ export default function VaseComparePage(): React.JSX.Element {
     </>}
   >
     <canvas id="app"></canvas>
+    <ToolStateOverlay state={runtimeState} />
   </StudioShell>;
 }

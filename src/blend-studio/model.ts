@@ -53,6 +53,7 @@ export type BlendStudioSeed =
   | { kind: "plane" }
   | { kind: "curve-circle" }
   | { kind: "curve-line" }
+  | { kind: "ico-spheres"; spheres: Array<{ position: [number, number, number]; radius: number }>; subdivisions?: number }
   | { kind: "object"; objectName: string };
 
 export type BlendStudioControl = {

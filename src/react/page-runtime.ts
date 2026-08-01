@@ -12,6 +12,16 @@ export type ToolHandle = { dispose(): void };
 
 export type ToolModule = { createTool(): ToolHandle | Promise<ToolHandle> };
 
+export type ToolRuntimeState = {
+  phase: "loading" | "ready" | "error";
+  error: Error | null;
+  retry(): void;
+};
+
+function normalizeError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
+
 export function usePageRuntime(title: string): void {
   useEffect(() => {
     document.title = title;
@@ -61,30 +71,45 @@ export function useToolController<Handle extends ToolHandle>(
  * exporting createTool(). Runs after render, so the tool can query the DOM
  * the page just rendered.
  */
-export function useToolRuntime(title: string, load: () => Promise<ToolModule>): void {
+export function useToolRuntime(
+  title: string,
+  load: () => Promise<ToolModule>,
+  restartKey?: unknown,
+): ToolRuntimeState {
   // Tools read location.search once at mount (capture modes, variant presets).
   // Depending on it here remounts the runtime when router navigation changes
   // only the query string — e.g. dev-menu preset links on the current tool.
   // Tool-initiated history.replaceState does not notify the router, so tools
   // rewriting their own query params never self-remount.
   const { search } = useLocation();
+  const [attempt, setAttempt] = useState(0);
+  const [state, setState] = useState<Omit<ToolRuntimeState, "retry">>({ phase: "loading", error: null });
   useEffect(() => {
     document.title = title;
+    setState({ phase: "loading", error: null });
     let disposed = false;
     let handle: ToolHandle | null = null;
     load()
       .then(async (mod) => {
         const created = await mod.createTool();
         if (disposed) created.dispose();
-        else handle = created;
+        else {
+          handle = created;
+          setState({ phase: "ready", error: null });
+        }
       })
       .catch((error: unknown) => {
-        if (!disposed) console.error("Studio tool failed to start", error);
+        if (!disposed) {
+          const normalized = normalizeError(error);
+          console.error("Studio tool failed to start", normalized);
+          setState({ phase: "error", error: normalized });
+        }
       });
     return () => {
       disposed = true;
       handle?.dispose();
       handle = null;
     };
-  }, [load, search, title]);
+  }, [attempt, load, restartKey, search, title]);
+  return { ...state, retry: () => setAttempt((value) => value + 1) };
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { usePageRuntime } from "../page-runtime";
-import { StudioShell } from "../studio/StudioShell";
+import { StudioPanelHeader, StudioShell } from "../studio/StudioShell";
 import "./materialx-lab.css";
 
 /**
@@ -33,7 +33,7 @@ export default function MaterialXLabPage(): React.JSX.Element {
   const threeLabel = import.meta.env.VITE_MATERIALX_THREE_LABEL || "Three.js 0.185.1 baseline";
 
   const rightDock = <>
-    <div className="st-tabs"><button type="button" aria-selected="true">Shader</button></div>
+    <StudioPanelHeader title="Shader" />
     <div className="st-section">
       <div className="st-section-title">Blender → MaterialX → Web</div>
       <label className="st-field">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
+import { useModalDialog } from "./useModalDialog";
 import "./studio-menu.css";
 
 export type StudioTool = { href: string; title: string; desc: string; badge?: string };
@@ -9,22 +10,22 @@ export type StudioTool = { href: string; title: string; desc: string; badge?: st
  * The rail's geometric marks. Pure CSS shapes — no icon assets, no icon
  * library — so a section is identifiable at 13px without a glyph font.
  */
-export type StudioMark = "square" | "circle-outline" | "diamond" | "square-outline" | "dot";
+export type StudioMark = "square" | "circle-outline" | "building" | "diamond" | "square-outline";
 
 export type StudioSection = {
   title: string;
   /** Short form for the nav section switcher and the tool rail. */
   label: string;
   mark: StudioMark;
-  /** Draws the rail's `hr` above this section (the parity group). */
+  /** Draws the rail's `hr` above this section. */
   railBreak?: boolean;
+  /** Adds the expandable presets, runtime status, and local pipeline panel. */
+  developerPanel?: boolean;
   items: StudioTool[];
 };
 
-// Every routed tool in the app. The studio workspace is the root route; the
-// Dev section carries the experiments that were never on the old landing page.
-// `label` + `mark` also drive the nav section switcher and the tool rail, so a
-// new section appears in all three places at once.
+// Every routed tool in the app. `label` + `mark` drive the nav section switcher
+// and the tool rail, so a new section appears in all three places at once.
 export const STUDIO_TOOLS: StudioSection[] = [
   {
     title: "Studio",
@@ -35,12 +36,20 @@ export const STUDIO_TOOLS: StudioSection[] = [
     ],
   },
   {
-    title: "Create",
-    label: "Create",
+    title: "Paint",
+    label: "Paint",
     mark: "circle-outline",
     items: [
       { href: "/paint", title: "Surface Painting Studio", badge: "WebGPU", desc: "Paint ivy, a banyan tree, crystal, molten, aurora, or reef growth onto any model — or switch to the Blender brush lab and run authored brushes along your stroke" },
-      { href: "/building", title: "Hong Kong Building", desc: "592-node build system hand-ported to TypeScript, 18 parameters" },
+      { href: "/paint?engine=putty", title: "Bubble Putty", badge: "editable", desc: "Add, move, resize, merge, and rebuild putty blobs through the authored Bubble Putty Geometry Nodes graph" },
+    ],
+  },
+  {
+    title: "Building Generator",
+    label: "Building",
+    mark: "building",
+    items: [
+      { href: "/building", title: "Hong Kong Building Generator", badge: "592 nodes", desc: "Shape a procedural Hong Kong tower with the hand-ported Blender build system and 18 live parameters" },
     ],
   },
   {
@@ -53,22 +62,16 @@ export const STUDIO_TOOLS: StudioSection[] = [
     ],
   },
   {
-    title: "Blender parity",
-    label: "Parity",
+    title: "Parity & Dev Lab",
+    label: "Lab",
     mark: "square-outline",
     railBreak: true,
+    developerPanel: true,
     items: [
-      { href: "/chrome-assets", title: "Live Asset Library", badge: "102 assets", desc: "Blender reference renders beside live VM output · every asset also loads into the Studio" },
-      { href: "/bin", title: "Dojo Bin Compare", desc: "Deep parity workspace for the recursive bin — the same graph as the studio's included sample" },
+      { href: "/chrome-assets", title: "Parity Catalog", badge: "104 assets", desc: "Compare Blender reference renders with live browser output; open any asset in the Studio to inspect its graph" },
+      { href: "/bin", title: "Recursive Bin", desc: "Build, share, export, and validate the cataloged Recursive Bin Generator" },
       { href: "/vase", title: "Bubble Vase Compare", desc: "Overlay and side-by-side parity for the bubble vase" },
       { href: "/materialx", title: "MaterialX Parity Lab", badge: "prototype", desc: "Capability-gated Blender → MaterialX shader experiment" },
-    ],
-  },
-  {
-    title: "Dev",
-    label: "Dev",
-    mark: "dot",
-    items: [
       { href: "/crayon", title: "Chrome Crayon Compare", desc: "Single-asset parity workspace with the Blender-style graph" },
       { href: "/bin/live", title: "Bin Live", desc: "Live-evaluated recursive bin (needs the local bake bridge)" },
     ],
@@ -92,6 +95,7 @@ const DEV_PRESETS: DevPresetGroup[] = [
       { label: "aurora silk", href: "/paint?mode=aurora" },
       { label: "reef", href: "/paint?mode=reef" },
       { label: "blender brush lab", href: "/paint?engine=blender" },
+      { label: "bubble putty", href: "/paint?engine=putty" },
     ],
   },
   {
@@ -105,7 +109,7 @@ const DEV_PRESETS: DevPresetGroup[] = [
   },
   {
     tool: "Dojo Bin",
-    presets: [0, 3, 6, 11].map((n) => ({ label: `select ${n}`, href: `/bin?select=${n}` })),
+    presets: Array.from({ length: 12 }, (_, n) => ({ label: `select ${n}`, href: `/bin?select=${n}` })),
   },
   {
     tool: "Gallery",
@@ -208,24 +212,26 @@ function DevPanel({ onClose }: { onClose: () => void }): React.JSX.Element {
 
 export function StudioMenu({ open, onClose }: { open: boolean; onClose: () => void }): React.JSX.Element | null {
   const { pathname } = useLocation();
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  const dialogRef = useModalDialog<HTMLElement>(open, onClose, "a[aria-current='page']");
   if (!open) return null;
   // Portaled to <body>: the trigger lives inside .st-shell, a fixed-position
   // grid that would otherwise become the containing block for this fixed
   // overlay and clip it to the nav row.
   return createPortal(
-    <div className="studio-menu-backdrop" onClick={onClose} role="presentation">
-      <nav className="studio-menu" aria-label="Studio tools" onClick={(event) => event.stopPropagation()}>
+    <div className="studio-menu-backdrop" onClick={onClose}>
+      <nav
+        ref={dialogRef}
+        className="studio-menu"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="studio-menu-title"
+        tabIndex={-1}
+        onClick={(event) => event.stopPropagation()}
+      >
         <header>
-          <b>Procedural Studio</b>
+          <b id="studio-menu-title">Procedural Studio</b>
           <span><kbd>⌘K</kbd> toggle · <kbd>Esc</kbd> close</span>
+          <button type="button" className="studio-menu-close" data-modal-close onClick={onClose}>Close ✕</button>
         </header>
         {STUDIO_TOOLS.map((section) => (
           <section key={section.title}>
@@ -241,7 +247,7 @@ export function StudioMenu({ open, onClose }: { open: boolean; onClose: () => vo
                 );
               })}
             </div>
-            {section.title === "Dev" && <DevPanel onClose={onClose} />}
+            {section.developerPanel && <DevPanel onClose={onClose} />}
           </section>
         ))}
       </nav>

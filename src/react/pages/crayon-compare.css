@@ -28,7 +28,7 @@
 .blender-flow-toolbar button:hover { border-color: rgba(127,196,232,.45); color: var(--st-ink); }
 .blender-flow-toolbar button:disabled { opacity: .3; }
 .blender-flow-toolbar span { color: var(--st-ok); font-weight: 700; }
-.blender-flow-toolbar select { min-width: 120px; max-width: 150px; height: 24px; border: 1px solid var(--st-line-2); border-radius: 4px; background: var(--st-sunken); color: #D2D8DD; padding: 0 7px; font: 500 var(--st-fs-micro)/1 var(--st-mono); }
+.blender-flow-toolbar select { min-width: 120px; max-width: 150px; height: 24px; border: 1px solid var(--st-line-2); border-radius: 4px; background-color: var(--st-sunken); color: #D2D8DD; padding: 0 26px 0 7px; font: 500 var(--st-fs-micro)/1 var(--st-mono); }
 .blender-flow-toolbar small { margin-left: auto; color: var(--st-ink-3); }
 .editor-kind { flex: 0 0 auto; color: var(--st-ok) !important; font-weight: 700; }
 .graph-breadcrumbs { display: flex; min-width: 0; max-width: 36%; align-items: center; gap: 2px; overflow: hidden; }

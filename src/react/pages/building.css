@@ -30,7 +30,7 @@
 }
 
 /* ---- The atmosphere panel: lil-gui mounted into the inspector column ---- */
-.building-gui-dock { min-height: 0; flex: 1; overflow: auto; }
+.building-gui-dock { display: none; }
 .lil-gui.building-gui {
   --background-color: var(--st-panel);
   --widget-color: rgba(255,255,255,.07);

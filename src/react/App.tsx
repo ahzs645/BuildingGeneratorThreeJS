@@ -64,13 +64,11 @@ function NotFound(): React.JSX.Element {
 }
 
 function StudioRoutes(): React.JSX.Element {
-  const location = useLocation();
   return (
-    // Keyed by path + search: tool pages must remount (fresh canvas, fresh
-    // runtime) on ANY router navigation, including query-only preset links —
-    // dispose() force-loses the old canvas's GL context, so a runtime can
-    // never be rebuilt on a canvas that React kept alive.
-    <Routes location={location} key={`${location.pathname}?${location.search}`}>
+    // Route components now survive query-only changes. Runtime hooks own the
+    // precise search-param restart boundary, so React state, focus, and shell
+    // chrome do not reset just because a preset changed.
+    <Routes>
           <Route path="/" element={<BlendBridgePage />} />
           <Route path="/building" element={<BuildingPage />} />
           <Route path="/gallery" element={<DojoGalleryPage />} />

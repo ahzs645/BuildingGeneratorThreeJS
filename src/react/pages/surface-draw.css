@@ -54,6 +54,12 @@
   .surface-brush-label { display: none; }
 }
 .surface-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.surface-target-picker { display: grid; gap: 7px; padding: 10px; border: 1px solid var(--st-line); border-radius: var(--st-r-md); background: rgba(255,255,255,.025); transition: border-color .16s ease, background .16s ease; }
+.surface-target-picker[data-mode="locked"] { border-color: rgba(255,226,69,.56); background: rgba(255,222,45,.055); }
+.surface-target-picker > span { color: var(--st-ink-2); font: 600 var(--st-fs-micro)/1.2 var(--st-sans); }
+.surface-target-picker > small { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.35 var(--st-mono); }
+.surface-target-pick { border-color: rgba(255,226,69,.42); color: #fff09a; }
+.surface-target-pick:hover { border-color: rgba(255,235,92,.78); background: rgba(255,222,45,.1); }
 /* display:contents so the brush rows join the section's flex column directly;
    [hidden] still has to win, hence the explicit none. */
 .surface-controls { display: contents; }

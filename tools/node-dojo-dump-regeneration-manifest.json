@@ -44,7 +44,7 @@
     {"output":"public/dojo/course-modules/module3-control-box/dump.json","project":"module-3","mode":"target","targets":["Cube.001"],"root_groups":["Geometry Nodes.134"],"shared_catalog_ids":["course-module3-control-box"],"postprocessors":[],"special_flags":[]},
 
     {"output":"public/dojo/crayon/dump.json","project":"chrome-crayon","mode":"target","targets":["CHROME CRAYON OBJECT"],"root_groups":["CHROME CRAYON 3D _4.3_DEC2024"],"shared_catalog_ids":[],"postprocessors":[],"special_flags":[]},
-    {"output":"public/dojo/dump_bin.json","project":"recursive-bin","mode":"target","targets":["Procedural Drawer"],"root_groups":["bin generator.001"],"shared_catalog_ids":[],"postprocessors":["tools/attach_fill_topology_hint.py"],"special_flags":["preserve-evaluated-fill-topology-hint"]},
+    {"output":"public/dojo/dump_bin.json","project":"recursive-bin","mode":"target","targets":["Procedural Drawer"],"root_groups":["bin generator.001"],"shared_catalog_ids":["recursive-bin"],"postprocessors":["tools/attach_fill_topology_hint.py"],"special_flags":["preserve-evaluated-fill-topology-hint"]},
     {"output":"public/dojo/dump_bubble.json","project":"bubble-vessel","mode":"target","targets":["BUBBLE VASE"],"root_groups":["Geometry Nodes.004"],"shared_catalog_ids":[],"postprocessors":[],"special_flags":[]},
 
     {"output":"public/dojo/joints/bubble-putty/dump.json","project":"joint-generators","mode":"target","targets":["PUTTY.002"],"root_groups":["Bubble Putty Generator_9OCT2024_01"],"shared_catalog_ids":["joint-bubble-putty"],"postprocessors":[],"special_flags":["dependency-cycle-source"]},

@@ -29,6 +29,45 @@
       "gnvm": { "verts": 56985, "faces": 55000 }
     }
   },
+  "browserControlContract": {
+    "updated": "2026-08-01",
+    "fixture": "tools/bin-parity-extended-cases.json",
+    "uniquePublishedRangeProbes": 44,
+    "exactBoundsCases": 44,
+    "exactTopologyCases": 24,
+    "ranges": {
+      "bin gap size": [0.2, 7],
+      "fillet": [0, 7.9],
+      "divide x": [0.15, 0.85],
+      "divide y": [0.2, 0.9],
+      "Bin Select": [0, 11]
+    },
+    "selectedMaterialSurfaceProbes": {
+      "cases": ["divide x=0.15, divide y=0.9", "bin gap size=7"],
+      "blenderToGnvm": { "p99": 0, "max": 0 },
+      "gnvmToBlender": { "p99": 0, "max": 0 },
+      "interpretation": "Different triangle counts at these limits are alternate tessellation of the same highlighted surface, not an appearance mismatch."
+    },
+    "excludedDiagnostics": [
+      {
+        "setting": "bin gap size > 7",
+        "reason": "At 8 the Blender highlight branch disappears while GN-VM still retains it. Gap 7 has zero bidirectional selected-material surface distance despite alternate triangulation."
+      },
+      {
+        "setting": "fillet=8",
+        "reason": "Blender enters a degenerate high-fillet path; GN-VM preserves the envelope but not the same surface. The last exact tested setting is 7.9."
+      },
+      {
+        "setting": "divider endpoints and near-endpoints",
+        "reason": "Collapsed partitions expose Blender degeneracies that are not portable. The published range is the previously surface-validated 0.15-0.85 by 0.2-0.9 grid."
+      },
+      {
+        "setting": "Bin Select > 11",
+        "reason": "Only selections 0-11 have checked-in Blender truth for the static site; selections 16-20 also diverge geometrically."
+      }
+    ],
+    "interpretation": "The website exposes the authored controls inside a reproducible Blender-backed contract instead of implying parity for every unbounded source-socket value."
+  },
   "surfaceComparison": {
     "exportedControlCases": 15,
     "blenderToGnvm": { "p99": 0, "max": 0 },

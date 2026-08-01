@@ -4,6 +4,7 @@ import { makeAttributeEmissionMaterial, type AttributeEmissionColorRemap } from 
 import { makeAttributeColorEmissionMaterial } from "../attribute-color-emission-material";
 import { makeAttributePrincipledMaterial } from "../attribute-principled-material";
 import { makeBasicBlenderMaterial, makeBlenderDefaultSurfaceMaterial } from "../blender-basic-material";
+import { makeBinAuthoredMaterial } from "../bin-authored-material";
 import { attachChainMaceRoughnessAttribute, makeChainMaceMaterial } from "../chain-mace-material";
 import { makeChromeCrayonMaterial } from "../chrome-crayon-material";
 import { makeCrossSectionFilamentMaterial } from "../cross-section-filament-material";
@@ -26,7 +27,8 @@ export type AuthoredMaterialProfile =
   | "image-pixel-stippler"
   | "attribute-emission"
   | "chrome-crayon"
-  | "chain-mace";
+  | "chain-mace"
+  | "recursive-bin";
 
 export interface AuthoredMaterialAsset {
   material?: AuthoredMaterialProfile;
@@ -135,6 +137,19 @@ export const AUTHORED_MATERIAL_ADAPTERS: readonly AuthoredMaterialAdapter[] = [
             asset.attributeEmissionColorRemaps,
           )
         : undefined,
+  },
+  {
+    id: "profile-recursive-bin",
+    resolve: ({ asset, dump, geometry, materialName }) => {
+      if (asset.material !== "recursive-bin") return undefined;
+      geometry.computeBoundingBox();
+      const bounds = geometry.boundingBox;
+      if (!bounds) return null;
+      return makeBinAuthoredMaterial(dump, {
+        min: bounds.min.toArray() as [number, number, number],
+        max: bounds.max.toArray() as [number, number, number],
+      }, materialName);
+    },
   },
   {
     id: "attribute-emission",

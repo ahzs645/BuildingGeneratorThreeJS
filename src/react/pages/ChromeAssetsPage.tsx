@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import { useToolRuntime } from "../page-runtime";
-import { StudioShell } from "../studio/StudioShell";
+import { StudioPanelHeader, StudioShell } from "../studio/StudioShell";
+import { ToolStateOverlay } from "../studio/ToolStateOverlay";
 import "./chrome-assets.css";
 import "./crayon-compare.css";
 
@@ -21,7 +22,7 @@ const typePixelBrushEditorConfig = {
 } as const;
 
 export default function ChromeAssetsPage(): React.JSX.Element {
-  useToolRuntime("Node Dojo Asset Library · Blender vs browser", loadChromeAssets);
+  const runtimeState = useToolRuntime("Parity Catalog · Blender vs browser", loadChromeAssets);
   const query = new URLSearchParams(location.search);
   const [activeAssetId, setActiveAssetId] = useState(() => query.get("asset") ?? "");
   // The comparison is the page's purpose; the node workspace opens on demand.
@@ -56,7 +57,7 @@ export default function ChromeAssetsPage(): React.JSX.Element {
   }, [graphMaximized, graphOpen, showTypePixelBrushGraph]);
 
   const rightDock = <>
-    <div className="st-tabs"><button type="button" aria-selected="true">Asset</button></div>
+    <StudioPanelHeader title="Parity asset" meta="Blender ↔ browser" />
     <div className="st-section">
       <label className="st-field assets-picker">
         <span>Ported asset</span>
@@ -102,6 +103,7 @@ export default function ChromeAssetsPage(): React.JSX.Element {
     <section className="assets-compare">
       <figure className="assets-pane"><figcaption><span>Blender reference</span><strong id="assets-blender-count">—</strong></figcaption><img id="assets-reference" alt="Isolated Blender reference render" /></figure>
       <figure className="assets-pane"><figcaption><span>Browser GN-VM · WebGL preview</span><strong id="assets-vm-count">—</strong></figcaption><canvas id="assets-canvas" /></figure>
+      <ToolStateOverlay state={runtimeState} />
     </section>
     {showTypePixelBrushGraph && !graphOpen && <button className="graph-toggle st-btn" type="button" onClick={() => setGraphOpen(true)}>Show Geometry Nodes workspace</button>}
   </StudioShell>;

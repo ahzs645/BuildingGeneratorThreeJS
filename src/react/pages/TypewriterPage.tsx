@@ -1,13 +1,14 @@
 import { useToolRuntime } from "../page-runtime";
-import { StudioShell } from "../studio/StudioShell";
+import { StudioPanelHeader, StudioShell } from "../studio/StudioShell";
+import { ToolStateOverlay } from "../studio/ToolStateOverlay";
 import "./typewriter.css";
 
 const loadTypewriter = () => import("../../typewriter");
 
 export default function TypewriterPage(): React.JSX.Element {
-  useToolRuntime("Node Dojo Typewriter · browser Geometry Nodes", loadTypewriter);
+  const runtimeState = useToolRuntime("Node Dojo Typewriter · browser Geometry Nodes", loadTypewriter);
   const leftDock = <>
-    <div className="st-tabs"><button type="button" aria-selected="true">Text</button></div>
+    <StudioPanelHeader title="Text" />
     <div className="st-section">
       <div className="st-section-title">Text input</div>
       <textarea id="typewriter-text" className="typewriter-text" rows={5} defaultValue="NODE DOJO TYPEWRITER — now running entirely in the browser." />
@@ -20,6 +21,7 @@ export default function TypewriterPage(): React.JSX.Element {
         <button id="typewriter-play" className="st-btn" type="button">Play</button>
         <button id="typewriter-evaluate" className="st-btn-primary" type="button">Evaluate</button>
       </div>
+      <button id="typewriter-reframe" className="st-btn" type="button">Reframe model</button>
     </div>
     <div className="st-section">
       <div className="st-section-title">Browser GN-VM</div>
@@ -49,5 +51,6 @@ export default function TypewriterPage(): React.JSX.Element {
     </>}
   >
     <canvas id="typewriter-canvas" />
+    <ToolStateOverlay state={runtimeState} />
   </StudioShell>;
 }

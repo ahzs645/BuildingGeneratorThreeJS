@@ -4,14 +4,19 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import GUI from "lil-gui";
 import { canvasBox, observeCanvasBox } from "./canvas-viewport";
 import { BIN_PARAMETERS } from "./bin-params";
 import type { ToolHandle } from "./react/page-runtime";
 
 const BRIDGE = "http://localhost:7801";
 
-export function createTool(): ToolHandle {
+export type BinLiveHandle = ToolHandle & {
+  getValues(): Record<string, number | boolean>;
+  setValue(name: string, value: number | boolean): void;
+  reframe(): void;
+};
+
+export function createTool(): BinLiveHandle {
   const canvas = document.getElementById("app") as HTMLCanvasElement;
   const statEl = document.getElementById("stat")!;
   const busyEl = document.getElementById("busy")!;
@@ -45,7 +50,6 @@ export function createTool(): ToolHandle {
   let current: THREE.Object3D | null = null;
   let framed = false;
   let disposed = false;
-  let gui: GUI | null = null;
   function frame(obj: THREE.Object3D) {
     const box = new THREE.Box3().setFromObject(obj);
     const size = box.getSize(new THREE.Vector3());
@@ -116,11 +120,6 @@ export function createTool(): ToolHandle {
       return;
     }
     if (disposed) return;
-    gui = new GUI({ title: "dojo bin · live (Blender)" });
-    for (const p of BIN_PARAMETERS) {
-      if (p.boolean) gui.add(state, p.name).onChange(requestBake);
-      else gui.add(state, p.name, p.min, p.max, p.step).onChange(requestBake);
-    }
     await bake(); // initial
   }
 
@@ -134,13 +133,20 @@ export function createTool(): ToolHandle {
   void main();
 
   return {
+    getValues: () => ({ ...state }),
+    setValue(name, value) {
+      if (!(name in state)) return;
+      state[name] = value;
+      requestBake();
+    },
+    reframe() {
+      if (current) frame(current);
+    },
     dispose() {
       disposed = true;
       clearTimeout(debounce);
       stopObservingCanvas();
       renderer.setAnimationLoop(null);
-      gui?.destroy();
-      gui = null;
       controls.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
