@@ -7,6 +7,9 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { PLYLoader } from "three/examples/jsm/loaders/PLYLoader.js";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
+import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2.js";
+import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from "three-mesh-bvh";
 import { publicUrl } from "./base-url";
 import { canvasBox, observeCanvasBox } from "./canvas-viewport";
@@ -69,6 +72,9 @@ function loadBrushAssets(): Promise<BrushAssets> {
 
 export function createTool(): ToolHandle {
   const canvas = document.querySelector<HTMLCanvasElement>("#surface-canvas")!;
+  const selectionHud = document.querySelector<HTMLElement>("#surface-selection-hud")!;
+  const selectionReticle = document.querySelector<HTMLElement>("#surface-selection-reticle")!;
+  const selectionLabel = document.querySelector<HTMLElement>("#surface-selection-label")!;
   const flatOverlay = document.querySelector<HTMLElement>("#surface-flat-overlay")!;
   const brushReticle = document.querySelector<HTMLElement>("#surface-brush-reticle")!;
   const brushLabel = document.querySelector<HTMLElement>("#surface-brush-label")!;
@@ -171,8 +177,19 @@ export function createTool(): ToolHandle {
   const areaMaterial = new THREE.LineBasicMaterial({ color: 0xffffb0, depthTest: false, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, toneMapped: false });
   const sourceAreaMaterial = new THREE.LineBasicMaterial({ color: 0xdce5e3, depthTest: false, transparent: true, opacity: .74 });
   const projectionRayMaterial = new THREE.MeshBasicMaterial({ color: 0x65ff74, depthTest: false, depthWrite: false, transparent: true, opacity: .94 });
+  const selectionGuideMaterial = new LineMaterial({ color: 0xffff5b, linewidth: 1.45, depthTest: false, depthWrite: false, transparent: true, opacity: 1, toneMapped: false });
+  selectionGuideMaterial.resolution.set(viewport.width, viewport.height);
   const handleMaterial = new THREE.PointsMaterial({ color: 0xfff2c2, size: .13, sizeAttenuation: true, depthTest: false });
   const selectedHandleMaterial = new THREE.PointsMaterial({ color: 0xff713d, size: .2, sizeAttenuation: true, depthTest: false });
+  const selectionGuidePositions = new Float32Array(8 * 3 * 2 * 3);
+  const selectionGuideGeometry = new LineSegmentsGeometry();
+  selectionGuideGeometry.setPositions(selectionGuidePositions);
+  const selectionGuideRoot = new LineSegments2(selectionGuideGeometry, selectionGuideMaterial);
+  selectionGuideRoot.name = "Chrome Crayon selection box corners";
+  selectionGuideRoot.frustumCulled = false;
+  selectionGuideRoot.renderOrder = 1000;
+  selectionGuideRoot.visible = false;
+  scene.add(selectionGuideRoot);
   const raycaster = new THREE.Raycaster(); raycaster.firstHitOnly = true;
   const projectionRaycaster = new THREE.Raycaster(); projectionRaycaster.firstHitOnly = true;
   const curveRaycaster = new THREE.Raycaster();
@@ -182,6 +199,7 @@ export function createTool(): ToolHandle {
   const curveDocument = new EditableCurveDocument();
   const strokes = curveDocument.strokes;
   let drawing = true;
+  let selectingTarget = false;
   let selectingArea = false;
   let selectingCurve = false;
   let drawingArea: DrawingArea | null = null;
@@ -206,6 +224,97 @@ export function createTool(): ToolHandle {
   let areaBaseSizeU = Number(areaSize.value);
   let areaBaseSizeV = Number(areaSize.value);
   let syncingAreaTransform = false;
+  let selectionGuidesDirty = true;
+
+  const selectionBox = new THREE.Box3();
+  const selectionViewBox = new THREE.Box3();
+  const selectionBoxSize = new THREE.Vector3();
+  const selectionBoxSourceCorner = new THREE.Vector3();
+  const selectionBoxCorner = new THREE.Vector3();
+  const selectionBoxArm = new THREE.Vector3();
+  const selectionBoxWorldCorner = new THREE.Vector3();
+  const selectionBoxWorldArm = new THREE.Vector3();
+
+  function updateSurfaceSelectionGuides(): void {
+    selectionGuidesDirty = false;
+    selectionGuideRoot.visible = selectingArea && surfaceKind === "curved";
+    if (!selectionGuideRoot.visible) {
+      return;
+    }
+
+    targetRoot.updateMatrixWorld(true);
+    selectionBox.makeEmpty();
+    for (const surface of selectedTargetSurfaces()) selectionBox.expandByObject(surface.mesh, true);
+    if (selectionBox.isEmpty()) {
+      selectionGuideRoot.visible = false;
+      return;
+    }
+
+    camera.updateMatrixWorld(true);
+    selectionViewBox.makeEmpty();
+    for (const xSide of [-1, 1]) for (const ySide of [-1, 1]) for (const zSide of [-1, 1]) {
+      selectionBoxSourceCorner.set(
+        xSide < 0 ? selectionBox.min.x : selectionBox.max.x,
+        ySide < 0 ? selectionBox.min.y : selectionBox.max.y,
+        zSide < 0 ? selectionBox.min.z : selectionBox.max.z,
+      ).project(camera);
+      selectionViewBox.expandByPoint(selectionBoxSourceCorner);
+    }
+
+    selectionViewBox.getSize(selectionBoxSize);
+    const centerX = (selectionViewBox.min.x + selectionViewBox.max.x) * .5;
+    const centerY = (selectionViewBox.min.y + selectionViewBox.max.y) * .5;
+    const halfX = Math.min(Math.max(.16, selectionBoxSize.x * .48), Math.max(.16, .9 - Math.abs(centerX)));
+    const halfY = Math.min(Math.max(.16, selectionBoxSize.y * .48), Math.max(.16, .9 - Math.abs(centerY)));
+    const nearZ = Math.max(-.98, selectionViewBox.min.z - .002);
+    const farZ = Math.min(.998, selectionViewBox.max.z + .002);
+    const rearScale = .74;
+    const armFraction = .16;
+    let vertex = 0;
+    const writeSegment = (from: THREE.Vector3, to: THREE.Vector3): void => {
+      selectionGuidePositions[vertex++] = from.x;
+      selectionGuidePositions[vertex++] = from.y;
+      selectionGuidePositions[vertex++] = from.z;
+      selectionGuidePositions[vertex++] = to.x;
+      selectionGuidePositions[vertex++] = to.y;
+      selectionGuidePositions[vertex++] = to.z;
+    };
+
+    for (const xSide of [-1, 1]) for (const ySide of [-1, 1]) for (const zSide of [-1, 1]) {
+      const planeScale = zSide < 0 ? 1 : rearScale;
+      const otherScale = zSide < 0 ? rearScale : 1;
+      selectionBoxCorner.set(
+        centerX + xSide * halfX * planeScale,
+        centerY + ySide * halfY * planeScale,
+        zSide < 0 ? nearZ : farZ,
+      );
+      selectionBoxWorldCorner.copy(selectionBoxCorner).unproject(camera);
+
+      selectionBoxArm.copy(selectionBoxCorner);
+      selectionBoxArm.x -= xSide * halfX * planeScale * armFraction;
+      selectionBoxWorldArm.copy(selectionBoxArm).unproject(camera);
+      writeSegment(selectionBoxWorldCorner, selectionBoxWorldArm);
+
+      selectionBoxArm.copy(selectionBoxCorner);
+      selectionBoxArm.y -= ySide * halfY * planeScale * armFraction;
+      selectionBoxWorldArm.copy(selectionBoxArm).unproject(camera);
+      writeSegment(selectionBoxWorldCorner, selectionBoxWorldArm);
+
+      selectionBoxArm.set(
+        centerX + xSide * halfX * otherScale,
+        centerY + ySide * halfY * otherScale,
+        zSide < 0 ? farZ : nearZ,
+      ).unproject(camera);
+      selectionBoxWorldArm.copy(selectionBoxWorldCorner).lerp(selectionBoxArm, armFraction);
+      writeSegment(selectionBoxWorldCorner, selectionBoxWorldArm);
+    }
+
+    selectionGuideRoot.visible = vertex > 0;
+    if (vertex > 0) selectionGuideGeometry.setPositions(selectionGuidePositions.subarray(0, vertex));
+  }
+
+  const invalidateSelectionGuides = (): void => { selectionGuidesDirty = true; };
+  controls.addEventListener("change", invalidateSelectionGuides);
 
   function evaluationWorker(): Worker {
     if (!activeWorker) {
@@ -266,10 +375,35 @@ export function createTool(): ToolHandle {
   }
 
   function positionBrushReticle(event: PointerEvent): void {
-    if (flatOverlay.hidden) return;
     const rect = canvas.getBoundingClientRect();
-    brushReticle.style.left = `${event.clientX - rect.left}px`;
-    brushReticle.style.top = `${event.clientY - rect.top}px`;
+    const left = `${event.clientX - rect.left}px`;
+    const top = `${event.clientY - rect.top}px`;
+    if (!flatOverlay.hidden) {
+      brushReticle.style.left = left;
+      brushReticle.style.top = top;
+    }
+    if (!selectionHud.hidden) {
+      selectionReticle.style.left = left;
+      selectionReticle.style.top = top;
+    }
+  }
+
+  function updateSurfaceSelectionHud(event?: PointerEvent): void {
+    if (!selectingArea || selectionHud.hidden) return;
+    const hit = event ? surfaceHit(event, false) : null;
+    const surface = hit ? targetSurfaces.find((candidate) => candidate.mesh === hit.target) : null;
+    selectionHud.dataset.hit = hit ? "true" : "false";
+    selectionLabel.textContent = hit
+      ? `CHROME CRAYON · ${surface?.label ?? "SURFACE"} · PLACE AREA`
+      : "CHROME CRAYON · PLACE AREA";
+    canvas.style.cursor = hit ? "crosshair" : "cell";
+  }
+
+  function updateTargetPickerHover(event: PointerEvent): void {
+    if (!selectingTarget) return;
+    const hit = surfaceHit(event, false);
+    canvas.style.cursor = hit ? "crosshair" : "not-allowed";
+    targetPickButton.dataset.hit = hit ? "true" : "false";
   }
 
   function prepareTarget(root: THREE.Object3D, material: THREE.Material = targetMaterial): void {
@@ -300,6 +434,7 @@ export function createTool(): ToolHandle {
       surface.mesh.material = !isolate || selected.has(surface.id) ? activeMaterial : inactiveTargetMaterial;
     }
     updateTargetSummary();
+    selectionGuidesDirty = true;
   }
 
   function refreshTargetInventory(defaultTarget = PICK_TARGET_SURFACE): void {
@@ -1080,11 +1215,18 @@ export function createTool(): ToolHandle {
     }, 120);
   }
   function clearStrokes(): void { curveDocument.clear(); parityPathMode = "none"; previewRoot.visible = true; clearObject(brushRoot); renderPreviews(); updateMetrics(); runtime.textContent = "Draw a stroke to evaluate GN-VM"; boundsText.textContent = "Bounds appear after evaluation"; }
-  function setMode(next: "draw" | "select" | "area" | "orbit"): void {
-    drawing = next === "draw"; selectingCurve = next === "select"; selectingArea = next === "area"; controls.enabled = next === "orbit";
+  function setMode(next: "draw" | "select" | "area" | "orbit" | "target"): void {
+    drawing = next === "draw"; selectingCurve = next === "select"; selectingArea = next === "area"; selectingTarget = next === "target"; controls.enabled = next === "orbit";
     drawButton.classList.toggle("active", drawing); selectButton.classList.toggle("active", selectingCurve); areaButton.classList.toggle("active", selectingArea); orbitButton.classList.toggle("active", next === "orbit");
-    canvas.style.cursor = selectingArea ? "cell" : selectingCurve ? "default" : drawing ? "crosshair" : "grab";
+    targetPickButton.classList.toggle("active", selectingTarget);
+    targetPickButton.dataset.hit = "false";
+    canvas.style.cursor = selectingTarget ? "crosshair" : selectingArea ? "cell" : selectingCurve ? "default" : drawing ? "crosshair" : "grab";
     brushReticle.hidden = !drawing;
+    selectionHud.hidden = !selectingArea;
+    selectionHud.dataset.hit = "false";
+    selectionLabel.textContent = `CHROME CRAYON · ${targetLabel(targetSurfaces, targetSelect.value)} · PLACE AREA`;
+    selectionGuidesDirty = true;
+    updateSurfaceSelectionGuides();
     previewRoot.visible = selectingCurve || curveDocument.activeStroke !== null;
     renderPreviews();
   }
@@ -1151,13 +1293,26 @@ export function createTool(): ToolHandle {
   canvas.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
     if (areaTransform.enabled && (areaTransform.dragging || areaTransform.axis !== null)) return;
-    if (selectingArea) {
+    if (selectingTarget) {
       const sample = surfaceHit(event, false);
       if (sample) {
-        if (targetSelect.value === PICK_TARGET_SURFACE) {
-          targetSelect.value = sample.target.uuid;
-          applyTargetAppearance();
-        }
+        targetSelect.value = sample.target.uuid;
+        applyTargetAppearance();
+        setMode("area");
+        positionBrushReticle(event);
+        updateSurfaceSelectionHud(event);
+        setStatus(`${targetLabel(targetSurfaces, targetSelect.value)} locked · now click to place the drawing area`);
+      }
+      return;
+    }
+    if (selectingArea) {
+      if (targetSelect.value === PICK_TARGET_SURFACE) {
+        setMode("target");
+        setStatus("Choose the target object first · the area-placement HUD will appear after it is locked");
+        return;
+      }
+      const sample = surfaceHit(event, false);
+      if (sample) {
         placeDrawingArea(sample);
         setMode("draw");
       }
@@ -1177,8 +1332,20 @@ export function createTool(): ToolHandle {
   }, { signal });
   canvas.addEventListener("pointermove", (event) => {
     positionBrushReticle(event);
+    if (selectingTarget) updateTargetPickerHover(event);
+    if (selectingArea) updateSurfaceSelectionHud(event);
     if (curveDrag) moveCurveDrag(event);
     else if (drawing && curveDocument.activeStroke) addSample(event);
+  }, { signal });
+  canvas.addEventListener("pointerleave", () => {
+    if (selectingTarget) {
+      targetPickButton.dataset.hit = "false";
+      canvas.style.cursor = "crosshair";
+    } else if (selectingArea) {
+      selectionHud.dataset.hit = "false";
+      selectionLabel.textContent = `CHROME CRAYON · ${targetLabel(targetSurfaces, targetSelect.value)} · PLACE AREA`;
+      canvas.style.cursor = "cell";
+    }
   }, { signal });
   canvas.addEventListener("pointerup", (event) => {
     if (curveDrag?.pointerId === event.pointerId) {
@@ -1199,7 +1366,7 @@ export function createTool(): ToolHandle {
   });
   areaTransform.addEventListener("mouseUp", () => {
     controls.enabled = orbitButton.classList.contains("active");
-    canvas.style.cursor = selectingArea ? "cell" : selectingCurve ? "default" : drawing ? "crosshair" : "grab";
+    canvas.style.cursor = selectingTarget ? "crosshair" : selectingArea ? "cell" : selectingCurve ? "default" : drawing ? "crosshair" : "grab";
     setStatus("Yellow selector updated · projected strokes follow its surface frame");
   });
   areaTransform.addEventListener("objectChange", updateDrawingAreaFromAnchor);
@@ -1209,15 +1376,20 @@ export function createTool(): ToolHandle {
     clearStrokes();
     applyTargetAppearance();
     const target = targetLabel(targetSurfaces, targetSelect.value);
-    setStatus(targetSelect.value === PICK_TARGET_SURFACE ? "Click Select area, then click an object to lock its surface" : `Projection target changed · ${target}`);
+    if (selectingTarget && targetSelect.value !== PICK_TARGET_SURFACE) {
+      setMode("area");
+      setStatus(`${target} locked · click the surface to place the drawing area`);
+    } else {
+      setStatus(targetSelect.value === PICK_TARGET_SURFACE ? "Choose a target object before placing the area" : `Projection target changed · ${target}`);
+    }
   }, { signal });
   targetPickButton.addEventListener("click", () => {
     targetSelect.value = PICK_TARGET_SURFACE;
     removeDrawingArea();
     clearStrokes();
     applyTargetAppearance();
-    setMode("area");
-    setStatus("Target picker armed · click the object surface you want");
+    setMode("target");
+    setStatus("Target picker armed · click once to lock an object (area HUD stays hidden)");
   }, { signal });
   demoButton.addEventListener("click", demoSurface, { signal });
   flatButton.addEventListener("click", flatSurface, { signal });
@@ -1227,7 +1399,15 @@ export function createTool(): ToolHandle {
   drawButton.addEventListener("click", () => setMode("draw"), { signal });
   selectButton.addEventListener("click", () => { setMode("select"); setStatus("Select a stroke to move it · click a handle to edit one point"); }, { signal });
   orbitButton.addEventListener("click", () => setMode("orbit"), { signal });
-  areaButton.addEventListener("click", () => { setMode("area"); setStatus("Click the model to place the drawing area"); }, { signal });
+  areaButton.addEventListener("click", () => {
+    if (targetSelect.value === PICK_TARGET_SURFACE) {
+      setMode("target");
+      setStatus("Choose the target object first · area placement starts on the next step");
+    } else {
+      setMode("area");
+      setStatus("Initial area selection · click the surface to place the drawing area");
+    }
+  }, { signal });
   clearAreaButton.addEventListener("click", () => { removeDrawingArea(); setStatus("Drawing area removed · drawing is unrestricted"); }, { signal });
   areaDoodleButton.addEventListener("click", addAreaDoodle, { signal });
   gizmoMoveButton.addEventListener("click", () => setAreaTransformMode("translate"), { signal });
@@ -1310,9 +1490,15 @@ export function createTool(): ToolHandle {
   const stopObservingCanvas = observeCanvasBox(canvas, (width, height) => {
     sizeCameras(width, height);
     renderer.setSize(width, height, false);
+    selectionGuideMaterial.resolution.set(width, height);
+    selectionGuidesDirty = true;
   });
   signal.addEventListener("abort", stopObservingCanvas);
-  renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+  renderer.setAnimationLoop(() => {
+    controls.update();
+    if (selectionGuidesDirty) updateSurfaceSelectionGuides();
+    renderer.render(scene, camera);
+  });
 
   setMode("draw"); applyCrayonPreset(); demoSurface();
   loadBrushAssets()
@@ -1334,13 +1520,15 @@ export function createTool(): ToolHandle {
       activeWorker?.terminate(); activeWorker = null;
       if (activeObjectUrl) { URL.revokeObjectURL(activeObjectUrl); activeObjectUrl = null; }
       renderer.setAnimationLoop(null);
+      controls.removeEventListener("change", invalidateSelectionGuides);
       controls.dispose();
       removeDrawingArea();
       areaTransform.dispose();
-      scene.remove(areaTransformHelper, areaAnchor);
+      scene.remove(areaTransformHelper, areaAnchor, selectionGuideRoot);
       clearObject(targetRoot); clearObject(brushRoot); clearObject(previewRoot); clearObject(handleRoot);
+      selectionGuideGeometry.dispose();
       envTexture.dispose();
-      for (const material of [targetMaterial, inactiveTargetMaterial, flatTargetMaterial, brushMaterial, chromeMaterial, sigilMaterial, previewMaterial, selectedPreviewMaterial, areaGlowMaterial, areaFillMaterial, areaMaterial, sourceAreaMaterial, projectionRayMaterial, handleMaterial, selectedHandleMaterial]) material.dispose();
+      for (const material of [targetMaterial, inactiveTargetMaterial, flatTargetMaterial, brushMaterial, chromeMaterial, sigilMaterial, previewMaterial, selectedPreviewMaterial, areaGlowMaterial, areaFillMaterial, areaMaterial, sourceAreaMaterial, projectionRayMaterial, selectionGuideMaterial, handleMaterial, selectedHandleMaterial]) material.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       canvas.style.cursor = "";

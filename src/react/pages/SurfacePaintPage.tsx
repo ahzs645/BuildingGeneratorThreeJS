@@ -300,6 +300,13 @@ function BlenderBrushLab(): React.JSX.Element {
     </section>}
   >
     <canvas id="surface-canvas" />
+    <div id="surface-selection-hud" className="surface-selection-hud" data-hit="false" hidden aria-hidden="true">
+      <div id="surface-selection-reticle" className="surface-selection-reticle">
+        <span className="surface-selection-grid" />
+        <span className="surface-selection-center" />
+        <span id="surface-selection-label" className="surface-selection-label">CHROME CRAYON · PICK SURFACE</span>
+      </div>
+    </div>
     <div id="surface-flat-overlay" className="surface-flat-overlay" data-empty="true" hidden aria-hidden="true">
       <div className="surface-canvas-frame">
         <i className="top-left" /><i className="top-right" />
