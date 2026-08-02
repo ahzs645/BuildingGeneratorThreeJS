@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import { preferredCanvasPixelRatio } from "./canvas-viewport";
 import {
   captureOverrideValue,
   guideLinePreviewValue,
@@ -105,7 +106,7 @@ export function createTool(): ToolHandle {
   const note = document.querySelector<HTMLElement>("#assets-note")!;
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(temporalCaptureRequested ? 1 : Math.min(devicePixelRatio, 2)); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.setPixelRatio(temporalCaptureRequested ? 1 : preferredCanvasPixelRatio()); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
   if (nativeMaterialXCapture || catalogMaterialXCapture) renderer.setClearColor(0x111417, 1);
   const scene = new THREE.Scene();
   let authoredKey: THREE.RectAreaLight | null = null;

@@ -3,7 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
-import { canvasBox, observeCanvasBox } from "./canvas-viewport";
+import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
 import type { Dump, TriSoup } from "./gnvm/index";
 
 export type CrayonWorkerReply =
@@ -63,7 +63,7 @@ const emit = (patch: Partial<CrayonRuntimeSnapshot>): void => {
 };
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(preferredCanvasPixelRatio());
 const viewport = canvasBox(canvas);
 renderer.setSize(viewport.width, viewport.height, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;

@@ -3,6 +3,7 @@ import { WebGPURenderer, type MeshPhysicalNodeMaterial } from "three/webgpu";
 import { EXRLoader } from "three/addons/loaders/EXRLoader.js";
 import { MaterialXLoader } from "three/addons/loaders/MaterialXLoader.js";
 import { publicUrl } from "./base-url";
+import { preferredCanvasPixelRatio } from "./canvas-viewport";
 import { resolveMaterialBackend, type MaterialBackend } from "./material-backend";
 import { auditMaterialXDocument } from "./materialx/capabilities";
 import { createMaterialXPrefilteredEnvironment } from "./materialx/environment-prefilter";
@@ -395,7 +396,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     if (!active) return;
     const width = capture ? 768 : Math.max(320, canvas.clientWidth);
     const height = capture ? 768 : Math.max(320, canvas.clientHeight);
-    renderer.setPixelRatio(capture ? 1 : Math.min(ownerWindow.devicePixelRatio, 2));
+    renderer.setPixelRatio(capture ? 1 : preferredCanvasPixelRatio());
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();

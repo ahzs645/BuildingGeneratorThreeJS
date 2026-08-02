@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { isStaticDeploy, publicUrl } from "../../base-url";
 import { animationFrameRange, type Dump } from "../../gnvm";
@@ -54,7 +54,6 @@ import {
   type BlendStudioRuntimeSnapshot,
 } from "../../blend-studio/runtime";
 import type { PortableGap } from "../../blend/index";
-import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import {
   AssetLibraryOverlay,
   fetchAssetCatalog,
@@ -68,6 +67,8 @@ import { useStudioStatusChips, type StudioTone } from "../studio/StudioChrome";
 import { StudioOverlay, StudioShell, useMobileStudio } from "../studio/StudioShell";
 import "./crayon-compare.css";
 import "./blend-studio.css";
+
+const GeometryNodesEditor = lazy(() => import("../geometry-nodes/GeometryNodesEditor"));
 
 type ImportedDump = Dump & {
   import_meta?: {
@@ -1409,7 +1410,9 @@ export default function BlendBridgePage(): React.JSX.Element {
   </>;
 
   const nodeEditor = graphSource && target
-    ? <GeometryNodesEditor config={editorConfig} source={graphSource} onDumpChange={setWorkingDump} />
+    ? <Suspense fallback={<div className="route-loading">Loading node editor…</div>}>
+        <GeometryNodesEditor config={editorConfig} source={graphSource} onDumpChange={setWorkingDump} />
+      </Suspense>
     : null;
 
   return <StudioShell

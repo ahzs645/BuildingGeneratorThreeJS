@@ -12,7 +12,7 @@ import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2.js";
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from "three-mesh-bvh";
 import { publicUrl } from "./base-url";
-import { canvasBox, observeCanvasBox } from "./canvas-viewport";
+import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
 import {
   EditableCurveDocument,
   type EditableCurvePoint,
@@ -138,7 +138,7 @@ export function createTool(): ToolHandle {
   const { signal } = abort;
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(preferredCanvasPixelRatio());
   const viewport = canvasBox(canvas);
   renderer.setSize(viewport.width, viewport.height, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;

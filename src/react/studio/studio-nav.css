@@ -78,15 +78,15 @@
     gap: 6px 9px; padding: 5px 10px 6px;
   }
   .st-nav-title, .st-nav-sep, .st-nav-chips, .st-nav-panels { display: none; }
-  .st-crumb { max-width: calc(100% - 78px); height: 28px; }
-  .st-nav-tools { margin-left: auto; }
+  .st-crumb { max-width: calc(100% - 78px); height: 44px; }
+  .st-nav-tools { min-height: var(--st-touch); margin-left: auto; }
   .st-nav-sections {
     display: flex; order: 10; flex: 0 0 100%; gap: 3px;
     margin: 0; padding: 3px; overflow-x: auto;
     scrollbar-width: none; scroll-snap-type: x proximity;
   }
   .st-nav-sections::-webkit-scrollbar { display: none; }
-  .st-nav-sections a { flex: 0 0 auto; scroll-snap-align: start; }
+  .st-nav-sections a { height: var(--st-touch); flex: 0 0 auto; scroll-snap-align: start; }
 }
 @media (max-width: 520px) {
   .st-nav-tools kbd { display: none; }

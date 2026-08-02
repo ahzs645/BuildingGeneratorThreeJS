@@ -15,6 +15,7 @@ import {
   type BlendStudioLinearMeasurementContract,
 } from "./measurement";
 import type { BlendStudioGizmoContract } from "./gizmos";
+import { preferredCanvasPixelRatio } from "../canvas-viewport";
 
 export type BlendStudioRuntimeState = "idle" | "queued" | "evaluating" | "ready" | "error";
 
@@ -235,7 +236,7 @@ export function mountBlendStudioRuntime({
     alpha: true,
     preserveDrawingBuffer: captureMode,
   });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(preferredCanvasPixelRatio());
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;

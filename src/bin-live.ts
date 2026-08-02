@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { canvasBox, observeCanvasBox } from "./canvas-viewport";
+import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
 import { BIN_PARAMETERS } from "./bin-params";
 import type { ToolHandle } from "./react/page-runtime";
 
@@ -22,7 +22,7 @@ export function createTool(): BinLiveHandle {
   const busyEl = document.getElementById("busy")!;
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(preferredCanvasPixelRatio());
   const viewport = canvasBox(canvas);
   renderer.setSize(viewport.width, viewport.height, false);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;

@@ -422,7 +422,7 @@
 /* ------------------------------------------------------------------ mobile */
 /* Same breakpoint as MOBILE_STUDIO_QUERY in StudioShell.tsx. */
 @media (max-width: 820px), ((pointer: coarse) and (max-height: 500px)) {
-  :root { --st-nav-h: 82px; }
+  :root { --st-nav-h: 104px; }
   .st-body { grid-template-columns: 1fr; }
   .st-rail, .st-dock, .st-node-dock { display: none; }
   .st-sheet {

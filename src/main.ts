@@ -17,7 +17,7 @@ import { createSnowAccumUniforms, createSnowShellMaterial } from "./snowAccum";
 import { createRain } from "./rain";
 import { createWetUniforms, applyWet } from "./wet";
 import { publicUrl } from "./base-url";
-import { canvasBox, observeCanvasBox } from "./canvas-viewport";
+import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
 import type { ToolHandle } from "./react/page-runtime";
 
 /** Live generator parameters, pushed whenever anything but the dock changes them. */
@@ -85,7 +85,7 @@ export function createTool(): BuildingToolHandle {
     powerPreference: "high-performance",
     logarithmicDepthBuffer: true,
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(preferredCanvasPixelRatio());
   const viewport = canvasBox(app);
   renderer.setSize(viewport.width, viewport.height, false);
   renderer.toneMapping = ACESFilmicToneMapping;

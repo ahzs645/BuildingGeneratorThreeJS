@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
-import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import type { GeometryNodesPreset } from "../geometry-nodes/GraphPresetLibrary";
 import { chromeCrayonEditorConfig as editorConfig } from "../geometry-nodes/chrome-crayon-editor";
 import { usePageRuntime } from "../page-runtime";
@@ -7,6 +6,8 @@ import { useCrayonRuntime } from "../crayon/useCrayonRuntime";
 import { useStudioStatusChips } from "../studio/StudioChrome";
 import { StudioOverlay, StudioPanelHeader, StudioShell, useMobileStudio } from "../studio/StudioShell";
 import "./crayon-compare.css";
+
+const GeometryNodesEditor = lazy(() => import("../geometry-nodes/GeometryNodesEditor"));
 
 const controls = [
   { name: "Sigilize", min: 3, max: 50, step: 1, value: 20 },
@@ -161,7 +162,9 @@ export default function CrayonComparePage(): React.JSX.Element {
     </div>
   </>;
 
-  const nodeEditor = <GeometryNodesEditor config={editorConfig} onDumpChange={runtime.setDump} onPreviewChange={runtime.setProbe} presets={crayonPresets} />;
+  const nodeEditor = <Suspense fallback={<div className="route-loading">Loading node editor…</div>}>
+    <GeometryNodesEditor config={editorConfig} onDumpChange={runtime.setDump} onPreviewChange={runtime.setProbe} presets={crayonPresets} />
+  </Suspense>;
 
   return <StudioShell
     className="crayon-page"

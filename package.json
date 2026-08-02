@@ -8,6 +8,7 @@
     "test": "tsx --test src/**/*.test.ts",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "building:optimize-kit": "node tools/optimize-building-kit.mjs procedural-hong-kong-building/source/kit.glb public/assets/kit.glb",
     "blend:decode": "tsx tools/blend-decode.ts",
     "blend:introspect": "tsx tools/blend-introspect.ts",
     "blend:parity": "tsx tools/blend-parity.ts",

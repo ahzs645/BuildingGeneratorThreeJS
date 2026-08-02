@@ -182,6 +182,7 @@ export class App {
   private lastRegrowAt = 0;
   private regrowCost = 0;
   private modeBtn: HTMLElement | null = null;
+  private flowerModeBtn: HTMLButtonElement | null = null;
   private disposed = false;
 
   /** Adaptive render scale: protect frame rate on Retina/4K displays, recover gradually. */
@@ -279,11 +280,13 @@ export class App {
 
     renderer.domElement.addEventListener('pointermove', this.onPointerMove);
 
+    this.modeBtn = document.getElementById('modeBtn')!;
+    this.flowerModeBtn = document.getElementById('flowerModeBtn') as HTMLButtonElement;
     this.setGenerator(this.settings.generator);
     this.gui = buildGui(this);
 
-    this.modeBtn = document.getElementById('modeBtn')!;
     this.modeBtn.addEventListener('click', this.onModeBtnClick);
+    this.flowerModeBtn.addEventListener('click', this.onFlowerModeBtnClick);
     window.addEventListener('resize', this.onResize);
     window.addEventListener('keydown', this.onKeyDown);
     document.addEventListener('visibilitychange', this.onVisibilityChange);
@@ -951,14 +954,28 @@ export class App {
     document.body.classList.toggle('flower', flower);
     document.body.classList.toggle('orbit', !(draw || interact || flower));
 
-    const btn = document.getElementById('modeBtn')!;
+    const btn = this.modeBtn ?? document.getElementById('modeBtn')!;
     btn.querySelector('.label')!.textContent =
       draw ? (generatorFamily(g) === 'decor' ? 'Paint mode' : 'Draw mode')
         : flower ? (g === 'Tree' ? 'Fig brush' : 'Flower brush')
           : interact ? 'Interact mode' : 'Orbit mode';
     const key = btn.querySelector('.key') as HTMLElement;
     key.textContent = flower ? 'F' : 'D';
-    key.style.display = draw || flower || interact ? '' : 'none';
+    const touchUi = window.matchMedia('(pointer: coarse), (max-width: 820px)').matches;
+    key.style.display = !touchUi && (draw || flower || interact) ? '' : 'none';
+
+    if (this.flowerModeBtn) {
+      const vegetation = generatorFamily(g) === 'vegetation';
+      this.flowerModeBtn.hidden = !vegetation;
+      this.flowerModeBtn.setAttribute('aria-pressed', String(flower));
+      this.flowerModeBtn.setAttribute(
+        'aria-label',
+        `${flower ? 'Disable' : 'Enable'} ${g === 'Tree' ? 'fig' : 'flower'} brush`,
+      );
+      this.flowerModeBtn.querySelector('.label')!.textContent = g === 'Tree'
+        ? 'Fig brush'
+        : 'Flower brush';
+    }
 
     if (!draw) this.hovering = false;
     if (!interact) {
@@ -974,19 +991,23 @@ export class App {
       ? 'WebGPU'
       : 'WebGL2 (fallback)';
     const g = this.settings.generator;
+    const touchUi = window.matchMedia('(pointer: coarse), (max-width: 820px)').matches;
     let mode: string;
     if (g === 'Tree') {
       mode = this.flowerMode
-        ? '<b>Fig brush</b> — hover the twigs and watch the green figs swell and ripen red. ' +
-          'Drag to orbit as usual. Press <b>F</b> to put the brush away.'
+        ? touchUi
+          ? '<b>Fig brush</b> — drag across the twigs to ripen figs; tap <b>Fig brush</b> to put it away.'
+          : '<b>Fig brush</b> — hover the twigs and watch the green figs swell and ripen red. Drag to orbit as usual. Press <b>F</b> to put the brush away.'
         : this.interactMode
           ? '<b>Interact mode</b> — sweep the cursor through branches or leaves to brush them aside; ' +
-            'they spring back behind you. Drag to orbit as usual. Press <b>D</b> to switch off, <b>F</b> to ripen figs.'
-          : '<b>Orbit mode</b> — drag to rotate, scroll to zoom. Press <b>D</b> to brush the tree around, ' +
-            '<b>F</b> to ripen its figs. <b>▶ Redraw</b> replays the growth.';
+            (touchUi ? 'they spring back behind you. Use the buttons below to orbit or ripen figs.' : 'they spring back behind you. Drag to orbit as usual. Press <b>D</b> to switch off, <b>F</b> to ripen figs.')
+          : touchUi
+            ? '<b>Orbit mode</b> — drag to rotate and pinch to zoom. Use the buttons below to brush the tree or ripen its figs. <b>▶ Redraw</b> replays the growth.'
+            : '<b>Orbit mode</b> — drag to rotate, scroll to zoom. Press <b>D</b> to brush the tree around, <b>F</b> to ripen its figs. <b>▶ Redraw</b> replays the growth.';
     } else if (this.flowerMode && g === 'Ivy') {
-      mode = '<b>Flower brush</b> — hover over the ivy and watch the buds pop into bloom. ' +
-        'Drag to orbit as usual. Press <b>F</b> to put the brush away.';
+      mode = touchUi
+        ? '<b>Flower brush</b> — drag across the ivy to bloom it; tap <b>Flower brush</b> to put the brush away.'
+        : '<b>Flower brush</b> — hover over the ivy and watch the buds pop into bloom. Drag to orbit as usual. Press <b>F</b> to put the brush away.';
     } else if (this.settings.drawMode) {
       const nouns: Record<string, string> = {
         'Ivy': 'an ivy path',
@@ -998,11 +1019,14 @@ export class App {
       const noun = nouns[g];
       mode = this.hovering
         ? `<b>Drag now</b> to paint ${noun} along the surface — it grows when you let go.`
-        : `Move over the model, then <b>drag</b> to paint ${noun}. Press <b>D</b> to orbit` +
-          (g === 'Ivy' ? ', <b>F</b> to bloom flowers.' : '.');
+        : `Move over the model, then <b>drag</b> to paint ${noun}. ` +
+          (touchUi
+            ? `Use the buttons below to orbit${g === 'Ivy' ? ' or bloom flowers.' : '.'}`
+            : `Press <b>D</b> to orbit${g === 'Ivy' ? ', <b>F</b> to bloom flowers.' : '.'}`);
     } else {
-      mode = '<b>Orbit mode</b> — drag to rotate, scroll to zoom, right-drag to pan. ' +
-        'Press <b>D</b> to paint.';
+      mode = touchUi
+        ? '<b>Orbit mode</b> — drag to rotate and pinch to zoom. Tap <b>Orbit mode</b> below to return to painting.'
+        : '<b>Orbit mode</b> — drag to rotate, scroll to zoom, right-drag to pan. Press <b>D</b> to paint.';
     }
     const decorCount = generatorFamily(g) === 'decor'
       ? ` · Strokes: ${this.decorLive.length}/${MAX_DECOR_STROKES}`
@@ -1023,6 +1047,10 @@ export class App {
 
   private onModeBtnClick = (): void => {
     this.toggleMode();
+  };
+
+  private onFlowerModeBtnClick = (): void => {
+    this.toggleFlowerMode();
   };
 
   private onKeyDown = (e: KeyboardEvent): void => {
@@ -1156,7 +1184,9 @@ export class App {
     window.removeEventListener('keydown', this.onKeyDown);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.modeBtn?.removeEventListener('click', this.onModeBtnClick);
+    this.flowerModeBtn?.removeEventListener('click', this.onFlowerModeBtnClick);
     this.modeBtn = null;
+    this.flowerModeBtn = null;
 
     this.gui?.destroy();
     this.gui = null;

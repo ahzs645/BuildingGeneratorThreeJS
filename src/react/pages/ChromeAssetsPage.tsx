@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import { useToolRuntime } from "../page-runtime";
 import { StudioPanelHeader, StudioShell } from "../studio/StudioShell";
 import { ToolStateOverlay } from "../studio/ToolStateOverlay";
 import "./chrome-assets.css";
 import "./crayon-compare.css";
+
+const GeometryNodesEditor = lazy(() => import("../geometry-nodes/GeometryNodesEditor"));
 
 const loadChromeAssets = () => import("../../chrome-assets");
 const typePixelBrushEditorConfig = {
@@ -97,7 +98,9 @@ export default function ChromeAssetsPage(): React.JSX.Element {
           <button className="st-btn" type="button" onClick={() => { setGraphMaximized(false); setGraphOpen(false); }}>Collapse</button>
         </div>
       </header>
-      <div className="st-node-dock-body"><GeometryNodesEditor config={typePixelBrushEditorConfig} /></div>
+      <div className="st-node-dock-body"><Suspense fallback={<div className="route-loading">Loading node editor…</div>}>
+        <GeometryNodesEditor config={typePixelBrushEditorConfig} />
+      </Suspense></div>
     </section>}
   >
     <section className="assets-compare">

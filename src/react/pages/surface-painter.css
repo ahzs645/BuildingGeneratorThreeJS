@@ -242,9 +242,10 @@ body.flower .surface-painter-page #drawFrame {
 @keyframes surface-painter-frame-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .surface-painter-page #drawFrame { animation: none !important; } }
 
-.surface-painter-page #modeBtn {
+.surface-painter-page #modeBtn,
+.surface-painter-page #flowerModeBtn {
   position: absolute; left: 50%; bottom: 20px; z-index: 4;
-  display: flex; align-items: center; gap: 10px;
+  display: flex; min-height: 44px; align-items: center; gap: 10px;
   padding: 9px 16px 9px 12px;
   transform: translateX(-50%);
   border: 0; border-radius: 999px;
@@ -255,6 +256,11 @@ body.flower .surface-painter-page #drawFrame {
   cursor: pointer; user-select: none;
   transition: transform 0.12s ease, box-shadow 0.2s ease;
 }
+.surface-painter-page #flowerModeBtn { left: calc(50% + 112px); background: rgba(24, 30, 40, 0.88); color: #eaf5d0; }
+.surface-painter-page #flowerModeBtn[hidden] { display: none; }
+.surface-painter-page #flowerModeBtn[aria-pressed="true"] { background: linear-gradient(180deg, #f6ffd6, #dff0ab); color: #2a3110; }
+.surface-painter-page #flowerModeBtn .dot { width: 9px; height: 9px; border-radius: 50%; background: #b9d66a; box-shadow: 0 0 8px #b9d66a; }
+.surface-painter-page #flowerModeBtn[aria-pressed="true"] .dot { background: #4a5a18; box-shadow: 0 0 8px #4a5a18; }
 .surface-painter-page #modeBtn:hover { transform: translateX(-50%) translateY(-1px); }
 .surface-painter-page #modeBtn:active { transform: translateX(-50%) translateY(1px); }
 .surface-painter-page #modeBtn .dot { width: 9px; height: 9px; border-radius: 50%; background: #16240a; box-shadow: 0 0 8px #16240a; }
@@ -296,12 +302,20 @@ body.orbit .surface-painter-page #modeBtn .key { background: rgba(255, 255, 255,
 
 @media (max-width: 820px), ((pointer: coarse) and (max-height: 500px)) {
   .surface-painter-page #hud { right: 12px; bottom: 116px; left: 12px; max-width: none; }
-  .surface-painter-page #modeBtn { bottom: 62px; }
-  .st-shell:has(.st-sheet.is-open) .surface-painter-page #modeBtn { display: none; }
+  .surface-painter-page #modeBtn { left: calc(50% - 74px); bottom: 62px; }
+  .surface-painter-page #flowerModeBtn { left: calc(50% + 92px); bottom: 62px; }
+  .st-shell:has(.st-sheet.is-open) .surface-painter-page #modeBtn,
+  .st-shell:has(.st-sheet.is-open) .surface-painter-page #flowerModeBtn { display: none; }
 
   .surface-painter-gui-dock { overflow: visible; }
   .lil-gui.surface-painter-gui.root > .children { padding: 10px 2px 2px; }
   .lil-gui.surface-painter-gui .paint-node > .children > .controller {
     grid-template-columns: minmax(0,1fr) minmax(142px,1.2fr);
+    min-height: var(--st-touch);
   }
+  .lil-gui.surface-painter-gui .paint-node > .title,
+  .lil-gui.surface-painter-gui .controller.function button { min-height: var(--st-touch); }
+  .lil-gui.surface-painter-gui input[type="checkbox"] { width: 44px; height: 28px; }
+  .lil-gui.surface-painter-gui input[type="checkbox"]::before { width: 18px; height: 18px; top: 4px; left: 4px; }
+  .lil-gui.surface-painter-gui input[type="checkbox"]:checked::before { transform: translateX(16px); }
 }

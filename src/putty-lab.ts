@@ -3,7 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { MarchingCubes } from "three/examples/jsm/objects/MarchingCubes.js";
 import { publicUrl } from "./base-url";
-import { canvasBox, observeCanvasBox } from "./canvas-viewport";
+import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
 import { EditablePuttyDocument, type PuttyPoint } from "./editable-putty";
 import type { Dump, TriSoup } from "./gnvm";
 import type { ToolHandle } from "./react/page-runtime";
@@ -65,7 +65,7 @@ export function createTool(): ToolHandle {
   let dragging: { pointerId: number; plane: THREE.Plane; offset: THREE.Vector3 } | null = null;
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(preferredCanvasPixelRatio());
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = .95;

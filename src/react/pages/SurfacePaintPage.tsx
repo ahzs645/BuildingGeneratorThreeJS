@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import GeometryNodesEditor from "../geometry-nodes/GeometryNodesEditor";
 import { chromeCrayonEditorConfig } from "../geometry-nodes/chrome-crayon-editor";
 import { useToolRuntime } from "../page-runtime";
 import { StudioOverlay, StudioPanelHeader, StudioShell, useMobileStudio } from "../studio/StudioShell";
@@ -8,6 +7,8 @@ import "./crayon-compare.css";
 import "./surface-painter.css";
 import "./surface-draw.css";
 import "./putty-lab.css";
+
+const GeometryNodesEditor = lazy(() => import("../geometry-nodes/GeometryNodesEditor"));
 
 const loadSurfacePainter = () => import("../../surface-painter/main");
 const loadSurfaceDraw = () => import("../../surface-draw");
@@ -115,6 +116,7 @@ function BubblePuttyLab(): React.JSX.Element {
  * it a bare viewport rather than docks it would duplicate.
  */
 function ProceduralPainter(): React.JSX.Element {
+  const isMobile = useMobileStudio();
   // buildGui() mounts the painter's lil-gui into this container, so the panel
   // is an inspector column instead of a sheet floating over the paint target.
   const rightDock = <>
@@ -135,7 +137,7 @@ function ProceduralPainter(): React.JSX.Element {
       className="surface-painter-page"
       rightDock={rightDock}
       sheetTabs={[{ id: "nodes", label: "Nodes", content: rightDock }]}
-      toolbar={<><EngineSwitch engine="procedural" /><span className="st-spacer" /><span>D toggles draw / orbit</span></>}
+      toolbar={<><EngineSwitch engine="procedural" />{!isMobile && <><span className="st-spacer" /><span>D toggles draw / orbit</span></>}</>}
     >
       <div id="surface-painter-app" />
       <div id="drawFrame" />
@@ -143,6 +145,10 @@ function ProceduralPainter(): React.JSX.Element {
         <span className="dot" />
         <span className="label">Draw mode</span>
         <span className="key">D</span>
+      </button>
+      <button id="flowerModeBtn" type="button" aria-pressed="false" hidden>
+        <span className="dot" />
+        <span className="label">Flower brush</span>
       </button>
       <div id="hud" />
       <div id="toast" role="status" aria-live="polite" />
@@ -272,7 +278,9 @@ function BlenderBrushLab(): React.JSX.Element {
     </div>
   </>;
 
-  const nodeEditor = <GeometryNodesEditor config={chromeCrayonEditorConfig} />;
+  const nodeEditor = <Suspense fallback={<div className="route-loading">Loading node editor…</div>}>
+    <GeometryNodesEditor config={chromeCrayonEditorConfig} />
+  </Suspense>;
 
   return <StudioShell
     className="surface-shell"

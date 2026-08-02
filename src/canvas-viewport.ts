@@ -14,6 +14,40 @@
 
 export type CanvasBox = { width: number; height: number };
 
+export const MOBILE_CANVAS_BREAKPOINT = 820;
+
+/**
+ * Choose a conservative initial drawing-buffer scale for touch/small-screen
+ * devices. A 1.5× buffer has 44% fewer pixels than 2× while remaining crisp
+ * on a phone; desktop keeps the existing 2× ceiling.
+ */
+export function canvasPixelRatioFor(
+  deviceRatio: number,
+  viewportWidth: number,
+  coarsePointer: boolean,
+  desktopMaximum = 2,
+): number {
+  const safeRatio = Number.isFinite(deviceRatio) && deviceRatio > 0 ? deviceRatio : 1;
+  const safeMaximum = Number.isFinite(desktopMaximum) && desktopMaximum > 0
+    ? desktopMaximum
+    : 2;
+  const mobileMaximum = Math.min(1.5, safeMaximum);
+  const maximum = viewportWidth <= MOBILE_CANVAS_BREAKPOINT || coarsePointer
+    ? mobileMaximum
+    : safeMaximum;
+  return Math.min(safeRatio, maximum);
+}
+
+/** Browser-bound wrapper used by Three.js runtimes during renderer setup. */
+export function preferredCanvasPixelRatio(desktopMaximum = 2): number {
+  return canvasPixelRatioFor(
+    window.devicePixelRatio,
+    window.innerWidth,
+    window.matchMedia("(pointer: coarse)").matches,
+    desktopMaximum,
+  );
+}
+
 /** The canvas's current CSS box, never smaller than 1×1. */
 export function canvasBox(element: HTMLElement): CanvasBox {
   const rect = element.getBoundingClientRect();
