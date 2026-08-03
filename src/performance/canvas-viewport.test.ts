@@ -30,3 +30,13 @@ test("the low-power predicate matches the viewports that get the reduced pixel r
   assert.equal(isLowPowerViewport(MOBILE_CANVAS_BREAKPOINT, false), true);
   assert.equal(isLowPowerViewport(MOBILE_CANVAS_BREAKPOINT + 1, false), false);
 });
+
+test("an unmeasured viewport is not mistaken for a small screen", () => {
+  // A tab that boots hidden or prerendering reports innerWidth 0 before layout.
+  // Callers latch this once at startup, so treating 0 as "mobile" would leave a
+  // desktop stuck at the reduced pixel ratio with ambient occlusion off.
+  assert.equal(isLowPowerViewport(0, false), false);
+  assert.equal(canvasPixelRatioFor(2, 0, false), 2);
+  // a coarse pointer is still decisive on its own, width or no width
+  assert.equal(isLowPowerViewport(0, true), true);
+});

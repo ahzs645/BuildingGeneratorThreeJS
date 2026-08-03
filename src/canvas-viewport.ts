@@ -42,9 +42,15 @@ export function canvasPixelRatioFor(
  * The same touch/small-screen devices that get the reduced drawing buffer above.
  * Callers use it to drop optional GPU work: a screen-space ambient occlusion pass
  * costs a second full scene render, which these devices can least afford.
+ *
+ * A width of 0 means the page booted before layout — a hidden, prerendering or
+ * zero-size-iframe tab — and says nothing about the screen. Both callers latch
+ * their decision once at startup, so believing that 0 would pin a desktop to the
+ * reduced-quality path for the whole session.
  */
 export function isLowPowerViewport(viewportWidth: number, coarsePointer: boolean): boolean {
-  return viewportWidth <= MOBILE_CANVAS_BREAKPOINT || coarsePointer;
+  if (coarsePointer) return true;
+  return viewportWidth > 0 && viewportWidth <= MOBILE_CANVAS_BREAKPOINT;
 }
 
 /** Browser-bound wrapper, mirroring preferredCanvasPixelRatio. */
