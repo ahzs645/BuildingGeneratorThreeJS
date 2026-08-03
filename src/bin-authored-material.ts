@@ -1,10 +1,11 @@
 import * as THREE from "three";
 import {
   filamentBumpGlsl,
+  filamentFbm3,
+  filamentFbmGlsl,
   filamentNoiseGlsl,
-  filamentSignedNoise3,
   type FilamentBounds,
-} from "./filament-material";
+} from "./materials/blender-glsl";
 import type { Dump } from "./gnvm";
 
 type RawSocket = { identifier?: string; name?: string; linked?: boolean; value?: unknown };
@@ -211,25 +212,6 @@ export function extractBinAuthoredMaterialConfig(dump: Dump, materialName: strin
   return { baseColor: [...sourceColor], ...SHARED };
 }
 
-function fbm(point: readonly number[], detail: number, roughness: number, lacunarity: number, normalize: boolean): number {
-  const whole = Math.floor(Math.max(0, Math.min(15, detail)));
-  let amplitude = 1;
-  let frequency = 1;
-  let sum = 0;
-  let maximum = 0;
-  for (let octave = 0; octave <= whole; octave++) {
-    sum += amplitude * filamentSignedNoise3(point.map((component) => component * frequency));
-    maximum += amplitude;
-    amplitude *= roughness;
-    frequency *= lacunarity;
-  }
-  const fraction = Math.max(0, Math.min(15, detail)) - whole;
-  const normalized = (value: number, weight: number): number => normalize ? 0.5 * value / weight + 0.5 : value;
-  if (fraction === 0) return normalized(sum, maximum);
-  const sum2 = sum + amplitude * filamentSignedNoise3(point.map((component) => component * frequency));
-  return THREE.MathUtils.lerp(normalized(sum, maximum), normalized(sum2, maximum + amplitude), fraction);
-}
-
 function mappedObjectCoordinate(objectCoordinate: readonly number[], config: BinAuthoredMaterialConfig): [number, number, number] {
   const angle = config.objectMappingRotation[1];
   const cosine = Math.cos(angle);
@@ -248,21 +230,15 @@ export function binAuthoredHeight(
   config: BinAuthoredMaterialConfig,
 ): number {
   const mapped = mappedObjectCoordinate(objectCoordinate, config);
-  const waveDistortion = fbm(
+  const waveDistortion = filamentFbm3(
     mapped.map((component) => component * config.waveDetailScale),
-    config.waveDetail,
-    config.waveDetailRoughness,
-    2,
-    false,
+    { detail: Math.max(0, Math.min(15, config.waveDetail)), roughness: config.waveDetailRoughness, lacunarity: 2, normalize: false },
   );
   const phase = mapped[0] * config.waveScale * 20 + config.waveDistortion * waveDistortion + config.wavePhaseOffset;
   const wave = 0.5 - 0.5 * Math.cos(phase);
-  const generatedNoise = fbm(
+  const generatedNoise = filamentFbm3(
     generatedCoordinate.map((component) => component * config.noiseScale),
-    config.noiseDetail,
-    config.noiseRoughness,
-    config.noiseLacunarity,
-    true,
+    { detail: Math.max(0, Math.min(15, config.noiseDetail)), roughness: config.noiseRoughness, lacunarity: config.noiseLacunarity, normalize: true },
   );
   return THREE.MathUtils.lerp(generatedNoise, wave, config.mixFactor);
 }
@@ -278,31 +254,29 @@ function glslVector(value: readonly number[]): string {
 function shaderFunctions(config: BinAuthoredMaterialConfig, bounds: FilamentBounds): string {
   const extent = bounds.max.map((value, axis) => Math.max(value - bounds.min[axis], 1e-20));
   const angle = config.objectMappingRotation[1];
-  let amplitude = 1;
-  let frequency = 1;
-  const waveTerms: string[] = [];
-  for (let octave = 0; octave <= Math.floor(config.waveDetail); octave++) {
-    waveTerms.push(`${glsl(amplitude)} * binNoise(mapped * ${glsl(frequency * config.waveDetailScale)})`);
-    amplitude *= config.waveDetailRoughness;
-    frequency *= 2;
-  }
-  const remainder = config.waveDetail - Math.floor(config.waveDetail);
-  waveTerms.push(`${glsl(remainder * amplitude)} * binNoise(mapped * ${glsl(frequency * config.waveDetailScale)})`);
-  const noiseWeights = [1, config.noiseRoughness, config.noiseRoughness ** 2];
-  const noiseMaximum = noiseWeights.reduce((sum, value) => sum + value, 0);
-  const noiseTerms = noiseWeights.map((weight, octave) =>
-    `${glsl(weight)} * binNoise(generated * ${glsl(config.noiseScale * config.noiseLacunarity ** octave)})`);
   return `${filamentNoiseGlsl("bin")}
+${filamentFbmGlsl("bin", "binWaveFbm", {
+    detail: Math.max(0, Math.min(15, config.waveDetail)),
+    roughness: config.waveDetailRoughness,
+    lacunarity: 2,
+    normalize: false,
+  })}
+${filamentFbmGlsl("bin", "binNoiseFbm", {
+    detail: Math.max(0, Math.min(15, config.noiseDetail)),
+    roughness: config.noiseRoughness,
+    lacunarity: config.noiseLacunarity,
+    normalize: true,
+  })}
 float binHeight(vec3 objectCoordinate) {
   float c = ${glsl(Math.cos(angle))}, s = ${glsl(Math.sin(angle))};
   vec3 mapped = vec3(c * objectCoordinate.x + s * objectCoordinate.z, objectCoordinate.y,
                      -s * objectCoordinate.x + c * objectCoordinate.z);
   vec3 generated = (objectCoordinate - ${glslVector(bounds.min)}) / ${glslVector(extent)};
-  float waveDistortion = ${waveTerms.join("\n    + ")};
+  float waveDistortion = binWaveFbm(mapped * ${glsl(config.waveDetailScale)});
   float phase = mapped.x * ${glsl(config.waveScale)} * 20.0
     + ${glsl(config.waveDistortion)} * waveDistortion + ${glsl(config.wavePhaseOffset)};
   float wave = 0.5 - 0.5 * cos(phase);
-  float noise = 0.5 + 0.5 * (${noiseTerms.join("\n    + ")}) / ${glsl(noiseMaximum)};
+  float noise = binNoiseFbm(generated * ${glsl(config.noiseScale)});
   return mix(noise, wave, ${glsl(config.mixFactor)});
 }`;
 }

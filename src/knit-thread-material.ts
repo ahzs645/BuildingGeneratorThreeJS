@@ -5,7 +5,14 @@ import {
   filamentGroupBounds,
   filamentNoiseGlsl,
   filamentWaveFunctionGlsl,
-} from "./filament-material";
+  generatedCoordinateGlsl,
+} from "./materials/blender-glsl";
+import {
+  chainOnBeforeCompile,
+  glslFloat,
+  glslVec3,
+  replaceOnce,
+} from "./materials/shader-patch";
 
 type RawSocket = { identifier?: string; name?: string; linked?: boolean; value?: unknown };
 type RawOutput = { identifier?: string; name?: string; default?: unknown };
@@ -202,14 +209,6 @@ export function extractKnitThreadMaterialConfig(dump: Dump, materialName: string
   };
 }
 
-function glsl(value: number): string {
-  return Number.isInteger(value) ? value.toFixed(1) : `${value}`;
-}
-
-function vec3(value: readonly number[]): string {
-  return `vec3(${value.map(glsl).join(", ")})`;
-}
-
 function mappingGlsl(): string {
   return `vec3 knitMap(vec3 point, vec3 rotation, float scale) {
   point *= scale;
@@ -232,7 +231,6 @@ export function makeKnitThreadMaterial(
   const config = extractKnitThreadMaterialConfig(dump, materialName);
   const bounds = filamentGroupBounds(geometry, group);
   if (!config || !bounds) return null;
-  const extent = bounds.max.map((value, axis) => Math.max(value - bounds.min[axis], 1e-20));
 
   const material = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
@@ -244,11 +242,20 @@ export function makeKnitThreadMaterial(
   material.name = `${materialName} · procedural knit thread reconstruction`;
   material.userData.knitThreadContract = config;
   material.userData.knitThreadBounds = bounds;
-  material.onBeforeCompile = (shader) => {
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", "#include <common>\nvarying vec3 vKnitGenerated;")
-      .replace("#include <begin_vertex>", `#include <begin_vertex>
-vKnitGenerated = (position - ${vec3(bounds.min)}) / ${vec3(extent)};`);
+  material.customProgramCacheKey = () =>
+    `knit-thread-${materialName}-${bounds.min.join(",")}-${bounds.max.join(",")}-v2`;
+  chainOnBeforeCompile(material, (shader) => {
+    shader.vertexShader = replaceOnce(
+      shader.vertexShader,
+      "#include <common>",
+      "#include <common>\nvarying vec3 vKnitGenerated;",
+    );
+    shader.vertexShader = replaceOnce(
+      shader.vertexShader,
+      "#include <begin_vertex>",
+      `#include <begin_vertex>
+${generatedCoordinateGlsl("vKnit", bounds)}`,
+    );
     const waveFunctions = config.waves.map((wave, index) => filamentWaveFunctionGlsl("knit", `knitWave${index}`, {
       distortion: wave.distortion,
       detail: wave.detail,
@@ -257,30 +264,30 @@ vKnitGenerated = (position - ${vec3(bounds.min)}) / ${vec3(extent)};`);
       direction: wave.direction,
       phaseOffset: wave.phaseOffset,
     })).join("\n");
-    const waveSamples = config.waves.map((wave, index) =>
-      `knitWave${index}(knitMap(vKnitGenerated, ${vec3(wave.mappingRotation)}, ${glsl(wave.mappingScale)}), ${glsl(wave.scale)})`);
-    const height = `mix(${waveSamples[0]}, ${waveSamples[1]}, ${glsl(config.waveMix)})`;
-    shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", `#include <common>
+    const waveSample = (coordinate: string, waveIndex: number) => {
+      const wave = config.waves[waveIndex];
+      return `knitWave${waveIndex}(knitMap(${coordinate}, ${glslVec3(wave.mappingRotation)}, ${glslFloat(wave.mappingScale)}), ${glslFloat(wave.scale)})`;
+    };
+    const height = (coordinate: string) =>
+      `mix(${waveSample(coordinate, 0)}, ${waveSample(coordinate, 1)}, ${glslFloat(config.waveMix)})`;
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <common>", `#include <common>
 varying vec3 vKnitGenerated;
 ${filamentNoiseGlsl("knit")}
 ${mappingGlsl()}
-${waveFunctions}`)
-      .replace("#include <color_fragment>", `#include <color_fragment>
-float knitColorHeight = ${height};
-diffuseColor.rgb = mix(${vec3(config.brightColor)}, ${vec3(config.darkColor)}, clamp(knitColorHeight, 0.0, 1.0));`)
-      .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
+${waveFunctions}`);
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <color_fragment>", `#include <color_fragment>
+float knitColorHeight = ${height("vKnitGenerated")};
+diffuseColor.rgb = mix(${glslVec3(config.brightColor)}, ${glslVec3(config.darkColor)}, clamp(knitColorHeight, 0.0, 1.0));`);
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <normal_fragment_maps>", `#include <normal_fragment_maps>
 ${filamentBumpGlsl({
     prefix: "knit",
     coordinate: "vKnitGenerated",
-    heightFunction: () => height,
+    heightFunction: height,
     strength: config.bumpStrength,
     distance: config.bumpDistance,
     filterWidth: config.bumpFilterWidth,
     invert: config.bumpInvert,
   })}`);
-  };
-  material.customProgramCacheKey = () =>
-    `knit-thread-${materialName}-${bounds.min.join(",")}-${bounds.max.join(",")}-v1`;
+  });
   return material;
 }

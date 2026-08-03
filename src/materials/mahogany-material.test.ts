@@ -59,6 +59,12 @@ test("builds the shader with geometry scale/rotation and Blender's black missing
   assert.match(shader.fragmentShader, /mahoganyNoiseValue=mahoganyTextureNoise/);
   assert.doesNotMatch(shader.fragmentShader, /float mahoganyHash\(vec3/);
   assert.match(shader.fragmentShader, /mahoganyRamp/);
+  assert.match(material.customProgramCacheKey(), /mahogany-attributes-.*0,0,0,1,1,1/);
+  const shiftedGeometry = geometry.clone().translate(3, 0, 0);
+  const shifted = makeMahoganyMaterial(dump, shiftedGeometry, name);
+  assert.notEqual(material.customProgramCacheKey(), shifted?.customProgramCacheKey());
+  shifted?.dispose();
+  shiftedGeometry.dispose();
   material?.dispose();
   geometry.dispose();
 });
@@ -103,6 +109,7 @@ test("builds N03D mahogany without geometry attributes", () => {
   assert.match(shader.fragmentShader, /0\.49755859375/);
   assert.match(shader.fragmentShader, /mahoganyN03dHeight/);
   assert.match(shader.fragmentShader, /mahoganyN03dBumpPerturbed/);
+  assert.match(material.customProgramCacheKey(), /mahogany-n03d-.*0,0,0,1,1,1/);
   material.dispose();
   geometry.dispose();
 });

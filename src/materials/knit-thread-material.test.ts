@@ -70,6 +70,12 @@ test("builds the authored knit shader on the exact GN-VM sphere material group",
   assert.match(shader.fragmentShader, /knitMap/);
   assert.match(shader.fragmentShader, /0\.7556818127632141/);
   assert.match(shader.fragmentShader, /knitPerturbed/);
+  const heightExpressions = [...shader.fragmentShader.matchAll(/float knitH(?:0|x|y) = (.*);/g)]
+    .map((match) => match[1]);
+  assert.equal(heightExpressions.length, 3);
+  assert.match(heightExpressions[1], /knitMap\(vKnitGenerated \+ dFdx\(vKnitGenerated\)/);
+  assert.match(heightExpressions[2], /knitMap\(vKnitGenerated \+ dFdy\(vKnitGenerated\)/);
+  assert.equal(new Set(heightExpressions).size, 3);
   material?.dispose();
   geometry.dispose();
 });

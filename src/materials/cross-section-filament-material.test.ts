@@ -83,6 +83,11 @@ test("reconstructs the joint library's evaluated filament fields", async () => {
   assert.match(shader.fragmentShader, /if\(!gl_FrontFacing\)outgoingLight=jointFilamentBackColor\(vJointColor\)/);
   assert.match(shader.fragmentShader, /vJointRoughness/);
   assert.doesNotMatch(shader.fragmentShader, /jointBand|if\(!gl_FrontFacing\)outgoingLight=vec3\(0\.0\)/);
+  const shiftedGeometry = geometry.clone().translate(5, 0, 0);
+  const shifted = makeCrossSectionFilamentMaterial(dump, shiftedGeometry, materialName);
+  assert.notEqual(material.customProgramCacheKey(), shifted?.customProgramCacheKey());
+  shifted?.dispose();
+  shiftedGeometry.dispose();
   material?.dispose();
   geometry.dispose();
 });
@@ -107,7 +112,7 @@ test("uses a constant roughness fallback when a variant omits the rough field", 
   geometry.setAttribute("layer", new THREE.Float32BufferAttribute([1.2, 1.2, 1.2], 1));
   const material = makeCrossSectionFilamentMaterial(variant, geometry, materialName);
   assert.ok(material?.isMeshPhysicalMaterial);
-  const shader = { vertexShader: "#include <common>\n#include <begin_vertex>", fragmentShader: "#include <common>\n#include <color_fragment>\n#include <roughnessmap_fragment>\n#include <opaque_fragment>" };
+  const shader = { vertexShader: "#include <common>\n#include <begin_vertex>", fragmentShader: "#include <common>\n#include <color_fragment>\n#include <roughnessmap_fragment>\n#include <normal_fragment_maps>\n#include <opaque_fragment>" };
   material?.onBeforeCompile(shader as never, {} as never);
   assert.doesNotMatch(shader.vertexShader, /attribute float rough/);
   assert.match(shader.vertexShader, /vJointRoughness=0.5/);
@@ -252,11 +257,45 @@ test("reconstructs the D-surface BDSF front color and patterned backface branch"
   material.onBeforeCompile(shader as never, {} as never);
   assert.match(shader.vertexShader, /attribute vec3 col/);
   assert.match(shader.vertexShader, /attribute float rough/);
+  assert.match(shader.vertexShader, /attribute float alpha/);
+  assert.match(shader.vertexShader, /vBdsfAlpha=alpha/);
   assert.match(shader.fragmentShader, /diffuseColor\.rgb=max\(vBdsfColor,vec3\(0\.0\)\)/);
+  assert.match(shader.fragmentShader, /diffuseColor\.a\*=clamp\(vBdsfAlpha,0\.0,1\.0\)/);
   assert.match(shader.fragmentShader, /bdsfCrossSectionBackWave/);
   assert.match(shader.fragmentShader, /mix\(vec3\(value\),front,0\.48399975895881653\)\*0\.5040002465248108/);
   assert.match(shader.fragmentShader, /wave<0\.117919921875\?vec3\(0\.0\):hsv/);
   assert.match(shader.fragmentShader, /if\(!gl_FrontFacing\)outgoingLight=bdsfCrossSectionBackColor\(vBdsfColor\)/);
   material.dispose();
   geometry.dispose();
+});
+
+test("binds BDSF alpha and enables blending only for non-opaque geometry", () => {
+  const bdsfName = "BDSF_Cross Section 1OCT2024.001";
+  const makeGeometry = (alpha: number[], itemSize = 1): THREE.BufferGeometry => {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3));
+    geometry.setAttribute("col", new THREE.Float32BufferAttribute([1, 0, 0, 0, 1, 0, 0, 0, 1], 3));
+    geometry.setAttribute("rough", new THREE.Float32BufferAttribute([0.2, 0.3, 0.4], 1));
+    geometry.setAttribute("alpha", new THREE.Float32BufferAttribute(alpha, itemSize));
+    return geometry;
+  };
+
+  const opaqueGeometry = makeGeometry([1, 1, 1]);
+  const opaque = makeCrossSectionFilamentMaterial(mathDump, opaqueGeometry, bdsfName);
+  assert.ok(opaque);
+  assert.equal(opaque.transparent, false);
+
+  const translucentGeometry = makeGeometry([1, 0.5, 1]);
+  const translucent = makeCrossSectionFilamentMaterial(mathDump, translucentGeometry, bdsfName);
+  assert.ok(translucent);
+  assert.equal(translucent.transparent, true);
+
+  const invalidGeometry = makeGeometry([1, 1, 1, 1, 1, 1], 2);
+  assert.equal(makeCrossSectionFilamentMaterial(mathDump, invalidGeometry, bdsfName), null);
+
+  opaque.dispose();
+  translucent.dispose();
+  opaqueGeometry.dispose();
+  translucentGeometry.dispose();
+  invalidGeometry.dispose();
 });

@@ -107,7 +107,7 @@ test("injects Generated-coordinate normalized Noise and derivative Bump with hon
   assert.match(shader.fragmentShader, /float nodeBaseNoise/);
   assert.match(shader.fragmentShader, /float nodeBaseHeight/);
   assert.match(shader.fragmentShader, /generated \* 500\.0/);
-  assert.match(shader.fragmentShader, /0\.5 \* signedFbm \/ 1\.75 \+ 0\.5/);
+  assert.match(shader.fragmentShader, /0\.5 \* \(1\.0 \* nodeBaseNoise\(coordinate \* 1\.0\)[\s\S]*?\/ 1\.75 \+ 0\.5/);
   assert.match(shader.fragmentShader, /dFdx\(vNodeBaseGenerated\)/);
   assert.match(shader.fragmentShader, /nodeBaseDistance = 1\.0/);
   assert.deepEqual(material.userData.nodeBaseContract, expectedConfig);

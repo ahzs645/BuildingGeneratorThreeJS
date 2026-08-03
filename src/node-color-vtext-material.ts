@@ -1,9 +1,13 @@
 import * as THREE from "three";
 import {
+  blenderPcg3d,
   filamentBumpGlsl,
   filamentGroupBounds,
+  generatedCoordinateGlsl,
+  voronoiDistance3,
+  voronoiGlsl,
   type FilamentBounds,
-} from "./filament-material";
+} from "./materials/blender-glsl";
 import type { Dump } from "./gnvm";
 
 type RawSocket = { identifier?: string; name?: string; linked?: boolean; value?: unknown };
@@ -175,26 +179,7 @@ function glslVector(value: readonly number[]): string {
 }
 
 const f32 = Math.fround;
-const PCG_MULTIPLIER = 1664525;
-const PCG_INCREMENT = 1013904223;
-const INT31_INVERSE = f32(1 / 0x7fffffff);
-
-/** Blender 5.1's signed-integer PCG3D cell hash, expressed with JS int32 operations. */
-export function nodeColorPcg3d(cell: readonly number[]): [number, number, number] {
-  let x = (Math.imul(cell[0] | 0, PCG_MULTIPLIER) + PCG_INCREMENT) | 0;
-  let y = (Math.imul(cell[1] | 0, PCG_MULTIPLIER) + PCG_INCREMENT) | 0;
-  let z = (Math.imul(cell[2] | 0, PCG_MULTIPLIER) + PCG_INCREMENT) | 0;
-  x = (x + Math.imul(y, z)) | 0;
-  y = (y + Math.imul(z, x)) | 0;
-  z = (z + Math.imul(x, y)) | 0;
-  x = (x ^ (x >> 16)) | 0;
-  y = (y ^ (y >> 16)) | 0;
-  z = (z ^ (z >> 16)) | 0;
-  x = (x + Math.imul(y, z)) | 0;
-  y = (y + Math.imul(z, x)) | 0;
-  z = (z + Math.imul(x, y)) | 0;
-  return [x, y, z].map((value) => f32(f32(value & 0x7fffffff) * INT31_INVERSE)) as [number, number, number];
-}
+export { blenderPcg3d as nodeColorPcg3d };
 
 function rotateXYZ(point: readonly number[], rotation: readonly number[]): [number, number, number] {
   const cosine = rotation.map((value) => f32(Math.cos(f32(value))));
@@ -211,38 +196,13 @@ function rotateXYZ(point: readonly number[], rotation: readonly number[]): [numb
   ];
 }
 
-function smoothstep01(value: number): number {
-  const clamped = f32(Math.max(0, Math.min(1, value)));
-  return f32(f32(clamped * clamped) * f32(3 - f32(2 * clamped)));
-}
-
 /** Blender 5.1's 3D Euclidean Smooth F1 kernel, including its effective half-smoothness. */
 export function nodeColorSmoothF1AtCoordinate(
   coordinate: readonly number[],
   randomness = CONTRACT.voronoiRandomness,
   smoothness = CONTRACT.voronoiSmoothness,
 ): number {
-  const cell = coordinate.map(Math.floor);
-  const local = coordinate.map((value, axis) => f32(value - cell[axis]));
-  const effectiveSmoothness = f32(Math.max(0, Math.min(0.5, smoothness / 2)));
-  let smoothDistance = f32(0);
-  let first = true;
-  for (let z = -2; z <= 2; z++) for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) {
-    const offset = [x, y, z];
-    const hashed = nodeColorPcg3d(cell.map((value, axis) => value + offset[axis]));
-    const point = offset.map((value, axis) => f32(value + f32(hashed[axis] * randomness)));
-    const delta = point.map((value, axis) => f32(value - local[axis]));
-    const distance = f32(Math.sqrt(f32(
-      f32(delta[0] * delta[0]) + f32(delta[1] * delta[1]) + f32(delta[2] * delta[2]),
-    )));
-    const h = first ? f32(1) : smoothstep01(f32(
-      0.5 + f32(0.5 * f32((smoothDistance - distance) / effectiveSmoothness)),
-    ));
-    const correction = f32(effectiveSmoothness * f32(h * f32(1 - h)));
-    smoothDistance = f32(f32(smoothDistance * f32(1 - h)) + f32(distance * h) - correction);
-    first = false;
-  }
-  return smoothDistance;
+  return voronoiDistance3(coordinate, { feature: "SMOOTH_F1", randomness, smoothness });
 }
 
 export function nodeColorVtextSmoothF1AtGenerated(
@@ -264,20 +224,7 @@ export function nodeColorVtextHeightAtGenerated(
 }
 
 function shaderFunctions(config: NodeColorVtextMaterialConfig): string {
-  return `ivec3 nodeColorPcg3d(ivec3 value) {
-  value = value * 1664525 + 1013904223;
-  value.x += value.y * value.z;
-  value.y += value.z * value.x;
-  value.z += value.x * value.y;
-  value ^= value >> 16;
-  value.x += value.y * value.z;
-  value.y += value.z * value.x;
-  value.z += value.x * value.y;
-  return value & ivec3(0x7fffffff);
-}
-vec3 nodeColorHashCell(ivec3 cell) {
-  return vec3(nodeColorPcg3d(cell)) * (1.0 / 2147483647.0);
-}
+  return `${voronoiGlsl({ prefix: "nodeColor", feature: "SMOOTH_F1", functionName: "nodeColorSmoothF1" })}
 vec3 nodeColorRotateXYZ(vec3 point, vec3 rotation) {
   vec3 cosine = cos(rotation), sine = sin(rotation);
   point = vec3(point.x, cosine.x * point.y - sine.x * point.z,
@@ -287,32 +234,10 @@ vec3 nodeColorRotateXYZ(vec3 point, vec3 rotation) {
   return vec3(cosine.z * point.x - sine.z * point.y,
               sine.z * point.x + cosine.z * point.y, point.z);
 }
-float nodeColorSmoothF1(vec3 coordinate) {
-  vec3 cellPositionF = floor(coordinate);
-  vec3 localPosition = coordinate - cellPositionF;
-  ivec3 cellPosition = ivec3(cellPositionF);
-  float smoothDistance = 0.0;
-  float h = -1.0;
-  float smoothness = clamp(${glsl(config.voronoiSmoothness)} / 2.0, 0.0, 0.5);
-  for (int z = -2; z <= 2; z++) {
-    for (int y = -2; y <= 2; y++) {
-      for (int x = -2; x <= 2; x++) {
-        ivec3 cellOffset = ivec3(x, y, z);
-        vec3 pointPosition = vec3(cellOffset) + nodeColorHashCell(cellPosition + cellOffset) * ${glsl(config.voronoiRandomness)};
-        float distanceToPoint = distance(pointPosition, localPosition);
-        h = h < 0.0 ? 1.0 : smoothstep(
-          0.0, 1.0, 0.5 + 0.5 * (smoothDistance - distanceToPoint) / smoothness);
-        float correction = smoothness * h * (1.0 - h);
-        smoothDistance = mix(smoothDistance, distanceToPoint, h) - correction;
-      }
-    }
-  }
-  return smoothDistance;
-}
 float nodeColorVtextHeight(vec3 generated) {
   vec3 mapped = nodeColorRotateXYZ(generated * ${glslVector(config.mappingScale)}, ${glslVector(config.mappingRotation)})
     + ${glslVector(config.mappingLocation)};
-  float distanceValue = clamp(nodeColorSmoothF1(mapped * ${glsl(config.voronoiScale)}), 0.0, 1.0);
+  float distanceValue = clamp(nodeColorSmoothF1(mapped * ${glsl(config.voronoiScale)}, ${glsl(config.voronoiRandomness)}, ${glsl(config.voronoiSmoothness)}), 0.0, 1.0);
   return distanceValue > ${glsl(config.threshold)} ? 1.0 : 0.0;
 }`;
 }
@@ -328,7 +253,6 @@ export function makeNodeColorVtextMaterial(
   if (!config) return null;
   const bounds = filamentGroupBounds(geometry, group);
   if (!bounds) return null;
-  const extent = bounds.max.map((value, axis) => Math.max(value - bounds.min[axis], 1e-20));
   const material = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(...config.baseColor),
     metalness: config.metallic,
@@ -348,7 +272,7 @@ export function makeNodeColorVtextMaterial(
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", "#include <common>\nvarying vec3 vNodeColorGenerated;")
-      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvNodeColorGenerated = (position - ${glslVector(bounds.min)}) / ${glslVector(extent)};`);
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\n${generatedCoordinateGlsl("vNodeColor", bounds)}`);
     shader.fragmentShader = shader.fragmentShader
       .replace("#include <common>", `#include <common>\nvarying vec3 vNodeColorGenerated;\n\n${shaderFunctions(config)}`)
       .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>

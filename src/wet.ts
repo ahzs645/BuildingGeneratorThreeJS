@@ -14,6 +14,7 @@
  */
 import { Vector2, Vector3 } from "three";
 import type { Material } from "three";
+import { chainOnBeforeCompile, replaceOnce } from "./materials/shader-patch";
 
 export interface WetUniforms {
   uTime: { value: number };
@@ -199,46 +200,60 @@ float wetDropletMask(vec3 p) {
 }
 `;
 
+const WET_NORMAL_MATRIX_GLSL = /* glsl */ `
+mat3 wetWorldNormalMatrix(mat3 transform) {
+  vec3 c0 = cross(transform[1], transform[2]);
+  vec3 c1 = cross(transform[2], transform[0]);
+  vec3 c2 = cross(transform[0], transform[1]);
+  float determinant = dot(transform[0], c0);
+  float safeDeterminant = abs(determinant) > 1e-8 ? determinant : (determinant < 0.0 ? -1e-8 : 1e-8);
+  return mat3(c0, c1, c2) / safeDeterminant;
+}
+`;
+
 /**
  * Inject the wet-surface treatment into a material in place. Safe to call once per
  * material; it recompiles with the puddle/ripple/bead shader and shares `u` by
  * reference so the GUI and the falling rain drive it live.
  */
 export function applyWet(material: Material, u: WetUniforms): void {
-  material.onBeforeCompile = shader => {
+  chainOnBeforeCompile(material, shader => {
     Object.assign(shader.uniforms, u);
 
-    shader.vertexShader = shader.vertexShader
-      .replace(
-        "#include <common>",
-        "#include <common>\nvarying vec3 vWetWorldN;\nvarying vec3 vWetWorldP;",
-      )
-      .replace(
-        "#include <beginnormal_vertex>",
-        `#include <beginnormal_vertex>
+    shader.vertexShader = replaceOnce(
+      shader.vertexShader,
+      "#include <common>",
+      `#include <common>\nvarying vec3 vWetWorldN;\nvarying vec3 vWetWorldP;\n${WET_NORMAL_MATRIX_GLSL}`,
+    );
+    shader.vertexShader = replaceOnce(
+      shader.vertexShader,
+      "#include <beginnormal_vertex>",
+      `#include <beginnormal_vertex>
         #ifdef USE_INSTANCING
-          mat3 wetNMat = mat3(modelMatrix) * mat3(instanceMatrix);
+          mat3 wetWorldTransform = mat3(modelMatrix) * mat3(instanceMatrix);
         #else
-          mat3 wetNMat = mat3(modelMatrix);
+          mat3 wetWorldTransform = mat3(modelMatrix);
         #endif
+        mat3 wetNMat = wetWorldNormalMatrix(wetWorldTransform);
         vWetWorldN = normalize(wetNMat * objectNormal);`,
-      )
-      .replace(
-        "#include <begin_vertex>",
-        `#include <begin_vertex>
+    );
+    shader.vertexShader = replaceOnce(
+      shader.vertexShader,
+      "#include <begin_vertex>",
+      `#include <begin_vertex>
         #ifdef USE_INSTANCING
           vec4 wetWP = modelMatrix * instanceMatrix * vec4(transformed, 1.0);
         #else
           vec4 wetWP = modelMatrix * vec4(transformed, 1.0);
         #endif
         vWetWorldP = wetWP.xyz;`,
-      );
+    );
 
-    shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", "#include <common>\n" + WET_HEADER)
-      .replace(
-        "#include <map_fragment>",
-        `#include <map_fragment>
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <common>", "#include <common>\n" + WET_HEADER);
+    shader.fragmentShader = replaceOnce(
+      shader.fragmentShader,
+      "#include <map_fragment>",
+      `#include <map_fragment>
         float upN = vWetWorldN.y;
         float pmask = wetPuddleMaskAt(vWetWorldP); // patchy wet/dry coverage
         float wetBase = uWet * uWetness * smoothstep(-0.3, 0.6, upN) * pmask;
@@ -246,21 +261,24 @@ export function applyWet(material: Material, u: WetUniforms): void {
         float beads = wetDropletMask(vWetWorldP) * uDropletAmount * wetBase;
         float wetAll = clamp(max(wetBase, topMask), 0.0, 1.0);
         diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * (1.0 - uWaterDarkness), wetAll);`,
-      )
-      .replace(
-        "#include <roughnessmap_fragment>",
-        `#include <roughnessmap_fragment>
+    );
+    shader.fragmentShader = replaceOnce(
+      shader.fragmentShader,
+      "#include <roughnessmap_fragment>",
+      `#include <roughnessmap_fragment>
         float gloss = clamp(max(wetBase * 0.7, topMask) + beads, 0.0, 1.0);
         roughnessFactor = mix(roughnessFactor, uPuddleRoughness, gloss);`,
-      )
-      .replace(
-        "#include <normal_fragment_maps>",
-        `#include <normal_fragment_maps>
+    );
+    shader.fragmentShader = replaceOnce(
+      shader.fragmentShader,
+      "#include <normal_fragment_maps>",
+      `#include <normal_fragment_maps>
         vec3 rN = mix(vec3(0.0, 1.0, 0.0), wetPuddleRippleNormal(vWetWorldP.xz), topMask);
         vec3 rView = normalize((viewMatrix * vec4(rN, 0.0)).xyz);
         normal = normalize(mix(normal, rView, topMask));`,
-      );
-  };
-  material.customProgramCacheKey = () => "wet-building-v2";
+    );
+  });
+  const chainedCacheKey = material.customProgramCacheKey.bind(material);
+  material.customProgramCacheKey = () => `${chainedCacheKey()}|wet-building-v3`;
   material.needsUpdate = true;
 }

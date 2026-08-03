@@ -1,11 +1,14 @@
 import * as THREE from "three";
 import {
   filamentBumpGlsl,
+  filamentFbm3,
+  filamentFbmGlsl,
   filamentGroupBounds,
   filamentNoiseGlsl,
   filamentSignedNoise3,
+  generatedCoordinateGlsl,
   type FilamentBounds,
-} from "./filament-material";
+} from "./materials/blender-glsl";
 import type { Dump } from "./gnvm";
 
 type RawSocket = { identifier?: string; name?: string; linked?: boolean; value?: unknown };
@@ -237,18 +240,12 @@ export function extractVtextMaterialConfig(dump: Dump, materialName: string): Vt
 /** Blender's non-normalized 3D Noise Texture FBM used by the live vtext branch. */
 export function vtextFbmAtGenerated(generated: readonly number[], scale: number, config: VtextMaterialConfig): number {
   const point = generated.map((value) => value * scale);
-  let amplitude = 1;
-  let frequency = 1;
-  let sum = 0;
-  for (let octave = 0; octave <= Math.floor(config.noiseDetail); octave++) {
-    sum += amplitude * filamentSignedNoise3(point.map((value) => value * frequency));
-    amplitude *= config.noiseRoughness;
-    frequency *= config.noiseLacunarity;
-  }
-  const remainder = config.noiseDetail - Math.floor(config.noiseDetail);
-  if (remainder === 0) return sum;
-  const sum2 = sum + amplitude * filamentSignedNoise3(point.map((value) => value * frequency));
-  return sum + (sum2 - sum) * remainder;
+  return filamentFbm3(point, {
+    detail: config.noiseDetail,
+    roughness: config.noiseRoughness,
+    lacunarity: config.noiseLacunarity,
+    normalize: false,
+  });
 }
 
 function pingPong(value: number, scale: number): number {
@@ -275,25 +272,16 @@ function glsl(value: number): string {
   return Number.isInteger(value) ? value.toFixed(1) : `${value}`;
 }
 
-function glslVector(vector: readonly number[]): string {
-  return `vec3(${vector.map(glsl).join(", ")})`;
-}
-
 function fbmGlsl(config: VtextMaterialConfig): string {
-  let amplitude = 1;
-  let frequency = 1;
-  const terms: string[] = [];
-  for (let octave = 0; octave <= Math.floor(config.noiseDetail); octave++) {
-    terms.push(`${glsl(amplitude)} * vtextNoise(point * ${glsl(frequency)})`);
-    amplitude *= config.noiseRoughness;
-    frequency *= config.noiseLacunarity;
-  }
-  const remainder = config.noiseDetail - Math.floor(config.noiseDetail);
-  return `float vtextFbm(vec3 coordinate, float scale) {
-  vec3 point = coordinate * scale;
-  float sum = ${terms.join("\n    + ")};
-  float sum2 = sum + ${glsl(amplitude)} * vtextNoise(point * ${glsl(frequency)});
-  return mix(sum, sum2, ${glsl(remainder)});
+  const fbm = filamentFbmGlsl("vtext", "vtextFbmPoint", {
+    detail: config.noiseDetail,
+    roughness: config.noiseRoughness,
+    lacunarity: config.noiseLacunarity,
+    normalize: false,
+  });
+  return `${fbm}
+float vtextFbm(vec3 coordinate, float scale) {
+  return vtextFbmPoint(coordinate * scale);
 }
 float vtextPingPong(float value, float scale) {
   if (scale == 0.0) return 0.0;
@@ -324,7 +312,6 @@ export function makeVtextMaterial(
   if (!config) return null;
   const bounds = filamentGroupBounds(geometry, group);
   if (!bounds) return null;
-  const extent = bounds.max.map((value, axis) => Math.max(value - bounds.min[axis], 1e-20));
   const material = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(...config.baseColor),
     metalness: config.metallic,
@@ -339,7 +326,7 @@ export function makeVtextMaterial(
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", "#include <common>\nvarying vec3 vVtextGenerated;")
-      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvVtextGenerated = (position - ${glslVector(bounds.min)}) / ${glslVector(extent)};`);
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\n${generatedCoordinateGlsl("vVtext", bounds)}`);
     shader.fragmentShader = shader.fragmentShader
       .replace("#include <common>", `#include <common>
 varying vec3 vVtextGenerated;

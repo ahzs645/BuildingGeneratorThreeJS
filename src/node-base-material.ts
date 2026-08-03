@@ -1,11 +1,13 @@
 import * as THREE from "three";
 import {
   filamentBumpGlsl,
+  filamentFbm3,
+  filamentFbmGlsl,
   filamentGroupBounds,
   filamentNoiseGlsl,
-  filamentSignedNoise3,
+  generatedCoordinateGlsl,
   type FilamentBounds,
-} from "./filament-material";
+} from "./materials/blender-glsl";
 import type { Dump } from "./gnvm";
 
 type RawSocket = { identifier?: string; name?: string; linked?: boolean; value?: unknown };
@@ -143,48 +145,29 @@ export function nodeBaseHeightAtGenerated(
   config: NodeBaseMaterialConfig,
 ): number {
   const detail = Math.max(0, Math.min(15, config.noiseDetail));
-  const whole = Math.floor(detail);
   const point = generated.map((component) => component * config.noiseScale);
-  let amplitude = 1;
-  let frequency = 1;
-  let sum = 0;
-  let maximum = 0;
-  for (let octave = 0; octave <= whole; octave++) {
-    sum += amplitude * filamentSignedNoise3(point.map((component) => component * frequency));
-    maximum += amplitude;
-    amplitude *= config.noiseRoughness;
-    frequency *= config.noiseLacunarity;
-  }
-  const normalized = (value: number, weight: number) => config.noiseNormalize ? 0.5 * value / weight + 0.5 : value;
-  const remainder = detail - whole;
-  if (remainder === 0) return normalized(sum, maximum);
-  const next = sum + amplitude * filamentSignedNoise3(point.map((component) => component * frequency));
-  return THREE.MathUtils.lerp(normalized(sum, maximum), normalized(next, maximum + amplitude), remainder);
+  return filamentFbm3(point, {
+    detail,
+    roughness: config.noiseRoughness,
+    lacunarity: config.noiseLacunarity,
+    normalize: config.noiseNormalize,
+  });
 }
 
 function glsl(value: number): string {
   return Number.isInteger(value) ? value.toFixed(1) : `${value}`;
 }
 
-function glslVector(vector: readonly number[]): string {
-  return `vec3(${vector.map(glsl).join(", ")})`;
-}
-
 function heightGlsl(config: NodeBaseMaterialConfig): string {
-  let amplitude = 1;
-  let frequency = 1;
-  let maximum = 0;
-  const terms: string[] = [];
-  for (let octave = 0; octave <= Math.floor(config.noiseDetail); octave++) {
-    terms.push(`${glsl(amplitude)} * nodeBaseNoise(point * ${glsl(frequency)})`);
-    maximum += amplitude;
-    amplitude *= config.noiseRoughness;
-    frequency *= config.noiseLacunarity;
-  }
-  return `float nodeBaseHeight(vec3 generated) {
-  vec3 point = generated * ${glsl(config.noiseScale)};
-  float signedFbm = ${terms.join("\n    + ")};
-  return ${config.noiseNormalize ? `0.5 * signedFbm / ${glsl(maximum)} + 0.5` : "signedFbm"};
+  const fbm = filamentFbmGlsl("nodeBase", "nodeBaseFbm", {
+    detail: Math.max(0, Math.min(15, config.noiseDetail)),
+    roughness: config.noiseRoughness,
+    lacunarity: config.noiseLacunarity,
+    normalize: config.noiseNormalize,
+  });
+  return `${fbm}
+float nodeBaseHeight(vec3 generated) {
+  return nodeBaseFbm(generated * ${glsl(config.noiseScale)});
 }`;
 }
 
@@ -286,7 +269,6 @@ export function makeSimpleNoiseBumpMaterial(
   const config = extractSimpleNoiseBumpMaterialConfig(dump, materialName);
   const bounds = config ? filamentGroupBounds(geometry, group) : null;
   if (!config || !bounds) return null;
-  const extent = bounds.max.map((value, axis) => Math.max(value - bounds.min[axis], 1e-20));
   const material = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(...config.baseColor),
     metalness: config.metallic,
@@ -302,7 +284,7 @@ export function makeSimpleNoiseBumpMaterial(
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", "#include <common>\nvarying vec3 vSimpleNoiseBumpGenerated;")
-      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvSimpleNoiseBumpGenerated = (position - ${glslVector(bounds.min)}) / ${glslVector(extent)};`);
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\n${generatedCoordinateGlsl("vSimpleNoiseBump", bounds)}`);
     shader.fragmentShader = shader.fragmentShader
       .replace("#include <common>", `#include <common>
 varying vec3 vSimpleNoiseBumpGenerated;
@@ -334,7 +316,6 @@ export function makeNodeBaseMaterial(
   const config = extractNodeBaseMaterialConfig(dump, materialName);
   const bounds = config ? filamentGroupBounds(geometry, group) : null;
   if (!config || !bounds) return null;
-  const extent = bounds.max.map((value, axis) => Math.max(value - bounds.min[axis], 1e-20));
   const material = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(...config.baseColor),
     metalness: config.metallic,
@@ -350,7 +331,7 @@ export function makeNodeBaseMaterial(
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", "#include <common>\nvarying vec3 vNodeBaseGenerated;")
-      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvNodeBaseGenerated = (position - ${glslVector(bounds.min)}) / ${glslVector(extent)};`);
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\n${generatedCoordinateGlsl("vNodeBase", bounds)}`);
     shader.fragmentShader = shader.fragmentShader
       .replace("#include <common>", `#include <common>
 varying vec3 vNodeBaseGenerated;

@@ -5,9 +5,10 @@ import {
   filamentNoiseGlsl,
   filamentWaveFunctionGlsl,
   filamentWaveHeightAtCoordinate,
+  generatedCoordinateGlsl,
   type FilamentBounds,
   type FilamentWaveConfig,
-} from "./filament-material";
+} from "./materials/blender-glsl";
 import type { Dump } from "./gnvm";
 
 type RawSocket = { identifier?: string; name?: string; value?: unknown };
@@ -163,7 +164,6 @@ export function makeHatStitchMaterial(
   const position = geometry.getAttribute("position");
   const bounds = filamentGroupBounds(geometry, group);
   if (!color || color.itemSize !== 3 || color.count !== position?.count || !bounds) return null;
-  const extent = bounds.max.map((value, axis) => Math.max(value - bounds.min[axis], 1e-20));
   const matrix = mappingMatrix(config).elements;
   const wave: FilamentWaveConfig = {
     distortion: config.waveDistortion,
@@ -190,7 +190,8 @@ export function makeHatStitchMaterial(
       .replace("#include <common>", `#include <common>\nattribute vec3 ${config.colorAttribute};\nvarying vec3 vHatStitchColor;\nvarying vec3 vHatStitchGenerated;`)
       .replace("#include <begin_vertex>", `#include <begin_vertex>
 vHatStitchColor = ${config.colorAttribute};
-vec3 hatStitchGenerated = (position - ${glslVector(bounds.min)}) / ${glslVector(extent)};
+vec3 hatStitchGenerated;
+${generatedCoordinateGlsl("hatStitch", bounds)}
 vHatStitchGenerated = mat3(${matrix.map(glsl).join(", ")}) * hatStitchGenerated + ${glslVector(config.mappingLocation)};`);
     shader.fragmentShader = shader.fragmentShader
       .replace("#include <common>", `#include <common>

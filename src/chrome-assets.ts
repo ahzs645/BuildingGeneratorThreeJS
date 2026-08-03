@@ -182,8 +182,21 @@ export function createTool(): ToolHandle {
       geometry.dispose();
       geometry = uvBinding.geometry;
     }
-    if (current.material === "image-pixel-stippler") {
-      const expanded = expandFaceDomainMaterialAttributes(geometry, soup);
+    const declaredAttributes = new Set<string>();
+    for (const group of soup.groups) {
+      const materialName = materialNameForGroup(current, group, soup.groups);
+      const tree = dump.materials?.[materialName] as {
+        nodes?: Array<{ type?: string; props?: Record<string, unknown> }>;
+      } | undefined;
+      for (const node of tree?.nodes ?? []) {
+        const name = node.type === "ShaderNodeAttribute" ? node.props?.attribute_name : undefined;
+        if (typeof name === "string") declaredAttributes.add(name);
+      }
+    }
+    const faceAttributes = new Set([...declaredAttributes].filter((name) =>
+      soup.attributes[name]?.domain === "FACE" && soup.attributes[name].domainData));
+    if (faceAttributes.size) {
+      const expanded = expandFaceDomainMaterialAttributes(geometry, soup, faceAttributes);
       if (expanded !== geometry) {
         geometry.dispose();
         geometry = expanded;

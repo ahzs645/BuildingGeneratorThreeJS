@@ -13,6 +13,7 @@
  * `uTime` is shared with the falling snow so the sparkle twinkles in lockstep.
  */
 import { Color, Vector2, DoubleSide, MeshStandardMaterial } from "three";
+import { chainOnBeforeCompile, replaceOnce } from "./materials/shader-patch";
 
 export interface SnowAccumUniforms {
   uTime: { value: number };
@@ -126,6 +127,17 @@ vec3 snowReliefNormal(vec2 worldXZ) {
 }
 `;
 
+const SNOW_NORMAL_MATRIX_GLSL = /* glsl */ `
+mat3 snowWorldNormalMatrix(mat3 transform) {
+  vec3 c0 = cross(transform[1], transform[2]);
+  vec3 c1 = cross(transform[2], transform[0]);
+  vec3 c2 = cross(transform[0], transform[1]);
+  float determinant = dot(transform[0], c0);
+  float safeDeterminant = abs(determinant) > 1e-8 ? determinant : (determinant < 0.0 ? -1e-8 : 1e-8);
+  return mat3(c0, c1, c2) / safeDeterminant;
+}
+`;
+
 /**
  * The snow-shell material: applied to a duplicate instanced pass that shares the
  * building's geometry. Extrudes along the surface normal by thickness × accumulation
@@ -144,24 +156,31 @@ export function createSnowShellMaterial(u: SnowAccumUniforms): MeshStandardMater
     polygonOffsetUnits: -1,
   });
 
-  mat.onBeforeCompile = shader => {
+  mat.customProgramCacheKey = () => "snow-shell-v2";
+  chainOnBeforeCompile(mat, shader => {
     Object.assign(shader.uniforms, u);
 
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", "#include <common>\n" + SNOW_GLSL)
-      .replace(
-        "#include <beginnormal_vertex>",
-        `#include <beginnormal_vertex>
+    shader.vertexShader = replaceOnce(
+      shader.vertexShader,
+      "#include <common>",
+      "#include <common>\n" + SNOW_GLSL + SNOW_NORMAL_MATRIX_GLSL,
+    );
+    shader.vertexShader = replaceOnce(
+      shader.vertexShader,
+      "#include <beginnormal_vertex>",
+      `#include <beginnormal_vertex>
         #ifdef USE_INSTANCING
-          mat3 snowNMat = mat3(modelMatrix) * mat3(instanceMatrix);
+          mat3 snowWorldTransform = mat3(modelMatrix) * mat3(instanceMatrix);
         #else
-          mat3 snowNMat = mat3(modelMatrix);
+          mat3 snowWorldTransform = mat3(modelMatrix);
         #endif
+        mat3 snowNMat = snowWorldNormalMatrix(snowWorldTransform);
         vSnowWorldN = normalize(snowNMat * objectNormal);`,
-      )
-      .replace(
-        "#include <begin_vertex>",
-        `#include <begin_vertex>
+    );
+    shader.vertexShader = replaceOnce(
+      shader.vertexShader,
+      "#include <begin_vertex>",
+      `#include <begin_vertex>
         #ifdef USE_INSTANCING
           vec4 snowWP = modelMatrix * instanceMatrix * vec4(transformed, 1.0);
         #else
@@ -171,14 +190,14 @@ export function createSnowShellMaterial(u: SnowAccumUniforms): MeshStandardMater
         vec3 snowWN = snowNMat * objectNormal;
         float snowMs = max(length(snowWN), 1e-4);
         float snowAccumV = snowAccumAt(snowWN / snowMs, vSnowWorldP);
-        transformed += normalize(objectNormal) * (uSnowThickness * snowAccumV / snowMs);`,
-      );
+        transformed += normalize(objectNormal) * (uSnowThickness * snowAccumV * snowMs);`,
+    );
 
-    shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", "#include <common>\n" + SNOW_GLSL)
-      .replace(
-        "#include <map_fragment>",
-        `#include <map_fragment>
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <common>", "#include <common>\n" + SNOW_GLSL);
+    shader.fragmentShader = replaceOnce(
+      shader.fragmentShader,
+      "#include <map_fragment>",
+      `#include <map_fragment>
         vec3 snowWn = normalize(vSnowWorldN);
         float snowAmt = snowAccumAt(snowWn, vSnowWorldP);
         if (snowAmt < 0.12) discard; // shell only exists where snow settled
@@ -187,21 +206,22 @@ export function createSnowShellMaterial(u: SnowAccumUniforms): MeshStandardMater
         float snowTwinkle = 0.5 + 0.5 * sin(uTime * 3.0 + snowSp * 30.0);
         float snowSparkle = step(0.985, snowSp) * snowTwinkle * uSnowSparkle;
         diffuseColor.rgb = uSnowColor * snowShade + snowSparkle;`,
-      )
-      .replace(
-        "#include <roughnessmap_fragment>",
-        `#include <roughnessmap_fragment>
+    );
+    shader.fragmentShader = replaceOnce(
+      shader.fragmentShader,
+      "#include <roughnessmap_fragment>",
+      `#include <roughnessmap_fragment>
         roughnessFactor = uSnowRoughness;
         roughnessFactor = mix(roughnessFactor, 0.08, snowSparkle);`,
-      )
-      .replace(
-        "#include <normal_fragment_maps>",
-        `#include <normal_fragment_maps>
+    );
+    shader.fragmentShader = replaceOnce(
+      shader.fragmentShader,
+      "#include <normal_fragment_maps>",
+      `#include <normal_fragment_maps>
         vec3 snowN = snowReliefNormal(vSnowWorldP.xz);
         vec3 snowView = normalize((viewMatrix * vec4(snowN, 0.0)).xyz);
         normal = normalize(mix(normal, snowView, clamp(snowAmt * 1.5, 0.0, 1.0)));`,
-      );
-  };
-  mat.customProgramCacheKey = () => "snow-shell-v1";
+    );
+  });
   return mat;
 }

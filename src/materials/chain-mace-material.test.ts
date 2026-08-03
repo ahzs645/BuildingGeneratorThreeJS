@@ -24,6 +24,7 @@ test("extracts Chain & Mace's authored chrome.002 contract", () => {
       roughness: 0.5,
       lacunarity: 2,
       distortion: 31.20849609375,
+      normalize: true,
       fromMin: 0,
       fromMax: 1,
       toMin: -1,

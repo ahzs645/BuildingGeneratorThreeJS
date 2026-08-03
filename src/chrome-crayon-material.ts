@@ -1,5 +1,11 @@
 import * as THREE from "three";
+import { filamentFbmGlsl, filamentNoiseGlsl, generatedCoordinateGlsl, mapRangeGlsl } from "./materials/blender-glsl";
 import type { Dump } from "./gnvm";
+import {
+  chainOnBeforeCompile,
+  glslFloat,
+  replaceOnce,
+} from "./materials/shader-patch";
 
 type RawSocket = { identifier?: string; name?: string; value?: unknown; default?: unknown };
 type RawNode = { name: string; type: string; props?: Record<string, unknown>; inputs?: RawSocket[]; outputs?: RawSocket[] };
@@ -17,6 +23,7 @@ export type ChromeCrayonMaterialConfig = {
     roughness: number;
     lacunarity: number;
     distortion: number;
+    normalize: boolean;
     fromMin: number;
     fromMax: number;
     toMin: number;
@@ -97,12 +104,14 @@ export function extractChromeCrayonMaterialConfig(dump: Dump, materialName: stri
   const noiseRoughness = finiteNumber(socketValue(noise, "Roughness"));
   const lacunarity = finiteNumber(socketValue(noise, "Lacunarity"));
   const distortion = finiteNumber(socketValue(noise, "Distortion"));
+  const normalize = noise.props?.normalize;
   const fromMin = finiteNumber(socketValue(mapRange, "From Min"));
   const fromMax = finiteNumber(socketValue(mapRange, "From Max"));
   const toMin = finiteNumber(socketValue(mapRange, "To Min"));
   const toMax = finiteNumber(socketValue(mapRange, "To Max"));
   if (!color || metallic === null || baseScale === null || zMultiplier === null || !/^[A-Za-z_]\w*$/.test(roughnessAttribute)
     || detail === null || noiseRoughness === null || lacunarity === null || distortion === null
+    || typeof normalize !== "boolean"
     || fromMin === null || fromMax === null || toMin === null || toMax === null) return null;
 
   return {
@@ -116,6 +125,7 @@ export function extractChromeCrayonMaterialConfig(dump: Dump, materialName: stri
       roughness: noiseRoughness,
       lacunarity,
       distortion,
+      normalize,
       fromMin,
       fromMax,
       toMin,
@@ -127,16 +137,27 @@ export function extractChromeCrayonMaterialConfig(dump: Dump, materialName: stri
   };
 }
 
-function glsl(value: number): string {
-  return Number.isInteger(value) ? `${value.toFixed(1)}` : `${value}`;
+function crayonNoiseTextureGlsl(config: ChromeCrayonMaterialConfig["noise"]): string {
+  const offsets = [
+    [186.03127584467438, 114.9559537682114, 154.44750347045425],
+    [199.8400018782914, 162.2925926843408, 154.048234399885],
+    [111.63384265071569, 157.36939531224067, 199.0881114730351],
+  ];
+  return `${filamentFbmGlsl("crayon", "crayonFbm", config)}
+float crayonTextureNoise(vec3 coordinate, float scale) {
+  vec3 p = coordinate * scale;
+  p += ${glslFloat(config.distortion)} * vec3(
+    crayonNoise(p + vec3(${offsets[0].map(glslFloat).join(", ")})),
+    crayonNoise(p + vec3(${offsets[1].map(glslFloat).join(", ")})),
+    crayonNoise(p + vec3(${offsets[2].map(glslFloat).join(", ")})));
+  return crayonFbm(p);
+}`;
 }
 
 /**
- * Reconstruct the authored Principled metal in Three.js. The Noise Texture is
- * represented with a compact deterministic value-noise approximation; in the
- * supplied asset this is visually exact in consequence because the evaluated
- * `rough` attribute is zero on every vertex, making the procedural branch
- * dormant and leaving a silver, fully metallic surface.
+ * Reconstruct the authored Principled metal in Three.js, including Blender's
+ * implicit Mapping-vector-to-Scale conversion and normalized, distorted 3D
+ * gradient-noise fBM. Missing `rough` still follows Blender's zero fallback.
  */
 export function makeChromeCrayonMaterial(
   dump: Dump,
@@ -162,36 +183,33 @@ export function makeChromeCrayonMaterial(
   material.name = `${materialName} · authored Chrome Crayon reconstruction`;
   material.userData.chromeCrayonContract = config;
   material.userData.chromeCrayonAttributeResolution = roughness ? "geometry-color" : "missing-zero";
-  material.onBeforeCompile = (shader) => {
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", `#include <common>\n${roughness ? `attribute float ${config.roughnessAttribute};\n` : ""}varying vec3 vCrayonGenerated;\nvarying float vCrayonRough;`)
-      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvCrayonGenerated = (position - vec3(${glsl(bounds.min.x)}, ${glsl(bounds.min.y)}, ${glsl(bounds.min.z)})) / max(vec3(${glsl(size.x)}, ${glsl(size.y)}, ${glsl(size.z)}), vec3(1e-7));\nvCrayonRough = ${roughness ? config.roughnessAttribute : "0.0"};`);
-    shader.fragmentShader = shader.fragmentShader.replace("#include <common>", `#include <common>
+  const boundsKey = [...bounds.min.toArray(), ...size.toArray()].join(",");
+  material.customProgramCacheKey = () =>
+    `chrome-crayon-${materialName}-${roughness ? "rough" : "missing-zero"}-${boundsKey}-v3`;
+  chainOnBeforeCompile(material, (shader) => {
+    shader.vertexShader = replaceOnce(shader.vertexShader, "#include <common>", `#include <common>\n${roughness ? `attribute float ${config.roughnessAttribute};\n` : ""}varying vec3 vCrayonGenerated;\nvarying float vCrayonRough;`);
+    shader.vertexShader = replaceOnce(shader.vertexShader, "#include <begin_vertex>", `#include <begin_vertex>\n${generatedCoordinateGlsl("vCrayon", { min: bounds.min.toArray(), max: bounds.max.toArray(), epsilon: 1e-7 })}\nvCrayonRough = ${roughness ? config.roughnessAttribute : "0.0"};`);
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <common>", `#include <common>
 varying vec3 vCrayonGenerated;
 varying float vCrayonRough;
-float crayonHash(vec3 p) {
-  p = fract(p * 0.1031);
-  p += dot(p, p.yzx + 33.33);
-  return fract((p.x + p.y) * p.z);
-}
-float crayonNoise(vec3 p) {
-  vec3 i = floor(p), f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(mix(crayonHash(i), crayonHash(i + vec3(1,0,0)), f.x), mix(crayonHash(i + vec3(0,1,0)), crayonHash(i + vec3(1,1,0)), f.x), f.y), mix(mix(crayonHash(i + vec3(0,0,1)), crayonHash(i + vec3(1,0,1)), f.x), mix(crayonHash(i + vec3(0,1,1)), crayonHash(i + vec3(1,1,1)), f.x), f.y), f.z);
-}
-`).replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
-vec3 crayonMapped = vCrayonGenerated * vec3(${config.generatedScale.map(glsl).join(", ")});
+${filamentNoiseGlsl("crayon")}
+${crayonNoiseTextureGlsl(config.noise)}
+${mapRangeGlsl({
+    name: "crayonMapRange",
+    fromMin: config.noise.fromMin,
+    fromMax: config.noise.fromMax,
+    toMin: config.noise.toMin,
+    toMax: config.noise.toMax,
+    clamp: false,
+  })}
+`);
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
+vec3 crayonMapped = vCrayonGenerated * vec3(${config.generatedScale.map(glslFloat).join(", ")});
 float crayonScale = (crayonMapped.x + crayonMapped.y + crayonMapped.z) / 3.0;
-vec3 crayonNoisePosition = vec3(0.0) * crayonScale;
-crayonNoisePosition += ${glsl(config.noise.distortion)} * vec3(
-  crayonNoise(crayonNoisePosition + vec3(0.0, 0.0, 0.0)),
-  crayonNoise(crayonNoisePosition + vec3(19.1, 7.7, 3.4)),
-  crayonNoise(crayonNoisePosition + vec3(5.2, 23.8, 11.6))
-);
-float crayonFac = crayonNoise(crayonNoisePosition);
-float crayonMappedRoughness = ${glsl(config.noise.toMin)} + (crayonFac - ${glsl(config.noise.fromMin)}) * (${glsl(config.noise.toMax)} - ${glsl(config.noise.toMin)}) / max(${glsl(config.noise.fromMax)} - ${glsl(config.noise.fromMin)}, 1e-7);
+vec3 crayonNoisePosition = vCrayonGenerated * crayonScale;
+float crayonFac = crayonTextureNoise(crayonNoisePosition, 1.0);
+float crayonMappedRoughness = crayonMapRange(crayonFac);
 roughnessFactor = clamp(crayonMappedRoughness * max(vCrayonRough, 0.0), 0.0, 1.0);`);
-  };
-  material.customProgramCacheKey = () => `chrome-crayon-${materialName}-${roughness ? "rough" : "missing-zero"}-v2`;
+  });
   return material;
 }

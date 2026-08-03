@@ -35,6 +35,7 @@ test("extracts the authored chrome.003 Principled/noise contract", () => {
       roughness: 0.5,
       lacunarity: 2,
       distortion: 31.20849609375,
+      normalize: true,
       fromMin: 0,
       fromMax: 1,
       toMin: -1,
@@ -82,10 +83,25 @@ test("builds the Chrome Crayon authored material with present or missing rough",
   assert.match(shader.vertexShader, /attribute float rough/);
   assert.match(shader.vertexShader, /vCrayonGenerated/);
   assert.match(shader.fragmentShader, /crayonMappedRoughness/);
+  assert.match(shader.fragmentShader, /vec3 crayonNoisePosition = vCrayonGenerated \* crayonScale/);
+  assert.match(shader.fragmentShader, /float crayonFac = crayonTextureNoise\(crayonNoisePosition, 1\.0\)/);
+  assert.match(shader.fragmentShader, /0\.5 \* \(1\.0 \* crayonNoise\(coordinate \* 1\.0\)/);
+  assert.match(shader.fragmentShader, /0\.5 \* crayonNoise\(coordinate \* 2\.0\)/);
+  assert.match(shader.fragmentShader, /0\.25 \* crayonNoise\(coordinate \* 4\.0\)/);
+  assert.match(shader.fragmentShader, /crayonMapRange\(crayonFac\)/);
+  assert.match(shader.fragmentShader, /186\.03127584467438/);
+  assert.doesNotMatch(shader.fragmentShader, /float crayonHash\(vec3|vec3\(0\.0\) \* crayonScale/);
   assert.match(shader.fragmentShader, /roughnessFactor = clamp\(crayonMappedRoughness \* max\(vCrayonRough/);
+
+  const shiftedGeometry = geometry.clone();
+  shiftedGeometry.translate(10, 0, 0);
+  const shifted = makeChromeCrayonMaterial(dump, shiftedGeometry, "chrome.003");
+  assert.notEqual(material?.customProgramCacheKey(), shifted?.customProgramCacheKey());
 
   missing?.dispose();
   material?.dispose();
+  shifted?.dispose();
+  shiftedGeometry.dispose();
   geometry.dispose();
 });
 
@@ -101,6 +117,7 @@ test("resolves Blunt Metal Marker's absent rough attribute to polished chrome", 
       roughness: 0.5,
       lacunarity: 2,
       distortion: 31.20849609375,
+      normalize: true,
       fromMin: 0,
       fromMax: 1,
       toMin: -1,

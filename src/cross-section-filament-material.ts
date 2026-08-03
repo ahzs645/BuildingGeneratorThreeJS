@@ -7,8 +7,13 @@ import {
   filamentWhiteNoise3,
   type FilamentBounds,
   type FilamentWaveConfig,
-} from "./filament-material";
+} from "./materials/blender-glsl";
 import type { Dump } from "./gnvm";
+import {
+  chainOnBeforeCompile,
+  glslFloat as glsl,
+  replaceOnce,
+} from "./materials/shader-patch";
 
 type RawSocket = { identifier?: string; name?: string; value?: unknown; default?: unknown };
 type RawNode = { name: string; type: string; props?: Record<string, unknown>; inputs?: RawSocket[]; outputs?: RawSocket[] };
@@ -383,10 +388,6 @@ export function mathClayFilamentFieldAtGenerated(
   };
 }
 
-function glsl(value: number): string {
-  return Number.isInteger(value) ? value.toFixed(1) : `${value}`;
-}
-
 function geometryBounds(geometry: THREE.BufferGeometry): FilamentBounds | null {
   const position = geometry.getAttribute("position");
   if (!position?.count) return null;
@@ -422,7 +423,13 @@ export function makeBdsfCrossSectionMaterial(
   if (!config) return null;
   const color = geometry.getAttribute(config.colorAttribute);
   const roughness = geometry.getAttribute(config.roughnessAttribute);
-  if (!color || color.itemSize !== 3 || !roughness || roughness.itemSize !== 1) return null;
+  const alpha = geometry.getAttribute(config.alphaAttribute);
+  if (!color || color.itemSize !== 3 || !roughness || roughness.itemSize !== 1
+    || !alpha || alpha.itemSize !== 1) return null;
+  let hasTransparency = false;
+  for (let index = 0; index < alpha.count && !hasTransparency; index++) {
+    hasTransparency = alpha.getX(index) < 1;
+  }
 
   // These controls are authored into the general-purpose material but evaluate
   // to Blender's missing-attribute zero on Dsurface. Refuse nonzero variants
@@ -441,6 +448,7 @@ export function makeBdsfCrossSectionMaterial(
     color: 0xffffff,
     metalness: 0,
     roughness: 1,
+    transparent: hasTransparency,
     envMapIntensity: 0.8,
     side: THREE.DoubleSide,
   });
@@ -449,18 +457,21 @@ export function makeBdsfCrossSectionMaterial(
   material.userData.bdsfResolvedZeroControls = zeroControls;
   const viewport = new THREE.Vector2(1, 1);
   material.onBeforeRender = (renderer) => renderer.getDrawingBufferSize(viewport);
-  material.onBeforeCompile = (shader) => {
+  material.customProgramCacheKey = () => `math-bdsf-cross-section-${materialName}-alpha-v2`;
+  chainOnBeforeCompile(material, (shader) => {
     shader.uniforms ??= {};
     shader.uniforms.bdsfViewport = { value: viewport };
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", `#include <common>
+    shader.vertexShader = replaceOnce(shader.vertexShader, "#include <common>", `#include <common>
 attribute vec3 ${config.colorAttribute};
 attribute float ${config.roughnessAttribute};
+attribute float ${config.alphaAttribute};
 varying vec3 vBdsfColor;
-varying float vBdsfRoughness;`)
-      .replace("#include <begin_vertex>", `#include <begin_vertex>
+varying float vBdsfRoughness;
+varying float vBdsfAlpha;`);
+    shader.vertexShader = replaceOnce(shader.vertexShader, "#include <begin_vertex>", `#include <begin_vertex>
 vBdsfColor=${config.colorAttribute};
-vBdsfRoughness=${config.roughnessAttribute};`);
+vBdsfRoughness=${config.roughnessAttribute};
+vBdsfAlpha=${config.alphaAttribute};`);
     const waveConfig: FilamentWaveConfig = {
       distortion: config.backWaveDistortion,
       detail: config.backWaveDetail,
@@ -468,11 +479,11 @@ vBdsfRoughness=${config.roughnessAttribute};`);
       detailRoughness: config.backWaveDetailRoughness,
       direction: "DIAGONAL",
     };
-    shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", `#include <common>
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <common>", `#include <common>
 uniform vec2 bdsfViewport;
 varying vec3 vBdsfColor;
 varying float vBdsfRoughness;
+varying float vBdsfAlpha;
 ${filamentNoiseGlsl("bdsfCrossSection")}
 ${filamentWaveFunctionGlsl("bdsfCrossSection", "bdsfCrossSectionBackWave", waveConfig)}
 vec3 bdsfCrossSectionBackColor(vec3 color) {
@@ -482,12 +493,11 @@ vec3 bdsfCrossSectionBackColor(vec3 color) {
   vec2 windowCoordinate=gl_FragCoord.xy/max(bdsfViewport,vec2(1.0));
   float wave=bdsfCrossSectionBackWave(vec3(windowCoordinate,0.0),${glsl(config.backWaveScale)});
   return wave<${glsl(config.backWaveThreshold)}?vec3(0.0):hsv;
-}`)
-      .replace("#include <color_fragment>", "#include <color_fragment>\ndiffuseColor.rgb=max(vBdsfColor,vec3(0.0));")
-      .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor=clamp(vBdsfRoughness,0.0,1.0);")
-      .replace("#include <opaque_fragment>", "if(!gl_FrontFacing)outgoingLight=bdsfCrossSectionBackColor(vBdsfColor);\n#include <opaque_fragment>");
-  };
-  material.customProgramCacheKey = () => `math-bdsf-cross-section-${materialName}-v1`;
+}`);
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <color_fragment>", "#include <color_fragment>\ndiffuseColor.rgb=max(vBdsfColor,vec3(0.0));\ndiffuseColor.a*=clamp(vBdsfAlpha,0.0,1.0);");
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor=clamp(vBdsfRoughness,0.0,1.0);");
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <opaque_fragment>", "if(!gl_FrontFacing)outgoingLight=bdsfCrossSectionBackColor(vBdsfColor);\n#include <opaque_fragment>");
+  });
   return material;
 }
 
@@ -520,7 +530,12 @@ export function makeCrossSectionFilamentMaterial(
   material.onBeforeRender = (renderer) => {
     if (config.mathClay || config.jointFilament) renderer.getDrawingBufferSize(viewport);
   };
-  material.onBeforeCompile = (shader) => {
+  const boundsKey = bounds
+    ? [...bounds.min, ...bounds.max.map((value, axis) => Math.max(value - bounds.min[axis], 1e-20))].join(",")
+    : "no-generated-bounds";
+  material.customProgramCacheKey = () =>
+    `joint-filament-${materialName}-${config.mathClay ? "math" : "joint"}-${boundsKey}-v4`;
+  chainOnBeforeCompile(material, (shader) => {
     const roughnessDeclaration = config.roughnessAttribute ? `attribute float ${config.roughnessAttribute};` : "";
     const roughnessValue = config.roughnessAttribute ?? glsl(config.roughnessFallback);
     const mathVertexDeclaration = config.mathClay ? `\nattribute float ${config.layerAttribute};\nvarying vec3 vMathFilamentGenerated;\nvarying float vMathFilamentLayer;`
@@ -531,15 +546,13 @@ vMathFilamentGenerated=(position-vec3(${bounds.min.map(glsl).join(",")}))/vec3($
 vMathFilamentLayer=${config.layerAttribute};` : config.jointFilament && bounds ? `
 vJointFilamentGenerated=(position-vec3(${bounds.min.map(glsl).join(",")}))/vec3(${bounds.max.map((value, axis) => glsl(Math.max(value - bounds.min[axis], 1e-20))).join(",")});
 vJointFilamentLayer=${config.layerAttribute};` : "";
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", `#include <common>\nattribute vec3 ${config.colorAttribute};\n${roughnessDeclaration}\nvarying vec3 vJointColor;\nvarying float vJointRoughness;${mathVertexDeclaration}`)
-      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvJointColor=${config.colorAttribute};\nvJointRoughness=${roughnessValue};${mathVertexValue}`);
-    shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", "#include <common>\nvarying vec3 vJointColor;\nvarying float vJointRoughness;")
-      .replace("#include <color_fragment>", `#include <color_fragment>
-diffuseColor.rgb=gl_FrontFacing?max(vJointColor,vec3(0.0)):vec3(0.0);`)
-      .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor=clamp(vJointRoughness,0.0,1.0);")
-      .replace("#include <opaque_fragment>", "if(!gl_FrontFacing)outgoingLight=vec3(0.0);\n#include <opaque_fragment>");
+    shader.vertexShader = replaceOnce(shader.vertexShader, "#include <common>", `#include <common>\nattribute vec3 ${config.colorAttribute};\n${roughnessDeclaration}\nvarying vec3 vJointColor;\nvarying float vJointRoughness;${mathVertexDeclaration}`);
+    shader.vertexShader = replaceOnce(shader.vertexShader, "#include <begin_vertex>", `#include <begin_vertex>\nvJointColor=${config.colorAttribute};\nvJointRoughness=${roughnessValue};${mathVertexValue}`);
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <common>", "#include <common>\nvarying vec3 vJointColor;\nvarying float vJointRoughness;");
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <color_fragment>", `#include <color_fragment>
+diffuseColor.rgb=gl_FrontFacing?max(vJointColor,vec3(0.0)):vec3(0.0);`);
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor=clamp(vJointRoughness,0.0,1.0);");
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <opaque_fragment>", "if(!gl_FrontFacing)outgoingLight=vec3(0.0);\n#include <opaque_fragment>");
 
     if (config.jointFilament && bounds) {
       const joint = config.jointFilament;
@@ -559,8 +572,7 @@ diffuseColor.rgb=gl_FrontFacing?max(vJointColor,vec3(0.0)):vec3(0.0);`)
       };
       shader.uniforms ??= {};
       shader.uniforms.jointFilamentViewport = { value: viewport };
-      shader.fragmentShader = shader.fragmentShader
-        .replace("#include <common>", `#include <common>
+      shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <common>", `#include <common>
 uniform vec2 jointFilamentViewport;
 varying vec3 vJointFilamentGenerated;
 varying float vJointFilamentLayer;
@@ -584,8 +596,8 @@ vec3 jointFilamentBackColor(vec3 jointColor) {
   vec2 windowCoordinate=gl_FragCoord.xy/max(jointFilamentViewport,vec2(1.0));
   float mask=jointFilamentBackWave(vec3(windowCoordinate,0.0),${glsl(joint.backWaveScale)});
   return mask<${glsl(joint.backWaveThreshold)}?vec3(0.0):color;
-}`)
-        .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
+}`);
+      shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <normal_fragment_maps>", `#include <normal_fragment_maps>
 ${filamentBumpGlsl({
           prefix: "jointFilamentBump",
           coordinate: "vJointFilamentGenerated",
@@ -594,8 +606,8 @@ ${filamentBumpGlsl({
           distance: joint.bumpDistance,
           filterWidth: joint.bumpFilterWidth,
           invert: joint.bumpInvert,
-        })}`)
-        .replace("if(!gl_FrontFacing)outgoingLight=vec3(0.0);", "if(!gl_FrontFacing)outgoingLight=jointFilamentBackColor(vJointColor);");
+        })}`);
+      shader.fragmentShader = replaceOnce(shader.fragmentShader, "if(!gl_FrontFacing)outgoingLight=vec3(0.0);", "if(!gl_FrontFacing)outgoingLight=jointFilamentBackColor(vJointColor);");
     }
 
     if (config.mathClay && bounds) {
@@ -609,8 +621,7 @@ ${filamentBumpGlsl({
       };
       shader.uniforms ??= {};
       shader.uniforms.mathFilamentViewport = { value: viewport };
-      shader.fragmentShader = shader.fragmentShader
-        .replace("#include <common>", `#include <common>
+      shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <common>", `#include <common>
 uniform vec2 mathFilamentViewport;
 varying vec3 vMathFilamentGenerated;
 varying float vMathFilamentLayer;
@@ -634,10 +645,10 @@ vec3 mathFilamentBackColor(vec3 jointColor) {
   vec2 windowCoordinate=gl_FragCoord.xy/max(mathFilamentViewport,vec2(1.0));
   float mask=mathFilamentBackWave(vec3(windowCoordinate,0.0),${glsl(math.backWaveScale)});
   return mask<${glsl(math.backWaveThreshold)}?vec3(0.0):color;
-}`)
-        .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
-roughnessFactor=clamp(mix(${glsl(math.roughness.min)},${glsl(math.roughness.max)},mathFilamentField(vMathFilamentGenerated)),0.0,1.0);`)
-        .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
+}`);
+      shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
+roughnessFactor=clamp(mix(${glsl(math.roughness.min)},${glsl(math.roughness.max)},mathFilamentField(vMathFilamentGenerated)),0.0,1.0);`);
+      shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <normal_fragment_maps>", `#include <normal_fragment_maps>
 ${filamentBumpGlsl({
           prefix: "mathFilamentBump",
           coordinate: "vMathFilamentGenerated",
@@ -646,14 +657,25 @@ ${filamentBumpGlsl({
           distance: math.bumpDistance,
           filterWidth: math.bumpFilterWidth,
           invert: math.bumpInvert,
-        })}`)
-        .replace("#include <lights_physical_fragment>", THREE.ShaderChunk.lights_physical_fragment
-          .replace("material.clearcoat = clearcoat;", `material.clearcoat = clamp(mix(${glsl(math.coatWeight.min)},${glsl(math.coatWeight.max)},mathFilamentField(vMathFilamentGenerated)),0.0,1.0);`)
-          .replace("material.clearcoatRoughness = clearcoatRoughness;", `material.clearcoatRoughness = clamp(mix(${glsl(math.coatRoughness.min)},${glsl(math.coatRoughness.max)},mathFilamentField(vMathFilamentGenerated)),0.0,1.0);`)
-          .replace("material.clearcoatF0 = vec3( 0.04 );", `material.clearcoatF0 = vec3( pow2( (${glsl(math.coatIor)} - 1.0) / (${glsl(math.coatIor)} + 1.0) ) );`))
-        .replace("if(!gl_FrontFacing)outgoingLight=vec3(0.0);", "if(!gl_FrontFacing)outgoingLight=mathFilamentBackColor(vJointColor);");
+        })}`);
+      let physicalLights = replaceOnce(
+        THREE.ShaderChunk.lights_physical_fragment,
+        "material.clearcoat = clearcoat;",
+        `material.clearcoat = clamp(mix(${glsl(math.coatWeight.min)},${glsl(math.coatWeight.max)},mathFilamentField(vMathFilamentGenerated)),0.0,1.0);`,
+      );
+      physicalLights = replaceOnce(
+        physicalLights,
+        "material.clearcoatRoughness = clearcoatRoughness;",
+        `material.clearcoatRoughness = clamp(mix(${glsl(math.coatRoughness.min)},${glsl(math.coatRoughness.max)},mathFilamentField(vMathFilamentGenerated)),0.0,1.0);`,
+      );
+      physicalLights = replaceOnce(
+        physicalLights,
+        "material.clearcoatF0 = vec3( 0.04 );",
+        `material.clearcoatF0 = vec3( pow2( (${glsl(math.coatIor)} - 1.0) / (${glsl(math.coatIor)} + 1.0) ) );`,
+      );
+      shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <lights_physical_fragment>", physicalLights);
+      shader.fragmentShader = replaceOnce(shader.fragmentShader, "if(!gl_FrontFacing)outgoingLight=vec3(0.0);", "if(!gl_FrontFacing)outgoingLight=mathFilamentBackColor(vJointColor);");
     }
-  };
-  material.customProgramCacheKey = () => `joint-filament-${materialName}-${config.mathClay ? "math-v2" : "joint-v3"}`;
+  });
   return material;
 }

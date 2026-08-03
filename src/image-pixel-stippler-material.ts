@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { Dump, TriSoup } from "./gnvm";
+import { voronoiGlsl } from "./materials/blender-glsl";
 
 type RawInput = { name: string; identifier: string; linked: boolean; value: unknown };
 type RawNode = {
@@ -109,23 +110,6 @@ const stippleFragmentShader = /* glsl */`
   varying float vRandomness;
   out vec4 fragColor;
 
-  // Exact signed PCG3D integer hash used by Blender's GPU shader. The signed
-  // right shift is significant for negative lanes; converting to uint would
-  // turn it into a logical shift and select different feature points.
-  vec3 hash3(vec3 cell) {
-    ivec3 v = ivec3(cell);
-    v = v * 1664525 + 1013904223;
-    v.x += v.y * v.z;
-    v.y += v.z * v.x;
-    v.z += v.x * v.y;
-    v = v ^ (v >> 16);
-    v.x += v.y * v.z;
-    v.y += v.z * v.x;
-    v.z += v.x * v.y;
-    v = v & ivec3(0x7fffffff);
-    return vec3(v) / 2147483647.0;
-  }
-
   vec3 rotateXYZ(vec3 p, vec3 r) {
     vec3 c = cos(r), s = sin(r);
     p = vec3(p.x, c.x * p.y - s.x * p.z, s.x * p.y + c.x * p.z);
@@ -133,26 +117,10 @@ const stippleFragmentShader = /* glsl */`
     return vec3(c.z * p.x - s.z * p.y, s.z * p.x + c.z * p.y, p.z);
   }
 
-  float voronoiF1(vec3 p, float randomness) {
-    vec3 base = floor(p);
-    vec3 local = fract(p);
-    float nearest = 2.0;
-    for (int z = -1; z <= 1; z++) {
-      for (int y = -1; y <= 1; y++) {
-        for (int x = -1; x <= 1; x++) {
-          vec3 cell = vec3(float(x), float(y), float(z));
-          // Blender scales the hashed point offset from the cell corner; zero
-          // randomness therefore lands on the corner, not the cell center.
-          vec3 point = cell + hash3(base + cell) * clamp(randomness, 0.0, 1.0);
-          nearest = min(nearest, length(point - local));
-        }
-      }
-    }
-    return nearest;
-  }
+  ${voronoiGlsl({ prefix: "stipple", feature: "F1", functionName: "voronoiF1" })}
 
   float authoredMask(vec3 mapped, float density, float randomness, float threshold) {
-    float distanceToFeature = voronoiF1(mapped * max(density, 0.0), randomness);
+    float distanceToFeature = voronoiF1(mapped * max(density, 0.0), randomness, 0.0);
     float firstGreaterThan = distanceToFeature > threshold ? 1.0 : 0.0;
     return firstGreaterThan > threshold ? 1.0 : 0.0;
   }
@@ -173,7 +141,7 @@ const stippleFragmentShader = /* glsl */`
       return;
     }
     if (debugMode > 2.5) {
-      float distanceToFeature = voronoiF1(mapped * max(vDensity, 0.0), vRandomness);
+      float distanceToFeature = voronoiF1(mapped * max(vDensity, 0.0), vRandomness, 0.0);
       fragColor = vec4(vec3(distanceToFeature), 1.0);
       return;
     }
@@ -201,13 +169,18 @@ const imageFragmentShader = /* glsl */`
 export function expandFaceDomainMaterialAttributes(
   geometry: THREE.BufferGeometry,
   soup: TriSoup,
+  attributeNames?: ReadonlySet<string>,
 ): THREE.BufferGeometry {
   const triangleFaces = soup.triangleFaces;
-  const faceAttributes = Object.entries(soup.attributes).filter(([, attribute]) =>
-    attribute.domain === "FACE" && attribute.domainData);
-  if (!geometry.index || !triangleFaces || !faceAttributes.length) return geometry;
-  const expanded = geometry.toNonIndexed();
-  const cornerCount = soup.indices.length;
+  const faceAttributes = Object.entries(soup.attributes).filter(([name, attribute]) =>
+    (!attributeNames || attributeNames.has(name)) && attribute.domain === "FACE" && attribute.domainData);
+  if (!triangleFaces || !faceAttributes.length) return geometry;
+  const expanded = geometry.index ? geometry.toNonIndexed() : geometry;
+  const cornerCount = expanded.getAttribute("position")?.count ?? 0;
+  if (cornerCount !== soup.indices.length) {
+    if (expanded !== geometry) expanded.dispose();
+    return geometry;
+  }
   for (const [name, attribute] of faceAttributes) {
     const source = attribute.domainData!;
     const data = new Float32Array(cornerCount * attribute.itemSize);

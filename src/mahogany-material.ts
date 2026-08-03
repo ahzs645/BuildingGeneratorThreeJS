@@ -2,9 +2,17 @@ import * as THREE from "three";
 import type { Dump } from "./gnvm";
 import {
   filamentBumpGlsl,
+  filamentFbmGlsl,
   filamentNoiseGlsl,
   filamentWaveFunctionGlsl,
-} from "./filament-material";
+  generatedCoordinateGlsl,
+  mapRangeGlsl,
+} from "./materials/blender-glsl";
+import {
+  chainOnBeforeCompile,
+  glslFloat as glsl,
+  replaceOnce,
+} from "./materials/shader-patch";
 
 type RawSocket = { identifier?: string; name?: string; value?: unknown; default?: unknown };
 type RawNode = { name: string; type: string; props?: Record<string, any>; inputs?: RawSocket[]; outputs?: RawSocket[] };
@@ -295,35 +303,7 @@ export function extractMahoganyMaterialConfig(dump: Dump, materialName: string):
   };
 }
 
-function glsl(value: number): string {
-  return Number.isInteger(value) ? value.toFixed(1) : `${value}`;
-}
-
 function mahoganyNoiseTextureGlsl(config: MahoganyCommonConfig): string {
-  const completedOctaves = Math.max(1, Math.floor(config.noiseDetail) + 1);
-  const amplitudes = Array.from(
-    { length: completedOctaves },
-    (_, octave) => config.noiseRoughness ** octave,
-  );
-  const frequencies = Array.from(
-    { length: completedOctaves },
-    (_, octave) => config.noiseLacunarity ** octave,
-  );
-  const sum = amplitudes.map(
-    (amplitude, octave) => `${glsl(amplitude)} * mahoganyNoise(p * ${glsl(frequencies[octave])})`,
-  ).join("\n    + ");
-  const maxAmplitude = amplitudes.reduce((total, amplitude) => total + amplitude, 0);
-  const remainder = config.noiseDetail - Math.floor(config.noiseDetail);
-  const normalized = config.noiseNormalize
-    ? `0.5 * (${sum}) / ${glsl(maxAmplitude)} + 0.5`
-    : `(${sum})`;
-  const nextAmplitude = config.noiseRoughness ** completedOctaves;
-  const nextFrequency = config.noiseLacunarity ** completedOctaves;
-  const withRemainder = remainder === 0
-    ? normalized
-    : config.noiseNormalize
-      ? `mix(${normalized}, 0.5 * ((${sum}) + ${glsl(nextAmplitude)} * mahoganyNoise(p * ${glsl(nextFrequency)})) / ${glsl(maxAmplitude + nextAmplitude)} + 0.5, ${glsl(remainder)})`
-      : `mix(${normalized}, ((${sum}) + ${glsl(nextAmplitude)} * mahoganyNoise(p * ${glsl(nextFrequency)})), ${glsl(remainder)})`;
   // Blender's random_vector3_offset(seed) uses hash_float2_to_float and
   // maps each component into [100, 200]. These lookup3-derived values are the
   // seed 0/1/2 offsets used by the 3D Noise Texture distortion branch.
@@ -332,13 +312,19 @@ function mahoganyNoiseTextureGlsl(config: MahoganyCommonConfig): string {
     [199.8400018782914, 162.2925926843408, 154.048234399885],
     [111.63384265071569, 157.36939531224067, 199.0881114730351],
   ];
-  return `float mahoganyTextureNoise(vec3 generated) {
+  return `${filamentFbmGlsl("mahogany", "mahoganyFbm", {
+    detail: config.noiseDetail,
+    roughness: config.noiseRoughness,
+    lacunarity: config.noiseLacunarity,
+    normalize: config.noiseNormalize,
+  })}
+float mahoganyTextureNoise(vec3 generated) {
   vec3 p = generated * ${glsl(config.noiseScale)};
   p += vec3(
     mahoganyNoise(p + vec3(${offsets[0].map(glsl).join(",")})),
     mahoganyNoise(p + vec3(${offsets[1].map(glsl).join(",")})),
     mahoganyNoise(p + vec3(${offsets[2].map(glsl).join(",")}))) * ${glsl(config.noiseDistortion)};
-  return ${withRemainder};
+  return mahoganyFbm(p);
 }`;
 }
 
@@ -363,16 +349,16 @@ export function makeMahoganyMaterial(dump: Dump, geometry: THREE.BufferGeometry,
     });
     material.name = `${materialName} · N03D procedural mahogany reconstruction`;
     material.userData.mahoganyContract = config;
-    material.onBeforeCompile = (shader) => {
+    const boundsKey = [...bounds.min.toArray(), ...size.toArray()].join(",");
+    material.customProgramCacheKey = () => `mahogany-n03d-${materialName}-${boundsKey}-v2`;
+    chainOnBeforeCompile(material, (shader) => {
       const rotation = config.mappingRotation.map(glsl).join(",");
       const colorA = config.colorA.map(glsl).join(",");
       const colorB = config.colorB.map(glsl).join(",");
-      shader.vertexShader = shader.vertexShader
-        .replace("#include <common>", "#include <common>\nvarying vec3 vMahoganyGenerated;")
-        .replace("#include <begin_vertex>", `#include <begin_vertex>
-vMahoganyGenerated=(position-vec3(${glsl(bounds.min.x)},${glsl(bounds.min.y)},${glsl(bounds.min.z)}))/max(vec3(${glsl(size.x)},${glsl(size.y)},${glsl(size.z)}),vec3(1e-7));`);
-      shader.fragmentShader = shader.fragmentShader
-        .replace("#include <common>", `#include <common>
+      shader.vertexShader = replaceOnce(shader.vertexShader, "#include <common>", "#include <common>\nvarying vec3 vMahoganyGenerated;");
+      shader.vertexShader = replaceOnce(shader.vertexShader, "#include <begin_vertex>", `#include <begin_vertex>
+${generatedCoordinateGlsl("vMahogany", { min: bounds.min.toArray(), max: bounds.max.toArray(), epsilon: 1e-7 })}`);
+      shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <common>", `#include <common>
 varying vec3 vMahoganyGenerated;
 vec3 mahoganyN03dRotate(vec3 p,vec3 r){vec3 c=cos(r),s=sin(r);p=vec3(p.x,p.y*c.x-p.z*s.x,p.y*s.x+p.z*c.x);p=vec3(p.x*c.y+p.z*s.y,p.y,-p.x*s.y+p.z*c.y);return vec3(p.x*c.z-p.y*s.z,p.x*s.z+p.y*c.z,p.z);}
 ${filamentNoiseGlsl("mahoganyN03d")}
@@ -384,18 +370,20 @@ ${filamentWaveFunctionGlsl("mahoganyN03d", "mahoganyN03dWave", {
     direction: "X",
     phaseOffset: config.wavePhase,
   })}
+${mapRangeGlsl({ name: "mahoganyN03dMap", fromMin: 0, fromMax: 1, toMin: config.mapToMin, toMax: config.noiseConstant, clamp: true })}
+${mapRangeGlsl({ name: "mahoganyN03dHeightMap", fromMin: 0, fromMax: 1, toMin: config.bumpHeightMin, toMax: config.bumpHeightMax, clamp: false })}
 float mahoganyN03dFactor(vec3 generated){
   vec3 mapped=mahoganyN03dRotate(generated*${glsl(config.mappingScale)},vec3(${rotation}));
   float wave=mahoganyN03dWave(mapped,${glsl(config.waveScale)});
-  return mix(${glsl(config.mapToMin)},${glsl(config.noiseConstant)},wave);
+  return mahoganyN03dMap(wave);
 }
 float mahoganyN03dHeight(vec3 generated){
-  return mix(${glsl(config.bumpHeightMin)},${glsl(config.bumpHeightMax)},mahoganyN03dFactor(generated));
-}`)
-        .replace("#include <color_fragment>", `#include <color_fragment>
+  return mahoganyN03dHeightMap(mahoganyN03dFactor(generated));
+}`);
+      shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <color_fragment>", `#include <color_fragment>
 float mahoganyN03dMapped=mahoganyN03dFactor(vMahoganyGenerated);
-diffuseColor.rgb=mix(vec3(${colorA}),vec3(${colorB}),mahoganyN03dMapped);`)
-        .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
+diffuseColor.rgb=mix(vec3(${colorA}),vec3(${colorB}),mahoganyN03dMapped);`);
+      shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <normal_fragment_maps>", `#include <normal_fragment_maps>
 ${filamentBumpGlsl({
     prefix: "mahoganyN03dBump",
     coordinate: "vMahoganyGenerated",
@@ -405,8 +393,7 @@ ${filamentBumpGlsl({
     filterWidth: config.bumpFilterWidth,
     invert: config.bumpInvert,
   })}`);
-    };
-    material.customProgramCacheKey = () => `mahogany-n03d-${materialName}-${bounds.min.toArray().join(",")}-${bounds.max.toArray().join(",")}-v1`;
+    });
     return material;
   }
 
@@ -430,17 +417,17 @@ ${filamentBumpGlsl({
   });
   material.name = `${materialName} · procedural mahogany reconstruction`;
   material.userData.mahoganyContract = config;
-  material.onBeforeCompile = (shader) => {
+  const boundsKey = [...bounds.min.toArray(), ...size.toArray()].join(",");
+  material.customProgramCacheKey = () => `mahogany-attributes-${materialName}-${boundsKey}-v3`;
+  chainOnBeforeCompile(material, (shader) => {
     const fallback = config.colorFallback.map(glsl).join(",");
     const colorADeclaration = colorA ? `attribute vec3 ${config.colorAAttribute};` : "";
     const colorBDeclaration = colorB ? `attribute vec3 ${config.colorBAttribute};` : "";
     const colorAValue = colorA ? config.colorAAttribute : `vec3(${fallback})`;
     const colorBValue = colorB ? config.colorBAttribute : `vec3(${fallback})`;
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", `#include <common>\n${colorADeclaration}\n${colorBDeclaration}\nattribute float ${config.scaleAttribute};\nattribute vec3 ${config.rotationAttribute};\nvarying vec3 vMahoganyA;\nvarying vec3 vMahoganyB;\nvarying float vMahoganyScale;\nvarying vec3 vMahoganyRotation;\nvarying vec3 vMahoganyGenerated;`)
-      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvMahoganyA=${colorAValue};\nvMahoganyB=${colorBValue};\nvMahoganyScale=${config.scaleAttribute};\nvMahoganyRotation=${config.rotationAttribute};\nvMahoganyGenerated=(position-vec3(${glsl(bounds.min.x)},${glsl(bounds.min.y)},${glsl(bounds.min.z)}))/max(vec3(${glsl(size.x)},${glsl(size.y)},${glsl(size.z)}),vec3(1e-7));`);
-    shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", `#include <common>
+    shader.vertexShader = replaceOnce(shader.vertexShader, "#include <common>", `#include <common>\n${colorADeclaration}\n${colorBDeclaration}\nattribute float ${config.scaleAttribute};\nattribute vec3 ${config.rotationAttribute};\nvarying vec3 vMahoganyA;\nvarying vec3 vMahoganyB;\nvarying float vMahoganyScale;\nvarying vec3 vMahoganyRotation;\nvarying vec3 vMahoganyGenerated;`);
+    shader.vertexShader = replaceOnce(shader.vertexShader, "#include <begin_vertex>", `#include <begin_vertex>\nvMahoganyA=${colorAValue};\nvMahoganyB=${colorBValue};\nvMahoganyScale=${config.scaleAttribute};\nvMahoganyRotation=${config.rotationAttribute};\n${generatedCoordinateGlsl("vMahogany", { min: bounds.min.toArray(), max: bounds.max.toArray(), epsilon: 1e-7 })}`);
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <common>", `#include <common>
 varying vec3 vMahoganyA;varying vec3 vMahoganyB;varying float vMahoganyScale;varying vec3 vMahoganyRotation;varying vec3 vMahoganyGenerated;
 vec3 mahoganyRotate(vec3 p,vec3 r){vec3 c=cos(r),s=sin(r);p=vec3(p.x,p.y*c.x-p.z*s.x,p.y*s.x+p.z*c.x);p=vec3(p.x*c.y+p.z*s.y,p.y,-p.x*s.y+p.z*c.y);return vec3(p.x*c.z-p.y*s.z,p.x*s.z+p.y*c.z,p.z);}
 ${filamentNoiseGlsl("mahogany")}
@@ -451,19 +438,27 @@ ${filamentWaveFunctionGlsl("mahogany", "mahoganyWave", {
     detailRoughness: config.waveDetailRoughness,
     direction: "X",
     phaseOffset: config.wavePhase,
+})}
+${mapRangeGlsl({
+    name: "mahoganyMapRange",
+    fromMin: 0,
+    fromMax: 1,
+    toMin: config.mapToMin,
+    toMax: "toMax",
+    clamp: true,
+    parameters: ["float toMax"],
   })}
-${mahoganyNoiseTextureGlsl(config)}`)
-      .replace("#include <color_fragment>", `#include <color_fragment>
+${mahoganyNoiseTextureGlsl(config)}`);
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <color_fragment>", `#include <color_fragment>
 vec3 mahoganyP=mahoganyRotate(vMahoganyGenerated*max(vMahoganyScale,1e-4),vMahoganyRotation);
 float mahoganyNoiseValue=mahoganyTextureNoise(vMahoganyGenerated);
 float mahoganyWaveValue=mahoganyWave(mahoganyP,${glsl(config.waveScale)});
-float mahoganyMapped=mix(${glsl(config.mapToMin)},mahoganyNoiseValue,mahoganyWaveValue);
+float mahoganyMapped=mahoganyMapRange(mahoganyWaveValue,mahoganyNoiseValue);
 float mahoganyColorFactor=clamp(mahoganyMapped,0.0,1.0);
-diffuseColor.rgb=mix(max(vMahoganyA,vec3(0.0)),max(vMahoganyB,vec3(0.0)),mahoganyColorFactor);`)
-      .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
+diffuseColor.rgb=mix(max(vMahoganyA,vec3(0.0)),max(vMahoganyB,vec3(0.0)),mahoganyColorFactor);`);
+    shader.fragmentShader = replaceOnce(shader.fragmentShader, "#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
 float mahoganyRamp=mix(${glsl(config.roughnessRamp[0].color)},${glsl(config.roughnessRamp[1].color)},clamp((mahoganyMapped-${glsl(config.roughnessRamp[0].position)})/max(${glsl(config.roughnessRamp[1].position - config.roughnessRamp[0].position)},1e-6),0.0,1.0));
 roughnessFactor=clamp(mix(mahoganyMapped,mahoganyNoiseValue,mahoganyRamp),0.0,1.0);`);
-  };
-  material.customProgramCacheKey = () => `mahogany-attributes-${materialName}-v2`;
+  });
   return material;
 }

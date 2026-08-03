@@ -79,9 +79,10 @@ test("exports and wires img, dens, and grid attributes on the exact authored mes
   assert.ok(material?.isShaderMaterial);
   assert.equal(material?.name, "Image Pixel Stippler · WebGL reconstruction");
   assert.equal(material?.glslVersion, THREE.GLSL3);
-  assert.match(material?.fragmentShader ?? "", /ivec3 v = ivec3\(cell\)/);
-  assert.match(material?.fragmentShader ?? "", /v = v \^ \(v >> 16\)/);
-  assert.match(material?.fragmentShader ?? "", /cell \+ hash3\(base \+ cell\) \* clamp\(randomness/);
+  assert.match(material?.fragmentShader ?? "", /ivec3 stipplePcg3d/);
+  assert.match(material?.fragmentShader ?? "", /value \^= value >> 16/);
+  assert.match(material?.fragmentShader ?? "", /vec3\(stipplePcg3d\(cell\)\) \/ 2147483647\.0/);
+  assert.match(material?.fragmentShader ?? "", /vec3\(offset\) \+ stippleHashCell\(cell \+ offset\) \* clamp\(randomness/);
   assert.match(material?.fragmentShader ?? "", /distanceToFeature > threshold \? 1\.0 : 0\.0/);
   assert.match(material?.fragmentShader ?? "", /float mask = authoredMask\(mapped, vDensity, vRandomness, threshold\)/);
   assert.doesNotMatch(material?.fragmentShader ?? "", /dFdx|sampleY < 4/);
