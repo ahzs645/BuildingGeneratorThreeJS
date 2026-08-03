@@ -5,7 +5,13 @@ import { useToolController } from "../page-runtime";
 import { StudioPanelHeader, StudioShell } from "../studio/StudioShell";
 import "./building.css";
 
-const loadBuilding = () => import("../../main");
+// Started here rather than inside the loader callback: as a callback the import
+// was only discovered once React ran the mount effect, which held the runtime
+// chunk (three.js, loaders, lil-gui) back by ~1.2s. Evaluating this module is
+// itself the signal that the route is live, so fetch it now and hand the same
+// promise to the controller.
+const buildingRuntime = import("../../main");
+const loadBuilding = () => buildingRuntime;
 
 type BuildingControl = {
   name: keyof BuildingParams;

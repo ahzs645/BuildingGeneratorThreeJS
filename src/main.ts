@@ -1,6 +1,6 @@
 import {
   AgXToneMapping, BufferGeometry, Clock, Color, DoubleSide, EdgesGeometry,
-  Group, InstancedMesh, LineBasicMaterial, LineSegments, MathUtils,
+  BatchedMesh, Group, LineBasicMaterial, LineSegments, MathUtils,
   Material, Matrix4, Mesh, MeshBasicMaterial, MeshNormalMaterial, MeshStandardMaterial,
   Object3D, PerspectiveCamera, PlaneGeometry, Raycaster, Scene, ShaderMaterial,
   SRGBColorSpace, Texture, Vector2, Vector3, WebGLRenderer,
@@ -9,7 +9,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import GUI from "lil-gui";
 import { defaultParams, type BuildingParams } from "./params";
 import { generateBuilding } from "./generator";
-import { Kit } from "./kit";
+import { Kit, batchedInstances } from "./kit";
 import { Environment, type Bounds } from "./environment";
 import { PostFX } from "./postfx";
 import { createSnow } from "./snow";
@@ -251,8 +251,8 @@ export function createTool(): BuildingToolHandle {
     if (building) {
       root.remove(building);
       building.traverse(o => {
-        const im = o as { isInstancedMesh?: boolean; dispose?: () => void };
-        if (im.isInstancedMesh) im.dispose?.();
+        const batch = o as { isBatchedMesh?: boolean; dispose?: () => void };
+        if (batch.isBatchedMesh) batch.dispose?.();
       });
     }
     building = kit.buildGroup(generateBuilding(params, kit));
@@ -260,6 +260,7 @@ export function createTool(): BuildingToolHandle {
     root.add(building);
     applySnowEnabled(snowState.enabled); // new snowShell group starts hidden
     env.frame(getBounds());
+    env.invalidateShadows(); // new casters — the cached depth map no longer matches
   }
 
   // ---- mesh inspector: hover a mesh to outline it + read its name/polycount ----
@@ -318,19 +319,22 @@ export function createTool(): BuildingToolHandle {
     if (!inspect.enabled || !pointerInside || !building) return clearInspect();
     raycaster.setFromCamera(pointer, camera);
     const hits = raycaster.intersectObject(building, true);
-    const hit = hits.find(
-      h => (h.object as InstancedMesh).isInstancedMesh && isPickable(h.object),
-    );
+    // the building draws as BatchedMeshes, so a hit identifies an instance by
+    // batchId; the part name and source geometry come from the batch's table
+    const hit = hits.find(h => batchedInstances(h.object) && isPickable(h.object));
     if (!hit) return clearInspect();
-    const im = hit.object as InstancedMesh;
-    const geom = im.geometry;
+    const batch = hit.object as BatchedMesh;
+    const instances = batchedInstances(batch)!;
+    const id = hit.batchId!;
+    const geom = instances.geometries[id];
+    if (!geom) return clearInspect();
     outline.geometry = edgesFor(geom);
-    // world matrix of the hovered instance = mesh world * per-instance matrix
-    im.getMatrixAt(hit.instanceId!, _instMat);
-    outline.matrix.copy(im.matrixWorld).multiply(_instMat);
+    // world matrix of the hovered instance = batch world * per-instance matrix
+    batch.getMatrixAt(id, _instMat);
+    outline.matrix.copy(batch.matrixWorld).multiply(_instMat);
     outline.matrixWorld.copy(outline.matrix);
     outline.visible = true;
-    tip.textContent = `${im.name}  •  ${triCount(geom).toLocaleString()} tris  •  #${hit.instanceId}`;
+    tip.textContent = `${instances.names[id]}  •  ${triCount(geom).toLocaleString()} tris  •  #${id}`;
     tip.style.display = "block";
   }
 
@@ -662,6 +666,12 @@ export function createTool(): BuildingToolHandle {
     renderer.setSize(width, height, false);
     post.setSize(width, height);
   });
+
+  // TEMP PERF HOOK — remove
+  (window as unknown as { __perf?: unknown }).__perf = {
+    renderer, scene, camera, post, kit, controls, env,
+    get building() { return building; },
+  };
 
   const clock = new Clock();
   renderer.setAnimationLoop(() => {

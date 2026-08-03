@@ -7,7 +7,7 @@
  * so they are replaced wholesale by name: building / floor / glass.
  */
 import {
-  Group, InstancedMesh, Matrix4, Mesh, Object3D, DoubleSide, Color,
+  BatchedMesh, Group, Matrix4, Mesh, Object3D, DoubleSide, Color,
   BufferAttribute, BufferGeometry,
   MeshStandardMaterial, MeshPhysicalMaterial, Material, Texture, TextureLoader,
   SRGBColorSpace, NoColorSpace, RepeatWrapping,
@@ -147,6 +147,17 @@ export class Kit {
   }
 
   async load(glbUrl: string, manifestUrl: string): Promise<void> {
+    // Build the materials BEFORE awaiting the kit. TextureLoader.load() returns a
+    // Texture synchronously and starts its request immediately, so the ~13MB of
+    // facade maps download alongside the GLB instead of waiting for it to finish
+    // downloading and parsing first.
+    const materials = buildMaterials();
+    this.materials = materials;
+    // dry clones for interior parts — cloned now (before main.ts injects the wet
+    // shader into building/floor), so they never pick up the rain wetness
+    this.dryMaterials.set(materials.building, materials.building.clone());
+    this.dryMaterials.set(materials.floor, materials.floor.clone());
+
     const [gltf, manifest] = await Promise.all([
       new GLTFLoader().loadAsync(glbUrl),
       fetch(manifestUrl).then(r => r.json() as Promise<Manifest>),
@@ -164,12 +175,6 @@ export class Kit {
     }
     // replace GLB-embedded materials with the from-scratch ones (matched by name;
     // Blender exports "building", "floor", "glass")
-    const materials = buildMaterials();
-    this.materials = materials;
-    // dry clones for interior parts — cloned now (before main.ts injects the wet
-    // shader into building/floor), so they never pick up the rain wetness
-    this.dryMaterials.set(materials.building, materials.building.clone());
-    this.dryMaterials.set(materials.floor, materials.floor.clone());
     const fallback = materials.building;
     gltf.scene.traverse(o => {
       const mesh = o as Mesh;
@@ -184,7 +189,7 @@ export class Kit {
     });
   }
 
-  /** Build a Group of InstancedMeshes from placements (matrices in Blender Z-up space). */
+  /** Build the scene graph for a set of placements (matrices in Blender Z-up space). */
   buildGroup(placements: Placement[]): Group {
     const group = new Group();
     const byPart = new Map<string, Matrix4[]>();
@@ -194,12 +199,10 @@ export class Kit {
       list.push(pl.matrix);
     }
 
-    // separate layer of duplicated (buffer-shared) meshes that the snow shader
-    // extrudes — the base building geometry stays untouched
-    const snowLayer = new Group();
-    snowLayer.name = "snowShell";
-    snowLayer.visible = false;
-
+    // Pass 1: resolve every placement down to the buffers it will actually draw
+    // with. Grouping happens afterwards, on material, because that is what
+    // decides the draw call — part names do not.
+    const draws: Draw[] = [];
     const tmp = new Matrix4();
     for (const [key, matrices] of byPart) {
       // interior parts (rooms / store interiors) never see the sky — no snow shell,
@@ -230,37 +233,108 @@ export class Kit {
           if (tmp.determinant() < 0) mirrored.push(tmp.clone().multiply(MIRROR_X));
           else plain.push(tmp.clone());
         }
+        // interior meshes render with the dry clone (falls back to the original for
+        // glass / anything not cloned) so the rain wet shader never touches them
+        const baseMat = mesh.material as Material;
+        const material = interior ? (this.dryMaterials.get(baseMat) ?? baseMat) : baseMat;
+        const shell = !interior &&
+          (baseMat === this.materials.building || baseMat === this.materials.floor);
         for (const [geom, list] of [
           [mesh.geometry, plain],
           [mirrored.length ? this.mirroredGeometry(mesh.geometry) : null, mirrored],
         ] as const) {
           if (!geom || list.length === 0) continue;
-          // interior meshes render with the dry clone (falls back to the original for
-          // glass / anything not cloned) so the rain wet shader never touches them
-          const baseMat = mesh.material as Material;
-          const imMat = interior ? (this.dryMaterials.get(baseMat) ?? baseMat) : baseMat;
-          const im = new InstancedMesh(geom, imMat, list.length);
-          im.name = key; // e.g. COL[roof][2] — used by the hover inspector
-          im.castShadow = true;
-          im.receiveShadow = true;
-          for (let i = 0; i < list.length; i++) im.setMatrixAt(i, list[i]);
-          im.instanceMatrix.needsUpdate = true;
-          group.add(im);
-
-          // snow shell pass for opaque kit materials: same geometry, SAME
-          // instanceMatrix buffer — only the vertex shader extrudes it
-          if (this.snowShellMaterial && !interior &&
-              (mesh.material === this.materials.building || mesh.material === this.materials.floor)) {
-            const shell = new InstancedMesh(geom, this.snowShellMaterial, list.length);
-            shell.instanceMatrix = im.instanceMatrix;
-            shell.castShadow = false;
-            shell.receiveShadow = true;
-            snowLayer.add(shell);
-          }
+          for (const matrix of list) draws.push({ geometry: geom, material, matrix, key, shell });
         }
       });
     }
-    if (snowLayer.children.length) group.add(snowLayer);
+
+    // Pass 2: one BatchedMesh per material. Grouping by part key instead used to
+    // produce ~950 InstancedMeshes averaging two instances each — the frame was
+    // spent submitting draw calls rather than drawing. BatchedMesh keeps the
+    // per-object matrices, frustum culling and pickable ids that a plain merged
+    // geometry would throw away.
+    const byMaterial = new Map<Material, Draw[]>();
+    for (const draw of draws) {
+      let list = byMaterial.get(draw.material);
+      if (!list) byMaterial.set(draw.material, (list = []));
+      list.push(draw);
+    }
+    for (const [material, list] of byMaterial) group.add(buildBatch(material, list, true));
+
+    // The snow shell is a second pass over the same geometry that only the vertex
+    // shader extrudes. It can no longer share an instanceMatrix buffer the way the
+    // InstancedMesh pass did, so it costs one more copy of the kit's unique
+    // geometry (~2 MB) plus its own matrix texture.
+    if (this.snowShellMaterial) {
+      const shellDraws = draws.filter(d => d.shell);
+      if (shellDraws.length) {
+        const snowLayer = new Group();
+        snowLayer.name = "snowShell";
+        snowLayer.visible = false;
+        snowLayer.add(buildBatch(this.snowShellMaterial, shellDraws, false));
+        group.add(snowLayer);
+      }
+    }
     return group;
   }
+}
+
+/** One placed copy of a kit mesh, resolved to the buffers it will draw with. */
+interface Draw {
+  geometry: BufferGeometry;
+  material: Material;
+  matrix: Matrix4;
+  /** source part name, e.g. COL[roof][2] — surfaced by the hover inspector */
+  key: string;
+  /** exterior building/floor surface, so it also gets a snow-shell copy */
+  shell: boolean;
+}
+
+/**
+ * Per-instance provenance for a BatchedMesh, indexed by the `batchId` that
+ * raycasting reports. BatchedMesh has one name and one geometry for the whole
+ * batch, so the inspector reads these instead.
+ */
+export interface BatchedInstances {
+  names: string[];
+  geometries: BufferGeometry[];
+}
+
+/** The provenance table for a batch, or null for anything else in the graph. */
+export function batchedInstances(o: Object3D): BatchedInstances | null {
+  const data = (o as BatchedMesh).isBatchedMesh
+    ? (o.userData as { instances?: BatchedInstances }).instances
+    : undefined;
+  return data ?? null;
+}
+
+function buildBatch(material: Material, items: Draw[], castShadow: boolean): BatchedMesh {
+  const unique = new Set<BufferGeometry>();
+  for (const item of items) unique.add(item.geometry);
+  let vertices = 0;
+  let indices = 0;
+  for (const geometry of unique) {
+    vertices += geometry.getAttribute("position").count;
+    indices += geometry.index?.count ?? 0;
+  }
+
+  const batch = new BatchedMesh(items.length, vertices, indices, material);
+  batch.castShadow = castShadow;
+  batch.receiveShadow = true;
+
+  // addGeometry copies into the batch's shared buffers, so each distinct geometry
+  // is uploaded once no matter how many placements reference it
+  const geometryIds = new Map<BufferGeometry, number>();
+  const instances: BatchedInstances = { names: [], geometries: [] };
+  for (const item of items) {
+    let id = geometryIds.get(item.geometry);
+    if (id === undefined) geometryIds.set(item.geometry, (id = batch.addGeometry(item.geometry)));
+    const instanceId = batch.addInstance(id);
+    batch.setMatrixAt(instanceId, item.matrix);
+    instances.names[instanceId] = item.key;
+    instances.geometries[instanceId] = item.geometry;
+  }
+  batch.userData.instances = instances;
+  return batch;
 }

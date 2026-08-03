@@ -14,7 +14,7 @@
  */
 import { Vector2, Vector3 } from "three";
 import type { Material } from "three";
-import { chainOnBeforeCompile, replaceOnce } from "./materials/shader-patch";
+import { chainOnBeforeCompile, objectMatrixGlsl, replaceOnce } from "./materials/shader-patch";
 
 export interface WetUniforms {
   uTime: { value: number };
@@ -229,11 +229,8 @@ export function applyWet(material: Material, u: WetUniforms): void {
       shader.vertexShader,
       "#include <beginnormal_vertex>",
       `#include <beginnormal_vertex>
-        #ifdef USE_INSTANCING
-          mat3 wetWorldTransform = mat3(modelMatrix) * mat3(instanceMatrix);
-        #else
-          mat3 wetWorldTransform = mat3(modelMatrix);
-        #endif
+${objectMatrixGlsl("wet")}
+        mat3 wetWorldTransform = mat3(modelMatrix) * mat3(wetObjectMatrix);
         mat3 wetNMat = wetWorldNormalMatrix(wetWorldTransform);
         vWetWorldN = normalize(wetNMat * objectNormal);`,
     );
@@ -241,11 +238,7 @@ export function applyWet(material: Material, u: WetUniforms): void {
       shader.vertexShader,
       "#include <begin_vertex>",
       `#include <begin_vertex>
-        #ifdef USE_INSTANCING
-          vec4 wetWP = modelMatrix * instanceMatrix * vec4(transformed, 1.0);
-        #else
-          vec4 wetWP = modelMatrix * vec4(transformed, 1.0);
-        #endif
+        vec4 wetWP = modelMatrix * wetObjectMatrix * vec4(transformed, 1.0);
         vWetWorldP = wetWP.xyz;`,
     );
 

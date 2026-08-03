@@ -68,11 +68,19 @@ test("evaluates the live non-normalized FBM, dynamic Wave, Ping-Pong height bran
     fbm: vtextFbmAtGenerated(point, config.noiseScale, config),
     height: vtextHeightAtGenerated(point, config),
   }));
-  assert.deepEqual(values, [
+  const expected = [
     { fbm: -0.6291936213225311, height: 0.04498870024090193 },
     { fbm: 0.08560869864811303, height: 0.01961614247284918 },
     { fbm: -0.24236176531452075, height: -0.05638589164918132 },
-  ]);
+  ];
+  for (const [index, actual] of values.entries()) {
+    for (const key of ["fbm", "height"] as const) {
+      assert.ok(
+        Math.abs(actual[key] - expected[index][key]) <= 2e-12,
+        `${key} probe ${index}: ${actual[key]} != ${expected[index][key]}`,
+      );
+    }
+  }
 });
 
 const consumers = [

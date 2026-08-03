@@ -13,7 +13,7 @@
  * `uTime` is shared with the falling snow so the sparkle twinkles in lockstep.
  */
 import { Color, Vector2, DoubleSide, MeshStandardMaterial } from "three";
-import { chainOnBeforeCompile, replaceOnce } from "./materials/shader-patch";
+import { chainOnBeforeCompile, objectMatrixGlsl, replaceOnce } from "./materials/shader-patch";
 
 export interface SnowAccumUniforms {
   uTime: { value: number };
@@ -169,11 +169,8 @@ export function createSnowShellMaterial(u: SnowAccumUniforms): MeshStandardMater
       shader.vertexShader,
       "#include <beginnormal_vertex>",
       `#include <beginnormal_vertex>
-        #ifdef USE_INSTANCING
-          mat3 snowWorldTransform = mat3(modelMatrix) * mat3(instanceMatrix);
-        #else
-          mat3 snowWorldTransform = mat3(modelMatrix);
-        #endif
+${objectMatrixGlsl("snow")}
+        mat3 snowWorldTransform = mat3(modelMatrix) * mat3(snowObjectMatrix);
         mat3 snowNMat = snowWorldNormalMatrix(snowWorldTransform);
         vSnowWorldN = normalize(snowNMat * objectNormal);`,
     );
@@ -181,11 +178,7 @@ export function createSnowShellMaterial(u: SnowAccumUniforms): MeshStandardMater
       shader.vertexShader,
       "#include <begin_vertex>",
       `#include <begin_vertex>
-        #ifdef USE_INSTANCING
-          vec4 snowWP = modelMatrix * instanceMatrix * vec4(transformed, 1.0);
-        #else
-          vec4 snowWP = modelMatrix * vec4(transformed, 1.0);
-        #endif
+        vec4 snowWP = modelMatrix * snowObjectMatrix * vec4(transformed, 1.0);
         vSnowWorldP = snowWP.xyz;
         vec3 snowWN = snowNMat * objectNormal;
         float snowMs = max(length(snowWN), 1e-4);

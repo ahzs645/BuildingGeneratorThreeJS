@@ -81,6 +81,12 @@ export class Environment {
 
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = PCFSoftShadowMap;
+    // The scene is static between rebuilds — only the camera orbits — so the depth
+    // map is identical frame to frame. Worse, the composer calls renderer.render()
+    // twice per frame (RenderPass + GTAOPass) and autoUpdate rebuilt the map on
+    // each one. Invalidate explicitly instead, from frame() and invalidateShadows().
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
     renderer.toneMapping = AgXToneMapping;
     renderer.toneMappingExposure = this.settings.exposure;
 
@@ -118,6 +124,18 @@ export class Environment {
     cam.near = 0.5;
     cam.far = dist + b.radius * 3;
     cam.updateProjectionMatrix();
+
+    // the key light and its frustum both moved — the cached depth map is stale
+    this.invalidateShadows();
+  }
+
+  /**
+   * Queue one shadow-map render for the next frame. Callers must use this after
+   * anything that changes what the key light sees: rebuilt geometry, a moved
+   * light, or a material swap that alters alpha-tested silhouettes.
+   */
+  invalidateShadows(): void {
+    this.renderer.shadowMap.needsUpdate = true;
   }
 
   /** re-apply settings (used by the GUI + dev hook) */
