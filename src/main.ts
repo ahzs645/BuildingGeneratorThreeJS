@@ -1,6 +1,6 @@
 import {
-  AgXToneMapping, BufferGeometry, Clock, Color, DoubleSide, EdgesGeometry,
-  BatchedMesh, Group, LineBasicMaterial, LineSegments, MathUtils,
+  AgXToneMapping, BatchedMesh, BufferGeometry, Clock, Color, DoubleSide,
+  EdgesGeometry, Group, LineBasicMaterial, LineSegments, MathUtils,
   Material, Matrix4, Mesh, MeshBasicMaterial, MeshNormalMaterial, MeshStandardMaterial,
   Object3D, PerspectiveCamera, PlaneGeometry, Raycaster, Scene, ShaderMaterial,
   SRGBColorSpace, Texture, Vector2, Vector3, WebGLRenderer,
@@ -17,7 +17,9 @@ import { createSnowAccumUniforms, createSnowShellMaterial } from "./snowAccum";
 import { createRain } from "./rain";
 import { createWetUniforms, applyWet } from "./wet";
 import { publicUrl } from "./base-url";
-import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
+import {
+  canvasBox, observeCanvasBox, preferredCanvasPixelRatio, prefersLowPowerViewport,
+} from "./canvas-viewport";
 import type { ToolHandle } from "./react/page-runtime";
 
 /** Live generator parameters, pushed whenever anything but the dock changes them. */
@@ -78,12 +80,15 @@ const lightDefaults = {
 
 export function createTool(): BuildingToolHandle {
   const app = document.getElementById("app")!;
-  // logarithmicDepthBuffer spreads depth precision so near-coplanar surfaces (posters
-  // on walls, glass in frames, awnings flush to the facade) stop z-fighting
+  // No logarithmicDepthBuffer: it makes every fragment shader write gl_FragDepth,
+  // which turns off early-Z rejection across the whole facade. It buys precision
+  // only for near/far ratios in the millions; the tight 0.5/600 range set below
+  // already leaves a 24-bit buffer ~0.05mm of resolution at the building, so the
+  // near-coplanar surfaces it was added for (posters on walls, glass in frames,
+  // awnings flush to the facade) stay stable without it.
   const renderer = new WebGLRenderer({
     antialias: true,
     powerPreference: "high-performance",
-    logarithmicDepthBuffer: true,
   });
   renderer.setPixelRatio(preferredCanvasPixelRatio());
   const viewport = canvasBox(app);
@@ -354,7 +359,9 @@ export function createTool(): BuildingToolHandle {
   renderer.domElement.addEventListener("pointerleave", onPointerLeave);
 
   // cinematic post-processing (ported from SnowSystemThreeJS)
-  const post = new PostFX(renderer, scene, camera);
+  const post = new PostFX(renderer, scene, camera, {
+    ambientOcclusion: !prefersLowPowerViewport(),
+  });
   env.setAmbientOcclusionEnabled(post.gtaoSettings.enabled);
   env.setBlenderProfileHandler((enabled) => post.setBlenderColorProfileEnabled(enabled));
 
@@ -666,12 +673,6 @@ export function createTool(): BuildingToolHandle {
     renderer.setSize(width, height, false);
     post.setSize(width, height);
   });
-
-  // TEMP PERF HOOK — remove
-  (window as unknown as { __perf?: unknown }).__perf = {
-    renderer, scene, camera, post, kit, controls, env,
-    get building() { return building; },
-  };
 
   const clock = new Clock();
   renderer.setAnimationLoop(() => {

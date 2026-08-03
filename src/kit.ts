@@ -26,31 +26,36 @@ function tex(loader: TextureLoader, url: string, srgb = false): Texture {
 
 function buildMaterials(): Record<string, Material> {
   const loader = new TextureLoader();
+  // Roughness and metalness ship as one ORM map per material (tools/optimize-textures.mjs):
+  // three samples roughness from .g and metalness from .b, so the same texture
+  // feeds both slots and the pair costs one request instead of two.
+  const buildingOrm = tex(loader, publicUrl("textures/Material_ORM.webp"));
+  const floorOrm = tex(loader, publicUrl("textures/floor_ORM.webp"));
   const building = new MeshStandardMaterial({
     name: "building",
-    map: tex(loader, publicUrl("textures/Material_Base_color.png"), true),
-    normalMap: tex(loader, publicUrl("textures/Material_Normal_OpenGL.png")),
-    roughnessMap: tex(loader, publicUrl("textures/Material_Roughness.png")),
+    map: tex(loader, publicUrl("textures/Material_Base_color.webp"), true),
+    normalMap: tex(loader, publicUrl("textures/Material_Normal_OpenGL.webp")),
+    roughnessMap: buildingOrm,
     roughness: 1,
-    metalnessMap: tex(loader, publicUrl("textures/Material_Metallic.png")),
+    metalnessMap: buildingOrm,
     metalness: 1,
-    emissiveMap: tex(loader, publicUrl("textures/Material_Emissive.png"), true),
+    emissiveMap: tex(loader, publicUrl("textures/Material_Emissive.webp"), true),
     emissive: new Color(0xffffff),
     emissiveIntensity: 1.4,
     side: DoubleSide,
   });
   const floor = new MeshStandardMaterial({
     name: "floor",
-    map: tex(loader, publicUrl("textures/floor_Base_color.png"), true),
-    normalMap: tex(loader, publicUrl("textures/floor_Normal_OpenGL.png")),
-    roughnessMap: tex(loader, publicUrl("textures/floor_Roughness.png")),
+    map: tex(loader, publicUrl("textures/floor_Base_color.webp"), true),
+    normalMap: tex(loader, publicUrl("textures/floor_Normal_OpenGL.webp")),
+    roughnessMap: floorOrm,
     roughness: 1,
-    metalnessMap: tex(loader, publicUrl("textures/floor_Metallic.png")),
+    metalnessMap: floorOrm,
     metalness: 1,
-    emissiveMap: tex(loader, publicUrl("textures/floor_Base_Emissive.png"), true),
+    emissiveMap: tex(loader, publicUrl("textures/floor_Base_Emissive.webp"), true),
     emissive: new Color(0xffffff),
     emissiveIntensity: 1, // driven by the "emissive" slider in building settings (1–50)
-    alphaMap: tex(loader, publicUrl("textures/floor_alpha.png")),
+    alphaMap: tex(loader, publicUrl("textures/floor_alpha.webp")),
     alphaTest: 0.5, // cutout — no blend-sorting artifacts
     side: DoubleSide,
   });
@@ -322,6 +327,13 @@ function buildBatch(material: Material, items: Draw[], castShadow: boolean): Bat
   const batch = new BatchedMesh(items.length, vertices, indices, material);
   batch.castShadow = castShadow;
   batch.receiveShadow = true;
+  // Both BatchedMesh defaults walk all ~8.6k instances on the CPU every pass, and
+  // both cost more than they save on one compact building: sorting is 2.3ms/frame
+  // and per-instance culling 1ms, against a 0.28ms frame once they are off. The
+  // InstancedMesh pass this replaced sorted nothing and culled per-mesh, so the
+  // batch's own bounding sphere still culls the building when it leaves frame.
+  batch.sortObjects = false;
+  batch.perObjectFrustumCulled = false;
 
   // addGeometry copies into the batch's shared buffers, so each distinct geometry
   // is uploaded once no matter how many placements reference it

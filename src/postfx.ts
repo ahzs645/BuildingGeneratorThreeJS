@@ -90,7 +90,12 @@ export class PostFX {
   private blenderProfile: BlenderColorProfilePass | null = null;
   private disposed = false;
 
-  constructor(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera) {
+  constructor(
+    renderer: WebGLRenderer,
+    scene: Scene,
+    camera: PerspectiveCamera,
+    options: { ambientOcclusion?: boolean } = {},
+  ) {
     const size = renderer.getDrawingBufferSize(new Vector2());
     // multisampled HDR target keeps edges clean through the stack
     const rt = new WebGLRenderTarget(size.x, size.y, { type: HalfFloatType, samples: 4 });
@@ -110,6 +115,11 @@ export class PostFX {
       screenSpaceRadius: false,
     });
     this.gtao.blendIntensity = this.gtaoSettings.intensity;
+    // GTAO renders the scene a second time for depth+normals. It stays in the pass
+    // list either way so the GUI toggle keeps working, but low-power viewports
+    // start with it off rather than paying for it before anyone asks.
+    this.gtaoSettings.enabled = options.ambientOcclusion ?? true;
+    this.gtao.enabled = this.gtaoSettings.enabled;
     this.composer.addPass(this.gtao);
 
     this.bokeh = new BokehPass(scene, camera, { focus: 9.7, aperture: 0.0012, maxblur: 0.005 });

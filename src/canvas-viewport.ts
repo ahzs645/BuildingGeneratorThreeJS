@@ -32,10 +32,24 @@ export function canvasPixelRatioFor(
     ? desktopMaximum
     : 2;
   const mobileMaximum = Math.min(1.5, safeMaximum);
-  const maximum = viewportWidth <= MOBILE_CANVAS_BREAKPOINT || coarsePointer
+  const maximum = isLowPowerViewport(viewportWidth, coarsePointer)
     ? mobileMaximum
     : safeMaximum;
   return Math.min(safeRatio, maximum);
+}
+
+/**
+ * The same touch/small-screen devices that get the reduced drawing buffer above.
+ * Callers use it to drop optional GPU work: a screen-space ambient occlusion pass
+ * costs a second full scene render, which these devices can least afford.
+ */
+export function isLowPowerViewport(viewportWidth: number, coarsePointer: boolean): boolean {
+  return viewportWidth <= MOBILE_CANVAS_BREAKPOINT || coarsePointer;
+}
+
+/** Browser-bound wrapper, mirroring preferredCanvasPixelRatio. */
+export function prefersLowPowerViewport(): boolean {
+  return isLowPowerViewport(window.innerWidth, window.matchMedia("(pointer: coarse)").matches);
 }
 
 /** Browser-bound wrapper used by Three.js runtimes during renderer setup. */

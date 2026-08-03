@@ -11,6 +11,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "building:optimize-kit": "node tools/optimize-building-kit.mjs procedural-hong-kong-building/source/kit.glb public/assets/kit.glb",
+    "building:optimize-textures": "node tools/optimize-textures.mjs --verify",
     "blend:decode": "tsx tools/blend-decode.ts",
     "blend:introspect": "tsx tools/blend-introspect.ts",
     "blend:parity": "tsx tools/blend-parity.ts",
@@ -61,6 +62,7 @@
     "@types/three": "^0.185.0",
     "@vitejs/plugin-react": "^6.0.3",
     "puppeteer-core": "^25.3.0",
+    "sharp": "^0.34.5",
     "tsx": "^4.22.5",
     "typescript": "^6.0.3",
     "vite": "^8.1.3"
