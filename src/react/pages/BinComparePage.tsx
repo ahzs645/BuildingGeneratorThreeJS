@@ -35,16 +35,26 @@ function rangeText(parameter: BinParameter): string {
   return `${parameter.min}–${parameter.max}`;
 }
 
-function moveTab(event: KeyboardEvent<HTMLButtonElement>, target: () => void, targetId: string): void {
-  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+function moveTab(event: KeyboardEvent<HTMLButtonElement>, ids: readonly [string, string], current: 0 | 1): void {
+  let next: 0 | 1;
+  if (event.key === "Home") next = 0;
+  else if (event.key === "End") next = 1;
+  else if (event.key === "ArrowLeft") next = current === 0 ? 1 : 0;
+  else if (event.key === "ArrowRight") next = current === 1 ? 0 : 1;
+  else return;
   event.preventDefault();
-  target();
   queueMicrotask(() => {
-    const button = document.getElementById(targetId) as HTMLButtonElement | null;
+    const button = document.getElementById(ids[next]) as HTMLButtonElement | null;
     button?.focus();
+    // The imperative geometry runtime also listens for the click so it can
+    // persist the active workspace and comparison view across a breakpoint
+    // remount. A synthetic focus-only tab change would leave it stale.
     button?.click();
   });
 }
+
+const workspaceTabIds = ["workspace-build", "workspace-validate"] as const;
+const validationTabIds = ["validate-results-tab", "validate-findings-tab"] as const;
 
 export default function BinComparePage(): React.JSX.Element {
   const { search } = useLocation();
@@ -121,7 +131,7 @@ export default function BinComparePage(): React.JSX.Element {
         aria-controls="workspace-build-panel"
         aria-selected={workspace === "build"}
         tabIndex={workspace === "build" ? 0 : -1}
-        onKeyDown={(event) => moveTab(event, () => setWorkspace("validate"), "workspace-validate")}
+        onKeyDown={(event) => moveTab(event, workspaceTabIds, 0)}
         onClick={() => setWorkspace("build")}
       >Build Bin</button>
       <button
@@ -131,7 +141,7 @@ export default function BinComparePage(): React.JSX.Element {
         aria-controls="workspace-validate-panel"
         aria-selected={workspace === "validate"}
         tabIndex={workspace === "validate" ? 0 : -1}
-        onKeyDown={(event) => moveTab(event, () => setWorkspace("build"), "workspace-build")}
+        onKeyDown={(event) => moveTab(event, workspaceTabIds, 1)}
         onClick={() => setWorkspace("validate")}
       >Validate Engines</button>
     </div>
@@ -157,7 +167,7 @@ export default function BinComparePage(): React.JSX.Element {
           <button id="export-stl" className="st-btn" type="button" disabled>STL</button>
           <button id="export-metadata" className="st-btn" type="button" disabled>Metadata</button>
         </div>
-        <small className="bin-section-help">Exports always use the last evaluated parameter snapshot, never pending edits.</small>
+        <small className="bin-section-help">Exports always use the last evaluated parameter snapshot, never pending edits. GLB embeds that snapshot and evidence metadata. STL stores geometry only—no materials, colors, units, or parameters—so download Metadata alongside it.</small>
       </div>
     </div>
 
@@ -185,8 +195,8 @@ export default function BinComparePage(): React.JSX.Element {
         <p className="bin-section-help">Material mode reconstructs authored shaders in WebGL; it is not a Blender render comparison.</p>
       </div>
       <div className="st-tabs" role="tablist" aria-label="Validation details">
-        <button id="validate-results-tab" type="button" role="tab" aria-controls="validate-results" aria-selected={validateTab === "results"} tabIndex={validateTab === "results" ? 0 : -1} onKeyDown={(event) => moveTab(event, () => setValidateTab("findings"), "validate-findings-tab")} onClick={() => setValidateTab("results")}>Results</button>
-        <button id="validate-findings-tab" type="button" role="tab" aria-controls="validate-findings" aria-selected={validateTab === "findings"} tabIndex={validateTab === "findings" ? 0 : -1} onKeyDown={(event) => moveTab(event, () => setValidateTab("results"), "validate-results-tab")} onClick={() => setValidateTab("findings")}>Findings</button>
+        <button id="validate-results-tab" type="button" role="tab" aria-controls="validate-results" aria-selected={validateTab === "results"} tabIndex={validateTab === "results" ? 0 : -1} onKeyDown={(event) => moveTab(event, validationTabIds, 0)} onClick={() => setValidateTab("results")}>Results</button>
+        <button id="validate-findings-tab" type="button" role="tab" aria-controls="validate-findings" aria-selected={validateTab === "findings"} tabIndex={validateTab === "findings" ? 0 : -1} onKeyDown={(event) => moveTab(event, validationTabIds, 1)} onClick={() => setValidateTab("findings")}>Findings</button>
       </div>
       <div id="validate-results" role="tabpanel" aria-labelledby="validate-results-tab" className="st-section bin-results stale" hidden={validateTab !== "results"}>
         <div className="bin-result-heading"><span id="result-classification" className="bin-classification">Not validated</span><small id="result-freshness">No comparison for current inputs</small></div>
@@ -214,12 +224,21 @@ export default function BinComparePage(): React.JSX.Element {
       <span className="bin-desktop-hint">drag to orbit · scroll to zoom</span>
     </>}
     status={<>
-      <span id="compare-status" role="status" aria-live="polite"><span className="st-dot" />Loading bin workspace…</span>
+      <span id="compare-status" role="status" aria-live="polite" aria-atomic="true"><span className="st-dot" />Loading bin workspace…</span>
       <span className="st-spacer" />
       <span className="st-muted bin-shortcut-hint">O overlay · S split · W edges · 1/2/3 isolate</span>
     </>}
   >
-    <canvas key={isMobile ? "mobile-bin-canvas" : "desktop-bin-canvas"} id="app" role="img" aria-label="Interactive Recursive Bin geometry preview"></canvas>
+    <canvas
+      key={isMobile ? "mobile-bin-canvas" : "desktop-bin-canvas"}
+      id="app"
+      role="img"
+      tabIndex={0}
+      aria-label="Interactive Recursive Bin geometry preview"
+      aria-describedby="bin-canvas-help"
+      aria-keyshortcuts="O S W 1 2 3"
+    ></canvas>
+    <span id="bin-canvas-help" className="bin-sr-only">Orbit and zoom the Recursive Bin preview. In Validate Engines, O selects overlay, S selects side by side, W toggles edges, and 1, 2, or 3 isolates an engine.</span>
     <ToolStateOverlay state={runtimeState} />
     <div className="viewport-label truth-label">Blender</div>
     <div className="viewport-label vm-label">GN-VM</div>

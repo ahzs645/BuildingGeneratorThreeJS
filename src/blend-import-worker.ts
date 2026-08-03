@@ -26,6 +26,16 @@ type EvaluationFields = {
     spheres: { position: [number, number, number]; radius: number }[];
     relativeToObject?: string;
   };
+  collectionCylinders?: {
+    collection: string;
+    cylinders: {
+      position: [number, number, number];
+      direction: [number, number, number];
+      radius: number;
+      length: number;
+    }[];
+    relativeToObject?: string;
+  };
   probe?: { group: string; node: string; socket?: string };
 };
 
@@ -70,7 +80,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
     // Evaluation reads the dump without mutating it, except when a curves
     // payload replaces object curve data in-place. Clone only for that case so
     // the cached dump stays pristine across evaluations.
-    const dump = request.curves || request.collectionSpheres
+    const dump = request.curves || request.collectionSpheres || request.collectionCylinders
       ? structuredClone(installed.dump)
       : installed.dump;
     await evaluate(dump, request);
@@ -114,6 +124,64 @@ function matrixScale(matrix: number[][] | undefined): number {
   return [0, 1, 2].reduce<number>((sum, column) => sum + Math.hypot(
     matrix[0][column], matrix[1][column], matrix[2][column],
   ), 0) / 3;
+}
+
+function transformDirection(matrix: number[][] | undefined, direction: [number, number, number]): [number, number, number] {
+  const [x, y, z] = direction;
+  const transformed: [number, number, number] = matrix?.length ? [
+    matrix[0][0] * x + matrix[0][1] * y + matrix[0][2] * z,
+    matrix[1][0] * x + matrix[1][1] * y + matrix[1][2] * z,
+    matrix[2][0] * x + matrix[2][1] * y + matrix[2][2] * z,
+  ] : [x, y, z];
+  const length = Math.hypot(...transformed) || 1;
+  return transformed.map((value) => value / length) as [number, number, number];
+}
+
+function cross(
+  [ax, ay, az]: [number, number, number],
+  [bx, by, bz]: [number, number, number],
+): [number, number, number] {
+  return [ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx];
+}
+
+function normalized(vector: [number, number, number]): [number, number, number] {
+  const length = Math.hypot(...vector) || 1;
+  return vector.map((value) => value / length) as [number, number, number];
+}
+
+function cylinderMesh(
+  direction: [number, number, number],
+  radius: number,
+  length: number,
+  segments = 24,
+): { verts: [number, number, number][]; faces: number[][]; edges: [number, number][]; face_materials: number[] } {
+  const axis = normalized(direction);
+  const helper: [number, number, number] = Math.abs(axis[2]) < .9 ? [0, 0, 1] : [0, 1, 0];
+  const tangent = normalized(cross(axis, helper));
+  const bitangent = normalized(cross(axis, tangent));
+  const verts: [number, number, number][] = [];
+  for (const side of [-1, 1]) {
+    for (let index = 0; index < segments; index++) {
+      const angle = index / segments * Math.PI * 2;
+      const radialX = Math.cos(angle) * radius;
+      const radialY = Math.sin(angle) * radius;
+      verts.push([
+        axis[0] * side * length / 2 + tangent[0] * radialX + bitangent[0] * radialY,
+        axis[1] * side * length / 2 + tangent[1] * radialX + bitangent[1] * radialY,
+        axis[2] * side * length / 2 + tangent[2] * radialX + bitangent[2] * radialY,
+      ]);
+    }
+  }
+  const bottomCenter = verts.length; verts.push(axis.map((value) => -value * length / 2) as [number, number, number]);
+  const topCenter = verts.length; verts.push(axis.map((value) => value * length / 2) as [number, number, number]);
+  const faces: number[][] = [];
+  for (let index = 0; index < segments; index++) {
+    const next = (index + 1) % segments;
+    faces.push([index, next, segments + next, segments + index]);
+    faces.push([bottomCenter, next, index]);
+    faces.push([topCenter, segments + index, segments + next]);
+  }
+  return { verts, faces, edges: [], face_materials: faces.map(() => 0) };
 }
 
 function installCollectionSpheres(dump: Dump, seed: NonNullable<EvaluationFields["collectionSpheres"]>): void {
@@ -162,6 +230,54 @@ function installCollectionSpheres(dump: Dump, seed: NonNullable<EvaluationFields
   ];
 }
 
+function installCollectionCylinders(
+  dump: Dump,
+  seed: NonNullable<EvaluationFields["collectionCylinders"]>,
+  append = false,
+): void {
+  const collection = dump.collections?.find((candidate) => candidate.name === seed.collection);
+  if (!collection) throw new Error(`collection seed target not found: ${seed.collection}`);
+  const relativeObject = seed.relativeToObject
+    ? dump.objects?.find((candidate) => candidate.name === seed.relativeToObject)
+    : undefined;
+  const relativeMatrix = relativeObject?.matrix_world;
+  const relativeScale = matrixScale(relativeMatrix);
+  const names: string[] = [];
+  const generated = seed.cylinders.map((cylinder, index) => {
+    const name = `__GNVM_COLLECTION_CYLINDER_${index}`;
+    names.push(name);
+    const location = transformPoint(relativeMatrix, cylinder.position);
+    const mesh = cylinderMesh(
+      transformDirection(relativeMatrix, cylinder.direction),
+      Math.max(.001, cylinder.radius * relativeScale),
+      Math.max(.001, cylinder.length * relativeScale),
+    );
+    return {
+      name,
+      type: "MESH" as const,
+      visible: true,
+      location,
+      rotation: [0, 0, 0] as [number, number, number],
+      scale: [1, 1, 1] as [number, number, number],
+      matrix_world: [
+        [1, 0, 0, location[0]],
+        [0, 1, 0, location[1]],
+        [0, 0, 1, location[2]],
+        [0, 0, 0, 1],
+      ],
+      materials: [],
+      modifiers: [],
+      mesh,
+      evaluated_mesh: mesh,
+    };
+  });
+  collection.objects = append ? [...(collection.objects ?? []), ...names] : names;
+  dump.objects = [
+    ...(dump.objects ?? []).filter((object) => !object.name.startsWith("__GNVM_COLLECTION_CYLINDER_")),
+    ...generated,
+  ];
+}
+
 async function evaluate(dump: Dump, request: EvaluationFields): Promise<void> {
   const {
     id,
@@ -175,6 +291,7 @@ async function evaluate(dump: Dump, request: EvaluationFields): Promise<void> {
     output,
     curves,
     collectionSpheres,
+    collectionCylinders,
     probe,
     frame,
     volumeSampleBudget,
@@ -182,6 +299,11 @@ async function evaluate(dump: Dump, request: EvaluationFields): Promise<void> {
   try {
     setDenseSdfSampleBudget(volumeSampleBudget ?? null);
     if (collectionSpheres) installCollectionSpheres(dump, collectionSpheres);
+    if (collectionCylinders) installCollectionCylinders(
+      dump,
+      collectionCylinders,
+      Boolean(collectionSpheres && collectionSpheres.collection === collectionCylinders.collection),
+    );
     if (curves) {
       if (!object) throw new Error("curve overrides require an object target");
       const target = dump.objects?.find((candidate) => candidate.name === object);

@@ -52,7 +52,17 @@ function EngineSwitch({ engine }: { engine: Engine }): React.JSX.Element {
 
 function BubblePuttyLab(): React.JSX.Element {
   const leftDock = <>
-    <StudioPanelHeader title="Bubble Putty" meta="Editable blobs" />
+    <StudioPanelHeader title="Bubble Putty" meta="Blobs + pipe fixture" />
+    <div className="st-section">
+      <div className="st-section-title">Input form</div>
+      <div className="st-segmented">
+        <button id="putty-blob-fixture" className="active" type="button">Putty blobs</button>
+        <button id="putty-pipe-fixture" type="button">Three pipes</button>
+      </div>
+      <button id="putty-lock-pipe" className="st-btn" type="button" disabled>Lock selected pipe as anchor</button>
+      <button id="putty-move-pipes" className="st-btn" type="button" disabled>Move pipes</button>
+      <div id="putty-anchor-state" className="putty-anchor-state">Blob authoring · choose Three pipes to test a locked surface</div>
+    </div>
     <div className="st-section">
       <div className="st-section-title">1 · Interaction</div>
       <div className="st-segmented">
@@ -60,7 +70,7 @@ function BubblePuttyLab(): React.JSX.Element {
         <button id="putty-move" className="active" type="button">Move putty</button>
         <button id="putty-add-mode" type="button">Place putty</button>
       </div>
-      <p className="putty-hint">Select and drag a blob to reshape the shared putty body. Orbit, then return to Move putty to reposition blobs in another screen plane.</p>
+      <p id="putty-interaction-hint" className="putty-hint">Select and drag a blob to reshape the shared putty body. Orbit, then return to Move putty to reposition blobs in another screen plane.</p>
       <div className="st-btn-row st-btn-row-even">
         <button id="putty-add" className="st-btn-primary" type="button">Add putty</button>
         <button id="putty-duplicate" className="st-btn" type="button">Duplicate</button>
@@ -69,7 +79,7 @@ function BubblePuttyLab(): React.JSX.Element {
         <button id="putty-delete" className="st-btn" type="button">Delete selected</button>
         <button id="putty-reset" className="st-btn" type="button">Reset</button>
       </div>
-      <label className="st-row"><span>Blob size</span><input id="putty-radius" type="range" min=".4" max="4.5" step=".05" defaultValue="2.4" /><output id="putty-radius-output">2.40</output></label>
+      <label className="st-row"><span id="putty-size-label">Blob size</span><input id="putty-radius" type="range" min=".4" max="4.5" step=".05" defaultValue="2.4" /><output id="putty-radius-output">2.40</output></label>
     </div>
     <div className="st-section">
       <div className="st-section-title">2 · Authored graph</div>
@@ -91,7 +101,7 @@ function BubblePuttyLab(): React.JSX.Element {
     <StudioPanelHeader title="Blender source" meta="53-node root" />
     <div className="st-section">
       <img className="putty-reference" src={`${import.meta.env.BASE_URL}dojo/references/joints/bubble-putty-authored.png`} alt="Blender-authored Bubble Putty reference" />
-      <p className="st-finding">The source group wraps one shared putty envelope around a collection of movable mesh forms. Added blobs are serialized together so overlaps merge rather than becoming unrelated objects.</p>
+      <p className="st-finding">The source group wraps one shared putty envelope around a collection of movable mesh forms. The three-pipe fixture uses the original collection contract: lock one pipe as the reference surface, move the other two, then rebuild the molded joint.</p>
       <Link className="st-btn putty-open-graph" to="/?asset=joint-bubble-putty">Open full node graph in Studio</Link>
     </div>
     <div className="st-section">
@@ -107,7 +117,7 @@ function BubblePuttyLab(): React.JSX.Element {
     status={<span id="putty-status"><span className="st-dot ready" />Move a blob or add more putty</span>}
   >
     <canvas id="putty-canvas" />
-    <div className="putty-canvas-help" aria-hidden="true"><b>BUBBLE PUTTY</b><span>editable source blobs · one shared body</span></div>
+    <div className="putty-canvas-help" aria-hidden="true"><b>BUBBLE PUTTY</b><span id="putty-canvas-help-text">editable source blobs · one shared body</span></div>
   </StudioShell>;
 }
 

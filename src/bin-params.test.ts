@@ -3,10 +3,15 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   binPresetFromSearch,
+  binPresetFromSearchDetailed,
   binSearchFromValues,
+  compileBinParityEvidence,
+  findBinParityEvidence,
   BIN_DEFAULTS,
   BIN_PARAMETERS,
   BIN_PRESETS,
+  normalizedBinValuesKey,
+  type BinParityEvidencePayload,
 } from "./bin-params";
 
 const repo = new URL("../", import.meta.url);
@@ -17,7 +22,7 @@ const catalog = JSON.parse(readFileSync(new URL(
 const parity = JSON.parse(readFileSync(new URL(
   "public/dojo/bin-geometry-parity.json",
   repo,
-), "utf8")) as {
+), "utf8")) as BinParityEvidencePayload & {
   browserControlContract: {
     uniquePublishedRangeProbes: number;
     exactBoundsCases: number;
@@ -41,6 +46,15 @@ test("Recursive Bin publishes the same validated controls in Studio and the cata
     assert.equal(control.max, parameter.max);
     assert.equal(control.step, parameter.step);
   }
+});
+
+test("Recursive Bin authored defaults align to their slider step and round-trip unchanged", () => {
+  for (const parameter of BIN_PARAMETERS) {
+    if (parameter.boolean) continue;
+    const ticks = (Number(parameter.defaultValue) - (parameter.min ?? 0)) / (parameter.step ?? 1);
+    assert.ok(Math.abs(ticks - Math.round(ticks)) < 1e-9, `${parameter.name} default is not on its published step`);
+  }
+  assert.deepEqual(binPresetFromSearch(binSearchFromValues(BIN_DEFAULTS)), BIN_DEFAULTS);
 });
 
 test("Recursive Bin parity-sensitive ranges stay tied to Blender evidence", () => {
@@ -82,6 +96,31 @@ test("Recursive Bin URL presets are precise, bounded, and backward compatible", 
     "divide y": 0.9,
     "Bin Select": 11,
   });
+});
+
+test("Recursive Bin reports requested and applied values when URLs exceed the contract", () => {
+  assert.deepEqual(binPresetFromSearchDetailed(
+    "?fillet=100&divide+x=0&Bin+Select=20",
+  ), {
+    values: { fillet: 7.9, "divide x": 0.15, "Bin Select": 11 },
+    diagnostics: [
+      { name: "fillet", requested: 100, applied: 7.9 },
+      { name: "divide x", requested: 0, applied: 0.15 },
+      { name: "Bin Select", requested: 20, applied: 11 },
+    ],
+  });
+});
+
+test("Recursive Bin parity evidence uses normalized full parameter snapshots", () => {
+  const registry = compileBinParityEvidence(parity);
+  assert.equal(registry.size, 25);
+  assert.equal(findBinParityEvidence(registry, { ...BIN_DEFAULTS, "Bin Select": 3 })?.surface.max, 0);
+  assert.equal(findBinParityEvidence(registry, { ...BIN_DEFAULTS, "Size X": 1.2, "Size Y": .8 })?.name, "Size X=1.2, Size Y=0.8");
+  assert.equal(findBinParityEvidence(registry, { ...BIN_DEFAULTS, fillet: 1 }), undefined);
+  assert.equal(
+    normalizedBinValuesKey(BIN_DEFAULTS),
+    normalizedBinValuesKey({ ...BIN_DEFAULTS, "Size X": .708, "divide y": .633 }),
+  );
 });
 
 test("Recursive Bin presets cover authored, every baked selection, and validated boundaries", () => {

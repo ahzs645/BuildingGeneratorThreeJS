@@ -79,6 +79,10 @@ web_modules/
 .env.production.local
 .env.local
 
+# Local licensed/recovered source assets. These may be used by Blender parity
+# tooling but must never be published or committed without a license review.
+.local-assets/
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache

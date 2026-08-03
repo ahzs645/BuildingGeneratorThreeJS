@@ -224,6 +224,14 @@ body.orbit #surface-painter-app:active { cursor: grabbing; }
 .paint-engine-switch a:hover { color: var(--st-ink); }
 .paint-engine-switch a[aria-current="page"] { background: var(--st-accent-wash); color: var(--st-accent-ink); font-weight: 600; }
 
+@media (max-width: 820px), ((pointer: coarse) and (max-height: 500px)) {
+  .paint-engine-switch a { height: var(--st-touch); }
+}
+
+@media (max-width: 360px) {
+  .paint-engine-switch a { padding-inline: 4px; font-size: 10px; }
+}
+
 .surface-painter-page #drawFrame {
   position: absolute; inset: 0; z-index: 2;
   opacity: 0;
@@ -308,6 +316,9 @@ body.orbit .surface-painter-page #modeBtn .key { background: rgba(255, 255, 255,
   .st-shell:has(.st-sheet.is-open) .surface-painter-page #flowerModeBtn { display: none; }
 
   .surface-painter-gui-dock { overflow: visible; }
+  .lil-gui.surface-painter-gui,
+  .lil-gui.surface-painter-gui .lil-gui { --widget-height: var(--st-touch); --title-height: var(--st-touch); }
+  .lil-gui.surface-painter-gui .controller.option select { inset: 0; height: 100%; }
   .lil-gui.surface-painter-gui.root > .children { padding: 10px 2px 2px; }
   .lil-gui.surface-painter-gui .paint-node > .children > .controller {
     grid-template-columns: minmax(0,1fr) minmax(142px,1.2fr);

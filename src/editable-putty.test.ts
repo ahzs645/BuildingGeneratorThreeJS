@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { EditablePuttyDocument } from "./editable-putty";
+import { EditablePipeFixture, EditablePuttyDocument } from "./editable-putty";
 
 test("putty blobs keep stable ids while selected blobs move", () => {
   const document = new EditablePuttyDocument();
@@ -39,4 +39,33 @@ test("putty serializes every blob into one Geometry Nodes seed", () => {
       { position: [1, 0, 0], radius: .5 },
     ],
   });
+});
+
+test("pipe-joint preset stays compact relative to the pipe diameters", () => {
+  const document = new EditablePuttyDocument();
+  document.resetForPipeJoint();
+  assert.equal(document.blobs.length, 3);
+  assert.ok(document.blobs.every((blob) => blob.radius >= .3 && blob.radius <= .36));
+  assert.ok(Math.max(...document.blobs.map((blob) => Math.abs(blob.position[0]))) <= .72);
+});
+
+test("three-pipe fixture starts with one locked anchor surface", () => {
+  const fixture = new EditablePipeFixture();
+  fixture.resetThreePipes();
+  assert.equal(fixture.pipes.length, 3);
+  assert.deepEqual(fixture.pipes.map((pipe) => pipe.locked), [true, false, false]);
+  fixture.select(fixture.pipes[0].id);
+  assert.equal(fixture.moveSelected([2, 0, 0]), false);
+  assert.deepEqual(fixture.pipes[0].position, [0, 0, 0]);
+});
+
+test("locking another pipe transfers the anchor and leaves other pipes movable", () => {
+  const fixture = new EditablePipeFixture();
+  fixture.resetThreePipes();
+  fixture.select(fixture.pipes[2].id);
+  assert.equal(fixture.lockSelected(), true);
+  assert.deepEqual(fixture.pipes.map((pipe) => pipe.locked), [false, false, true]);
+  fixture.select(fixture.pipes[1].id);
+  assert.equal(fixture.moveSelected([.5, .25, 0]), true);
+  assert.deepEqual(fixture.toCylinders()[1].position, [.5, .25, 0]);
 });

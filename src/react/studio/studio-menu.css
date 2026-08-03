@@ -30,4 +30,10 @@
 .studio-menu-presets a:hover{border-color:rgba(127,196,232,.45);color:var(--st-ink);background:var(--st-accent-wash)}
 .studio-menu-cli div{color:var(--st-ink-3);font:500 var(--st-fs-micro)/1.7 var(--st-mono)}
 .studio-menu-cli code{color:var(--st-accent);background:var(--st-sunken);border-radius:4px;padding:1px 5px;margin-right:6px}
-@media (max-width:520px){.studio-menu>header span{display:none}.studio-menu-backdrop{padding:4vh 10px}.studio-menu-close{margin-left:auto}}
+@media (max-width:520px){
+  .studio-menu>header span{display:none}
+  .studio-menu-backdrop{padding:4vh 10px}
+  .studio-menu-close{min-width:var(--st-touch);min-height:var(--st-touch);margin-left:auto}
+  .studio-menu-dev-toggle{min-height:var(--st-touch)}
+  .studio-menu-presets a{display:inline-flex;min-height:var(--st-touch);align-items:center}
+}

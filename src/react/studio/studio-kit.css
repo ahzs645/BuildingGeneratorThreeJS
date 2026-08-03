@@ -422,7 +422,7 @@
 /* ------------------------------------------------------------------ mobile */
 /* Same breakpoint as MOBILE_STUDIO_QUERY in StudioShell.tsx. */
 @media (max-width: 820px), ((pointer: coarse) and (max-height: 500px)) {
-  :root { --st-nav-h: 104px; }
+  :root { --st-nav-h: 104px; --st-toolbar-h: 50px; }
   .st-body { grid-template-columns: 1fr; }
   .st-rail, .st-dock, .st-node-dock { display: none; }
   .st-sheet {
@@ -436,6 +436,11 @@
   .st-sheet-grip { width: 44px; height: 4px; margin: 10px auto 8px; border-radius: 99px; background: #39424B; }
   .st-sheet .st-segmented button,
   .st-sheet .st-btn, .st-sheet .st-btn-primary { min-height: var(--st-touch); font-size: var(--st-fs-title); }
+  .st-sheet .st-tabs { height: var(--st-touch); min-height: var(--st-touch); padding-inline: 8px; gap: 4px; }
+  .st-sheet .st-tabs button {
+    display: inline-flex; min-width: 0; min-height: var(--st-touch); flex: 1 1 0;
+    align-items: center; justify-content: center; padding-inline: 8px;
+  }
   /* Rows go two-line on mobile: 13px label above a 44px-tall control. */
   .st-sheet .st-row {
     grid-template-columns: minmax(0,1fr) 56px; grid-template-rows: auto auto;
@@ -450,8 +455,13 @@
   .st-sheet .st-row output,
   .st-sheet .st-row > input[type=number] { grid-column: 2; grid-row: 2; }
   .st-sheet .st-row input[type=checkbox] { grid-column: 2; grid-row: 1; }
-  .st-sheet .st-select, .st-sheet .st-input { height: 40px; font-size: var(--st-fs-title); }
-  .st-sheet input[type=checkbox] { width: 22px; height: 22px; }
+  .st-sheet .st-select, .st-sheet .st-input { height: var(--st-touch); font-size: var(--st-fs-title); }
+  .st-sheet input[type=checkbox] { width: 28px; height: 28px; }
+  .st-sheet .st-section > a {
+    display: flex; min-height: var(--st-touch); align-items: center;
+  }
+  .st-toolbar :is(button, a),
+  .st-toolbar .st-segmented > a { min-height: var(--st-touch); }
   .st-toolbar { overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; }
   .st-toolbar::-webkit-scrollbar { display: none; }
 }

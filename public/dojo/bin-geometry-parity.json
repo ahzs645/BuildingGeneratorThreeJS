@@ -15,6 +15,11 @@
       "source": "Degular Text Semibold.ttf",
       "sha256": "f83eeb8958d56adfa39ff58dd0186e9b0feccd0340fc5c38157580837dc60460",
       "policy": "Recovered source font used only for local Blender validation; browser uses extracted glyph-outline JSON."
+    },
+    {
+      "source": "DegularText-Semibold.otf",
+      "sha256": "d1405adead11043f315cdd74405bbd0781287b20a0fc5c7ee42699cc3ba0d596",
+      "policy": "Validated local OTF equivalent: the authored Recursive Bin export is byte-identical to public/dojo/bin.glb; browser uses extracted glyph-outline JSON."
     }
   ],
   "summary": {
@@ -75,6 +80,35 @@
     "distanceDisplayPrecision": 0.001,
     "triangleAreaAgreementPrecision": 0.001,
     "interpretation": "All exported cases report zero bidirectional sampled point-to-triangle distance at 0.001-unit precision and equal total surface area at 0.001-square-unit precision. Remaining nonzero vertex/face deltas are alternate polygon partitioning of the same surface."
+  },
+  "evidenceRegistry": {
+    "version": "2026-08-02",
+    "distanceTolerance": 0.001,
+    "interpretation": "Normalized parameter snapshots used by the website. Empty overrides inherit the authored modifier values; sweeps expand to one snapshot per value.",
+    "sweeps": [
+      {
+        "name": "Recovered-font selection sweep",
+        "parameter": "Bin Select",
+        "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        "surface": { "p99": 0, "max": 0, "materialP99": 0, "materialMax": 0 }
+      }
+    ],
+    "cases": [
+      { "name": "authored default", "overrides": {}, "surface": { "p99": 0, "max": 0, "materialP99": 0, "materialMax": 0 } },
+      { "name": "divide x=0.15, divide y=0.2", "overrides": { "divide x": 0.15, "divide y": 0.2 }, "surface": { "p99": 0, "max": 0 } },
+      { "name": "divide x=0.15, divide y=0.633", "overrides": { "divide x": 0.15 }, "surface": { "p99": 0, "max": 0 } },
+      { "name": "divide x=0.15, divide y=0.9", "overrides": { "divide x": 0.15, "divide y": 0.9 }, "surface": { "p99": 0, "max": 0, "materialP99": 0, "materialMax": 0 } },
+      { "name": "divide x=0.417, divide y=0.2", "overrides": { "divide y": 0.2 }, "surface": { "p99": 0, "max": 0 } },
+      { "name": "divide x=0.417, divide y=0.9", "overrides": { "divide y": 0.9 }, "surface": { "p99": 0, "max": 0 } },
+      { "name": "divide x=0.85, divide y=0.2", "overrides": { "divide x": 0.85, "divide y": 0.2 }, "surface": { "p99": 0, "max": 0 } },
+      { "name": "divide x=0.85, divide y=0.633", "overrides": { "divide x": 0.85 }, "surface": { "p99": 0, "max": 0 } },
+      { "name": "divide x=0.85, divide y=0.9", "overrides": { "divide x": 0.85, "divide y": 0.9 }, "surface": { "p99": 0, "max": 0 } },
+      { "name": "fillet=0.3", "overrides": { "fillet": 0.3 }, "surface": { "p99": 0, "max": 0 } },
+      { "name": "fillet=2.5", "overrides": { "fillet": 2.5 }, "surface": { "p99": 0, "max": 0 } },
+      { "name": "bin wall thiccness=4", "overrides": { "bin wall thiccness": 4 }, "surface": { "p99": 0, "max": 0 } },
+      { "name": "Size X=1.2, Size Y=0.8", "overrides": { "Size X": 1.2, "Size Y": 0.8 }, "surface": { "p99": 0, "max": 0 } },
+      { "name": "bin gap size=7 selected-material boundary", "overrides": { "bin gap size": 7 }, "surface": { "p99": 0, "max": 0, "materialP99": 0, "materialMax": 0 } }
+    ]
   },
   "results": [
     { "name": "authored default", "blender": [56985, 55000], "gnvm": [56985, 55000], "bboxMaxDiff": 0 },

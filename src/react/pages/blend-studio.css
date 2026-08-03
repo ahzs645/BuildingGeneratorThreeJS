@@ -27,6 +27,11 @@
 .blend-export button:hover { background: rgba(127,196,232,.1); color: var(--st-ink); }
 .blend-export button:disabled { opacity: .4; cursor: not-allowed; }
 
+@media (max-width: 820px), ((pointer: coarse) and (max-height: 500px)) {
+  .st-sheet .blend-export > div { top: 48px; }
+  .st-sheet .blend-export button { min-height: var(--st-touch); }
+}
+
 /* Parameter grouping inside the Parameters tab. */
 .blend-control-panel h4 { margin: 10px 0 2px; color: #7DA9BC; font: 700 var(--st-fs-micro)/1 var(--st-mono); letter-spacing: .08em; text-transform: uppercase; }
 /* Text and datablock controls have no separate value column. */

@@ -8,13 +8,19 @@ The Bubble Putty lab is available at `/paint?engine=putty` and from **Paint → 
 
 The live viewport turns those blobs into one Marching Cubes field. Overlapping blobs therefore fuse immediately while the user edits instead of behaving like unrelated meshes.
 
+The **Three pipes** input form exercises the Blender file's original use case. It starts with three intersecting cylindrical meshes and one blue anchor pipe. In **Move putty**, the visible putty controls can be dragged directly; every pointer position is projected back onto the blue cylinder so the material stays attached while moving around its surface. **Place putty**, **Add putty**, and **Duplicate** create more surface-locked material. **Move pipes** is a separate fixture mode. The anchor cannot move there, while either remaining pipe can be dragged relative to it. Selecting another pipe and choosing **Lock selected pipe as anchor** transfers that constraint and reprojects the putty controls to the new surface.
+
+The default joint is intentionally diameter-relative rather than a full-length pipe coating. Each pipe contributes only a compact eight-radius influence span around the crossing, while three small surface controls introduce the asymmetric lobes. This leaves the outer pipe lengths exposed and produces the short sleeve/star silhouette used by the Blender reference. The pipe selection wireframes are editing aids; an authored rebuild shows the clean solid pipes with the generated putty.
+
 ## Blender-authored rebuild
 
 The source file at `/Users/ahmadjalil/Documents/No3d Tools/bubble-putty-generator.blend` drives the quality pass through the extracted `Bubble Putty Generator_9OCT2024_01` Geometry Nodes group.
 
 The original `.blend` stores a fixed `putty structure1` collection containing three demonstration dowels. Before each evaluation, the worker replaces that collection with closed icosahedron objects generated from the current editable blobs. Positions and radii are converted into the target object's coordinate space. This keeps the authored collection-based graph intact while making its result respond to added and moved putty.
 
-The authoring preview stays interactive; **Rebuild Blender putty** deliberately runs the full graph and replaces the preview with the authored mesh. Any later edit returns to the live preview until the next rebuild.
+For the three-pipe input, the adapter installs both closed cylinder meshes and the surface-locked putty spheres into the same collection. Their centers, axes, radii, and lengths are transformed into the authored object's coordinate space before the 53-node graph runs, so the exact rebuild uses the same dragged putty and locked/moved pipe arrangement shown by the interactive preview.
+
+The authoring preview stays interactive; **Rebuild Blender putty** deliberately runs the full graph and replaces the preview with the authored mesh at the same world scale, keeping the fixture visible for a direct proportion check. Any later edit returns to the live preview until the next rebuild.
 
 ## Reuse
 

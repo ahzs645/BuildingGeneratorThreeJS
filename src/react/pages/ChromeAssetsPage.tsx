@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useToolRuntime } from "../page-runtime";
-import { StudioPanelHeader, StudioShell } from "../studio/StudioShell";
+import { StudioOverlay, StudioPanelHeader, StudioShell, useMobileStudio } from "../studio/StudioShell";
 import { ToolStateOverlay } from "../studio/ToolStateOverlay";
 import "./chrome-assets.css";
 import "./crayon-compare.css";
@@ -23,6 +23,7 @@ const typePixelBrushEditorConfig = {
 } as const;
 
 export default function ChromeAssetsPage(): React.JSX.Element {
+  const isMobile = useMobileStudio();
   const runtimeState = useToolRuntime("Parity Catalog · Blender vs browser", loadChromeAssets);
   const query = new URLSearchParams(location.search);
   const [activeAssetId, setActiveAssetId] = useState(() => query.get("asset") ?? "");
@@ -80,6 +81,15 @@ export default function ChromeAssetsPage(): React.JSX.Element {
     </div>
   </>;
 
+  const nodeEditor = <Suspense fallback={<div className="route-loading">Loading node editor…</div>}>
+    <GeometryNodesEditor config={typePixelBrushEditorConfig} />
+  </Suspense>;
+
+  const closeGraph = (): void => {
+    setGraphMaximized(false);
+    setGraphOpen(false);
+  };
+
   return <StudioShell
     className={`assets-shell ${shaderCapture ? "shader-capture" : ""}`}
     rightDock={rightDock}
@@ -89,18 +99,16 @@ export default function ChromeAssetsPage(): React.JSX.Element {
       <span className="st-spacer" />
       <span id="assets-runtime" className="st-muted">Worker idle</span>
     </>}
-    nodeDock={showTypePixelBrushGraph && graphOpen && <section className={`st-node-dock ${graphMaximized ? "maximized" : ""}`}>
+    nodeDock={!isMobile && showTypePixelBrushGraph && graphOpen && <section className={`st-node-dock ${graphMaximized ? "maximized" : ""}`}>
       <header>
         <b>Geometry Nodes</b>
         <small>Type Pixel Brush · double-click groups to enter</small>
         <div>
           <button className="st-btn" type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Full screen"}</button>
-          <button className="st-btn" type="button" onClick={() => { setGraphMaximized(false); setGraphOpen(false); }}>Collapse</button>
+          <button className="st-btn" type="button" onClick={closeGraph}>Collapse</button>
         </div>
       </header>
-      <div className="st-node-dock-body"><Suspense fallback={<div className="route-loading">Loading node editor…</div>}>
-        <GeometryNodesEditor config={typePixelBrushEditorConfig} />
-      </Suspense></div>
+      <div className="st-node-dock-body">{nodeEditor}</div>
     </section>}
   >
     <section className="assets-compare">
@@ -109,5 +117,9 @@ export default function ChromeAssetsPage(): React.JSX.Element {
       <ToolStateOverlay state={runtimeState} />
     </section>
     {showTypePixelBrushGraph && !graphOpen && <button className="graph-toggle st-btn" type="button" onClick={() => setGraphOpen(true)}>Show Geometry Nodes workspace</button>}
+    {isMobile && showTypePixelBrushGraph && graphOpen && <StudioOverlay
+      title="Type Pixel Brush · Geometry Nodes"
+      onClose={closeGraph}
+    >{nodeEditor}</StudioOverlay>}
   </StudioShell>;
 }

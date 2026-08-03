@@ -6,6 +6,20 @@ export type PuttyBlob = {
   radius: number;
 };
 
+export type PuttyPipe = {
+  id: number;
+  position: PuttyPoint;
+  direction: PuttyPoint;
+  radius: number;
+  length: number;
+  locked: boolean;
+};
+
+function normalized(point: PuttyPoint): PuttyPoint {
+  const length = Math.hypot(...point) || 1;
+  return point.map((value) => value / length) as PuttyPoint;
+}
+
 /**
  * Stable, renderer-independent source document for Bubble Putty authoring.
  * Generated metaball/GN meshes are disposable views of this small blob list.
@@ -77,6 +91,14 @@ export class EditablePuttyDocument {
     this.selectedId = this.blobs[1].id;
   }
 
+  resetForPipeJoint(): void {
+    this.clear();
+    this.add([-.72, 0, .58], .32);
+    this.add([0, .62, 0], .36);
+    this.add([.72, 0, -.58], .3);
+    this.selectedId = this.blobs[1].id;
+  }
+
   toSeed(subdivisions = 2): {
     kind: "ico-spheres";
     subdivisions: number;
@@ -87,5 +109,95 @@ export class EditablePuttyDocument {
       subdivisions,
       spheres: this.blobs.map(({ position, radius }) => ({ position: [...position] as PuttyPoint, radius })),
     };
+  }
+}
+
+/**
+ * Three-dimensional fixture document for collection-driven putty graphs.
+ * Exactly one pipe can be the immovable anchor surface; the remaining pipes
+ * stay editable relative to it.
+ */
+export class EditablePipeFixture {
+  readonly pipes: PuttyPipe[] = [];
+  selectedId: number | null = null;
+  private nextId = 1;
+
+  add(
+    position: PuttyPoint,
+    direction: PuttyPoint,
+    radius = .5,
+    length = 6,
+    locked = false,
+  ): PuttyPipe {
+    const pipe = {
+      id: this.nextId++,
+      position: [...position] as PuttyPoint,
+      direction: normalized(direction),
+      radius: Math.max(.05, radius),
+      length: Math.max(.1, length),
+      locked,
+    };
+    this.pipes.push(pipe);
+    this.selectedId = pipe.id;
+    return pipe;
+  }
+
+  selected(): PuttyPipe | undefined {
+    return this.pipes.find((pipe) => pipe.id === this.selectedId);
+  }
+
+  select(id: number | null): boolean {
+    if (id !== null && !this.pipes.some((pipe) => pipe.id === id)) return false;
+    this.selectedId = id;
+    return true;
+  }
+
+  moveSelected(position: PuttyPoint): boolean {
+    const pipe = this.selected();
+    if (!pipe || pipe.locked) return false;
+    pipe.position = [...position] as PuttyPoint;
+    return true;
+  }
+
+  resizeSelected(radius: number): boolean {
+    const pipe = this.selected();
+    if (!pipe) return false;
+    pipe.radius = Math.max(.05, radius);
+    return true;
+  }
+
+  lockSelected(): boolean {
+    const selected = this.selected();
+    if (!selected) return false;
+    for (const pipe of this.pipes) pipe.locked = pipe.id === selected.id;
+    return true;
+  }
+
+  clear(): void {
+    this.pipes.length = 0;
+    this.selectedId = null;
+    this.nextId = 1;
+  }
+
+  resetThreePipes(): void {
+    this.clear();
+    this.add([0, 0, 0], [1, 0, 0], .52, 7.2, true);
+    this.add([0, .05, 0], [0, 1, 0], .46, 6.4);
+    this.add([.15, -.1, .05], [.46, .24, .86], .42, 6);
+    this.selectedId = this.pipes[1].id;
+  }
+
+  toCylinders(): Array<{
+    position: PuttyPoint;
+    direction: PuttyPoint;
+    radius: number;
+    length: number;
+  }> {
+    return this.pipes.map(({ position, direction, radius, length }) => ({
+      position: [...position] as PuttyPoint,
+      direction: [...direction] as PuttyPoint,
+      radius,
+      length,
+    }));
   }
 }

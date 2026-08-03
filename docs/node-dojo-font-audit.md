@@ -18,6 +18,23 @@ See the dependency and licensing policy in
 
 The raw Blurmed, Degular, Dogica, and Brokenscript files remain outside `public/`. Browser ports may include portable polygonal glyph outlines extracted by Blender, without distributing those font binaries. The Typewriter follows this model: exact evaluated Blurmed outlines for ASCII and the default em dash are embedded, while the page lets the user choose their local recovered TTF for matching editor text. Its frame-240 generated geometry now matches Blender exactly at 4,743 vertices / 33 faces.
 
+Recursive Bin development can stage locally obtained Dogica and Degular files
+without publishing them:
+
+```sh
+npm run bin:stage-fonts -- /path/to/dogica.otf "/path/to/Degular Text Semibold.ttf"
+```
+
+The staging command writes to gitignored `.local-assets/node-dojo-fonts/` and
+checks every binary against `bin-geometry-parity.json`. Only exact hashes enter
+the `exact/` directory consumed by `tools/bake_server.py`; mismatches enter
+`candidates/` and remain unavailable to exact Blender comparisons.
+
+`DegularText-Semibold.otf` is accepted as a portable equivalent to the authored
+`Degular Text Semibold.ttf`: with exact Dogica loaded, Blender 5.1.2 exports a
+byte-identical Recursive Bin GLB. The general `Degular-Semibold.otf` face and
+`Degular Demo Semibold` are different cuts and remain candidates only.
+
 ## Still unavailable as exact binaries
 
 - `BodoniStd-Poster.otf`

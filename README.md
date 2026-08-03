@@ -104,6 +104,15 @@ live bin still require the local services because Pages is static hosting.
 For the live Blender bin locally, run the warm Blender evaluator and its HTTP
 bridge alongside Vite (replace the `.blend` path if the source is elsewhere):
 
+First stage locally recovered fonts. The command validates them against the
+checked-in parity hashes and stores them under the gitignored `.local-assets/`
+directory; unrecognized cuts are retained as candidates but are not loaded as
+exact Blender truth:
+
+```sh
+npm run bin:stage-fonts -- /path/to/dogica.otf "/path/to/Degular Text Semibold.ttf"
+```
+
 ```sh
 blender --background "/path/to/Dojo Bin Generator_recursive red bins_v.0.1.1.blend" \
   --python tools/bake_server.py -- /tmp/bin-bake-comm "Procedural Drawer"

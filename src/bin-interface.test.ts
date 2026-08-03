@@ -14,6 +14,7 @@ test("Recursive Bin separates build and validation workflows with complete actio
   assert.match(page, /BIN_PRESETS\.map/);
   assert.match(page, /useToolRuntime\([^;]+isMobile\)/s);
   assert.match(page, /key=\{isMobile \? "mobile-bin-canvas" : "desktop-bin-canvas"\}/);
+  assert.match(page, /Material mode reconstructs authored shaders in WebGL; it is not a Blender render comparison\./);
 });
 
 test("Recursive Bin clears stale truth claims and preserves a VM-only failure result", () => {
@@ -25,11 +26,16 @@ test("Recursive Bin clears stale truth claims and preserves a VM-only failure re
 });
 
 test("Recursive Bin exposes semantic states and protects number editing from shortcuts", () => {
-  assert.match(page, /role="status" aria-live="polite"/);
+  assert.match(page, /role="status" aria-live="polite" aria-atomic="true"/);
   assert.match(page, /aria-pressed="true"/);
   assert.match(page, /aria-labelledby=\{labelId\}/);
+  assert.match(page, /aria-keyshortcuts="O S W 1 2 3"/);
+  assert.match(page, /tabIndex=\{0\}/);
+  assert.match(page, /event\.key === "Home"/);
+  assert.match(page, /event\.key === "End"/);
   assert.match(runtime, /target\?\.matches\("input, textarea, select, button"\)/);
   assert.match(runtime, /setAttribute\("aria-pressed"/);
+  assert.match(css, /#app:focus-visible/);
 });
 
 test("Recursive Bin mobile controls use the full row and reframe after aspect changes", () => {
@@ -37,4 +43,21 @@ test("Recursive Bin mobile controls use the full row and reframe after aspect ch
   assert.match(css, /grid-template-columns: minmax\(0, 1fr\) 72px/);
   assert.match(css, /bin-param-row input\[type="range"\].*width: 100%/s);
   assert.match(runtime, /shouldReframe/);
+});
+
+test("Recursive Bin breakpoint remount persists the complete draft and runtime view", () => {
+  assert.match(page, /useToolRuntime\("Recursive Bin · Build and Validate", loadBinCompare, isMobile\)/);
+  assert.match(page, /key=\{isMobile \? "mobile-bin-canvas" : "desktop-bin-canvas"\}/);
+  assert.match(runtime, /buildWorkspaceButton\.getAttribute\("aria-selected"\) === "true"/);
+  assert.match(runtime, /binSearchFromValues\(values, \{ workspace, layout: mode, style, visible: resultView \}\)/);
+  assert.match(runtime, /history\.replaceState/);
+  assert.match(runtime, /if \(!canvas\.isConnected\) renderer\.forceContextLoss\(\)/);
+});
+
+test("Recursive Bin uses registry and current live surface evidence without fixture overclaiming", () => {
+  assert.match(runtime, /dojo\/bin-geometry-parity\.json/);
+  assert.match(runtime, /findBinParityEvidence\(parityEvidence, overrides\)/);
+  assert.match(runtime, /measureBinSurfaceParity\(truthSolid!, vmSolid!\)/);
+  assert.match(runtime, /fixture-exact claims are disabled/);
+  assert.match(runtime, /requested .* applied/);
 });

@@ -1415,15 +1415,23 @@ export default function BlendBridgePage(): React.JSX.Element {
       </Suspense>
     : null;
 
+  const mobileSheetTabs = isMobile
+    ? [
+        { id: "source", label: "Source", content: sourceSection },
+        ...(workingDump ? [{ id: "parameters", label: "Parameters", content: parameterSection }] : []),
+        { id: "results", label: "Results", content: rightDock },
+      ]
+    : [
+        { id: "parameters", label: "Parameters", content: parameterSection },
+        { id: "source", label: "Source", content: sourceSection },
+        { id: "results", label: "Results", content: rightDock },
+      ];
+
   return <StudioShell
     className="blend-studio-page"
     leftDock={leftDock}
     rightDock={rightDock}
-    sheetTabs={[
-      { id: "parameters", label: "Parameters", content: parameterSection },
-      { id: "source", label: "Source", content: sourceSection },
-      { id: "results", label: "Results", content: rightDock },
-    ]}
+    sheetTabs={mobileSheetTabs}
     toolbar={<>
       <span>{target ? target.label : "No target"}</span>
       {animatedFrameRange && <>

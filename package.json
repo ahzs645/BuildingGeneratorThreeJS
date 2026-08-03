@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "test": "tsx --test src/**/*.test.ts",
+    "test:bin-responsive": "node tools/test-bin-responsive.mjs",
+    "bin:stage-fonts": "tsx tools/stage-bin-fonts.ts",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "building:optimize-kit": "node tools/optimize-building-kit.mjs procedural-hong-kong-building/source/kit.glb public/assets/kit.glb",

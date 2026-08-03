@@ -1,21 +1,32 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
-import { STLExporter } from "three/examples/jsm/exporters/STLExporter.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import { probeBinBlenderBridge, requestBinBlenderBake } from "./bin-blender-bridge";
+import {
+  encodeBinGlb,
+  encodeBinMetadata,
+  encodeBinStl,
+  makeBinExportMetadata,
+} from "./bin-export";
 import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
 import { makeBinAuthoredMaterial } from "./bin-authored-material";
 import type { FilamentBounds } from "./filament-material";
 import type { Dump, TriSoup } from "./gnvm/index";
 import {
-  binPresetFromSearch,
+  binPresetFromSearchDetailed,
   binSearchFromValues,
+  clampBinParameter,
+  compileBinParityEvidence,
+  findBinParityEvidence,
   BIN_DEFAULTS,
   BIN_PARAMETERS,
   BIN_PRESETS,
 } from "./bin-params";
+import type { BinClampDiagnostic, BinParityEvidencePayload, BinParityEvidenceRecord } from "./bin-params";
+import { measureBinSurfaceParity } from "./bin-surface-metrics";
+import type { BinLiveSurfaceMetrics } from "./bin-surface-metrics";
 import type { ToolHandle } from "./react/page-runtime";
 
 type Variant = { id: string; params: Record<string, number>; file: string };
@@ -29,17 +40,11 @@ type Workspace = "build" | "validate";
 type TruthSource = "live" | "baked" | "unavailable";
 type EvidenceClassification = "exact-topology" | "exact-surface" | "bounds-only" | "unvalidated" | "unsupported";
 
-// Full recovered-font 0..11 sweep: both point-to-surface directions, total
-// triangle counts, and highlighted-material triangle counts match Blender.
-const measuredSurfaceP99: Record<number, number> = {
-  0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0,
-  6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0,
-};
-
 // Pure fetched data may persist across remounts; everything DOM/GPU-bound is
 // created fresh inside createTool().
 let cachedDump: Dump | null = null;
 let cachedVariants: Variant[] | null = null;
+let cachedParityEvidence: Map<string, BinParityEvidenceRecord> | null = null;
 
 function namedMaterial(name: string | null, material: THREE.Material): THREE.Material {
   material.name = name ?? "";
@@ -164,6 +169,10 @@ function valuesSummary(values: Record<string, number | boolean>): string {
   return `Selection ${values["Bin Select"]} · ${Number(values["Size X"]).toFixed(3)} × ${Number(values["Size Y"]).toFixed(3)} × ${Number(values["Size Z"]).toFixed(3)}`;
 }
 
+function clampSummary(diagnostics: BinClampDiagnostic[]): string {
+  return diagnostics.map((item) => `${item.name}: requested ${item.requested}, applied ${item.applied}`).join(" · ");
+}
+
 function classificationLabel(classification: EvidenceClassification): string {
   if (classification === "exact-topology") return "Exact topology";
   if (classification === "exact-surface") return "Exact surface · alternate tessellation";
@@ -284,6 +293,9 @@ export function createTool(): ToolHandle {
   let lastEvaluatedOverrides: Record<string, number | boolean> | null = null;
   let lastComparedOverrides: Record<string, number | boolean> | null = null;
   let liveBlenderAvailable = false;
+  let liveBlenderDependencyComplete = true;
+  let liveBlenderMissingFonts: string[] = [];
+  let liveBlenderMissingImages: string[] = [];
   let capabilityChecked = false;
   let splitOffset = 0;
   let lastViewportAspect = viewport.width / viewport.height;
@@ -292,6 +304,7 @@ export function createTool(): ToolHandle {
   let workerReject: ((error: Error) => void) | null = null;
   let dump: Dump;
   let variants: Variant[] = [];
+  let parityEvidence = new Map<string, BinParityEvidenceRecord>();
   let disposed = false;
   let bedTexture: THREE.CanvasTexture | null = null;
 
@@ -345,10 +358,12 @@ export function createTool(): ToolHandle {
       return;
     }
     if (liveBlenderAvailable) {
-      capabilityDot.classList.add("ready");
-      capabilityEl.textContent = "Live Blender 5.1.2";
-      capabilityDetailEl.textContent = "Every published control can be evaluated live";
-      toolbarSourceEl.textContent = workspace === "build" ? "GN-VM preview" : "Live Blender available";
+      capabilityDot.classList.add(liveBlenderDependencyComplete ? "ready" : "warn");
+      capabilityEl.textContent = liveBlenderDependencyComplete ? "Live Blender 5.1.2" : "Live Blender · dependencies incomplete";
+      capabilityDetailEl.textContent = liveBlenderDependencyComplete
+        ? (liveBlenderMissingImages.length ? `Geometry-ready · ${liveBlenderMissingImages.length} missing image dependency` : "Every published control can be evaluated live")
+        : `${liveBlenderMissingFonts.length} missing font${liveBlenderMissingFonts.length === 1 ? "" : "s"}; fixture-exact claims disabled`;
+      toolbarSourceEl.textContent = workspace === "build" ? "GN-VM preview" : liveBlenderDependencyComplete ? "Live Blender available" : "Live Blender incomplete";
       return;
     }
     if (hasStaticTruth(values)) {
@@ -596,18 +611,11 @@ export function createTool(): ToolHandle {
   }
 
   async function preflightBlender(): Promise<void> {
-    if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
-      capabilityChecked = true;
-      updateTruthCapability();
-      return;
-    }
-    try {
-      const response = await fetch(`http://${location.hostname}:7801/status`);
-      const status = await response.json() as { ready?: boolean };
-      liveBlenderAvailable = Boolean(response.ok && status.ready);
-    } catch {
-      liveBlenderAvailable = false;
-    }
+    const status = await probeBinBlenderBridge(fetch, location.hostname);
+    liveBlenderAvailable = status.available;
+    liveBlenderDependencyComplete = status.dependencyComplete !== false;
+    liveBlenderMissingFonts = status.missingFonts ?? [];
+    liveBlenderMissingImages = status.missingImages ?? [];
     capabilityChecked = true;
     updateTruthCapability();
   }
@@ -615,13 +623,8 @@ export function createTool(): ToolHandle {
   async function loadBlenderTruth(overrides: Record<string, number | boolean>): Promise<{ root: THREE.Object3D; source: Exclude<TruthSource, "unavailable"> }> {
     if (liveBlenderAvailable) {
       try {
-        const response = await fetch(`http://${location.hostname}:7801/bake`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(overrides),
-        });
-        if (!response.ok) throw new Error(`${response.status} ${await response.text()}`);
-        return { root: (await new GLTFLoader().parseAsync(await response.arrayBuffer(), "")).scene, source: "live" };
+        const payload = await requestBinBlenderBake(fetch, location.hostname, overrides);
+        return { root: (await new GLTFLoader().parseAsync(payload, "")).scene, source: "live" };
       } catch (error) {
         liveBlenderAvailable = false;
         updateTruthCapability(overrides);
@@ -695,38 +698,62 @@ export function createTool(): ToolHandle {
     truthRed: number,
     vmRed: number,
     envelope: number,
-  ): { classification: EvidenceClassification; evidence: string; surfaceP99?: number } {
-    const selection = Number(overrides["Bin Select"]);
-    const surfaceP99 = isDefaultExceptSelection(overrides) ? measuredSurfaceP99[selection] : undefined;
-    const matchesBoundary = (changes: Record<string, number | boolean>): boolean => BIN_PARAMETERS.every((parameter) => {
-      const expected = changes[parameter.name] ?? BIN_DEFAULTS[parameter.name];
-      const actual = overrides[parameter.name];
-      if (typeof actual === "number" && typeof expected === "number") return Math.abs(actual - expected) <= Math.max(1e-6, (parameter.step ?? 0) / 2 + 1e-9);
-      return actual === expected;
-    });
-    if (surfaceP99 !== undefined && envelope <= 1e-6) {
-      if (truthTris === vmTris && truthRed === vmRed) return {
-        classification: "exact-topology",
-        evidence: `Validated fixture: topology/material counts match; bidirectional p99/max ${surfaceP99.toFixed(3)}.`,
-        surfaceP99,
+    truthSource: Exclude<TruthSource, "unavailable">,
+    liveMetrics?: BinLiveSurfaceMetrics,
+  ): { classification: EvidenceClassification; evidence: string; surfaceP99?: number; surfaceMax?: number } {
+    const topologyMatches = truthTris === vmTris && truthRed === vmRed;
+    const record = findBinParityEvidence(parityEvidence, overrides);
+    const tolerance = record?.distanceTolerance ?? .001;
+
+    if (truthSource === "live") {
+      if (!liveBlenderDependencyComplete) return {
+        classification: "bounds-only",
+        evidence: `Live Blender is missing ${liveBlenderMissingFonts.length} geometry dependency font${liveBlenderMissingFonts.length === 1 ? "" : "s"}; fixture-exact claims are disabled. Current envelope delta ${envelope.toFixed(4)}.`,
+        surfaceP99: liveMetrics?.whole?.p99,
+        surfaceMax: liveMetrics?.whole?.max,
+      };
+      const materialRequired = truthRed > 0 || vmRed > 0;
+      const materialExact = !materialRequired || Boolean(
+        !liveMetrics?.materialMismatch
+        && liveMetrics?.material
+        && liveMetrics.material.max <= tolerance,
+      );
+      const surfaceExact = Boolean(
+        envelope <= tolerance
+        && liveMetrics?.whole
+        && liveMetrics.whole.max <= tolerance
+        && materialExact,
+      );
+      if (surfaceExact) return {
+        classification: topologyMatches ? "exact-topology" : "exact-surface",
+        evidence: `Measured now against live Blender: ${liveMetrics!.whole!.aToB.samples + liveMetrics!.whole!.bToA.samples} bidirectional samples, p99 ${liveMetrics!.whole!.p99.toFixed(4)}, max ${liveMetrics!.whole!.max.toFixed(4)}${materialRequired ? `; highlighted-material max ${liveMetrics!.material!.max.toFixed(4)}` : ""}.${record ? ` Also covered by ${record.name} (${record.version}).` : ""}`,
+        surfaceP99: liveMetrics!.whole!.p99,
+        surfaceMax: liveMetrics!.whole!.max,
       };
       return {
-        classification: "exact-surface",
-        evidence: `Validated fixture: bidirectional p99/max ${surfaceP99.toFixed(3)}; triangle differences are alternate tessellation.`,
-        surfaceP99,
+        classification: "bounds-only",
+        evidence: liveMetrics?.whole
+          ? `Live sampled surface is outside the ${tolerance.toFixed(3)} tolerance: p99 ${liveMetrics.whole.p99.toFixed(4)}, max ${liveMetrics.whole.max.toFixed(4)}; envelope delta ${envelope.toFixed(4)}${liveMetrics.materialMismatch ? "; highlighted material exists on only one engine" : ""}.`
+          : `Current live result measures an envelope delta of ${envelope.toFixed(4)}, but a bidirectional surface metric could not be produced.`,
+        surfaceP99: liveMetrics?.whole?.p99,
+        surfaceMax: liveMetrics?.whole?.max,
       };
     }
-    if (envelope <= 1e-6 && (
-      matchesBoundary({ "bin gap size": 7 })
-      || matchesBoundary({ "divide x": 0.15, "divide y": 0.9 })
-    )) return {
-      classification: "exact-surface",
-      evidence: "Validated boundary fixture: bidirectional whole-surface and highlighted-material distances are zero; count differences are alternate tessellation.",
-      surfaceP99: 0,
-    };
+
+    if (record && envelope <= tolerance && record.surface.max <= tolerance) {
+      const materialEvidence = record.surface.materialMax === undefined
+        ? "whole-surface"
+        : `whole-surface and highlighted-material (max ${record.surface.materialMax.toFixed(3)})`;
+      return {
+        classification: topologyMatches ? "exact-topology" : "exact-surface",
+        evidence: `Checked-in ${record.name} evidence (${record.version}): ${materialEvidence} bidirectional p99 ${record.surface.p99.toFixed(3)}, max ${record.surface.max.toFixed(3)}.`,
+        surfaceP99: record.surface.p99,
+        surfaceMax: record.surface.max,
+      };
+    }
     return {
       classification: "bounds-only",
-      evidence: `Current live result measures an envelope delta of ${envelope.toFixed(4)}; sampled surface parity has not been validated for this combination.`,
+      evidence: `Current Blender result measures an envelope delta of ${envelope.toFixed(4)}; sampled surface parity has not been validated for this parameter snapshot.`,
     };
   }
 
@@ -798,19 +825,31 @@ export function createTool(): ToolHandle {
       const blender = blenderResult.value;
       const truth = replaceTruth(blender.root);
       lastTruthSource = blender.source;
-      truthMetricLabel.textContent = blender.source === "live" ? "Live Blender truth" : "Checked-in Blender bake";
+      truthMetricLabel.textContent = blender.source === "live"
+        ? liveBlenderDependencyComplete ? "Live Blender truth" : "Live Blender · incomplete dependencies"
+        : "Checked-in Blender bake";
       const envelope = maxBoundsDelta(new THREE.Box3().setFromObject(truthSolid!), new THREE.Box3().setFromObject(vmSolid!));
-      const evidence = evidenceFor(overrides, truth.tris, vm.tris, truth.red, vm.red, envelope);
+      let liveMetrics: BinLiveSurfaceMetrics | undefined;
+      if (blender.source === "live") {
+        setStatus("Measuring bidirectional surface distance…");
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        try {
+          liveMetrics = measureBinSurfaceParity(truthSolid!, vmSolid!);
+        } catch (error) {
+          console.warn("Live Recursive Bin surface measurement failed", error);
+        }
+      }
+      const evidence = evidenceFor(overrides, truth.tris, vm.tris, truth.red, vm.red, envelope, blender.source, liveMetrics);
       setClassification(evidence.classification, evidence.evidence);
       const triangleDelta = vm.tris - truth.tris;
       const redDelta = vm.red - truth.red;
       deltaEnvelopeEl.textContent = `${envelope.toFixed(4)} envelope`;
-      deltaTrisEl.textContent = `${triangleDelta >= 0 ? "+" : ""}${triangleDelta.toLocaleString()} triangles${evidence.surfaceP99 !== undefined ? ` · p99 ${evidence.surfaceP99.toFixed(3)}` : ""}`;
+      deltaTrisEl.textContent = `${triangleDelta >= 0 ? "+" : ""}${triangleDelta.toLocaleString()} triangles${evidence.surfaceP99 !== undefined ? ` · p99 ${evidence.surfaceP99.toFixed(3)}` : ""}${evidence.surfaceMax !== undefined ? ` · max ${evidence.surfaceMax.toFixed(3)}` : ""}`;
       findingEl.textContent = evidence.classification === "exact-topology"
-        ? "The checked fixture proves the same surface and topology counts for this setting."
+        ? blender.source === "live" ? "The current live measurement has the same sampled surface and topology/material counts." : "The checked fixture proves the same surface and topology/material counts for this setting."
         : evidence.classification === "exact-surface"
-          ? "The checked fixture proves the same surface; count differences are alternate tessellation."
-          : `Only bounds and count evidence are available for this live combination. Highlighted-material triangle delta: ${redDelta}.`;
+          ? blender.source === "live" ? "The current live measurement has the same sampled surface; count differences are alternate tessellation." : "The checked fixture proves the same surface; count differences are alternate tessellation."
+          : `${liveMetrics?.whole ? "Live surface metrics did not satisfy the exact threshold." : "Only bounds and count evidence are available for this combination."} Highlighted-material triangle delta: ${redDelta}.`;
       mode = "overlay";
       style = "wire";
       resultView = "both";
@@ -818,7 +857,7 @@ export function createTool(): ToolHandle {
       syncView(true);
       updateTruthCapability(overrides);
       setStatus(`Both engines evaluated in ${((performance.now() - started) / 1000).toFixed(2)}s`, true);
-      (window as typeof window & { __BIN_COMPARE__?: unknown }).__BIN_COMPARE__ = { ready: true, overrides, truthSource: blender.source, truthTris: truth.tris, vmTris: vm.tris, truthRed: truth.red, vmRed: vm.red, envelope, surfaceP99: evidence.surfaceP99, classification, mode, style, resultView };
+      (window as typeof window & { __BIN_COMPARE__?: unknown }).__BIN_COMPARE__ = { ready: true, overrides, truthSource: blender.source, truthTris: truth.tris, vmTris: vm.tris, truthRed: truth.red, vmRed: vm.red, envelope, surfaceP99: evidence.surfaceP99, surfaceMax: evidence.surfaceMax, classification, mode, style, resultView };
     } catch (error) {
       clearTruth();
       clearAndDispose(vmGroup);
@@ -845,10 +884,27 @@ export function createTool(): ToolHandle {
       cachedDump = await dumpResponse.json() as Dump;
       cachedVariants = (await manifestResponse.json() as { variants: Variant[] }).variants;
     }
+    if (!cachedParityEvidence) {
+      try {
+        const response = await fetch(publicUrl("dojo/bin-geometry-parity.json"));
+        if (!response.ok) throw new Error(`Evidence registry request failed (${response.status})`);
+        cachedParityEvidence = compileBinParityEvidence(await response.json() as BinParityEvidencePayload);
+      } catch (error) {
+        console.warn("Recursive Bin parity registry unavailable", error);
+        cachedParityEvidence = new Map();
+      }
+    }
     dump = cachedDump;
     variants = cachedVariants;
+    parityEvidence = cachedParityEvidence;
     if (disposed) return;
-    setControls({ ...BIN_DEFAULTS, ...binPresetFromSearch(location.search) });
+    const requestedPreset = binPresetFromSearchDetailed(location.search);
+    setControls({ ...BIN_DEFAULTS, ...requestedPreset.values });
+    if (requestedPreset.diagnostics.length) {
+      presetSelect.value = "custom";
+      presetDescription.setAttribute("role", "status");
+      presetDescription.textContent = `Outside published contract · ${clampSummary(requestedPreset.diagnostics)}`;
+    }
     await preflightBlender();
     if (disposed) return;
     syncView();
@@ -867,36 +923,38 @@ export function createTool(): ToolHandle {
     return `recursive-bin-selection-${lastEvaluatedOverrides?.["Bin Select"] ?? "unknown"}-${engine}`;
   }
 
+  function exportMetadataFor(engine: "vm" | "blender") {
+    if (!lastEvaluatedOverrides) throw new Error("No evaluated Recursive Bin parameters are available");
+    return makeBinExportMetadata({
+      parameters: lastEvaluatedOverrides,
+      engine,
+      truthSource: lastTruthSource,
+      classification,
+      comparedParameters: lastComparedOverrides,
+      evidence: evidenceEl.textContent ?? "",
+    });
+  }
+
   async function exportGlb(): Promise<void> {
     const source = evaluatedExportRoot();
     if (!source) return;
-    const result = await new GLTFExporter().parseAsync(source.root, { binary: true, onlyVisible: true });
-    const bytes = result instanceof ArrayBuffer ? result : new TextEncoder().encode(JSON.stringify(result));
+    const bytes = await encodeBinGlb(source.root, exportMetadataFor(source.engine));
     downloadBlob(`${exportBaseName(source.engine)}.glb`, new Blob([bytes], { type: "model/gltf-binary" }));
   }
 
   function exportStl(): void {
     const source = evaluatedExportRoot();
     if (!source) return;
-    const result = new STLExporter().parse(source.root, { binary: true });
-    downloadBlob(`${exportBaseName(source.engine)}.stl`, new Blob([result.buffer as ArrayBuffer], { type: "model/stl" }));
+    const bytes = encodeBinStl(source.root);
+    downloadBlob(`${exportBaseName(source.engine)}.stl`, new Blob([bytes], { type: "model/stl" }));
+    setStatus("STL exported · geometry only; download Metadata for parameters", true);
   }
 
   function exportMetadata(): void {
     const source = evaluatedExportRoot();
-    if (!source || !lastEvaluatedOverrides) return;
-    const metadata = {
-      asset: "Recursive Bin",
-      parameters: lastEvaluatedOverrides,
-      engine: source.engine === "blender" ? "Blender" : "GN-VM",
-      truthSource: lastTruthSource,
-      blenderVersion: "5.1.2",
-      classification,
-      comparedParameters: lastComparedOverrides,
-      evidence: evidenceEl.textContent,
-      evidenceVersion: "2026-08-01",
-    };
-    downloadBlob(`${exportBaseName(source.engine)}.json`, new Blob([`${JSON.stringify(metadata, null, 2)}\n`], { type: "application/json" }));
+    if (!source) return;
+    const metadata = exportMetadataFor(source.engine);
+    downloadBlob(`${exportBaseName(source.engine)}.json`, new Blob([encodeBinMetadata(metadata)], { type: "application/json" }));
   }
 
   document.querySelectorAll<HTMLInputElement>("[data-bin-param]").forEach((control) => {
@@ -917,10 +975,16 @@ export function createTool(): ToolHandle {
         output.value = Number(control.value).toFixed(parameter.step === 1 ? 0 : 3);
         return;
       }
-      const clamped = Math.min(parameter.max ?? value, Math.max(parameter.min ?? value, value));
+      const clamped = clampBinParameter(parameter, value);
       control.value = String(clamped);
       output.value = clamped.toFixed(parameter.step === 1 ? 0 : 3);
       markDirty();
+      if (clamped !== value) {
+        const diagnostic = clampSummary([{ name: parameter.name, requested: value, applied: clamped }]);
+        presetDescription.setAttribute("role", "status");
+        presetDescription.textContent = `Outside published contract · ${diagnostic}`;
+        setStatus(`Adjusted to the published range · ${diagnostic}`);
+      }
     });
   });
   listen(presetSelect, "change", () => {
@@ -1039,7 +1103,14 @@ export function createTool(): ToolHandle {
       bedTexture = null;
       controls.dispose();
       renderer.dispose();
-      renderer.forceContextLoss();
+      // React can restart this effect while retaining the same canvas (for
+      // example after a query-string navigation or Fast Refresh). Losing that
+      // still-connected canvas context makes the replacement WebGLRenderer
+      // fail during capability discovery. Defer the hard release and only do
+      // it when React actually removed/replaced this canvas.
+      queueMicrotask(() => {
+        if (!canvas.isConnected) renderer.forceContextLoss();
+      });
       delete (window as typeof window & { __BIN_COMPARE__?: unknown }).__BIN_COMPARE__;
     },
   };

@@ -4,6 +4,7 @@
 .putty-shell #putty-status.busy > .st-dot { background: var(--st-warn); box-shadow: 0 0 0 3px rgba(224,164,112,.14); }
 .putty-hint { margin: 0; color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.45 var(--st-sans); }
 .putty-runtime { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.45 var(--st-mono); }
+.putty-anchor-state { padding: 8px 10px; border: 1px solid rgba(86,169,255,.3); border-radius: var(--st-r-sm); color: #a9d2ff; background: rgba(86,169,255,.08); font: 500 var(--st-fs-micro)/1.35 var(--st-sans); }
 .putty-reference { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid var(--st-line); border-radius: var(--st-r-md); background: #000; }
 .putty-open-graph { display: flex; align-items: center; justify-content: center; text-decoration: none; }
 .putty-canvas-help { position: absolute; left: 16px; bottom: 16px; display: grid; gap: 4px; pointer-events: none; color: rgba(226,244,233,.62); text-shadow: 0 1px 3px #000; }

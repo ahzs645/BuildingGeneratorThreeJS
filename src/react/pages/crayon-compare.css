@@ -164,13 +164,17 @@
    Must match MOBILE_STUDIO_QUERY in StudioShell.tsx. */
 @media (max-width: 820px), ((pointer: coarse) and (max-height: 500px)) {
   .blender-node-title i.nested-group-open { position: relative; cursor: pointer; }
-  .blender-node-title i.nested-group-open::after { content: ""; position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; transform: translate(-50%,-50%); }
+  .blender-node-title i.nested-group-open::after { content: ""; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%,-50%); }
   /* The overlay toolbar scrolls horizontally, so items keep their natural
      width instead of flex-shrinking: desktop squeezes the breadcrumbs to a few
      px where taps land on the group <select> underneath. */
+  .st-overlay .blender-flow-toolbar { height: 52px; flex-basis: 52px; }
   .st-overlay .blender-flow-toolbar > * { flex: 0 0 auto; }
   .st-overlay .graph-breadcrumbs { max-width: none; overflow: visible; }
-  .st-overlay .graph-breadcrumbs button { min-width: 44px; min-height: 32px; max-width: 150px; }
-  .st-overlay .graph-search { width: 150px; margin-left: 0; }
-  .st-overlay .graph-actions button, .st-overlay .blender-flow-toolbar select { min-height: 32px; }
+  .st-overlay .graph-breadcrumbs button { min-width: 44px; min-height: 44px; max-width: 150px; }
+  .st-overlay .graph-search { width: 150px; height: 44px; margin-left: 0; }
+  .st-overlay .graph-actions button,
+  .st-overlay .blender-flow-toolbar select { min-width: 44px; min-height: 44px; }
+  .st-overlay .react-flow__controls-button { width: 44px; height: 44px; }
+  .st-overlay .graph-library-grid article > button { min-height: 44px; }
 }
