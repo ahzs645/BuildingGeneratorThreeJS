@@ -82,8 +82,6 @@
 #truth-capability-dot.ready, #preview-state-dot.ready { background: var(--st-ok); box-shadow: 0 0 0 3px rgba(126,215,158,.14); }
 #truth-capability-dot.warn { background: var(--st-warn); box-shadow: 0 0 0 3px rgba(224,164,112,.14); }
 #truth-capability-dot.error { background: var(--st-err); box-shadow: 0 0 0 3px rgba(228,86,78,.14); }
-.bin-live-link { color: var(--st-accent); font: 500 var(--st-fs-ui)/1.3 var(--st-font); text-decoration: none; }
-.bin-live-link:hover { text-decoration: underline; }
 .bin-result-filter { grid-template-columns: repeat(3, 1fr); }
 
 .bin-results { transition: opacity .15s; }

@@ -361,6 +361,76 @@
 .st-chip.ok   { border-color: rgba(126,215,158,.16); background: rgba(126,215,158,.06); color: #8FCFA8; }
 .st-chip b { margin-left: auto; font: 500 var(--st-fs-micro)/1 var(--st-mono); }
 
+/* ------------------------------------------------------------- node cards */
+/* An inspector column presented as the pipeline it drives: one collapsible
+   card per stage, with a category port dot and a role badge. The procedural
+   painter builds the same component out of lil-gui folders
+   (`.paint-node-*` in surface-painter.css); these classes are the React twin,
+   so both inspectors read as one kit component. */
+.st-node-stack { display: flex; flex-direction: column; gap: 8px; padding: 10px; }
+.st-node-intro {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 11px;
+  border: 1px solid rgba(127,196,232,.24); border-radius: var(--st-r-md);
+  background: linear-gradient(135deg, rgba(127,196,232,.11), rgba(127,196,232,.035));
+}
+.st-node-intro > div { display: grid; min-width: 0; gap: 3px; }
+.st-node-intro b { color: var(--st-ink); font-size: var(--st-fs-ui); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-node-intro small { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.35 var(--st-mono); }
+.st-node-intro .st-dot { margin: 0 3px; }
+
+.st-node {
+  position: relative; overflow: hidden;
+  border: 1px solid var(--st-line-2); border-radius: var(--st-r-md);
+  background: var(--st-sunken);
+}
+.st-node::before {
+  content: ""; position: absolute; z-index: 2; top: 15px; left: 10px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--st-node-color, var(--st-accent));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--st-node-color, var(--st-accent)) 15%, transparent);
+  pointer-events: none;
+}
+.st-node-source     { --st-node-color: #9AB7FF; }
+.st-node-interaction { --st-node-color: #E0A470; }
+.st-node-generator  { --st-node-color: #7ED79E; }
+.st-node-simulation { --st-node-color: #9F9AE8; }
+.st-node-render     { --st-node-color: #7FC4E8; }
+.st-node-animation  { --st-node-color: #D9C979; }
+
+.st-node-head {
+  box-sizing: border-box; display: flex; align-items: center; gap: 8px;
+  width: 100%; height: 36px; padding: 0 10px 0 24px;
+  border: 0; border-bottom: 1px solid var(--st-line);
+  background: var(--st-raised); color: var(--st-ink);
+  font: 600 var(--st-fs-ui)/1 var(--st-font);
+  text-align: left; cursor: pointer;
+}
+.st-node.closed .st-node-head { border-bottom-color: transparent; }
+.st-node-head:hover { background: #1D242B; }
+.st-node-head::after {
+  content: ""; flex: 0 0 7px; width: 7px; height: 7px;
+  border-right: 1.5px solid var(--st-ink-3); border-bottom: 1.5px solid var(--st-ink-3);
+  transform: rotate(45deg) translateY(-2px); transition: transform .14s ease;
+}
+.st-node.closed .st-node-head::after { transform: rotate(-45deg); }
+.st-node-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-node-badge {
+  padding: 3px 5px;
+  border: 1px solid color-mix(in srgb, var(--st-node-color) 28%, transparent);
+  border-radius: 4px; background: color-mix(in srgb, var(--st-node-color) 8%, transparent);
+  color: color-mix(in srgb, var(--st-node-color) 80%, white);
+  font: 600 9px/1 var(--st-mono); letter-spacing: .08em;
+}
+.st-node-body { display: flex; flex-direction: column; gap: 9px; padding: 10px; }
+.st-node-body[hidden] { display: none; }
+.st-node-body > h4 {
+  margin: 4px 0 0; color: #7DA9BC;
+  font: 700 var(--st-fs-micro)/1 var(--st-mono);
+  letter-spacing: .08em; text-transform: uppercase;
+}
+@media (prefers-reduced-motion: reduce) { .st-node-head::after { transition: none; } }
+
 /* Status dot — the ONLY status affordance in the app */
 .st-dot { width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: var(--st-ink-3); }
 .st-dot.ready { background: var(--st-ok);   box-shadow: 0 0 0 3px rgba(126,215,158,.14); }
@@ -456,6 +526,9 @@
   .st-sheet .st-row > input[type=number] { grid-column: 2; grid-row: 2; }
   .st-sheet .st-row input[type=checkbox] { grid-column: 2; grid-row: 1; }
   .st-sheet .st-select, .st-sheet .st-input { height: var(--st-touch); font-size: var(--st-fs-title); }
+  .st-sheet .st-node-stack { padding: 10px 2px; }
+  .st-sheet .st-node-head { height: var(--st-touch); font-size: var(--st-fs-title); }
+  .st-sheet .st-node::before { top: calc(var(--st-touch) / 2 - 3px); }
   .st-sheet input[type=checkbox] { width: 28px; height: 28px; }
   .st-sheet .st-section > a {
     display: flex; min-height: var(--st-touch); align-items: center;

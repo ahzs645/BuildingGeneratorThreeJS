@@ -73,7 +73,6 @@ export const STUDIO_TOOLS: StudioSection[] = [
       { href: "/vase", title: "Bubble Vase Compare", desc: "Overlay and side-by-side parity for the bubble vase" },
       { href: "/materialx", title: "MaterialX Parity Lab", badge: "prototype", desc: "Capability-gated Blender → MaterialX shader experiment" },
       { href: "/crayon", title: "Chrome Crayon Compare", desc: "Single-asset parity workspace with the Blender-style graph" },
-      { href: "/bin/live", title: "Bin Live", desc: "Live-evaluated recursive bin (needs the local bake bridge)" },
     ],
   },
 ];
@@ -136,7 +135,7 @@ const DEV_PRESETS: DevPresetGroup[] = [
 // Local pipelines that cannot run in the browser — documentation-in-place.
 const CLI_REFERENCE: { cmd: string; desc: string }[] = [
   { cmd: "npm test", desc: "GN-VM + pipeline unit tests (tsx --test)" },
-  { cmd: "node tools/bake-bridge.mjs", desc: "local Blender bake bridge on :7801 — powers Bin Live" },
+  { cmd: "node tools/bake-bridge.mjs", desc: "local Blender bake bridge on :7801 — powers live validation on /bin" },
   { cmd: "npm run dev", desc: "dev server incl. /api/blend-import extraction middleware" },
   { cmd: "npm run materialx:extract", desc: "extract Blender material → MaterialX document" },
   { cmd: "npm run materialx:capture:web", desc: "headless captures of the web viewers for parity evidence" },
@@ -186,7 +185,7 @@ function DevPanel({ onClose }: { onClose: () => void }): React.JSX.Element {
       {open && <div className="studio-menu-dev-body">
         <div className="studio-menu-status" role="status">
           <span title="WebGPU adapter (vegetation + geometry painter)">{probeDot(status.webgpu)} WebGPU</span>
-          <span title="Blender bake bridge on localhost:7801 (Bin Live)">{probeDot(status.bridge)} bake bridge :7801</span>
+          <span title="Blender bake bridge on localhost:7801 (live /bin validation)">{probeDot(status.bridge)} bake bridge :7801</span>
           <span title="/api/blend-import middleware (BlendBridge extraction, dev server only)">{probeDot(status.importer)} .blend importer</span>
         </div>
         {DEV_PRESETS.map((group) => (

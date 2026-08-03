@@ -4,6 +4,10 @@
    .blend-secondary-button, .blend-dropzone, .blend-source-status,
    .blend-runtime-status, .blend-empty-state — now comes from studio-kit.css. */
 
+/* The inspector carries the asset's whole control stack, so it gets the same
+   width the procedural painter's node column uses. */
+.blend-studio-page { --st-inspector-w: 360px; }
+
 #blend-studio-canvas { display: block; width: 100%; height: 100%; }
 
 /* Source card + info rows: two-line text that has to ellipsise inside 300px. */
@@ -32,8 +36,23 @@
   .st-sheet .blend-export button { min-height: var(--st-touch); }
 }
 
-/* Parameter grouping inside the Parameters tab. */
-.blend-control-panel h4 { margin: 10px 0 2px; color: #7DA9BC; font: 700 var(--st-fs-micro)/1 var(--st-mono); letter-spacing: .08em; text-transform: uppercase; }
+/* Inspector node stack ---------------------------------------------------- */
+/* The evaluation foot of the stack: the one action that commits the sliders
+   above it, plus the measured live/manual read-out. */
+.blend-node-run { display: grid; gap: 8px; margin-top: 2px; padding: 10px; border: 1px solid var(--st-line-2); border-radius: var(--st-r-md); background: var(--st-raised); }
+.blend-node-run .st-btn-primary { width: 100%; }
+.blend-node-note { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.4 var(--st-mono); }
+/* Blender input names are long; the wider inspector can afford the label. */
+.st-node-body .st-row { grid-template-columns: 118px minmax(0,1fr) 44px; }
+.st-node-body .st-row.st-row-wide { grid-template-columns: 118px minmax(0,1fr); }
+.st-node-body .st-field { grid-template-columns: 92px minmax(0,1fr); }
+/* The tab strip is a flex row; the readout rides its trailing edge. */
+.blend-inspector-meta { color: var(--st-ink-3); font: 500 var(--st-fs-micro)/1 var(--st-mono); font-variant-numeric: tabular-nums; }
+.st-tabs .st-spacer { margin-left: auto; }
+.blend-check-switch { padding-bottom: 0; border-bottom: 0; }
+/* Node bodies already pad and gap; the caliper only adds its own tint. */
+.st-node-body > .blend-measurement-tool { display: flex; flex-direction: column; gap: 9px; }
+
 /* Text and datablock controls have no separate value column. */
 .st-row > .blend-span-control { grid-column: 2 / 4; }
 .blend-packaging { grid-template-columns: repeat(3, minmax(0,1fr)); }

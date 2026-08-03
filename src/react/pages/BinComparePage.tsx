@@ -1,5 +1,5 @@
 import { useState, type KeyboardEvent } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { BIN_PARAMETERS, BIN_PRESETS, type BinParameter } from "../../bin-params";
 import { useToolRuntime } from "../page-runtime";
 import { StudioShell, useMobileStudio } from "../studio/StudioShell";
@@ -179,7 +179,6 @@ export default function BinComparePage(): React.JSX.Element {
           <div><b id="truth-capability">Checking Blender…</b><small id="truth-capability-detail">12 checked-in selection bakes available</small></div>
         </div>
         <button id="update-comparison" className="st-btn-primary" type="button">Compare with Blender</button>
-        <Link className="bin-live-link" to="/bin/live">Open Blender service diagnostics →</Link>
       </div>
       <div className="st-section">
         <div className="st-section-title">Comparison view</div>

@@ -1,11 +1,22 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const repo = new URL("../", import.meta.url);
 const runtime = readFileSync(new URL("src/bin-compare.ts", repo), "utf8");
 const page = readFileSync(new URL("src/react/pages/BinComparePage.tsx", repo), "utf8");
 const css = readFileSync(new URL("src/react/pages/bin-compare.css", repo), "utf8");
+const app = readFileSync(new URL("src/react/App.tsx", repo), "utf8");
+const menu = readFileSync(new URL("src/react/studio/StudioMenu.tsx", repo), "utf8");
+
+test("Recursive Bin has one canonical workspace and redirects retired live URLs", () => {
+  assert.doesNotMatch(app, /BinLivePage/);
+  assert.match(app, /"\/bin\/live": "\/bin"/);
+  assert.doesNotMatch(menu, /title: "Bin Live"/);
+  assert.equal(existsSync(new URL("src/bin-live.ts", repo)), false);
+  assert.equal(existsSync(new URL("src/react/pages/BinLivePage.tsx", repo)), false);
+  assert.equal(existsSync(new URL("src/react/pages/bin-live.css", repo)), false);
+});
 
 test("Recursive Bin separates build and validation workflows with complete actions", () => {
   for (const label of ["Build Bin", "Validate Engines", "Authored reset", "Revert preview", "Copy link", "Preview current bin", "Compare with Blender", "GLB", "STL", "Metadata"]) {

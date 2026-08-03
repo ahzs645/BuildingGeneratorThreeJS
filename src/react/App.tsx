@@ -14,7 +14,6 @@ const BlendBridgePage = lazy(() => import("./pages/BlendBridgePage"));
 const BuildingPage = lazy(() => import("./pages/BuildingPage"));
 const DojoGalleryPage = lazy(() => import("./pages/DojoGalleryPage"));
 const BinComparePage = lazy(() => import("./pages/BinComparePage"));
-const BinLivePage = lazy(() => import("./pages/BinLivePage"));
 const VaseComparePage = lazy(() => import("./pages/VaseComparePage"));
 const CrayonComparePage = lazy(() => import("./pages/CrayonComparePage"));
 const TypewriterPage = lazy(() => import("./pages/TypewriterPage"));
@@ -39,7 +38,8 @@ const LEGACY_ROUTES: Record<string, string> = {
   "/dojo-viewer.html": "/gallery?model=dojo-bin",
   "/dojo-gallery.html": "/gallery",
   "/bin-studio.html": "/bin",
-  "/bin-live.html": "/bin/live",
+  "/bin/live": "/bin",
+  "/bin-live.html": "/bin",
   "/gnvm-viewer.html": "/bin",
   "/vase-compare.html": "/vase",
   "/geometry-painter.html": "/paint?mode=crystals",
@@ -73,7 +73,6 @@ function StudioRoutes(): React.JSX.Element {
           <Route path="/building" element={<BuildingPage />} />
           <Route path="/gallery" element={<DojoGalleryPage />} />
           <Route path="/bin" element={<BinComparePage />} />
-          <Route path="/bin/live" element={<BinLivePage />} />
           <Route path="/vase" element={<VaseComparePage />} />
           <Route path="/crayon" element={<CrayonComparePage />} />
           <Route path="/typewriter" element={<TypewriterPage />} />

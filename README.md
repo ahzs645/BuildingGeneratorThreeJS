@@ -119,8 +119,9 @@ blender --background "/path/to/Dojo Bin Generator_recursive red bins_v.0.1.1.ble
 node tools/bake-bridge.mjs /tmp/bin-bake-comm 7801
 ```
 
-Then open `/bin/live`. The `/bin` comparison does not need those services: its
-Blender side uses 12 checked-in truth bakes while GN-VM evaluates live.
+Then open `/bin`, switch to **Validate Engines**, and run the comparison. When
+the local bridge is unavailable, `/bin` still evaluates GN-VM and can use the 12
+checked-in Blender selection bakes where their parameter contract applies.
 
 ## Re-exporting the asset kit
 

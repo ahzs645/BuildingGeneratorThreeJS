@@ -64,7 +64,8 @@ import {
 import { useBlendStudioRuntime } from "../blend-studio/useBlendStudioRuntime";
 import { usePageRuntime } from "../page-runtime";
 import { useStudioStatusChips, type StudioTone } from "../studio/StudioChrome";
-import { StudioOverlay, StudioShell, useMobileStudio } from "../studio/StudioShell";
+import { StudioNode } from "../studio/StudioNode";
+import { StudioOverlay, StudioPanelHeader, StudioShell, useMobileStudio } from "../studio/StudioShell";
 import "./crayon-compare.css";
 import "./blend-studio.css";
 
@@ -173,8 +174,10 @@ export default function BlendBridgePage(): React.JSX.Element {
   const workpieceInput = useRef<HTMLInputElement>(null);
   const importSerial = useRef(0);
   const isMobile = useMobileStudio();
-  const [sourceTab, setSourceTab] = useState<"source" | "parameters">("source");
-  const [inspectorTab, setInspectorTab] = useState<"compatibility" | "runtime" | "info">("compatibility");
+  // The inspector leads with the asset's own controls; the read-only parity
+  // panels are one tab away rather than owning the whole column.
+  const [inspectorTab, setInspectorTab] = useState<"nodes" | "checks">("nodes");
+  const [checkTab, setCheckTab] = useState<"compatibility" | "runtime" | "info">("compatibility");
   // Mobile starts with the graph overlay closed; the FAB is its entry point.
   const [graphOpen, setGraphOpen] = useState(!isMobile);
   const [graphMaximized, setGraphMaximized] = useState(false);
@@ -897,121 +900,134 @@ export default function BlendBridgePage(): React.JSX.Element {
       </details>}
     </div>
     <div className="st-section">
-      <div className="st-section-title">Execution target</div>
-      <label className="st-field">
-        <span>Target</span>
-        <select
-          className="st-select"
-          disabled={!targets.length}
-          value={target?.id ?? ""}
-          onChange={(event) => {
-            runtime.cancel();
-            setTargetId(event.target.value);
-            setWorkingDump(sourceDump ? structuredClone(sourceDump) : null);
-          }}
-        >
-          {!targets.length && <option>Import a graph first</option>}
-          {targets.map((item) => <option key={item.id} value={item.id}>
-            {item.kind === "object" ? "Object" : "Group"} · {item.label}
-          </option>)}
-        </select>
-      </label>
-      {target && connectedGeometryInputs.length > 0 && <label className="st-field">
-        <span>Apply to</span>
-        <select className="st-select" value={seedValue} onChange={(event) => setSeedValue(event.target.value)}>
-          {target.kind === "object" && <option value="authored">Authored object · {target.objectName}</option>}
-          <option value="cube">Primitive · Cube</option>
-          <option value="plane">Primitive · Plane</option>
-          <option value="curve-circle">Primitive · Curve circle</option>
-          <option value="curve-line">Primitive · Curve line</option>
-          {seedObjects.map((name) => <option key={name} value={`object:${name}`}>Object · {name}</option>)}
-        </select>
-      </label>}
-      {target && connectedGeometryInputs.length > 1 && <label className="st-field">
-        <span>Input socket</span>
-        <select className="st-select" value={geometryInput} onChange={(event) => setGeometryInput(event.target.value)}>
-          {connectedGeometryInputs.map((item) => <option key={item.identifier} value={item.identifier}>{item.name}</option>)}
-        </select>
-      </label>}
-      {target && geometryInputs.length > 0 && connectedGeometryInputs.length === 0
-        && <div className="st-chip">Pure generator · the exposed Geometry socket is disconnected, so node parameters drive the output</div>}
-      {target && (geometryOutputs.length > 1 || viewerPreviews.length > 0) && <label className="st-field">
-        <span>Output</span>
-        <select className="st-select" value={geometryOutput} onChange={(event) => setGeometryOutput(event.target.value)}>
-          {geometryOutputs.map((item) => <option key={item.identifier} value={item.identifier}>{item.name}</option>)}
-          {viewerPreviews.map((preview) =>
-            <option key={preview.id} value={`viewer:${preview.id}`}>Viewer · {preview.label}</option>)}
-        </select>
-      </label>}
-      <div className="st-btn-row">
-        <button
-          className="st-btn-primary"
-          type="button"
-          disabled={!workingDump || !target || runtime.snapshot.state === "evaluating"}
-          onClick={() => {
-            if (!evaluation) return;
-            lastQueuedEvaluation.current = evaluation;
-            void runtime.evaluate(withProgressivePreview(evaluation)).catch(() => {});
-          }}
-        >Apply to preview</button>
-        <details className="blend-export">
-          <summary className="st-btn">Export</summary>
-          <div>
-            <button type="button" disabled={!interpretedDump} onClick={() => {
-              if (!interpretedDump) return;
-              download(
-                `${exportBaseName}${measurementContract?.display ? ".interpreted" : ""}.nodes.json`,
-                JSON.stringify(interpretedDump),
-              );
-            }}>Portable graph JSON</button>
-            <button type="button" disabled={!workingDump} onClick={() => {
-              if (!workingDump) return;
-              void dependencyExtractionPackage(workingDump).then((extractionPackage) => {
-                download(`${exportBaseName}.dependencies.json`, JSON.stringify(extractionPackage, null, 2));
-              });
-            }}>Dependency package</button>
-          </div>
-        </details>
-      </div>
+      <div className="st-section-title">Portable output<small>source untouched</small></div>
+      <details className="blend-export">
+        <summary className="st-btn">Export</summary>
+        <div>
+          <button type="button" disabled={!interpretedDump} onClick={() => {
+            if (!interpretedDump) return;
+            download(
+              `${exportBaseName}${measurementContract?.display ? ".interpreted" : ""}.nodes.json`,
+              JSON.stringify(interpretedDump),
+            );
+          }}>Portable graph JSON</button>
+          <button type="button" disabled={!workingDump} onClick={() => {
+            if (!workingDump) return;
+            void dependencyExtractionPackage(workingDump).then((extractionPackage) => {
+              download(`${exportBaseName}.dependencies.json`, JSON.stringify(extractionPackage, null, 2));
+            });
+          }}>Dependency package</button>
+        </div>
+      </details>
     </div>
   </>;
 
-  const parameterSection = <>
-    {animatedFrameRange && <div className="st-section">
-      <div className="st-section-title">Animation<small>{`${animatedFrameRange[0]}–${animatedFrameRange[1]}`}</small></div>
-      <label className="st-row" title="Extracted Blender node-tree F-curves are evaluated at this frame before Geometry Nodes run">
-        <span>Frame</span>
-        <input
-          type="range"
-          min={animatedFrameRange[0]}
-          max={animatedFrameRange[1]}
-          step={1}
-          value={animationFrame}
-          onChange={(event) => setAnimationFrame(Number(event.target.value))}
-        />
-        <output>{animationFrame}</output>
-      </label>
-    </div>}
-    {hasVolumeBoundary && <div className="st-section">
-      <div className="st-section-title">Volume fidelity<small>manual</small></div>
-      <label className="st-field" title="Higher settings preserve the authored voxel spacing for larger grids, but stay manual because memory and evaluation time rise sharply">
-        <span>Samples</span>
-        <select
-          className="st-select"
-          value={volumeSampleBudget}
-          onChange={(event) => setVolumeSampleBudget(Number(event.target.value))}
-        >
-          <option value={1_000_000}>Interactive · 1 million</option>
-          <option value={4_000_000}>Detailed · 4 million</option>
-          <option value={12_000_000}>Parity probe · 12 million</option>
-          <option value={16_000_000}>Maximum · 16 million</option>
-        </select>
-      </label>
-    </div>}
-    {measurementContract && <div className="st-section blend-measurement-tool">
-      <div className="st-section-title">Caliper<small>{measurementContract.display
-        ? "LCD interpreted"
-        : "Linear Gizmo"}</small></div>
+  /** The INPUT node of the stack: what gets evaluated, and into what. */
+  const targetNode = <StudioNode
+    title="Target"
+    badge="INPUT"
+    tone="source"
+    title2="The Blender object or reusable group this inspector drives, and the geometry fed into it."
+  >
+    <label className="st-field">
+      <span>Target</span>
+      <select
+        className="st-select"
+        disabled={!targets.length}
+        value={target?.id ?? ""}
+        onChange={(event) => {
+          runtime.cancel();
+          setTargetId(event.target.value);
+          setWorkingDump(sourceDump ? structuredClone(sourceDump) : null);
+        }}
+      >
+        {!targets.length && <option>Import a graph first</option>}
+        {targets.map((item) => <option key={item.id} value={item.id}>
+          {item.kind === "object" ? "Object" : "Group"} · {item.label}
+        </option>)}
+      </select>
+    </label>
+    {target && connectedGeometryInputs.length > 0 && <label className="st-field">
+      <span>Apply to</span>
+      <select className="st-select" value={seedValue} onChange={(event) => setSeedValue(event.target.value)}>
+        {target.kind === "object" && <option value="authored">Authored object · {target.objectName}</option>}
+        <option value="cube">Primitive · Cube</option>
+        <option value="plane">Primitive · Plane</option>
+        <option value="curve-circle">Primitive · Curve circle</option>
+        <option value="curve-line">Primitive · Curve line</option>
+        {seedObjects.map((name) => <option key={name} value={`object:${name}`}>Object · {name}</option>)}
+      </select>
+    </label>}
+    {target && connectedGeometryInputs.length > 1 && <label className="st-field">
+      <span>Input socket</span>
+      <select className="st-select" value={geometryInput} onChange={(event) => setGeometryInput(event.target.value)}>
+        {connectedGeometryInputs.map((item) => <option key={item.identifier} value={item.identifier}>{item.name}</option>)}
+      </select>
+    </label>}
+    {target && geometryInputs.length > 0 && connectedGeometryInputs.length === 0
+      && <div className="st-chip">Pure generator · the exposed Geometry socket is disconnected, so node parameters drive the output</div>}
+    {target && (geometryOutputs.length > 1 || viewerPreviews.length > 0) && <label className="st-field">
+      <span>Output</span>
+      <select className="st-select" value={geometryOutput} onChange={(event) => setGeometryOutput(event.target.value)}>
+        {geometryOutputs.map((item) => <option key={item.identifier} value={item.identifier}>{item.name}</option>)}
+        {viewerPreviews.map((preview) =>
+          <option key={preview.id} value={`viewer:${preview.id}`}>Viewer · {preview.label}</option>)}
+      </select>
+    </label>}
+  </StudioNode>;
+
+  const animationNode = animatedFrameRange && <StudioNode
+    title="Animation"
+    badge="PLAYBACK"
+    tone="animation"
+    title2="Extracted Blender node-tree F-curves are evaluated at this frame before Geometry Nodes run"
+  >
+    <label className="st-row">
+      <span>Frame</span>
+      <input
+        type="range"
+        min={animatedFrameRange[0]}
+        max={animatedFrameRange[1]}
+        step={1}
+        value={animationFrame}
+        onChange={(event) => setAnimationFrame(Number(event.target.value))}
+      />
+      <output>{animationFrame}</output>
+    </label>
+    <small className="blend-node-note">Frames {animatedFrameRange[0]}–{animatedFrameRange[1]}</small>
+  </StudioNode>;
+
+  const volumeNode = hasVolumeBoundary && <StudioNode
+    title="Volume fidelity"
+    badge="MANUAL"
+    tone="render"
+    defaultOpen={false}
+    title2="Higher settings preserve the authored voxel spacing for larger grids, but stay manual because memory and evaluation time rise sharply"
+  >
+    <label className="st-field">
+      <span>Samples</span>
+      <select
+        className="st-select"
+        value={volumeSampleBudget}
+        onChange={(event) => setVolumeSampleBudget(Number(event.target.value))}
+      >
+        <option value={1_000_000}>Interactive · 1 million</option>
+        <option value={4_000_000}>Detailed · 4 million</option>
+        <option value={12_000_000}>Parity probe · 12 million</option>
+        <option value={16_000_000}>Maximum · 16 million</option>
+      </select>
+    </label>
+  </StudioNode>;
+
+  const caliperNode = measurementContract && <StudioNode
+    title="Caliper"
+    badge={measurementContract.display ? "LCD" : "GIZMO"}
+    tone="interaction"
+    title2={measurementContract.display
+      ? "The modeled LCD is evaluated from reversible zero-offset and unit-scale Geometry Nodes added by BlendBridge."
+      : "This graph exposes jaw measurement but no traceable modeled LCD branch."}
+  >
+    <div className="blend-measurement-tool">
       <div className="blend-measurement-readout">
         <strong>{displayedMeasurement.toFixed(3)}</strong>
         <span>{measurementUnit}</span>
@@ -1166,10 +1182,16 @@ export default function BlendBridgePage(): React.JSX.Element {
         : "This graph exposes jaw measurement but no traceable modeled LCD branch; mm/in and tare remain studio readout features."}>
         {measurementContract.display ? "Interpreted LCD · source untouched" : "Studio readout · no modeled LCD branch"}
       </div>
-    </div>}
-    {gizmoContracts.length > 0 && <div className="st-section">
-      <div className="st-section-title">Graph gizmos<small>{gizmoContracts.length} bound</small></div>
-      {gizmoContracts.map((contract) => {
+    </div>
+  </StudioNode>;
+
+  const gizmoNode = gizmoContracts.length > 0 && <StudioNode
+    title="Graph gizmos"
+    badge="LIVE"
+    tone="simulation"
+    title2={`${gizmoContracts.length} bound · each slider has a matching handle in the viewport`}
+  >
+    {gizmoContracts.map((contract) => {
         const raw = overrides[contract.rootInputIdentifier] ?? contract.rootValue;
         const value = contract.component === undefined
           ? Number(raw)
@@ -1195,12 +1217,97 @@ export default function BlendBridgePage(): React.JSX.Element {
           <output>{display}</output>
         </label>;
       })}
-    </div>}
-    <div className="st-section">
-      <div className="st-section-title">
-        Parameters
-        <small>{visibleOrdinaryControls.length + visibleDatablockControls.length} editable</small>
+  </StudioNode>;
+
+  // One card per Blender panel. The authored panel layout is the graph's own
+  // grouping, so the stack mirrors the modifier the artist built rather than
+  // an order this page invented.
+  const parameterNodes = controlPanelKeys.map((panelKey, index) => {
+    const inPanel = (path: readonly string[]): boolean => path.join(" › ") === panelKey;
+    const ordinary = visibleOrdinaryControls.filter((control) => inPanel(control.panelPath));
+    const datablocks = visibleDatablockControls.filter((control) => inPanel(control.panelPath));
+    return <StudioNode
+      key={panelKey || "General"}
+      title={panelKey || "Parameters"}
+      badge="LIVE"
+      tone="generator"
+      // Blender's first panel is the one the artist expects to reach for.
+      defaultOpen={index === 0}
+      title2={`${ordinary.length + datablocks.length} editable inputs`}
+    >
+      {ordinary.map((control) => <label className="st-row" key={control.identifier}>
+        <span>{control.name}</span>
+        {control.socketType === "NodeSocketBool"
+          ? <input
+              type="checkbox"
+              checked={Boolean(overrides[control.identifier])}
+              onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: event.target.checked }))}
+            />
+          : control.socketType === "NodeSocketString"
+            ? <input
+                className="st-input blend-span-control"
+                type="text"
+                value={String(overrides[control.identifier] ?? control.value)}
+                onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: event.target.value }))}
+              />
+            : <>
+                <input
+                  type="range"
+                  min={control.min}
+                  max={control.max}
+                  step={control.step}
+                  value={Number(overrides[control.identifier] ?? control.value)}
+                  onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: Number(event.target.value) }))}
+                />
+                <output>{Number(overrides[control.identifier] ?? control.value).toFixed(control.step === 1 ? 0 : 3)}</output>
+              </>}
+      </label>)}
+      {datablocks.map((control) => {
+        const value = overrides[control.identifier] as { name?: string } | null | undefined;
+        return <label className="st-row" key={control.identifier}>
+          <span>{control.name}</span>
+          <select
+            className="st-select blend-span-control"
+            value={value?.name ?? ""}
+            onChange={(event) => setOverrides((current) => ({
+              ...current,
+              [control.identifier]: event.target.value
+                ? { datablock: control.datablock, name: event.target.value }
+                : null,
+            }))}
+          >
+            <option value="">Unbound</option>
+            {control.options.map((name) =>
+              <option key={name} value={name}>{control.datablock} · {name}</option>)}
+          </select>
+        </label>;
+      })}
+    </StudioNode>;
+  });
+
+  /**
+   * The inspector as the pipeline it drives: source geometry in at the top,
+   * the graph's own authored panels in the middle, evaluation at the foot.
+   */
+  const nodeStack = <div className="st-node-stack">
+    <div className="st-node-intro">
+      <span className={`st-dot ${RUNTIME_TONE[runtime.snapshot.state]}`} />
+      <div>
+        <b>{target ? target.label : "No target"}</b>
+        <small>{target
+          ? `${target.groupName} · ${visibleOrdinaryControls.length + visibleDatablockControls.length} editable inputs`
+          : "Import a Blender graph to expose its controls"}</small>
       </div>
+    </div>
+    {targetNode}
+    {animationNode}
+    {caliperNode}
+    {gizmoNode}
+    {parameterNodes}
+    {visibleOrdinaryControls.length === 0 && visibleDatablockControls.length === 0
+      && <div className="st-chip">No additional portable inputs are exposed by this target.</div>}
+    {volumeNode}
+    <div className="blend-node-run">
       {hiddenControlCount > 0 && <label className="st-row st-row-wide">
         <span>Blender-hidden</span>
         <input
@@ -1210,62 +1317,16 @@ export default function BlendBridgePage(): React.JSX.Element {
           title={`Show ${hiddenControlCount} ${hiddenControlCount === 1 ? "control" : "controls"} hidden in the Blender modifier`}
         />
       </label>}
-      {visibleOrdinaryControls.length === 0 && visibleDatablockControls.length === 0
-        && <div className="st-chip">No additional portable inputs are exposed by this target.</div>}
-      {controlPanelKeys.map((panelKey) => <div className="blend-control-panel" key={panelKey || "General"}>
-        {panelKey && <h4>{panelKey}</h4>}
-        {visibleOrdinaryControls
-          .filter((control) => control.panelPath.join(" › ") === panelKey)
-          .map((control) => <label className="st-row" key={control.identifier}>
-            <span>{control.name}</span>
-            {control.socketType === "NodeSocketBool"
-              ? <input
-                  type="checkbox"
-                  checked={Boolean(overrides[control.identifier])}
-                  onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: event.target.checked }))}
-                />
-              : control.socketType === "NodeSocketString"
-                ? <input
-                    className="st-input blend-span-control"
-                    type="text"
-                    value={String(overrides[control.identifier] ?? control.value)}
-                    onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: event.target.value }))}
-                  />
-                : <>
-                    <input
-                      type="range"
-                      min={control.min}
-                      max={control.max}
-                      step={control.step}
-                      value={Number(overrides[control.identifier] ?? control.value)}
-                      onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: Number(event.target.value) }))}
-                    />
-                    <output>{Number(overrides[control.identifier] ?? control.value).toFixed(control.step === 1 ? 0 : 3)}</output>
-                  </>}
-          </label>)}
-        {visibleDatablockControls
-          .filter((control) => control.panelPath.join(" › ") === panelKey)
-          .map((control) => {
-            const value = overrides[control.identifier] as { name?: string } | null | undefined;
-            return <label className="st-row" key={control.identifier}>
-              <span>{control.name}</span>
-              <select
-                className="st-select blend-span-control"
-                value={value?.name ?? ""}
-                onChange={(event) => setOverrides((current) => ({
-                  ...current,
-                  [control.identifier]: event.target.value
-                    ? { datablock: control.datablock, name: event.target.value }
-                    : null,
-                }))}
-              >
-                <option value="">Unbound</option>
-                {control.options.map((name) =>
-                  <option key={name} value={name}>{control.datablock} · {name}</option>)}
-              </select>
-            </label>;
-          })}
-      </div>)}
+      <button
+        className="st-btn-primary"
+        type="button"
+        disabled={!workingDump || !target || runtime.snapshot.state === "evaluating"}
+        onClick={() => {
+          if (!evaluation) return;
+          lastQueuedEvaluation.current = evaluation;
+          void runtime.evaluate(withProgressivePreview(evaluation)).catch(() => {});
+        }}
+      >Apply to preview</button>
       {autoEvaluation && <div
         className="st-segmented"
         aria-label="Evaluation policy"
@@ -1279,14 +1340,11 @@ export default function BlendBridgePage(): React.JSX.Element {
         <button type="button" disabled aria-pressed={!autoEvaluation.enabled} className={autoEvaluation.enabled ? "" : "active"}>Manual</button>
       </div>}
     </div>
-  </>;
+  </div>;
 
   const leftDock = <>
-    <div className="st-tabs" role="tablist" aria-label="Source and parameters">
-      <button type="button" role="tab" aria-selected={sourceTab === "source"} onClick={() => setSourceTab("source")}>Source</button>
-      <button type="button" role="tab" aria-selected={sourceTab === "parameters"} onClick={() => setSourceTab("parameters")}>Parameters</button>
-    </div>
-    {sourceTab === "source" ? sourceSection : parameterSection}
+    <StudioPanelHeader title="Source" meta={sourceName ? humanBytes(sourceBytes) : "no file"} />
+    {sourceSection}
   </>;
 
   const compatibilityPanel = <>
@@ -1400,13 +1458,26 @@ export default function BlendBridgePage(): React.JSX.Element {
     </div>
   </div>;
 
+  /** The read-only parity panels, now one tab rather than the whole column. */
+  const checksSection = <>
+    <div className="st-section blend-check-switch">
+      <div className="st-segmented" aria-label="Checks">
+        <button type="button" className={checkTab === "compatibility" ? "active" : ""} onClick={() => setCheckTab("compatibility")}>Compatibility</button>
+        <button type="button" className={checkTab === "runtime" ? "active" : ""} onClick={() => setCheckTab("runtime")}>Runtime</button>
+        <button type="button" className={checkTab === "info" ? "active" : ""} onClick={() => setCheckTab("info")}>Info</button>
+      </div>
+    </div>
+    {checkTab === "compatibility" ? compatibilityPanel : checkTab === "runtime" ? runtimePanel : infoPanel}
+  </>;
+
   const rightDock = <>
     <div className="st-tabs" role="tablist" aria-label="Inspector">
-      <button type="button" role="tab" aria-selected={inspectorTab === "compatibility"} onClick={() => setInspectorTab("compatibility")}>Compatibility</button>
-      <button type="button" role="tab" aria-selected={inspectorTab === "runtime"} onClick={() => setInspectorTab("runtime")}>Runtime</button>
-      <button type="button" role="tab" aria-selected={inspectorTab === "info"} onClick={() => setInspectorTab("info")}>Info</button>
+      <button type="button" role="tab" aria-selected={inspectorTab === "nodes"} onClick={() => setInspectorTab("nodes")}>Nodes</button>
+      <button type="button" role="tab" aria-selected={inspectorTab === "checks"} onClick={() => setInspectorTab("checks")}>Checks</button>
+      <span className="st-spacer" />
+      <span className="blend-inspector-meta">{inspectorTab === "nodes" ? "live pipeline" : "read only"}</span>
     </div>
-    {inspectorTab === "compatibility" ? compatibilityPanel : inspectorTab === "runtime" ? runtimePanel : infoPanel}
+    {inspectorTab === "nodes" ? nodeStack : checksSection}
   </>;
 
   const nodeEditor = graphSource && target
@@ -1415,17 +1486,14 @@ export default function BlendBridgePage(): React.JSX.Element {
       </Suspense>
     : null;
 
-  const mobileSheetTabs = isMobile
-    ? [
-        { id: "source", label: "Source", content: sourceSection },
-        ...(workingDump ? [{ id: "parameters", label: "Parameters", content: parameterSection }] : []),
-        { id: "results", label: "Results", content: rightDock },
-      ]
-    : [
-        { id: "parameters", label: "Parameters", content: parameterSection },
-        { id: "source", label: "Source", content: sourceSection },
-        { id: "results", label: "Results", content: rightDock },
-      ];
+  // The sheet flattens the inspector's two tabs into siblings of Source, so a
+  // phone never nests one tab strip inside another. Before a graph is loaded
+  // there is nothing to modulate, so Source leads.
+  const mobileSheetTabs = [
+    ...(workingDump ? [{ id: "nodes", label: "Nodes", content: nodeStack }] : []),
+    { id: "source", label: "Source", content: sourceSection },
+    { id: "checks", label: "Checks", content: checksSection },
+  ];
 
   return <StudioShell
     className="blend-studio-page"
