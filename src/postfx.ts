@@ -1,6 +1,6 @@
 /**
  * Cinematic post-processing stack — ported from the SnowSystemThreeJS project:
- *   Render -> Depth of Field -> Bloom -> tone map / sRGB (OutputPass) -> Film grade
+ *   Render -> GTAO -> Depth of Field -> Bloom -> display transform -> Film grade
  *
  * The grade pass runs last (display space) and adds the "shot on film" feel:
  * radial chromatic aberration, contrast/saturation grading, vignette and grain.
@@ -14,6 +14,11 @@ import { BokehPass } from "three/addons/postprocessing/BokehPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
+import {
+  createBlenderColorProfilePass,
+  type BlenderColorProfilePass,
+} from "./blender-color-management";
 
 const FilmGradeShader = {
   uniforms: {
@@ -23,6 +28,8 @@ const FilmGradeShader = {
     uVignetteSize: { value: 0.4 },
     uGrain: { value: 0.0 },
     uChroma: { value: 0.0025 },
+    // Keep Blender-referenced display transforms intact by default. Moving either
+    // value away from 1.0 deliberately departs from the reference transform.
     uContrast: { value: 1.0 },
     uSaturation: { value: 1.0 },
   },
@@ -74,9 +81,14 @@ type UniformMap = Record<string, { value: number }>;
 
 export class PostFX {
   readonly composer: EffectComposer;
+  readonly gtao: GTAOPass;
   readonly bokeh: BokehPass;
   readonly bloom: UnrealBloomPass;
+  readonly output: OutputPass;
   readonly grade: ShaderPass;
+  readonly gtaoSettings = { enabled: true, radius: 1.0, intensity: 0.75 };
+  private blenderProfile: BlenderColorProfilePass | null = null;
+  private disposed = false;
 
   constructor(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera) {
     const size = renderer.getDrawingBufferSize(new Vector2());
@@ -86,6 +98,20 @@ export class PostFX {
 
     this.composer.addPass(new RenderPass(scene, camera));
 
+    // The building is roughly 15 world units across. A 1u world-space radius
+    // catches facade/window recesses without turning broad walls into dark blobs.
+    this.gtao = new GTAOPass(scene, camera, size.x, size.y);
+    this.gtao.updateGtaoMaterial({
+      radius: this.gtaoSettings.radius,
+      thickness: 0.8,
+      distanceFallOff: 1.0,
+      scale: 1.0,
+      samples: 16,
+      screenSpaceRadius: false,
+    });
+    this.gtao.blendIntensity = this.gtaoSettings.intensity;
+    this.composer.addPass(this.gtao);
+
     this.bokeh = new BokehPass(scene, camera, { focus: 9.7, aperture: 0.0012, maxblur: 0.005 });
     this.bokeh.enabled = false; // off by default — opt in when framing
     this.composer.addPass(this.bokeh);
@@ -93,7 +119,8 @@ export class PostFX {
     this.bloom = new UnrealBloomPass(new Vector2(size.x, size.y), 0.04, 0.7, 0.62);
     this.composer.addPass(this.bloom);
 
-    this.composer.addPass(new OutputPass()); // tone mapping + sRGB
+    this.output = new OutputPass();
+    this.composer.addPass(this.output); // renderer-selected tone mapping + sRGB
 
     this.grade = new ShaderPass(FilmGradeShader);
     this.composer.addPass(this.grade); // last -> display space
@@ -109,13 +136,71 @@ export class PostFX {
     return this.grade.uniforms as unknown as UniformMap;
   }
 
+  setGtaoEnabled(enabled: boolean): void {
+    this.gtaoSettings.enabled = enabled;
+    this.gtao.enabled = enabled;
+  }
+
+  setGtaoRadius(radius: number): void {
+    this.gtaoSettings.radius = radius;
+    this.gtao.updateGtaoMaterial({ radius });
+  }
+
+  setGtaoIntensity(intensity: number): void {
+    this.gtaoSettings.intensity = intensity;
+    this.gtao.blendIntensity = intensity;
+  }
+
+  /**
+   * Load the committed Blender LUT and place it in the display-transform slot.
+   * OutputPass stays immediately before it in the pass list but is disabled while
+   * the LUT is active: OutputPass always applies sRGB transfer, while the LUT pass
+   * must receive linear HDR input and performs its own final sRGB transfer.
+   */
+  async loadBlenderColorProfile(url: string): Promise<boolean> {
+    try {
+      const response = await fetch(url, { cache: "force-cache" });
+      if (!response.ok) return false;
+      const profile = createBlenderColorProfilePass(await response.json());
+      if (this.disposed) {
+        profile.dispose();
+        return false;
+      }
+      profile.pass.enabled = false;
+      const gradeIndex = this.composer.passes.indexOf(this.grade);
+      this.composer.insertPass(profile.pass, gradeIndex);
+      this.blenderProfile = profile;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  setBlenderColorProfileEnabled(enabled: boolean): void {
+    const useProfile = enabled && this.blenderProfile !== null;
+    this.output.enabled = !useProfile;
+    if (this.blenderProfile) this.blenderProfile.pass.enabled = useProfile;
+  }
+
   setSize(w: number, h: number): void {
+    // EffectComposer propagates DPR-aware dimensions to GTAO, bloom and all other passes.
     this.composer.setSize(w, h);
-    this.bloom.setSize(w, h);
   }
 
   render(dt: number): void {
     this.gradeUniforms["uTime"].value += dt;
     this.composer.render();
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.blenderProfile?.dispose();
+    this.gtao.dispose();
+    this.bokeh.dispose();
+    this.bloom.dispose();
+    this.output.dispose();
+    this.grade.dispose();
+    this.composer.dispose();
   }
 }

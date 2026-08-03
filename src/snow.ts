@@ -55,6 +55,9 @@ export function createSnow(opts: { camera: PerspectiveCamera; shared: SnowShared
   const material = new ShaderMaterial({
     uniforms,
     transparent: true,
+    // The composer render target has a depth buffer, but no sampleable DepthTexture.
+    // Use hard depth intersections rather than adding a separate soft-particle prepass.
+    depthTest: true,
     depthWrite: false,
     blending: NormalBlending,
     vertexShader: /* glsl */ `

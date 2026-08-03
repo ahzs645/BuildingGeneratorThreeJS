@@ -1,5 +1,5 @@
 import {
-  ACESFilmicToneMapping, BufferGeometry, Clock, Color, DoubleSide, EdgesGeometry,
+  AgXToneMapping, BufferGeometry, Clock, Color, DoubleSide, EdgesGeometry,
   Group, InstancedMesh, LineBasicMaterial, LineSegments, MathUtils,
   Material, Matrix4, Mesh, MeshBasicMaterial, MeshNormalMaterial, MeshStandardMaterial,
   Object3D, PerspectiveCamera, PlaneGeometry, Raycaster, Scene, ShaderMaterial,
@@ -88,8 +88,9 @@ export function createTool(): BuildingToolHandle {
   renderer.setPixelRatio(preferredCanvasPixelRatio());
   const viewport = canvasBox(app);
   renderer.setSize(viewport.width, viewport.height, false);
-  renderer.toneMapping = ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMapping = AgXToneMapping;
+  // AgX default: 0.8 roughly preserves the building's former ACES-at-0.5 midtones.
+  renderer.toneMappingExposure = 0.8;
   renderer.outputColorSpace = SRGBColorSpace;
   app.appendChild(renderer.domElement);
 
@@ -137,8 +138,8 @@ export function createTool(): BuildingToolHandle {
   kit.snowShellMaterial = createSnowShellMaterial(accumU);
   const snow = createSnow({ camera, shared: snowShared });
   snow.mesh.visible = false;
-  // draw flakes on top of the building instead of being occluded by it
-  snow.material.depthTest = false;
+  // Depth-tested, non-writing flakes are occluded by the building. Their shader
+  // documents the hard-intersection tradeoff from the composer's unsampleable depth.
   snow.mesh.renderOrder = 10;
   scene.add(snow.mesh);
 
@@ -168,8 +169,8 @@ export function createTool(): BuildingToolHandle {
   const wetU = createWetUniforms(rainShared.uTime, rainShared.uWind);
   const rain = createRain({ camera, shared: rainShared });
   rain.mesh.visible = false;
-  // draw streaks on top of the building instead of being occluded by it
-  rain.material.depthTest = false;
+  // Depth-tested, non-writing streaks are occluded by the building. Their shader
+  // documents the hard-intersection tradeoff from the composer's unsampleable depth.
   rain.mesh.renderOrder = 10;
   scene.add(rain.mesh);
 
@@ -350,6 +351,8 @@ export function createTool(): BuildingToolHandle {
 
   // cinematic post-processing (ported from SnowSystemThreeJS)
   const post = new PostFX(renderer, scene, camera);
+  env.setAmbientOcclusionEnabled(post.gtaoSettings.enabled);
+  env.setBlenderProfileHandler((enabled) => post.setBlenderColorProfileEnabled(enabled));
 
   // cinematic camera prefs — auto-orbit via OrbitControls, plus fov + letterbox
   const cine = { autoOrbit: false, orbitSpeed: 0.6, fov: 30, letterbox: false };
@@ -477,6 +480,11 @@ export function createTool(): BuildingToolHandle {
   fDebug.close();
 
   env.addGui(gui);
+  void post.loadBlenderColorProfile(
+    publicUrl("dojo/color-management/standard-medium-high-contrast-lut.json"),
+  ).then((available) => {
+    if (!disposed) env.setBlenderProfileAvailable(available);
+  });
 
   // ---- snow GUI (one master toggle, ported params from SnowSystemThreeJS) ----
   const fSnow = gui.addFolder("snow");
@@ -567,6 +575,14 @@ export function createTool(): BuildingToolHandle {
   fDof.add(post.bokehUniforms["maxblur"], "value", 0, 0.02, 0.0005).name("Max Blur");
 
   const fFx = fCine.addFolder("Effects");
+  fFx.add(post.gtaoSettings, "enabled").name("GTAO").onChange((v: boolean) => {
+    post.setGtaoEnabled(v);
+    env.setAmbientOcclusionEnabled(v);
+  });
+  fFx.add(post.gtaoSettings, "radius", 0.1, 3, 0.05).name("GTAO Radius")
+    .onChange((v: number) => post.setGtaoRadius(v));
+  fFx.add(post.gtaoSettings, "intensity", 0, 2, 0.01).name("GTAO Intensity")
+    .onChange((v: number) => post.setGtaoIntensity(v));
   fFx.add(post.bloom, "strength", 0, 2, 0.01).name("Bloom");
   fFx.add(post.bloom, "radius", 0, 2, 0.01).name("Bloom Radius");
   fFx.add(post.bloom, "threshold", 0, 1, 0.01).name("Bloom Threshold");
@@ -778,8 +794,7 @@ export function createTool(): BuildingToolHandle {
         if (Array.isArray(obj.material)) obj.material.forEach(disposeMaterial);
         else if (obj.material) disposeMaterial(obj.material);
       });
-      scene.environment?.dispose();
-      scene.environment = null;
+      env.dispose();
       scene.clear();
       edgesCache.forEach(e => e.dispose());
       edgesCache.clear();
@@ -789,7 +804,7 @@ export function createTool(): BuildingToolHandle {
       building = null;
 
       // post-processing render targets + the renderer / GL context itself
-      post.composer.dispose();
+      post.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       renderer.domElement.remove();
