@@ -145,26 +145,25 @@ function BubblePuttyLab(): React.JSX.Element {
  */
 function ProceduralPainter(): React.JSX.Element {
   const isMobile = useMobileStudio();
+  const leftDock = <>
+    <StudioPanelHeader title="Generators" meta="Choose a tool" />
+    <div id="surface-painter-generator-dock" className="surface-painter-generator-dock" />
+  </>;
   // buildGui() mounts the painter's lil-gui into this container, so the panel
   // is an inspector column instead of a sheet floating over the paint target.
   const rightDock = <>
-    <StudioPanelHeader title="Generator nodes" meta="Live pipeline" className="paint-node-tabs" />
-    <div className="paint-node-intro">
-      <span className="paint-node-intro-icon" aria-hidden="true">
-        <i /><i /><i />
-      </span>
-      <span>
-        <b>Procedural node stack</b>
-        <small>Each card controls one stage of the active generator.</small>
-      </span>
-    </div>
+    <StudioPanelHeader title="Generator options" meta="Active settings" className="paint-node-tabs" />
     <div id="surface-painter-gui-dock" className="surface-painter-gui-dock" />
   </>;
   return (
     <StudioShell
       className="surface-painter-page"
+      leftDock={leftDock}
       rightDock={rightDock}
-      sheetTabs={[{ id: "nodes", label: "Nodes", content: rightDock }]}
+      sheetTabs={[
+        { id: "generators", label: "Generators", content: leftDock },
+        { id: "options", label: "Options", content: rightDock },
+      ]}
       toolbar={<><EngineSwitch engine="procedural" />{!isMobile && <><span className="st-spacer" /><span>D toggles draw / orbit</span></>}</>}
       status={<>
         <span id="paint-status" className="st-state busy">
@@ -263,21 +262,82 @@ function BlenderBrushLab(): React.JSX.Element {
       <p className="surface-edit-hint">Draw a stroke, then select it to move the whole shape. Click a visible control point to reshape it.</p>
       <div className="surface-area-transform" aria-label="Drawing area transform">
         <span>Yellow selector</span>
+        <fieldset className="surface-selector-fields">
+          <legend>Selector layers</legend>
+          <label className="st-row"><span>Active selector</span><select id="surface-selector-list" className="st-select" defaultValue="selector-1"><option value="selector-1">Selector 1</option></select></label>
+          <label className="st-row"><span>Mask operation</span><select id="surface-mask-operation" className="st-select" defaultValue="replace"><option value="replace">Replace</option><option value="add">Add</option><option value="subtract">Subtract</option><option value="intersect">Intersect</option></select></label>
+          <div className="st-btn-row st-btn-row-even">
+            <button id="surface-selector-new" className="st-btn" type="button">New selector</button>
+            <button id="surface-selector-delete" className="st-btn" type="button">Delete selector</button>
+          </div>
+          <div className="st-btn-row st-btn-row-even">
+            <label className="st-row"><span>Visible</span><input id="surface-selector-visible" type="checkbox" defaultChecked /></label>
+            <label className="st-row"><span>Transform lock</span><input id="surface-selector-locked" type="checkbox" /></label>
+          </div>
+          <small>Every visible selector remains in the viewport. Choose one layer to edit its transform and mask.</small>
+        </fieldset>
         <div className="st-segmented">
           <button id="surface-gizmo-move" className="active" type="button" title="Move drawing area (G)">Move · G</button>
           <button id="surface-gizmo-rotate" type="button" title="Rotate drawing area (R)">Rotate · R</button>
           <button id="surface-gizmo-scale" type="button" title="Scale drawing area (S)">Scale · S</button>
         </div>
-        <label className="st-row surface-projection-height"><span>Projection height</span><input id="surface-projection-height" type="range" min="0.1" max="2.5" step="0.05" defaultValue="0.85" /><output id="surface-projection-height-output">0.85</output></label>
-        <button id="surface-drop-area" className="st-btn surface-drop-area" type="button">Drop / project to surface</button>
-        <small>The white source grid stays above the mesh; the yellow result is ray-projected onto it.</small>
+        <div className="st-btn-row st-btn-row-even">
+          <label className="st-row"><span>Snap</span><input id="surface-area-snap" type="checkbox" /></label>
+          <label className="st-row"><span>Space</span><select id="surface-area-space" className="st-select" defaultValue="local"><option value="local">Local</option><option value="world">World</option></select></label>
+        </div>
+        <fieldset className="surface-vector-fields">
+          <legend>Transform</legend>
+          <div className="surface-vector-row">
+            <span>Position</span>
+            <label><b>X</b><input id="surface-area-position-x" className="st-input" type="number" step="0.01" defaultValue="0" aria-label="Selector position X" /></label>
+            <label><b>Y</b><input id="surface-area-position-y" className="st-input" type="number" step="0.01" defaultValue="0" aria-label="Selector position Y" /></label>
+            <label><b>Z</b><input id="surface-area-position-z" className="st-input" type="number" step="0.01" defaultValue="0" aria-label="Selector position Z" /></label>
+          </div>
+          <div className="surface-vector-row">
+            <span>Rotation</span>
+            <label><b>X</b><input id="surface-area-rotation-x" className="st-input" type="number" step="0.1" defaultValue="0" aria-label="Selector rotation X in degrees" /></label>
+            <label><b>Y</b><input id="surface-area-rotation-y" className="st-input" type="number" step="0.1" defaultValue="0" aria-label="Selector rotation Y in degrees" /></label>
+            <label><b>Z</b><input id="surface-area-rotation-z" className="st-input" type="number" step="0.1" defaultValue="0" aria-label="Selector rotation Z in degrees" /></label>
+          </div>
+          <div className="surface-vector-row">
+            <span>Scale</span>
+            <label><b>X</b><input id="surface-area-scale-x" className="st-input" type="number" min="0.01" step="0.01" defaultValue="1" aria-label="Selector scale X" /></label>
+            <label><b>Y</b><input id="surface-area-scale-y" className="st-input" type="number" min="0.01" step="0.01" defaultValue="1" aria-label="Selector scale Y" /></label>
+            <label><b>Z</b><input id="surface-area-scale-z" className="st-input" type="number" min="0.01" step="0.01" defaultValue="1" aria-label="Selector scale Z" /></label>
+          </div>
+          <div className="st-btn-row st-btn-row-even surface-transform-actions">
+            <button id="surface-area-apply-transform" className="st-btn" type="button">Apply values</button>
+            <button id="surface-area-reset-transform" className="st-btn" type="button">Reset transform</button>
+          </div>
+        </fieldset>
+        <label className="st-row surface-projection-height"><span>Push depth</span><input id="surface-projection-height" type="range" min="-2.5" max="2.5" step="0.05" defaultValue="0.85" /><output id="surface-projection-height-output">0.85</output></label>
+        <fieldset className="surface-contact-fields">
+          <legend>Contact + drape</legend>
+          <label className="st-row"><span>Contact softness</span><input id="surface-contact-softness" type="range" min="0" max="1" step="0.01" defaultValue="0.18" /><output id="surface-contact-softness-output">0.18</output></label>
+          <label className="st-row"><span>Contact depth</span><input id="surface-contact-depth" type="range" min="0.01" max="0.75" step="0.01" defaultValue="0.08" /><output id="surface-contact-depth-output">0.08</output></label>
+          <label className="st-row"><span>Max surface angle</span><input id="surface-max-angle" type="range" min="0" max="90" step="1" defaultValue="72" /><output id="surface-max-angle-output">72°</output></label>
+          <label className="st-row"><span>Drape stretch</span><input id="surface-drape-stretch" type="range" min="0" max="1" step="0.01" defaultValue="0.15" /><output id="surface-drape-stretch-output">0.15</output></label>
+          <label className="st-row"><span>Solver iterations</span><input id="surface-drape-iterations" type="range" min="1" max="32" step="1" defaultValue="8" /><output id="surface-drape-iterations-output">8</output></label>
+          <label className="st-row"><span>Lock contact mask</span><input id="surface-contact-lock" type="checkbox" /></label>
+          <button id="surface-contact-clear" className="st-btn" type="button">Clear active mask</button>
+          <label className="st-row"><span>Cloth relaxation</span><input id="surface-cloth-enabled" type="checkbox" /></label>
+          <label className="st-row"><span>Cloth sag / folds</span><input id="surface-cloth-sag" type="range" min="0" max="1" step="0.01" defaultValue="0.12" /><output id="surface-cloth-sag-output">0.12</output></label>
+        </fieldset>
+        <div className="st-btn-row st-btn-row-even">
+          <button id="surface-drop-area" className="st-btn surface-drop-area" type="button">First contact</button>
+          <button id="surface-push-through" className="st-btn" type="button">Push through</button>
+        </div>
+        <small>Unlocked contact follows the surface live, so raising the grid deselects it. Push through enables contact lock and preserves the swept near-side patch.</small>
       </div>
       <label className="st-row"><span>Area size</span><input id="surface-area-size" type="range" min="0.6" max="4" step="0.1" defaultValue="2.4" /><output id="surface-area-size-output">2.4</output></label>
       <div className="st-btn-row st-btn-row-even">
         <button id="surface-undo" className="st-btn" type="button">Undo stroke</button>
-        <button id="surface-clear" className="st-btn" type="button">Clear</button>
+        <button id="surface-undo-area" className="st-btn" type="button">Undo selector</button>
       </div>
-      <button id="surface-clear-area" className="st-btn" type="button">Remove drawing area</button>
+      <div className="st-btn-row st-btn-row-even">
+        <button id="surface-clear" className="st-btn" type="button">Clear strokes</button>
+        <button id="surface-clear-area" className="st-btn" type="button">Remove selector</button>
+      </div>
       <button id="surface-area-doodle" className="st-btn" type="button">Add demo doodle inside area</button>
       <button id="surface-parity-path" className="st-btn" type="button">Load fixed Blender parity path</button>
       <button id="surface-curved-parity-path" className="st-btn" type="button">Load same curved Blender test</button>

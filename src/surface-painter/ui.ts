@@ -6,6 +6,50 @@ import { windSettings } from '../vegetation-generator/wind';
 import { listLibraryShapes } from '../base-shape-catalog';
 import { GENERATORS, type App, type Generator, type ModelKind } from './app';
 
+const GENERATOR_PRESENTATION: Record<Generator, {
+  code: string;
+  shortLabel: string;
+  family: string;
+  description: string;
+}> = {
+  Ivy: {
+    code: 'IV',
+    shortLabel: 'Ivy',
+    family: 'Growth painter',
+    description: 'Paint branching ivy across the active surface.',
+  },
+  Tree: {
+    code: 'TR',
+    shortLabel: 'Tree',
+    family: 'Ground generator',
+    description: 'Grow and shape a procedural banyan from the ground.',
+  },
+  Crystals: {
+    code: 'CR',
+    shortLabel: 'Crystals',
+    family: 'Surface growth',
+    description: 'Paint animated crystal clusters onto the model.',
+  },
+  'Molten fissures': {
+    code: 'MF',
+    shortLabel: 'Molten',
+    family: 'Surface effect',
+    description: 'Draw branching, emissive cracks through the surface.',
+  },
+  'Aurora silk': {
+    code: 'AU',
+    shortLabel: 'Aurora',
+    family: 'Flow painter',
+    description: 'Unfurl luminous curtains along painted paths.',
+  },
+  'Bioluminescent reef': {
+    code: 'RF',
+    shortLabel: 'Bio reef',
+    family: 'Colony painter',
+    description: 'Grow pulsing reef colonies over the model.',
+  },
+};
+
 /**
  * One GUI for every generator. Folders scope to the active generator; the
  * Model, Drawing, Look, and Growth folders are shared by all of them (the
@@ -13,10 +57,14 @@ import { GENERATORS, type App, type Generator, type ModelKind } from './app';
  * from strokes).
  */
 export function buildGui(app: App): GUI {
-  // Dock into the studio inspector column when the page provides one, so the
-  // panel is a shell column rather than a sheet floating over the paint target.
-  const dock = document.getElementById('surface-painter-gui-dock');
-  const gui = new GUI({ title: 'Surface Painter', ...(dock ? { container: dock } : {}) });
+  // The generator choices and active options flank the viewport as separate
+  // Studio docks. On mobile, the shell presents the same two containers as tabs.
+  const selectorDock = document.getElementById('surface-painter-generator-dock');
+  const optionsDock = document.getElementById('surface-painter-gui-dock');
+  const shell = selectorDock && optionsDock
+    ? buildGeneratorShell(selectorDock, optionsDock)
+    : null;
+  const gui = new GUI({ title: 'Surface Painter', ...(shell ? { container: shell.options } : {}) });
   gui.domElement.classList.add('surface-painter-gui');
   const s = app.settings;
   const t = app.treeParams;
@@ -46,6 +94,14 @@ export function buildGui(app: App): GUI {
     syncFolders(g);
   });
   generatorController.domElement.classList.add('paint-generator-controller');
+  generatorController.domElement.hidden = Boolean(shell);
+
+  if (shell) {
+    for (const generator of GENERATORS) {
+      const button = shell.buttons.get(generator);
+      button?.addEventListener('click', () => generatorController.setValue(generator));
+    }
+  }
 
   // ---------- shared: model + drawing ----------
 
@@ -283,10 +339,99 @@ export function buildGui(app: App): GUI {
         else folder.hide();
       }
     }
+    shell?.select(active);
   }
   syncFolders(s.generator);
 
   return gui;
+}
+
+function buildGeneratorShell(selectorDock: HTMLElement, optionsDock: HTMLElement): {
+  options: HTMLDivElement;
+  buttons: Map<Generator, HTMLButtonElement>;
+  select: (generator: Generator) => void;
+} {
+  selectorDock.replaceChildren();
+  optionsDock.replaceChildren();
+
+  const selector = document.createElement('nav');
+  selector.className = 'paint-generator-selector';
+  selector.setAttribute('aria-label', 'Surface generator');
+
+  const selectorLabel = document.createElement('span');
+  selectorLabel.className = 'paint-generator-selector-label';
+  selectorLabel.textContent = 'Generators';
+  selector.appendChild(selectorLabel);
+
+  const buttons = new Map<Generator, HTMLButtonElement>();
+  for (const generator of GENERATORS) {
+    const presentation = GENERATOR_PRESENTATION[generator];
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'paint-generator-option';
+    button.dataset.generator = generator;
+    button.setAttribute('aria-label', generator);
+    button.setAttribute('aria-pressed', 'false');
+    button.setAttribute('aria-controls', 'paint-generator-options');
+
+    const glyph = document.createElement('span');
+    glyph.className = 'paint-generator-glyph';
+    glyph.textContent = presentation.code;
+    glyph.setAttribute('aria-hidden', 'true');
+
+    const label = document.createElement('span');
+    label.className = 'paint-generator-label';
+    label.textContent = presentation.shortLabel;
+
+    button.append(glyph, label);
+    selector.appendChild(button);
+    buttons.set(generator, button);
+  }
+
+  const panel = document.createElement('section');
+  panel.id = 'paint-generator-options';
+  panel.className = 'paint-generator-panel';
+
+  const context = document.createElement('header');
+  context.className = 'paint-generator-context';
+  context.setAttribute('aria-live', 'polite');
+
+  const contextCopy = document.createElement('span');
+  const family = document.createElement('small');
+  family.className = 'paint-generator-family';
+  const title = document.createElement('strong');
+  title.className = 'paint-generator-active-title';
+  const description = document.createElement('span');
+  description.className = 'paint-generator-description';
+  contextCopy.append(family, title, description);
+
+  const live = document.createElement('span');
+  live.className = 'paint-generator-live';
+  live.textContent = 'Live';
+  context.append(contextCopy, live);
+
+  const options = document.createElement('div');
+  options.className = 'paint-generator-options';
+  panel.append(context, options);
+  selectorDock.appendChild(selector);
+  optionsDock.appendChild(panel);
+
+  return {
+    options,
+    buttons,
+    select(generator: Generator): void {
+      const presentation = GENERATOR_PRESENTATION[generator];
+      family.textContent = presentation.family;
+      title.textContent = generator;
+      description.textContent = presentation.description;
+      panel.setAttribute('aria-label', `${generator} options`);
+      for (const [value, button] of buttons) {
+        const active = value === generator;
+        button.setAttribute('aria-pressed', String(active));
+        button.toggleAttribute('data-active', active);
+      }
+    },
+  };
 }
 
 function decorateNode(

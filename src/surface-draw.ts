@@ -31,6 +31,9 @@ import {
   targetLabel,
   type TargetSurface,
 } from "./surface-targets";
+import { SweptContactSelection, type SweptContactSnapshot } from "./swept-contact-selection";
+import { relaxClothLattice } from "./cloth-lattice-relaxation";
+import { SelectionMaskDocument, type SelectionMaskOperation } from "./selection-mask-document";
 
 declare module "three" {
   interface BufferGeometry { computeBoundsTree: typeof computeBoundsTree; disposeBoundsTree: typeof disposeBoundsTree }
@@ -55,6 +58,7 @@ const CRAYON_SCALE = 20;
 // straddle its input plane, so surface projection rebases its lowest Z to this
 // clearance instead of allowing negative vertices to sink into the target.
 const SURFACE_CLEARANCE = .018;
+const AREA_CONTACT_SAMPLES = 20;
 
 // Pure fetched/parsed brush assets may persist across remounts; everything
 // DOM/GPU/listener-bound is created fresh inside createTool().
@@ -130,17 +134,47 @@ export function createTool(): ToolHandle {
   const parityPathButton = document.querySelector<HTMLButtonElement>("#surface-parity-path")!;
   const curvedParityPathButton = document.querySelector<HTMLButtonElement>("#surface-curved-parity-path")!;
   const undoButton = document.querySelector<HTMLButtonElement>("#surface-undo")!;
+  const undoAreaButton = document.querySelector<HTMLButtonElement>("#surface-undo-area")!;
   const clearButton = document.querySelector<HTMLButtonElement>("#surface-clear")!;
   const clearAreaButton = document.querySelector<HTMLButtonElement>("#surface-clear-area")!;
   const areaDoodleButton = document.querySelector<HTMLButtonElement>("#surface-area-doodle")!;
   const gizmoMoveButton = document.querySelector<HTMLButtonElement>("#surface-gizmo-move")!;
   const gizmoRotateButton = document.querySelector<HTMLButtonElement>("#surface-gizmo-rotate")!;
   const gizmoScaleButton = document.querySelector<HTMLButtonElement>("#surface-gizmo-scale")!;
+  const areaSnap = document.querySelector<HTMLInputElement>("#surface-area-snap")!;
+  const areaSpace = document.querySelector<HTMLSelectElement>("#surface-area-space")!;
+  const selectorList = document.querySelector<HTMLSelectElement>("#surface-selector-list")!;
+  const selectorNewButton = document.querySelector<HTMLButtonElement>("#surface-selector-new")!;
+  const selectorDeleteButton = document.querySelector<HTMLButtonElement>("#surface-selector-delete")!;
+  const selectorVisible = document.querySelector<HTMLInputElement>("#surface-selector-visible")!;
+  const selectorLocked = document.querySelector<HTMLInputElement>("#surface-selector-locked")!;
+  const maskOperation = document.querySelector<HTMLSelectElement>("#surface-mask-operation")!;
   const projectionHeight = document.querySelector<HTMLInputElement>("#surface-projection-height")!;
   const projectionHeightOutput = document.querySelector<HTMLOutputElement>("#surface-projection-height-output")!;
   const dropAreaButton = document.querySelector<HTMLButtonElement>("#surface-drop-area")!;
+  const pushThroughButton = document.querySelector<HTMLButtonElement>("#surface-push-through")!;
   const areaSize = document.querySelector<HTMLInputElement>("#surface-area-size")!;
   const areaSizeOutput = document.querySelector<HTMLOutputElement>("#surface-area-size-output")!;
+  const contactSoftness = document.querySelector<HTMLInputElement>("#surface-contact-softness")!;
+  const contactSoftnessOutput = document.querySelector<HTMLOutputElement>("#surface-contact-softness-output")!;
+  const contactDepthControl = document.querySelector<HTMLInputElement>("#surface-contact-depth")!;
+  const contactDepthOutput = document.querySelector<HTMLOutputElement>("#surface-contact-depth-output")!;
+  const maxSurfaceAngle = document.querySelector<HTMLInputElement>("#surface-max-angle")!;
+  const maxSurfaceAngleOutput = document.querySelector<HTMLOutputElement>("#surface-max-angle-output")!;
+  const drapeStretch = document.querySelector<HTMLInputElement>("#surface-drape-stretch")!;
+  const drapeStretchOutput = document.querySelector<HTMLOutputElement>("#surface-drape-stretch-output")!;
+  const drapeIterations = document.querySelector<HTMLInputElement>("#surface-drape-iterations")!;
+  const drapeIterationsOutput = document.querySelector<HTMLOutputElement>("#surface-drape-iterations-output")!;
+  const contactLock = document.querySelector<HTMLInputElement>("#surface-contact-lock")!;
+  const clearContactButton = document.querySelector<HTMLButtonElement>("#surface-contact-clear")!;
+  const clothEnabled = document.querySelector<HTMLInputElement>("#surface-cloth-enabled")!;
+  const clothSag = document.querySelector<HTMLInputElement>("#surface-cloth-sag")!;
+  const clothSagOutput = document.querySelector<HTMLOutputElement>("#surface-cloth-sag-output")!;
+  const transformPosition = (["x", "y", "z"] as const).map((axis) => document.querySelector<HTMLInputElement>(`#surface-area-position-${axis}`)!);
+  const transformRotation = (["x", "y", "z"] as const).map((axis) => document.querySelector<HTMLInputElement>(`#surface-area-rotation-${axis}`)!);
+  const transformScale = (["x", "y", "z"] as const).map((axis) => document.querySelector<HTMLInputElement>(`#surface-area-scale-${axis}`)!);
+  const applyTransformButton = document.querySelector<HTMLButtonElement>("#surface-area-apply-transform")!;
+  const resetTransformButton = document.querySelector<HTMLButtonElement>("#surface-area-reset-transform")!;
   const brushSelect = document.querySelector<HTMLSelectElement>("#surface-brush")!;
   const periodicControls = document.querySelector<HTMLElement>("#surface-periodic-controls")!;
   const crayonControls = document.querySelector<HTMLElement>("#surface-crayon-controls")!;
@@ -211,8 +245,11 @@ export function createTool(): ToolHandle {
   const brushRoot = new THREE.Group(); scene.add(brushRoot);
   const previewRoot = new THREE.Group(); scene.add(previewRoot);
   const areaRoot = new THREE.Group(); scene.add(areaRoot);
+  const selectorOverlayRoot = new THREE.Group(); scene.add(selectorOverlayRoot);
   const handleRoot = new THREE.Group(); scene.add(handleRoot);
-  const targetMaterial = new THREE.MeshPhysicalMaterial({ color: 0x53645b, metalness: .08, roughness: .46, clearcoat: .28, side: THREE.DoubleSide });
+  // A matte neutral target keeps the yellow contact mask legible and makes it
+  // clear that selector feedback is not Blender's shiny-object selection tint.
+  const targetMaterial = new THREE.MeshPhysicalMaterial({ color: 0x66726d, metalness: 0, roughness: 1, clearcoat: 0, envMapIntensity: .22, side: THREE.DoubleSide });
   const inactiveTargetMaterial = new THREE.MeshPhysicalMaterial({ color: 0x27312d, metalness: 0, roughness: .72, transparent: true, opacity: .24, depthWrite: false, side: THREE.DoubleSide });
   const flatTargetMaterial = new THREE.MeshBasicMaterial({ color: 0x696d6a, side: THREE.DoubleSide });
   const brushMaterial = new THREE.MeshPhysicalMaterial({ color: 0xb9ff8c, emissive: 0x13260b, metalness: .18, roughness: .27, clearcoat: .48, side: THREE.DoubleSide });
@@ -253,6 +290,42 @@ export function createTool(): ToolHandle {
   let selectingCurve = false;
   let drawingArea: DrawingArea | null = null;
   let areaDropped = false;
+  let areaPreviewVisible = false;
+  const sweptAreaSelection = new SweptContactSelection({ pointMode: "strongest", undoLimit: 24 });
+  let areaContactPatchId: string | null = null;
+  let areaContactPatchCounter = 0;
+  let suppressAreaContactAccumulationOnce = false;
+  type AreaSelectorState = {
+    id: string;
+    name: string;
+    area: DrawingArea | null;
+    initialArea: DrawingArea | null;
+    dropped: boolean;
+    projectionHeight: string;
+    contactLocked: boolean;
+    patchId: string | null;
+    renderPoints: [number, number, number][];
+    renderIndices: number[];
+  };
+  const maskDocument = new SelectionMaskDocument({
+    vertexCount: (AREA_CONTACT_SAMPLES + 1) * (AREA_CONTACT_SAMPLES + 1),
+    cellCount: AREA_CONTACT_SAMPLES * AREA_CONTACT_SAMPLES,
+  });
+  let selectorCounter = 1;
+  maskDocument.createSelector("selector-1", { name: "Selector 1", operation: "replace", history: false });
+  const selectorStates = new Map<string, AreaSelectorState>([["selector-1", {
+    id: "selector-1", name: "Selector 1", area: null, initialArea: null, dropped: false,
+    projectionHeight: projectionHeight.value, contactLocked: false, patchId: null, renderPoints: [], renderIndices: [],
+  }]]);
+  type AreaHistorySnapshot = {
+    area: DrawingArea;
+    dropped: boolean;
+    projectionHeight: string;
+    contactLocked: boolean;
+    contacts: SweptContactSnapshot;
+    points: { id: number; point: THREE.Vector3; normal: THREE.Vector3; local?: [number, number] }[];
+  };
+  const areaHistory: AreaHistorySnapshot[] = [];
   let targetSurfaces: TargetSurface[] = [];
   const dumps: Partial<Record<"periodic" | "crayon", Dump>> = {};
   let crayonGraphReceived = false;
@@ -830,10 +903,10 @@ export function createTool(): ToolHandle {
     }
   }
 
-  type ClosestSurface = { point: THREE.Vector3; normal: THREE.Vector3 };
+  type ClosestSurface = { point: THREE.Vector3; normal: THREE.Vector3; distance: number };
 
   function closestTargetSurface(worldPoint: THREE.Vector3): ClosestSurface | null {
-    let closest: (ClosestSurface & { distance: number }) | null = null;
+    let closest: ClosestSurface | null = null;
     for (const { mesh: item } of selectedTargetSurfaces()) {
       const geometry = item.geometry as THREE.BufferGeometry & {
         boundsTree?: { closestPointToPoint: (point: THREE.Vector3) => { point: THREE.Vector3; distance: number; faceIndex?: number } };
@@ -874,38 +947,242 @@ export function createTool(): ToolHandle {
     return closest;
   }
 
+  function cloneDrawingArea(area: DrawingArea): DrawingArea {
+    return {
+      center: area.center.clone(), normal: area.normal.clone(), u: area.u.clone(), v: area.v.clone(),
+      sizeU: area.sizeU, sizeV: area.sizeV,
+    };
+  }
+
+  function activeSelectorState(): AreaSelectorState {
+    const id = maskDocument.activeSelectorId ?? "selector-1";
+    const state = selectorStates.get(id);
+    if (!state) throw new Error(`Missing selector viewport state ${id}`);
+    return state;
+  }
+
+  function saveActiveSelectorState(): void {
+    const state = activeSelectorState();
+    state.area = drawingArea ? cloneDrawingArea(drawingArea) : null;
+    state.dropped = areaDropped;
+    state.projectionHeight = projectionHeight.value;
+    state.contactLocked = contactLock.checked;
+    state.patchId = areaContactPatchId;
+  }
+
+  function syncSelectorUI(): void {
+    const activeId = maskDocument.activeSelectorId;
+    selectorList.replaceChildren(...maskDocument.selectors.map((selector) => new Option(selector.name, selector.id)));
+    if (!activeId) return;
+    selectorList.value = activeId;
+    const selector = maskDocument.getSelector(activeId);
+    maskOperation.value = selector.operation;
+    selectorVisible.checked = selector.visible;
+    selectorLocked.checked = selector.locked;
+    selectorDeleteButton.disabled = maskDocument.selectorIds.length <= 1;
+    const locked = selector.locked || !selector.editable;
+    for (const control of [gizmoMoveButton, gizmoRotateButton, gizmoScaleButton, applyTransformButton, resetTransformButton, dropAreaButton, pushThroughButton]) control.disabled = locked;
+    areaTransform.enabled = Boolean(drawingArea) && !locked;
+    areaTransformHelper.visible = Boolean(drawingArea) && !locked;
+  }
+
+  function renderInactiveSelectorOverlays(): void {
+    clearObject(selectorOverlayRoot);
+    const activeId = maskDocument.activeSelectorId;
+    const composedVertices = new Set(maskDocument.compose().vertices);
+    for (const selector of maskDocument.selectors) {
+      if (!selector.visible || selector.id === activeId) continue;
+      const state = selectorStates.get(selector.id);
+      if (!state?.renderPoints.length || !state.renderIndices.length) continue;
+      const points = state.renderPoints.map((point) => new THREE.Vector3(...point));
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const indices: number[] = [];
+      for (let index = 0; index < state.renderIndices.length; index += 3) {
+        const triangle = state.renderIndices.slice(index, index + 3);
+        if (triangle.every((vertex) => composedVertices.has(vertex))) indices.push(...triangle);
+      }
+      if (!indices.length) { geometry.dispose(); continue; }
+      geometry.setIndex(indices);
+      const mesh = new THREE.Mesh(geometry, areaFillMaterial);
+      mesh.renderOrder = 7;
+      mesh.userData.selectorId = selector.id;
+      selectorOverlayRoot.add(mesh);
+    }
+  }
+
+  function loadSelector(id: string): void {
+    if (id === maskDocument.activeSelectorId) return;
+    saveActiveSelectorState();
+    maskDocument.setActiveSelector(id);
+    const state = activeSelectorState();
+    drawingArea = state.area ? cloneDrawingArea(state.area) : null;
+    areaDropped = state.dropped;
+    projectionHeight.value = state.projectionHeight;
+    projectionHeightOutput.value = Number(state.projectionHeight).toFixed(2);
+    contactLock.checked = state.contactLocked;
+    areaContactPatchId = state.patchId;
+    areaHistory.length = 0;
+    if (drawingArea) syncAreaAnchor();
+    else {
+      areaTransform.detach();
+      areaTransform.enabled = false;
+      areaTransformHelper.visible = false;
+    }
+    syncSelectorUI();
+    renderDrawingArea();
+    setStatus(`${state.name} active · all visible selector masks remain shown`);
+  }
+
+  function createSelector(): void {
+    saveActiveSelectorState();
+    const id = `selector-${++selectorCounter}`;
+    const name = `Selector ${selectorCounter}`;
+    maskDocument.createSelector(id, { name, operation: "add" });
+    selectorStates.set(id, {
+      id, name, area: null, initialArea: null, dropped: false,
+      projectionHeight: projectionHeight.value, contactLocked: false, patchId: null, renderPoints: [], renderIndices: [],
+    });
+    drawingArea = null;
+    areaDropped = false;
+    areaContactPatchId = null;
+    areaHistory.length = 0;
+    areaTransform.detach();
+    areaTransform.enabled = false;
+    areaTransformHelper.visible = false;
+    syncSelectorUI();
+    renderDrawingArea();
+    setMode("area");
+    setStatus(`${name} created · click the matte object to place it`);
+  }
+
+  function deleteActiveSelector(): void {
+    if (maskDocument.selectorIds.length <= 1) {
+      setStatus("At least one selector layer is required");
+      return;
+    }
+    const id = maskDocument.activeSelectorId!;
+    const state = activeSelectorState();
+    if (state.patchId) sweptAreaSelection.removePatch(state.patchId);
+    const remainingId = maskDocument.selectorIds.find((candidate) => candidate !== id)!;
+    maskDocument.removeSelector(id, { force: true });
+    selectorStates.delete(id);
+    maskDocument.setActiveSelector(remainingId, false);
+    const next = activeSelectorState();
+    drawingArea = next.area ? cloneDrawingArea(next.area) : null;
+    areaDropped = next.dropped;
+    projectionHeight.value = next.projectionHeight;
+    projectionHeightOutput.value = Number(next.projectionHeight).toFixed(2);
+    contactLock.checked = next.contactLocked;
+    areaContactPatchId = next.patchId;
+    if (drawingArea) syncAreaAnchor();
+    syncSelectorUI();
+    renderDrawingArea();
+    setStatus(`${state.name} deleted`);
+  }
+
+  function checkpointDrawingArea(): void {
+    if (!drawingArea || !areaContactPatchId) return;
+    const editableStrokes = [...strokes, ...(curveDocument.activeStroke ? [curveDocument.activeStroke] : [])];
+    areaHistory.push({
+      area: cloneDrawingArea(drawingArea),
+      dropped: areaDropped,
+      projectionHeight: projectionHeight.value,
+      contactLocked: contactLock.checked,
+      contacts: sweptAreaSelection.snapshot(),
+      points: editableStrokes.flatMap((stroke) => stroke.points.map((sample) => ({
+        id: sample.id,
+        point: sample.point.clone(),
+        normal: sample.normal.clone(),
+        local: sample.local ? [...sample.local] as [number, number] : undefined,
+      }))),
+    });
+    if (areaHistory.length > 24) areaHistory.shift();
+  }
+
+  function undoDrawingArea(): void {
+    const snapshot = areaHistory.pop();
+    if (!snapshot) { setStatus("No selector change to undo"); return; }
+    drawingArea = cloneDrawingArea(snapshot.area);
+    areaDropped = snapshot.dropped;
+    projectionHeight.value = snapshot.projectionHeight;
+    projectionHeightOutput.value = Number(snapshot.projectionHeight).toFixed(2);
+    contactLock.checked = snapshot.contactLocked;
+    sweptAreaSelection.restore(snapshot.contacts);
+    areaContactPatchId = snapshot.contacts.activePatchId;
+    const pointsById = new Map(snapshot.points.map((point) => [point.id, point]));
+    const editableStrokes = [...strokes, ...(curveDocument.activeStroke ? [curveDocument.activeStroke] : [])];
+    for (const stroke of editableStrokes) for (const sample of stroke.points) {
+      const previous = pointsById.get(sample.id);
+      if (!previous) continue;
+      sample.point.copy(previous.point); sample.normal.copy(previous.normal);
+      sample.local = previous.local ? [...previous.local] : undefined;
+    }
+    dropAreaButton.classList.toggle("projected", areaDropped);
+    dropAreaButton.textContent = areaDropped ? "Contact captured ✓" : "First contact";
+    pushThroughButton.classList.toggle("projected", areaDropped && Number(projectionHeight.value) < 0);
+    areaBaseSizeU = drawingArea.sizeU; areaBaseSizeV = drawingArea.sizeV;
+    areaSize.value = String(Math.min(4, Math.max(.6, (drawingArea.sizeU + drawingArea.sizeV) * .5)));
+    areaSizeOutput.value = `${drawingArea.sizeU.toFixed(1)} × ${drawingArea.sizeV.toFixed(1)}`;
+    syncAreaAnchor();
+    suppressAreaContactAccumulationOnce = true;
+    renderDrawingArea(); renderPreviews(); updateMetrics(); queueEvaluation();
+    setStatus("Selector, captured surface, and affected strokes restored");
+  }
+
   function removeDrawingArea(): void {
     drawingArea = null;
     areaDropped = false;
+    areaPreviewVisible = false;
+    for (const patchId of [...sweptAreaSelection.patchIds]) sweptAreaSelection.removePatch(patchId);
+    areaContactPatchId = null;
+    areaHistory.length = 0;
     dropAreaButton.classList.remove("projected");
-    dropAreaButton.textContent = "Drop / project to surface";
+    dropAreaButton.textContent = "First contact";
+    pushThroughButton.classList.remove("projected");
     areaTransform.detach();
     areaTransform.enabled = false;
     areaTransformHelper.visible = false;
     clearObject(areaRoot);
+    clearObject(selectorOverlayRoot);
+    for (const state of selectorStates.values()) {
+      state.area = null;
+      state.initialArea = null;
+      state.dropped = false;
+      state.patchId = null;
+      state.renderPoints = [];
+      state.renderIndices = [];
+    }
+    for (const selector of maskDocument.selectors) maskDocument.clearSelectorMask(selector.id, { history: false, force: true });
+  }
+
+  function clearActiveSelectorArea(): void {
+    const state = activeSelectorState();
+    if (state.patchId) sweptAreaSelection.removePatch(state.patchId);
+    maskDocument.clearSelectorMask(state.id, { force: true });
+    state.area = null;
+    state.initialArea = null;
+    state.dropped = false;
+    state.patchId = null;
+    state.renderPoints = [];
+    state.renderIndices = [];
+    drawingArea = null;
+    areaDropped = false;
+    areaContactPatchId = null;
+    areaHistory.length = 0;
+    areaTransform.detach();
+    areaTransform.enabled = false;
+    areaTransformHelper.visible = false;
+    renderDrawingArea();
   }
 
   function renderDrawingArea(): void {
     clearObject(areaRoot);
-    if (!drawingArea) return;
-    const grid = 10, samples = 18, halfU = drawingArea.sizeU * .5, halfV = drawingArea.sizeV * .5;
+    areaPreviewVisible = false;
+    if (!drawingArea) { renderInactiveSelectorOverlays(); return; }
+    const activeSelector = maskDocument.activeSelectorId ? maskDocument.getSelector(maskDocument.activeSelectorId) : null;
+    if (activeSelector && !activeSelector.visible) { renderInactiveSelectorOverlays(); return; }
+    const grid = 10, samples = AREA_CONTACT_SAMPLES, halfU = drawingArea.sizeU * .5, halfV = drawingArea.sizeV * .5;
     const sourceCenter = drawingArea.center.clone().addScaledVector(drawingArea.normal, Number(projectionHeight.value));
-    const addSourceLine = (points: THREE.Vector3[]): void => {
-      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), sourceAreaMaterial);
-      line.renderOrder = 11; areaRoot.add(line);
-    };
-    for (let index = 0; index <= grid; index++) {
-      const x = -halfU + drawingArea.sizeU * index / grid;
-      const y = -halfV + drawingArea.sizeV * index / grid;
-      addSourceLine([
-        sourceCenter.clone().addScaledVector(drawingArea.u, x).addScaledVector(drawingArea.v, -halfV),
-        sourceCenter.clone().addScaledVector(drawingArea.u, x).addScaledVector(drawingArea.v, halfV),
-      ]);
-      addSourceLine([
-        sourceCenter.clone().addScaledVector(drawingArea.u, -halfU).addScaledVector(drawingArea.v, y),
-        sourceCenter.clone().addScaledVector(drawingArea.u, halfU).addScaledVector(drawingArea.v, y),
-      ]);
-    }
     const rayStart = sourceCenter.clone().addScaledVector(drawingArea.normal, .35);
     const rayEnd = drawingArea.center.clone().addScaledVector(drawingArea.normal, -.12);
     const rayDirection = rayEnd.clone().sub(rayStart);
@@ -913,56 +1190,178 @@ export function createTool(): ToolHandle {
     ray.position.copy(rayStart).add(rayEnd).multiplyScalar(.5);
     ray.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), rayDirection.normalize());
     ray.renderOrder = 12; areaRoot.add(ray);
-    if (!areaDropped) return;
-    const projectPoint = (x: number, y: number, offset = .02): THREE.Vector3 => {
-      const guess = drawingArea!.center.clone().addScaledVector(drawingArea!.u, x).addScaledVector(drawingArea!.v, y);
+
+    if (!areaContactPatchId) {
+      areaContactPatchId = `area-${++areaContactPatchCounter}`;
+      sweptAreaSelection.createPatch(areaContactPatchId, {
+        vertexCount: (samples + 1) * (samples + 1),
+        cellCount: samples * samples,
+      });
+    }
+
+    const cellSize = Math.min(drawingArea.sizeU, drawingArea.sizeV) / AREA_CONTACT_SAMPLES;
+    const contactDepth = Number(contactDepthControl.value) + Number(contactSoftness.value) * cellSize * 1.5;
+    const facingThreshold = Math.cos(THREE.MathUtils.degToRad(Number(maxSurfaceAngle.value)));
+    areaGlowMaterial.opacity = areaDropped ? .34 : .28;
+    areaFillMaterial.opacity = areaDropped ? .68 : .58;
+    const selectedMeshes = selectedTargetSurfaces().map((surface) => surface.mesh);
+    const targetBounds = new THREE.Box3();
+    for (const mesh of selectedMeshes) targetBounds.expandByObject(mesh);
+    let targetFront = Number.NEGATIVE_INFINITY;
+    if (!targetBounds.isEmpty()) {
+      for (let corner = 0; corner < 8; corner++) {
+        const point = new THREE.Vector3(
+          corner & 1 ? targetBounds.max.x : targetBounds.min.x,
+          corner & 2 ? targetBounds.max.y : targetBounds.min.y,
+          corner & 4 ? targetBounds.max.z : targetBounds.min.z,
+        );
+        targetFront = Math.max(targetFront, point.dot(drawingArea.normal));
+      }
+    }
+
+    type ProjectedAreaPoint = {
+      sourcePoint: THREE.Vector3;
+      surfacePoint: THREE.Vector3 | null;
+      touching: boolean;
+    };
+    const projectPoint = (x: number, y: number, offset = .02): ProjectedAreaPoint => {
       const sourcePoint = sourceCenter.clone().addScaledVector(drawingArea!.u, x).addScaledVector(drawingArea!.v, y);
-      projectionRaycaster.set(sourcePoint.clone().addScaledVector(drawingArea!.normal, .02), drawingArea!.normal.clone().negate());
-      const hit = projectionRaycaster.intersectObjects(selectedTargetSurfaces().map((surface) => surface.mesh), false)[0];
+      if (!Number.isFinite(targetFront)) return { sourcePoint, surfacePoint: null, touching: false };
+      const rayLift = Math.max(.25, targetFront - sourcePoint.dot(drawingArea!.normal) + .25);
+      const rayOrigin = sourcePoint.clone().addScaledVector(drawingArea!.normal, rayLift);
+      projectionRaycaster.set(rayOrigin, drawingArea!.normal.clone().negate());
+      const hit = projectionRaycaster.intersectObjects(selectedMeshes, false)[0];
       if (hit?.face) {
         const hitNormal = hit.face.normal.clone().applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld)).normalize();
-        return hit.point.clone().addScaledVector(hitNormal, offset);
+        // Always start beyond the target and keep only the first near-facing
+        // surface. This never switches to the exit face after the selector has
+        // moved inside a closed object.
+        if (hitNormal.dot(drawingArea!.normal) >= facingThreshold) {
+          const clearance = sourcePoint.clone().sub(hit.point).dot(drawingArea!.normal);
+          // Contact is a narrow band around the actual surface crossing. A
+          // projector far inside the object is not still "touching" every
+          // point; swept samples latch the crossings as the grid moves down.
+          return { sourcePoint, surfacePoint: hit.point.clone().addScaledVector(hitNormal, offset), touching: Math.abs(clearance) <= contactDepth };
+        }
       }
-      const surface = closestTargetSurface(guess);
-      return (surface?.point ?? guess).addScaledVector(surface?.normal ?? drawingArea!.normal, offset);
+      return { sourcePoint, surfacePoint: null, touching: false };
     };
 
-    const patchPoints: THREE.Vector3[] = [];
+    const liveGrid: ProjectedAreaPoint[] = [];
+    const vertexSamples: { index: number; point: [number, number, number] }[] = [];
     const patchIndices: number[] = [];
     for (let row = 0; row <= samples; row++) {
       const y = -halfV + drawingArea.sizeV * row / samples;
       for (let column = 0; column <= samples; column++) {
         const x = -halfU + drawingArea.sizeU * column / samples;
-        patchPoints.push(projectPoint(x, y, .016));
+        const projected = projectPoint(x, y, .016);
+        const index = row * (samples + 1) + column;
+        liveGrid.push(projected);
+        if (projected.touching && projected.surfacePoint) {
+          vertexSamples.push({ index, point: [projected.surfacePoint.x, projected.surfacePoint.y, projected.surfacePoint.z] });
+        }
       }
     }
+    const cellSamples: { index: number; point: [number, number, number] }[] = [];
+    for (let row = 0; row < samples; row++) for (let column = 0; column < samples; column++) {
+      const a = row * (samples + 1) + column, b = a + 1, c = a + samples + 1, d = c + 1;
+      const contacts = [liveGrid[a], liveGrid[b], liveGrid[c], liveGrid[d]];
+      if (contacts.every((contact) => contact.touching && contact.surfacePoint)) {
+        const center = contacts.reduce((point, contact) => point.add(contact.surfacePoint!), new THREE.Vector3()).multiplyScalar(.25);
+        cellSamples.push({ index: row * samples + column, point: [center.x, center.y, center.z] });
+      }
+    }
+    if (suppressAreaContactAccumulationOnce) suppressAreaContactAccumulationOnce = false;
+    else if (vertexSamples.length || cellSamples.length) sweptAreaSelection.accumulate({ vertices: vertexSamples, cells: cellSamples }, areaContactPatchId);
+
+    const retainedVertices = sweptAreaSelection.vertexContacts(areaContactPatchId);
+    const retainedCells = sweptAreaSelection.cellContacts(areaContactPatchId);
+    const activeId = maskDocument.activeSelectorId;
+    if (activeId && maskDocument.isSelectorEditable(activeId)) {
+      maskDocument.setSelectorMask(activeId, { vertices: retainedVertices.keys(), cells: retainedCells.keys() }, { history: false });
+    }
+    areaPreviewVisible = retainedVertices.size > 0;
+    let patchPoints = liveGrid.map((live, index) => {
+      const retained = retainedVertices.get(index)?.point;
+      return retained ? new THREE.Vector3(retained[0], retained[1], retained[2]) : live.sourcePoint;
+    });
+    if (clothEnabled.checked && retainedVertices.size > 0) {
+      const sourcePositions = liveGrid.flatMap((live) => live.sourcePoint.toArray());
+      const initialPositions = [...sourcePositions];
+      const sag = Number(clothSag.value) * Math.min(drawingArea.sizeU, drawingArea.sizeV) * .32;
+      for (let row = 0; row <= samples; row++) for (let column = 0; column <= samples; column++) {
+        const index = row * (samples + 1) + column;
+        if (retainedVertices.has(index)) continue;
+        const fold = Math.sin(Math.PI * row / samples) * Math.sin(Math.PI * column / samples);
+        const ripple = .72 + .28 * Math.sin(column * 1.7 + row * .45);
+        const offset = index * 3;
+        initialPositions[offset] -= drawingArea.normal.x * sag * fold * ripple;
+        initialPositions[offset + 1] -= drawingArea.normal.y * sag * fold * ripple;
+        initialPositions[offset + 2] -= drawingArea.normal.z * sag * fold * ripple;
+      }
+      const relaxed = relaxClothLattice({
+        columns: samples + 1,
+        rows: samples + 1,
+        sourcePositions,
+        initialPositions,
+        contacts: [...retainedVertices].flatMap(([index, contact]) => contact.point ? [{ index, position: contact.point }] : []),
+        stretchIterations: Number(drapeIterations.value),
+        stretchStrength: Number(drapeStretch.value),
+        bendIterations: Number(drapeIterations.value),
+        bendStrength: Math.min(.6, Number(contactSoftness.value) * .6),
+      });
+      patchPoints = liveGrid.map((_, index) => new THREE.Vector3(
+        relaxed.positions[index * 3], relaxed.positions[index * 3 + 1], relaxed.positions[index * 3 + 2],
+      ));
+    }
+    const composedVertices = new Set(maskDocument.compose().vertices);
+    const patchValid = liveGrid.map((_, index) => retainedVertices.has(index) && composedVertices.has(index));
     for (let row = 0; row < samples; row++) for (let column = 0; column < samples; column++) {
       const a = row * (samples + 1) + column;
       const b = a + 1;
       const c = a + samples + 1;
       const d = c + 1;
-      patchIndices.push(a, c, b, b, c, d);
+      if (patchValid[a] && patchValid[c] && patchValid[b]) patchIndices.push(a, c, b);
+      if (patchValid[b] && patchValid[c] && patchValid[d]) patchIndices.push(b, c, d);
     }
+    areaPreviewVisible = patchIndices.length > 0;
+    const selectorState = activeSelectorState();
+    selectorState.area = cloneDrawingArea(drawingArea);
+    selectorState.dropped = areaDropped;
+    selectorState.projectionHeight = projectionHeight.value;
+    selectorState.patchId = areaContactPatchId;
+    selectorState.renderPoints = patchPoints.map((point) => point.toArray() as [number, number, number]);
+    selectorState.renderIndices = [...patchIndices];
     const patchGeometry = new THREE.BufferGeometry().setFromPoints(patchPoints);
     patchGeometry.setIndex(patchIndices);
     const glow = new THREE.Mesh(patchGeometry.clone(), areaGlowMaterial); glow.renderOrder = 7; areaRoot.add(glow);
     const patch = new THREE.Mesh(patchGeometry, areaFillMaterial); patch.renderOrder = 8; areaRoot.add(patch);
 
-    const makeLine = (constant: number, swap: boolean) => {
-      const points: THREE.Vector3[] = [];
-      for (let index = 0; index <= samples; index++) {
-        const variable = swap
-          ? -halfU + drawingArea!.sizeU * index / samples
-          : -halfV + drawingArea!.sizeV * index / samples;
-        const x = swap ? variable : constant, y = swap ? constant : variable;
-        points.push(projectPoint(x, y, .024));
-      }
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(geometry, areaMaterial); line.renderOrder = 9; areaRoot.add(line);
+    const freeSegments: THREE.Vector3[] = [];
+    const contactSegments: THREE.Vector3[] = [];
+    const pushEdge = (a: number, b: number) => {
+      const touches = patchValid[a] || patchValid[b];
+      if (touches) contactSegments.push(patchPoints[a], patchPoints[b]);
+      else if (!areaDropped || clothEnabled.checked) freeSegments.push(patchPoints[a], patchPoints[b]);
     };
-    for (let index = 0; index <= grid; index++) {
-      makeLine(-halfU + drawingArea.sizeU * index / grid, false);
-      makeLine(-halfV + drawingArea.sizeV * index / grid, true);
+    const gridStep = samples / grid;
+    for (let lineIndex = 0; lineIndex <= grid; lineIndex++) {
+      const fixed = lineIndex * gridStep;
+      for (let variable = 0; variable < samples; variable++) {
+        pushEdge(variable * (samples + 1) + fixed, (variable + 1) * (samples + 1) + fixed);
+        pushEdge(fixed * (samples + 1) + variable, fixed * (samples + 1) + variable + 1);
+      }
+    }
+    const addSegments = (points: THREE.Vector3[], material: THREE.LineBasicMaterial, renderOrder: number) => {
+      if (!points.length) return;
+      const line = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), material);
+      line.renderOrder = renderOrder; areaRoot.add(line);
+    };
+    addSegments(freeSegments, sourceAreaMaterial, 11);
+    addSegments(contactSegments, areaMaterial, 9);
+    renderInactiveSelectorOverlays();
+    if (areaDropped && retainedVertices.size === (samples + 1) * (samples + 1)) {
+      setStatus("Selector fully conformed · the flat source grid is completely gone");
     }
   }
 
@@ -972,6 +1371,14 @@ export function createTool(): ToolHandle {
     gizmoRotateButton.classList.toggle("active", mode === "rotate");
     gizmoScaleButton.classList.toggle("active", mode === "scale");
     if (drawingArea) setStatus(`${mode === "translate" ? "Move" : mode === "rotate" ? "Rotate" : "Scale"} the yellow selector with its viewport handles`);
+  }
+
+  function applyAreaTransformSnap(): void {
+    const enabled = areaSnap.checked;
+    areaTransform.setTranslationSnap(enabled ? .1 : null);
+    areaTransform.setRotationSnap(enabled ? THREE.MathUtils.degToRad(15) : null);
+    areaTransform.setScaleSnap(enabled ? .1 : null);
+    setStatus(enabled ? "Selector snapping enabled · 0.1 units / 15°" : "Selector snapping disabled");
   }
 
   function syncAreaAnchor(): void {
@@ -988,6 +1395,15 @@ export function createTool(): ToolHandle {
     areaTransformHelper.visible = true;
     areaTransformHelper.renderOrder = 20;
     syncingAreaTransform = false;
+    syncTransformFields();
+    syncSelectorUI();
+  }
+
+  function syncTransformFields(): void {
+    const rotation = new THREE.Euler().setFromQuaternion(areaAnchor.quaternion, "XYZ");
+    [areaAnchor.position.x, areaAnchor.position.y, areaAnchor.position.z].forEach((value, index) => { transformPosition[index].value = value.toFixed(3); });
+    [rotation.x, rotation.y, rotation.z].forEach((value, index) => { transformRotation[index].value = THREE.MathUtils.radToDeg(value).toFixed(2); });
+    [areaAnchor.scale.x, areaAnchor.scale.y, areaAnchor.scale.z].forEach((value, index) => { transformScale[index].value = value.toFixed(3); });
   }
 
   function updateDrawingAreaFromAnchor(): void {
@@ -1020,23 +1436,36 @@ export function createTool(): ToolHandle {
     drawingArea.sizeU = nextSizeU; drawingArea.sizeV = nextSizeV;
     areaSize.value = String(Math.min(4, Math.max(.6, (nextSizeU + nextSizeV) * .5)));
     areaSizeOutput.value = `${nextSizeU.toFixed(1)} × ${nextSizeV.toFixed(1)}`;
+    syncTransformFields();
     renderDrawingArea(); renderPreviews(); updateMetrics(); queueEvaluation();
   }
 
   function placeDrawingArea(sample: NewSample): void {
+    areaHistory.length = 0;
+    if (areaContactPatchId) sweptAreaSelection.removePatch(areaContactPatchId);
+    areaContactPatchId = `area-${++areaContactPatchCounter}`;
+    sweptAreaSelection.createPatch(areaContactPatchId, {
+      vertexCount: (AREA_CONTACT_SAMPLES + 1) * (AREA_CONTACT_SAMPLES + 1),
+      cellCount: AREA_CONTACT_SAMPLES * AREA_CONTACT_SAMPLES,
+    });
     let u = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
     u.addScaledVector(sample.normal, -u.dot(sample.normal)).normalize();
     if (u.lengthSq() < 1e-9) u = new THREE.Vector3(0, 1, 0).cross(sample.normal).normalize();
     const v = sample.normal.clone().cross(u).normalize();
     const initialSize = Number(areaSize.value);
     drawingArea = { center: sample.point.clone(), normal: sample.normal.clone(), u, v, sizeU: initialSize, sizeV: initialSize };
+    const selectorState = activeSelectorState();
+    selectorState.initialArea = cloneDrawingArea(drawingArea);
+    selectorState.area = cloneDrawingArea(drawingArea);
+    selectorState.patchId = areaContactPatchId;
     areaDropped = false;
     dropAreaButton.classList.remove("projected");
-    dropAreaButton.textContent = "Drop / project to surface";
+    dropAreaButton.textContent = "First contact";
+    pushThroughButton.classList.remove("projected");
     renderDrawingArea();
     syncAreaAnchor();
     setAreaTransformMode("translate");
-    setStatus("Source grid placed above the mesh · adjust it, then drop it to the surface");
+    setStatus("Source grid placed above the mesh · lower it until contact reveals the yellow area");
   }
 
   function addAreaDoodle(): void {
@@ -1602,13 +2031,18 @@ export function createTool(): ToolHandle {
   }, { signal });
   canvas.addEventListener("pointercancel", () => { curveDrag = null; curveDocument.cancelStroke(); renderPreviews(); }, { signal });
   areaTransform.addEventListener("mouseDown", () => {
+    checkpointDrawingArea();
     controls.enabled = false;
     canvas.style.cursor = "grabbing";
   });
   areaTransform.addEventListener("mouseUp", () => {
     controls.enabled = orbitButton.classList.contains("active");
     canvas.style.cursor = selectingTarget ? "crosshair" : selectingArea ? "cell" : selectingCurve ? "default" : drawing ? "crosshair" : "grab";
-    setStatus("Yellow selector updated · projected strokes follow its surface frame");
+    setStatus(areaDropped
+      ? "Committed yellow area updated · projected strokes follow its surface frame"
+      : areaPreviewVisible
+        ? "Selector touches the target · yellow surface preview is live"
+        : "Selector is above the target · lower it until the yellow area appears");
   });
   areaTransform.addEventListener("objectChange", updateDrawingAreaFromAnchor);
   fileInput.addEventListener("change", () => { const file = fileInput.files?.[0]; if (file) void loadFile(file).catch((error) => setStatus(error instanceof Error ? error.message : String(error))); }, { signal });
@@ -1669,24 +2103,135 @@ export function createTool(): ToolHandle {
       setStatus("Initial area selection · click the surface to place the drawing area");
     }
   }, { signal });
-  clearAreaButton.addEventListener("click", () => { removeDrawingArea(); setStatus("Drawing area removed · drawing is unrestricted"); }, { signal });
+  clearAreaButton.addEventListener("click", () => { clearActiveSelectorArea(); setStatus("Active selector area removed · other visible selectors remain"); }, { signal });
   areaDoodleButton.addEventListener("click", addAreaDoodle, { signal });
+  selectorList.addEventListener("change", () => loadSelector(selectorList.value), { signal });
+  selectorNewButton.addEventListener("click", createSelector, { signal });
+  selectorDeleteButton.addEventListener("click", deleteActiveSelector, { signal });
+    maskOperation.addEventListener("change", () => {
+    const id = maskDocument.activeSelectorId;
+    if (!id) return;
+    maskDocument.updateSelector(id, { operation: maskOperation.value as SelectionMaskOperation });
+    renderDrawingArea();
+    setStatus(`${activeSelectorState().name} mask operation · ${maskOperation.value}`);
+  }, { signal });
+  selectorVisible.addEventListener("change", () => {
+    const id = maskDocument.activeSelectorId;
+    if (!id) return;
+    maskDocument.updateSelector(id, { visible: selectorVisible.checked });
+    renderDrawingArea();
+    setStatus(`${activeSelectorState().name} ${selectorVisible.checked ? "visible" : "hidden"}`);
+  }, { signal });
+  selectorLocked.addEventListener("change", () => {
+    const id = maskDocument.activeSelectorId;
+    if (!id) return;
+    maskDocument.updateSelector(id, { locked: selectorLocked.checked });
+    syncSelectorUI();
+    setStatus(`${activeSelectorState().name} ${selectorLocked.checked ? "locked" : "unlocked"}`);
+  }, { signal });
   gizmoMoveButton.addEventListener("click", () => setAreaTransformMode("translate"), { signal });
   gizmoRotateButton.addEventListener("click", () => setAreaTransformMode("rotate"), { signal });
   gizmoScaleButton.addEventListener("click", () => setAreaTransformMode("scale"), { signal });
+  areaSnap.addEventListener("change", applyAreaTransformSnap, { signal });
+  areaSpace.addEventListener("change", () => {
+    areaTransform.setSpace(areaSpace.value === "world" ? "world" : "local");
+    setStatus(`Selector transform space · ${areaSpace.value}`);
+  }, { signal });
+  applyTransformButton.addEventListener("click", () => {
+    if (!drawingArea) { setStatus("Place the active selector before entering a transform"); return; }
+    checkpointDrawingArea();
+    const position = transformPosition.map((input, index) => Number.isFinite(Number(input.value)) ? Number(input.value) : areaAnchor.position.getComponent(index));
+    const rotation = transformRotation.map((input) => THREE.MathUtils.degToRad(Number.isFinite(Number(input.value)) ? Number(input.value) : 0));
+    const scale = transformScale.map((input, index) => Number.isFinite(Number(input.value)) ? Math.max(.01, Math.abs(Number(input.value))) : areaAnchor.scale.getComponent(index));
+    areaAnchor.position.set(position[0], position[1], position[2]);
+    areaAnchor.quaternion.setFromEuler(new THREE.Euler(rotation[0], rotation[1], rotation[2], "XYZ"));
+    areaAnchor.scale.set(scale[0], scale[1], scale[2]);
+    updateDrawingAreaFromAnchor();
+    setStatus("Numeric selector transform applied");
+  }, { signal });
+  resetTransformButton.addEventListener("click", () => {
+    const state = activeSelectorState();
+    if (!state.initialArea) { setStatus("This selector has no placed transform to reset"); return; }
+    checkpointDrawingArea();
+    drawingArea = cloneDrawingArea(state.initialArea);
+    syncAreaAnchor();
+    renderDrawingArea();
+    setStatus("Selector transform reset to its placement pose");
+  }, { signal });
+  for (const [input, output, decimals, suffix] of [
+    [contactSoftness, contactSoftnessOutput, 2, ""],
+    [contactDepthControl, contactDepthOutput, 2, ""],
+    [maxSurfaceAngle, maxSurfaceAngleOutput, 0, "°"],
+    [drapeStretch, drapeStretchOutput, 2, ""],
+    [drapeIterations, drapeIterationsOutput, 0, ""],
+    [clothSag, clothSagOutput, 2, ""],
+  ] as const) {
+    input.addEventListener("pointerdown", checkpointDrawingArea, { signal });
+    input.addEventListener("input", () => {
+      output.value = `${Number(input.value).toFixed(decimals)}${suffix}`;
+      renderDrawingArea();
+    }, { signal });
+  }
+  clothEnabled.addEventListener("change", () => {
+    checkpointDrawingArea();
+    renderDrawingArea();
+    setStatus(clothEnabled.checked
+      ? "Optional cloth relaxation enabled · contacts stay pinned while free cells sag"
+      : "Blender-style projected shrinkwrap enabled · cloth relaxation off");
+  }, { signal });
   projectionHeight.addEventListener("input", () => {
     projectionHeightOutput.value = Number(projectionHeight.value).toFixed(2);
     renderDrawingArea();
-    setStatus(areaDropped ? "Projection height changed · yellow result remains on the target" : "Source grid height changed · ready to drop");
+    setStatus(areaDropped
+      ? "Projection height changed · committed yellow result updated"
+      : areaPreviewVisible
+        ? "Source grid reached the target · yellow surface preview is live"
+        : "Source grid is still above the target · no yellow area yet");
   }, { signal });
+  projectionHeight.addEventListener("pointerdown", checkpointDrawingArea, { signal });
   dropAreaButton.addEventListener("click", () => {
     if (!drawingArea) { setMode("area"); setStatus("Click an object first to place the floating source grid"); return; }
+    checkpointDrawingArea();
+    // Lower in small increments and stop at the first real surface crossing,
+    // matching the reference instead of treating every point below the plane
+    // as contact.
+    const startHeight = Number(projectionHeight.value);
+    const contactStep = Math.max(.02, Number(contactDepthControl.value) * .45);
+    areaDropped = false;
+    for (let height = startHeight; height >= -0.5; height -= contactStep) {
+      projectionHeight.value = height.toFixed(3);
+      projectionHeightOutput.value = height.toFixed(2);
+      renderDrawingArea();
+      if (areaPreviewVisible) break;
+    }
+    areaDropped = areaPreviewVisible;
+    dropAreaButton.classList.add("projected");
+    dropAreaButton.textContent = "Contact captured ✓";
+    renderDrawingArea();
+    setStatus(areaPreviewVisible
+      ? "Lowered to first contact · only the crossing cells are yellow and conformed"
+      : "No surface contact found inside the projection limit");
+  }, { signal });
+  pushThroughButton.addEventListener("click", () => {
+    if (!drawingArea) { setMode("area"); setStatus("Place the selector on an object first"); return; }
+    checkpointDrawingArea();
     areaDropped = true;
     dropAreaButton.classList.add("projected");
-    dropAreaButton.textContent = "Projected onto surface ✓";
+    dropAreaButton.textContent = "Contact captured ✓";
+    pushThroughButton.classList.add("projected");
+    const finalHeight = -1.25;
+    const contactStep = Math.max(.025, Number(contactDepthControl.value) * .65);
+    for (let height = Number(projectionHeight.value) - contactStep; height > finalHeight; height -= contactStep) {
+      projectionHeight.value = height.toFixed(3);
+      projectionHeightOutput.value = height.toFixed(2);
+      renderDrawingArea();
+    }
+    projectionHeight.value = String(finalHeight);
+    projectionHeightOutput.value = finalHeight.toFixed(2);
     renderDrawingArea();
-    setStatus("Dropped to surface · yellow geometry is the conformed projection");
+    setStatus("Pushed through · latched near-side contacts remain yellow and the flat grid is hidden");
   }, { signal });
+  areaSize.addEventListener("pointerdown", checkpointDrawingArea, { signal });
   areaSize.addEventListener("input", () => {
     areaSizeOutput.value = Number(areaSize.value).toFixed(1);
     if (drawingArea) {
@@ -1705,7 +2250,9 @@ export function createTool(): ToolHandle {
     else return;
     event.preventDefault();
   }, { signal });
-  undoButton.addEventListener("click", () => { curveDocument.undo(); renderPreviews(); updateMetrics(); queueEvaluation(); }, { signal }); clearButton.addEventListener("click", clearStrokes, { signal });
+  undoButton.addEventListener("click", () => { curveDocument.undo(); renderPreviews(); updateMetrics(); queueEvaluation(); }, { signal });
+  undoAreaButton.addEventListener("click", undoDrawingArea, { signal });
+  clearButton.addEventListener("click", clearStrokes, { signal });
   for (const input of [spacing, size]) input.addEventListener("input", () => { spacingOutput.value = Number(spacing.value).toFixed(2); sizeOutput.value = Number(size.value).toFixed(3); queueEvaluation(); }, { signal });
   for (const [input, output, decimals] of [[thickness, thicknessOutput, 1], [peak, peakOutput, 1], [sigilize, sigilizeOutput, 0], [soften, softenOutput, 0], [resolution, resolutionOutput, 3], [spiro, spiroOutput, 0], [extrude, extrudeOutput, 1]] as const)
     input.addEventListener("input", () => { output.value = Number(input.value).toFixed(decimals); queueEvaluation(); }, { signal });
@@ -1787,6 +2334,7 @@ export function createTool(): ToolHandle {
     renderer.render(scene, camera);
   });
 
+  syncSelectorUI();
   setMode("draw"); applyCrayonPreset(); demoSurface();
   loadBrushAssets()
     .then((assets) => {
@@ -1812,7 +2360,7 @@ export function createTool(): ToolHandle {
       removeDrawingArea();
       areaTransform.dispose();
       scene.remove(areaTransformHelper, areaAnchor, selectionGuideRoot);
-      clearObject(targetRoot); clearObject(brushRoot); clearObject(previewRoot); clearObject(handleRoot);
+      clearObject(targetRoot); clearObject(brushRoot); clearObject(previewRoot); clearObject(handleRoot); clearObject(selectorOverlayRoot);
       selectionGuideGeometry.dispose();
       envTexture.dispose();
       for (const material of [targetMaterial, inactiveTargetMaterial, flatTargetMaterial, brushMaterial, chromeMaterial, sigilMaterial, previewMaterial, selectedPreviewMaterial, areaGlowMaterial, areaFillMaterial, areaMaterial, sourceAreaMaterial, projectionRayMaterial, selectionGuideMaterial, handleMaterial, selectedHandleMaterial]) material.dispose();

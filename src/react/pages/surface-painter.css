@@ -2,7 +2,10 @@
    lil-gui for reliable live bindings, but its DOM is presented as a Studio
    node stack rather than a legacy utility panel. */
 
-.surface-painter-page { --st-inspector-w: 360px; }
+.surface-painter-page {
+  --st-dock-w: 154px;
+  --st-inspector-w: clamp(340px, 24vw, 390px);
+}
 
 #surface-painter-app { position: absolute; inset: 0; }
 #surface-painter-app canvas { display: block; width: 100%; height: 100%; }
@@ -16,37 +19,71 @@
   text-transform: uppercase;
 }
 
-.paint-node-intro {
-  display: flex; align-items: center; gap: 10px;
-  padding: 11px 14px;
+.surface-painter-generator-dock,
+.surface-painter-gui-dock { min-height: 0; flex: 1; overflow: hidden; }
+.paint-generator-selector {
+  display: flex; min-height: 0; flex-direction: column; gap: 5px;
+  height: 100%;
+  padding: 10px 8px; overflow: auto; scrollbar-gutter: stable;
+  background: color-mix(in srgb, var(--st-rail) 72%, var(--st-panel));
+}
+.paint-generator-selector-label {
+  padding: 3px 7px 7px;
+  color: var(--st-ink-3);
+  font: 700 9px/1 var(--st-mono); letter-spacing: .12em; text-transform: uppercase;
+}
+.paint-generator-option {
+  display: grid; grid-template-columns: 28px minmax(0,1fr); align-items: center; gap: 8px;
+  width: 100%; min-height: 42px; padding: 6px 7px;
+  border: 1px solid transparent; border-radius: var(--st-r-md);
+  background: transparent; color: var(--st-ink-3); cursor: pointer;
+  text-align: left;
+}
+.paint-generator-option:hover { background: rgba(255,255,255,.035); color: var(--st-ink); }
+.paint-generator-option:focus-visible { outline: 1px solid var(--st-accent); outline-offset: 1px; }
+.paint-generator-option[aria-pressed="true"] {
+  border-color: rgba(127,196,232,.3);
+  background: linear-gradient(135deg, rgba(127,196,232,.16), rgba(127,196,232,.055));
+  color: var(--st-accent-ink);
+}
+.paint-generator-glyph {
+  display: grid; place-items: center;
+  width: 28px; height: 28px;
+  border: 1px solid var(--st-line-2); border-radius: 7px;
+  background: var(--st-sunken); color: var(--st-ink-3);
+  font: 700 9px/1 var(--st-mono); letter-spacing: .04em;
+}
+.paint-generator-option[aria-pressed="true"] .paint-generator-glyph {
+  border-color: var(--st-accent-edge); background: var(--st-accent-fill); color: #E9F6FD;
+  box-shadow: 0 0 0 3px var(--st-accent-wash);
+}
+.paint-generator-label {
+  min-width: 0; overflow-wrap: anywhere;
+  font: 600 var(--st-fs-micro)/1.2 var(--st-font);
+}
+.paint-generator-panel {
+  display: flex; min-width: 0; min-height: 0; height: 100%; flex-direction: column;
+}
+.paint-generator-context {
+  display: flex; align-items: flex-start; gap: 10px;
+  min-height: 70px; padding: 11px 12px;
   border-bottom: 1px solid var(--st-line);
-  background: linear-gradient(135deg, rgba(127,196,232,.08), transparent 68%);
+  background: linear-gradient(135deg, rgba(127,196,232,.09), transparent 72%);
 }
-.paint-node-intro > span:last-child { display: grid; min-width: 0; gap: 3px; }
-.paint-node-intro b { color: var(--st-ink); font-size: var(--st-fs-ui); font-weight: 600; }
-.paint-node-intro small { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.35 var(--st-font); }
-.paint-node-intro-icon {
-  position: relative; width: 31px; height: 31px; flex: 0 0 31px;
-  border: 1px solid rgba(127,196,232,.22); border-radius: var(--st-r-md);
-  background: var(--st-sunken);
+.paint-generator-context > span:first-child { display: grid; min-width: 0; gap: 3px; }
+.paint-generator-family {
+  color: var(--st-accent-ink);
+  font: 700 9px/1 var(--st-mono); letter-spacing: .1em; text-transform: uppercase;
 }
-.paint-node-intro-icon::before,
-.paint-node-intro-icon::after {
-  content: ""; position: absolute; top: 9px; left: 8px;
-  width: 14px; height: 1px; background: rgba(127,196,232,.42);
-  transform: rotate(28deg); transform-origin: left center;
+.paint-generator-active-title { color: var(--st-ink); font-size: var(--st-fs-title); font-weight: 650; }
+.paint-generator-description { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.35 var(--st-font); }
+.paint-generator-live {
+  margin-left: auto; padding: 3px 5px;
+  border: 1px solid rgba(126,215,158,.28); border-radius: 4px;
+  background: rgba(126,215,158,.08); color: #9DDEB5;
+  font: 700 9px/1 var(--st-mono); letter-spacing: .08em; text-transform: uppercase;
 }
-.paint-node-intro-icon::after { top: 21px; transform: rotate(-28deg); }
-.paint-node-intro-icon i {
-  position: absolute; z-index: 1; width: 6px; height: 6px;
-  border: 1px solid var(--st-accent-edge); border-radius: 50%;
-  background: var(--st-panel); box-shadow: 0 0 0 2px rgba(127,196,232,.08);
-}
-.paint-node-intro-icon i:nth-child(1) { top: 6px; left: 5px; }
-.paint-node-intro-icon i:nth-child(2) { top: 12px; right: 5px; }
-.paint-node-intro-icon i:nth-child(3) { bottom: 5px; left: 5px; }
-
-.surface-painter-gui-dock { min-height: 0; flex: 1; overflow: auto; scrollbar-gutter: stable; }
+.paint-generator-options { min-height: 0; flex: 1; overflow: auto; scrollbar-gutter: stable; }
 .lil-gui.surface-painter-gui {
   --background-color: transparent;
   --title-background-color: var(--st-raised);
@@ -74,27 +111,10 @@
 /* The dock tab already names the panel. */
 .lil-gui.surface-painter-gui.root > .title { display: none; }
 .lil-gui.surface-painter-gui.root { background: transparent; }
+.lil-gui.surface-painter-gui .paint-generator-controller[hidden] { display: none !important; }
 .lil-gui.surface-painter-gui.root > .children {
   display: flex; flex-direction: column; gap: 8px;
   padding: 10px; overflow: visible;
-}
-
-/* The generator selector is the source node for the stack. */
-.lil-gui.surface-painter-gui .paint-generator-controller {
-  display: grid; grid-template-columns: minmax(0,1fr) minmax(138px,1.2fr); gap: 12px;
-  min-height: 42px; margin: 0; padding: 6px 10px;
-  border: 1px solid rgba(127,196,232,.24); border-radius: var(--st-r-md);
-  background: linear-gradient(135deg, rgba(127,196,232,.11), rgba(127,196,232,.035));
-}
-.lil-gui.surface-painter-gui .paint-generator-controller > .name {
-  position: relative; padding-left: 13px;
-  color: var(--st-ink); font-weight: 600;
-}
-.lil-gui.surface-painter-gui .paint-generator-controller > .name::before {
-  content: ""; position: absolute; top: 50%; left: 0;
-  width: 6px; height: 6px; transform: translateY(-50%);
-  border-radius: 50%; background: var(--st-accent);
-  box-shadow: 0 0 0 3px rgba(127,196,232,.12);
 }
 
 /* Each folder is a node group. Tone classes provide subtle category ports. */
@@ -327,6 +347,15 @@ body.draw .surface-painter-page #modeBtn .key { background: rgba(9, 12, 15, 0.28
   .st-shell:has(.st-sheet.is-open) .surface-painter-page .paint-mode-bar { display: none; }
 
   .surface-painter-gui-dock { overflow: visible; }
+  .surface-painter-generator-dock { overflow: visible; }
+  .paint-generator-selector {
+    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(112px,1fr);
+    height: auto; padding: 8px; overflow-x: auto; overflow-y: hidden;
+  }
+  .paint-generator-selector-label { display: none; }
+  .paint-generator-option { min-height: var(--st-touch); }
+  .paint-generator-context { min-height: 74px; }
+  .paint-generator-options { overflow: visible; }
   .lil-gui.surface-painter-gui,
   .lil-gui.surface-painter-gui .lil-gui { --widget-height: var(--st-touch); --title-height: var(--st-touch); }
   .lil-gui.surface-painter-gui .controller.option select { inset: 0; height: 100%; }

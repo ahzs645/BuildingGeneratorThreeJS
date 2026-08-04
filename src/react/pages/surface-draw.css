@@ -107,12 +107,68 @@
 .surface-area-transform > span { color: color-mix(in srgb, var(--surface-selector) 72%, white); font: 600 var(--st-fs-micro)/1.2 var(--st-font); }
 .surface-area-transform > small { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.35 var(--st-font); }
 .surface-area-transform .st-segmented button { min-width: 0; padding-inline: 6px; font-size: 10px; }
+.surface-area-transform .st-btn-row .st-row { grid-template-columns: auto minmax(0, 1fr); gap: 6px; padding: 0; }
+.surface-area-transform .st-btn-row .st-select { min-width: 0; height: 28px; padding-inline: 6px; }
 .surface-area-transform .surface-projection-height { grid-template-columns: 1fr 76px 34px; padding-block: 2px; }
+.surface-vector-fields,
+.surface-contact-fields {
+  min-width: 0; margin: 1px 0; padding: 8px; border: 1px solid var(--st-line);
+  border-radius: var(--st-r-sm); display: grid; gap: 7px;
+}
+
+.surface-selector-fields {
+  display: grid;
+  gap: 7px;
+  margin: 2px 0 8px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--st-border, #8c9b92) 48%, transparent);
+  border-radius: 8px;
+}
+
+.surface-selector-fields legend {
+  padding: 0 5px;
+  color: #fff7a8;
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.surface-selector-fields small {
+  color: var(--st-muted, #aab5ae);
+  line-height: 1.35;
+}
+.surface-vector-fields > legend,
+.surface-contact-fields > legend {
+  padding-inline: 4px; color: var(--st-ink-3);
+  font: 600 var(--st-fs-micro)/1 var(--st-font); letter-spacing: .04em;
+}
+.surface-vector-row {
+  display: grid; grid-template-columns: 54px repeat(3, minmax(0, 1fr));
+  align-items: center; gap: 5px;
+}
+.surface-vector-row > span { color: var(--st-ink-2); font: 500 10px/1 var(--st-font); }
+.surface-vector-row > label { position: relative; min-width: 0; }
+.surface-vector-row b {
+  position: absolute; z-index: 1; left: 7px; top: 50%; transform: translateY(-50%);
+  color: var(--st-ink-3); font: 600 9px/1 var(--st-mono); pointer-events: none;
+}
+.surface-vector-row .st-input {
+  width: 100%; min-width: 0; height: 27px; padding: 0 5px 0 18px;
+  font-size: 10px; text-align: right;
+}
+.surface-transform-actions { margin-top: 1px; }
+.surface-contact-fields .st-row {
+  grid-template-columns: minmax(78px, 1fr) minmax(54px, 76px) 31px;
+  gap: 6px; padding-block: 1px;
+}
+.surface-contact-fields .st-row > span { font-size: 10px; }
+.surface-contact-fields output { font-size: 10px; font-variant-numeric: tabular-nums; }
 /* "Drop to surface" is the tool's one constructive action, so it takes the
    kit's --st-ok rather than a third green invented for this page. */
 .surface-drop-area { border-color: rgba(126,215,158,.42); color: #B3E6C6; background: rgba(126,215,158,.08); }
 .surface-drop-area:hover { border-color: rgba(126,215,158,.78); background: rgba(126,215,158,.16); }
 .surface-drop-area.projected { border-color: color-mix(in srgb, var(--surface-selector) 72%, transparent); color: color-mix(in srgb, var(--surface-selector) 68%, white); background: color-mix(in srgb, var(--surface-selector) 12%, transparent); }
+.surface-area-transform .st-btn.projected { border-color: color-mix(in srgb, var(--surface-selector) 72%, transparent); color: color-mix(in srgb, var(--surface-selector) 68%, white); background: color-mix(in srgb, var(--surface-selector) 12%, transparent); }
 /* display:contents so the brush rows join the section's flex column directly;
    [hidden] still has to win, hence the explicit none. */
 .surface-controls { display: contents; }

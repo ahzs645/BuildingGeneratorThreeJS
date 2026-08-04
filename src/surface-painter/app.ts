@@ -20,6 +20,10 @@ import { auroraMode, defaultAuroraSettings, type AuroraSettings } from '../geome
 import { defaultReefSettings, reefMode, type ReefSettings } from '../geometry-painter/modes/reef';
 import { IvyPlant, defaultIvySettings, type IvySettings } from '../vegetation-generator/ivy';
 import { TreePlant, defaultTreeSettings, type TreeSettings } from '../vegetation-generator/tree';
+import {
+  SurfaceStudioHostController,
+  type SurfaceStudioHost,
+} from '../surface-studio/app-host';
 import { buildGui } from './ui';
 
 /**
@@ -133,6 +137,7 @@ export class App {
   private controls!: OrbitControls;
   private painter!: SurfacePainter;
   private gui: GUI | null = null;
+  private studioHostController: SurfaceStudioHostController | null = null;
 
   // Model + paint roots. paintAnchor is static, so anchor-local decor samples
   // equal world coordinates; ivy consumes world-space samples directly.
@@ -146,6 +151,8 @@ export class App {
   private decorStrokes: DecorStroke[] = [];
   private decorLive: StrokeInstance[] = [];
   private tree: TreePlant | null = null;
+  private treeReady = false;
+  private treeCompilePromise: Promise<void> | null = null;
   private strokeCounter = 0;
 
   // Current model placement (see installModel).
@@ -200,6 +207,12 @@ export class App {
     this.settings.generator = initialGenerator;
   }
 
+  /** Available after start() resolves; shared Studio systems never receive App itself. */
+  getSurfaceStudioHost(): SurfaceStudioHost {
+    if (!this.studioHostController) throw new Error('Surface Painter has not started');
+    return this.studioHostController.host;
+  }
+
   async start(): Promise<void> {
     const renderer = new THREE.WebGPURenderer({ antialias: true });
     await renderer.init();
@@ -225,6 +238,19 @@ export class App {
     this.controls.target.set(0, -0.05, 0);
     // Keep the camera above the horizon so you can't tumble under the floor.
     this.controls.maxPolarAngle = Math.PI / 2 - 0.02;
+
+    this.studioHostController = new SurfaceStudioHostController({
+      scene: this.scene,
+      camera: this.camera,
+      canvas: renderer.domElement,
+      controls: this.controls,
+      modelRoot: this.modelRoot,
+      // Shared generator roots use world space. Existing decor still keeps its
+      // paintAnchor until the final adapter cutover.
+      outputParent: this.scene,
+      compile: (object) => renderer.compileAsync(object, this.camera, this.scene),
+      setStatus: (state, message) => this.setStatus(state, message),
+    });
 
     this.gardenPrimitiveMat = new THREE.MeshStandardMaterial({ color: 0x9aa1ab, roughness: 0.9 });
     // The decor stage's satin basalt canvas — a quiet stage that lets the strokes star.
@@ -548,8 +574,77 @@ export class App {
     this.tree = new TreePlant(settings, this.effectiveSeed(7777));
     this.tree.group.position.set(0, GARDEN_GROUND_Y, 0); // rooted on the garden ground disc
     this.tree.group.visible = this.settings.generator === 'Tree';
+    if (!this.treeReady && this.treeCompilePromise) this.tree.group.visible = false;
     this.scene.add(this.tree.group);
     if (!animate) this.tree.finishGrowth();
+  }
+
+  /**
+   * The first Tree frame used to synchronously prepare every bark, foliage, fig,
+   * and shadow pipeline, freezing the UI for more than a second on WebGPU. Build
+   * the CPU geometry once, then let compileAsync upload/compile it while the
+   * previous surface remains visible. Renderer.compileAsync yields between
+   * objects, so the selector and camera stay responsive during the warm-up.
+   */
+  private prepareTree(): void {
+    if (this.treeReady) {
+      this.showTree();
+      return;
+    }
+
+    if (!this.tree) this.rebuildTree(true);
+    const tree = this.tree!;
+    tree.group.visible = true;
+
+    if (!this.treeCompilePromise) {
+      const compilation = this.renderer.compileAsync(tree.group, this.camera, this.scene);
+      // compileAsync collects the visible objects synchronously before its first
+      // yield, so it is safe to keep the tree out of normal renders immediately.
+      tree.group.visible = false;
+      this.treeCompilePromise = compilation;
+      void compilation
+        .then(() => {
+          if (this.treeCompilePromise === compilation) this.treeCompilePromise = null;
+          if (this.disposed) return;
+          // A live Tree slider can replace the geometry while the previous tree
+          // is compiling. Warm the replacement instead of leaving preparation
+          // permanently attached to the disposed tree.
+          if (this.tree !== tree) {
+            if (this.settings.generator === 'Tree') this.prepareTree();
+            return;
+          }
+          this.treeReady = true;
+          if (this.settings.generator === 'Tree') this.showTree();
+        })
+        .catch((error: unknown) => {
+          if (this.treeCompilePromise === compilation) this.treeCompilePromise = null;
+          if (this.disposed) return;
+          if (this.tree !== tree) {
+            if (this.settings.generator === 'Tree') this.prepareTree();
+            return;
+          }
+          console.warn('Tree pipeline preparation failed; falling back to normal rendering.', error);
+          this.treeReady = true;
+          if (this.settings.generator === 'Tree') this.showTree();
+        });
+    } else {
+      tree.group.visible = false;
+    }
+
+    // Do not blank the viewport while the tree prepares.
+    this.modelRoot.visible = true;
+    this.ivyRoot.visible = true;
+    this.paintAnchor.visible = true;
+    this.setStatus('busy', 'Preparing the banyan tree… You can keep orbiting while it loads.');
+  }
+
+  private showTree(): void {
+    if (!this.tree) return;
+    this.modelRoot.visible = false;
+    this.ivyRoot.visible = false;
+    this.paintAnchor.visible = false;
+    this.tree.group.visible = true;
+    this.applyModes();
   }
 
   /**
@@ -696,16 +791,22 @@ export class App {
     document.body.classList.toggle('tree', tree);
     this.setStage(generatorFamily(g) === 'decor' ? 'studio' : 'garden');
     // The banyan replaces the paintable model; every paint generator shares it.
-    this.modelRoot.visible = !tree;
-    this.ivyRoot.visible = !tree;
-    this.paintAnchor.visible = !tree;
     if (tree) {
-      if (this.tree) this.tree.group.visible = true;
-      else this.rebuildTree(true); // first visit: grow the banyan in
+      this.prepareTree();
     } else if (this.tree) {
       this.tree.group.visible = false;
+      this.modelRoot.visible = true;
+      this.ivyRoot.visible = true;
+      this.paintAnchor.visible = true;
+    } else {
+      this.modelRoot.visible = true;
+      this.ivyRoot.visible = true;
+      this.paintAnchor.visible = true;
     }
     this.applyModes();
+    if (tree && !this.treeReady) {
+      this.setStatus('busy', 'Preparing the banyan tree… You can keep orbiting while it loads.');
+    }
   }
 
   // ---------- vegetation brushes (F) and tree pushing ----------
@@ -843,6 +944,7 @@ export class App {
     this.modelRoot.add(container);
     this.applyModelScale();
     indexForRaycasts(this.modelRoot); // BVH indexes local geometry; scaling won't invalidate it
+    this.studioHostController?.notifySurfaceChanged();
   }
 
   /** Re-place the current model for the fit scale × the user's Model-scale slider. */
@@ -864,6 +966,7 @@ export class App {
     this.settings.modelScale = v;
     this.applyModelScale();
     this.clearAll();
+    this.studioHostController?.notifySurfaceChanged();
   }
 
   /**
@@ -1210,15 +1313,20 @@ export class App {
 
     this.controls.update();
     this.painter.update(dt);
-    for (const plant of this.plants) {
-      plant.update(dt);
-      plant.updateLeaves(tSec);
+    if (this.ivyRoot.visible) {
+      for (const plant of this.plants) {
+        plant.update(dt);
+        plant.updateLeaves(tSec);
+      }
     }
-    if (this.tree) {
+    if (this.tree?.group.visible) {
       this.tree.update(dt);
       this.tree.updateLeaves(tSec);
     }
-    for (const s of this.decorLive) s.update(dt, tSec);
+    if (this.paintAnchor.visible) {
+      for (const s of this.decorLive) s.update(dt, tSec);
+    }
+    this.studioHostController?.runFrameTasks(dt, tSec);
 
     // Garden renders directly (the vegetation look was authored without post);
     // the studio renders through bloom + vignette.
@@ -1244,6 +1352,8 @@ export class App {
 
     this.gui?.destroy();
     this.gui = null;
+    this.studioHostController?.dispose();
+    this.studioHostController = null;
 
     if (this.painter) this.painter.dispose();
     if (this.controls) this.controls.dispose();
