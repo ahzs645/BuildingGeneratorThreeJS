@@ -18,6 +18,8 @@ export interface DrawingAreaProjectionOptions {
   readonly contactDepth?: number;
   readonly maxProjectionDistance?: number;
   readonly facingThreshold?: number;
+  /** Build projection data even while the source grid is outside contact. */
+  readonly forceProjection?: boolean;
 }
 
 export interface DrawingAreaLineData {
@@ -31,8 +33,12 @@ export interface DrawingAreaSourceData {
 }
 
 export interface DrawingAreaPatchData {
+  /** Undeformed projector-lattice positions, used by optional cloth relaxation. */
+  readonly sourcePositions?: readonly Vec3[];
   readonly positions: readonly Vec3[];
   readonly valid: readonly boolean[];
+  /** Vertices currently inside the narrow surface-contact band. */
+  readonly touching?: readonly boolean[];
   readonly indices: readonly number[];
   readonly lines: readonly DrawingAreaLineData[];
 }
@@ -95,7 +101,7 @@ export class DrawingAreaController {
       u: tuple(u),
       v: tuple(v),
       size: [Math.max(MIN_SIZE, size[0]), Math.max(MIN_SIZE, size[1])],
-      projectionHeight: Math.max(0, options.projectionHeight ?? 0.85),
+      projectionHeight: options.projectionHeight ?? 0.85,
       committed: false,
     };
     this.document.setDrawingArea(area);
@@ -133,7 +139,7 @@ export class DrawingAreaController {
   }
 
   setProjectionHeight(height: number): void {
-    this.update((area) => ({ ...area, projectionHeight: Math.max(0, height) }));
+    this.update((area) => ({ ...area, projectionHeight: height }));
   }
 
   setCommitted(committed: boolean, projectionHeight?: number): void {
@@ -142,7 +148,7 @@ export class DrawingAreaController {
       committed,
       ...(projectionHeight === undefined
         ? {}
-        : { projectionHeight: Math.max(0, projectionHeight) }),
+        : { projectionHeight }),
     }));
   }
 
@@ -169,8 +175,11 @@ export class DrawingAreaController {
     this.finishTransformGroup('cancel');
   }
 
-  project(options: DrawingAreaProjectionOptions = {}): DrawingAreaProjectionResult {
-    const area = this.area;
+  project(
+    options: DrawingAreaProjectionOptions = {},
+    areaOverride?: DrawingAreaState | null,
+  ): DrawingAreaProjectionResult {
+    const area = areaOverride === undefined ? this.area : areaOverride;
     if (!area) return emptyProjectionResult();
 
     const targetAvailable = this.projector.selectTarget(area.target);
@@ -236,11 +245,13 @@ export class DrawingAreaController {
         const y = -halfV + area.size[1] * row / contactProbeDivisions;
         const sourcePoint = sourceCenter.clone().addScaledVector(u, x).addScaledVector(v, y);
         const hit = raycastDown(this.projector, sourcePoint, normal, rayStartOffset);
-        if (hit) closestContactDistance = Math.min(closestContactDistance, hit.distance);
+        if (hit && hit.worldNormal.dot(normal) > facingThreshold) {
+          closestContactDistance = Math.min(closestContactDistance, hit.distance);
+        }
       }
     }
     const contact = closestContactDistance <= contactDepth;
-    if (!contact && !area.committed) {
+    if (!contact && !area.committed && !options.forceProjection) {
       return {
         area,
         source,
@@ -254,8 +265,10 @@ export class DrawingAreaController {
       };
     }
 
+    const sourcePositions: Vec3[] = [];
     const positions: Vec3[] = [];
     const valid: boolean[] = [];
+    const touching: boolean[] = [];
     const indices: number[] = [];
     const stats = { rayHits: 0, fallbackHits: 0, rejectedRayHits: 0, rejectedFallbackHits: 0 };
     const projectPoint = (x: number, y: number): THREE.Vector3 | null => {
@@ -288,7 +301,14 @@ export class DrawingAreaController {
       const y = -halfV + area.size[1] * row / patchDivisions;
       for (let column = 0; column <= patchDivisions; column++) {
         const x = -halfU + area.size[0] * column / patchDivisions;
+        const sourcePoint = sourceCenter.clone().addScaledVector(u, x).addScaledVector(v, y);
         const projected = projectPoint(x, y);
+        const contactHit = this.projector.closestPoint(sourcePoint);
+        const isTouching = Boolean(contactHit
+          && contactHit.worldNormal.dot(normal) > facingThreshold
+          && contactHit.distance <= contactDepth);
+        sourcePositions.push(tuple(sourcePoint));
+        touching.push(isTouching);
         valid.push(projected !== null);
         positions.push(tuple(projected ?? center));
       }
@@ -323,7 +343,7 @@ export class DrawingAreaController {
     return {
       area,
       source,
-      patch: { positions, valid, indices, lines },
+      patch: { sourcePositions, positions, valid, touching, indices, lines },
       contact,
       committed: area.committed,
       closestContactDistance: Number.isFinite(closestContactDistance)

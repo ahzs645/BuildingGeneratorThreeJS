@@ -146,6 +146,29 @@ test('draw mode samples by minimum distance and commits target-local points', ()
   projector.dispose();
 });
 
+test('drawing-area hook can reject samples outside the committed projection patch', () => {
+  const { camera, projector } = surfaceFixture();
+  const pointer = new FakePointerElement();
+  const document = new SurfaceDocument();
+  const controller = new SurfaceInputController({
+    element: element(pointer),
+    camera: () => camera,
+    projector,
+    document,
+    orbitControls: { enabled: true },
+    generatorId: 'chrome-crayon',
+    mode: 'draw',
+    hooks: { areaPosition: () => null },
+  });
+
+  pointer.dispatch('pointerdown', { pointerId: 3, clientX: 50, clientY: 50 });
+  pointer.dispatch('pointermove', { pointerId: 3, clientX: 80, clientY: 50 });
+  pointer.dispatch('pointerup', { pointerId: 3, clientX: 80, clientY: 50 });
+  assert.equal(document.snapshot.strokes.length, 0);
+  controller.dispose();
+  projector.dispose();
+});
+
 test('pointer cancellation removes only the active stroke', () => {
   const { camera, projector } = surfaceFixture();
   const pointer = new FakePointerElement();

@@ -9,8 +9,10 @@ import {
   bufferGeometryFromGnSoup,
   chromeCrayonAdapter,
   chromeCrayonCurvePayload,
+  chromeSigilCurvePayload,
   periodicBrushAdapter,
   periodicCurvePayload,
+  projectChromeSigilSoup,
   stampAdapter,
   stampsAlongProjectedStroke,
   typewriterAdapter,
@@ -65,6 +67,19 @@ test('flattens Chrome Crayon by arc length then wraps soup over projected normal
   // Halfway along + one unit lateral (+Y) + half unit normal (+Z).
   assert.deepEqual([...result.positions].map((value) => Number(value.toFixed(5))), [2, 3, 3.5]);
   assert.deepEqual([...result.normals], [0, 0, 1]);
+});
+
+test('normalizes unique-sigil input and places the evaluated motif in its surface frame', () => {
+  const stroke = projectedStroke(1, [[-1, -0.5, 0], [1, 0.5, 0]]);
+  const { curves, layout } = chromeSigilCurvePayload([stroke], null);
+  const xs = curves[0].points.map((point) => point[0]);
+  assert.equal(Math.max(...xs) - Math.min(...xs), 96);
+
+  const result = soup([0, 0, 0, 96, 48, 4]);
+  projectChromeSigilSoup(result, layout, []);
+  assert.ok([...result.positions].every(Number.isFinite));
+  assert.ok(result.positions[3] > result.positions[0]);
+  assert.ok(result.positions[5] > result.positions[2]);
 });
 
 test('creates ordinary indexed BufferGeometry and retains draw groups', () => {

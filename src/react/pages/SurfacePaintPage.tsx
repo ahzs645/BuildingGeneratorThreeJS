@@ -1,96 +1,270 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import type { LibraryShapeInfo } from "../../base-shape-catalog";
+import { listLibraryShapes } from "../../base-shape-catalog";
+import type { SurfaceGeneratorId } from "../../surface-studio/contracts";
+import { surfaceGenerator } from "../../surface-studio/generator-catalog";
+import type {
+  SurfacePainterStudioSnapshot,
+  SurfacePainterToolHandle,
+} from "../../surface-painter/main";
 import { chromeCrayonEditorConfig } from "../geometry-nodes/chrome-crayon-editor";
-import { useToolRuntime } from "../page-runtime";
-import { StudioOverlay, StudioPanelHeader, StudioShell, useMobileStudio } from "../studio/StudioShell";
-import "./crayon-compare.css";
+import { useToolController, useToolRuntime } from "../page-runtime";
+import { StudioPanelHeader, StudioShell, useMobileStudio } from "../studio/StudioShell";
+import { BlenderBrushOptions } from "./surface-studio/BlenderBrushOptions";
+import { SurfaceProjectionPanel } from "./surface-studio/SurfaceProjectionPanel";
+import { SurfaceToolSelector } from "./surface-studio/SurfaceToolSelector";
+import { SurfaceWorkspaceToolbar } from "./surface-studio/SurfaceWorkspaceToolbar";
 import "./surface-painter.css";
-import "./surface-draw.css";
 import "./putty-lab.css";
 
+const loadSurfacePainter = () => import("../../surface-painter/main");
+const loadPuttyLab = () => import("../../putty-lab");
 const GeometryNodesEditor = lazy(() => import("../geometry-nodes/GeometryNodesEditor"));
 
-const loadSurfacePainter = () => import("../../surface-painter/main");
-const loadSurfaceDraw = () => import("../../surface-draw");
-const loadPuttyLab = () => import("../../putty-lab");
-
-type Engine = "procedural" | "blender" | "putty";
+const EMPTY_SNAPSHOT: SurfacePainterStudioSnapshot = {
+  activeTool: "ivy",
+  interactionMode: "draw",
+  modelPreset: "Sphere",
+  referenceObject: "",
+  projectionTarget: { kind: "pick" },
+  projectionTargets: [
+    { value: "__pick__", label: "Pick mesh in viewport" },
+    { value: "__all__", label: "All visible meshes" },
+  ],
+  canUndo: false,
+  canClear: false,
+  hasDrawingArea: false,
+  areaCommitted: false,
+  areaContact: false,
+  areaClosestContactDistance: null,
+  areaSize: 2.4,
+  projectionHeight: 0.85,
+  projectionContactDepth: 0.18,
+  projectionContactSoftness: 0.18,
+  projectionMaxAngle: 72,
+  projectionSurfaceOffset: 0.016,
+  selectorLayers: [{ id: "selector-1", name: "Selector 1", operation: "replace", visible: true, locked: false }],
+  activeSelectorId: "selector-1",
+  contactLocked: false,
+  clothEnabled: false,
+  clothSag: 0.12,
+  drapeStretch: 0.15,
+  drapeIterations: 8,
+  areaPosition: [0, 0, 0],
+  areaRotation: [0, 0, 0],
+  areaScale: [1, 1, 1],
+  placementHover: null,
+  gizmoSpace: "local",
+  gizmoSnap: false,
+  strokeCount: 0,
+  surfaceRevision: 0,
+};
 
 /**
- * The unified surface-painting studio. One route hosts both engines:
- *  - Procedural painter: the merged WebGPU app (ivy, banyan tree, crystals,
- *    molten fissures, aurora silk, bioluminescent reef) with shared model
- *    presets, .glb import, and studio look controls.
- *  - Blender brush lab: the GN-VM parity tool that evaluates Blender-authored
- *    brushes (Chrome Crayon, Periodic Brush) along your projected stroke.
- * Switching engines navigates the query string; useToolRuntime disposes and
- * restarts only the renderer while the shared shell stays mounted.
+ * `/paint` now owns one persistent renderer/model/camera. Query parameters are
+ * only deep-link state; changing a generator never chooses another runtime.
  */
 export default function SurfacePaintPage(): React.JSX.Element {
   const { search } = useLocation();
-  const requestedEngine = new URLSearchParams(search).get("engine");
-  const engine: Engine = requestedEngine === "blender" || requestedEngine === "putty" ? requestedEngine : "procedural";
-  useToolRuntime(
-    engine === "blender" ? "Surface Painting Studio · Blender brush lab"
-      : engine === "putty" ? "Bubble Putty · editable Blender Geometry Nodes"
-        : "Surface Painting Studio · three.js WebGPU",
-    engine === "blender" ? loadSurfaceDraw : engine === "putty" ? loadPuttyLab : loadSurfacePainter,
-  );
-  return engine === "blender" ? <BlenderBrushLab /> : engine === "putty" ? <BubblePuttyLab /> : <ProceduralPainter />;
+  if (new URLSearchParams(search).get("engine") === "putty") return <BubblePuttyLab />;
+  return <PersistentSurfaceStudio initialTool={toolFromSearch(search)} />;
 }
 
-/** The engine switch is a kit segmented control living in the toolbar. */
-function EngineSwitch({ engine }: { engine: Engine }): React.JSX.Element {
-  return (
-    <nav className="st-segmented paint-engine-switch" aria-label="Painting engine">
-      <Link to="/paint" aria-current={engine === "procedural" ? "page" : undefined}>Procedural painter</Link>
-      <Link to="/paint?engine=blender" aria-current={engine === "blender" ? "page" : undefined}>Blender brush lab</Link>
-      <Link to="/paint?engine=putty" aria-current={engine === "putty" ? "page" : undefined}>Bubble Putty</Link>
-    </nav>
+function PersistentSurfaceStudio({ initialTool }: { initialTool: SurfaceGeneratorId }): React.JSX.Element {
+  const navigate = useNavigate();
+  const isMobile = useMobileStudio();
+  const controller = useToolController<SurfacePainterToolHandle>(
+    "Surface Painting Studio",
+    loadSurfacePainter,
+    "persistent-surface-studio",
   );
+  const [snapshot, setSnapshot] = useState<SurfacePainterStudioSnapshot>(() => ({
+    ...EMPTY_SNAPSHOT,
+    activeTool: initialTool,
+  }));
+  const [references, setReferences] = useState<readonly LibraryShapeInfo[]>([]);
+  const [graphOpen, setGraphOpen] = useState(false);
+  const [graphMaximized, setGraphMaximized] = useState(false);
+
+  useEffect(() => controller?.subscribe(setSnapshot), [controller]);
+  useEffect(() => {
+    let cancelled = false;
+    void listLibraryShapes().then((items) => {
+      if (!cancelled) setReferences(items);
+    }).catch(() => { /* primitives and imports remain available */ });
+    return () => { cancelled = true; };
+  }, []);
+  useEffect(() => {
+    if (!graphOpen) return;
+    const frame = window.requestAnimationFrame(() => window.dispatchEvent(new CustomEvent(chromeCrayonEditorConfig.events.resize)));
+    return () => window.cancelAnimationFrame(frame);
+  }, [graphMaximized, graphOpen]);
+
+  const selectTool = (tool: SurfaceGeneratorId): void => {
+    if (tool !== "chrome-crayon") {
+      setGraphOpen(false);
+      setGraphMaximized(false);
+    }
+    setSnapshot((current) => ({ ...current, activeTool: tool }));
+    navigate(toolHref(tool), { replace: true });
+    void controller?.setActiveTool(tool);
+  };
+
+  const activeTool = snapshot.activeTool;
+  const descriptor = surfaceGenerator(activeTool);
+  const blender = descriptor.family === "blender";
+  const leftDock = <>
+    <StudioPanelHeader title="Generators & brushes" meta="One surface document" />
+    <SurfaceToolSelector activeTool={activeTool} onSelect={selectTool} ariaControls="surface-active-options" />
+    {/* buildGui keeps its internal generator controller here so existing
+        procedural option bindings remain live; the duplicate rail is hidden. */}
+    <div id="surface-painter-generator-dock" className="surface-painter-generator-dock" hidden />
+  </>;
+  const rightDock = <>
+    <StudioPanelHeader title="Generator options" meta="Active settings" className="paint-node-tabs" />
+    {blender && controller && <SurfaceProjectionPanel controller={controller} snapshot={snapshot} />}
+    <section className="surface-active-generator-context" aria-live="polite">
+      <span aria-hidden="true">{descriptor.code}</span>
+      <div><small>{descriptor.family === "blender" ? "Projected Blender brush" : "Procedural generator"}</small><strong>{descriptor.label}</strong><p>{descriptor.description}</p></div>
+    </section>
+    <div id="surface-active-options" className="surface-active-options">
+      <div id="surface-painter-gui-dock" className="surface-painter-gui-dock" hidden={blender} />
+      {blender && controller && <BlenderBrushOptions tool={activeTool} controller={controller} references={references} />}
+      {blender && !controller && <div className="st-section"><span className="st-muted">Preparing shared brush runtime…</span></div>}
+      {activeTool === "chrome-crayon" && !isMobile && <div className="st-section"><button className="st-btn" type="button" onClick={() => setGraphOpen((open) => !open)}>{graphOpen ? "Hide Geometry Nodes" : "Show Geometry Nodes"}</button><p className="surface-edit-hint">Graph edits re-evaluate Chrome Crayon on the same shared surface.</p></div>}
+    </div>
+  </>;
+
+  const nodeDock = !isMobile && graphOpen && (
+    <section className={`st-node-dock ${graphMaximized ? "maximized" : ""}`}>
+      <header>
+        <b>Geometry Nodes</b>
+        <small>Chrome Crayon · live shared-brush graph</small>
+        <div>
+          <button className="st-btn" type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Full screen"}</button>
+          <button className="st-btn" type="button" onClick={() => { setGraphMaximized(false); setGraphOpen(false); }}>Collapse</button>
+        </div>
+      </header>
+      <Suspense fallback={<div className="route-loading">Loading node editor…</div>}>
+        <GeometryNodesEditor config={chromeCrayonEditorConfig} onDumpChange={(dump) => { void controller?.setChromeCrayonDump(dump); }} />
+      </Suspense>
+    </section>
+  );
+
+  return <StudioShell
+    className="surface-painter-page persistent-surface-studio"
+    leftDock={leftDock}
+    rightDock={rightDock}
+    sheetTabs={[
+      { id: "generators", label: "Generators", content: leftDock },
+      { id: "options", label: "Options", content: rightDock },
+    ]}
+    toolbar={<SurfaceWorkspaceToolbar controller={controller} snapshot={snapshot} references={references} />}
+    nodeDock={nodeDock}
+    status={<>
+      <span id="paint-status" className="st-state busy"><span className="st-dot" /><span data-status-text>{controller ? `${descriptor.label} ready on the shared surface` : "Starting the shared surface…"}</span></span>
+      <span className="st-spacer" />
+      {!isMobile && <span className="st-muted">{snapshot.strokeCount} projected stroke{snapshot.strokeCount === 1 ? "" : "s"} · surface revision {snapshot.surfaceRevision}</span>}
+      <span id="paint-metrics" className="st-muted" />
+    </>}
+  >
+    <div id="surface-painter-app" />
+    <SurfaceInitialSelectorHud snapshot={snapshot} />
+    <div id="drawFrame" />
+    {/* App keeps these binding targets for its procedural modes. The shared
+        toolbar is the only visible interaction control. */}
+    <div className="paint-mode-bar" hidden aria-hidden="true">
+      <button id="modeBtn" type="button"><span className="dot" /><span className="label">Draw mode</span><span className="key">D</span></button>
+      <button id="flowerModeBtn" type="button" aria-pressed="false"><span className="dot" /><span className="label">Flower brush</span></button>
+    </div>
+    <div id="toast" role="status" aria-live="polite" />
+  </StudioShell>;
+}
+
+function SurfaceInitialSelectorHud({ snapshot }: { snapshot: SurfacePainterStudioSnapshot }): React.JSX.Element {
+  const visible = snapshot.interactionMode === "place-area" && !snapshot.hasDrawingArea;
+  const hover = snapshot.placementHover;
+  const target = snapshot.projectionTargets.find((option) => option.value === (
+    snapshot.projectionTarget.kind === "mesh"
+      ? snapshot.projectionTarget.targetId
+      : snapshot.projectionTarget.kind === "all" ? "__all__" : "__pick__"
+  ));
+  return <div className="surface-initial-selector-hud" data-hit={hover?.hit ? "true" : "false"} hidden={!visible}>
+    <div
+      className="surface-initial-selector-reticle"
+      style={{ left: hover?.x ?? "50%", top: hover?.y ?? "50%" }}
+    >
+      <i className="surface-initial-selector-grid" />
+      <i className="surface-initial-selector-center" />
+      <span>CHROME CRAYON · {hover?.hit ? hover.label : target?.label ?? "SURFACE"} · PLACE AREA</span>
+    </div>
+  </div>;
+}
+
+const PROCEDURAL_TOOL_MODE: Readonly<Partial<Record<SurfaceGeneratorId, string>>> = {
+  ivy: "ivy",
+  tree: "tree",
+  crystals: "crystals",
+  molten: "fissures",
+  aurora: "aurora",
+  reef: "reef",
+};
+
+const BLENDER_TOOL_BRUSH: Readonly<Partial<Record<SurfaceGeneratorId, string>>> = {
+  "chrome-crayon": "crayon",
+  "periodic-brush": "periodic",
+  typewriter: "text",
+  stamp: "stamp",
+};
+
+function toolHref(tool: SurfaceGeneratorId): string {
+  const mode = PROCEDURAL_TOOL_MODE[tool];
+  return mode ? `/paint?mode=${mode}` : `/paint?engine=blender&brush=${BLENDER_TOOL_BRUSH[tool] ?? "crayon"}`;
+}
+
+function toolFromSearch(search: string): SurfaceGeneratorId {
+  const params = new URLSearchParams(search);
+  if (params.get("engine") === "blender") {
+    const brush = params.get("brush");
+    if (brush === "periodic") return "periodic-brush";
+    if (brush === "text") return "typewriter";
+    if (brush === "stamp") return "stamp";
+    return "chrome-crayon";
+  }
+  const mode = params.get("mode");
+  if (mode === "tree") return "tree";
+  if (mode === "crystals") return "crystals";
+  if (mode === "fissures") return "molten";
+  if (mode === "aurora") return "aurora";
+  if (mode === "reef") return "reef";
+  return "ivy";
 }
 
 function BubblePuttyLab(): React.JSX.Element {
+  useToolRuntime("Bubble Putty · editable Blender Geometry Nodes", loadPuttyLab);
   const leftDock = <>
     <StudioPanelHeader title="Bubble Putty" meta="Blobs + pipe fixture" />
     <div className="st-section">
       <div className="st-section-title">Input form</div>
-      <div className="st-segmented">
-        <button id="putty-blob-fixture" className="active" type="button">Putty blobs</button>
-        <button id="putty-pipe-fixture" type="button">Three pipes</button>
-      </div>
+      <div className="st-segmented"><button id="putty-blob-fixture" className="active" type="button">Putty blobs</button><button id="putty-pipe-fixture" type="button">Three pipes</button></div>
       <button id="putty-lock-pipe" className="st-btn" type="button" disabled>Lock selected pipe as anchor</button>
       <button id="putty-move-pipes" className="st-btn" type="button" disabled>Move pipes</button>
       <div id="putty-anchor-state" className="putty-anchor-state">Blob authoring · choose Three pipes to test a locked surface</div>
     </div>
     <div className="st-section">
       <div className="st-section-title">Base object</div>
-      <select id="putty-base-select" className="st-select" defaultValue="">
-        <option value="">None · putty from blobs only</option>
-      </select>
-      <div className="st-btn-row st-btn-row-even">
-        <button id="putty-base-import" className="st-btn" type="button">Import shape…</button>
-        <button id="putty-base-clear" className="st-btn" type="button" disabled>Clear</button>
-      </div>
+      <select id="putty-base-select" className="st-select" defaultValue=""><option value="">None · putty from blobs only</option></select>
+      <div className="st-btn-row st-btn-row-even"><button id="putty-base-import" className="st-btn" type="button">Import shape…</button><button id="putty-base-clear" className="st-btn" type="button" disabled>Clear</button></div>
       <input id="putty-base-file" type="file" accept=".glb,.gltf,.obj,.stl,.ply,.fbx" hidden />
       <p id="putty-base-state" className="putty-hint">Pick a reference object or import any shape — it joins the putty body and blobs snap onto its surface.</p>
     </div>
     <div className="st-section">
       <div className="st-section-title">1 · Interaction</div>
-      <div className="st-segmented">
-        <button id="putty-orbit" type="button">Orbit</button>
-        <button id="putty-move" className="active" type="button">Move putty</button>
-        <button id="putty-add-mode" type="button">Place putty</button>
-      </div>
-      <p id="putty-interaction-hint" className="putty-hint">Select and drag a blob to reshape the shared putty body. Orbit, then return to Move putty to reposition blobs in another screen plane.</p>
-      <div className="st-btn-row st-btn-row-even">
-        <button id="putty-add" className="st-btn-primary" type="button">Add putty</button>
-        <button id="putty-duplicate" className="st-btn" type="button">Duplicate</button>
-      </div>
-      <div className="st-btn-row st-btn-row-even">
-        <button id="putty-delete" className="st-btn" type="button">Delete selected</button>
-        <button id="putty-reset" className="st-btn" type="button">Reset</button>
-      </div>
+      <div className="st-segmented"><button id="putty-orbit" type="button">Orbit</button><button id="putty-move" className="active" type="button">Move putty</button><button id="putty-add-mode" type="button">Place putty</button></div>
+      <p id="putty-interaction-hint" className="putty-hint">Select and drag a blob to reshape the shared putty body.</p>
+      <div className="st-btn-row st-btn-row-even"><button id="putty-add" className="st-btn-primary" type="button">Add putty</button><button id="putty-duplicate" className="st-btn" type="button">Duplicate</button></div>
+      <div className="st-btn-row st-btn-row-even"><button id="putty-delete" className="st-btn" type="button">Delete selected</button><button id="putty-reset" className="st-btn" type="button">Reset</button></div>
       <label className="st-row"><span id="putty-size-label">Blob size</span><input id="putty-radius" type="range" min=".4" max="4.5" step=".05" defaultValue="2.4" /><output id="putty-radius-output">2.40</output></label>
     </div>
     <div className="st-section">
@@ -98,360 +272,10 @@ function BubblePuttyLab(): React.JSX.Element {
       <label className="st-row"><span>Puttiness</span><input id="putty-puttiness" type="range" min="0" max="1" step=".01" defaultValue=".635" /><output id="putty-puttiness-output">0.64</output></label>
       <label className="st-row"><span>Soften</span><input id="putty-soften" type="range" min="0" max="10" step="1" defaultValue="5" /><output id="putty-soften-output">5</output></label>
       <label className="st-row"><span>Max bubble</span><input id="putty-max-bubble" type="range" min=".25" max="3" step=".01" defaultValue="1.456" /><output id="putty-max-bubble-output">1.46</output></label>
-      <button id="putty-rebuild" className="st-btn-primary" type="button">Rebuild Blender putty</button>
-      <button id="putty-preview" className="st-btn" type="button">Return to interactive preview</button>
-      <p className="putty-hint">The live metaball preview stays responsive while editing. Rebuild runs the complete extracted Bubble Putty graph when the arrangement is ready.</p>
+      <button id="putty-rebuild" className="st-btn-primary" type="button">Rebuild Blender putty</button><button id="putty-preview" className="st-btn" type="button">Return to interactive preview</button>
     </div>
-    <div className="st-section">
-      <div className="st-section-title">Putty document</div>
-      <div className="st-metric"><strong id="putty-count">3 putty blobs</strong><span id="putty-selection">Blob selected</span></div>
-      <small id="putty-runtime" className="putty-runtime">Interactive field preview · exact graph not evaluated yet</small>
-    </div>
+    <div className="st-section"><div className="st-section-title">Putty document</div><div className="st-metric"><strong id="putty-count">3 putty blobs</strong><span id="putty-selection">Blob selected</span></div><small id="putty-runtime" className="putty-runtime">Interactive field preview</small></div>
   </>;
-
-  const rightDock = <>
-    <StudioPanelHeader title="Blender source" meta="53-node root" />
-    <div className="st-section">
-      <img className="putty-reference" src={`${import.meta.env.BASE_URL}dojo/references/joints/bubble-putty-authored.png`} alt="Blender-authored Bubble Putty reference" />
-      <p className="st-finding">The source group wraps one shared putty envelope around a collection of movable mesh forms. The three-pipe fixture uses the original collection contract: lock one pipe as the reference surface, move the other two, then rebuild the molded joint.</p>
-      <Link className="st-btn putty-open-graph" to="/?asset=joint-bubble-putty">Open full node graph in Studio</Link>
-    </div>
-    <div className="st-section">
-      <div className="st-chip warn">The immediate preview is an authoring proxy. “Rebuild Blender putty” evaluates the extracted Geometry Nodes graph and replaces it with the authored result.</div>
-    </div>
-  </>;
-
-  return <StudioShell
-    className="putty-shell"
-    leftDock={leftDock}
-    rightDock={rightDock}
-    toolbar={<><EngineSwitch engine="putty" /><span className="st-spacer" /><span>move: drag blob · place: click canvas · orbit: drag canvas</span></>}
-    status={<span id="putty-status" className="st-state busy">
-      <span className="st-dot" />
-      <span data-status-text>Move a blob or add more putty</span>
-    </span>}
-  >
-    <canvas id="putty-canvas" />
-    <div className="putty-canvas-help" aria-hidden="true"><b>BUBBLE PUTTY</b><span id="putty-canvas-help-text">editable source blobs · one shared body</span></div>
-  </StudioShell>;
-}
-
-/**
- * The WebGPU painter builds its own lil-gui panel, so the shell hands it a
- * bare viewport rather than docks it would duplicate. Its guidance and runtime
- * readout go in the shell's status bar like every other tool's — this engine
- * used to be the only one in the app with no status bar, carrying both in a
- * floating in-viewport panel instead.
- */
-function ProceduralPainter(): React.JSX.Element {
-  const isMobile = useMobileStudio();
-  const leftDock = <>
-    <StudioPanelHeader title="Generators" meta="Choose a tool" />
-    <div id="surface-painter-generator-dock" className="surface-painter-generator-dock" />
-  </>;
-  // buildGui() mounts the painter's lil-gui into this container, so the panel
-  // is an inspector column instead of a sheet floating over the paint target.
-  const rightDock = <>
-    <StudioPanelHeader title="Generator options" meta="Active settings" className="paint-node-tabs" />
-    <div id="surface-painter-gui-dock" className="surface-painter-gui-dock" />
-  </>;
-  return (
-    <StudioShell
-      className="surface-painter-page"
-      leftDock={leftDock}
-      rightDock={rightDock}
-      sheetTabs={[
-        { id: "generators", label: "Generators", content: leftDock },
-        { id: "options", label: "Options", content: rightDock },
-      ]}
-      toolbar={<><EngineSwitch engine="procedural" />{!isMobile && <><span className="st-spacer" /><span>D toggles draw / orbit</span></>}</>}
-      status={<>
-        <span id="paint-status" className="st-state busy">
-          <span className="st-dot" />
-          <span data-status-text>Starting the procedural painter…</span>
-        </span>
-        <span className="st-spacer" />
-        <span id="paint-metrics" className="st-muted" />
-      </>}
-    >
-      <div id="surface-painter-app" />
-      <div id="drawFrame" />
-      {/* One centred row, not two absolutely-positioned pills offset by a magic
-          112px: the labels are generator-dependent ("Flower brush" / "Fig
-          brush", "Draw mode" / "Interact mode") and the fixed offset made them
-          overlap by ~30px. A flex row also re-centres the mode pill on its own
-          when the brush pill is hidden. */}
-      <div className="paint-mode-bar">
-        <button id="modeBtn" type="button" aria-label="Toggle the active painting interaction mode">
-          <span className="dot" />
-          <span className="label">Draw mode</span>
-          <span className="key">D</span>
-        </button>
-        <button id="flowerModeBtn" type="button" aria-pressed="false" hidden>
-          <span className="dot" />
-          <span className="label">Flower brush</span>
-        </button>
-      </div>
-      <div id="toast" role="status" aria-live="polite" />
-    </StudioShell>
-  );
-}
-
-function BlenderBrushLab(): React.JSX.Element {
-  const isMobile = useMobileStudio();
-  const [graphOpen, setGraphOpen] = useState(false);
-  const [graphMaximized, setGraphMaximized] = useState(false);
-
-  useEffect(() => {
-    if (!graphMaximized) return;
-    const restore = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") setGraphMaximized(false);
-    };
-    window.addEventListener("keydown", restore);
-    return () => window.removeEventListener("keydown", restore);
-  }, [graphMaximized]);
-  useEffect(() => {
-    if (!graphOpen) return;
-    const frame = window.requestAnimationFrame(() => window.dispatchEvent(new CustomEvent(chromeCrayonEditorConfig.events.resize)));
-    return () => window.cancelAnimationFrame(frame);
-  }, [graphMaximized, graphOpen]);
-
-  const closeGraph = (): void => {
-    setGraphMaximized(false);
-    setGraphOpen(false);
-  };
-
-  const leftDock = <>
-    <StudioPanelHeader title="Brush lab" />
-    <div className="st-section">
-      <div className="st-section-title">1 · Surface</div>
-      <label className="st-dropzone surface-upload">
-        <input id="surface-file" type="file" accept=".glb,.gltf,.obj,.stl,.ply,.fbx,model/gltf-binary,model/gltf+json" />
-        <b>Upload GLB, GLTF, OBJ, STL, PLY, or FBX</b>
-        <span id="surface-file-name">Using generated demo surface</span>
-      </label>
-      <div className="st-btn-row st-btn-row-even">
-        <button id="surface-demo" className="st-btn" type="button">Curved demo</button>
-        <button id="surface-flat" className="st-btn" type="button">Flat canvas</button>
-      </div>
-      <button id="surface-sample" className="st-btn" type="button">Sample GLB</button>
-      <label className="surface-target-picker">
-        <span>Reference object</span>
-        <select id="surface-library" className="st-select" defaultValue="">
-          <option value="">Choose from the ported library…</option>
-        </select>
-      </label>
-      <label className="surface-target-picker">
-        <span>Projection target</span>
-        <select id="surface-target" className="st-select" defaultValue="__pick__">
-          <option value="__pick__">Pick mesh when placing area</option>
-          <option value="__all__">All visible meshes</option>
-        </select>
-        <button id="surface-target-pick" className="st-btn surface-target-pick" type="button">Pick target from viewport</button>
-        <small id="surface-target-summary">Click Select area, then choose a surface</small>
-      </label>
-    </div>
-    <div className="st-section">
-      <div className="st-section-title">2 · Interaction</div>
-      <div className="st-segmented" title="Select an area and click the model to place a local drawing patch. Draw samples are restricted to that patch and raycast onto the mesh.">
-        <button id="surface-orbit" type="button">Orbit</button>
-        <button id="surface-area" type="button">Select area</button>
-        <button id="surface-draw" className="active" type="button">Draw</button>
-        <button id="surface-select" type="button">Select / move</button>
-      </div>
-      <p className="surface-edit-hint">Draw a stroke, then select it to move the whole shape. Click a visible control point to reshape it.</p>
-      <div className="surface-area-transform" aria-label="Drawing area transform">
-        <span>Yellow selector</span>
-        <fieldset className="surface-selector-fields">
-          <legend>Selector layers</legend>
-          <label className="st-row"><span>Active selector</span><select id="surface-selector-list" className="st-select" defaultValue="selector-1"><option value="selector-1">Selector 1</option></select></label>
-          <label className="st-row"><span>Mask operation</span><select id="surface-mask-operation" className="st-select" defaultValue="replace"><option value="replace">Replace</option><option value="add">Add</option><option value="subtract">Subtract</option><option value="intersect">Intersect</option></select></label>
-          <div className="st-btn-row st-btn-row-even">
-            <button id="surface-selector-new" className="st-btn" type="button">New selector</button>
-            <button id="surface-selector-delete" className="st-btn" type="button">Delete selector</button>
-          </div>
-          <div className="st-btn-row st-btn-row-even">
-            <label className="st-row"><span>Visible</span><input id="surface-selector-visible" type="checkbox" defaultChecked /></label>
-            <label className="st-row"><span>Transform lock</span><input id="surface-selector-locked" type="checkbox" /></label>
-          </div>
-          <small>Every visible selector remains in the viewport. Choose one layer to edit its transform and mask.</small>
-        </fieldset>
-        <div className="st-segmented">
-          <button id="surface-gizmo-move" className="active" type="button" title="Move drawing area (G)">Move · G</button>
-          <button id="surface-gizmo-rotate" type="button" title="Rotate drawing area (R)">Rotate · R</button>
-          <button id="surface-gizmo-scale" type="button" title="Scale drawing area (S)">Scale · S</button>
-        </div>
-        <div className="st-btn-row st-btn-row-even">
-          <label className="st-row"><span>Snap</span><input id="surface-area-snap" type="checkbox" /></label>
-          <label className="st-row"><span>Space</span><select id="surface-area-space" className="st-select" defaultValue="local"><option value="local">Local</option><option value="world">World</option></select></label>
-        </div>
-        <fieldset className="surface-vector-fields">
-          <legend>Transform</legend>
-          <div className="surface-vector-row">
-            <span>Position</span>
-            <label><b>X</b><input id="surface-area-position-x" className="st-input" type="number" step="0.01" defaultValue="0" aria-label="Selector position X" /></label>
-            <label><b>Y</b><input id="surface-area-position-y" className="st-input" type="number" step="0.01" defaultValue="0" aria-label="Selector position Y" /></label>
-            <label><b>Z</b><input id="surface-area-position-z" className="st-input" type="number" step="0.01" defaultValue="0" aria-label="Selector position Z" /></label>
-          </div>
-          <div className="surface-vector-row">
-            <span>Rotation</span>
-            <label><b>X</b><input id="surface-area-rotation-x" className="st-input" type="number" step="0.1" defaultValue="0" aria-label="Selector rotation X in degrees" /></label>
-            <label><b>Y</b><input id="surface-area-rotation-y" className="st-input" type="number" step="0.1" defaultValue="0" aria-label="Selector rotation Y in degrees" /></label>
-            <label><b>Z</b><input id="surface-area-rotation-z" className="st-input" type="number" step="0.1" defaultValue="0" aria-label="Selector rotation Z in degrees" /></label>
-          </div>
-          <div className="surface-vector-row">
-            <span>Scale</span>
-            <label><b>X</b><input id="surface-area-scale-x" className="st-input" type="number" min="0.01" step="0.01" defaultValue="1" aria-label="Selector scale X" /></label>
-            <label><b>Y</b><input id="surface-area-scale-y" className="st-input" type="number" min="0.01" step="0.01" defaultValue="1" aria-label="Selector scale Y" /></label>
-            <label><b>Z</b><input id="surface-area-scale-z" className="st-input" type="number" min="0.01" step="0.01" defaultValue="1" aria-label="Selector scale Z" /></label>
-          </div>
-          <div className="st-btn-row st-btn-row-even surface-transform-actions">
-            <button id="surface-area-apply-transform" className="st-btn" type="button">Apply values</button>
-            <button id="surface-area-reset-transform" className="st-btn" type="button">Reset transform</button>
-          </div>
-        </fieldset>
-        <label className="st-row surface-projection-height"><span>Push depth</span><input id="surface-projection-height" type="range" min="-2.5" max="2.5" step="0.05" defaultValue="0.85" /><output id="surface-projection-height-output">0.85</output></label>
-        <fieldset className="surface-contact-fields">
-          <legend>Contact + drape</legend>
-          <label className="st-row"><span>Contact softness</span><input id="surface-contact-softness" type="range" min="0" max="1" step="0.01" defaultValue="0.18" /><output id="surface-contact-softness-output">0.18</output></label>
-          <label className="st-row"><span>Contact depth</span><input id="surface-contact-depth" type="range" min="0.01" max="0.75" step="0.01" defaultValue="0.08" /><output id="surface-contact-depth-output">0.08</output></label>
-          <label className="st-row"><span>Max surface angle</span><input id="surface-max-angle" type="range" min="0" max="90" step="1" defaultValue="72" /><output id="surface-max-angle-output">72°</output></label>
-          <label className="st-row"><span>Drape stretch</span><input id="surface-drape-stretch" type="range" min="0" max="1" step="0.01" defaultValue="0.15" /><output id="surface-drape-stretch-output">0.15</output></label>
-          <label className="st-row"><span>Solver iterations</span><input id="surface-drape-iterations" type="range" min="1" max="32" step="1" defaultValue="8" /><output id="surface-drape-iterations-output">8</output></label>
-          <label className="st-row"><span>Lock contact mask</span><input id="surface-contact-lock" type="checkbox" /></label>
-          <button id="surface-contact-clear" className="st-btn" type="button">Clear active mask</button>
-          <label className="st-row"><span>Cloth relaxation</span><input id="surface-cloth-enabled" type="checkbox" /></label>
-          <label className="st-row"><span>Cloth sag / folds</span><input id="surface-cloth-sag" type="range" min="0" max="1" step="0.01" defaultValue="0.12" /><output id="surface-cloth-sag-output">0.12</output></label>
-        </fieldset>
-        <div className="st-btn-row st-btn-row-even">
-          <button id="surface-drop-area" className="st-btn surface-drop-area" type="button">First contact</button>
-          <button id="surface-push-through" className="st-btn" type="button">Push through</button>
-        </div>
-        <small>Unlocked contact follows the surface live, so raising the grid deselects it. Push through enables contact lock and preserves the swept near-side patch.</small>
-      </div>
-      <label className="st-row"><span>Area size</span><input id="surface-area-size" type="range" min="0.6" max="4" step="0.1" defaultValue="2.4" /><output id="surface-area-size-output">2.4</output></label>
-      <div className="st-btn-row st-btn-row-even">
-        <button id="surface-undo" className="st-btn" type="button">Undo stroke</button>
-        <button id="surface-undo-area" className="st-btn" type="button">Undo selector</button>
-      </div>
-      <div className="st-btn-row st-btn-row-even">
-        <button id="surface-clear" className="st-btn" type="button">Clear strokes</button>
-        <button id="surface-clear-area" className="st-btn" type="button">Remove selector</button>
-      </div>
-      <button id="surface-area-doodle" className="st-btn" type="button">Add demo doodle inside area</button>
-      <button id="surface-parity-path" className="st-btn" type="button">Load fixed Blender parity path</button>
-      <button id="surface-curved-parity-path" className="st-btn" type="button">Load same curved Blender test</button>
-    </div>
-    <div className="st-section">
-      <div className="st-section-title">3 · Blender brush</div>
-      <select id="surface-brush" className="st-select" defaultValue="crayon"><option value="crayon">Chrome Crayon</option><option value="periodic">Periodic Brush</option><option value="text">Typewriter text</option><option value="stamp">Library stamp</option></select>
-      <div id="surface-text-controls" className="surface-controls" hidden>
-        <label className="st-row"><span>Text</span><input id="surface-text" type="text" defaultValue="NODE DOJO" /></label>
-        <label className="st-row"><span>Fit stroke</span><input id="surface-text-fit" type="checkbox" defaultChecked /></label>
-        <label className="st-row"><span>Text size</span><input id="surface-text-size" type="range" min="0.08" max="1.2" step="0.01" defaultValue="0.35" disabled /><output id="surface-text-size-output">0.35</output></label>
-        <label className="st-row"><span>Offset</span><input id="surface-text-offset" type="range" min="-1" max="1" step="0.02" defaultValue="0" /><output id="surface-text-offset-output">0.00</output></label>
-        <p className="surface-edit-hint">Draw a stroke on the model — the typewriter glyphs run along it, wrapped onto the surface. Fit stroke scales the text to the stroke; otherwise Text size sets the glyph height and Offset slides the baseline sideways.</p>
-      </div>
-      <div id="surface-stamp-controls" className="surface-controls" hidden>
-        <select id="surface-stamp-asset" className="st-select" defaultValue="">
-          <option value="">Choose a reference object…</option>
-        </select>
-        <label className="st-row"><span>Stamp size</span><input id="surface-stamp-size" type="range" min="0.1" max="1.5" step="0.02" defaultValue="0.45" /><output id="surface-stamp-size-output">0.45</output></label>
-        <label className="st-row"><span>Spacing</span><input id="surface-stamp-spacing" type="range" min="0.15" max="2" step="0.05" defaultValue="0.6" /><output id="surface-stamp-spacing-output">0.60</output></label>
-        <p className="surface-edit-hint">The chosen reference object repeats along each stroke, oriented to the surface. Heavy assets are capped to keep the viewport responsive.</p>
-      </div>
-      <div id="surface-periodic-controls" className="surface-controls" hidden>
-        <label className="st-row"><span>Spacing</span><input id="surface-spacing" type="range" min="0.12" max="1.2" step="0.01" defaultValue="0.38" /><output id="surface-spacing-output">0.38</output></label>
-        <label className="st-row"><span>Size</span><input id="surface-size" type="range" min="0.002" max="0.08" step="0.001" defaultValue="0.012" /><output id="surface-size-output">0.012</output></label>
-      </div>
-      <div id="surface-crayon-controls" className="surface-controls">
-        <select id="surface-crayon-preset" className="st-select" defaultValue="adapted"><option value="adapted">Drawn line · live GN-VM</option><option value="exact">Original seven-spline stamp · not the line</option></select>
-        <label className="st-row"><span>Thickness</span><input id="surface-thickness" type="range" min="0.6" max="30" step="0.1" defaultValue="6" /><output id="surface-thickness-output">6.0</output></label>
-        <label className="st-row"><span>Peak</span><input id="surface-peak" type="range" min="0.5" max="450" step="0.1" defaultValue="10" /><output id="surface-peak-output">10.0</output></label>
-        <label className="st-row"><span>Sigilize</span><input id="surface-sigilize" type="range" min="0" max="800" step="1" defaultValue="0" /><output id="surface-sigilize-output">0</output></label>
-        <label className="st-row" title="Smooths the generated volume boundary. Set to 0 only when comparing raw Blender parity topology."><span>Edge smoothing</span><input id="surface-soften" type="range" min="0" max="10" step="1" defaultValue="3" /><output id="surface-soften-output">3</output></label>
-        <label className="st-row"><span>Resolution</span><input id="surface-resolution" type="range" min="0.2" max="1" step="0.005" defaultValue="0.835" /><output id="surface-resolution-output">0.835</output></label>
-        <label className="st-row"><span>SPIRO</span><input id="surface-spiro" type="range" min="0" max="3" step="1" defaultValue="1" /><output id="surface-spiro-output">1</output></label>
-        <label className="st-row"><span>Extrude</span><input id="surface-extrude" type="range" min="0.1" max="3" step="0.1" defaultValue="1" /><output id="surface-extrude-output">1.0</output></label>
-        <label className="st-row st-row-wide"><span>Flatten stroke</span><input id="surface-flatten" type="checkbox" /></label>
-        <button id="surface-sigil" className="st-btn" type="button" title="Sigilize reconnects the stroke into a generated stamp; SPIRO changes its curve construction.">Auto-connect into a unique sigil</button>
-      </div>
-    </div>
-    <div className="st-section">
-      <div className="st-section-title">Evaluated stroke</div>
-      <div className="st-metric"><strong id="surface-points">0 projected points</strong><span id="surface-runtime">Draw a stroke to evaluate GN-VM</span></div>
-      <small id="surface-bounds" className="surface-bounds">Bounds appear after evaluation</small>
-    </div>
-  </>;
-
-  const rightDock = <>
-    <StudioPanelHeader title="Blender parity" />
-    <div className="st-section">
-      <div className="st-section-title">Flat parity</div>
-      <img className="surface-reference-image" src={`${import.meta.env.BASE_URL}dojo/references/crayon-flat-path.png`} alt="Blender render of the fixed flat Chrome Crayon path" />
-      <p className="st-finding">Same 7-point POLY curve and controls: 1,744 verts · 1,746 faces · evaluated positions match within 0.000006 Blender units.</p>
-    </div>
-    <div className="st-section">
-      <div className="st-section-title">Curved parity</div>
-      <img className="surface-reference-image" src={`${import.meta.env.BASE_URL}dojo/references/crayon-curved-path.png`} alt="Blender render of the fixed Chrome Crayon path wrapped onto the curved test surface" />
-      <p className="st-finding">Same generated mesh, path frames, and curved target used by the browser test.</p>
-    </div>
-    <div className="st-section">
-      <div className="st-chip warn">Drawn line evaluates your projected curve through GN-VM. The optional seven-spline stamp is a separate Blender reference asset, not the line you drew.</div>
-    </div>
-  </>;
-
-  const nodeEditor = <Suspense fallback={<div className="route-loading">Loading node editor…</div>}>
-    <GeometryNodesEditor config={chromeCrayonEditorConfig} />
-  </Suspense>;
-
-  return <StudioShell
-    className="surface-shell"
-    leftDock={leftDock}
-    rightDock={rightDock}
-    toolbar={<>
-      <EngineSwitch engine="blender" />
-      <span className="st-spacer" />
-      <span>drag to draw · wheel to zoom</span>
-      {!isMobile && <button className="st-btn" type="button" onClick={() => setGraphOpen((open) => !open)}>{graphOpen ? "Hide node editor" : "Show node editor"}</button>}
-    </>}
-    status={<span id="surface-status" className="st-state busy">
-      <span className="st-dot" />
-      <span data-status-text>Ready on the demo surface</span>
-    </span>}
-    nodeDock={!isMobile && graphOpen && <section className={`st-node-dock ${graphMaximized ? "maximized" : ""}`}>
-      <header>
-        <b>Geometry Nodes</b>
-        <small>Chrome Crayon · edits re-evaluate this canvas</small>
-        <div>
-          <button className="st-btn" type="button" onClick={() => setGraphMaximized((maximized) => !maximized)}>{graphMaximized ? "Restore" : "Full screen"}</button>
-          <button className="st-btn" type="button" onClick={closeGraph}>Collapse</button>
-        </div>
-      </header>
-      <div className="st-node-dock-body">{nodeEditor}</div>
-    </section>}
-  >
-    <canvas id="surface-canvas" />
-    <div id="surface-selection-hud" className="surface-selection-hud" data-hit="false" hidden aria-hidden="true">
-      <div id="surface-selection-reticle" className="surface-selection-reticle">
-        <span className="surface-selection-grid" />
-        <span className="surface-selection-center" />
-        <span id="surface-selection-label" className="surface-selection-label">CHROME CRAYON · PICK SURFACE</span>
-      </div>
-    </div>
-    <div id="surface-flat-overlay" className="surface-flat-overlay" data-empty="true" hidden aria-hidden="true">
-      <div className="surface-canvas-frame">
-        <i className="top-left" /><i className="top-right" />
-        <i className="bottom-left" /><i className="bottom-right" />
-      </div>
-      <div id="surface-brush-reticle" className="surface-brush-reticle">
-        <span className="surface-reticle-grid" />
-        <span className="surface-reticle-ring" />
-        <span id="surface-brush-label" className="surface-brush-label">Chrome Crayon · draw anywhere</span>
-      </div>
-      <span className="surface-canvas-empty-label">DRAW ON THE CANVAS</span>
-    </div>
-    {isMobile && !graphOpen && <button className="graph-toggle st-btn" type="button" onClick={() => setGraphOpen(true)}>Open node editor</button>}
-    {isMobile && graphOpen && <StudioOverlay title="Chrome Crayon · Geometry Nodes" onClose={closeGraph}>{nodeEditor}</StudioOverlay>}
-  </StudioShell>;
+  const rightDock = <><StudioPanelHeader title="Blender source" meta="53-node root" /><div className="st-section"><img className="putty-reference" src={`${import.meta.env.BASE_URL}dojo/references/joints/bubble-putty-authored.png`} alt="Blender-authored Bubble Putty reference" /><p className="st-finding">The source group wraps one shared putty envelope around a collection of movable mesh forms.</p><Link className="st-btn putty-open-graph" to="/?asset=joint-bubble-putty">Open full node graph in Studio</Link></div></>;
+  return <StudioShell className="putty-shell" leftDock={leftDock} rightDock={rightDock} toolbar={<><Link className="st-btn" to="/paint">Surface Painting Studio</Link><span className="st-spacer" /><span>move: drag blob · place: click canvas · orbit: drag canvas</span></>} status={<span id="putty-status" className="st-state busy"><span className="st-dot" /><span data-status-text>Move a blob or add more putty</span></span>}><canvas id="putty-canvas" /><div className="putty-canvas-help" aria-hidden="true"><b>BUBBLE PUTTY</b><span id="putty-canvas-help-text">editable source blobs · one shared body</span></div></StudioShell>;
 }

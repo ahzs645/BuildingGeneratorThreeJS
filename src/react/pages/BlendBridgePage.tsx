@@ -64,6 +64,7 @@ import {
   libraryAssetStats,
   type LibraryAsset,
 } from "../blend-studio/AssetLibrary";
+import { StudioRangeInput } from "../blend-studio/StudioRangeInput";
 import { useBlendStudioRuntime } from "../blend-studio/useBlendStudioRuntime";
 import { usePageRuntime } from "../page-runtime";
 import { useStudioStatusChips, type StudioTone } from "../studio/StudioChrome";
@@ -1046,13 +1047,13 @@ export default function BlendBridgePage(): React.JSX.Element {
   >
     <label className="st-row">
       <span>Frame</span>
-      <input
-        type="range"
+      <StudioRangeInput
+        label="Frame"
         min={animatedFrameRange[0]}
         max={animatedFrameRange[1]}
         step={1}
         value={animationFrame}
-        onChange={(event) => setAnimationFrame(Number(event.target.value))}
+        onValue={setAnimationFrame}
       />
       <output>{animationFrame}</output>
     </label>
@@ -1104,13 +1105,13 @@ export default function BlendBridgePage(): React.JSX.Element {
       </div>
       <label className="st-row">
         <span>Opening</span>
-        <input
-          type="range"
+        <StudioRangeInput
+          label="Opening"
           min={0}
           max={modeledCapacityMm}
           step={.05}
           value={Math.min(modeledCapacityMm, physicalMeasurementMm)}
-          onChange={(event) => setPhysicalMeasurementMm(Number(event.target.value))}
+          onValue={setPhysicalMeasurementMm}
         />
         <output>{Number.isFinite(displayedMeasurement) ? displayedMeasurement.toFixed(2) : "0"}</output>
       </label>
@@ -1246,15 +1247,16 @@ export default function BlendBridgePage(): React.JSX.Element {
       </div>
       {batteryControl && <label className="st-row">
         <span>Battery</span>
-        <input
-          type="range"
+        <StudioRangeInput
+          label="Battery"
           min={batteryControl.min}
           max={batteryControl.max}
           step={batteryControl.step}
           value={batteryValue}
-          onChange={(event) => setOverrides((current) => ({
+          preserveExactValue={!batteryControl.socketType.includes("Int")}
+          onValue={(value) => setOverrides((current) => ({
             ...current,
-            [batteryControl.identifier]: Number(event.target.value),
+            [batteryControl.identifier]: value,
           }))}
         />
         <output>{Math.round(batteryValue * 100)}%</output>
@@ -1287,14 +1289,15 @@ export default function BlendBridgePage(): React.JSX.Element {
           title={`${contract.groupName} · ${contract.nodeName} · the matching handle can also be dragged in the viewport`}
         >
           <span>{contract.rootInputName}</span>
-          <input
-            type="range"
+          <StudioRangeInput
+            label={contract.rootInputName}
             min={contract.min}
             max={contract.max}
             step={contract.step}
             value={value}
-            onChange={(event) => setOverrides((current) =>
-              setGizmoValue(current, contract, Number(event.target.value)))}
+            preserveExactValue
+            onValue={(next) => setOverrides((current) =>
+              setGizmoValue(current, contract, next))}
           />
           <output>{display}</output>
         </label>;
@@ -1333,13 +1336,14 @@ export default function BlendBridgePage(): React.JSX.Element {
                 onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: event.target.value }))}
               />
             : <>
-                <input
-                  type="range"
+                <StudioRangeInput
+                  label={control.name}
                   min={control.min}
                   max={control.max}
                   step={control.step}
                   value={Number(overrides[control.identifier] ?? control.value)}
-                  onChange={(event) => setOverrides((current) => ({ ...current, [control.identifier]: Number(event.target.value) }))}
+                  preserveExactValue={!control.socketType.includes("Int")}
+                  onValue={(value) => setOverrides((current) => ({ ...current, [control.identifier]: value }))}
                 />
                 <output>{Number(overrides[control.identifier] ?? control.value).toFixed(control.step === 1 ? 0 : 3)}</output>
               </>}

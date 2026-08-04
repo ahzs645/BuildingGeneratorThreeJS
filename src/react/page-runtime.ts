@@ -36,8 +36,10 @@ export function usePageRuntime(title: string): void {
 export function useToolController<Handle extends ToolHandle>(
   title: string,
   load: () => Promise<{ createTool(): Handle | Promise<Handle> }>,
+  restartKey?: unknown,
 ): Handle | null {
   const { search } = useLocation();
+  const resolvedRestartKey = restartKey === undefined ? search : restartKey;
   const [handle, setHandle] = useState<Handle | null>(null);
   useEffect(() => {
     document.title = title;
@@ -61,7 +63,7 @@ export function useToolController<Handle extends ToolHandle>(
       created = null;
       setHandle(null);
     };
-  }, [load, search, title]);
+  }, [load, resolvedRestartKey, title]);
   return handle;
 }
 

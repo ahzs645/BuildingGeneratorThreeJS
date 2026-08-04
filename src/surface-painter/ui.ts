@@ -106,6 +106,7 @@ export function buildGui(app: App): GUI {
   // ---------- shared: model + drawing ----------
 
   const fModel = gui.addFolder('Model');
+  fModel.domElement.classList.add('paint-shared-model-node');
   fModel
     .add(s, 'model', ['Sphere', 'Torus Knot', 'Box', 'Cylinder'] satisfies ModelKind[])
     .name('Preset')
@@ -131,6 +132,7 @@ export function buildGui(app: App): GUI {
   paintFolders.push(fModel);
 
   const fDraw = gui.addFolder('Drawing');
+  fDraw.domElement.classList.add('paint-shared-drawing-node');
   fDraw.add(s, 'drawMode').name('Draw mode (D)').listen().onChange(() => app.applyModes());
   fDraw.add({ undo: () => app.undoLast() }, 'undo').name('Undo last stroke');
   const clearController = fDraw.add({ clear: () => app.clearAll() }, 'clear').name('Clear all strokes');

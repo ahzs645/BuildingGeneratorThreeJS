@@ -193,6 +193,10 @@ export class App {
   private regrowCost = 0;
   private modeBtn: HTMLElement | null = null;
   private flowerModeBtn: HTMLButtonElement | null = null;
+  /** False while the shared studio input controller owns the canvas. */
+  private legacyAuthoringEnabled = true;
+  /** Shared toolbar target. Null means every visible mesh in the model root. */
+  private sharedProjectionTargetId: string | null = null;
   private disposed = false;
 
   /** Adaptive render scale: protect frame rate on Retina/4K displays, recover gradually. */
@@ -809,6 +813,26 @@ export class App {
     }
   }
 
+  /**
+   * Hand canvas input between the legacy procedural painter and the shared
+   * projected-brush controller without recreating the renderer or model.
+   */
+  setLegacyAuthoringEnabled(enabled: boolean): void {
+    this.legacyAuthoringEnabled = enabled;
+    this.applyModes();
+  }
+
+  /** Drive the procedural interaction from the shared Studio toolbar. */
+  setSharedInteractionMode(mode: 'orbit' | 'draw' | 'interact' | 'flower'): void {
+    this.flowerMode = mode === 'flower';
+    if (this.settings.generator === 'Tree') {
+      this.interactMode = mode === 'interact';
+    } else {
+      this.settings.drawMode = mode === 'draw';
+    }
+    this.applyModes();
+  }
+
   // ---------- vegetation brushes (F) and tree pushing ----------
 
   private onPointerMove = (e: PointerEvent): void => {
@@ -1062,9 +1086,16 @@ export class App {
   private paintTargets(): THREE.Object3D[] {
     const targets: THREE.Object3D[] = [];
     this.modelRoot.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh) targets.push(o);
+      if (!(o as THREE.Mesh).isMesh) return;
+      if (this.sharedProjectionTargetId && o.uuid !== this.sharedProjectionTargetId) return;
+      targets.push(o);
     });
     return targets;
+  }
+
+  /** Keep legacy procedural painting aligned with the studio projection selector. */
+  setSharedProjectionTarget(targetId: string | null): void {
+    this.sharedProjectionTargetId = targetId;
   }
 
   // ---------- modes / hud ----------
@@ -1093,9 +1124,9 @@ export class App {
 
   applyModes(): void {
     const g = this.settings.generator;
-    const draw = g !== 'Tree' && this.settings.drawMode;
-    const flower = this.flowerMode && generatorFamily(g) === 'vegetation';
-    const interact = g === 'Tree' && this.interactMode && !flower;
+    const draw = this.legacyAuthoringEnabled && g !== 'Tree' && this.settings.drawMode;
+    const flower = this.legacyAuthoringEnabled && this.flowerMode && generatorFamily(g) === 'vegetation';
+    const interact = this.legacyAuthoringEnabled && g === 'Tree' && this.interactMode && !flower;
     this.painter.setEnabled(draw);
     // Hover-based modes (flower brush, tree interact) keep orbiting available.
     this.controls.enableRotate = !draw;

@@ -38,7 +38,7 @@ export interface SurfaceInputHooks {
   readonly areaPosition?: (
     hit: SurfaceProjectionHit,
     event: PointerEvent,
-  ) => Vec2 | undefined;
+  ) => Vec2 | null | undefined;
 }
 
 export interface SurfaceInputControllerOptions {
@@ -213,6 +213,8 @@ export class SurfaceInputController {
     if (this.lastSamplePosition
       && hit.worldPosition.distanceTo(this.lastSamplePosition) < this.minDistance) return;
     const areaPosition = this.options.hooks?.areaPosition?.(hit, event);
+    // A placed drawing area may reject hits outside its projected bounds.
+    if (areaPosition === null) return;
     const value: NewSurfacePoint = {
       targetId: hit.targetId,
       targetPosition: hit.targetPosition.toArray() as Vec3,

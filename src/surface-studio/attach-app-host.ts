@@ -1,6 +1,7 @@
 import type { SurfaceGeneratorId } from './contracts';
 import type { SurfaceGeneratorAdapter } from './generator-adapter';
 import type { SurfaceStudioHost } from './app-host';
+import type { SurfaceInputHooks } from './surface-input-controller';
 import { SurfaceStudioRuntime } from './surface-studio-runtime';
 
 export interface AttachedSurfaceStudioRuntime {
@@ -17,6 +18,7 @@ export function attachSurfaceStudioRuntime(
   host: SurfaceStudioHost,
   adapters: readonly SurfaceGeneratorAdapter<any>[],
   activeGenerator: SurfaceGeneratorId = 'ivy',
+  inputHooks?: SurfaceInputHooks,
 ): AttachedSurfaceStudioRuntime {
   const runtime = new SurfaceStudioRuntime({
     element: host.canvas,
@@ -33,6 +35,7 @@ export function attachSurfaceStudioRuntime(
     },
     adapters,
     activeGenerator,
+    inputHooks,
   });
   let disposed = false;
   let lastRevision = -1;
@@ -54,4 +57,3 @@ export function attachSurfaceStudioRuntime(
     },
   };
 }
-

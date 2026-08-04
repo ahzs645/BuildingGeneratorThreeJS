@@ -60,6 +60,7 @@ export class DrawingAreaOverlay {
       depthTest: false,
       depthWrite: false,
       side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
       toneMapped: false,
     });
     this.patchLineMaterial = new THREE.LineBasicMaterial({
@@ -68,6 +69,7 @@ export class DrawingAreaOverlay {
       opacity: 1,
       depthTest: false,
       depthWrite: false,
+      blending: THREE.AdditiveBlending,
       toneMapped: false,
     });
 

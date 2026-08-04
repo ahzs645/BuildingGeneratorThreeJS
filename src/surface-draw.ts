@@ -346,6 +346,12 @@ export function createTool(): ToolHandle {
   let areaBaseSizeU = Number(areaSize.value);
   let areaBaseSizeV = Number(areaSize.value);
   let syncingAreaTransform = false;
+  let areaDepthDrag: {
+    anchorPosition: THREE.Vector3;
+    normal: THREE.Vector3;
+    initialDepth: number;
+    lastDepth: number;
+  } | null = null;
   let selectionGuidesDirty = true;
 
   const selectionBox = new THREE.Box3();
@@ -1236,7 +1242,13 @@ export function createTool(): ToolHandle {
         // Always start beyond the target and keep only the first near-facing
         // surface. This never switches to the exit face after the selector has
         // moved inside a closed object.
-        if (hitNormal.dot(drawingArea!.normal) >= facingThreshold) {
+        const alignment = hitNormal.dot(drawingArea!.normal);
+        // Blender's reference uses Project Shrinkwrap with face culling off.
+        // The first ray hit already identifies the near surface, so winding
+        // must not punch holes through steep crests or imported meshes whose
+        // normals happen to be reversed. Reorient only for the display offset.
+        if (Math.abs(alignment) >= facingThreshold - 1e-6) {
+          if (alignment < 0) hitNormal.negate();
           const clearance = sourcePoint.clone().sub(hit.point).dot(drawingArea!.normal);
           // Contact is a narrow band around the actual surface crossing. A
           // projector far inside the object is not still "touching" every
@@ -1272,7 +1284,14 @@ export function createTool(): ToolHandle {
       }
     }
     if (suppressAreaContactAccumulationOnce) suppressAreaContactAccumulationOnce = false;
-    else if (vertexSamples.length || cellSamples.length) sweptAreaSelection.accumulate({ vertices: vertexSamples, cells: cellSamples }, areaContactPatchId);
+    else {
+      // Unlocked contact is a live mask. Locked contact is a swept/latching
+      // mask, so moving through the surface keeps every crossing selected.
+      if (!contactLock.checked) sweptAreaSelection.clearPatch(areaContactPatchId);
+      if (vertexSamples.length || cellSamples.length) {
+        sweptAreaSelection.accumulate({ vertices: vertexSamples, cells: cellSamples }, areaContactPatchId);
+      }
+    }
 
     const retainedVertices = sweptAreaSelection.vertexContacts(areaContactPatchId);
     const retainedCells = sweptAreaSelection.cellContacts(areaContactPatchId);
@@ -1329,6 +1348,7 @@ export function createTool(): ToolHandle {
     selectorState.area = cloneDrawingArea(drawingArea);
     selectorState.dropped = areaDropped;
     selectorState.projectionHeight = projectionHeight.value;
+    selectorState.contactLocked = contactLock.checked;
     selectorState.patchId = areaContactPatchId;
     selectorState.renderPoints = patchPoints.map((point) => point.toArray() as [number, number, number]);
     selectorState.renderIndices = [...patchIndices];
@@ -1340,9 +1360,10 @@ export function createTool(): ToolHandle {
     const freeSegments: THREE.Vector3[] = [];
     const contactSegments: THREE.Vector3[] = [];
     const pushEdge = (a: number, b: number) => {
-      const touches = patchValid[a] || patchValid[b];
-      if (touches) contactSegments.push(patchPoints[a], patchPoints[b]);
-      else if (!areaDropped || clothEnabled.checked) freeSegments.push(patchPoints[a], patchPoints[b]);
+      const bothTouch = patchValid[a] && patchValid[b];
+      const bothFree = !patchValid[a] && !patchValid[b];
+      if (bothTouch) contactSegments.push(patchPoints[a], patchPoints[b]);
+      else if (bothFree && (!areaDropped || clothEnabled.checked)) freeSegments.push(patchPoints[a], patchPoints[b]);
     };
     const gridStep = samples / grid;
     for (let lineIndex = 0; lineIndex <= grid; lineIndex++) {
@@ -1438,6 +1459,47 @@ export function createTool(): ToolHandle {
     areaSizeOutput.value = `${nextSizeU.toFixed(1)} × ${nextSizeV.toFixed(1)}`;
     syncTransformFields();
     renderDrawingArea(); renderPreviews(); updateMetrics(); queueEvaluation();
+  }
+
+  function updateAreaTransformInteraction(): void {
+    if (!areaDepthDrag) {
+      updateDrawingAreaFromAnchor();
+      return;
+    }
+    const displacement = areaAnchor.position.clone().sub(areaDepthDrag.anchorPosition);
+    const nextDepth = THREE.MathUtils.clamp(
+      areaDepthDrag.initialDepth + displacement.dot(areaDepthDrag.normal),
+      Number(projectionHeight.min),
+      Number(projectionHeight.max),
+    );
+    // TransformControls calculates every drag sample from its pointer-down
+    // pose. Restore that pose after reading the local-Z delta so the selector
+    // frame stays anchored and only its projector depth changes.
+    syncingAreaTransform = true;
+    areaAnchor.position.copy(areaDepthDrag.anchorPosition);
+    syncingAreaTransform = false;
+
+    const renderDepth = (depth: number): void => {
+      projectionHeight.value = depth.toFixed(3);
+      projectionHeightOutput.value = depth.toFixed(2);
+      renderDrawingArea();
+    };
+    if (contactLock.checked) {
+      // A fast gizmo drag can leap across the narrow contact band between
+      // pointer events. Sample the intervening depths just like Push Through.
+      const step = Math.max(.025, Number(contactDepthControl.value) * .65);
+      const direction = Math.sign(nextDepth - areaDepthDrag.lastDepth);
+      if (direction !== 0) {
+        for (
+          let depth = areaDepthDrag.lastDepth + direction * step;
+          direction > 0 ? depth < nextDepth : depth > nextDepth;
+          depth += direction * step
+        ) renderDepth(depth);
+      }
+    }
+    renderDepth(nextDepth);
+    areaDepthDrag.lastDepth = nextDepth;
+    syncTransformFields();
   }
 
   function placeDrawingArea(sample: NewSample): void {
@@ -2032,19 +2094,37 @@ export function createTool(): ToolHandle {
   canvas.addEventListener("pointercancel", () => { curveDrag = null; curveDocument.cancelStroke(); renderPreviews(); }, { signal });
   areaTransform.addEventListener("mouseDown", () => {
     checkpointDrawingArea();
+    areaDepthDrag = drawingArea
+      && areaTransform.getMode() === "translate"
+      && areaTransform.axis === "Z"
+      ? {
+          anchorPosition: areaAnchor.position.clone(),
+          normal: drawingArea.normal.clone(),
+          initialDepth: Number(projectionHeight.value),
+          lastDepth: Number(projectionHeight.value),
+        }
+      : null;
     controls.enabled = false;
     canvas.style.cursor = "grabbing";
   });
   areaTransform.addEventListener("mouseUp", () => {
+    const finishedDepthDrag = Boolean(areaDepthDrag);
+    areaDepthDrag = null;
     controls.enabled = orbitButton.classList.contains("active");
     canvas.style.cursor = selectingTarget ? "crosshair" : selectingArea ? "cell" : selectingCurve ? "default" : drawing ? "crosshair" : "grab";
-    setStatus(areaDropped
+    setStatus(finishedDepthDrag
+      ? contactLock.checked
+        ? "Manual push depth updated · crossed surface cells remain locked yellow"
+        : areaPreviewVisible
+          ? "Manual push is touching the surface · raise it to deselect"
+          : "Manual push depth updated · unlocked mask follows only the current contact band"
+      : areaDropped
       ? "Committed yellow area updated · projected strokes follow its surface frame"
       : areaPreviewVisible
         ? "Selector touches the target · yellow surface preview is live"
         : "Selector is above the target · lower it until the yellow area appears");
   });
-  areaTransform.addEventListener("objectChange", updateDrawingAreaFromAnchor);
+  areaTransform.addEventListener("objectChange", updateAreaTransformInteraction);
   fileInput.addEventListener("change", () => { const file = fileInput.files?.[0]; if (file) void loadFile(file).catch((error) => setStatus(error instanceof Error ? error.message : String(error))); }, { signal });
   targetSelect.addEventListener("change", () => {
     removeDrawingArea();
@@ -2179,6 +2259,28 @@ export function createTool(): ToolHandle {
       ? "Optional cloth relaxation enabled · contacts stay pinned while free cells sag"
       : "Blender-style projected shrinkwrap enabled · cloth relaxation off");
   }, { signal });
+  contactLock.addEventListener("change", () => {
+    checkpointDrawingArea();
+    activeSelectorState().contactLocked = contactLock.checked;
+    renderDrawingArea();
+    setStatus(contactLock.checked
+      ? "Contact mask locked · swept surface crossings remain selected"
+      : "Contact mask live · raise the grid to deselect the surface");
+  }, { signal });
+  clearContactButton.addEventListener("click", () => {
+    if (!areaContactPatchId) { setStatus("The active selector has no contact mask"); return; }
+    checkpointDrawingArea();
+    sweptAreaSelection.clearPatch(areaContactPatchId);
+    const id = maskDocument.activeSelectorId;
+    if (id) maskDocument.clearSelectorMask(id, { history: false, force: true });
+    const state = activeSelectorState();
+    state.renderPoints = [];
+    state.renderIndices = [];
+    areaDropped = false;
+    contactLock.checked = false;
+    renderDrawingArea();
+    setStatus("Active contact mask cleared · lower the grid to select again");
+  }, { signal });
   projectionHeight.addEventListener("input", () => {
     projectionHeightOutput.value = Number(projectionHeight.value).toFixed(2);
     renderDrawingArea();
@@ -2216,6 +2318,7 @@ export function createTool(): ToolHandle {
     if (!drawingArea) { setMode("area"); setStatus("Place the selector on an object first"); return; }
     checkpointDrawingArea();
     areaDropped = true;
+    contactLock.checked = true;
     dropAreaButton.classList.add("projected");
     dropAreaButton.textContent = "Contact captured ✓";
     pushThroughButton.classList.add("projected");

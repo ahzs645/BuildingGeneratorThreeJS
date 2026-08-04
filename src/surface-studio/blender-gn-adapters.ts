@@ -1,5 +1,7 @@
 import * as THREE from 'three/webgpu';
 import type { Dump, TriSoup } from '../gnvm/index';
+import type { TargetSurface } from '../surface-targets';
+import type { DrawingAreaState } from './contracts';
 import { surfaceGenerator } from './generator-catalog';
 import type {
   GeneratorEvaluationInput,
@@ -281,6 +283,14 @@ export interface ChromeCurveLayout {
   readonly length: number;
 }
 
+export interface ChromeSigilLayout {
+  readonly center: THREE.Vector3;
+  readonly normal: THREE.Vector3;
+  readonly u: THREE.Vector3;
+  readonly v: THREE.Vector3;
+  readonly size: number;
+}
+
 /** Periodic Brush consumes the durable projected points directly in world space. */
 export function periodicCurvePayload(strokes: readonly ProjectedSurfaceStroke[]): GnCurvePayload[] {
   return strokes.filter(hasCurve).map((stroke) => ({
@@ -318,6 +328,44 @@ export function chromeCrayonCurvePayload(strokes: readonly ProjectedSurfaceStrok
   return { curves, layouts };
 }
 
+/** Build the normalized planar input used by Brush Lab's unique-sigil mode. */
+export function chromeSigilCurvePayload(
+  strokes: readonly ProjectedSurfaceStroke[],
+  drawingArea: DrawingAreaState | null,
+): { curves: GnCurvePayload[]; layout: ChromeSigilLayout } {
+  const useful = strokes.filter(hasCurve);
+  const points = useful.flatMap((stroke) => stroke.points);
+  const frame = sigilFrame(points, drawingArea);
+  const local = useful.map((stroke) => stroke.points.map((point) => {
+    if (drawingArea && point.areaPosition) return [point.areaPosition[0], point.areaPosition[1], 0];
+    const delta = point.worldPosition.clone().sub(frame.center);
+    return [delta.dot(frame.u), delta.dot(frame.v), 0];
+  }));
+  const flat = local.flat();
+  const minX = Math.min(...flat.map((point) => point[0]));
+  const maxX = Math.max(...flat.map((point) => point[0]));
+  const minY = Math.min(...flat.map((point) => point[1]));
+  const maxY = Math.max(...flat.map((point) => point[1]));
+  const sourceSpan = Math.max(maxX - minX, maxY - minY, 1e-9);
+  const scale = 96 / sourceSpan;
+  const curves = local.map((curve) => ({
+    cyclic: false,
+    points: curve.map((point) => [
+      Number((point[0] * scale).toFixed(6)),
+      Number((point[1] * scale).toFixed(6)),
+      0,
+    ]),
+  }));
+  const lineLength = useful.reduce((total, stroke) => total + strokeLength(stroke), 0);
+  return {
+    curves,
+    layout: {
+      ...frame,
+      size: drawingArea ? Math.min(...drawingArea.size) * 0.82 : Math.min(lineLength * 0.72, 2.6),
+    },
+  };
+}
+
 /** Bend flat Chrome Crayon output into the shared projected-stroke frames. */
 export function wrapChromeCrayonSoup(soup: TriSoup, layouts: readonly ChromeCurveLayout[]): TriSoup {
   if (!layouts.length) return soup;
@@ -338,6 +386,32 @@ export function wrapChromeCrayonSoup(soup: TriSoup, layouts: readonly ChromeCurv
       .addScaledVector(frame.normal, normal[offset + 2])
       .normalize();
     normal.set(worldNormal.toArray(), offset);
+  }
+  return soup;
+}
+
+/** Conform one evaluated sigil stamp to the currently selected surface. */
+export function projectChromeSigilSoup(
+  soup: TriSoup,
+  layout: ChromeSigilLayout,
+  targets: readonly TargetSurface[],
+): TriSoup {
+  const { min, max } = soupBounds(soup);
+  const span = Math.max(max[0] - min[0], max[1] - min[1], 1e-9);
+  const heightSpan = Math.max(max[2] - min[2], 1e-9);
+  const scale = layout.size / span;
+  const centerX = (min[0] + max[0]) * 0.5;
+  const centerY = (min[1] + max[1]) * 0.5;
+  for (let index = 0; index < soup.positions.length; index += 3) {
+    const planePoint = layout.center.clone()
+      .addScaledVector(layout.u, (soup.positions[index] - centerX) * scale)
+      .addScaledVector(layout.v, (soup.positions[index + 1] - centerY) * scale);
+    const surface = closestTargetSurface(targets, planePoint);
+    const point = surface?.point ?? planePoint;
+    const normal = surface?.normal ?? layout.normal;
+    point.addScaledVector(normal, ((soup.positions[index + 2] - min[2]) / heightSpan) * 0.09 + 0.012);
+    soup.positions.set(point.toArray(), index);
+    soup.normals.set(normal.toArray(), index);
   }
   return soup;
 }
@@ -485,16 +559,21 @@ class BlenderGnRuntime<Settings extends BrushSettings> implements SurfaceGenerat
     try {
       const dump = await this.loadDump(this.kind);
       if (input.signal.aborted || revision !== this.revision || this.disposed) return;
-      const chrome = this.kind === 'chrome-crayon' ? chromeCrayonCurvePayload(useful) : null;
+      const sigil = this.kind === 'chrome-crayon'
+        && (this.settings as Readonly<ChromeCrayonSettings>).sigilize > 0
+        ? chromeSigilCurvePayload(useful, input.drawingArea)
+        : null;
+      const chrome = this.kind === 'chrome-crayon' && !sigil ? chromeCrayonCurvePayload(useful) : null;
       const soup = await this.client.evaluate({
         dump,
         object: this.kind === 'chrome-crayon' ? 'CHROME CRAYON OBJECT' : 'PERIODIC BRUSH',
-        curves: chrome?.curves ?? periodicCurvePayload(useful),
+        curves: sigil?.curves ?? chrome?.curves ?? periodicCurvePayload(useful),
         overrides: overridesFor(this.kind, this.settings),
         signal: input.signal,
       });
       if (input.signal.aborted || revision !== this.revision || this.disposed) return;
-      if (chrome) wrapChromeCrayonSoup(soup, chrome.layouts);
+      if (sigil) projectChromeSigilSoup(soup, sigil.layout, input.targets);
+      else if (chrome) wrapChromeCrayonSoup(soup, chrome.layouts);
       const geometry = bufferGeometryFromGnSoup(soup, this.kind === 'chrome-crayon');
       const color = this.settings.color;
       const material = this.kind === 'chrome-crayon'
@@ -550,6 +629,11 @@ class BlenderGnRuntime<Settings extends BrushSettings> implements SurfaceGenerat
 
 let chromeDumpPromise: Promise<Dump> | null = null;
 let periodicDumpPromise: Promise<Dump> | null = null;
+
+/** Replace the live Chrome graph resource; the evaluator reinstalls on identity change. */
+export function installChromeCrayonDump(dump: Dump): void {
+  chromeDumpPromise = Promise.resolve(dump);
+}
 
 function defaultDumpLoader(kind: BrushKind): Promise<Dump> {
   const current = kind === 'chrome-crayon' ? chromeDumpPromise : periodicDumpPromise;
@@ -827,6 +911,82 @@ function createAdapter<Settings extends BrushSettings>(
 
 function hasCurve(stroke: ProjectedSurfaceStroke): boolean {
   return stroke.points.length > 1;
+}
+
+function strokeLength(stroke: ProjectedSurfaceStroke): number {
+  let length = 0;
+  for (let index = 1; index < stroke.points.length; index++) {
+    length += stroke.points[index].worldPosition.distanceTo(stroke.points[index - 1].worldPosition);
+  }
+  return length;
+}
+
+function sigilFrame(
+  points: readonly ProjectedSurfaceStroke['points'][number][],
+  drawingArea: DrawingAreaState | null,
+): Omit<ChromeSigilLayout, 'size'> {
+  if (drawingArea) {
+    return {
+      center: new THREE.Vector3().fromArray(drawingArea.center),
+      normal: new THREE.Vector3().fromArray(drawingArea.normal).normalize(),
+      u: new THREE.Vector3().fromArray(drawingArea.u).normalize(),
+      v: new THREE.Vector3().fromArray(drawingArea.v).normalize(),
+    };
+  }
+  const center = points.reduce(
+    (sum, point) => sum.add(point.worldPosition),
+    new THREE.Vector3(),
+  ).multiplyScalar(1 / Math.max(points.length, 1));
+  const normal = points.reduce(
+    (sum, point) => sum.add(point.worldNormal),
+    new THREE.Vector3(),
+  ).normalize();
+  if (normal.lengthSq() < 1e-9) normal.set(0, 0, 1);
+  const first = points[0]?.worldPosition;
+  const last = points.at(-1)?.worldPosition;
+  const u = first && last ? last.clone().sub(first) : new THREE.Vector3(1, 0, 0);
+  u.addScaledVector(normal, -u.dot(normal));
+  if (u.lengthSq() < 1e-9) u.copy(Math.abs(normal.x) < 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0)).cross(normal);
+  u.normalize();
+  return { center, normal, u, v: normal.clone().cross(u).normalize() };
+}
+
+function closestTargetSurface(
+  targets: readonly TargetSurface[],
+  worldPoint: THREE.Vector3,
+): { point: THREE.Vector3; normal: THREE.Vector3; distance: number } | null {
+  let closest: { point: THREE.Vector3; normal: THREE.Vector3; distance: number } | null = null;
+  for (const { mesh } of targets) {
+    const geometry = mesh.geometry as THREE.BufferGeometry & {
+      boundsTree?: { closestPointToPoint(point: THREE.Vector3): { point: THREE.Vector3; distance: number; faceIndex?: number } };
+    };
+    if (!geometry.boundsTree) continue;
+    mesh.updateWorldMatrix(true, false);
+    const localQuery = mesh.worldToLocal(worldPoint.clone());
+    const hit = geometry.boundsTree.closestPointToPoint(localQuery);
+    const localPoint = hit.point.clone();
+    const point = mesh.localToWorld(localPoint.clone());
+    const distance = point.distanceTo(worldPoint);
+    if (closest && distance >= closest.distance) continue;
+    let normal = new THREE.Vector3(0, 0, 1);
+    if (hit.faceIndex !== undefined) {
+      const positions = geometry.getAttribute('position') as THREE.BufferAttribute;
+      const index = geometry.index;
+      const offset = hit.faceIndex * 3;
+      const a = index ? index.getX(offset) : offset;
+      const b = index ? index.getX(offset + 1) : offset + 1;
+      const c = index ? index.getX(offset + 2) : offset + 2;
+      normal = new THREE.Triangle(
+        new THREE.Vector3().fromBufferAttribute(positions, a),
+        new THREE.Vector3().fromBufferAttribute(positions, b),
+        new THREE.Vector3().fromBufferAttribute(positions, c),
+      ).getNormal(new THREE.Vector3()).applyNormalMatrix(
+        new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld),
+      ).normalize();
+    }
+    closest = { point, normal, distance };
+  }
+  return closest;
 }
 
 function overridesFor(kind: BrushKind, settings: Readonly<BrushSettings>): Record<string, unknown> {
