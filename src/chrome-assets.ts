@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import { bindStatusLine } from "./status-line";
 import { preferredCanvasPixelRatio } from "./canvas-viewport";
 import {
   captureOverrideValue,
@@ -97,7 +98,7 @@ export function createTool(): ToolHandle {
   const nextAsset = document.querySelector<HTMLButtonElement>("#assets-next")!;
   const controlsHost = document.querySelector<HTMLElement>("#assets-controls")!;
   const reference = document.querySelector<HTMLImageElement>("#assets-reference")!;
-  const status = document.querySelector<HTMLElement>("#assets-status")!;
+  const setStatus = bindStatusLine("#assets-status");
   const blenderCount = document.querySelector<HTMLElement>("#assets-blender-count")!;
   const vmCount = document.querySelector<HTMLElement>("#assets-vm-count")!;
   const runtime = document.querySelector<HTMLElement>("#assets-runtime")!;
@@ -387,8 +388,7 @@ export function createTool(): ToolHandle {
   async function evaluate(): Promise<void> {
     if (disposed) return;
     const id = ++requestId;
-    status.classList.remove("ready");
-    status.textContent = "Evaluating extracted graph…";
+    setStatus("busy", "Evaluating extracted graph…");
     const started = performance.now();
     const worker = new Worker(new URL("./blend-import-worker.ts", import.meta.url), { type: "module", name: "chrome-assets" });
     activeWorkers.add(worker);
@@ -407,9 +407,9 @@ export function createTool(): ToolHandle {
     reference.src = publicUrl(previewMode === "diagnostic" ? current.reference : current.authoredReference ?? current.reference);
     if (previewMode === "materialx-native" || previewMode === "materialx-prefilter") {
       const prefiltered = previewMode === "materialx-prefilter";
-      status.textContent = prefiltered
+      setStatus("busy", prefiltered
         ? "Generating the shared MaterialX GGX environment mip chain…"
-        : "Binding recovered chrome.003 MaterialX graph to live GN-VM geometry…";
+        : "Binding recovered chrome.003 MaterialX graph to live GN-VM geometry…");
       await applyMaterialXPreview(mesh, result.soup, previewMode);
     }
     if (disposed || id !== requestId) {
@@ -436,27 +436,29 @@ export function createTool(): ToolHandle {
       ? curveExact
       : result.soup.stats.verts === current.blenderStats.verts
         && result.soup.stats.faces === (current.blenderStats.triangles ?? current.blenderStats.faces);
-    status.classList.toggle("ready", exact);
-    status.textContent = exact
+    setStatus(exact ? "ready" : "warn", exact
       ? previewMode === "materialx-native" || previewMode === "materialx-prefilter"
         ? previewMode === "materialx-prefilter"
           ? `Topology matches Blender · ${current.id === "25d-chrome-crayon" ? "native chrome.003" : "catalog metal"} with MaterialX GGX prefilter bound`
           : "Topology matches Blender · recovered chrome.003 native MaterialX bound"
         : current.curveStats ? "Curve control points match Blender" : "Topology counts match Blender"
-      : current.note ?? "Geometry differs from Blender reference";
+      : current.note ?? "Geometry differs from Blender reference");
     document.documentElement.dataset.chromeAssetsReady = previewMode === "materialx-prefilter" && exact
       ? "materialx-prefilter"
       : previewMode === "materialx-native" && exact
         ? "materialx-native"
       : exact ? "exact" : "inexact";
   }
-  function queue(): void { clearTimeout(timer);timer=window.setTimeout(()=>void evaluate().catch((error)=>{if(!disposed)status.textContent=String(error);}),100); }
+  function queue(): void { clearTimeout(timer);timer=window.setTimeout(()=>void evaluate().catch((error)=>{if(!disposed)setStatus("error",String(error));}),100); }
   function matchingAsset(value: string): Asset | undefined {
     const normalized = value.trim().toLocaleLowerCase();
     return catalog.find((item) => item.title.toLocaleLowerCase() === normalized || item.id.toLocaleLowerCase() === normalized);
   }
   function setSelectedAsset(asset: Asset): void {
     select.value = asset.title;
+    // Catalog titles are "Collection · Name" and run past the field width;
+    // the tooltip is how the tail stays reachable without focusing the input.
+    select.title = asset.title;
     select.dataset.assetId = asset.id;
   }
   function stepAsset(direction: -1 | 1): void {
@@ -482,7 +484,7 @@ export function createTool(): ToolHandle {
     if (select.dataset.assetId === asset.id && current?.id === asset.id) return;
     setSelectedAsset(asset);
     const url=new URL(location.href);url.searchParams.set("asset",asset.id);history.replaceState(null,"",url);
-    void choose().catch((error)=>{if(!disposed)status.textContent=String(error);});
+    void choose().catch((error)=>{if(!disposed)setStatus("error",String(error));});
   }
   const onPreviousAsset = (): void => stepAsset(-1);
   const onNextAsset = (): void => stepAsset(1);
@@ -495,7 +497,7 @@ export function createTool(): ToolHandle {
     queue();
   };
   select.addEventListener("input",commitAssetSelection);select.addEventListener("change",commitAssetSelection);previousAsset.addEventListener("click",onPreviousAsset);nextAsset.addEventListener("click",onNextAsset);reset.addEventListener("click",onReset);addEventListener("resize",resize);renderer.setAnimationLoop(()=>{orbit.update();if(temporalCapture&&model.children.length)temporalCapture.render();else renderer.render(scene,camera);});
-  fetch(publicUrl("dojo/chrome-assets/catalog.json"),{cache:"no-store"}).then((response)=>response.json()).then((items:Asset[])=>{if(disposed)return;catalog=items;assetOptions.replaceChildren();for(const item of catalog){const option=document.createElement("option");option.value=item.title;option.label=item.id;assetOptions.append(option);}const requested=new URLSearchParams(location.search).get("asset");setSelectedAsset(catalog.find((item)=>item.id===requested)??catalog[0]);resize();return choose();}).catch((error)=>{if(!disposed)status.textContent=String(error);});
+  fetch(publicUrl("dojo/chrome-assets/catalog.json"),{cache:"no-store"}).then((response)=>response.json()).then((items:Asset[])=>{if(disposed)return;catalog=items;assetOptions.replaceChildren();for(const item of catalog){const option=document.createElement("option");option.value=item.title;option.label=item.id;assetOptions.append(option);}const requested=new URLSearchParams(location.search).get("asset");setSelectedAsset(catalog.find((item)=>item.id===requested)??catalog[0]);resize();return choose();}).catch((error)=>{if(!disposed)setStatus("error",String(error));});
 
   window.addEventListener("type-pixel-brush-graph-change", onTypePixelBrushGraphChange);
 

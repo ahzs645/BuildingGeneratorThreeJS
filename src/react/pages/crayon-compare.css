@@ -18,29 +18,55 @@
 .blender-flow-stage > .react-flow { width: 100%; height: 100%; }
 .annotation-canvas { position: absolute; z-index: 4; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .annotation-minimap { position: absolute; z-index: 12; right: 10px; bottom: 10px; box-sizing: border-box; width: 130px; height: 84px; border: 1px solid var(--st-line-2); border-radius: 5px; background: var(--st-sunken); cursor: crosshair; }
+/* This strip is the shell's .st-toolbar in miniature, so it uses the same
+   height token and the same 26px control height as the rest of the studio —
+   it used to run a 38px bar over 22/24/28px controls.
+   overflow stays visible: .graph-search-results is an absolutely positioned
+   popup anchored inside this row, and any scroll/clip container here would
+   swallow it whole. Fit is managed by the shrink order below instead. */
 .blender-flow-toolbar {
-  display: flex; flex: 0 0 38px; align-items: center; gap: 7px;
-  height: 38px; padding: 0 8px;
+  box-sizing: border-box;
+  display: flex; flex: 0 0 var(--st-toolbar-h); align-items: center; gap: 7px;
+  height: var(--st-toolbar-h); padding: 0 8px;
   border-bottom: 1px solid var(--st-line); background: var(--st-chrome);
   color: #AEB6BD; font: 500 var(--st-fs-micro)/1 var(--st-mono);
 }
-.blender-flow-toolbar button { width: 23px; height: 22px; border: 1px solid var(--st-line-2); border-radius: 4px; background: var(--st-raised); color: #D7DDE2; cursor: pointer; }
+/* Shrink order: breadcrumbs give first (the group <select> beside them names
+   the same thing), then the search field down to its placeholder width. The
+   actions never shrink — a half-width "Save" is worse than a tight row. */
+.blender-flow-toolbar > * { flex: 0 0 auto; }
+.blender-flow-toolbar button { box-sizing: border-box; min-width: 26px; height: 26px; border: 1px solid var(--st-line-2); border-radius: 4px; background: var(--st-raised); color: #D7DDE2; cursor: pointer; }
 .blender-flow-toolbar button:hover { border-color: rgba(127,196,232,.45); color: var(--st-ink); }
 .blender-flow-toolbar button:disabled { opacity: .3; }
-.blender-flow-toolbar span { color: var(--st-ok); font-weight: 700; }
-.blender-flow-toolbar select { min-width: 120px; max-width: 150px; height: 24px; border: 1px solid var(--st-line-2); border-radius: 4px; background-color: var(--st-sunken); color: #D2D8DD; padding: 0 26px 0 7px; font: 500 var(--st-fs-micro)/1 var(--st-mono); }
-.blender-flow-toolbar small { margin-left: auto; color: var(--st-ink-3); }
-.editor-kind { flex: 0 0 auto; color: var(--st-ok) !important; font-weight: 700; }
-.graph-breadcrumbs { display: flex; min-width: 0; max-width: 36%; align-items: center; gap: 2px; overflow: hidden; }
+/* Direct children only — the search icon and the breadcrumb separators are
+   spans too, and neither is an "ok" signal. */
+.blender-flow-toolbar > span { color: var(--st-ok); font-weight: 700; }
+.blender-flow-toolbar select { box-sizing: border-box; flex: 0 1 auto; min-width: 96px; max-width: 150px; height: 26px; border: 1px solid var(--st-line-2); border-radius: 4px; background-color: var(--st-sunken); color: #D2D8DD; padding: 0 26px 0 7px; font: 500 var(--st-fs-micro)/1 var(--st-mono); }
+.blender-flow-toolbar small { color: var(--st-ink-3); }
+.blender-flow-toolbar > .editor-dirty { margin-right: 1px; }
+/* The one item allowed to shrink, but never below one readable crumb — it
+   used to collapse to a 2px sliver. Past that the strip scrolls. */
+.graph-breadcrumbs { display: flex; flex: 0 1 auto; min-width: 88px; max-width: 36%; align-items: center; gap: 2px; overflow: hidden; }
 .graph-breadcrumbs > span { display: flex; min-width: 0; align-items: center; gap: 2px; }
 .graph-breadcrumbs i { color: var(--st-ink-3); font-style: normal; }
 .graph-breadcrumbs button { width: auto !important; max-width: 130px; padding: 0 5px !important; border-color: transparent !important; background: transparent !important; color: #AEB6BD !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .graph-breadcrumbs button:hover { background: var(--st-raised) !important; color: var(--st-ink) !important; }
-.graph-actions { display: flex; gap: 4px; margin-left: 0; }
-.blender-flow-toolbar .graph-actions button { width: auto; min-width: 28px; padding: 0 7px; white-space: nowrap; font: 500 var(--st-fs-micro)/1 var(--st-mono); }
+/* The actions ride the trailing edge, and this group — not the row — is what
+   scrolls when the dock gets narrow (a 1120px window leaves the node dock
+   ~444px, less than these buttons need). The scroller lives here because
+   .graph-actions is the one group with no popup inside it; putting it on the
+   row swallowed .graph-search-results whole. */
+.graph-actions {
+  display: flex; flex: 0 1 auto; gap: 4px; min-width: 56px; margin-left: auto;
+  overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none;
+}
+.graph-actions::-webkit-scrollbar { display: none; }
+.blender-flow-toolbar .graph-actions button { flex: 0 0 auto; width: auto; padding: 0 7px; white-space: nowrap; font: 500 var(--st-fs-micro)/1 var(--st-mono); }
 .graph-file-input { display: none; }
 
-.graph-search { position: relative; display: flex; align-items: center; width: 180px; height: 26px; margin-left: auto; border: 1px solid var(--st-line-2); border-radius: var(--st-r-sm); background: var(--st-sunken); color: var(--st-ink-3); }
+/* min-width holds the full "Find nodes · F3" placeholder; it used to collapse
+   to 106px and clip the placeholder mid-word. */
+.graph-search { box-sizing: border-box; position: relative; display: flex; flex: 0 1 180px; align-items: center; width: 180px; min-width: 136px; height: 26px; border: 1px solid var(--st-line-2); border-radius: var(--st-r-sm); background: var(--st-sunken); color: var(--st-ink-3); }
 .graph-search > span { padding-left: 7px; }
 .graph-search input { min-width: 0; width: 100%; height: 100%; border: 0; outline: 0; padding: 0 7px; background: transparent; color: #D9DDE0; font: 500 var(--st-fs-micro)/1 var(--st-mono); }
 .graph-search-results { position: absolute; z-index: 50; left: 0; right: 0; top: 29px; max-height: 300px; overflow: auto; padding: 4px; border: 1px solid var(--st-line-2); border-radius: var(--st-r-md); background: var(--st-raised); box-shadow: 0 12px 28px rgba(0,0,0,.48); }
@@ -50,7 +76,9 @@
 .graph-search-results small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; color: var(--st-ink-2); font-size: var(--st-fs-micro); line-height: 1.4; }
 .graph-search-results em { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.35 var(--st-mono); font-style: normal; }
 
-.graph-statusbar { display: grid; flex: 0 0 26px; grid-template-columns: 1fr 2fr 1fr; align-items: center; gap: 12px; height: 26px; padding: 0 10px; border-top: 1px solid var(--st-line); background: var(--st-chrome); color: var(--st-ink-3); font: 500 var(--st-fs-micro)/1 var(--st-mono); }
+/* Same height token as the shell's .st-statusbar, so the editor's own strip and
+   the tool's strip below it read as one family rather than 26 vs 30. */
+.graph-statusbar { box-sizing: border-box; display: grid; flex: 0 0 var(--st-status-h); grid-template-columns: 1fr 2fr 1fr; align-items: center; gap: 12px; height: var(--st-status-h); padding: 0 10px; border-top: 1px solid var(--st-line); background: var(--st-chrome); color: var(--st-ink-3); font: 500 var(--st-fs-micro)/1 var(--st-mono); }
 .graph-statusbar > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .graph-statusbar span:nth-child(2) { text-align: center; }
 .graph-statusbar span:last-child { text-align: right; }

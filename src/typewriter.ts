@@ -4,6 +4,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { publicUrl } from "./base-url";
 import { fitPerspectiveCameraToObject } from "./camera-fit";
 import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
+import { bindStatusLine } from "./status-line";
 import type { ToolHandle } from "./react/page-runtime";
 import type { Dump, TriSoup } from "./gnvm/index";
 
@@ -34,7 +35,7 @@ export function createTool(): ToolHandle {
   const playButton = document.querySelector<HTMLButtonElement>("#typewriter-play")!;
   const evaluateButton = document.querySelector<HTMLButtonElement>("#typewriter-evaluate")!;
   const reframeButton = document.querySelector<HTMLButtonElement>("#typewriter-reframe")!;
-  const statusEl = document.querySelector<HTMLElement>("#typewriter-status")!;
+  const setStatus = bindStatusLine("#typewriter-status");
   const countEl = document.querySelector<HTMLElement>("#typewriter-count")!;
   const runtimeEl = document.querySelector<HTMLElement>("#typewriter-runtime")!;
   const fontFileEl = document.querySelector<HTMLInputElement>("#typewriter-font-file")!;
@@ -151,7 +152,7 @@ export function createTool(): ToolHandle {
 
   async function update(): Promise<void> {
     const requested = runId + 1;
-    statusEl.classList.remove("ready"); statusEl.textContent = "Evaluating animated Geometry Nodes…"; evaluateButton.disabled = true;
+    setStatus("busy", "Evaluating animated Geometry Nodes…"); evaluateButton.disabled = true;
     const started = performance.now();
     try {
       const result = await evaluate();
@@ -163,9 +164,9 @@ export function createTool(): ToolHandle {
       if (!hasFramed) frameModel();
       countEl.textContent = `${result.soup.stats.verts.toLocaleString()} verts · ${result.soup.stats.faces.toLocaleString()} faces`;
       runtimeEl.textContent = `${((performance.now() - started) / 1000).toFixed(2)}s · frame ${frameInput.value}`;
-      statusEl.classList.add("ready"); statusEl.textContent = "Portable typewriter graph evaluated";
+      setStatus("ready", "Portable typewriter graph evaluated");
       (window as typeof window & { __TYPEWRITER__?: unknown }).__TYPEWRITER__ = { ready: true, frame: Number(frameInput.value), stats: result.soup.stats };
-    } catch (error) { if (!disposed) statusEl.textContent = error instanceof Error ? error.message : String(error); }
+    } catch (error) { if (!disposed) setStatus("error", error instanceof Error ? error.message : String(error)); }
     finally { if (!disposed) evaluateButton.disabled = false; }
   }
 
@@ -199,7 +200,7 @@ export function createTool(): ToolHandle {
 
   Promise.all([loadDisplayFallback(), loadDump()])
     .then(([, loaded]) => { if (disposed) return; dump = loaded; void update(); })
-    .catch((error) => { if (!disposed) statusEl.textContent = String(error); });
+    .catch((error) => { if (!disposed) setStatus("error", String(error)); });
 
   return {
     dispose(): void {

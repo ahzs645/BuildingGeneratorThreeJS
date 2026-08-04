@@ -1,6 +1,11 @@
-/* Only the text editor, the font-status card, and the violet accent are
-   unique. The 34px heading, the floating panel, and the help line are gone. */
-.typewriter-page { --typewriter-accent: #B483FF; }
+/* Only the text editor and the font-status card are unique. The 34px heading,
+   the floating panel, and the help line are gone.
+
+   There used to be a --typewriter-accent violet here, applied to the frame
+   slider, the metric number, the textarea focus ring, the font input and the
+   playing state — but not to the buttons, so the page ran two accents at once
+   and was the only tool in the studio with its own. The kit's accent is the
+   accent; the tool's identity is its viewport and its output. */
 #typewriter-canvas { display: block; width: 100%; height: 100%; }
 .typewriter-page .st-viewport { background: radial-gradient(circle at 42% 38%, #202533, #08090D 68%); }
 
@@ -11,20 +16,15 @@
   background: var(--st-sunken); color: #DDE5EB;
   font: 400 var(--st-fs-ui)/1.5 var(--st-mono);
 }
-.typewriter-text:focus { outline: 1px solid var(--typewriter-accent); border-color: var(--typewriter-accent); }
-.typewriter-page .st-row input[type=range] { accent-color: var(--typewriter-accent); }
-.typewriter-page .st-metric strong { color: var(--typewriter-accent); }
+.typewriter-text:focus { outline: 1px solid var(--st-accent); border-color: var(--st-accent); }
 
+/* The kit styles input[type=file] and its ::file-selector-button; this only
+   adds the dashed "drop a font here" affordance around it. */
 .typewriter-font-file {
   box-sizing: border-box; width: 100%;
-  padding: 7px; border: 1px dashed rgba(180,131,255,.35); border-radius: var(--st-r-sm);
-  background: rgba(130,73,210,.08); color: #CDB8E9;
+  padding: 7px; border: 1px dashed rgba(127,196,232,.35); border-radius: var(--st-r-sm);
+  background: var(--st-accent-wash);
   font: 400 var(--st-fs-micro)/1.2 var(--st-mono);
-}
-.typewriter-font-file::file-selector-button {
-  margin-right: 9px; border: 0; border-radius: 5px; padding: 6px 9px;
-  background: #5D3A83; color: #F4EBFF; cursor: pointer;
-  font: 500 var(--st-fs-micro)/1 var(--st-mono);
 }
 /* typewriter.ts rewrites className, so the state modifiers must stand alone. */
 .typewriter-font-status {
@@ -35,6 +35,9 @@
 .typewriter-font-status.loaded { color: var(--st-ok); border-color: rgba(126,215,158,.3); }
 .typewriter-font-status.fallback { color: var(--st-warn); border-color: rgba(224,164,112,.32); }
 
-/* Runtime-toggled states: `ready` on the status line, `active` while playing. */
-.typewriter-page #typewriter-status.ready { color: var(--st-ok); }
-.typewriter-page #typewriter-play.active { border-color: var(--typewriter-accent); background: #5D3A83; color: #F4EBFF; }
+/* The status tone lives on .st-state in the kit and drives the dot; the label
+   itself is never recoloured. `active` marks the play button while running —
+   the same treatment .st-segmented gives a pressed segment. */
+.typewriter-page #typewriter-play.active {
+  border-color: var(--st-accent-edge); background: var(--st-accent-fill); color: #E9F6FD; font-weight: 600;
+}

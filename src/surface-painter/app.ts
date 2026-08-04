@@ -4,6 +4,7 @@ import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type GUI from 'lil-gui';
+import { bindStatusLine } from '../status-line';
 import { disposeRaycastIndex, firstHitOnly, indexForRaycasts } from '../geometry-painter/bvh';
 import { SurfacePainter } from '../geometry-painter/surfacePainter';
 import type { PaintMode, StrokeInstance, SurfaceSample } from '../geometry-painter/modes/mode';
@@ -165,7 +166,8 @@ export class App {
   private dustVel: number[] = [];
   private backLights: { light: THREE.DirectionalLight; base: number }[] = [];
 
-  private hud = document.getElementById('hud')!;
+  private setStatus = bindStatusLine('#paint-status');
+  private metricsEl = document.getElementById('paint-metrics')!;
   private lastTime = 0;
   private hovering = false;
   private toastTimer = 0;
@@ -955,14 +957,17 @@ export class App {
     document.body.classList.toggle('orbit', !(draw || interact || flower));
 
     const btn = this.modeBtn ?? document.getElementById('modeBtn')!;
+    // This pill names the mode *it* toggles (D), never the brush the pill
+    // beside it toggles (F) — labelling it "Flower brush" while the brush is up
+    // put the same word on both pills. With the brush up, drawing is off and
+    // rotation is live, so this really is orbit.
     btn.querySelector('.label')!.textContent =
       draw ? (generatorFamily(g) === 'decor' ? 'Paint mode' : 'Draw mode')
-        : flower ? (g === 'Tree' ? 'Fig brush' : 'Flower brush')
-          : interact ? 'Interact mode' : 'Orbit mode';
+        : interact ? 'Interact mode' : 'Orbit mode';
     const key = btn.querySelector('.key') as HTMLElement;
-    key.textContent = flower ? 'F' : 'D';
+    key.textContent = 'D';
     const touchUi = window.matchMedia('(pointer: coarse), (max-width: 820px)').matches;
-    key.style.display = !touchUi && (draw || flower || interact) ? '' : 'none';
+    key.style.display = !touchUi && (draw || interact) ? '' : 'none';
 
     if (this.flowerModeBtn) {
       const vegetation = generatorFamily(g) === 'vegetation';
@@ -1031,8 +1036,13 @@ export class App {
     const decorCount = generatorFamily(g) === 'decor'
       ? ` · Strokes: ${this.decorLive.length}/${MAX_DECOR_STROKES}`
       : '';
-    this.hud.innerHTML = `${mode}<div class="sub">Generator: ${g} · Renderer: ${backend}` +
-      `${decorCount} · Scale: ${this.pixelRatio.toFixed(2)}×</div>`;
+    // The strip is the tool's only readout, so the guidance goes in the state
+    // slot and the runtime facts ride the muted trailing slot. `mode` is
+    // authored with <b> around the mode name and the key hints; the strip is
+    // one weight, so they come out as plain text.
+    this.setStatus('ready', mode.replace(/<\/?b>/g, ''));
+    this.metricsEl.textContent =
+      `Generator: ${g} · Renderer: ${backend}${decorCount} · Scale: ${this.pixelRatio.toFixed(2)}×`;
   }
 
   private showToast(msg: string): void {
@@ -1239,7 +1249,7 @@ export class App {
       this.renderer.domElement.remove();
       this.renderer.dispose();
     }
-    this.hud.textContent = '';
+    this.metricsEl.textContent = '';
   }
 }
 

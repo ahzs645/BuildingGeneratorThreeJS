@@ -5,6 +5,7 @@
 // Keys: 1 truth, 2 VM, 3 both · T/V toggle each · O/S overlay/side-by-side
 // · W toggle solid/wire for VM · R reset camera
 import * as THREE from "three";
+import { bindStatusLine } from "./status-line";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { publicUrl } from "./base-url";
@@ -18,7 +19,7 @@ export function createTool(): ToolHandle {
   const timeouts: ReturnType<typeof setTimeout>[] = [];
 
   const canvas = document.getElementById("app") as HTMLCanvasElement;
-  const stat = document.getElementById("stat")!;
+  const setStatus = bindStatusLine("#vase-status");
   const truthToggle = document.getElementById("toggle-truth") as HTMLButtonElement;
   const vmToggle = document.getElementById("toggle-vm") as HTMLButtonElement;
   const overlayToggle = document.getElementById("view-overlay") as HTMLButtonElement;
@@ -111,10 +112,14 @@ export function createTool(): ToolHandle {
     if (reframe) frameAll();
   }
 
+  // Truth and VM load independently and report exactly once each, so the line
+  // stays busy until both are in rather than reading "ready" off half a result.
   const status: string[] = [];
-  function report(msg: string) {
+  let failed = false;
+  function report(msg: string, ok = true): void {
     status.push(msg);
-    stat.textContent = status.join(" · ");
+    failed ||= !ok;
+    setStatus(failed ? "error" : status.length >= 2 ? "ready" : "busy", status.join(" · "));
   }
 
   function logBBox(label: string, obj: THREE.Object3D) {
@@ -241,7 +246,7 @@ export function createTool(): ToolHandle {
       syncComparison();
     })
     .catch(() => {
-      if (!disposed) report("vm export missing — run tools/gnvm-export.ts");
+      if (!disposed) report("vm export missing — run tools/gnvm-export.ts", false);
     });
 
   truthToggle.addEventListener("click", () => {

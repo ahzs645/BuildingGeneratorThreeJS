@@ -94,8 +94,10 @@ export default function ChromeAssetsPage(): React.JSX.Element {
     className={`assets-shell ${shaderCapture ? "shader-capture" : ""}`}
     rightDock={rightDock}
     status={<>
-      <span className="st-dot busy" />
-      <span id="assets-status">Loading catalog…</span>
+      <span id="assets-status" className="st-state busy">
+        <span className="st-dot" />
+        <span data-status-text>Loading catalog…</span>
+      </span>
       <span className="st-spacer" />
       <span id="assets-runtime" className="st-muted">Worker idle</span>
     </>}

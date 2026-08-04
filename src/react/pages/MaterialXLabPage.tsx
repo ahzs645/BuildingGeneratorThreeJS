@@ -47,9 +47,11 @@ export default function MaterialXLabPage(): React.JSX.Element {
       </label>
       <label className="st-field">
         <span>Variant</span>
+        {/* Option text has to fit --st-control-h on one line; "Noise bump
+            probe" is what the status bar has always called this variant. */}
         <select id="materialx-variant" className="st-select" defaultValue="bump">
-          <option value="bump">Noise bump compatibility probe</option>
-          <option value="source">chrome.003 native lowering</option>
+          <option value="bump">Noise bump probe</option>
+          <option value="source">chrome.003 lowering</option>
         </select>
       </label>
       <p className="st-finding">An isolated node-material route. The existing WebGLRenderer and ShaderMaterial pages remain untouched.</p>
@@ -73,10 +75,10 @@ export default function MaterialXLabPage(): React.JSX.Element {
     bodyRef={rootRef}
     rightDock={rightDock}
     toolbar={<span>{threeLabel}</span>}
-    status={<>
-      <span className="st-dot busy" />
-      <span id="materialx-status">Initializing isolated renderer…</span>
-    </>}
+    status={<span id="materialx-status" className="st-state busy">
+      <span className="st-dot" />
+      <span data-status-text>Initializing isolated renderer…</span>
+    </span>}
   >
     <canvas id="materialx-canvas" aria-label="MaterialX shader comparison render" />
   </StudioShell>;

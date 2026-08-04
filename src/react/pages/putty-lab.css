@@ -1,13 +1,13 @@
 #putty-canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 .putty-shell .st-viewport { background: radial-gradient(circle at 48% 38%, #17251d, #07090c 68%); }
-.putty-shell #putty-status { display: flex; align-items: center; gap: 8px; }
-.putty-shell #putty-status.busy > .st-dot { background: var(--st-warn); box-shadow: 0 0 0 3px rgba(224,164,112,.14); }
-.putty-hint { margin: 0; color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.45 var(--st-sans); }
+/* #putty-status is a kit .st-state line; its tones come from studio-kit.css. */
+.putty-hint { margin: 0; color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.45 var(--st-font); }
 .putty-runtime { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.45 var(--st-mono); }
-.putty-anchor-state { padding: 8px 10px; border: 1px solid rgba(86,169,255,.3); border-radius: var(--st-r-sm); color: #a9d2ff; background: rgba(86,169,255,.08); font: 500 var(--st-fs-micro)/1.35 var(--st-sans); }
+.putty-anchor-state { padding: 8px 10px; border: 1px solid rgba(86,169,255,.3); border-radius: var(--st-r-sm); color: #a9d2ff; background: rgba(86,169,255,.08); font: 500 var(--st-fs-micro)/1.35 var(--st-font); }
 .putty-reference { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid var(--st-line); border-radius: var(--st-r-md); background: #000; }
 .putty-open-graph { display: flex; align-items: center; justify-content: center; text-decoration: none; }
 .putty-canvas-help { position: absolute; left: 16px; bottom: 16px; display: grid; gap: 4px; pointer-events: none; color: rgba(226,244,233,.62); text-shadow: 0 1px 3px #000; }
 .putty-canvas-help b { font: 700 12px/1 var(--st-mono); letter-spacing: .16em; }
 .putty-canvas-help span { font: 500 10px/1 var(--st-mono); letter-spacing: .06em; }
-@media (max-width: 820px) { .putty-canvas-help { bottom: 54px; } }
+/* No mobile offset needed: the shell reserves --st-sheet-collapsed, so the
+   viewport already ends above the bottom sheet. */

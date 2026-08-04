@@ -223,7 +223,10 @@ export default function BinComparePage(): React.JSX.Element {
       <span className="bin-desktop-hint">drag to orbit · scroll to zoom</span>
     </>}
     status={<>
-      <span id="compare-status" role="status" aria-live="polite" aria-atomic="true"><span className="st-dot" />Loading bin workspace…</span>
+      <span id="compare-status" className="st-state busy" role="status" aria-live="polite" aria-atomic="true">
+        <span className="st-dot" />
+        <span data-status-text>Loading bin workspace…</span>
+      </span>
       <span className="st-spacer" />
       <span className="st-muted bin-shortcut-hint">O overlay · S split · W edges · 1/2/3 isolate</span>
     </>}

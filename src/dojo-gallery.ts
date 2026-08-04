@@ -3,6 +3,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import { bindStatusLine } from "./status-line";
 import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
 import type { ToolHandle } from "./react/page-runtime";
 
@@ -26,9 +27,8 @@ export function createTool(): ToolHandle {
   const canvas = document.querySelector<HTMLCanvasElement>("#app")!;
   const titleEl = document.querySelector<HTMLElement>("#title")!;
   const subtitleEl = document.querySelector<HTMLElement>("#subtitle")!;
-  const statusEl = document.querySelector<HTMLElement>("#status")!;
+  const setStatus = bindStatusLine("#status");
   const modelsEl = document.querySelector<HTMLElement>("#models")!;
-  const accentHost = canvas.closest<HTMLElement>(".dojo-gallery-page") ?? document.documentElement;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(preferredCanvasPixelRatio());
   const viewport = canvasBox(canvas);
@@ -142,8 +142,7 @@ export function createTool(): ToolHandle {
     const token = ++loadToken;
     titleEl.textContent = active.title;
     subtitleEl.textContent = active.detail;
-    statusEl.textContent = "loading Blender bake…";
-    accentHost.style.setProperty("--accent", `#${active.accent.toString(16).padStart(6, "0")}`);
+    setStatus("busy", "loading Blender bake…");
     document.querySelectorAll<HTMLButtonElement>(".model").forEach((button) => button.classList.toggle("active", button.dataset.model === active.id));
     const url = new URL(location.href);
     url.searchParams.set("model", active.id);
@@ -178,12 +177,12 @@ export function createTool(): ToolHandle {
       frameObject(root);
       const ready = { model: active.id, meshes, triangles: Math.round(triangles) };
       (window as typeof window & { __READY__?: unknown }).__READY__ = ready;
-      statusEl.innerHTML = `<span class="ok">ready</span> · ${meshes} mesh${meshes === 1 ? "" : "es"} · ${Math.round(triangles).toLocaleString()} triangles · drag to orbit · scroll to zoom`;
+      setStatus("ready", `${meshes} mesh${meshes === 1 ? "" : "es"} · ${Math.round(triangles).toLocaleString()} triangles · drag to orbit · scroll to zoom`);
       console.log("DOJO_GALLERY_READY", JSON.stringify(ready));
     } catch (error) {
       if (disposed) return;
       const message = error instanceof Error ? error.message : String(error);
-      statusEl.innerHTML = `<span class="err">failed to load</span> · ${message}`;
+      setStatus("error", `failed to load · ${message}`);
       console.error("DOJO_GALLERY_ERROR", message);
     }
   }
@@ -261,7 +260,6 @@ export function createTool(): ToolHandle {
       studioMaterial = null;
       originals.clear();
       environmentTexture.dispose();
-      accentHost.style.removeProperty("--accent");
       delete (window as typeof window & { __READY__?: unknown }).__READY__;
       renderer.dispose();
       renderer.forceContextLoss();

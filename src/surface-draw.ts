@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { bindStatusLine } from "./status-line";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
@@ -84,7 +85,7 @@ export function createTool(): ToolHandle {
   const targetPickButton = document.querySelector<HTMLButtonElement>("#surface-target-pick")!;
   const targetSummary = document.querySelector<HTMLElement>("#surface-target-summary")!;
   const targetPicker = targetSelect.closest<HTMLElement>(".surface-target-picker")!;
-  const status = document.querySelector<HTMLElement>("#surface-status")!;
+  const applyStatus = bindStatusLine("#surface-status");
   const orbitButton = document.querySelector<HTMLButtonElement>("#surface-orbit")!;
   const areaButton = document.querySelector<HTMLButtonElement>("#surface-area")!;
   const drawButton = document.querySelector<HTMLButtonElement>("#surface-draw")!;
@@ -344,7 +345,7 @@ export function createTool(): ToolHandle {
     return { worker, installId };
   }
 
-  function setStatus(message: string, busy = false): void { if (disposed) return; status.classList.toggle("busy", busy); status.lastChild!.textContent = message; }
+  function setStatus(message: string, busy = false): void { if (disposed) return; applyStatus(busy ? "busy" : "ready", message); }
 
   function useCamera(next: THREE.PerspectiveCamera | THREE.OrthographicCamera): void {
     camera = next;

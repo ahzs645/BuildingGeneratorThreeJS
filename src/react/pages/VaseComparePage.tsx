@@ -49,10 +49,10 @@ export default function VaseComparePage(): React.JSX.Element {
       <span className="st-spacer" />
       <span>drag to orbit · scroll to zoom</span>
     </>}
-    status={<>
-      <span className="st-dot busy" />
-      <span id="stat">loading…</span>
-    </>}
+    status={<span id="vase-status" className="st-state busy">
+      <span className="st-dot" />
+      <span data-status-text>loading…</span>
+    </span>}
   >
     <canvas id="app"></canvas>
     <ToolStateOverlay state={runtimeState} />

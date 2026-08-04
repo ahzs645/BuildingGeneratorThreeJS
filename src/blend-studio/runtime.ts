@@ -83,7 +83,12 @@ function formatPreviewValue(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
-export type BlendStudioMeasurementMode = "jaw" | "points";
+/**
+ * "graph" measures the node canvas itself: picks arrive from the node editor
+ * rather than the viewport, so the runtime keeps the jaw handle visible but
+ * inert (neither the jaw-drag nor the point-pick pointer paths match).
+ */
+export type BlendStudioMeasurementMode = "jaw" | "points" | "graph";
 
 export type BlendStudioPointMeasurementSnapshot = {
   points: Array<[number, number, number]>;

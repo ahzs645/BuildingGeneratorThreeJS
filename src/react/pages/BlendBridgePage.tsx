@@ -36,6 +36,7 @@ import {
   setGizmoValue,
 } from "../../blend-studio/gizmos";
 import {
+  appendNodeCanvasPick,
   authoredValueFromMeasurementDistance,
   interpretMeasurementDisplay,
   linearMeasurementContractForBlendStudioTarget,
@@ -43,7 +44,9 @@ import {
   measurementDistanceFromAuthoredValue,
   measurementDistanceFromDisplay,
   measurementDistanceRange,
+  nodeCanvasPickForMeasurement,
   type BlendStudioMeasurementUnit,
+  type BlendStudioNodeCanvasMeasurementSnapshot,
 } from "../../blend-studio/measurement";
 import {
   BLEND_STUDIO_EVALUATION_TIMEOUT_MS,
@@ -215,6 +218,8 @@ export default function BlendBridgePage(): React.JSX.Element {
   const [measurementZeroMm, setMeasurementZeroMm] = useState(0);
   const [pointMeasurement, setPointMeasurement] =
     useState<BlendStudioPointMeasurementSnapshot>({ points: [] });
+  const [nodeCanvasMeasurement, setNodeCanvasMeasurement] =
+    useState<BlendStudioNodeCanvasMeasurementSnapshot>({ picks: [] });
   const [measurementSubject, setMeasurementSubject] =
     useState<BlendStudioMeasurementSubjectSnapshot | null>(null);
   const [measurementSubjectFile, setMeasurementSubjectFile] = useState<File | null>(null);
@@ -525,6 +530,25 @@ export default function BlendBridgePage(): React.JSX.Element {
         authoredValueFromMeasurementDistance(measurementContract, boundedDistanceMm),
     }));
   }, [measurementContract]);
+
+  // In graph mode the node editor is the workpiece: each node click lands a
+  // caliper jaw on that node's canvas position, and the second jaw drives the
+  // modeled caliper open to the 96 DPI print distance between them.
+  const pickNodeCanvasMeasurement = useCallback(
+    (selection: { group: string; node: string }): void => {
+      if (measurementMode !== "graph" || !workingDump) return;
+      const pick = nodeCanvasPickForMeasurement(workingDump, selection.group, selection.node);
+      if (!pick) return;
+      const next = appendNodeCanvasPick(nodeCanvasMeasurement, pick);
+      setNodeCanvasMeasurement(next);
+      if (next.distanceMm !== undefined) setPhysicalMeasurementMm(next.distanceMm);
+    },
+    [measurementMode, nodeCanvasMeasurement, setPhysicalMeasurementMm, workingDump],
+  );
+
+  useEffect(() => {
+    setNodeCanvasMeasurement({ picks: [] });
+  }, [measurementMode, sourceKey, target?.id]);
 
   useEffect(() => {
     if (!measurementContract) {
@@ -1089,7 +1113,9 @@ export default function BlendBridgePage(): React.JSX.Element {
         aria-label="Measurement mode"
         title={measurementMode === "jaw"
           ? "Drag the mint handle in the viewport. The positive value maps back to Blender’s authored negative socket."
-          : "Pick two surfaces in the viewport to drive the jaw opening from their distance."}
+          : measurementMode === "points"
+            ? "Pick two surfaces in the viewport to drive the jaw opening from their distance."
+            : "Click two nodes in the node editor to caliper the graph itself, printed at 96 DPI."}
       >
         <button
           className={measurementMode === "jaw" ? "active" : ""}
@@ -1101,6 +1127,14 @@ export default function BlendBridgePage(): React.JSX.Element {
           type="button"
           onClick={() => setMeasurementMode("points")}
         >Pick 2 points</button>
+        <button
+          className={measurementMode === "graph" ? "active" : ""}
+          type="button"
+          onClick={() => {
+            setMeasurementMode("graph");
+            setGraphOpen(true);
+          }}
+        >Measure nodes</button>
       </div>
       {measurementMode === "points" && <div className={`st-chip ${pointMeasurement.missed ? "warn" : "ok"}`}>
         {pointMeasurement.missed
@@ -1110,6 +1144,16 @@ export default function BlendBridgePage(): React.JSX.Element {
             : pointMeasurement.points.length === 1
               ? "First point set · pick the second"
               : `Measured ${pointMeasurement.distanceMm?.toFixed(3)} mm`}
+      </div>}
+      {measurementMode === "graph" && <div
+        className={`st-chip ${nodeCanvasMeasurement.distanceMm !== undefined && nodeCanvasMeasurement.distanceMm > modeledCapacityMm ? "warn" : "ok"}`}
+        title="One node-editor unit is one CSS pixel, and a CSS pixel prints at 96 DPI, so the graph has a physical size. The caliper is merely the correct instrument for it."
+      >
+        {nodeCanvasMeasurement.picks.length === 0
+          ? "Click two nodes in the node editor"
+          : nodeCanvasMeasurement.picks.length === 1
+            ? `Fixed jaw on “${nodeCanvasMeasurement.picks[0].label}” · click the second node`
+            : `“${nodeCanvasMeasurement.picks[0].label}” ↔ “${nodeCanvasMeasurement.picks[1].label}” · ${nodeCanvasMeasurement.distanceMm?.toFixed(3)} mm at 96 DPI${(nodeCanvasMeasurement.distanceMm ?? 0) > modeledCapacityMm ? ` · beyond the ${modeledCapacityMm} mm jaw` : ""}`}
       </div>}
       <div className="blend-workpiece">
         <input
@@ -1482,7 +1526,7 @@ export default function BlendBridgePage(): React.JSX.Element {
 
   const nodeEditor = graphSource && target
     ? <Suspense fallback={<div className="route-loading">Loading node editor…</div>}>
-        <GeometryNodesEditor config={editorConfig} source={graphSource} onDumpChange={setWorkingDump} />
+        <GeometryNodesEditor config={editorConfig} source={graphSource} onDumpChange={setWorkingDump} onPreviewChange={pickNodeCanvasMeasurement} />
       </Suspense>
     : null;
 

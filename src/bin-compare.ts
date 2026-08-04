@@ -3,6 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import { bindStatusLine } from "./status-line";
 import { probeBinBlenderBridge, requestBinBlenderBake } from "./bin-blender-bridge";
 import {
   encodeBinGlb,
@@ -208,7 +209,7 @@ async function copyText(value: string): Promise<void> {
 
 export function createTool(): ToolHandle {
   const canvas = document.querySelector<HTMLCanvasElement>("#app")!;
-  const statusEl = document.querySelector<HTMLElement>("#compare-status")!;
+  const applyStatus = bindStatusLine("#compare-status");
   const truthMetricLabel = document.querySelector<HTMLElement>("#truth-metric-label")!;
   const updateButton = document.querySelector<HTMLButtonElement>("#update-comparison")!;
   const previewButton = document.querySelector<HTMLButtonElement>("#preview-bin")!;
@@ -314,10 +315,10 @@ export function createTool(): ToolHandle {
     cleanups.push(() => target.removeEventListener(type, handler));
   };
 
+  // Neither flag set means work is outstanding — pending edits, an evaluation
+  // in flight — which is exactly the dot's amber `busy`.
   function setStatus(message: string, ready = false, error = false): void {
-    statusEl.classList.toggle("ready", ready);
-    statusEl.classList.toggle("error", error);
-    statusEl.lastChild!.textContent = message;
+    applyStatus(error ? "error" : ready ? "ready" : "busy", message);
   }
 
   function setClassification(next: EvidenceClassification, evidence: string): void {

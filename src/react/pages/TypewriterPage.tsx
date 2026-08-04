@@ -44,8 +44,10 @@ export default function TypewriterPage(): React.JSX.Element {
     className="typewriter-page"
     leftDock={leftDock}
     status={<>
-      <span className="st-dot busy" />
-      <span id="typewriter-status">Loading portable graph…</span>
+      <span id="typewriter-status" className="st-state busy">
+        <span className="st-dot" />
+        <span data-status-text>Loading portable graph…</span>
+      </span>
       <span className="st-spacer" />
       <span className="st-muted">drag to orbit · scroll to zoom</span>
     </>}

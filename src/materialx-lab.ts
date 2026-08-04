@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { bindStatusLine } from "./status-line";
 import { WebGPURenderer, type MeshPhysicalNodeMaterial } from "three/webgpu";
 import { EXRLoader } from "three/addons/loaders/EXRLoader.js";
 import { MaterialXLoader } from "three/addons/loaders/MaterialXLoader.js";
@@ -212,7 +213,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   const canvas = required<HTMLCanvasElement>(root, "#materialx-canvas");
   const backendSelect = required<HTMLSelectElement>(root, "#materialx-backend");
   const variantSelect = required<HTMLSelectElement>(root, "#materialx-variant");
-  const status = required<HTMLElement>(root, "#materialx-status");
+  const setStatus = bindStatusLine("#materialx-status", root);
   const rendererStatus = required<HTMLElement>(root, "#materialx-renderer");
   const graphStatus = required<HTMLElement>(root, "#materialx-graph");
   const fallbackStatus = required<HTMLElement>(root, "#materialx-fallback");
@@ -424,7 +425,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     }
     probe.material = material;
     fallbackStatus.textContent = resolution.fallbackReason ?? `No fallback: ${resolution.resolved} selected`;
-    status.textContent = `${resolution.resolved} · ${variant() === "bump" ? "Noise bump probe" : "Blender native source lowering"}`;
+    setStatus("ready", `${resolution.resolved} · ${variant() === "bump" ? "Noise bump probe" : "Blender native source lowering"}`);
     ownerDocument.documentElement.dataset.materialxReady = "true";
     ownerDocument.documentElement.dataset.materialBackend = resolution.resolved;
   }
@@ -486,7 +487,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
         source: sourceRadiance,
         signal: abortController.signal,
         onProgress: (completed, total) => {
-          status.textContent = `Prefiltering studio environment · mip ${completed}/${total}`;
+          setStatus("busy", `Prefiltering studio environment · mip ${completed}/${total}`);
         },
       });
       radiance = ownTexture(prefiltered.radiance);
@@ -507,7 +508,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       rendererStatus.textContent = "WebGLRenderer · +90° environment / Blender-world light diagnostic";
       graphStatus.textContent = "Top: FIS radiance cardinals · bottom: bound directional-light cardinals · +X, +Z, −X, −Z";
       fallbackStatus.textContent = "Coordinate diagnostic; no production material selected";
-      status.textContent = "MaterialX coordinate contract";
+      setStatus("ready", "MaterialX coordinate contract");
       ownerDocument.documentElement.dataset.materialxReady = "true";
       ownerDocument.documentElement.dataset.materialBackend = "materialx";
       ownerDocument.documentElement.dataset.materialxImplementation = implementation;
@@ -649,7 +650,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
         : metalThinFilmStreakDiagnostic
           ? "DIRECT"
           : "PREFILTER";
-      status.textContent = `materialx · ${metalRenderMode} · ${preset.label}`;
+      setStatus("ready", `materialx · ${metalRenderMode} · ${preset.label}`);
       if (metalActiveNonImageScalarDiagnostic || metalActiveNonImageDiagnostic) {
         const activeCore = presetIndex.activeGoldNonImageCore;
         rendererStatus.textContent += metalActiveNonImageScalarDiagnostic
@@ -879,7 +880,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       // Texture Coordinate Normal from object to world space before Mapping.
       probe.updateMatrixWorld(true);
       probe.material = materialXMaterials.UiNormalBandSemanticRecovery;
-      status.textContent = "materialx · UI normal-band semantic diagnostic";
+      setStatus("ready", "materialx · UI normal-band semantic diagnostic");
       graphStatus.textContent = "World Normal/Mapping/CONSTANT ramp + typed col + unlit surface passed on rotated geometry";
       fallbackStatus.textContent = "Topology-derived portable branch; source .blend remains unavailable for native export audit";
       ownerDocument.documentElement.dataset.materialxReady = "true";
@@ -890,7 +891,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     }
     if (geompropColorDiagnostic && officialEssl) {
       probe.material = materialXMaterials.MaterialXGeompropColorDiagnostic;
-      status.textContent = "materialx · typed col geometry property";
+      setStatus("ready", "materialx · typed col geometry property");
       fallbackStatus.textContent = "Manifest-driven color3 point attribute diagnostic";
       ownerDocument.documentElement.dataset.materialxReady = "true";
       ownerDocument.documentElement.dataset.materialBackend = "materialx";
@@ -904,7 +905,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
       for (const light of [key, fill, rim]) light.intensity = 0;
       floor.visible = false;
       probe.material = rawDiagnosticMaterial;
-      status.textContent = `materialx · ${environmentMode.toUpperCase()} · roughness ${requestedRoughness}`;
+      setStatus("ready", `materialx · ${environmentMode.toUpperCase()} · roughness ${requestedRoughness}`);
       graphStatus.textContent += " · environment-only smooth-conductor diagnostic";
       fallbackStatus.textContent = "No direct lights or floor; exact public-uniform roughness override";
       ownerDocument.documentElement.dataset.materialxReady = "true";
@@ -938,7 +939,7 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
         diagnosticMaterial = rawDiagnosticMaterial;
       }
       probe.material = diagnosticMaterial;
-      status.textContent = `${threeLightDiagnostic ? "three" : "materialx"} · ${selectedLightDiagnostic} light direction`;
+      setStatus("ready", `${threeLightDiagnostic ? "three" : "materialx"} · ${selectedLightDiagnostic} light direction`);
       fallbackStatus.textContent = "Authoritative Blender matrix_world diagnostic";
       graphStatus.textContent += ` · ${selectedLightDiagnostic} only · ${threeLightDiagnostic ? "Three physical control" : "MaterialX LightData"} · environment disabled`;
       ownerDocument.documentElement.dataset.materialxReady = "true";
@@ -958,7 +959,9 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
   void start().catch((error) => {
     if (!active) return;
     materialXReady = false;
-    graphStatus.textContent = error instanceof Error ? error.message : String(error);
+    const message = error instanceof Error ? error.message : String(error);
+    graphStatus.textContent = message;
+    setStatus("error", message);
     applySelection();
     renderer.setAnimationLoop(() => renderer.render(scene, camera));
   }).finally(() => {

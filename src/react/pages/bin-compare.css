@@ -17,7 +17,7 @@
 .bin-control-label { display: grid; min-width: 0; gap: 3px; }
 .bin-control-label b { overflow: hidden; color: #C5CED6; font: 500 var(--st-fs-ui)/1.1 var(--st-font); text-overflow: ellipsis; white-space: nowrap; }
 .bin-param-row.is-boolean .bin-control-label b { white-space: normal; }
-.bin-control-label small { color: #8996A2; font: 400 var(--st-fs-micro)/1 var(--st-mono); }
+.bin-control-label small { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1 var(--st-mono); }
 .bin-param-row input[type="checkbox"] { grid-column: 3; }
 .bin-number {
   box-sizing: border-box;
@@ -54,11 +54,18 @@
 
 .bin-preset-row { display: grid; grid-template-columns: 76px minmax(0,1fr); align-items: center; gap: 7px; }
 .bin-preset-row > label { color: #C5CED6; font-size: var(--st-fs-ui); }
-.bin-preset-row > small { grid-column: 1 / -1; color: #8996A2; font: 400 var(--st-fs-micro)/1.4 var(--st-font); }
+.bin-preset-row > small { grid-column: 1 / -1; color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.4 var(--st-font); }
 .bin-range-note,
-.bin-section-help { margin: 0; color: #8996A2; font: 400 var(--st-fs-micro)/1.45 var(--st-font); }
+.bin-section-help { margin: 0; color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.45 var(--st-font); }
 .bin-workflow-actions,
-.bin-export-actions { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; }
+.bin-export-actions { display: grid; gap: 6px; }
+/* "Authored reset" and "Revert preview" need ~119px; three columns of a 340px
+   dock give 95px and wrapped them onto two lines inside a 32px button — the
+   only wrapped buttons in the studio. Two up, third full width. */
+.bin-workflow-actions { grid-template-columns: 1fr 1fr; }
+.bin-workflow-actions > :last-child { grid-column: 1 / -1; }
+/* GLB / STL / Metadata all fit; these stay three up. */
+.bin-export-actions { grid-template-columns: repeat(3, minmax(0,1fr)); }
 .bin-workflow-actions .st-btn,
 .bin-export-actions .st-btn { min-width: 0; padding: 0 6px; }
 .bin-primary-actions { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px; }
@@ -75,19 +82,17 @@
 }
 .bin-state-card > div { display: grid; min-width: 0; gap: 4px; }
 .bin-state-card b { overflow: hidden; color: var(--st-ink); font: 600 var(--st-fs-ui)/1.2 var(--st-font); text-overflow: ellipsis; white-space: nowrap; }
-.bin-state-card small { overflow: hidden; color: #8996A2; font: 400 var(--st-fs-micro)/1.3 var(--st-mono); text-overflow: ellipsis; white-space: nowrap; }
+.bin-state-card small { overflow: hidden; color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.3 var(--st-mono); text-overflow: ellipsis; white-space: nowrap; }
 #truth-capability-detail { white-space: normal; }
-.bin-state-card .st-dot.ready,
-.bin-state-card .st-dot + div .ready { background: var(--st-ok); }
-#truth-capability-dot.ready, #preview-state-dot.ready { background: var(--st-ok); box-shadow: 0 0 0 3px rgba(126,215,158,.14); }
-#truth-capability-dot.warn { background: var(--st-warn); box-shadow: 0 0 0 3px rgba(224,164,112,.14); }
-#truth-capability-dot.error { background: var(--st-err); box-shadow: 0 0 0 3px rgba(228,86,78,.14); }
+/* The card dots are plain .st-dot elements and the runtime toggles
+   ready/warn/error straight onto them — the kit owns all four tones, so this
+   page no longer restates them per id. */
 .bin-result-filter { grid-template-columns: repeat(3, 1fr); }
 
 .bin-results { transition: opacity .15s; }
 .bin-results.stale { opacity: .46; }
 .bin-result-heading { display: grid; gap: 4px; padding-bottom: 4px; border-bottom: 1px solid var(--st-line); }
-.bin-result-heading small { color: #8996A2; font: 400 var(--st-fs-micro)/1.25 var(--st-font); }
+.bin-result-heading small { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.25 var(--st-font); }
 .bin-classification {
   justify-self: start;
   padding: 4px 7px;
@@ -101,16 +106,13 @@
 .bin-classification[data-classification="exact-surface"] { border-color: rgba(126,215,158,.35); color: var(--st-ok); }
 .bin-classification[data-classification="bounds-only"] { border-color: rgba(245,212,111,.35); color: var(--st-delta); }
 .bin-classification[data-classification="unsupported"] { border-color: rgba(228,86,78,.4); color: var(--st-err); }
-.bin-evidence { color: #8996A2; font: 400 var(--st-fs-micro)/1.45 var(--st-font); }
+.bin-evidence { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.45 var(--st-font); }
 .bin-contract-summary { display: grid; gap: 5px; padding: 10px; border: 1px solid var(--st-line); border-radius: var(--st-r-md); background: var(--st-sunken); }
 .bin-contract-summary b { font-size: var(--st-fs-ui); }
-.bin-contract-summary span { color: #8996A2; font: 400 var(--st-fs-micro)/1.45 var(--st-font); }
+.bin-contract-summary span { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.45 var(--st-font); }
 
 .bin-toolbar-button { border: 0; background: transparent; color: var(--st-accent); cursor: pointer; font: 500 var(--st-fs-micro)/1 var(--st-font); }
-.bin-compare-page #compare-status { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.bin-compare-page #compare-status > .st-dot { background: var(--st-warn); box-shadow: 0 0 0 3px rgba(224,164,112,.14); }
-.bin-compare-page #compare-status.ready > .st-dot { background: var(--st-ok); box-shadow: 0 0 0 3px rgba(126,215,158,.14); }
-.bin-compare-page #compare-status.error > .st-dot { background: var(--st-err); box-shadow: 0 0 0 3px rgba(228,86,78,.14); }
+/* #compare-status is a kit .st-state line; its tones come from studio-kit.css. */
 
 .bin-compare-page .viewport-label {
   position: absolute;
@@ -144,8 +146,5 @@
   .bin-compare-page .bin-param-row.is-boolean { min-height: 44px; }
   .bin-compare-page .bin-param-row.is-boolean .bin-control-label { grid-column: 1; }
   .bin-compare-page .bin-param-row.is-boolean input[type="checkbox"] { grid-column: 2; grid-row: 1; width: var(--st-touch); height: var(--st-touch); }
-  .bin-workflow-actions { grid-template-columns: 1fr 1fr; }
-  .bin-workflow-actions > :last-child { grid-column: 1 / -1; }
   .bin-desktop-hint, .bin-shortcut-hint { display: none; }
-  .bin-compare-page .viewport-label { bottom: 52px; }
 }

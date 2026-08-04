@@ -1,8 +1,9 @@
-/* The gallery keeps only its model rows and the per-model accent. The .top
-   eyebrow + 34px h1 + subtitle stack and the floating #panel are gone: the nav
-   names the tool and the dock holds the list. */
+/* The gallery keeps only its model rows. The .top eyebrow + 34px h1 + subtitle
+   stack and the floating #panel are gone: the nav names the tool and the dock
+   holds the list. (There used to be a --accent variable here that the runtime
+   rewrote per model and no rule ever read; the per-model colour reaches the
+   scene through the Three.js material, not CSS.) */
 
-.dojo-gallery-page { --accent: #8FCFFF; }
 .dojo-gallery-page #app { display: block; width: 100%; height: 100%; }
 .dojo-gallery-page #subtitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -21,6 +22,5 @@
 .dojo-gallery-page .model strong { font-size: var(--st-fs-ui); font-weight: 600; }
 .dojo-gallery-page .model span { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.35 var(--st-mono); }
 
-/* The runtime writes the leading word as .ok / .err inside the status bar. */
-.dojo-gallery-page #status .ok { color: var(--st-ok); }
-.dojo-gallery-page #status .err { color: var(--st-err); }
+/* The status tone lives on .st-state in the kit and drives the dot; the runtime
+   no longer prefixes the line with a colour-coded "ready" / "failed" word. */

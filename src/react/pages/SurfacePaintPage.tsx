@@ -114,7 +114,10 @@ function BubblePuttyLab(): React.JSX.Element {
     leftDock={leftDock}
     rightDock={rightDock}
     toolbar={<><EngineSwitch engine="putty" /><span className="st-spacer" /><span>move: drag blob · place: click canvas · orbit: drag canvas</span></>}
-    status={<span id="putty-status"><span className="st-dot ready" />Move a blob or add more putty</span>}
+    status={<span id="putty-status" className="st-state busy">
+      <span className="st-dot" />
+      <span data-status-text>Move a blob or add more putty</span>
+    </span>}
   >
     <canvas id="putty-canvas" />
     <div className="putty-canvas-help" aria-hidden="true"><b>BUBBLE PUTTY</b><span id="putty-canvas-help-text">editable source blobs · one shared body</span></div>
@@ -122,8 +125,11 @@ function BubblePuttyLab(): React.JSX.Element {
 }
 
 /**
- * The WebGPU painter builds its own lil-gui panel and HUD, so the shell hands
- * it a bare viewport rather than docks it would duplicate.
+ * The WebGPU painter builds its own lil-gui panel, so the shell hands it a
+ * bare viewport rather than docks it would duplicate. Its guidance and runtime
+ * readout go in the shell's status bar like every other tool's — this engine
+ * used to be the only one in the app with no status bar, carrying both in a
+ * floating in-viewport panel instead.
  */
 function ProceduralPainter(): React.JSX.Element {
   const isMobile = useMobileStudio();
@@ -148,19 +154,33 @@ function ProceduralPainter(): React.JSX.Element {
       rightDock={rightDock}
       sheetTabs={[{ id: "nodes", label: "Nodes", content: rightDock }]}
       toolbar={<><EngineSwitch engine="procedural" />{!isMobile && <><span className="st-spacer" /><span>D toggles draw / orbit</span></>}</>}
+      status={<>
+        <span id="paint-status" className="st-state busy">
+          <span className="st-dot" />
+          <span data-status-text>Starting the procedural painter…</span>
+        </span>
+        <span className="st-spacer" />
+        <span id="paint-metrics" className="st-muted" />
+      </>}
     >
       <div id="surface-painter-app" />
       <div id="drawFrame" />
-      <button id="modeBtn" type="button" aria-label="Toggle the active painting interaction mode">
-        <span className="dot" />
-        <span className="label">Draw mode</span>
-        <span className="key">D</span>
-      </button>
-      <button id="flowerModeBtn" type="button" aria-pressed="false" hidden>
-        <span className="dot" />
-        <span className="label">Flower brush</span>
-      </button>
-      <div id="hud" />
+      {/* One centred row, not two absolutely-positioned pills offset by a magic
+          112px: the labels are generator-dependent ("Flower brush" / "Fig
+          brush", "Draw mode" / "Interact mode") and the fixed offset made them
+          overlap by ~30px. A flex row also re-centres the mode pill on its own
+          when the brush pill is hidden. */}
+      <div className="paint-mode-bar">
+        <button id="modeBtn" type="button" aria-label="Toggle the active painting interaction mode">
+          <span className="dot" />
+          <span className="label">Draw mode</span>
+          <span className="key">D</span>
+        </button>
+        <button id="flowerModeBtn" type="button" aria-pressed="false" hidden>
+          <span className="dot" />
+          <span className="label">Flower brush</span>
+        </button>
+      </div>
       <div id="toast" role="status" aria-live="polite" />
     </StudioShell>
   );
@@ -302,9 +322,10 @@ function BlenderBrushLab(): React.JSX.Element {
       <span>drag to draw · wheel to zoom</span>
       {!isMobile && <button className="st-btn" type="button" onClick={() => setGraphOpen((open) => !open)}>{graphOpen ? "Hide node editor" : "Show node editor"}</button>}
     </>}
-    status={<>
-      <span id="surface-status"><span className="st-dot ready" />Ready on the demo surface</span>
-    </>}
+    status={<span id="surface-status" className="st-state busy">
+      <span className="st-dot" />
+      <span data-status-text>Ready on the demo surface</span>
+    </span>}
     nodeDock={!isMobile && graphOpen && <section className={`st-node-dock ${graphMaximized ? "maximized" : ""}`}>
       <header>
         <b>Geometry Nodes</b>

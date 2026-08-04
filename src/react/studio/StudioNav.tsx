@@ -36,14 +36,21 @@ export function StudioNav(): React.JSX.Element | null {
   const entry = findStudioTool(pathname);
   const openMenu = (): void => setMenuOpen(true);
   return <>
+    {/* Three grid tracks, not a flex row with an auto-margin: the switcher has
+        to sit at the centre of the bar, not at the centre of whatever space
+        the breadcrumb and the chips happen to leave. Pages publish different
+        numbers of chips, and an auto margin made the switcher jump ~190px
+        between tools. */}
     <header className="st-nav">
-      <strong className="st-nav-title">Procedural Studio</strong>
-      <span className="st-nav-sep" aria-hidden="true" />
-      <span className="st-crumb">
-        {entry?.section.title ?? "Procedural Studio"}
-        <i aria-hidden="true">/</i>
-        <strong>{entry?.tool.title ?? "Tool directory"}</strong>
-      </span>
+      <div className="st-nav-lead">
+        <strong className="st-nav-title">Procedural Studio</strong>
+        <span className="st-nav-sep" aria-hidden="true" />
+        <span className="st-crumb">
+          <span className="st-crumb-section">{entry?.section.title ?? "Procedural Studio"}</span>
+          <i aria-hidden="true">/</i>
+          <strong>{entry?.tool.title ?? "Tool directory"}</strong>
+        </span>
+      </div>
       <nav className="st-segmented st-nav-sections" aria-label="Studio sections">
         {STUDIO_TOOLS.map((section) => {
           const current = section.title === entry?.section.title;
@@ -55,22 +62,24 @@ export function StudioNav(): React.JSX.Element | null {
           >{section.label}</Link>;
         })}
       </nav>
-      <div className="st-nav-chips">
-        {chips.map((chip) => <span className="st-nav-chip" key={chip.id}>
-          <span className={`st-dot ${chip.tone ?? ""}`} aria-hidden="true" />
-          {chip.label}
-        </span>)}
+      <div className="st-nav-trail">
+        <div className="st-nav-chips">
+          {chips.map((chip) => <span className="st-nav-chip" key={chip.id}>
+            <span className={`st-dot ${chip.tone ?? ""}`} aria-hidden="true" />
+            {chip.label}
+          </span>)}
+        </div>
+        {hasDocks && <button
+          type="button"
+          className="st-nav-panels"
+          aria-pressed={docksOpen}
+          onClick={() => setDocksOpen(!docksOpen)}
+        >{docksOpen ? "Hide panels" : "Show panels"}</button>}
+        <button type="button" className="st-nav-tools" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={openMenu}>
+          <span className="st-nav-tools-label">Tools</span>
+          <kbd>⌘K</kbd>
+        </button>
       </div>
-      {hasDocks && <button
-        type="button"
-        className="st-nav-panels"
-        aria-pressed={docksOpen}
-        onClick={() => setDocksOpen(!docksOpen)}
-      >{docksOpen ? "Hide panels" : "Show panels"}</button>}
-      <button type="button" className="st-nav-tools" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={openMenu}>
-        <span className="st-nav-tools-label">Tools</span>
-        <kbd>⌘K</kbd>
-      </button>
     </header>
     <StudioMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
   </>;

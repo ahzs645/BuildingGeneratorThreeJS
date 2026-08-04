@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { Dump } from "../gnvm";
 import {
+  appendNodeCanvasPick,
   authoredValueFromMeasurementDistance,
   interpretMeasurementDisplay,
   linearMeasurementContractForBlendStudioTarget,
@@ -9,6 +10,9 @@ import {
   measurementDistanceFromDisplay,
   measurementDistanceFromAuthoredValue,
   measurementDistanceRange,
+  NODE_CANVAS_MM_PER_UNIT,
+  nodeCanvasDistanceMm,
+  nodeCanvasPickForMeasurement,
 } from "./measurement";
 
 function caliperLikeDump(): Dump {
@@ -293,4 +297,77 @@ test("adds reversible zero and unit nodes to a detected LCD branch", () => {
       .extensions.some((extension) => extension.id === "unrelated-extension"),
     true,
   );
+});
+
+test("calipers the node canvas itself at 96 DPI print scale", () => {
+  const dump: Dump = {
+    blender_version: "5.1.2",
+    objects: [],
+    node_groups: {
+      Controller: {
+        name: "Controller",
+        type: "GeometryNodeTree",
+        interface: [],
+        nodes: [
+          {
+            name: "Group Input",
+            type: "NodeGroupInput",
+            label: null,
+            ui: { location: [10, 20], location_absolute: [0, 0] },
+            inputs: [],
+            outputs: [],
+          },
+          {
+            name: "Math.001",
+            type: "ShaderNodeMath",
+            label: "One Inch Away",
+            ui: { location_absolute: [96, 0] },
+            inputs: [],
+            outputs: [],
+          },
+          {
+            name: "Detached",
+            type: "ShaderNodeMath",
+            label: "   ",
+            ui: { location: [3, -4] },
+            inputs: [],
+            outputs: [],
+          },
+          {
+            name: "Unplaced",
+            type: "ShaderNodeMath",
+            label: null,
+            inputs: [],
+            outputs: [],
+          },
+        ],
+        links: [],
+      },
+    },
+  } as unknown as Dump;
+
+  const first = nodeCanvasPickForMeasurement(dump, "Controller", "Group Input");
+  const second = nodeCanvasPickForMeasurement(dump, "Controller", "Math.001");
+  const detached = nodeCanvasPickForMeasurement(dump, "Controller", "Detached");
+  assert.deepEqual(first?.position, [0, 0]);
+  assert.equal(first?.label, "Group Input");
+  assert.equal(second?.label, "One Inch Away");
+  // A blank label falls back to the node name; location backs up location_absolute.
+  assert.equal(detached?.label, "Detached");
+  assert.deepEqual(detached?.position, [3, -4]);
+  assert.equal(nodeCanvasPickForMeasurement(dump, "Controller", "Unplaced"), null);
+  assert.equal(nodeCanvasPickForMeasurement(dump, "Missing", "Group Input"), null);
+
+  let snapshot = appendNodeCanvasPick({ picks: [] }, first!);
+  assert.equal(snapshot.picks.length, 1);
+  assert.equal(snapshot.distanceMm, undefined);
+  // Re-picking the lone fixed jaw is a no-op.
+  assert.equal(appendNodeCanvasPick(snapshot, first!), snapshot);
+  snapshot = appendNodeCanvasPick(snapshot, second!);
+  // 96 canvas units = 96 CSS pixels = exactly one printed inch.
+  assert.equal(snapshot.distanceMm, 25.4);
+  assert.equal(nodeCanvasDistanceMm([0, 0], [3, -4]), 5 * NODE_CANVAS_MM_PER_UNIT);
+  // A third pick starts a fresh measurement from that jaw.
+  const restarted = appendNodeCanvasPick(snapshot, detached!);
+  assert.deepEqual(restarted, { picks: [detached] });
 });

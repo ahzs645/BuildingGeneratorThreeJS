@@ -39,7 +39,10 @@ export default function DojoGalleryPage(): React.JSX.Element {
       className="dojo-gallery-page"
       leftDock={leftDock}
       toolbar={<span id="subtitle">Blender-evaluated Geometry Nodes, presented as portable glTF.</span>}
-      status={<span id="status">loading…</span>}
+      status={<span id="status" className="st-state busy">
+        <span className="st-dot" />
+        <span data-status-text>loading…</span>
+      </span>}
     >
       <canvas id="app"></canvas>
       <ToolStateOverlay state={runtimeState} />

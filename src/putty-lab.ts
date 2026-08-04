@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { bindStatusLine } from "./status-line";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { MarchingCubes } from "three/examples/jsm/objects/MarchingCubes.js";
@@ -34,7 +35,7 @@ function loadPuttyDump(): Promise<Dump> {
 
 export function createTool(): ToolHandle {
   const canvas = document.querySelector<HTMLCanvasElement>("#putty-canvas")!;
-  const status = document.querySelector<HTMLElement>("#putty-status")!;
+  const applyStatus = bindStatusLine("#putty-status");
   const countText = document.querySelector<HTMLElement>("#putty-count")!;
   const runtimeText = document.querySelector<HTMLElement>("#putty-runtime")!;
   const selectionText = document.querySelector<HTMLElement>("#putty-selection")!;
@@ -147,8 +148,7 @@ export function createTool(): ToolHandle {
 
   function setStatus(message: string, busy = false): void {
     if (disposed) return;
-    status.classList.toggle("busy", busy);
-    status.lastChild!.textContent = message;
+    applyStatus(busy ? "busy" : "ready", message);
   }
 
   function clearRoot(root: THREE.Group): void {

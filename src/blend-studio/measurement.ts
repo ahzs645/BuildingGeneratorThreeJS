@@ -287,6 +287,70 @@ export function measurementDistanceFromDisplay(
   return unit === "in" ? distance * 25.4 : distance;
 }
 
+/**
+ * One node-editor unit measured as a CSS pixel printed at 96 DPI. This is the
+ * whole joke made rigorous: the caliper reads the graph "as printed", so a
+ * default-width Blender node (140 units) calipers at a plausible 37.042 mm.
+ */
+export const NODE_CANVAS_MM_PER_UNIT = 25.4 / 96;
+
+export type BlendStudioNodeCanvasPick = {
+  groupName: string;
+  nodeName: string;
+  label: string;
+  position: [number, number];
+};
+
+export type BlendStudioNodeCanvasMeasurementSnapshot = {
+  picks: BlendStudioNodeCanvasPick[];
+  distanceMm?: number;
+};
+
+export function nodeCanvasDistanceMm(
+  from: [number, number],
+  to: [number, number],
+): number {
+  return Math.hypot(to[0] - from[0], to[1] - from[1]) * NODE_CANVAS_MM_PER_UNIT;
+}
+
+export function nodeCanvasPickForMeasurement(
+  dump: Dump,
+  groupName: string,
+  nodeName: string,
+): BlendStudioNodeCanvasPick | null {
+  const group = dump.node_groups[groupName];
+  const node = group ? nodeByName(group, nodeName) : undefined;
+  const location = node?.ui?.location_absolute ?? node?.ui?.location;
+  if (!node || !Array.isArray(location) || location.length < 2) return null;
+  const [x, y] = [Number(location[0]), Number(location[1])];
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  return {
+    groupName,
+    nodeName,
+    label: node.label?.trim() || nodeName,
+    position: [x, y],
+  };
+}
+
+/**
+ * The caliper-jaw pick sequence over the node canvas: the first pick sets the
+ * fixed jaw, the second sets the sliding jaw and yields a distance, and a
+ * third starts a fresh measurement. Re-picking the lone fixed jaw is a no-op.
+ */
+export function appendNodeCanvasPick(
+  snapshot: BlendStudioNodeCanvasMeasurementSnapshot,
+  pick: BlendStudioNodeCanvasPick,
+): BlendStudioNodeCanvasMeasurementSnapshot {
+  if (snapshot.picks.length !== 1) return { picks: [pick] };
+  const [first] = snapshot.picks;
+  if (first.groupName === pick.groupName && first.nodeName === pick.nodeName)
+    return snapshot;
+  return {
+    picks: [first, pick],
+    distanceMm: nodeCanvasDistanceMm(first.position, pick.position),
+  };
+}
+
 const ZERO_NODE_NAME = "__BlendStudio LCD Zero Offset";
 const UNIT_NODE_NAME = "__BlendStudio LCD Unit Scale";
 

@@ -5,7 +5,7 @@
 .surface-shell .st-viewport { background: radial-gradient(circle at 45% 35%, #26312D, #080B0A 67%); }
 .surface-selection-hud {
   position: absolute; inset: 0; z-index: 4; overflow: hidden; pointer-events: none;
-  color: #eef064; font: 600 10px/1 var(--st-mono); letter-spacing: .08em;
+  color: var(--surface-selector); font: 600 10px/1 var(--st-mono); letter-spacing: .08em;
 }
 .surface-selection-hud[hidden] { display: none; }
 .surface-selection-reticle {
@@ -31,12 +31,12 @@
 }
 .surface-selection-hud[data-hit="true"] .surface-selection-grid {
   background-image:
-    linear-gradient(rgba(255,247,98,.92) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,247,98,.92) 1px, transparent 1px);
-  filter: drop-shadow(0 0 4px rgba(255,232,52,.55));
+    linear-gradient(color-mix(in srgb, var(--surface-selector) 92%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--surface-selector) 92%, transparent) 1px, transparent 1px);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--surface-selector) 55%, transparent));
 }
 .surface-selection-hud[data-hit="true"] .surface-selection-center,
-.surface-selection-hud[data-hit="true"] .surface-selection-label { color: #fff36b; border-color: #fff36b; }
+.surface-selection-hud[data-hit="true"] .surface-selection-label { color: var(--surface-selector); border-color: var(--surface-selector); }
 .surface-flat-overlay {
   position: absolute; inset: 0; z-index: 3;
   overflow: hidden; pointer-events: none; color: rgba(244,246,242,.78);
@@ -49,9 +49,9 @@
 }
 .surface-canvas-frame i { position: absolute; width: 54px; height: 58px; }
 .surface-canvas-frame .top-left { left: 0; top: 0; border-left: 1px solid currentColor; border-top: 1px solid currentColor; }
-.surface-canvas-frame .top-right { right: 0; top: 0; border-right: 2px solid #d8d430; border-top: 1px solid currentColor; }
-.surface-canvas-frame .bottom-left { left: 0; bottom: 0; border-left: 1px solid currentColor; border-bottom: 2px solid #d8d430; }
-.surface-canvas-frame .bottom-right { right: 0; bottom: 0; border-right: 2px solid #d8d430; border-bottom: 2px solid #d8d430; }
+.surface-canvas-frame .top-right { right: 0; top: 0; border-right: 2px solid var(--surface-selector); border-top: 1px solid currentColor; }
+.surface-canvas-frame .bottom-left { left: 0; bottom: 0; border-left: 1px solid currentColor; border-bottom: 2px solid var(--surface-selector); }
+.surface-canvas-frame .bottom-right { right: 0; bottom: 0; border-right: 2px solid var(--surface-selector); border-bottom: 2px solid var(--surface-selector); }
 .surface-brush-reticle {
   position: absolute; left: 50%; top: 50%; width: 88px; height: 88px;
   transform: translate(-50%, -50%); will-change: left, top;
@@ -88,30 +88,37 @@
   .surface-brush-label, .surface-selection-label { display: none; }
 }
 .surface-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+/* The dock's yellow is object identity, not decoration: it names the selector
+   drawn in the viewport, the way --st-truth / --st-vm name the two sides of a
+   parity comparison. It is one declared colour derived with color-mix, where
+   it used to be ten hand-mixed yellows (#eef064, #d8d430, #fff36b, #fff15b,
+   #fff09a, #fff18a and four rgba() variants) that never quite matched. */
+.surface-shell { --surface-selector: #FFE245; }
 .surface-target-picker { display: grid; gap: 7px; padding: 10px; border: 1px solid var(--st-line); border-radius: var(--st-r-md); background: rgba(255,255,255,.025); transition: border-color .16s ease, background .16s ease; }
-.surface-target-picker[data-mode="locked"] { border-color: rgba(255,226,69,.56); background: rgba(255,222,45,.055); }
-.surface-target-picker > span { color: var(--st-ink-2); font: 600 var(--st-fs-micro)/1.2 var(--st-sans); }
+.surface-target-picker[data-mode="locked"] { border-color: color-mix(in srgb, var(--surface-selector) 56%, transparent); background: color-mix(in srgb, var(--surface-selector) 6%, transparent); }
+.surface-target-picker > span { color: var(--st-ink-2); font: 600 var(--st-fs-micro)/1.2 var(--st-font); }
 .surface-target-picker > small { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.35 var(--st-mono); }
-.surface-target-pick { border-color: rgba(255,226,69,.42); color: #fff09a; }
-.surface-target-pick:hover { border-color: rgba(255,235,92,.78); background: rgba(255,222,45,.1); }
-.surface-target-pick.active { border-color: #fff15b; color: #fffbd0; background: rgba(255,226,69,.14); box-shadow: 0 0 0 1px rgba(255,235,92,.26), 0 0 18px rgba(255,222,45,.1); }
-.surface-target-pick.active[data-hit="true"] { background: rgba(255,226,69,.22); box-shadow: 0 0 0 1px rgba(255,245,122,.48), 0 0 22px rgba(255,222,45,.16); }
-.surface-area-transform { display: grid; gap: 7px; padding: 10px; border: 1px solid rgba(255,226,69,.32); border-radius: var(--st-r-md); background: rgba(255,222,45,.04); }
-.surface-area-transform > span { color: #fff09a; font: 600 var(--st-fs-micro)/1.2 var(--st-sans); }
-.surface-area-transform > small { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.35 var(--st-sans); }
+.surface-target-pick { border-color: color-mix(in srgb, var(--surface-selector) 42%, transparent); color: color-mix(in srgb, var(--surface-selector) 72%, white); }
+.surface-target-pick:hover { border-color: color-mix(in srgb, var(--surface-selector) 78%, transparent); background: color-mix(in srgb, var(--surface-selector) 10%, transparent); }
+.surface-target-pick.active { border-color: var(--surface-selector); color: color-mix(in srgb, var(--surface-selector) 35%, white); background: color-mix(in srgb, var(--surface-selector) 14%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--surface-selector) 26%, transparent), 0 0 18px color-mix(in srgb, var(--surface-selector) 10%, transparent); }
+.surface-target-pick.active[data-hit="true"] { background: color-mix(in srgb, var(--surface-selector) 22%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--surface-selector) 48%, transparent), 0 0 22px color-mix(in srgb, var(--surface-selector) 16%, transparent); }
+.surface-area-transform { display: grid; gap: 7px; padding: 10px; border: 1px solid color-mix(in srgb, var(--surface-selector) 32%, transparent); border-radius: var(--st-r-md); background: color-mix(in srgb, var(--surface-selector) 4%, transparent); }
+.surface-area-transform > span { color: color-mix(in srgb, var(--surface-selector) 72%, white); font: 600 var(--st-fs-micro)/1.2 var(--st-font); }
+.surface-area-transform > small { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.35 var(--st-font); }
 .surface-area-transform .st-segmented button { min-width: 0; padding-inline: 6px; font-size: 10px; }
 .surface-area-transform .surface-projection-height { grid-template-columns: 1fr 76px 34px; padding-block: 2px; }
-.surface-drop-area { border-color: rgba(122,255,112,.42); color: #caffb8; background: rgba(73,180,79,.08); }
-.surface-drop-area:hover { border-color: rgba(132,255,116,.78); background: rgba(73,180,79,.16); }
-.surface-drop-area.projected { border-color: rgba(255,232,75,.72); color: #fff18a; background: rgba(255,222,45,.12); }
+/* "Drop to surface" is the tool's one constructive action, so it takes the
+   kit's --st-ok rather than a third green invented for this page. */
+.surface-drop-area { border-color: rgba(126,215,158,.42); color: #B3E6C6; background: rgba(126,215,158,.08); }
+.surface-drop-area:hover { border-color: rgba(126,215,158,.78); background: rgba(126,215,158,.16); }
+.surface-drop-area.projected { border-color: color-mix(in srgb, var(--surface-selector) 72%, transparent); color: color-mix(in srgb, var(--surface-selector) 68%, white); background: color-mix(in srgb, var(--surface-selector) 12%, transparent); }
 /* display:contents so the brush rows join the section's flex column directly;
    [hidden] still has to win, hence the explicit none. */
 .surface-controls { display: contents; }
 .surface-controls[hidden] { display: none; }
 .surface-bounds { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.45 var(--st-mono); word-break: break-word; }
 .surface-reference-image { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid var(--st-line); border-radius: var(--st-r-md); background: #000; }
-.surface-edit-hint { margin: 0; color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.45 var(--st-sans); }
+.surface-edit-hint { margin: 0; color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.45 var(--st-font); }
 
-/* surface-draw.ts toggles `busy` and rewrites the status line's last text node. */
-.surface-shell #surface-status { display: flex; align-items: center; gap: 8px; }
-.surface-shell #surface-status.busy > .st-dot { background: var(--st-warn); box-shadow: 0 0 0 3px rgba(224,164,112,.14); }
+/* #surface-status is a kit .st-state line; its tones come from studio-kit.css. */

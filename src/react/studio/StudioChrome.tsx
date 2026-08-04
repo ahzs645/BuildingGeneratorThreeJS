@@ -4,9 +4,11 @@ import { useLocation } from "react-router-dom";
 /**
  * The shell's tone vocabulary. `.st-dot` is the only status affordance in the
  * app, so every "is it working" signal — nav chip, status bar, source card —
- * resolves to one of these four.
+ * resolves to one of these. `busy` is working, `warn` is working but degraded;
+ * both read amber. Never signal state a second way (recolouring the label,
+ * swapping a word) — the dot is the signal.
  */
-export type StudioTone = "idle" | "ready" | "busy" | "error";
+export type StudioTone = "idle" | "ready" | "busy" | "warn" | "error";
 
 export type StudioChip = { id: string; label: string; tone?: StudioTone };
 

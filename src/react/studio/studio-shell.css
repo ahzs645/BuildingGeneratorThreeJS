@@ -39,6 +39,10 @@
 /* Toolbar and status bar are single-line strips: their items never wrap. */
 .st-toolbar > *, .st-statusbar > * { flex: 0 0 auto; white-space: nowrap; }
 .st-toolbar > .st-spacer, .st-statusbar > .st-spacer { flex: 1 1 auto; }
+/* The state line is the one item allowed to give ground. Some tools write a
+   whole sentence of guidance into it, and at 0 0 auto that pushed the trailing
+   readout (renderer, timings, counts) straight off the end of the strip. */
+.st-statusbar > .st-state { flex: 0 1 auto; min-width: 0; }
 /* Runtime-written status text may be long; it truncates rather than pushing. */
 .st-statusbar > span:not(.st-sep):not(.st-spacer):not(.st-dot) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
@@ -65,7 +69,11 @@
 
 /* Docked node editor: the editor sizes to the dock, never to the window. */
 .st-node-dock { overflow: hidden; }
+/* A 34px strip: the title and the buttons hold their line, and the hint is the
+   one thing that truncates when the dock is narrow. */
+.st-node-dock > header > * { flex: 0 0 auto; white-space: nowrap; }
 .st-node-dock > header b { color: var(--st-ink); }
+.st-node-dock > header small { min-width: 0; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; }
 .st-node-dock-body {
   min-height: 0; flex: 1; overflow: hidden;
   background: #0C0F13;
@@ -93,6 +101,11 @@
 .st-finding { margin: 0; font-size: var(--st-fs-ui); line-height: 1.55; color: var(--st-ink-2); }
 
 @media (max-width: 820px), ((pointer: coarse) and (max-height: 500px)) {
+  /* The kit makes the strip scroll on phones, so the state line keeps its
+     natural width here instead of giving ground: shrunk against 390px it was
+     rendering one letter of the message. Lives in this file, not the kit,
+     because the desktop rule above would otherwise win on load order. */
+  .st-statusbar > .st-state { flex: 0 0 auto; }
   .st-sheet { box-shadow: 0 -18px 48px rgba(0,0,0,.5); }
   .st-sheet-handle {
     display: flex; width: 100%; min-height: var(--st-touch); flex: 0 0 auto;
@@ -100,7 +113,12 @@
     border: 0; background: transparent; color: var(--st-ink-2); cursor: pointer;
     font: 500 var(--st-fs-micro)/1 var(--st-mono);
   }
-  @media (max-height: 500px) { .st-sheet-handle { min-height: 34px; gap: 4px; } }
+  /* Shorter handle in landscape — the kit reserves --st-sheet-collapsed of
+     body height for it, so the two have to move together. */
+  @media (max-height: 500px) {
+    :root { --st-sheet-collapsed: calc(34px + 1px + env(safe-area-inset-bottom, 0px)); }
+    .st-sheet-handle { min-height: 34px; gap: 4px; }
+  }
   .st-sheet.is-open .st-sheet-grip { background: #5C6771; }
   .st-sheet-body { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 10px; padding: 0 12px 10px; }
   .st-sheet-body[hidden] { display: none; }
