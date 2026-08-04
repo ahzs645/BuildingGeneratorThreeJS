@@ -24,6 +24,18 @@ export default function TypewriterPage(): React.JSX.Element {
       <button id="typewriter-reframe" className="st-btn" type="button">Reframe model</button>
     </div>
     <div className="st-section">
+      <div className="st-section-title">Base object</div>
+      <select id="typewriter-base-select" className="st-select" defaultValue="">
+        <option value="">None · text only</option>
+      </select>
+      <div className="st-btn-row st-btn-row-even">
+        <button id="typewriter-base-import" className="st-btn" type="button">Import shape…</button>
+        <button id="typewriter-base-clear" className="st-btn" type="button" disabled>Clear</button>
+      </div>
+      <input id="typewriter-base-file" type="file" accept=".glb,.gltf,.obj,.stl,.ply,.fbx" hidden />
+      <p id="typewriter-base-state" className="st-finding">Join the typed text with a reference object or any imported shape — the graph's own base-geometry input.</p>
+    </div>
+    <div className="st-section">
       <div className="st-section-title">Browser GN-VM</div>
       <div className="st-metric">
         <strong id="typewriter-count">—</strong>

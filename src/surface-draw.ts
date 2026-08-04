@@ -13,7 +13,8 @@ import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2.js";
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from "three-mesh-bvh";
 import { publicUrl } from "./base-url";
-import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
+import { evaluateLibraryShape, listLibraryShapes, loadLibraryBaseShape, type LibraryShapeInfo } from "./base-shapes";
+import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio, releaseToolContext } from "./canvas-viewport";
 import {
   EditableCurveDocument,
   type EditableCurvePoint,
@@ -71,6 +72,39 @@ function loadBrushAssets(): Promise<BrushAssets> {
   return brushAssetsPromise;
 }
 
+// Typewriter glyph geometry for the text brush: the studies text graph runs
+// once per distinct string; the flat glyph soup is then swept along strokes.
+let typewriterDumpPromise: Promise<Dump> | null = null;
+const typewriterSoupCache = new Map<string, Promise<TriSoup>>();
+function typewriterTextSoup(text: string): Promise<TriSoup> {
+  let cached = typewriterSoupCache.get(text);
+  if (cached) return cached;
+  typewriterDumpPromise ??= fetch(publicUrl("dojo/typewriter/dump.json")).then((response) => {
+    if (!response.ok) throw new Error(`Typewriter graph failed to load (${response.status})`);
+    return response.json() as Promise<Dump>;
+  });
+  typewriterDumpPromise.catch(() => { typewriterDumpPromise = null; });
+  cached = typewriterDumpPromise.then((dump) => new Promise<TriSoup>((resolve, reject) => {
+    const worker = new Worker(new URL("./blend-import-worker.ts", import.meta.url), { type: "module", name: "surface-text" });
+    worker.onmessage = (event: MessageEvent<WorkerReply>) => {
+      worker.terminate();
+      if (event.data.ok) resolve(event.data.soup); else reject(new Error(event.data.error));
+    };
+    worker.onerror = (event) => { worker.terminate(); reject(new Error(event.message)); };
+    // The graph animates a type-then-erase demo cycle; a far frame plus a
+    // deferred backspace keyframe shows the whole string fully typed.
+    worker.postMessage({
+      id: 1,
+      dump,
+      object: "_Typewriter Node Container",
+      overrides: { __frame: 2400, "Text input": text, "Keyframe to Backspace": 100000 },
+    });
+  }));
+  cached.catch(() => typewriterSoupCache.delete(text));
+  typewriterSoupCache.set(text, cached);
+  return cached;
+}
+
 export function createTool(): ToolHandle {
   const canvas = document.querySelector<HTMLCanvasElement>("#surface-canvas")!;
   const selectionHud = document.querySelector<HTMLElement>("#surface-selection-hud")!;
@@ -110,6 +144,19 @@ export function createTool(): ToolHandle {
   const brushSelect = document.querySelector<HTMLSelectElement>("#surface-brush")!;
   const periodicControls = document.querySelector<HTMLElement>("#surface-periodic-controls")!;
   const crayonControls = document.querySelector<HTMLElement>("#surface-crayon-controls")!;
+  const textControls = document.querySelector<HTMLElement>("#surface-text-controls")!;
+  const surfaceText = document.querySelector<HTMLInputElement>("#surface-text")!;
+  const textFit = document.querySelector<HTMLInputElement>("#surface-text-fit")!;
+  const textSize = document.querySelector<HTMLInputElement>("#surface-text-size")!;
+  const textSizeOutput = document.querySelector<HTMLOutputElement>("#surface-text-size-output")!;
+  const textOffset = document.querySelector<HTMLInputElement>("#surface-text-offset")!;
+  const textOffsetOutput = document.querySelector<HTMLOutputElement>("#surface-text-offset-output")!;
+  const stampControls = document.querySelector<HTMLElement>("#surface-stamp-controls")!;
+  const stampAsset = document.querySelector<HTMLSelectElement>("#surface-stamp-asset")!;
+  const stampSize = document.querySelector<HTMLInputElement>("#surface-stamp-size")!;
+  const stampSizeOutput = document.querySelector<HTMLOutputElement>("#surface-stamp-size-output")!;
+  const stampSpacing = document.querySelector<HTMLInputElement>("#surface-stamp-spacing")!;
+  const stampSpacingOutput = document.querySelector<HTMLOutputElement>("#surface-stamp-spacing-output")!;
   const crayonPreset = document.querySelector<HTMLSelectElement>("#surface-crayon-preset")!;
   const spacing = document.querySelector<HTMLInputElement>("#surface-spacing")!;
   const size = document.querySelector<HTMLInputElement>("#surface-size")!;
@@ -199,6 +246,7 @@ export function createTool(): ToolHandle {
   const pointer = new THREE.Vector2();
   const curveDocument = new EditableCurveDocument();
   const strokes = curveDocument.strokes;
+  let libraryShapes: LibraryShapeInfo[] = [];
   let drawing = true;
   let selectingTarget = false;
   let selectingArea = false;
@@ -516,6 +564,22 @@ export function createTool(): ToolHandle {
     activeObjectUrl = url;
     try { await loadTarget(url, file.name.split(".").pop()?.toLowerCase() ?? "", file.name, () => file.text(), () => file.arrayBuffer()); }
     finally { URL.revokeObjectURL(url); if (activeObjectUrl === url) activeObjectUrl = null; }
+  }
+
+  /** Evaluate a ported reference object through the GN-VM and install it as the projection surface. */
+  async function loadLibrarySurface(info: LibraryShapeInfo): Promise<void> {
+    surfaceKind = "curved";
+    showFlatWorkspace(false);
+    useCamera(perspectiveCamera);
+    removeDrawingArea();
+    setStatus(`Evaluating ${info.title} through the GN-VM…`, true);
+    const shape = await loadLibraryBaseShape(info);
+    if (disposed) return;
+    clearObject(targetRoot); targetRoot.add(shape.object); normalizeTarget(shape.object); prepareTarget(shape.object);
+    refreshTargetInventory();
+    if (!targetSurfaces.length) throw new Error(`${info.title} does not contain a usable mesh surface.`);
+    fileName.textContent = info.title; clearStrokes();
+    setStatus(`${info.title} ready · ${targetSurfaces.length} projection mesh${targetSurfaces.length === 1 ? "" : "es"}`);
   }
 
   function updatePointer(event: PointerEvent): void {
@@ -1121,7 +1185,183 @@ export function createTool(): ToolHandle {
     return { min, max };
   }
 
+  /** strokeFrame, but positions past either stroke end continue along the end tangent. */
+  function strokeFrameExtended(layout: CrayonLayout, distance: number): ReturnType<typeof strokeFrame> {
+    const clamped = THREE.MathUtils.clamp(distance, 0, layout.length);
+    const frame = strokeFrame(layout, clamped);
+    if (distance !== clamped) frame.point.addScaledVector(frame.tangent, distance - clamped);
+    return frame;
+  }
+
+  /**
+   * Sweep the flat typewriter glyph soup along one stroke: glyph X maps to
+   * stroke arc length, glyph Y to the surface-tangent lateral direction, and
+   * glyph height rides the surface normal. Each vertex re-projects onto the
+   * nearest target surface so the text conforms to curvature between samples.
+   * Fit mode scales the string to the stroke; fixed mode uses a world glyph
+   * height and lets the string run past the stroke ends along their tangents.
+   */
+  function textAlongStroke(soup: TriSoup, layout: CrayonLayout): THREE.BufferGeometry {
+    const source = soup.positions;
+    const positions = new Float32Array(source.length);
+    const min = [Infinity, Infinity, Infinity];
+    const max = [-Infinity, -Infinity, -Infinity];
+    for (let i = 0; i < source.length; i += 3) for (let axis = 0; axis < 3; axis++) {
+      min[axis] = Math.min(min[axis], source[i + axis]);
+      max[axis] = Math.max(max[axis], source[i + axis]);
+    }
+    const scale = textFit.checked
+      ? layout.length / Math.max(max[0] - min[0], 1e-9)
+      : Number(textSize.value) / Math.max(max[1] - min[1], 1e-9);
+    const offset = Number(textOffset.value);
+    const lateralCenter = (min[1] + max[1]) * .5;
+    for (let i = 0; i < source.length; i += 3) {
+      const frame = strokeFrameExtended(layout, (source[i] - min[0]) * scale);
+      const planePoint = frame.point.clone()
+        .addScaledVector(frame.lateral, (source[i + 1] - lateralCenter) * scale + offset);
+      const surface = surfaceKind === "flat" ? null : closestTargetSurface(planePoint);
+      const point = surface?.point ?? planePoint;
+      const normal = surface?.normal ?? frame.normal;
+      point.addScaledVector(normal, (source[i + 2] - min[2]) * scale + SURFACE_CLEARANCE);
+      positions[i] = point.x; positions[i + 1] = point.y; positions[i + 2] = point.z;
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geometry.setIndex(new THREE.BufferAttribute(soup.indices.slice(), 1));
+    geometry.computeVertexNormals();
+    return geometry;
+  }
+
+  async function evaluateTextBrush(): Promise<void> {
+    const text = surfaceText.value.trim();
+    const { layouts } = crayonInput();
+    if (!text || !layouts.length) {
+      clearObject(brushRoot);
+      runtime.textContent = text ? "Draw a stroke to place the text" : "Type some text first";
+      return;
+    }
+    const id = ++requestId;
+    const started = performance.now();
+    setStatus("Evaluating typewriter glyphs in GN-VM…", true);
+    const soup = await typewriterTextSoup(text);
+    if (id !== requestId || disposed) return;
+    const group = new THREE.Group();
+    let verts = 0, tris = 0;
+    for (const layout of layouts) {
+      const geometry = textAlongStroke(soup, layout);
+      verts += geometry.getAttribute("position").count;
+      tris += geometry.index ? geometry.index.count / 3 : 0;
+      group.add(new THREE.Mesh(geometry, chromeMaterial));
+    }
+    previewRoot.visible = selectingCurve || curveDocument.activeStroke !== null;
+    clearObject(brushRoot); brushRoot.add(group);
+    runtime.textContent = `${verts.toLocaleString()} verts · ${Math.round(tris).toLocaleString()} tris · ${((performance.now() - started) / 1000).toFixed(2)}s`;
+    boundsText.textContent = `“${text}” swept along ${layouts.length} stroke${layouts.length === 1 ? "" : "s"}`;
+    setStatus("Typewriter text wrapped onto the surface · draw more strokes or edit the text");
+    (window as typeof window & { __SURFACE_DRAW__?: unknown }).__SURFACE_DRAW__ = {
+      ready: true,
+      brush: "text",
+      surface: surfaceKind,
+      strokes: strokes.length,
+      points: curveDocument.pointCount,
+      stats: { verts, faces: Math.round(tris) },
+    };
+  }
+
+  /**
+   * Repeat a reference object's evaluated mesh along each stroke: stamps sit
+   * at spacing intervals, oriented by the local stroke frame (asset X along
+   * the stroke, Y lateral, Blender Z-up along the surface normal). Placement
+   * is rigid per stamp — stamps are small, so chordal error stays negligible.
+   */
+  const STAMP_VERTEX_BUDGET = 400_000;
+  function stampsAlongStroke(soup: TriSoup, layout: CrayonLayout, size: number, spacing: number, budget: number): { geometry: THREE.BufferGeometry; count: number } | null {
+    const source = soup.positions;
+    const min = [Infinity, Infinity, Infinity];
+    const max = [-Infinity, -Infinity, -Infinity];
+    for (let i = 0; i < source.length; i += 3) for (let axis = 0; axis < 3; axis++) {
+      min[axis] = Math.min(min[axis], source[i + axis]);
+      max[axis] = Math.max(max[axis], source[i + axis]);
+    }
+    const footprint = Math.max(max[0] - min[0], max[1] - min[1], 1e-9);
+    const scale = size / footprint;
+    const centerX = (min[0] + max[0]) * .5;
+    const centerY = (min[1] + max[1]) * .5;
+    const vertexCount = source.length / 3;
+    const fitCount = Math.max(1, Math.floor((layout.length - size) / spacing) + 1);
+    const count = Math.max(1, Math.min(fitCount, Math.floor(budget / Math.max(vertexCount, 1))));
+    if (!count) return null;
+    const startDistance = (layout.length - (count - 1) * spacing) * .5;
+    const positions = new Float32Array(source.length * count);
+    const indices = new Uint32Array(soup.indices.length * count);
+    for (let stamp = 0; stamp < count; stamp++) {
+      const frame = strokeFrame(layout, startDistance + stamp * spacing);
+      const vertexBase = stamp * vertexCount;
+      const positionBase = stamp * source.length;
+      for (let i = 0; i < source.length; i += 3) {
+        const x = (source[i] - centerX) * scale;
+        const y = (source[i + 1] - centerY) * scale;
+        const z = (source[i + 2] - min[2]) * scale + SURFACE_CLEARANCE;
+        positions[positionBase + i] = frame.point.x + frame.tangent.x * x + frame.lateral.x * y + frame.normal.x * z;
+        positions[positionBase + i + 1] = frame.point.y + frame.tangent.y * x + frame.lateral.y * y + frame.normal.y * z;
+        positions[positionBase + i + 2] = frame.point.z + frame.tangent.z * x + frame.lateral.z * y + frame.normal.z * z;
+      }
+      const indexBase = stamp * soup.indices.length;
+      for (let i = 0; i < soup.indices.length; i++) indices[indexBase + i] = soup.indices[i] + vertexBase;
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    geometry.computeVertexNormals();
+    return { geometry, count };
+  }
+
+  async function evaluateStampBrush(): Promise<void> {
+    const info = libraryShapes.find((shape) => shape.id === stampAsset.value);
+    const { layouts } = crayonInput();
+    if (!info || !layouts.length) {
+      clearObject(brushRoot);
+      runtime.textContent = info ? "Draw a stroke to place the stamps" : "Choose a reference object to stamp";
+      return;
+    }
+    const id = ++requestId;
+    const started = performance.now();
+    setStatus(`Evaluating ${info.title} in GN-VM…`, true);
+    const soup = await evaluateLibraryShape(info);
+    if (id !== requestId || disposed) return;
+    const size = Number(stampSize.value);
+    const spacing = Number(stampSpacing.value);
+    const group = new THREE.Group();
+    let verts = 0, tris = 0, stamps = 0, budget = STAMP_VERTEX_BUDGET;
+    for (const layout of layouts) {
+      const placed = stampsAlongStroke(soup, layout, size, spacing, budget);
+      if (!placed) continue;
+      stamps += placed.count;
+      budget -= placed.count * (soup.positions.length / 3);
+      verts += placed.geometry.getAttribute("position").count;
+      tris += placed.geometry.index ? placed.geometry.index.count / 3 : 0;
+      group.add(new THREE.Mesh(placed.geometry, chromeMaterial));
+    }
+    previewRoot.visible = selectingCurve || curveDocument.activeStroke !== null;
+    clearObject(brushRoot); brushRoot.add(group);
+    const capped = budget <= soup.positions.length / 3;
+    runtime.textContent = `${stamps} stamp${stamps === 1 ? "" : "s"} · ${verts.toLocaleString()} verts · ${((performance.now() - started) / 1000).toFixed(2)}s${capped ? " · capped for performance" : ""}`;
+    boundsText.textContent = `${info.title} repeated along ${layouts.length} stroke${layouts.length === 1 ? "" : "s"}`;
+    setStatus(`${info.title} stamped along the stroke${capped ? " · heavy asset, stamp count capped" : ""}`);
+    (window as typeof window & { __SURFACE_DRAW__?: unknown }).__SURFACE_DRAW__ = {
+      ready: true,
+      brush: "stamp",
+      surface: surfaceKind,
+      strokes: strokes.length,
+      points: curveDocument.pointCount,
+      stats: { verts, faces: Math.round(tris) },
+      stamps,
+    };
+  }
+
   async function evaluateBrush(): Promise<void> {
+    if (brushSelect.value === "text") { await evaluateTextBrush(); return; }
+    if (brushSelect.value === "stamp") { await evaluateStampBrush(); return; }
     const brush = brushSelect.value === "periodic" ? "periodic" : "crayon";
     const dump = dumps[brush];
     const authored = brush === "crayon" && crayonPreset.value === "exact";
@@ -1394,6 +1634,26 @@ export function createTool(): ToolHandle {
   }, { signal });
   demoButton.addEventListener("click", demoSurface, { signal });
   flatButton.addEventListener("click", flatSurface, { signal });
+  {
+    const librarySelect = document.querySelector<HTMLSelectElement>("#surface-library")!;
+    void listLibraryShapes()
+      .then((shapes) => {
+        if (disposed) return;
+        libraryShapes = shapes;
+        // Remounts retain the DOM: rebuild after the placeholders instead of appending.
+        while (librarySelect.options.length > 1) librarySelect.remove(1);
+        while (stampAsset.options.length > 1) stampAsset.remove(1);
+        for (const shape of shapes) {
+          librarySelect.add(new Option(shape.title, shape.id));
+          stampAsset.add(new Option(shape.title, shape.id));
+        }
+      })
+      .catch(() => { /* catalog unavailable — uploads and the demo surface remain */ });
+    librarySelect.addEventListener("change", () => {
+      const info = libraryShapes.find((shape) => shape.id === librarySelect.value);
+      if (info) void loadLibrarySurface(info).catch((error) => setStatus(error instanceof Error ? error.message : String(error)));
+    }, { signal });
+  }
   sampleButton.addEventListener("click", () => void loadTarget(publicUrl("dojo/crayon/00-browser-baseline.glb"), "glb", "Node Dojo Chrome Crayon GLB").catch((error) => setStatus(error instanceof Error ? error.message : String(error))), { signal });
   parityPathButton.addEventListener("click", loadParityPath, { signal });
   curvedParityPathButton.addEventListener("click", loadCurvedParityPath, { signal });
@@ -1472,10 +1732,36 @@ export function createTool(): ToolHandle {
     queueEvaluation();
   }, { signal });
   brushSelect.addEventListener("change", () => {
-    const crayon = brushSelect.value === "crayon";
-    brushLabel.textContent = crayon ? "Chrome Crayon · draw anywhere" : "Periodic Brush · draw anywhere";
-    crayonControls.hidden = !crayon; periodicControls.hidden = crayon;
+    const brush = brushSelect.value;
+    brushLabel.textContent = brush === "crayon"
+      ? "Chrome Crayon · draw anywhere"
+      : brush === "periodic" ? "Periodic Brush · draw anywhere"
+      : brush === "text" ? "Typewriter text · draw a baseline" : "Library stamp · draw a path";
+    crayonControls.hidden = brush !== "crayon";
+    periodicControls.hidden = brush !== "periodic";
+    textControls.hidden = brush !== "text";
+    stampControls.hidden = brush !== "stamp";
     clearObject(brushRoot); queueEvaluation();
+  }, { signal });
+  surfaceText.addEventListener("input", () => { if (brushSelect.value === "text") queueEvaluation(); }, { signal });
+  textFit.addEventListener("change", () => {
+    textSize.disabled = textFit.checked;
+    if (brushSelect.value === "text") queueEvaluation();
+  }, { signal });
+  for (const [input, output, decimals] of [
+    [textSize, textSizeOutput, 2],
+    [textOffset, textOffsetOutput, 2],
+  ] as const) input.addEventListener("input", () => {
+    output.value = Number(input.value).toFixed(decimals);
+    if (brushSelect.value === "text") queueEvaluation();
+  }, { signal });
+  stampAsset.addEventListener("change", () => { if (brushSelect.value === "stamp") queueEvaluation(); }, { signal });
+  for (const [input, output, decimals] of [
+    [stampSize, stampSizeOutput, 2],
+    [stampSpacing, stampSpacingOutput, 2],
+  ] as const) input.addEventListener("input", () => {
+    output.value = Number(input.value).toFixed(decimals);
+    if (brushSelect.value === "stamp") queueEvaluation();
   }, { signal });
   window.addEventListener("crayon-graph-change", (event) => {
     const nextDump = (event as CustomEvent<{ dump?: Dump }>).detail?.dump;
@@ -1531,7 +1817,7 @@ export function createTool(): ToolHandle {
       envTexture.dispose();
       for (const material of [targetMaterial, inactiveTargetMaterial, flatTargetMaterial, brushMaterial, chromeMaterial, sigilMaterial, previewMaterial, selectedPreviewMaterial, areaGlowMaterial, areaFillMaterial, areaMaterial, sourceAreaMaterial, projectionRayMaterial, selectionGuideMaterial, handleMaterial, selectedHandleMaterial]) material.dispose();
       renderer.dispose();
-      renderer.forceContextLoss();
+      releaseToolContext(renderer);
       canvas.style.cursor = "";
       delete (window as typeof window & { __SURFACE_DRAW__?: unknown }).__SURFACE_DRAW__;
     },

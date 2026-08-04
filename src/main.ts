@@ -18,7 +18,7 @@ import { createRain } from "./rain";
 import { createWetUniforms, applyWet } from "./wet";
 import { publicUrl } from "./base-url";
 import {
-  canvasBox, observeCanvasBox, preferredCanvasPixelRatio, prefersLowPowerViewport,
+  canvasBox, observeCanvasBox, preferredCanvasPixelRatio, prefersLowPowerViewport, releaseToolContext,
 } from "./canvas-viewport";
 import type { ToolHandle } from "./react/page-runtime";
 
@@ -817,8 +817,8 @@ export function createTool(): BuildingToolHandle {
       // post-processing render targets + the renderer / GL context itself
       post.dispose();
       renderer.dispose();
-      renderer.forceContextLoss();
       renderer.domElement.remove();
+      releaseToolContext(renderer);
     },
   };
 }

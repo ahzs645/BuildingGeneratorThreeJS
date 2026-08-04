@@ -75,6 +75,23 @@ local curved-surface patches. The reusable authoring and backend-adapter
 contract is documented in
 [`docs/EDITABLE_CURVE_FRAMEWORK.md`](docs/EDITABLE_CURVE_FRAMEWORK.md).
 
+Every node tool can now start from any shape. A shared base-shape system
+(`src/base-shape-catalog.ts`, `src/base-shapes.ts`, `src/inline-mesh-conversion.ts`)
+lets a tool pick any of the 104 ported reference objects (evaluated live through
+the GN-VM) or import a local GLB/GLTF/OBJ/STL/PLY/FBX file, and feeds the result
+into a graph as a serializable `inline-mesh` seed. Bubble Putty molds its
+authored putty envelope around the chosen base object (blobs snap onto its
+surface), the Typewriter joins its typed glyphs with the base shape through the
+graph's own Geometry input, both paint engines accept reference objects as
+paint/projection surfaces, and the Studio's **Apply to** control can bind an
+imported mesh file to any connected Geometry input. The brush lab additionally
+offers a **Typewriter text** brush — type a string, draw a stroke on any target
+surface, and the GN-VM-evaluated typewriter glyphs sweep along the stroke,
+re-projected per vertex so the text conforms to the surface, with fit-to-stroke
+or fixed glyph size plus a lateral baseline offset — and a **Library stamp**
+brush that repeats any reference object along the stroke, oriented to the
+surface, with size/spacing controls and a vertex budget for heavy assets.
+
 `/bin` is the synchronized Dojo Bin parity workspace: one Bin Select control
 drives a baked Blender-truth variant and a fresh GN-VM evaluation, with overlay,
 side-by-side, wire/material, triangle, highlighted-material, and envelope-delta

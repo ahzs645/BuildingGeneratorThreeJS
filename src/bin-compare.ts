@@ -11,7 +11,7 @@ import {
   encodeBinStl,
   makeBinExportMetadata,
 } from "./bin-export";
-import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
+import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio, releaseToolContext } from "./canvas-viewport";
 import { makeBinAuthoredMaterial } from "./bin-authored-material";
 import type { FilamentBounds } from "./filament-material";
 import type { Dump, TriSoup } from "./gnvm/index";
@@ -1105,13 +1105,9 @@ export function createTool(): ToolHandle {
       controls.dispose();
       renderer.dispose();
       // React can restart this effect while retaining the same canvas (for
-      // example after a query-string navigation or Fast Refresh). Losing that
-      // still-connected canvas context makes the replacement WebGLRenderer
-      // fail during capability discovery. Defer the hard release and only do
-      // it when React actually removed/replaced this canvas.
-      queueMicrotask(() => {
-        if (!canvas.isConnected) renderer.forceContextLoss();
-      });
+      // example after a query-string navigation or Fast Refresh); see
+      // releaseToolContext for why the hard release must be deferred.
+      releaseToolContext(renderer);
       delete (window as typeof window & { __BIN_COMPARE__?: unknown }).__BIN_COMPARE__;
     },
   };

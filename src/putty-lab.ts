@@ -4,9 +4,17 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { MarchingCubes } from "three/examples/jsm/objects/MarchingCubes.js";
 import { publicUrl } from "./base-url";
-import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
+import {
+  fitBaseShape,
+  listLibraryShapes,
+  loadFileBaseShape,
+  loadLibraryBaseShape,
+  type LibraryShapeInfo,
+} from "./base-shapes";
+import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio, releaseToolContext } from "./canvas-viewport";
 import { EditablePipeFixture, EditablePuttyDocument, type PuttyPoint } from "./editable-putty";
-import type { Dump, TriSoup } from "./gnvm";
+import { inlineMeshSeedFromObject } from "./inline-mesh-conversion";
+import type { Dump, InlineMeshSeed, TriSoup } from "./gnvm";
 import type { ToolHandle } from "./react/page-runtime";
 
 type Mode = "orbit" | "move" | "add" | "pipes";
@@ -64,6 +72,11 @@ export function createTool(): ToolHandle {
   const sizeLabel = document.querySelector<HTMLElement>("#putty-size-label")!;
   const canvasHelpText = document.querySelector<HTMLElement>("#putty-canvas-help-text")!;
   const interactionHint = document.querySelector<HTMLElement>("#putty-interaction-hint")!;
+  const baseSelect = document.querySelector<HTMLSelectElement>("#putty-base-select")!;
+  const baseImportButton = document.querySelector<HTMLButtonElement>("#putty-base-import")!;
+  const baseClearButton = document.querySelector<HTMLButtonElement>("#putty-base-clear")!;
+  const baseFileInput = document.querySelector<HTMLInputElement>("#putty-base-file")!;
+  const baseStateText = document.querySelector<HTMLElement>("#putty-base-state")!;
 
   const abort = new AbortController();
   const { signal } = abort;
@@ -125,6 +138,16 @@ export function createTool(): ToolHandle {
   scene.add(preview);
   const proxyRoot = new THREE.Group(); scene.add(proxyRoot);
   const exactRoot = new THREE.Group(); scene.add(exactRoot);
+  // Optional reference object / imported shape the putty molds onto.
+  const baseRoot = new THREE.Group(); scene.add(baseRoot);
+  const baseMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0x8b93a4,
+    metalness: .1,
+    roughness: .55,
+    side: THREE.DoubleSide,
+  });
+  let baseShape: { label: string; seed: InlineMeshSeed } | null = null;
+  let baseRequest = 0;
 
   const proxyGeometry = new THREE.SphereGeometry(1, 20, 14);
   const proxyMaterial = new THREE.MeshBasicMaterial({ color: 0x9affbd, transparent: true, opacity: .075, wireframe: true, depthWrite: false });
@@ -172,6 +195,7 @@ export function createTool(): ToolHandle {
     preview.visible = true;
     for (const child of proxyRoot.children) child.visible = true;
     proxyRoot.visible = mode !== "orbit";
+    baseRoot.visible = baseShape !== null && fixtureMode === "blobs";
     if (message) setStatus(message);
   }
 
@@ -375,6 +399,39 @@ export function createTool(): ToolHandle {
     updatePreview();
   }
 
+  /** Pointer ray against the loaded base shape, when one is active for blob authoring. */
+  function baseSurfaceHit(): THREE.Intersection | null {
+    if (!baseShape || fixtureMode !== "blobs" || !baseRoot.visible) return null;
+    return raycaster.intersectObjects(baseRoot.children, true)[0] ?? null;
+  }
+
+  function installBaseObject(label: string, object: THREE.Object3D, fingerprint: string): void {
+    clearRoot(baseRoot);
+    object.traverse((child) => { if (child instanceof THREE.Mesh) child.material = baseMaterial; });
+    baseRoot.add(object);
+    // Match the putty world: blobs live in roughly a 7-unit half-size field.
+    fitBaseShape(object, 5);
+    const seed = inlineMeshSeedFromObject(baseRoot, label, `${fingerprint}:fit5`);
+    baseShape = { label, seed };
+    baseClearButton.disabled = false;
+    const verts = Math.floor(seed.positions.length / 3);
+    baseStateText.textContent = `${label} · ${verts.toLocaleString()} verts join the putty body${
+      verts > 60_000 ? " · large shape, rebuilding may take a while" : ""}`;
+    showInteractivePreview(`${label} placed · click its surface to put putty on it, then rebuild`);
+    updatePreview();
+  }
+
+  function clearBaseShape(message = "Base object cleared · putty forms from blobs alone"): void {
+    baseRequest++;
+    clearRoot(baseRoot);
+    baseShape = null;
+    baseSelect.value = "";
+    baseClearButton.disabled = true;
+    baseStateText.textContent = "Pick a reference object or import any shape — it joins the putty body and blobs snap onto its surface.";
+    showInteractivePreview(message);
+    updatePreview();
+  }
+
   function workerReply<T>(post: (active: Worker) => void): Promise<T> {
     const active = worker ??= new Worker(new URL("./blend-import-worker.ts", import.meta.url), { type: "module", name: "bubble-putty-gnvm" });
     return new Promise<T>((resolve, reject) => {
@@ -436,6 +493,15 @@ export function createTool(): ToolHandle {
             length: Math.min(pipe.length, Math.max(pipe.radius * PIPE_INFLUENCE_DIAMETERS, 1.8)),
           })),
         } : undefined,
+        collectionMeshes: !pipeMode && baseShape ? {
+          collection: "putty structure1",
+          relativeToObject: "PUTTY.002",
+          meshes: [{
+            positions: baseShape.seed.positions,
+            indices: baseShape.seed.indices,
+            name: baseShape.label,
+          }],
+        } : undefined,
         overrides: {
           Puttiness: Number(puttinessInput.value),
           Soften: Number(softenInput.value),
@@ -450,6 +516,8 @@ export function createTool(): ToolHandle {
       exactRoot.visible = true;
       exactVisible = true;
       preview.visible = false;
+      // The authored result already wraps the base shape, so hide the input copy.
+      baseRoot.visible = false;
       for (const child of proxyRoot.children) {
         child.visible = child.userData.puttyPipeSolid === true;
       }
@@ -458,7 +526,9 @@ export function createTool(): ToolHandle {
       runtimeText.textContent = `${reply.soup.stats.verts.toLocaleString()} verts · ${reply.soup.stats.faces.toLocaleString()} faces · ${seconds.toFixed(1)}s`;
       setStatus(pipeMode
         ? "Authored putty molded around all three pipes · drag putty or move an unlocked pipe to continue"
-        : "Authored Bubble Putty result ready · edit any blob to return to the live preview");
+        : baseShape
+          ? `Authored putty molded around ${baseShape.label} · edit any blob to return to the live preview`
+          : "Authored Bubble Putty result ready · edit any blob to return to the live preview");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : String(error));
     } finally {
@@ -470,6 +540,8 @@ export function createTool(): ToolHandle {
     if (event.button !== 0 || mode === "orbit") return;
     updatePointer(event);
     if (mode === "add") {
+      const surfaceHit = baseSurfaceHit();
+      if (surfaceHit) { addBlobAt(surfaceHit.point.clone()); return; }
       const plane = screenPlane(controls.target);
       if (raycaster.ray.intersectPlane(plane, dragPoint)) addBlobAt(dragPoint.clone());
       return;
@@ -524,9 +596,11 @@ export function createTool(): ToolHandle {
       pipeFixture.moveSelected(dragPoint.toArray() as PuttyPoint);
     } else {
       const selected = puttyDoc.selected();
-      const next = fixtureMode === "pipes" && selected
-        ? projectToAnchorSurface(dragPoint, selected.radius)
-        : dragPoint;
+      const surfaceHit = baseSurfaceHit();
+      const next = surfaceHit ? surfaceHit.point
+        : fixtureMode === "pipes" && selected
+          ? projectToAnchorSurface(dragPoint, selected.radius)
+          : dragPoint;
       puttyDoc.moveSelected(next.toArray() as PuttyPoint);
     }
     updatePreview();
@@ -600,6 +674,60 @@ export function createTool(): ToolHandle {
   }, { signal });
   rebuildButton.addEventListener("click", () => void rebuildExact(), { signal });
   previewButton.addEventListener("click", () => showInteractivePreview("Interactive putty preview"), { signal });
+
+  let libraryShapes: LibraryShapeInfo[] = [];
+  void listLibraryShapes()
+    .then((shapes) => {
+      if (disposed) return;
+      libraryShapes = shapes;
+      // Remounts retain the DOM: rebuild after the placeholder instead of appending.
+      while (baseSelect.options.length > 1) baseSelect.remove(1);
+      for (const shape of shapes) baseSelect.add(new Option(shape.title, shape.id));
+    })
+    .catch(() => {
+      if (!disposed) baseStateText.textContent = "Reference catalog unavailable · import a shape file instead";
+    });
+
+  baseSelect.addEventListener("change", () => {
+    const id = baseSelect.value;
+    if (!id) { clearBaseShape(); return; }
+    const info = libraryShapes.find((shape) => shape.id === id);
+    if (!info) return;
+    const request = ++baseRequest;
+    setStatus(`Evaluating ${info.title} through the GN-VM…`, true);
+    baseStateText.textContent = `Evaluating ${info.title}…`;
+    loadLibraryBaseShape(info)
+      .then((shape) => {
+        if (disposed || request !== baseRequest) return;
+        installBaseObject(shape.label, shape.object, `library:${info.id}`);
+      })
+      .catch((error) => {
+        if (disposed || request !== baseRequest) return;
+        setStatus(error instanceof Error ? error.message : String(error));
+        baseStateText.textContent = `${info.title} could not be evaluated · choose another shape`;
+      });
+  }, { signal });
+
+  baseImportButton.addEventListener("click", () => baseFileInput.click(), { signal });
+  baseFileInput.addEventListener("change", () => {
+    const file = baseFileInput.files?.[0];
+    baseFileInput.value = "";
+    if (!file) return;
+    const request = ++baseRequest;
+    setStatus(`Loading ${file.name}…`, true);
+    loadFileBaseShape(file)
+      .then((shape) => {
+        if (disposed || request !== baseRequest) return;
+        baseSelect.value = "";
+        installBaseObject(shape.label, shape.object, shape.seed.fingerprint ?? file.name);
+      })
+      .catch((error) => {
+        if (disposed || request !== baseRequest) return;
+        setStatus(error instanceof Error ? error.message : String(error));
+        baseStateText.textContent = `${file.name} could not be loaded · choose a GLB, GLTF, OBJ, STL, PLY, or FBX file`;
+      });
+  }, { signal });
+  baseClearButton.addEventListener("click", () => clearBaseShape(), { signal });
   blobFixtureButton.addEventListener("click", () => setFixtureMode("blobs"), { signal });
   pipeFixtureButton.addEventListener("click", () => setFixtureMode("pipes"), { signal });
   lockPipeButton.addEventListener("click", () => {
@@ -632,16 +760,16 @@ export function createTool(): ToolHandle {
       worker?.terminate(); worker = null;
       renderer.setAnimationLoop(null);
       controls.dispose();
-      clearRoot(proxyRoot); clearRoot(exactRoot);
+      clearRoot(proxyRoot); clearRoot(exactRoot); clearRoot(baseRoot);
       preview.geometry.dispose();
       proxyGeometry.dispose(); centerGeometry.dispose(); pipeGeometry.dispose();
       for (const material of [
         puttyMaterial, exactMaterial, proxyMaterial, selectedProxyMaterial,
         centerMaterial, selectedCenterMaterial, pipeMaterial, selectedPipeMaterial,
-        lockedPipeMaterial, solidPipeMaterial,
+        lockedPipeMaterial, solidPipeMaterial, baseMaterial,
       ]) material.dispose();
       environment.dispose();
-      renderer.dispose(); renderer.forceContextLoss();
+      renderer.dispose(); releaseToolContext(renderer);
       canvas.style.cursor = "";
     },
   };

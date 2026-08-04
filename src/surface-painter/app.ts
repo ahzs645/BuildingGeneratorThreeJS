@@ -5,6 +5,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type GUI from 'lil-gui';
 import { bindStatusLine } from '../status-line';
+import { evaluateLibraryShape, type LibraryShapeInfo } from '../base-shape-catalog';
 import { disposeRaycastIndex, firstHitOnly, indexForRaycasts } from '../geometry-painter/bvh';
 import { SurfacePainter } from '../geometry-painter/surfacePainter';
 import type { PaintMode, StrokeInstance, SurfaceSample } from '../geometry-painter/modes/mode';
@@ -863,6 +864,49 @@ export class App {
     this.settings.modelScale = v;
     this.applyModelScale();
     this.clearAll();
+  }
+
+  /**
+   * Evaluate a ported reference object through the GN-VM and install its
+   * result as the paint surface, exactly like a primitive preset (it shares
+   * the stage's primitive material and the fit/ground placement of a GLB).
+   */
+  async loadLibraryModel(info: LibraryShapeInfo): Promise<void> {
+    try {
+      this.setStatus('busy', `Evaluating ${info.title} through the GN-VM…`);
+      const soup = await evaluateLibraryShape(info);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(soup.positions, 3));
+      geo.setAttribute('normal', new THREE.BufferAttribute(soup.normals, 3));
+      geo.setIndex(new THREE.BufferAttribute(soup.indices, 1));
+      const mesh = new THREE.Mesh(
+        geo,
+        this.stage === 'studio' ? this.studioPrimitiveMat : this.gardenPrimitiveMat,
+      );
+      mesh.name = info.title;
+      // GN-VM output is Blender Z-up; the paint stages are Y-up.
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+
+      const probe = new THREE.Group();
+      probe.add(mesh);
+      probe.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(mesh);
+      const size = box.getSize(new THREE.Vector3());
+      const fitScale = 2.6 / Math.max(size.x, size.y, size.z, 1e-3);
+      probe.remove(mesh);
+
+      this.clearAll();
+      this.disposeModel();
+      this.settings.modelScale = 1;
+      this.primitiveMesh = mesh; // shares the swap-on-stage primitive material
+      this.installModel(mesh, fitScale, true);
+      this.setStatus('ready', `${info.title} ready to paint`);
+    } catch (err) {
+      console.error('Failed to evaluate library shape:', err);
+      this.setStatus('error', `${info.title} could not be evaluated`);
+    }
   }
 
   async loadGlbFile(file: File): Promise<void> {

@@ -167,7 +167,7 @@ function download(name: string, value: BlobPart): void {
 function seedFromValue(value: string): BlendStudioSeed {
   return value.startsWith("object:")
     ? { kind: "object", objectName: value.slice("object:".length) }
-    : { kind: value as Exclude<BlendStudioSeed["kind"], "object" | "ico-spheres"> };
+    : { kind: value as Exclude<BlendStudioSeed["kind"], "object" | "ico-spheres" | "inline-mesh"> };
 }
 
 export default function BlendBridgePage(): React.JSX.Element {
@@ -206,6 +206,10 @@ export default function BlendBridgePage(): React.JSX.Element {
   const [animationFrame, setAnimationFrame] = useState(0);
   const [volumeSampleBudget, setVolumeSampleBudget] = useState(1_000_000);
   const [seedValue, setSeedValue] = useState("authored");
+  const [importedShape, setImportedShape] =
+    useState<{ label: string; seed: Extract<BlendStudioSeed, { kind: "inline-mesh" }> } | null>(null);
+  const [importedShapeError, setImportedShapeError] = useState<string | null>(null);
+  const shapeInput = useRef<HTMLInputElement>(null);
   const [geometryInput, setGeometryInput] = useState("");
   const [geometryOutput, setGeometryOutput] = useState("");
   const [showHiddenControls, setShowHiddenControls] = useState(false);
@@ -459,7 +463,9 @@ export default function BlendBridgePage(): React.JSX.Element {
       target,
       overrides,
       seed: connectedGeometryInputs.length && seedValue !== "authored"
-        ? seedFromValue(seedValue)
+        ? seedValue === "imported"
+          ? importedShape?.seed
+          : seedFromValue(seedValue)
         : undefined,
       geometryInput: geometryInput || undefined,
       output: viewerApplication?.outputIdentifier
@@ -467,7 +473,7 @@ export default function BlendBridgePage(): React.JSX.Element {
       frame: animationFrame,
       volumeSampleBudget: hasVolumeBoundary ? volumeSampleBudget : undefined,
     };
-  }, [animationFrame, connectedGeometryInputs.length, geometryInput, geometryOutput, hasVolumeBoundary, interpretedDump, overrides, seedValue, target, viewerPreviews, volumeSampleBudget]);
+  }, [animationFrame, connectedGeometryInputs.length, geometryInput, geometryOutput, hasVolumeBoundary, importedShape, interpretedDump, overrides, seedValue, target, viewerPreviews, volumeSampleBudget]);
 
   // Attach the two-phase low-res preview at dispatch time (not inside the
   // evaluation memo, whose identity gates the live-edit queue) so a request is
@@ -980,8 +986,40 @@ export default function BlendBridgePage(): React.JSX.Element {
         <option value="curve-circle">Primitive · Curve circle</option>
         <option value="curve-line">Primitive · Curve line</option>
         {seedObjects.map((name) => <option key={name} value={`object:${name}`}>Object · {name}</option>)}
+        {importedShape && <option value="imported">Imported · {importedShape.label}</option>}
       </select>
     </label>}
+    {target && connectedGeometryInputs.length > 0 && <>
+      <button
+        className="st-btn"
+        type="button"
+        onClick={() => shapeInput.current?.click()}
+        title="Load a GLB, GLTF, OBJ, STL, PLY, or FBX file and feed it into the selected Geometry input"
+      >
+        Import shape as input…
+      </button>
+      <input
+        ref={shapeInput}
+        type="file"
+        accept=".glb,.gltf,.obj,.stl,.ply,.fbx"
+        hidden
+        onChange={(event) => void (async () => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (!file) return;
+          try {
+            const { loadFileBaseShape } = await import("../../base-shapes");
+            const shape = await loadFileBaseShape(file);
+            setImportedShapeError(null);
+            setImportedShape({ label: shape.label, seed: shape.seed });
+            setSeedValue("imported");
+          } catch (error) {
+            setImportedShapeError(error instanceof Error ? error.message : String(error));
+          }
+        })()}
+      />
+      {importedShapeError && <div className="st-chip warn">{importedShapeError}</div>}
+    </>}
     {target && connectedGeometryInputs.length > 1 && <label className="st-field">
       <span>Input socket</span>
       <select className="st-select" value={geometryInput} onChange={(event) => setGeometryInput(event.target.value)}>

@@ -64,6 +64,18 @@ function BubblePuttyLab(): React.JSX.Element {
       <div id="putty-anchor-state" className="putty-anchor-state">Blob authoring · choose Three pipes to test a locked surface</div>
     </div>
     <div className="st-section">
+      <div className="st-section-title">Base object</div>
+      <select id="putty-base-select" className="st-select" defaultValue="">
+        <option value="">None · putty from blobs only</option>
+      </select>
+      <div className="st-btn-row st-btn-row-even">
+        <button id="putty-base-import" className="st-btn" type="button">Import shape…</button>
+        <button id="putty-base-clear" className="st-btn" type="button" disabled>Clear</button>
+      </div>
+      <input id="putty-base-file" type="file" accept=".glb,.gltf,.obj,.stl,.ply,.fbx" hidden />
+      <p id="putty-base-state" className="putty-hint">Pick a reference object or import any shape — it joins the putty body and blobs snap onto its surface.</p>
+    </div>
+    <div className="st-section">
       <div className="st-section-title">1 · Interaction</div>
       <div className="st-segmented">
         <button id="putty-orbit" type="button">Orbit</button>
@@ -225,6 +237,12 @@ function BlenderBrushLab(): React.JSX.Element {
       </div>
       <button id="surface-sample" className="st-btn" type="button">Sample GLB</button>
       <label className="surface-target-picker">
+        <span>Reference object</span>
+        <select id="surface-library" className="st-select" defaultValue="">
+          <option value="">Choose from the ported library…</option>
+        </select>
+      </label>
+      <label className="surface-target-picker">
         <span>Projection target</span>
         <select id="surface-target" className="st-select" defaultValue="__pick__">
           <option value="__pick__">Pick mesh when placing area</option>
@@ -266,7 +284,22 @@ function BlenderBrushLab(): React.JSX.Element {
     </div>
     <div className="st-section">
       <div className="st-section-title">3 · Blender brush</div>
-      <select id="surface-brush" className="st-select" defaultValue="crayon"><option value="crayon">Chrome Crayon</option><option value="periodic">Periodic Brush</option></select>
+      <select id="surface-brush" className="st-select" defaultValue="crayon"><option value="crayon">Chrome Crayon</option><option value="periodic">Periodic Brush</option><option value="text">Typewriter text</option><option value="stamp">Library stamp</option></select>
+      <div id="surface-text-controls" className="surface-controls" hidden>
+        <label className="st-row"><span>Text</span><input id="surface-text" type="text" defaultValue="NODE DOJO" /></label>
+        <label className="st-row"><span>Fit stroke</span><input id="surface-text-fit" type="checkbox" defaultChecked /></label>
+        <label className="st-row"><span>Text size</span><input id="surface-text-size" type="range" min="0.08" max="1.2" step="0.01" defaultValue="0.35" disabled /><output id="surface-text-size-output">0.35</output></label>
+        <label className="st-row"><span>Offset</span><input id="surface-text-offset" type="range" min="-1" max="1" step="0.02" defaultValue="0" /><output id="surface-text-offset-output">0.00</output></label>
+        <p className="surface-edit-hint">Draw a stroke on the model — the typewriter glyphs run along it, wrapped onto the surface. Fit stroke scales the text to the stroke; otherwise Text size sets the glyph height and Offset slides the baseline sideways.</p>
+      </div>
+      <div id="surface-stamp-controls" className="surface-controls" hidden>
+        <select id="surface-stamp-asset" className="st-select" defaultValue="">
+          <option value="">Choose a reference object…</option>
+        </select>
+        <label className="st-row"><span>Stamp size</span><input id="surface-stamp-size" type="range" min="0.1" max="1.5" step="0.02" defaultValue="0.45" /><output id="surface-stamp-size-output">0.45</output></label>
+        <label className="st-row"><span>Spacing</span><input id="surface-stamp-spacing" type="range" min="0.15" max="2" step="0.05" defaultValue="0.6" /><output id="surface-stamp-spacing-output">0.60</output></label>
+        <p className="surface-edit-hint">The chosen reference object repeats along each stroke, oriented to the surface. Heavy assets are capped to keep the viewport responsive.</p>
+      </div>
       <div id="surface-periodic-controls" className="surface-controls" hidden>
         <label className="st-row"><span>Spacing</span><input id="surface-spacing" type="range" min="0.12" max="1.2" step="0.01" defaultValue="0.38" /><output id="surface-spacing-output">0.38</output></label>
         <label className="st-row"><span>Size</span><input id="surface-size" type="range" min="0.002" max="0.08" step="0.001" defaultValue="0.012" /><output id="surface-size-output">0.012</output></label>

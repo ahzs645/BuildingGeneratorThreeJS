@@ -36,6 +36,16 @@ type EvaluationFields = {
     }[];
     relativeToObject?: string;
   };
+  /** Arbitrary viewer-supplied triangle meshes injected as collection members. */
+  collectionMeshes?: {
+    collection: string;
+    meshes: {
+      positions: Float32Array | number[];
+      indices?: Uint32Array | Uint16Array | number[];
+      name?: string;
+    }[];
+    relativeToObject?: string;
+  };
   probe?: { group: string; node: string; socket?: string };
 };
 
@@ -80,7 +90,7 @@ scope.onmessage = async (event: MessageEvent<Request>) => {
     // Evaluation reads the dump without mutating it, except when a curves
     // payload replaces object curve data in-place. Clone only for that case so
     // the cached dump stays pristine across evaluations.
-    const dump = request.curves || request.collectionSpheres || request.collectionCylinders
+    const dump = request.curves || request.collectionSpheres || request.collectionCylinders || request.collectionMeshes
       ? structuredClone(installed.dump)
       : installed.dump;
     await evaluate(dump, request);
@@ -278,6 +288,67 @@ function installCollectionCylinders(
   ];
 }
 
+function installCollectionMeshes(
+  dump: Dump,
+  seed: NonNullable<EvaluationFields["collectionMeshes"]>,
+  append = false,
+): void {
+  const collection = dump.collections?.find((candidate) => candidate.name === seed.collection);
+  if (!collection) throw new Error(`collection seed target not found: ${seed.collection}`);
+  const relativeObject = seed.relativeToObject
+    ? dump.objects?.find((candidate) => candidate.name === seed.relativeToObject)
+    : undefined;
+  const relativeMatrix = relativeObject?.matrix_world;
+  const names: string[] = [];
+  const generated = seed.meshes.map((inline, index) => {
+    const name = `__GNVM_COLLECTION_MESH_${index}`;
+    names.push(name);
+    const source = inline.positions;
+    if (source.length % 3 !== 0)
+      throw new Error(`collection mesh ${inline.name ?? index} positions length must be a multiple of 3`);
+    const verts: [number, number, number][] = [];
+    for (let vertex = 0; vertex * 3 < source.length; vertex++) {
+      verts.push(transformPoint(relativeMatrix, [
+        source[vertex * 3],
+        source[vertex * 3 + 1],
+        source[vertex * 3 + 2],
+      ]));
+    }
+    const indices = inline.indices;
+    const triangleVertexCount = indices ? indices.length : verts.length;
+    const faces: number[][] = [];
+    for (let corner = 0; corner + 2 < triangleVertexCount; corner += 3) {
+      faces.push(indices
+        ? [indices[corner], indices[corner + 1], indices[corner + 2]]
+        : [corner, corner + 1, corner + 2]);
+    }
+    const mesh = { verts, faces, edges: [] as [number, number][], face_materials: faces.map(() => 0) };
+    return {
+      name,
+      type: "MESH" as const,
+      visible: true,
+      location: [0, 0, 0] as [number, number, number],
+      rotation: [0, 0, 0] as [number, number, number],
+      scale: [1, 1, 1] as [number, number, number],
+      matrix_world: [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1],
+      ],
+      materials: [],
+      modifiers: [],
+      mesh,
+      evaluated_mesh: mesh,
+    };
+  });
+  collection.objects = append ? [...(collection.objects ?? []), ...names] : names;
+  dump.objects = [
+    ...(dump.objects ?? []).filter((object) => !object.name.startsWith("__GNVM_COLLECTION_MESH_")),
+    ...generated,
+  ];
+}
+
 async function evaluate(dump: Dump, request: EvaluationFields): Promise<void> {
   const {
     id,
@@ -292,6 +363,7 @@ async function evaluate(dump: Dump, request: EvaluationFields): Promise<void> {
     curves,
     collectionSpheres,
     collectionCylinders,
+    collectionMeshes,
     probe,
     frame,
     volumeSampleBudget,
@@ -303,6 +375,14 @@ async function evaluate(dump: Dump, request: EvaluationFields): Promise<void> {
       dump,
       collectionCylinders,
       Boolean(collectionSpheres && collectionSpheres.collection === collectionCylinders.collection),
+    );
+    if (collectionMeshes) installCollectionMeshes(
+      dump,
+      collectionMeshes,
+      Boolean(
+        (collectionSpheres && collectionSpheres.collection === collectionMeshes.collection)
+        || (collectionCylinders && collectionCylinders.collection === collectionMeshes.collection),
+      ),
     );
     if (curves) {
       if (!object) throw new Error("curve overrides require an object target");

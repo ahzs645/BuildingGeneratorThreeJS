@@ -2,11 +2,19 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import {
+  fitBaseShape,
+  listLibraryShapes,
+  loadFileBaseShape,
+  loadLibraryBaseShape,
+  type LibraryShapeInfo,
+} from "./base-shapes";
 import { fitPerspectiveCameraToObject } from "./camera-fit";
-import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
+import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio, releaseToolContext } from "./canvas-viewport";
+import { inlineMeshSeedFromObject } from "./inline-mesh-conversion";
 import { bindStatusLine } from "./status-line";
 import type { ToolHandle } from "./react/page-runtime";
-import type { Dump, TriSoup } from "./gnvm/index";
+import type { Dump, InlineMeshSeed, TriSoup } from "./gnvm/index";
 
 type WorkerReply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
 
@@ -40,6 +48,11 @@ export function createTool(): ToolHandle {
   const runtimeEl = document.querySelector<HTMLElement>("#typewriter-runtime")!;
   const fontFileEl = document.querySelector<HTMLInputElement>("#typewriter-font-file")!;
   const fontStatusEl = document.querySelector<HTMLElement>("#typewriter-font-status")!;
+  const baseSelect = document.querySelector<HTMLSelectElement>("#typewriter-base-select")!;
+  const baseImportButton = document.querySelector<HTMLButtonElement>("#typewriter-base-import")!;
+  const baseClearButton = document.querySelector<HTMLButtonElement>("#typewriter-base-clear")!;
+  const baseFileInput = document.querySelector<HTMLInputElement>("#typewriter-base-file")!;
+  const baseStateEl = document.querySelector<HTMLElement>("#typewriter-base-state")!;
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(preferredCanvasPixelRatio());
@@ -70,6 +83,8 @@ export function createTool(): ToolHandle {
   let lastPlay = 0;
   let editTimer = 0;
   let hasFramed = false;
+  let baseShape: { label: string; seed: InlineMeshSeed } | null = null;
+  let baseRequest = 0;
   const liveWorkers = new Set<Worker>();
 
   async function loadDisplayFallback(): Promise<boolean> {
@@ -113,8 +128,9 @@ export function createTool(): ToolHandle {
     // The source object is a presentation board spelling "_TYPEWRITER NODES".
     // Blender joins that pre-existing mesh with the generated glyphs. For the
     // live web tool, show the procedural output alone so editable text is not
-    // hidden inside the much larger demonstration board.
-    if (root?.links) root.links = root.links.filter((link: any) => !(link.from_node === "Group Input" && link.to_node === "Join Geometry"));
+    // hidden inside the much larger demonstration board. When the user picks a
+    // base object, keep the authored join and let the seed replace the board.
+    if (!baseShape && root?.links) root.links = root.links.filter((link: any) => !(link.from_node === "Group Input" && link.to_node === "Join Geometry"));
     return next;
   }
 
@@ -129,7 +145,19 @@ export function createTool(): ToolHandle {
         if (!event.data.ok) reject(new Error(event.data.error)); else resolve(event.data);
       };
       worker.onerror = (event) => { worker.terminate(); liveWorkers.delete(worker); reject(new Error(event.message)); };
-      worker.postMessage({ id, dump: editableDump(), object: "_Typewriter Node Container", overrides: { __frame: Number(frameInput.value) } });
+      worker.postMessage({
+        id,
+        dump: editableDump(),
+        object: "_Typewriter Node Container",
+        // The graph's base-geometry input reaches Join Geometry through a
+        // "Show presentation board" switch; turning it on lets the seed —
+        // which replaces the authored board — join the generated glyphs.
+        overrides: {
+          __frame: Number(frameInput.value),
+          ...(baseShape ? { "Show presentation board": true } : {}),
+        },
+        seed: baseShape?.seed,
+      });
     });
   }
 
@@ -171,6 +199,80 @@ export function createTool(): ToolHandle {
   }
 
   function queueUpdate(): void { window.clearTimeout(editTimer); editTimer = window.setTimeout(() => void update(), 140); }
+
+  function applyBaseObject(label: string, object: THREE.Object3D, fingerprint: string): void {
+    // The typed line runs from the origin to roughly x=4 at z=0. Fit the shape
+    // to that width and park it just behind the glyph plane, centered on the
+    // text run — the same role the authored presentation board played.
+    fitBaseShape(object, 4);
+    const box = new THREE.Box3().setFromObject(object);
+    object.position.x += 2.05 - (box.min.x + box.max.x) / 2;
+    object.position.y += -0.05 - (box.min.y + box.max.y) / 2;
+    object.position.z += -0.05 - box.max.z;
+    object.updateWorldMatrix(true, true);
+    baseShape = { label, seed: inlineMeshSeedFromObject(object, label, `${fingerprint}:fit4`) };
+    baseClearButton.disabled = false;
+    const verts = Math.floor(baseShape.seed.positions.length / 3);
+    baseStateEl.textContent = `${label} · ${verts.toLocaleString()} verts joined with the typed text.`;
+    hasFramed = false;
+    queueUpdate();
+  }
+
+  function clearBaseObject(): void {
+    baseRequest++;
+    if (!baseShape) return;
+    baseShape = null;
+    baseSelect.value = "";
+    baseClearButton.disabled = true;
+    baseStateEl.textContent = "Join the typed text with a reference object or any imported shape — the graph's own base-geometry input.";
+    hasFramed = false;
+    queueUpdate();
+  }
+
+  let libraryShapes: LibraryShapeInfo[] = [];
+  void listLibraryShapes()
+    .then((shapes) => {
+      if (disposed) return;
+      libraryShapes = shapes;
+      // Remounts retain the DOM: rebuild after the placeholder instead of appending.
+      while (baseSelect.options.length > 1) baseSelect.remove(1);
+      for (const shape of shapes) baseSelect.add(new Option(shape.title, shape.id));
+    })
+    .catch(() => { if (!disposed) baseStateEl.textContent = "Reference catalog unavailable · import a shape file instead."; });
+
+  const onBaseSelect = (): void => {
+    const id = baseSelect.value;
+    if (!id) { clearBaseObject(); return; }
+    const info = libraryShapes.find((shape) => shape.id === id);
+    if (!info) return;
+    const request = ++baseRequest;
+    setStatus("busy", `Evaluating ${info.title} through the GN-VM…`);
+    loadLibraryBaseShape(info)
+      .then((shape) => { if (!disposed && request === baseRequest) applyBaseObject(shape.label, shape.object, `library:${info.id}`); })
+      .catch((error) => {
+        if (disposed || request !== baseRequest) return;
+        setStatus("error", error instanceof Error ? error.message : String(error));
+      });
+  };
+  const onBaseImport = (): void => baseFileInput.click();
+  const onBaseFile = (): void => {
+    const file = baseFileInput.files?.[0];
+    baseFileInput.value = "";
+    if (!file) return;
+    const request = ++baseRequest;
+    setStatus("busy", `Loading ${file.name}…`);
+    loadFileBaseShape(file)
+      .then((shape) => {
+        if (disposed || request !== baseRequest) return;
+        baseSelect.value = "";
+        applyBaseObject(shape.label, shape.object, shape.seed.fingerprint ?? file.name);
+      })
+      .catch((error) => {
+        if (disposed || request !== baseRequest) return;
+        setStatus("error", error instanceof Error ? error.message : String(error));
+      });
+  };
+  const onBaseClear = (): void => clearBaseObject();
   const onFrameInput = (): void => { frameOutput.value = frameInput.value; queueUpdate(); };
   const onEvaluate = (): void => void update();
   const onReframe = (): void => frameModel();
@@ -178,6 +280,10 @@ export function createTool(): ToolHandle {
   const onFontFileChange = (): void => void onFontFile();
 
   fontFileEl.addEventListener("change", onFontFileChange);
+  baseSelect.addEventListener("change", onBaseSelect);
+  baseImportButton.addEventListener("click", onBaseImport);
+  baseFileInput.addEventListener("change", onBaseFile);
+  baseClearButton.addEventListener("click", onBaseClear);
   frameInput.addEventListener("input", onFrameInput);
   textInput.addEventListener("input", queueUpdate);
   evaluateButton.addEventListener("click", onEvaluate);
@@ -212,6 +318,10 @@ export function createTool(): ToolHandle {
       reframeButton.removeEventListener("click", onReframe);
       playButton.removeEventListener("click", onPlay);
       fontFileEl.removeEventListener("change", onFontFileChange);
+      baseSelect.removeEventListener("change", onBaseSelect);
+      baseImportButton.removeEventListener("click", onBaseImport);
+      baseFileInput.removeEventListener("change", onBaseFile);
+      baseClearButton.removeEventListener("click", onBaseClear);
       stopObservingCanvas();
       for (const worker of liveWorkers) worker.terminate();
       liveWorkers.clear();
@@ -221,7 +331,7 @@ export function createTool(): ToolHandle {
       for (const material of materials) material.dispose();
       envTexture.dispose();
       renderer.dispose();
-      renderer.forceContextLoss();
+      releaseToolContext(renderer);
       delete (window as typeof window & { __TYPEWRITER__?: unknown }).__TYPEWRITER__;
     },
   };

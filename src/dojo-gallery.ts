@@ -4,7 +4,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
 import { bindStatusLine } from "./status-line";
-import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
+import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio, releaseToolContext } from "./canvas-viewport";
 import type { ToolHandle } from "./react/page-runtime";
 
 type Example = {
@@ -262,7 +262,7 @@ export function createTool(): ToolHandle {
       environmentTexture.dispose();
       delete (window as typeof window & { __READY__?: unknown }).__READY__;
       renderer.dispose();
-      renderer.forceContextLoss();
+      releaseToolContext(renderer);
     },
   };
 }

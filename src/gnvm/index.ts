@@ -115,9 +115,10 @@ export type {
 export { ensureManifold, isManifoldReady } from "./boolean";
 export { ensureBulletHull, isBulletHullReady } from "./bullet-hull";
 export { baseGeometryOf } from "./dump-object-geometry";
-export { createPrimitiveGeometry, resolveGeometrySeed, runNodeGroup } from "./group-runner";
+export { createPrimitiveGeometry, inlineMeshFingerprint, resolveGeometrySeed, runNodeGroup } from "./group-runner";
 export type {
   GroupGeometrySeed,
+  InlineMeshSeed,
   PrimitiveGeometrySeed,
   RunNodeGroupOptions,
 } from "./group-runner";

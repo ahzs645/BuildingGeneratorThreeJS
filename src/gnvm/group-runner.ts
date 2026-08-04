@@ -80,7 +80,27 @@ export type PrimitiveGeometrySeed =
     kind: "ico-spheres";
     spheres: Array<{ position: Vec3; radius: number }>;
     subdivisions?: number;
-  };
+  }
+  | InlineMeshSeed;
+
+/**
+ * An arbitrary triangle mesh supplied by the viewer — an imported GLB/OBJ/STL,
+ * or another asset's evaluated result. Typed arrays survive postMessage, so
+ * this is the one seed kind that can carry geometry the dump never contained.
+ */
+export type InlineMeshSeed = {
+  kind: "inline-mesh";
+  /** Flat xyz triplets. */
+  positions: Float32Array | number[];
+  /** Triangle vertex indices; sequential (soup) ordering when omitted. */
+  indices?: Uint32Array | Uint16Array | number[];
+  /**
+   * Stable identity for the cross-evaluation cache. Callers that rebuild the
+   * arrays per run should pass one; otherwise a structural hash is used.
+   */
+  fingerprint?: string;
+  name?: string;
+};
 
 export type GroupGeometrySeed =
   | Geometry
@@ -147,7 +167,53 @@ function selectSocket(
   return matches.find((socket) => socket.identifier === requested) ?? matches[0];
 }
 
+function createInlineMeshGeometry(seed: InlineMeshSeed): Geometry {
+  const positions = seed.positions;
+  if (positions.length % 3 !== 0)
+    throw new Error(`inline-mesh seed positions length must be a multiple of 3 (got ${positions.length})`);
+  const vertexCount = positions.length / 3;
+  const geometry = new Geometry();
+  const mesh = new Mesh();
+  mesh.positions = Array.from({ length: vertexCount }, (_, vertex) => [
+    positions[vertex * 3],
+    positions[vertex * 3 + 1],
+    positions[vertex * 3 + 2],
+  ] as Vec3);
+  const indices = seed.indices;
+  const triangleCount = Math.floor((indices ? indices.length : vertexCount) / 3);
+  mesh.faces = Array.from({ length: triangleCount }, (_, triangle) => {
+    const a = indices ? indices[triangle * 3] : triangle * 3;
+    const b = indices ? indices[triangle * 3 + 1] : triangle * 3 + 1;
+    const c = indices ? indices[triangle * 3 + 2] : triangle * 3 + 2;
+    if (a >= vertexCount || b >= vertexCount || c >= vertexCount)
+      throw new Error(`inline-mesh seed index out of range in triangle ${triangle}`);
+    return [a, b, c];
+  });
+  mesh.faceMaterial = mesh.faces.map(() => 0);
+  mesh.materialSlots = [null];
+  geometry.mesh = mesh;
+  return geometry;
+}
+
+/** Cheap structural identity for inline meshes without stringifying the arrays. */
+export function inlineMeshFingerprint(seed: InlineMeshSeed): string {
+  if (seed.fingerprint) return `inline:${seed.fingerprint}`;
+  let hash = 0x811c9dc5;
+  const mix = (value: number): void => {
+    // FNV-1a over the float's rounded millimeter value keeps this stable
+    // across Float32Array/number[] representations of the same shape.
+    hash ^= Math.round(value * 1000) & 0xff;
+    hash = Math.imul(hash, 0x01000193);
+  };
+  const positions = seed.positions;
+  const stride = Math.max(1, Math.floor(positions.length / 256)) * 3;
+  for (let index = 0; index < positions.length; index += stride) mix(positions[index]);
+  const indices = seed.indices;
+  return `inline:${seed.name ?? ""}:${positions.length}:${indices ? indices.length : "soup"}:${(hash >>> 0).toString(16)}`;
+}
+
 export function createPrimitiveGeometry(seed: PrimitiveGeometrySeed): Geometry {
+  if (seed.kind === "inline-mesh") return createInlineMeshGeometry(seed);
   if (seed.kind === "ico-spheres") {
     const geometry = new Geometry();
     geometry.mesh = new Mesh();
@@ -216,6 +282,8 @@ export function resolveGeometrySeed(dump: Dump, seed: GroupGeometrySeed): { geom
     // cross-evaluation cache match nodes fed by this binding across runs.
     return { geometry: tagGeometryFingerprint(geometry, `base:${objectName}`), objectName };
   }
+  if (seed.kind === "inline-mesh")
+    return { geometry: tagGeometryFingerprint(createPrimitiveGeometry(seed), inlineMeshFingerprint(seed)) };
   return { geometry: tagGeometryFingerprint(createPrimitiveGeometry(seed), `seed:${JSON.stringify(seed)}`) };
 }
 

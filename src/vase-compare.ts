@@ -9,7 +9,7 @@ import { bindStatusLine } from "./status-line";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { publicUrl } from "./base-url";
-import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio } from "./canvas-viewport";
+import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio, releaseToolContext } from "./canvas-viewport";
 import type { ToolHandle } from "./react/page-runtime";
 
 export function createTool(): ToolHandle {
@@ -359,7 +359,7 @@ export function createTool(): ToolHandle {
       vmSolid = null;
       vmWire = null;
       renderer.dispose();
-      renderer.forceContextLoss();
+      releaseToolContext(renderer);
     },
   };
 }

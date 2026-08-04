@@ -4,7 +4,7 @@ import { WebGPURenderer, type MeshPhysicalNodeMaterial } from "three/webgpu";
 import { EXRLoader } from "three/addons/loaders/EXRLoader.js";
 import { MaterialXLoader } from "three/addons/loaders/MaterialXLoader.js";
 import { publicUrl } from "./base-url";
-import { preferredCanvasPixelRatio } from "./canvas-viewport";
+import { preferredCanvasPixelRatio, releaseToolContext } from "./canvas-viewport";
 import { resolveMaterialBackend, type MaterialBackend } from "./material-backend";
 import { auditMaterialXDocument } from "./materialx/capabilities";
 import { createMaterialXPrefilteredEnvironment } from "./materialx/environment-prefilter";
@@ -349,9 +349,10 @@ export function mountMaterialXLab(root: ParentNode, options: MaterialXLabOptions
     if (rendererReleased) return;
     rendererReleased = true;
     void renderer.dispose();
-    // Release the GL context immediately: SPA remounts render a fresh canvas, and
-    // browsers cap the number of live WebGL contexts.
-    if (renderer instanceof THREE.WebGLRenderer) renderer.forceContextLoss();
+    // Browsers cap the number of live WebGL contexts, so release this one when
+    // its canvas is really gone (releaseToolContext keeps remount-retained
+    // canvases usable for the replacement renderer).
+    if (renderer instanceof THREE.WebGLRenderer) releaseToolContext(renderer);
   };
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;

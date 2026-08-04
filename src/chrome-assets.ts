@@ -3,7 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
 import { bindStatusLine } from "./status-line";
-import { preferredCanvasPixelRatio } from "./canvas-viewport";
+import { preferredCanvasPixelRatio, releaseToolContext } from "./canvas-viewport";
 import {
   captureOverrideValue,
   guideLinePreviewValue,
@@ -527,7 +527,7 @@ export function createTool(): ToolHandle {
       scene.background = null;
       delete document.documentElement.dataset.chromeAssetsReady;
       renderer.dispose();
-      renderer.forceContextLoss();
+      releaseToolContext(renderer);
     },
   };
 }

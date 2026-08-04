@@ -54,7 +54,14 @@ export type BlendStudioSeed =
   | { kind: "curve-circle" }
   | { kind: "curve-line" }
   | { kind: "ico-spheres"; spheres: Array<{ position: [number, number, number]; radius: number }>; subdivisions?: number }
-  | { kind: "object"; objectName: string };
+  | { kind: "object"; objectName: string }
+  | {
+      kind: "inline-mesh";
+      positions: Float32Array | number[];
+      indices?: Uint32Array | Uint16Array | number[];
+      fingerprint?: string;
+      name?: string;
+    };
 
 export type BlendStudioControl = {
   identifier: string;

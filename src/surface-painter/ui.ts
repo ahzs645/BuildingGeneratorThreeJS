@@ -3,6 +3,7 @@ import type { CrystalPaletteName } from '../geometry-painter/modes/crystals';
 import type { AuroraPaletteName } from '../geometry-painter/modes/aurora';
 import type { ReefPaletteName } from '../geometry-painter/modes/reef';
 import { windSettings } from '../vegetation-generator/wind';
+import { listLibraryShapes } from '../base-shape-catalog';
 import { GENERATORS, type App, type Generator, type ModelKind } from './app';
 
 /**
@@ -53,6 +54,19 @@ export function buildGui(app: App): GUI {
     .add(s, 'model', ['Sphere', 'Torus Knot', 'Box', 'Cylinder'] satisfies ModelKind[])
     .name('Preset')
     .onChange((v: ModelKind) => app.setModel(v));
+  // The ported reference-object catalog loads async; the dropdown appears once known.
+  const libraryState = { reference: 'None' };
+  void listLibraryShapes()
+    .then((shapes) => {
+      fModel
+        .add(libraryState, 'reference', ['None', ...shapes.map((shape) => shape.title)])
+        .name('Reference object')
+        .onChange((title: string) => {
+          const info = shapes.find((shape) => shape.title === title);
+          if (info) void app.loadLibraryModel(info);
+        });
+    })
+    .catch(() => { /* catalog unavailable — presets and GLB upload remain */ });
   fModel.add({ load: () => pickGlb(app) }, 'load').name('Load .glb…');
   // Rescaling the surface invalidates painted strokes, so this clears them on change.
   const modelScaleController = fModel.add(s, 'modelScale', 0.2, 3).name('Model scale').listen()

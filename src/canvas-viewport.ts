@@ -95,3 +95,19 @@ export function observeCanvasBox(
   apply();
   return () => observer.disconnect();
 }
+
+/**
+ * Release a tool renderer's GL context, but only when its canvas actually
+ * left the document. React can restart a tool's mount effect while retaining
+ * the same canvas element (StrictMode double-invoke, Fast Refresh, and
+ * query-string navigation on the current tool all do this): force-losing a
+ * still-connected canvas's context makes the replacement WebGLRenderer fail
+ * during capability discovery, leaving the remounted tool dead until a full
+ * reload. Deferred to a microtask so unmount-driven DOM removal has already
+ * happened by the time the connectivity check runs.
+ */
+export function releaseToolContext(renderer: { forceContextLoss(): void; domElement: HTMLCanvasElement }): void {
+  queueMicrotask(() => {
+    if (!renderer.domElement.isConnected) renderer.forceContextLoss();
+  });
+}

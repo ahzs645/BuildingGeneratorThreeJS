@@ -159,6 +159,44 @@ test("direct group runner reports ambiguous geometry inputs instead of guessing"
   );
 });
 
+test("direct group runner accepts a serializable inline mesh seed", async () => {
+  const result = await runNodeGroup(fixture(), {
+    group: "Asset Group",
+    seed: {
+      kind: "inline-mesh",
+      positions: new Float32Array([0, 0, 0, 2, 0, 0, 0, 2, 0, 2, 2, 0]),
+      indices: new Uint32Array([0, 1, 2, 1, 3, 2]),
+      name: "imported-quad",
+    },
+    overrides: { Offset: [0, 0, 5] },
+  });
+
+  assert.deepEqual(result.soup.stats, { verts: 4, faces: 2, tris: 2 });
+  assert.deepEqual(result.geometry.mesh!.positions[3], [2, 2, 5]);
+});
+
+test("inline mesh seeds without indices triangulate sequentially and validate range", () => {
+  const soup = createPrimitiveGeometry({
+    kind: "inline-mesh",
+    positions: [0, 0, 0, 1, 0, 0, 0, 1, 0],
+  });
+  assert.equal(soup.mesh!.positions.length, 3);
+  assert.deepEqual(soup.mesh!.faces, [[0, 1, 2]]);
+
+  assert.throws(
+    () => createPrimitiveGeometry({ kind: "inline-mesh", positions: [0, 0] }),
+    /multiple of 3/,
+  );
+  assert.throws(
+    () => createPrimitiveGeometry({
+      kind: "inline-mesh",
+      positions: [0, 0, 0, 1, 0, 0, 0, 1, 0],
+      indices: [0, 1, 9],
+    }),
+    /out of range/,
+  );
+});
+
 test("worker-safe curve seeds create curve components", () => {
   const circle = createPrimitiveGeometry({ kind: "curve-circle", radius: 2, points: 8 });
   const line = createPrimitiveGeometry({ kind: "curve-line" });
