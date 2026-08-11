@@ -6,6 +6,7 @@ import { useCrayonRuntime } from "../crayon/useCrayonRuntime";
 import { useStudioStatusChips } from "../studio/StudioChrome";
 import { StudioOverlay, StudioPanelHeader, StudioShell, useMobileStudio } from "../studio/StudioShell";
 import "./crayon-compare.css";
+import { rangeFillStyle } from "../studio/range-fill";
 
 const GeometryNodesEditor = lazy(() => import("../geometry-nodes/GeometryNodesEditor"));
 
@@ -118,7 +119,7 @@ export default function CrayonComparePage(): React.JSX.Element {
       <div className="st-section-title">Exposed group inputs<small>live</small></div>
       {controls.map((control) => <label className="st-row" key={control.name}>
         <span>{control.name}</span>
-        <input type="range" min={control.min} max={control.max} step={control.step} value={overrides[control.name]} onChange={(event) => setOverrides((current) => ({ ...current, [control.name]: Number(event.target.value) }))} />
+        <input type="range" min={control.min} max={control.max} step={control.step} value={overrides[control.name]} style={rangeFillStyle(overrides[control.name], control.min, control.max)} onChange={(event) => setOverrides((current) => ({ ...current, [control.name]: Number(event.target.value) }))} />
         <output>{overrides[control.name].toFixed(control.step === 1 ? 0 : 2)}</output>
       </label>)}
       <button className="st-btn-primary" type="button" disabled={runtime.snapshot.state === "evaluating"} onClick={() => void runtime.evaluate(overrides)}>Evaluate now</button>

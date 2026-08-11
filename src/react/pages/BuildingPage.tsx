@@ -4,6 +4,7 @@ import type { BuildingAtmosphere, BuildingStatus, BuildingToolHandle } from "../
 import { useToolController } from "../page-runtime";
 import { StudioPanelHeader, StudioShell } from "../studio/StudioShell";
 import "./building.css";
+import { rangeFillStyle } from "../studio/range-fill";
 
 // Started here rather than inside the loader callback: as a callback the import
 // was only discovered once React ran the mount effect, which held the runtime
@@ -105,6 +106,7 @@ export default function BuildingPage(): React.JSX.Element {
             max={control.max}
             step={control.step}
             value={params[control.name]}
+            style={rangeFillStyle(params[control.name], control.min, control.max)}
             disabled={!tool}
             onChange={(event) => {
               const value = Number(event.target.value);
@@ -123,6 +125,7 @@ export default function BuildingPage(): React.JSX.Element {
           max={50}
           step={1}
           value={emissive}
+          style={rangeFillStyle(emissive, 1, 50)}
           disabled={!tool}
           onChange={(event) => {
             const value = Number(event.target.value);
@@ -159,6 +162,7 @@ export default function BuildingPage(): React.JSX.Element {
               max={control.max}
               step={control.step}
               value={Number(value ?? 0)}
+              style={rangeFillStyle(Number(value ?? 0), control.min ?? 0, control.max ?? 1)}
               disabled={!tool}
               onChange={(event) => {
                 const next = Number(event.target.value);

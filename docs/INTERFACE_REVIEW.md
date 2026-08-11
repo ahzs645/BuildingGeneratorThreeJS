@@ -478,6 +478,52 @@ Worth stating explicitly so none of it gets "fixed":
 - **`bindStatusLine`.** One status treatment per tool, with tone and message
   bound together, is a genuinely good constraint.
 
+## Follow-up
+
+Three things surfaced after the fixes went in.
+
+### The phone breadcrumb spent its width twice
+
+Not one of the twenty — it was an observation, not a finding — but it is two
+lines. At 390px the crumb rendered "Building Genera… / Hong Kong Building
+Gener…": both halves truncated, and the section half is already spelled out by
+the switcher directly below it, highlighted. On mobile the section and its
+separator are hidden and the tool name takes the whole crumb.
+
+### The test glob had been running two thirds of the suite
+
+`"test": "tsx --test src/**/*.test.ts"` — unquoted, so the shell expanded it,
+and npm runs scripts under `sh`, where `**` is just `*`. It matched
+`src/*/*.test.ts` and nothing else: every test file directly under `src/` and
+everything three levels deep never ran. That is 102 tests, including all of
+`src/bin-interface.test.ts` and both `src/react/blend-studio/*.test.ts` files.
+
+Quoting the pattern hands it to Node's own test runner, which walks it
+properly. The suite is 716 tests now, not 614.
+
+One of the tests that had stopped running was failing. `bin-interface.test.ts`
+asserted that `bin-compare.ts` contains
+`if (!canvas.isConnected) renderer.forceContextLoss()` — the deferred WebGL
+release on a breakpoint remount. The behaviour is intact, but it moved into
+`releaseToolContext` in `canvas-viewport.ts` at some point, and the assertion
+pinned the line's old address rather than the contract. It now asserts that the
+runtime delegates and that the helper does the connectivity-checked release.
+
+### Regression cover
+
+`src/react/studio/studio-interface.test.ts` locks in all twenty findings plus
+the slider. Two of them cannot be verified any other way here: a safe-area inset
+needs a notched phone, and `dvh` only diverges from `vh` where a browser toolbar
+retracts, so those assert against the source that encodes them. The rest are
+there because they are one careless edit away from returning — the review found
+the same aspect-blind camera fit copied into five files.
+
+Writing that file caught a regression in my own fix: pinning Mode to the leading
+edge of the Paint toolbar (A3) made it the most-tapped control in the strip, and
+I had left its buttons at 36px — the exact drift D4 was about. They are
+`--st-touch` now, and phone landscape drops the four group captions to pay back
+the height.
+
 ## Verification
 
 Re-measured headlessly at all six viewports, across all ten routes:
@@ -485,8 +531,40 @@ Re-measured headlessly at all six viewports, across all ten routes:
 - No horizontal page overflow anywhere (`scrollWidth == clientWidth`).
 - No page errors or failed navigations on any route/viewport pair.
 - Zero sub-44px touch targets on a 390×844 phone.
-- `npm test` — 614 tests, 612 pass, 2 skipped, 0 fail.
+- `npm test` — 716 tests, 714 pass, 2 skipped, 0 fail.
 - `tsc --noEmit` and `npm run build` clean.
+
+## The slider
+
+Requested separately: the fill-bar slider lil-gui uses, in place of the kit's
+rail-and-round-thumb. The studio already shows that widget in the Surface
+painter's lil-gui panel, so matching it is a consistency win as much as a
+preference.
+
+CSS cannot read an `<input type=range>`'s value, and no filled-portion
+pseudo-element exists that both Chromium and WebKit implement — only Firefox
+has `::-moz-range-progress`. So `src/react/studio/range-fill.ts` publishes the
+percentage to each element as `--st-fill` and the track paints itself from it,
+through two publishers: an inline style for controlled React inputs (exact, no
+listener — the value and the fill are written in the same render), and a
+delegated listener plus MutationObserver for everything else, which is what
+covers the sliders imperative runtimes build. Verified: 29 sliders on
+`/building`, 10 on `/bin`, none missing a fill.
+
+The input's own box is the hit area and `::-*-track` is the painted bar inside
+it, which is what lets a phone keep a 44px target under an 18px bar.
+
+**One deliberate deviation.** lil-gui's `.fill` has no background — only a 2px
+right border in `--number-color` is visible, so its slider is a flat track with
+a thin knob line. The kit colours the fill, because a dock stacks fifteen to
+twenty-nine of these and a filled bar reads as a magnitude at a glance where a
+bare knob does not. It is one token: setting `--st-slider-fill: transparent`
+gives the literal lil-gui widget and changes nothing else.
+
+lil-gui's number is also an editable text field; the kit's readout is still an
+`<output>` on most pages and an `<input type=number>` on `/bin`. Making every
+readout editable is a separate change with its own parsing and clamping per
+call site, so it was left alone.
 
 ## Scope and limitations
 

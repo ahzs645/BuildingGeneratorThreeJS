@@ -62,7 +62,14 @@ test("Recursive Bin breakpoint remount persists the complete draft and runtime v
   assert.match(runtime, /buildWorkspaceButton\.getAttribute\("aria-selected"\) === "true"/);
   assert.match(runtime, /binSearchFromValues\(values, \{ workspace, layout: mode, style, visible: resultView \}\)/);
   assert.match(runtime, /history\.replaceState/);
-  assert.match(runtime, /if \(!canvas\.isConnected\) renderer\.forceContextLoss\(\)/);
+  // The deferred, connectivity-checked release moved into canvas-viewport's
+  // releaseToolContext; this asserts the contract rather than the line's old
+  // address. It went unnoticed because the test glob never reached this file.
+  assert.match(runtime, /releaseToolContext\(renderer\)/);
+  assert.match(
+    readFileSync(new URL("src/canvas-viewport.ts", repo), "utf8"),
+    /if \(!renderer\.domElement\.isConnected\) renderer\.forceContextLoss\(\)/,
+  );
 });
 
 test("Recursive Bin uses registry and current live surface evidence without fixture overclaiming", () => {

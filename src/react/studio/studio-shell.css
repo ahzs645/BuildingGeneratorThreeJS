@@ -125,7 +125,6 @@
   .st-sheet-panel { min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
   .st-sheet-panel[hidden] { display: none; }
   .st-sheet-panel .st-tabs { position: sticky; top: 0; z-index: 2; background: var(--st-panel); }
-  .st-sheet input[type=range] { height: 32px; }
 
   /* Full-screen node inspection. Above the sheet (46), owns its scrolling so
      graph pans never rubber-band the page. */

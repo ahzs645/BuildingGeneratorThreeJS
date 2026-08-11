@@ -99,6 +99,11 @@
   .st-nav-lead  { grid-area: 1 / 1; }
   .st-nav-trail { grid-area: 1 / 2; }
   .st-nav-title, .st-nav-sep, .st-nav-chips, .st-nav-panels { display: none; }
+  /* The tool name gets the whole crumb. The section half is already spelled
+     out by the switcher directly below — highlighted, at that — and with both
+     halves sharing a 240px track a phone rendered "Building Genera… / Hong
+     Kong Building Gener…": two truncations where one name would fit. */
+  .st-crumb-section, .st-crumb i { display: none; }
   .st-crumb { height: 44px; }
   .st-nav-tools { min-height: var(--st-touch); }
   .st-nav-sections {

@@ -1,5 +1,6 @@
 import { useId } from "react";
 import type { SurfaceInteractionMode } from "../../../surface-studio/contracts";
+import { rangeFillStyle } from "../../studio/range-fill";
 import "./surface-shared-controls.css";
 
 export type { SurfaceInteractionMode } from "../../../surface-studio/contracts";
@@ -238,6 +239,7 @@ export function SurfaceSharedControls({
               max="2.5"
               step="0.05"
               value={projectionHeight}
+              style={rangeFillStyle(projectionHeight, 0.1, 2.5)}
               onChange={(event) => onProjectionHeightChange(event.currentTarget.valueAsNumber)}
             />
             <output>{projectionHeight.toFixed(2)}</output>
@@ -250,6 +252,7 @@ export function SurfaceSharedControls({
               max="4"
               step="0.1"
               value={areaSize}
+              style={rangeFillStyle(areaSize, 0.6, 4)}
               onChange={(event) => onAreaSizeChange(event.currentTarget.valueAsNumber)}
             />
             <output>{areaSize.toFixed(1)}</output>

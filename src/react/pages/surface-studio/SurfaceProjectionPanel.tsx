@@ -1,3 +1,4 @@
+import { rangeFillStyle } from "../../studio/range-fill";
 import type {
   SurfacePainterStudioSnapshot,
   SurfacePainterToolHandle,
@@ -136,8 +137,8 @@ export function SurfaceProjectionPanel({ controller, snapshot }: SurfaceProjecti
           <button className="st-btn" type="button" onClick={() => controller.setInteractionMode("pick-target")}>Pick target</button>
         </div>
 
-        <label className="st-row"><span>Area size</span><input type="range" min="0.6" max="4" step="0.1" value={snapshot.areaSize} disabled={transformDisabled} onChange={(event) => controller.setAreaSize(event.currentTarget.valueAsNumber)} /><output>{snapshot.areaSize.toFixed(1)}</output></label>
-        <label className="st-row"><span>Projection height</span><input type="range" min="-2.5" max="2.5" step="0.05" value={snapshot.projectionHeight} disabled={transformDisabled} onChange={(event) => controller.setProjectionHeight(event.currentTarget.valueAsNumber)} /><output>{snapshot.projectionHeight.toFixed(2)}</output></label>
+        <label className="st-row"><span>Area size</span><input type="range" min="0.6" max="4" step="0.1" value={snapshot.areaSize} style={rangeFillStyle(snapshot.areaSize, 0.6, 4)} disabled={transformDisabled} onChange={(event) => controller.setAreaSize(event.currentTarget.valueAsNumber)} /><output>{snapshot.areaSize.toFixed(1)}</output></label>
+        <label className="st-row"><span>Projection height</span><input type="range" min="-2.5" max="2.5" step="0.05" value={snapshot.projectionHeight} style={rangeFillStyle(snapshot.projectionHeight, -2.5, 2.5)} disabled={transformDisabled} onChange={(event) => controller.setProjectionHeight(event.currentTarget.valueAsNumber)} /><output>{snapshot.projectionHeight.toFixed(2)}</output></label>
 
         <fieldset className="surface-projection-transform" disabled={transformDisabled}>
           <legend>Area transform</legend>
@@ -165,18 +166,18 @@ export function SurfaceProjectionPanel({ controller, snapshot }: SurfaceProjecti
 
         <fieldset className="surface-projection-quality">
           <legend>Surface contact</legend>
-          <label className="st-row"><span>Contact depth</span><input type="range" min="0.01" max="0.75" step="0.01" value={snapshot.projectionContactDepth} onChange={(event) => controller.setProjectionContactDepth(event.currentTarget.valueAsNumber)} /><output>{snapshot.projectionContactDepth.toFixed(2)}</output></label>
-          <label className="st-row"><span>Contact softness</span><input type="range" min="0" max="1" step="0.01" value={snapshot.projectionContactSoftness} onChange={(event) => controller.setProjectionContactSoftness(event.currentTarget.valueAsNumber)} /><output>{snapshot.projectionContactSoftness.toFixed(2)}</output></label>
-          <label className="st-row"><span>Max surface angle</span><input type="range" min="0" max="90" step="1" value={snapshot.projectionMaxAngle} onChange={(event) => controller.setProjectionMaxAngle(event.currentTarget.valueAsNumber)} /><output>{snapshot.projectionMaxAngle.toFixed(0)}°</output></label>
-          <label className="st-row"><span>Surface clearance</span><input type="range" min="0" max="0.12" step="0.002" value={snapshot.projectionSurfaceOffset} onChange={(event) => controller.setProjectionSurfaceOffset(event.currentTarget.valueAsNumber)} /><output>{snapshot.projectionSurfaceOffset.toFixed(3)}</output></label>
+          <label className="st-row"><span>Contact depth</span><input type="range" min="0.01" max="0.75" step="0.01" value={snapshot.projectionContactDepth} style={rangeFillStyle(snapshot.projectionContactDepth, 0.01, 0.75)} onChange={(event) => controller.setProjectionContactDepth(event.currentTarget.valueAsNumber)} /><output>{snapshot.projectionContactDepth.toFixed(2)}</output></label>
+          <label className="st-row"><span>Contact softness</span><input type="range" min="0" max="1" step="0.01" value={snapshot.projectionContactSoftness} style={rangeFillStyle(snapshot.projectionContactSoftness, 0, 1)} onChange={(event) => controller.setProjectionContactSoftness(event.currentTarget.valueAsNumber)} /><output>{snapshot.projectionContactSoftness.toFixed(2)}</output></label>
+          <label className="st-row"><span>Max surface angle</span><input type="range" min="0" max="90" step="1" value={snapshot.projectionMaxAngle} style={rangeFillStyle(snapshot.projectionMaxAngle, 0, 90)} onChange={(event) => controller.setProjectionMaxAngle(event.currentTarget.valueAsNumber)} /><output>{snapshot.projectionMaxAngle.toFixed(0)}°</output></label>
+          <label className="st-row"><span>Surface clearance</span><input type="range" min="0" max="0.12" step="0.002" value={snapshot.projectionSurfaceOffset} style={rangeFillStyle(snapshot.projectionSurfaceOffset, 0, 0.12)} onChange={(event) => controller.setProjectionSurfaceOffset(event.currentTarget.valueAsNumber)} /><output>{snapshot.projectionSurfaceOffset.toFixed(3)}</output></label>
           <div className="surface-projection-toggles">
             <label><input type="checkbox" checked={snapshot.contactLocked} disabled={disabled} onChange={(event) => controller.setContactLocked(event.currentTarget.checked)} /> Keep contacted area</label>
             <label><input type="checkbox" checked={snapshot.clothEnabled} disabled={disabled} onChange={(event) => controller.setClothEnabled(event.currentTarget.checked)} /> Cloth folds</label>
           </div>
           {snapshot.clothEnabled && <div className="surface-projection-cloth-controls">
-            <label className="st-row"><span>Sag</span><input type="range" min="0" max="1" step="0.01" value={snapshot.clothSag} onChange={(event) => controller.setClothSag(event.currentTarget.valueAsNumber)} /><output>{snapshot.clothSag.toFixed(2)}</output></label>
-            <label className="st-row"><span>Stretch</span><input type="range" min="0" max="1" step="0.01" value={snapshot.drapeStretch} onChange={(event) => controller.setDrapeStretch(event.currentTarget.valueAsNumber)} /><output>{snapshot.drapeStretch.toFixed(2)}</output></label>
-            <label className="st-row"><span>Iterations</span><input type="range" min="1" max="32" step="1" value={snapshot.drapeIterations} onChange={(event) => controller.setDrapeIterations(event.currentTarget.valueAsNumber)} /><output>{snapshot.drapeIterations}</output></label>
+            <label className="st-row"><span>Sag</span><input type="range" min="0" max="1" step="0.01" value={snapshot.clothSag} style={rangeFillStyle(snapshot.clothSag, 0, 1)} onChange={(event) => controller.setClothSag(event.currentTarget.valueAsNumber)} /><output>{snapshot.clothSag.toFixed(2)}</output></label>
+            <label className="st-row"><span>Stretch</span><input type="range" min="0" max="1" step="0.01" value={snapshot.drapeStretch} style={rangeFillStyle(snapshot.drapeStretch, 0, 1)} onChange={(event) => controller.setDrapeStretch(event.currentTarget.valueAsNumber)} /><output>{snapshot.drapeStretch.toFixed(2)}</output></label>
+            <label className="st-row"><span>Iterations</span><input type="range" min="1" max="32" step="1" value={snapshot.drapeIterations} style={rangeFillStyle(snapshot.drapeIterations, 1, 32)} onChange={(event) => controller.setDrapeIterations(event.currentTarget.valueAsNumber)} /><output>{snapshot.drapeIterations}</output></label>
           </div>}
         </fieldset>
 

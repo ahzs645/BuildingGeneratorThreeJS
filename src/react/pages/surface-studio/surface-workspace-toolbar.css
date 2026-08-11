@@ -106,7 +106,10 @@
   .surface-workspace-group :is(button, .st-btn, .st-select) { min-height: var(--st-touch); }
   .surface-workspace-group .st-select { height: var(--st-touch); }
   .surface-workspace-import { height: var(--st-touch); min-height: var(--st-touch); }
-  .surface-workspace-modes .st-segmented button { height: 36px; min-height: 36px; }
+  /* --st-touch here too. Pinning Mode to the leading edge (below) made it the
+     most-tapped control in the strip; leaving it at 36px would have been the
+     exact drift this file was being fixed for. */
+  .surface-workspace-modes .st-segmented button { height: var(--st-touch); min-height: var(--st-touch); }
 
   /* Mode decides whether a touch orbits the model or paints on it, and at
      x 608–784 on a 390px phone it was entirely off-screen behind a scroll with
@@ -129,4 +132,16 @@
   .surface-painter-page .st-toolbar:has(.surface-workspace-toolbar) {
     box-shadow: inset -22px 0 16px -16px rgba(0, 0, 0, .75);
   }
+}
+
+/* Landscape pays back the height the 44px targets above cost it, and then
+   some: 390px of screen cannot afford four 11px group captions over controls
+   that already say what they are. */
+@media ((pointer: coarse) and (max-height: 500px)) {
+  .surface-painter-page .st-toolbar:has(.surface-workspace-toolbar) {
+    min-height: 0;
+    padding: 5px 10px;
+  }
+  .surface-workspace-group { padding: 5px 8px; }
+  .surface-workspace-group-label { display: none; }
 }

@@ -1,3 +1,4 @@
+import { rangeFillStyle } from "../../studio/range-fill";
 import type { LibraryShapeInfo } from "../../../base-shape-catalog";
 import { surfaceGenerator } from "../../../surface-studio/generator-catalog";
 import type { SurfaceInteractionMode } from "../../../surface-studio/contracts";
@@ -147,6 +148,7 @@ export function SurfaceWorkspaceToolbar({
               max="4"
               step="0.1"
               value={snapshot.areaSize}
+              style={rangeFillStyle(snapshot.areaSize, 0.6, 4)}
               disabled={!controller}
               onChange={(event) => controller?.setAreaSize(event.currentTarget.valueAsNumber)}
             />
@@ -159,6 +161,7 @@ export function SurfaceWorkspaceToolbar({
               max="2.5"
               step="0.05"
               value={snapshot.projectionHeight}
+              style={rangeFillStyle(snapshot.projectionHeight, -2.5, 2.5)}
               disabled={!controller}
               onChange={(event) => controller?.setProjectionHeight(event.currentTarget.valueAsNumber)}
             />

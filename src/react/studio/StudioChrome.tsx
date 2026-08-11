@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
+import { installRangeFill } from "./range-fill";
 
 /**
  * The shell's tone vocabulary. `.st-dot` is the only status affordance in the
@@ -55,6 +56,11 @@ export function StudioChromeProvider({ children }: { children: ReactNode }): Rea
     () => ({ chips, setChipGroup, docksOpen, setDocksOpen, hasDocks, setHasDocks, capture }),
     [capture, chips, docksOpen, hasDocks, setChipGroup],
   );
+  // Fill-bar sliders need their percentage published to the DOM. Installed on
+  // <body>, not the shell: lil-gui panels and the portaled modals live outside
+  // it, and their sliders are the same widget.
+  useEffect(() => installRangeFill(document.body), []);
+
   // The shell owns the whole viewport: nav row + body row. Nothing inside is
   // position:fixed except the mobile sheet, so no panel can cover the viewport.
   return <StudioChromeContext.Provider value={value}>
