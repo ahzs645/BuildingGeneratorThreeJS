@@ -14,7 +14,7 @@ import { StudioPanelHeader, StudioShell, useMobileStudio } from "../studio/Studi
 import { BlenderBrushOptions } from "./surface-studio/BlenderBrushOptions";
 import { SurfaceProjectionPanel } from "./surface-studio/SurfaceProjectionPanel";
 import { SurfaceToolSelector } from "./surface-studio/SurfaceToolSelector";
-import { SurfaceWorkspaceToolbar } from "./surface-studio/SurfaceWorkspaceToolbar";
+import { SurfaceDocumentSetup, SurfaceWorkspaceToolbar } from "./surface-studio/SurfaceWorkspaceToolbar";
 import "./surface-painter.css";
 import "./putty-lab.css";
 
@@ -122,7 +122,11 @@ function PersistentSurfaceStudio({ initialTool }: { initialTool: SurfaceGenerato
     <div id="surface-painter-generator-dock" className="surface-painter-generator-dock" hidden />
   </>;
   const rightDock = <>
-    <StudioPanelHeader title="Generator options" meta="Active settings" className="paint-node-tabs" />
+    <StudioPanelHeader title="Surface & options" meta="Active settings" className="paint-node-tabs" />
+    {/* Set-up, not work: the surface you paint on and where strokes land. It
+        was in the toolbar, where wrapping four groups made the strip 221px tall
+        at 1024×768 and 320px at 834×1112. */}
+    <SurfaceDocumentSetup controller={controller} snapshot={snapshot} references={references} />
     {blender && controller && <SurfaceProjectionPanel controller={controller} snapshot={snapshot} />}
     <section className="surface-active-generator-context" aria-live="polite">
       <span aria-hidden="true">{descriptor.code}</span>
@@ -160,7 +164,7 @@ function PersistentSurfaceStudio({ initialTool }: { initialTool: SurfaceGenerato
       { id: "generators", label: "Generators", content: leftDock },
       { id: "options", label: "Options", content: rightDock },
     ]}
-    toolbar={<SurfaceWorkspaceToolbar controller={controller} snapshot={snapshot} references={references} />}
+    toolbar={<SurfaceWorkspaceToolbar controller={controller} snapshot={snapshot} />}
     nodeDock={nodeDock}
     status={<>
       <span id="paint-status" className="st-state busy"><span className="st-dot" /><span data-status-text>{controller ? `${descriptor.label} ready on the shared surface` : "Starting the shared surface…"}</span></span>

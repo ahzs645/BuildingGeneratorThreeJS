@@ -174,11 +174,28 @@ test("the sheet has a peek detent between collapsed and open", () => {
 test("every tool publishes a runtime chip, and page chips do not evict it", () => {
   assert.match(chrome, /export type StudioChipGroup = "runtime" \| "page"/);
   assert.match(chrome, /export function useStudioRuntimeChip/);
-  // Both runtime hooks, so a page gets the chip whether or not it keeps a handle.
-  const chipCalls = pageRuntime.match(/useStudioRuntimeChip\(/g) ?? [];
-  assert.equal(chipCalls.length, 2, "useToolController and useToolRuntime must both publish");
-  assert.match(pageRuntime, /RUNTIME_CHIP\[phase\]/);
-  assert.match(pageRuntime, /RUNTIME_CHIP\[state\.phase\]/);
+  // One publisher, reached by every path that mounts a runtime. Counting calls
+  // inside page-runtime.ts — which is what this test used to do — is exactly
+  // what let /materialx ship with an empty chip track: it mounts its runtime by
+  // hand and called neither of the two hooks being counted. Assert the contract
+  // at the routes instead, so a page that opts out of both is what fails.
+  assert.match(pageRuntime, /export function useRuntimePhaseChip/);
+  const ROUTE_PAGES = [
+    "BinComparePage", "BlendBridgePage", "BuildingPage", "ChromeAssetsPage",
+    "CrayonComparePage", "DojoGalleryPage", "MaterialXLabPage", "SurfacePaintPage",
+    "TypewriterPage", "VaseComparePage",
+  ];
+  // Either publisher satisfies it: the point is that the nav's chip track says
+  // something on every route, not which group filled it. BlendBridgePage
+  // publishes its own bridge/VM chips and no runtime one, and that is fine —
+  // an empty track is the defect, and it is what /materialx had.
+  for (const page of ROUTE_PAGES) {
+    assert.match(
+      read(`src/react/pages/${page}.tsx`),
+      /useToolController|useToolRuntime|useRuntimePhaseChip|useStudioStatusChips/,
+      `${page} leaves the nav chip track empty`,
+    );
+  }
 });
 
 // D2 —— the Parity Catalog's rows were the one control row the kit could not reach.

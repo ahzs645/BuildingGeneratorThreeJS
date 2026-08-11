@@ -111,7 +111,18 @@
 .bin-contract-summary b { font-size: var(--st-fs-ui); }
 .bin-contract-summary span { color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1.45 var(--st-font); }
 
-.bin-toolbar-button { border: 0; background: transparent; color: var(--st-accent); cursor: pointer; font: 500 var(--st-fs-micro)/1 var(--st-font); }
+/* A ghost text button still needs a hit area. Reframe measured 58.5 × 13 at
+   1440×900 — the height of its own type, under WCAG 2.2's 24 × 24 minimum —
+   because nothing but the glyphs was ever laid out. The toolbar's mobile rule
+   raises it to --st-touch on a coarse pointer; this is the mouse case. */
+.bin-toolbar-button {
+  display: inline-flex; align-items: center;
+  min-height: 26px; padding: 0 6px;
+  border: 0; border-radius: var(--st-r-sm); background: transparent;
+  color: var(--st-accent); cursor: pointer;
+  font: 500 var(--st-fs-micro)/1 var(--st-font);
+}
+.bin-toolbar-button:hover { background: var(--st-accent-wash); }
 /* #compare-status is a kit .st-state line; its tones come from studio-kit.css. */
 
 .bin-compare-page .viewport-label {

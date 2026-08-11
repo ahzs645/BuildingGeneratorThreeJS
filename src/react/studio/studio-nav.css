@@ -94,6 +94,12 @@
     grid-template-columns: minmax(0,1fr) auto;
     grid-template-rows: auto auto;
     align-content: center;
+    /* The inline halves of this shorthand are overridden: studio-kit.css pads
+       all three strips against env(safe-area-inset-left/right) through
+       `.st-shell .st-nav`, two classes, so a notch cannot swallow the
+       breadcrumb. That rule used to be a bare `.st-nav` and this shorthand
+       silently beat it on load order — keep any padding written here to the
+       block halves unless you intend to lose the inset again. */
     gap: 6px 9px; padding: 5px 10px 6px;
   }
   .st-nav-lead  { grid-area: 1 / 1; }
@@ -112,7 +118,10 @@
     scrollbar-width: none; scroll-snap-type: x proximity;
   }
   .st-nav-sections::-webkit-scrollbar { display: none; }
-  .st-nav-sections a { height: var(--st-touch); flex: 0 0 auto; scroll-snap-align: start; }
+  /* min-width as well as height: "Lab" is three characters and measured
+     43.7 × 44 in landscape — a target that misses the minimum on one axis is
+     a target that misses the minimum. */
+  .st-nav-sections a { min-width: var(--st-touch); height: var(--st-touch); flex: 0 0 auto; scroll-snap-align: start; }
 }
 /* Phone in landscape: one row, not two. 390px of height had a 104px nav in it.
    Lead, switcher and trail all fit across 844px, and the switcher's items keep

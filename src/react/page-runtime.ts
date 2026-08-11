@@ -13,8 +13,10 @@ export type ToolHandle = { dispose(): void };
 
 export type ToolModule = { createTool(): ToolHandle | Promise<ToolHandle> };
 
+export type RuntimePhase = "loading" | "ready" | "error";
+
 export type ToolRuntimeState = {
-  phase: "loading" | "ready" | "error";
+  phase: RuntimePhase;
   error: Error | null;
   retry(): void;
 };
@@ -28,11 +30,22 @@ function normalizeError(error: unknown): Error {
  * track carries the same fact on every route — before, eight of the ten pages
  * left it empty and the trailing nav buttons shifted between tools.
  */
-const RUNTIME_CHIP: Record<"loading" | "ready" | "error", { label: string; tone: StudioTone }> = {
+const RUNTIME_CHIP: Record<RuntimePhase, { label: string; tone: StudioTone }> = {
   loading: { label: "starting", tone: "busy" },
   ready: { label: "runtime live", tone: "ready" },
   error: { label: "runtime failed", tone: "error" },
 };
+
+/**
+ * The chip, for a page that mounts its runtime by hand. /materialx does: it
+ * imports its module in a bare useEffect rather than through either hook
+ * below, so it published nothing and `.st-nav-chips` measured 0×0 there while
+ * the other nine routes carried a chip. Exported rather than copied, so the
+ * three words a chip can say stay defined in one place.
+ */
+export function useRuntimePhaseChip(phase: RuntimePhase): void {
+  useStudioRuntimeChip(RUNTIME_CHIP[phase].label, RUNTIME_CHIP[phase].tone);
+}
 
 export function usePageRuntime(title: string): void {
   useEffect(() => {
@@ -53,7 +66,7 @@ export function useToolController<Handle extends ToolHandle>(
   const { search } = useLocation();
   const resolvedRestartKey = restartKey === undefined ? search : restartKey;
   const [handle, setHandle] = useState<Handle | null>(null);
-  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
+  const [phase, setPhase] = useState<RuntimePhase>("loading");
   useEffect(() => {
     document.title = title;
     setPhase("loading");
@@ -82,7 +95,7 @@ export function useToolController<Handle extends ToolHandle>(
       setHandle(null);
     };
   }, [load, resolvedRestartKey, title]);
-  useStudioRuntimeChip(RUNTIME_CHIP[phase].label, RUNTIME_CHIP[phase].tone);
+  useRuntimePhaseChip(phase);
   return handle;
 }
 
@@ -132,6 +145,6 @@ export function useToolRuntime(
       handle = null;
     };
   }, [attempt, load, restartKey, search, title]);
-  useStudioRuntimeChip(RUNTIME_CHIP[state.phase].label, RUNTIME_CHIP[state.phase].tone);
+  useRuntimePhaseChip(state.phase);
   return { ...state, retry: () => setAttempt((value) => value + 1) };
 }

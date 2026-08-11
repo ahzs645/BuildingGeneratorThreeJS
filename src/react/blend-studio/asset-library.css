@@ -1,7 +1,13 @@
 /* The overlay keeps its shape; only type sizes and surfaces move onto the kit
    (grid item titles 12px, meta 11px mono, kit radii and lines). */
-.asset-library-backdrop{position:fixed;inset:0;z-index:220;display:flex;align-items:flex-start;justify-content:center;overflow:hidden;padding:5vh 16px;background:rgba(5,7,9,.62);backdrop-filter:blur(7px)}
-.asset-library{display:flex;flex-direction:column;width:min(1080px,100%);max-height:90vh;overflow:hidden;border:1px solid var(--st-line-2);border-radius:var(--st-r-lg);background:var(--st-panel);box-shadow:0 30px 90px rgba(0,0,0,.6);color:var(--st-ink);font-family:var(--st-font)}
+/* dvh with a vh fallback, like the sheet and the tool menu. C4 named this file
+   alongside those two and only they were changed: on iOS Safari `vh` resolves
+   against the LARGEST viewport, so with the browser toolbars showing a 90vh
+   dialog inside 5vh of padding is taller than the space that exists and its
+   footer — and the last row of cards — sit under the toolbar. The vh
+   declaration has to come first; the dvh one wins where it is supported. */
+.asset-library-backdrop{position:fixed;inset:0;z-index:220;display:flex;align-items:flex-start;justify-content:center;overflow:hidden;padding:5vh 16px;padding-block:5dvh;background:rgba(5,7,9,.62);backdrop-filter:blur(7px)}
+.asset-library{display:flex;flex-direction:column;width:min(1080px,100%);max-height:90vh;max-height:90dvh;overflow:hidden;border:1px solid var(--st-line-2);border-radius:var(--st-r-lg);background:var(--st-panel);box-shadow:0 30px 90px rgba(0,0,0,.6);color:var(--st-ink);font-family:var(--st-font)}
 .asset-library>header{display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--st-line)}
 .asset-library>header b{font:700 var(--st-fs-micro)/1 var(--st-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--st-accent);white-space:nowrap}
 .asset-library>header input{flex:1;min-width:0;height:var(--st-control-h);border:1px solid var(--st-line-2);border-radius:var(--st-r-sm);padding:0 10px;background:var(--st-sunken);color:#DDE5EB;font:500 var(--st-fs-ui)/1 var(--st-font)}
@@ -38,6 +44,22 @@
   /* The credit line is the first thing to go: it is the same sentence every
      time, and it was taking 54px of a 390px landscape screen. */
   .asset-library > footer { display: none; }
+
+  /* These three moved up from a `max-width: 720px` block. The overlay's
+     breakpoint was raised to 820px to match the shell, but the layout rules
+     that make the full-screen sheet work were left behind, so 721–820px got
+     the sheet with the desktop dialog's scrolling category strip — the exact
+     bug the breakpoint change was meant to close, in a 100px band. Latent
+     today only because seven chips happen to fit at those widths. */
+  .asset-library > header { flex-wrap: wrap; }
+  .asset-library > header b { flex: 1; }
+  .asset-library > header input { order: 3; flex-basis: 100%; }
+  .asset-library-filters { align-items: stretch; flex-direction: column; }
+  /* Wrap rather than scroll. A full-screen sheet has the vertical room, and
+     the scrolling strip clipped "Studies" mid-word and pushed "Scenes" off the
+     end entirely, with the scrollbar hidden and nothing else to say so. */
+  .asset-library-categories { flex-wrap: wrap; overflow-x: visible; }
+  .asset-library-views { margin-left: 0; }
 }
 
 /* Keyed on the pointer, not the width: whether a control needs to be 44px is
@@ -54,16 +76,11 @@
   .asset-library-favorite::after { content: ""; position: absolute; inset: -7px; border-radius: 50%; }
 }
 
+/* The card grid keeps a width breakpoint of its own, because "how many columns
+   fit" is a question about pixels rather than about which shell is mounted.
+   Two up is right for a 390px phone; forcing it at 820px would give 394px
+   cards whose square thumbnails are taller than the viewport. */
 @media (max-width: 720px) {
-  .asset-library > header { flex-wrap: wrap; }
-  .asset-library > header b { flex: 1; }
-  .asset-library > header input { order: 3; flex-basis: 100%; }
-  .asset-library-filters { align-items: stretch; flex-direction: column; }
-  /* Wrap rather than scroll. A full-screen sheet has the vertical room, and
-     the scrolling strip clipped "Studies" mid-word and pushed "Scenes" off the
-     end entirely, with the scrollbar hidden and nothing else to say so. */
-  .asset-library-categories { flex-wrap: wrap; overflow-x: visible; }
-  .asset-library-views { margin-left: 0; }
   .asset-library-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
