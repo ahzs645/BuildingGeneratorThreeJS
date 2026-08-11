@@ -167,13 +167,20 @@
 .blender-flow-wrap .react-flow__controls-button { background: var(--st-raised); border-bottom-color: var(--st-line-2); color: #D3D8DC; }
 
 /* ------------------------------------------------------------ authoring menus */
-.graph-popup { position: fixed; z-index: 200; overflow: hidden; border: 1px solid var(--st-line-2); border-radius: var(--st-r-md); background: var(--st-raised); color: var(--st-ink); box-shadow: 0 16px 44px rgba(0,0,0,.58); font: 500 var(--st-fs-ui)/1.25 var(--st-font); }
-.graph-add-menu { width: 280px; max-height: min(420px,70vh); }
-.graph-add-menu > header { display: flex; align-items: center; justify-content: space-between; height: 32px; padding: 0 8px; border-bottom: 1px solid var(--st-line); font: 700 var(--st-fs-micro)/1 var(--st-mono); letter-spacing: .1em; text-transform: uppercase; }
+/* box-sizing, because the widths and max-heights here are also the footprints
+   clampMenuToViewport (GeometryNodesEditor.tsx) uses to keep a menu on screen.
+   Content-box let the border and padding push the real box 10px past what the
+   clamp reserved, which put the context menu 4px off a 390px phone. */
+.graph-popup { box-sizing: border-box; position: fixed; z-index: 200; overflow: hidden; border: 1px solid var(--st-line-2); border-radius: var(--st-r-md); background: var(--st-raised); color: var(--st-ink); box-shadow: 0 16px 44px rgba(0,0,0,.58); font: 500 var(--st-fs-ui)/1.25 var(--st-font); }
+/* A column, so the row list gives up height when the menu is capped by 70vh
+   rather than overflowing the hidden box: at 844x390 the 350px list ran ~90px
+   past a 273px menu, and those rows could not be scrolled to at all. */
+.graph-add-menu { display: flex; flex-direction: column; width: 280px; max-height: min(420px,70vh); }
+.graph-add-menu > header { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; height: 32px; padding: 0 8px; border-bottom: 1px solid var(--st-line); font: 700 var(--st-fs-micro)/1 var(--st-mono); letter-spacing: .1em; text-transform: uppercase; }
 .graph-add-menu > header button { width: 22px; height: 22px; border: 0; background: transparent; color: var(--st-ink-2); cursor: pointer; font-size: 16px; }
-.graph-add-menu > input { box-sizing: border-box; width: calc(100% - 12px); height: 28px; margin: 6px; padding: 0 8px; border: 1px solid var(--st-line-2); border-radius: var(--st-r-sm); outline: 0; background: var(--st-sunken); color: var(--st-ink); font: 500 var(--st-fs-ui)/1 var(--st-font); }
+.graph-add-menu > input { box-sizing: border-box; flex: 0 0 auto; width: calc(100% - 12px); height: 28px; margin: 6px; padding: 0 8px; border: 1px solid var(--st-line-2); border-radius: var(--st-r-sm); outline: 0; background: var(--st-sunken); color: var(--st-ink); font: 500 var(--st-fs-ui)/1 var(--st-font); }
 .graph-add-menu > input:focus { border-color: var(--st-accent-edge); }
-.graph-add-menu > div { max-height: 350px; overflow: auto; padding: 0 4px 5px; }
+.graph-add-menu > div { flex: 1 1 auto; min-height: 0; max-height: 350px; overflow: auto; padding: 0 4px 5px; }
 /* Rows are one level deeper than they were — each family is a <section> — so
    this selector is a descendant rather than a child combinator. */
 .graph-add-menu > div button { display: flex; width: 100%; height: auto; min-height: 38px; flex-direction: column; align-items: flex-start; border: 0; border-radius: 5px; padding: 6px 8px; background: transparent; color: var(--st-ink); cursor: pointer; text-align: left; font: 500 var(--st-fs-ui)/1.2 var(--st-font); }

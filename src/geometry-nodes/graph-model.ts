@@ -272,7 +272,7 @@ export function graphNodeTemplates(dump: Dump): GraphNodeTemplate[] {
         // node with it. Falling straight through to `bl_label` printed "Group"
         // 21 times in the crayon dump's add menu, one row per nested tree.
         label: node.label?.trim() || nested || String(node.props?.bl_label ?? node.name),
-        family: `${node.type} ${nested}`,
+        family: `${node.type} ${nested}`,
         inputTypes: node.inputs.filter((socket) => socket.enabled !== false && socket.identifier !== "__extend__").map((socket) => socket.type),
         outputTypes: node.outputs.filter((socket) => socket.enabled !== false && socket.identifier !== "__extend__").map((socket) => socket.type ?? "NodeSocketUndefined"),
         props: node.props ?? {},

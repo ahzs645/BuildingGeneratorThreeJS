@@ -91,13 +91,16 @@ const DRAFT_PERSIST_MAX_CHARS = 4 * 1024 * 1024;
 
 /**
  * Popup footprints, kept in step with `.graph-add-menu` / `.graph-context-menu`
- * in crayon-compare.css. Only used to keep a menu on screen: a menu opened from
- * the right edge of a 390px phone would otherwise render 190px off it, and the
+ * in crayon-compare.css — which are `box-sizing: border-box` so these are the
+ * whole box. Only used to keep a menu on screen: a menu opened from the right
+ * edge of a 390px phone would otherwise render 190px off it, and the
  * `position: fixed` popups have nothing to scroll them back.
  */
 const ADD_MENU_BOX = { width: 280, height: 420 };
 /** Taller than the desktop menu measures: its rows grow to `--st-touch` on a phone. */
 const CONTEXT_MENU_BOX = { width: 200, height: 330 };
+/** Both popups cap at 70vh in CSS; the clamp has to reserve the same. */
+const MENU_MAX_VIEWPORT_FRACTION = .7;
 
 /**
  * Rows the add menu draws before it stops. It used to be 60, which was under
@@ -111,14 +114,22 @@ const ADD_MENU_MAX_ROWS = 120;
 const LONG_PRESS_MS = 480;
 const LONG_PRESS_SLOP_PX = 12;
 
-/** `fitView` padding for the working-set framing, and the zoom floor it prefers. */
+/** `fitView` padding for the working-set framing, and the zoom band it prefers. */
 const WORKING_SET_PADDING = .28;
 const WORKING_SET_MIN_ZOOM = .62;
 const WORKING_SET_MAX_ZOOM = .82;
+/**
+ * How much of the authored output chain to open on. It is a range, not a
+ * number, because the stage decides: `graphWorkingSetNodeIds` walks upstream
+ * from Group Output, so a smaller limit is a prefix of a larger one — always
+ * the output and its nearest neighbours, never an arbitrary subset.
+ */
+const WORKING_SET_LIMIT = 12;
+const WORKING_SET_MIN_NODES = 3;
 
 function clampMenuToViewport(x: number, y: number, box: { width: number; height: number }): { x: number; y: number } {
   const margin = 6;
-  const height = Math.min(box.height, window.innerHeight * .7);
+  const height = Math.min(box.height, window.innerHeight * MENU_MAX_VIEWPORT_FRACTION);
   return {
     x: Math.max(margin, Math.min(x, window.innerWidth - box.width - margin)),
     y: Math.max(margin, Math.min(y, window.innerHeight - height - margin)),
@@ -707,22 +718,42 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
   const frameAll = (): void => {
     void flow?.fitBounds(graphBounds, { duration: 320, padding: .12 });
   };
+  /**
+   * Open on as much of the authored output chain as this stage can hold.
+   *
+   * The working set was a flat 12 nodes framed at a .62 zoom floor, and both
+   * numbers were tuned against one box. `fitView` clamps its computed zoom into
+   * [minZoom, maxZoom] and then crops whatever no longer fits, so in the
+   * 390x711 mobile overlay exactly 6 of the 12 landed fully on screen — 3 cut
+   * by an edge and 3 outside the viewport entirely, and Group Output, the node
+   * the whole walk starts from, was one of the three cut. 844x259 measured the
+   * same 6 of 12.
+   *
+   * Dropping the floor instead would fit all twelve, but at zoom .20 on the
+   * phone and .16 in the 764x156 desktop dock, which is why the floor exists:
+   * Blender opens a tree at a working scale rather than shrinking it into view,
+   * and 10.5px node titles at .16 are not a working scale. So the *set* gives
+   * way instead of the scale. Walking the limit down keeps the output node and
+   * its nearest upstream neighbours (`graphWorkingSetNodeIds` is a BFS from
+   * Group Output, so a smaller limit is a prefix of a larger one), and the
+   * floor only yields at the smallest set, where cropping the last three nodes
+   * would leave nothing framed at all.
+   */
   const frameWorkingSet = useCallback((duration = 0): boolean => {
     if (!flow || !graph || !nodes.length) return false;
-    const workingSet = new Set(graphWorkingSetNodeIds(graph, 12));
-    const focusNodes = nodes.filter((node) => workingSet.has(node.id));
-    if (!focusNodes.length) return false;
-    // The zoom floor is a preference, not a constraint. `fitView` clamps its
-    // computed zoom into [minZoom, maxZoom] and then simply crops whatever no
-    // longer fits, so a floor tuned against the ~900x250 desktop node dock cut
-    // 4 of the 11 nodes it rendered off the edges of the 390x711 mobile
-    // overlay. Blender opens a tree at a working scale rather than shrinking it
-    // into view, which is what .62 is for — but only where the stage can hold
-    // the set at that scale. Where it cannot, framing the set beats cropping it.
     const stage = stageRef.current?.getBoundingClientRect();
-    const fitted = stage
-      ? fitZoomForBounds(flow.getNodesBounds(focusNodes), stage.width, stage.height, WORKING_SET_PADDING)
-      : Number.POSITIVE_INFINITY;
+    let focusNodes: Node[] = [];
+    let fitted = Number.POSITIVE_INFINITY;
+    for (let limit = WORKING_SET_LIMIT; limit >= WORKING_SET_MIN_NODES; limit -= 1) {
+      const workingSet = new Set(graphWorkingSetNodeIds(graph, limit));
+      const candidates = nodes.filter((node) => workingSet.has(node.id));
+      if (!candidates.length) break;
+      focusNodes = candidates;
+      if (!stage?.width || !stage.height) break;
+      fitted = fitZoomForBounds(flow.getNodesBounds(candidates), stage.width, stage.height, WORKING_SET_PADDING);
+      if (fitted >= WORKING_SET_MIN_ZOOM) break;
+    }
+    if (!focusNodes.length) return false;
     void flow.fitView({
       nodes: focusNodes,
       duration,

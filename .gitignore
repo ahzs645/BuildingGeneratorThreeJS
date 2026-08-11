@@ -142,3 +142,10 @@ dist
 # Python/Blender probe caches
 __pycache__/
 *.py[cod]
+
+# Scratch directories agent/automation runs leave behind. Two of these were
+# committed by a `git add -A` that ran while a measurement script was writing
+# into the working tree; ignoring them means the next one cannot repeat it.
+.agent-measure/
+.audit-agent/
+*.local.mjs

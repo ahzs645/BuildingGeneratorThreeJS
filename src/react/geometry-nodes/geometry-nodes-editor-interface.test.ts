@@ -78,26 +78,42 @@ test("both popups are clamped into the viewport", () => {
   assert.match(editor, /const spot = clampMenuToViewport\(clientX, clientY, CONTEXT_MENU_BOX\)/);
   // The node still lands where the user pointed; only the popup box moves.
   assert.match(editor, /flow\?\.screenToFlowPosition\(\{ x: clientX, y: clientY \}\)/);
-  // The 70vh the clamp assumes has to exist in CSS for both menus.
-  assert.match(editorCss, /\.graph-add-menu \{ width: 280px; max-height: min\(420px,70vh\)/);
+  // The 70vh the clamp assumes has to exist in CSS for both menus, and the
+  // popups must be border-box or the border and padding push the real box past
+  // the footprint the clamp reserved (which put the context menu 4px off a
+  // 390px phone).
+  assert.match(editorCss, /\.graph-popup \{ box-sizing: border-box;/);
+  assert.match(editorCss, /\.graph-add-menu \{ display: flex; flex-direction: column; width: 280px; max-height: min\(420px,70vh\)/);
   assert.match(mobileBlock(), /\.graph-context-menu \{ max-height: 70vh/);
+  assert.match(editor, /MENU_MAX_VIEWPORT_FRACTION = \.7/);
+  // The row list has to give up height when 70vh caps the menu; a fixed 350px
+  // list ran ~90px past a 273px menu at 844x390, unreachable behind `hidden`.
+  assert.match(editorCss, /\.graph-add-menu > div \{ flex: 1 1 auto; min-height: 0; max-height: 350px/);
 });
 
 // —— A fit computed for the desktop dock, displayed in the phone overlay.
 test("the working-set framing is computed against the stage it lands in", () => {
-  // The zoom floor is a preference the stage can override, not a constant.
-  assert.doesNotMatch(editor, /fitView\(\{[^}]*minZoom: \.62/);
-  assert.match(editor, /minZoom: Math\.min\(WORKING_SET_MIN_ZOOM, fitted\)/);
+  // The size of the set gives way, not the readable scale it is drawn at: the
+  // limit walks down until the stage can hold that many at the zoom floor.
+  assert.doesNotMatch(editor, /graphWorkingSetNodeIds\(graph, 12\)/);
+  assert.match(editor, /for \(let limit = WORKING_SET_LIMIT; limit >= WORKING_SET_MIN_NODES; limit -= 1\)/);
+  assert.match(editor, /if \(fitted >= WORKING_SET_MIN_ZOOM\) break;/);
   assert.match(editor, /const stage = stageRef\.current\?\.getBoundingClientRect\(\)/);
-  assert.match(editor, /fitZoomForBounds\(flow\.getNodesBounds\(focusNodes\), stage\.width, stage\.height, WORKING_SET_PADDING\)/);
+  assert.match(editor, /fitZoomForBounds\(flow\.getNodesBounds\(candidates\), stage\.width, stage\.height, WORKING_SET_PADDING\)/);
+  // The smallest set still may not be cropped — there would be nothing left.
+  assert.match(editor, /minZoom: Math\.min\(WORKING_SET_MIN_ZOOM, fitted\)/);
   // Mirrors getViewportForBounds in @xyflow/system: padding is a fraction of
   // the stage, halved per side. A different formula would silently re-crop.
   assert.match(editor, /Math\.floor\(\(width - width \/ \(1 \+ padding\)\) \* \.5\) \* 2/);
 });
 
 test("the editor re-frames itself when its stage changes shape", () => {
-  // The host dispatches its resize event in the frame the overlay opens, before
-  // the lazy editor chunk exists to hear it, so the editor watches its own box.
+  // Two failures, one observer. The host dispatches its resize event in the
+  // frame the overlay opens, before the lazy editor chunk exists to hear it.
+  // And the mount-time framing runs in a `requestAnimationFrame` that beats
+  // React Flow's own measurement pass, so `fitView` sees zero measured nodes
+  // and returns without touching the viewport — the docked editor at 1440x900
+  // opened at zoom 1 with none of its output chain framed.
   assert.match(editor, /new ResizeObserver\(/);
   assert.match(editor, /observer\.observe\(stage\)/);
   assert.match(editor, /previous\.width \* \.05/);
