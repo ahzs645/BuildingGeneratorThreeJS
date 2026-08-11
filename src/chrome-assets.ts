@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import { bindSearchableSelect } from "./react/studio/searchable-select";
 import { bindStatusLine } from "./status-line";
 import { preferredCanvasPixelRatio, releaseToolContext } from "./canvas-viewport";
 import {
@@ -93,9 +94,6 @@ export function createTool(): ToolHandle {
     ? requestedSpecularIntensity
     : null;
   const select = document.querySelector<HTMLInputElement>("#assets-select")!;
-  const assetOptions = document.querySelector<HTMLDataListElement>("#assets-options")!;
-  const previousAsset = document.querySelector<HTMLButtonElement>("#assets-previous")!;
-  const nextAsset = document.querySelector<HTMLButtonElement>("#assets-next")!;
   const controlsHost = document.querySelector<HTMLElement>("#assets-controls")!;
   const reference = document.querySelector<HTMLImageElement>("#assets-reference")!;
   const setStatus = bindStatusLine("#assets-status");
@@ -170,7 +168,7 @@ export function createTool(): ToolHandle {
     }
     return controls;
   }
-  function renderControls(): void { const controls=visibleControls();controlsHost.replaceChildren(...controls.map((control) => { const label=document.createElement("label");label.className=`assets-control assets-${control.type??"range"}`;const span=document.createElement("span");span.textContent=control.label;const row=document.createElement("div");const input=document.createElement("input");input.dataset.control=control.name;if(control.type==="checkbox"){input.type="checkbox";input.checked=control.value;input.style.width="18px";input.style.height="18px";input.addEventListener("change",queue);row.append(input);}else if(control.type==="text"){input.type="text";input.value=control.value;input.spellcheck=false;input.addEventListener("input",queue);row.append(input);}else if(control.type==="select"){const menu=document.createElement("select");menu.dataset.control=control.name;const selectedValue=control.name==="__materialPreview"&&requestedPreview?requestedPreview:control.value;for(const item of control.options){const option=document.createElement("option");option.value=String(item.value);option.textContent=item.label;option.selected=item.value===selectedValue;menu.append(option);}menu.addEventListener("change",queue);row.append(menu);}else if(control.type==="vector"){control.value.forEach((value,axis)=>{const component=input.cloneNode() as HTMLInputElement;component.type="number";component.dataset.axis=String(axis);component.step=String(control.step??.01);component.value=String(value);component.setAttribute("aria-label",`${control.label} ${"XYZ"[axis]}`);component.addEventListener("input",queue);row.append(component);});}else{input.type="range";input.min=String(control.min);input.max=String(control.max);input.step=String(control.step);input.value=String(control.value);const output=document.createElement("output");output.value=Number(control.value).toFixed(control.step < .001 ? 3 : 2);input.addEventListener("input",()=>{input.dataset.dirty="true";output.value=Number(input.value).toFixed(control.step < .001 ? 3 : 2);queue();});row.append(input,output);}label.append(span,row);return label;})); reset.hidden=!controls.length; }
+  function renderControls(): void { const controls=visibleControls();controlsHost.replaceChildren(...controls.map((control) => { const label=document.createElement("label");label.className=`st-row st-row-stacked assets-control assets-${control.type??"range"}`;const span=document.createElement("span");span.textContent=control.label;const row=document.createElement("div");const input=document.createElement("input");input.dataset.control=control.name;if(control.type==="checkbox"){input.type="checkbox";input.checked=control.value;input.addEventListener("change",queue);row.append(input);}else if(control.type==="text"){input.type="text";input.className="st-input";input.value=control.value;input.spellcheck=false;input.addEventListener("input",queue);row.append(input);}else if(control.type==="select"){const menu=document.createElement("select");menu.className="st-select";menu.dataset.control=control.name;const selectedValue=control.name==="__materialPreview"&&requestedPreview?requestedPreview:control.value;for(const item of control.options){const option=document.createElement("option");option.value=String(item.value);option.textContent=item.label;option.selected=item.value===selectedValue;menu.append(option);}menu.addEventListener("change",queue);row.append(menu);}else if(control.type==="vector"){control.value.forEach((value,axis)=>{const component=input.cloneNode() as HTMLInputElement;component.type="number";component.className="st-input";component.dataset.axis=String(axis);component.step=String(control.step??.01);component.value=String(value);component.setAttribute("aria-label",`${control.label} ${"XYZ"[axis]}`);component.addEventListener("input",queue);row.append(component);});}else{input.type="range";input.min=String(control.min);input.max=String(control.max);input.step=String(control.step);input.value=String(control.value);const output=document.createElement("output");output.value=Number(control.value).toFixed(control.step < .001 ? 3 : 2);input.addEventListener("input",()=>{input.dataset.dirty="true";output.value=Number(input.value).toFixed(control.step < .001 ? 3 : 2);queue();});row.append(input,output);}label.append(span,row);return label;})); reset.hidden=!controls.length; }
   function makeMesh(soup: TriSoup): THREE.Mesh {
     let geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(soup.positions, 3));
@@ -450,25 +448,17 @@ export function createTool(): ToolHandle {
       : exact ? "exact" : "inexact";
   }
   function queue(): void { clearTimeout(timer);timer=window.setTimeout(()=>void evaluate().catch((error)=>{if(!disposed)setStatus("error",String(error));}),100); }
-  function matchingAsset(value: string): Asset | undefined {
-    const normalized = value.trim().toLocaleLowerCase();
-    return catalog.find((item) => item.title.toLocaleLowerCase() === normalized || item.id.toLocaleLowerCase() === normalized);
-  }
-  function setSelectedAsset(asset: Asset): void {
-    select.value = asset.title;
-    // Catalog titles are "Collection · Name" and run past the field width;
-    // the tooltip is how the tail stays reachable without focusing the input.
-    select.title = asset.title;
-    select.dataset.assetId = asset.id;
-  }
-  function stepAsset(direction: -1 | 1): void {
-    if (!catalog.length) return;
-    const currentIndex = Math.max(0, catalog.findIndex((item) => item.id === select.dataset.assetId));
-    setSelectedAsset(catalog[(currentIndex + direction + catalog.length) % catalog.length]);
-    select.dispatchEvent(new Event("change"));
-  }
+  // Matching typed text to a catalog entry, wrapping the arrows around it and
+  // keeping the field showing what is loaded are the studio's searchable
+  // picker, shared with /typewriter and /paint rather than restated here.
+  const picker = bindSearchableSelect(select, (id) => {
+    const asset = catalog.find((item) => item.id === id);
+    if (!asset || current?.id === asset.id) return;
+    const url=new URL(location.href);url.searchParams.set("asset",asset.id);history.replaceState(null,"",url);
+    void choose().catch((error)=>{if(!disposed)setStatus("error",String(error));});
+  });
   async function choose(): Promise<void> {
-    current=matchingAsset(select.value)??catalog.find((item)=>item.id===select.dataset.assetId)??catalog[0];setSelectedAsset(current);const asset=current;
+    current=catalog.find((item)=>item.id===picker.getValue())??catalog[0];picker.setValue(current.id);const asset=current;
     window.dispatchEvent(new CustomEvent("chrome-assets-selection-change",{detail:{id:current.id,title:current.title,object:current.object,dumpUrl:current.dump}}));reference.src=publicUrl(current.reference);blenderCount.textContent=current.blenderStats.triangles===undefined?`${current.blenderStats.verts.toLocaleString()} verts · ${current.blenderStats.faces.toLocaleString()} faces`:`${current.blenderStats.verts.toLocaleString()} verts · ${current.blenderStats.faces.toLocaleString()} polygons · ${current.blenderStats.triangles.toLocaleString()} triangles`;note.textContent=current.note??"";note.hidden=!current.note;renderControls();
     await Promise.all([prepareFont(asset), prepareAuthoredEnvironment(asset)]);if(disposed||current!==asset)return;
     const [geometryDump,shaderMetadata]=await Promise.all([
@@ -478,16 +468,6 @@ export function createTool(): ToolHandle {
     if(disposed||current!==asset)return;
     dump=Object.assign(geometryDump,shaderMetadata??{});await evaluate();
   }
-  function commitAssetSelection(): void {
-    const asset = matchingAsset(select.value);
-    if (!asset) return;
-    if (select.dataset.assetId === asset.id && current?.id === asset.id) return;
-    setSelectedAsset(asset);
-    const url=new URL(location.href);url.searchParams.set("asset",asset.id);history.replaceState(null,"",url);
-    void choose().catch((error)=>{if(!disposed)setStatus("error",String(error));});
-  }
-  const onPreviousAsset = (): void => stepAsset(-1);
-  const onNextAsset = (): void => stepAsset(1);
   const onReset = (): void => { renderControls(); queue(); };
   const onTypePixelBrushGraphChange = (event: Event): void => {
     if (current?.id !== "type-pixel-brush") return;
@@ -496,8 +476,8 @@ export function createTool(): ToolHandle {
     dump = next;
     queue();
   };
-  select.addEventListener("input",commitAssetSelection);select.addEventListener("change",commitAssetSelection);previousAsset.addEventListener("click",onPreviousAsset);nextAsset.addEventListener("click",onNextAsset);reset.addEventListener("click",onReset);addEventListener("resize",resize);renderer.setAnimationLoop(()=>{orbit.update();if(temporalCapture&&model.children.length)temporalCapture.render();else renderer.render(scene,camera);});
-  fetch(publicUrl("dojo/chrome-assets/catalog.json"),{cache:"no-store"}).then((response)=>response.json()).then((items:Asset[])=>{if(disposed)return;catalog=items;assetOptions.replaceChildren();for(const item of catalog){const option=document.createElement("option");option.value=item.title;option.label=item.id;assetOptions.append(option);}const requested=new URLSearchParams(location.search).get("asset");setSelectedAsset(catalog.find((item)=>item.id===requested)??catalog[0]);resize();return choose();}).catch((error)=>{if(!disposed)setStatus("error",String(error));});
+  reset.addEventListener("click",onReset);addEventListener("resize",resize);renderer.setAnimationLoop(()=>{orbit.update();if(temporalCapture&&model.children.length)temporalCapture.render();else renderer.render(scene,camera);});
+  fetch(publicUrl("dojo/chrome-assets/catalog.json"),{cache:"no-store"}).then((response)=>response.json()).then((items:Asset[])=>{if(disposed)return;catalog=items;picker.setOptions(catalog.map((item)=>({value:item.id,label:item.title})));const requested=new URLSearchParams(location.search).get("asset");picker.setValue((catalog.find((item)=>item.id===requested)??catalog[0]).id);resize();return choose();}).catch((error)=>{if(!disposed)setStatus("error",String(error));});
 
   window.addEventListener("type-pixel-brush-graph-change", onTypePixelBrushGraphChange);
 
@@ -509,10 +489,7 @@ export function createTool(): ToolHandle {
       clearTimeout(timer);
       for (const worker of activeWorkers) worker.terminate();
       activeWorkers.clear();
-      select.removeEventListener("input", commitAssetSelection);
-      select.removeEventListener("change", commitAssetSelection);
-      previousAsset.removeEventListener("click", onPreviousAsset);
-      nextAsset.removeEventListener("click", onNextAsset);
+      picker.dispose();
       reset.removeEventListener("click", onReset);
       removeEventListener("resize", resize);
       window.removeEventListener("type-pixel-brush-graph-change", onTypePixelBrushGraphChange);

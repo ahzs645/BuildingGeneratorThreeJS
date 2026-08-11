@@ -3,6 +3,8 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import { fitDistanceForRadius } from "./camera-fit";
+import { describeLoadProgress } from "./load-progress";
 import { bindStatusLine } from "./status-line";
 import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio, releaseToolContext } from "./canvas-viewport";
 import type { ToolHandle } from "./react/page-runtime";
@@ -116,7 +118,7 @@ export function createTool(): ToolHandle {
     obj.position.z -= center.z;
     obj.updateMatrixWorld(true);
     const radius = Math.max(size.length() * 0.5, 0.001);
-    const distance = radius / Math.sin(THREE.MathUtils.degToRad(camera.fov * 0.5));
+    const distance = fitDistanceForRadius(camera, radius);
     camera.position.set(distance * 0.72, distance * 0.48, distance * 0.92);
     controls.target.set(0, size.y * 0.45, 0);
     camera.near = Math.max(radius / 1000, 0.0001);
@@ -149,7 +151,21 @@ export function createTool(): ToolHandle {
     history.replaceState(null, "", url);
 
     try {
-      const gltf = await loader.loadAsync(`${active.file}?v=${Date.now()}`);
+      // No Date.now() cache-buster: these bakes are immutable for the life of a
+      // session, and busting the cache re-downloaded up to 38 MB every time a
+      // model was reselected. And progress is reported in bytes — a silent
+      // 38 MB wait on a phone reads as a hang, not as loading.
+      const gltf = await new Promise<Awaited<ReturnType<typeof loader.loadAsync>>>((resolve, reject) => {
+        loader.load(
+          active.file,
+          resolve,
+          (event) => {
+            if (token !== loadToken || disposed) return;
+            setStatus("busy", describeLoadProgress("loading Blender bake…", event.loaded, event.total));
+          },
+          reject,
+        );
+      });
       if (token !== loadToken || disposed) {
         disposeObject(gltf.scene);
         return;

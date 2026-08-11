@@ -12,6 +12,7 @@ import {
 } from "../../../surface-studio/blender-gn-adapters";
 import type { SurfaceGeneratorId } from "../../../surface-studio/contracts";
 import type { SurfacePainterToolHandle } from "../../../surface-painter/main";
+import { rangeFillStyle } from "../../studio/range-fill";
 
 export interface BlenderBrushOptionsProps {
   tool: SurfaceGeneratorId;
@@ -137,7 +138,7 @@ function Range({
   disabled?: boolean;
   onChange: (value: number) => void;
 }): React.JSX.Element {
-  return <label className="st-row"><span>{label}</span><input type="range" min={min} max={max} step={step} value={value} disabled={disabled} onChange={(event) => onChange(event.currentTarget.valueAsNumber)} /><output>{step < 0.01 ? value.toFixed(3) : value.toFixed(step < 0.1 ? 2 : 1)}</output></label>;
+  return <label className="st-row"><span>{label}</span><input type="range" min={min} max={max} step={step} value={value} style={rangeFillStyle(value, min, max)} disabled={disabled} onChange={(event) => onChange(event.currentTarget.valueAsNumber)} /><output>{step < 0.01 ? value.toFixed(3) : value.toFixed(step < 0.1 ? 2 : 1)}</output></label>;
 }
 
 export default BlenderBrushOptions;

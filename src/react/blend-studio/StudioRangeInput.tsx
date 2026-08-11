@@ -1,4 +1,5 @@
 import type { JSX, KeyboardEvent, PointerEvent } from "react";
+import { rangeFillStyle } from "../studio/range-fill";
 
 type StudioRangeInputProps = {
   label: string;
@@ -113,6 +114,7 @@ export function StudioRangeInput({
     max={max}
     step={preserveExactValue ? "any" : finiteStep(min, max, step)}
     value={value}
+    style={rangeFillStyle(value, min, max)}
     disabled={disabled}
     onInput={(event) => commitInput(event.currentTarget)}
     onChange={(event) => commitInput(event.currentTarget)}

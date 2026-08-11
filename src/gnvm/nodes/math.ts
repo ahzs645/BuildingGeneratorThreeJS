@@ -278,7 +278,15 @@ reg("ShaderNodeFloatCurve", (api) => {
 });
 
 // ---- Vector Math ----------------------------------------------------------
-const VECTOR_MATH_OPS = new Set([
+/**
+ * Vector Math operations this handler implements.
+ *
+ * The set is the switch's contract, not a superset of it: the `default` branch
+ * below only records a miss for operations *outside* it, so anything listed
+ * here without a matching `case` silently passes Vector A through and reports
+ * nothing. Exported so `math.test.ts` can hold the two to each other.
+ */
+export const VECTOR_MATH_OPS = new Set([
   "ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "SCALE", "CROSS_PRODUCT", "NORMALIZE",
   "DOT_PRODUCT", "LENGTH", "DISTANCE", "ABSOLUTE", "MINIMUM", "MAXIMUM",
   "FLOOR", "CEIL", "FRACTION", "MULTIPLY_ADD", "PROJECT", "REFLECT", "REFRACT",
@@ -364,12 +372,29 @@ reg("ShaderNodeVectorMath", (api) => {
       const u = va(x), n = vnorm(va(y));
       return vsub(u, vscale(n, 2 * vdot(u, n)));
     }); break;
+    // Blender's `math::refract(incident, normalize(normal), eta)`, which is
+    // GLSL `refract` semantics: total internal reflection (k < 0) returns the
+    // zero vector rather than clamping. Vector is the incident ray, Vector_001
+    // the normal, and the IOR rides the Scale socket — the node relabels it
+    // "Ior" for this operation only, which is why it does not read from `b`
+    // like the two-vector cases above.
+    case "REFRACT": vecOut = fieldMap([a, b, scale], (x, y, s) => {
+      const i = va(x), n = vnorm(va(y)), eta = num(s);
+      const cosine = vdot(n, i);
+      const k = 1 - eta * eta * (1 - cosine * cosine);
+      if (k < 0) return [0, 0, 0];
+      return vsub(vscale(i, eta), vscale(n, eta * cosine + Math.sqrt(k)));
+    }); break;
     case "FACEFORWARD": vecOut = fieldMap([a, b, c], (x, y, z) => {
       const n = va(x), i = va(y), nref = va(z);
       return vdot(nref, i) < 0 ? n : vscale(n, -1);
     }); break;
     default: {
       // Never silently ADD — record a miss and no-op (pass Vector A through).
+      // The guard is only correct while every member of VECTOR_MATH_OPS has a
+      // `case` above: an op listed there but missing from the switch lands here
+      // and passes Vector A out having recorded nothing. REFRACT was exactly
+      // that until it was implemented.
       if (!VECTOR_MATH_OPS.has(op)) {
         const key = `ShaderNodeVectorMath:${op}`;
         MISSING.set(key, (MISSING.get(key) ?? 0) + 1);

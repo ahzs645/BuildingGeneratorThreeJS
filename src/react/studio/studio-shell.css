@@ -104,8 +104,18 @@
   /* The kit makes the strip scroll on phones, so the state line keeps its
      natural width here instead of giving ground: shrunk against 390px it was
      rendering one letter of the message. Lives in this file, not the kit,
-     because the desktop rule above would otherwise win on load order. */
-  .st-statusbar > .st-state { flex: 0 0 auto; }
+     because the desktop rule above would otherwise win on load order.
+     Bounded, though: "does not shrink" is not "may be any width". A runtime
+     error written into [data-status-text] took .st-statusbar's scrollWidth to
+     7,643px against a 390px client on /crayon — a strip you would swipe for
+     twenty seconds to reach the readout at its end. One screenful is the
+     natural width worth keeping; past that the kit's ellipsis takes over.
+     The bare-span form is bounded the same way: /crayon and /building write
+     status straight into .st-statusbar children rather than through a
+     .st-state wrapper, and those measured 690–775px against 390px with no
+     error text in them at all. */
+  .st-statusbar > .st-state,
+  .st-statusbar > span:not(.st-sep):not(.st-spacer):not(.st-dot) { flex: 0 0 auto; max-width: 100%; }
   .st-sheet { box-shadow: 0 -18px 48px rgba(0,0,0,.5); }
   .st-sheet-handle {
     display: flex; width: 100%; min-height: var(--st-touch); flex: 0 0 auto;
@@ -113,19 +123,24 @@
     border: 0; background: transparent; color: var(--st-ink-2); cursor: pointer;
     font: 500 var(--st-fs-micro)/1 var(--st-mono);
   }
-  /* Shorter handle in landscape — the kit reserves --st-sheet-collapsed of
-     body height for it, so the two have to move together. */
+  /* Landscape used to shorten the handle to 34px to buy back viewport height,
+     and it measured 39px live: the only sub-44px target at 844×390, on all ten
+     routes, and the only control that opens the panels at all. The touch
+     minimum wins that trade — 5px of a 390px screen, 1.3%. The grip's margins
+     pay for most of it, so the handle is 44px of target around the same mark.
+     --st-sheet-collapsed reserves this height in the body grid, so the two
+     have to move together. */
   @media (max-height: 500px) {
-    :root { --st-sheet-collapsed: calc(34px + 1px + env(safe-area-inset-bottom, 0px)); }
-    .st-sheet-handle { min-height: 34px; gap: 4px; }
+    :root { --st-sheet-collapsed: calc(var(--st-touch) + 1px + env(safe-area-inset-bottom, 0px)); }
+    .st-sheet-handle { min-height: var(--st-touch); gap: 3px; }
+    .st-sheet-handle .st-sheet-grip { margin: 4px auto 2px; }
   }
-  .st-sheet.is-open .st-sheet-grip { background: #5C6771; }
+  .st-sheet:is(.is-open, .is-peek) .st-sheet-grip { background: #5C6771; }
   .st-sheet-body { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 10px; padding: 0 12px 10px; }
   .st-sheet-body[hidden] { display: none; }
   .st-sheet-panel { min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
   .st-sheet-panel[hidden] { display: none; }
   .st-sheet-panel .st-tabs { position: sticky; top: 0; z-index: 2; background: var(--st-panel); }
-  .st-sheet input[type=range] { height: 32px; }
 
   /* Full-screen node inspection. Above the sheet (46), owns its scrolling so
      graph pans never rubber-band the page. */
@@ -150,14 +165,18 @@
   .st-overlay-body > .blender-flow-wrap { height: 100%; }
   .st-overlay .blender-flow-toolbar { overflow-x: auto; overscroll-behavior-x: contain; }
 
-  /* Node-graph entry point: a thumb-sized FAB above the sheet handle. */
+  /* Node-graph entry point: a thumb-sized FAB above the sheet handle. It has
+     to clear the status bar as well as the handle — at a flat 60px it sat on
+     top of the strip the kit calls the tool's only state readout, covering the
+     right half of the message. */
   .st-viewport .graph-toggle {
-    position: fixed; right: 14px; bottom: calc(60px + env(safe-area-inset-bottom,0px)); z-index: 44;
+    position: fixed; right: 14px; z-index: 44;
+    bottom: calc(var(--st-sheet-collapsed) + var(--st-status-h) + 12px);
     display: inline-flex; align-items: center; justify-content: center;
     min-height: var(--st-touch); padding: 0 18px;
     border: 1px solid var(--st-accent-edge); border-radius: 999px;
     background: var(--st-accent-fill); color: #E9F6FD; cursor: pointer;
     font: 600 var(--st-fs-ui)/1 var(--st-font);
   }
-  .st-shell:has(.st-sheet.is-open) .st-viewport .graph-toggle { display: none; }
+  .st-shell:has(.st-sheet:is(.is-open, .is-peek)) .st-viewport .graph-toggle { display: none; }
 }

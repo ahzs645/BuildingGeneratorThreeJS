@@ -13,10 +13,14 @@ const loadGallery = () => import("../../dojo-gallery");
 export default function DojoGalleryPage(): React.JSX.Element {
   const runtimeState = useToolRuntime("Node Dojo Gallery · Blender Geometry Nodes in the browser", loadGallery);
   const leftDock = <>
-    <StudioPanelHeader title="Baked models" meta="GLB gallery" />
+    {/* #title is the selected model. It belongs in the panel header's meta
+        slot, not in a section title: as a section title it rendered the
+        selected model's name in uppercase meta styling directly above a list
+        of all five, reading as a category header for a list it did not
+        describe. #subtitle rides in the toolbar. */}
+    <StudioPanelHeader title="Baked models" meta={<span id="title">GLB gallery</span>} />
     <div className="st-section">
-      {/* #title is the selected model; #subtitle rides in the toolbar. */}
-      <div className="st-section-title"><span id="title">Gallery</span></div>
+      <div className="st-section-title">Models<small>5 bakes</small></div>
       <div id="models"></div>
     </div>
     <div className="st-section">

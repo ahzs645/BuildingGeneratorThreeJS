@@ -639,7 +639,7 @@ body.draw .surface-painter-page #modeBtn .key { background: rgba(9, 12, 15, 0.28
   /* The shell reserves --st-sheet-collapsed, so the bar only has to clear the
      bottom of the viewport, not the sheet sitting on top of it. */
   .surface-painter-page .paint-mode-bar { bottom: 16px; }
-  .st-shell:has(.st-sheet.is-open) .surface-painter-page .paint-mode-bar { display: none; }
+  .st-shell:has(.st-sheet:is(.is-open, .is-peek)) .surface-painter-page .paint-mode-bar { display: none; }
 
   .surface-painter-gui-dock { overflow: visible; }
   .surface-painter-generator-dock { overflow: visible; }

@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { usePageRuntime } from "../page-runtime";
+import { useEffect, useRef, useState } from "react";
+import { usePageRuntime, useRuntimePhaseChip, type RuntimePhase } from "../page-runtime";
 import { StudioPanelHeader, StudioShell } from "../studio/StudioShell";
 import "./materialx-lab.css";
 
@@ -11,14 +11,25 @@ import "./materialx-lab.css";
 export default function MaterialXLabPage(): React.JSX.Element {
   usePageRuntime("MaterialX shader parity lab");
   const rootRef = useRef<HTMLElement>(null);
+  // This page mounts its runtime by hand rather than through useToolRuntime —
+  // mountMaterialXLab() takes the shell body as its root and returns a bare
+  // dispose function, not a { createTool } module — so the nav chip the other
+  // nine routes get for free has to be published from here. Without it
+  // `.st-nav-chips` measured 0×0 on /materialx and the trailing nav buttons
+  // sat in a different place than on every other tool.
+  const [phase, setPhase] = useState<RuntimePhase>("loading");
+  useRuntimePhaseChip(phase);
   useEffect(() => {
     let disposed = false;
     let disposeLab: (() => void) | undefined;
     void import("../../materialx-lab").then(({ mountMaterialXLab }) => {
       if (disposed || !rootRef.current) return;
       disposeLab = mountMaterialXLab(rootRef.current);
+      setPhase("ready");
     }).catch((error) => {
-      if (disposed || !rootRef.current) return;
+      if (disposed) return;
+      setPhase("error");
+      if (!rootRef.current) return;
       const graphStatus = rootRef.current.querySelector<HTMLElement>("#materialx-graph");
       if (graphStatus) graphStatus.textContent = error instanceof Error ? error.message : String(error);
     });

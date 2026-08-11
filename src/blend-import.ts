@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { fitDistanceForRadius } from "./camera-fit";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import {
   analyzeProgramCapabilities,
@@ -254,7 +255,7 @@ function showSoup(soup: TriSoup): void {
     if (pointMaterial instanceof THREE.PointsMaterial)
       pointMaterial.size = Math.max(radius / 80, .0005);
   });
-  const distance = radius / Math.sin(THREE.MathUtils.degToRad(camera.fov * 0.5));
+  const distance = fitDistanceForRadius(camera, radius);
   camera.position.set(distance * 0.72, distance * 0.48, distance * 0.92);
   camera.near = Math.max(radius / 1000, 0.0001);
   camera.far = radius * 100;

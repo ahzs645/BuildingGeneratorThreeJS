@@ -1581,11 +1581,16 @@ export default function BlendBridgePage(): React.JSX.Element {
     { id: "checks", label: "Checks", content: checksSection },
   ];
 
+  // Every way into this tool — the dropzone, the asset library, the bundled
+  // sample — lives in Source, and on a phone Source lives in the sheet. With
+  // the sheet collapsed the route was an empty viewport with a watermark and no
+  // visible way to start, so it opens to its peek detent until something loads.
   return <StudioShell
     className="blend-studio-page"
     leftDock={leftDock}
     rightDock={rightDock}
     sheetTabs={mobileSheetTabs}
+    sheetInitiallyOpen={!workingDump}
     toolbar={<>
       <span>{target ? target.label : "No target"}</span>
       {animatedFrameRange && <>

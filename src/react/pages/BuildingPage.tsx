@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { defaultParams, type BuildingParams } from "../../params";
-import type { BuildingAtmosphere, BuildingStatus, BuildingToolHandle } from "../../main";
+import type {
+  BuildingAtmosphere, BuildingAtmosphereOptions, BuildingStatus, BuildingToolHandle,
+} from "../../main";
 import { useToolController } from "../page-runtime";
 import { StudioPanelHeader, StudioShell } from "../studio/StudioShell";
 import "./building.css";
+import { rangeFillStyle } from "../studio/range-fill";
 
 // Started here rather than inside the loader callback: as a callback the import
 // was only discovered once React ran the mount effect, which held the runtime
@@ -48,7 +51,18 @@ const ATMOSPHERE_CONTROLS: Array<{
   min?: number;
   max?: number;
   step?: number;
+  /**
+   * A row backed by a list of named choices rather than a number or a flag.
+   * The list itself comes from the runtime, not from here: the Blender LUT and
+   * the studio EXR are only offered once their asset parses.
+   */
+  choices?: keyof BuildingAtmosphereOptions;
 }> = [
+  // Tone mapping and the environment map existed only in the lil-gui panel,
+  // which this inspector replaced and which the page now renders hidden — so
+  // the two settings had no reachable control anywhere in the UI.
+  { name: "toneMapping", label: "Tone mapping", group: "Lighting", choices: "toneMapping" },
+  { name: "environmentMap", label: "Environment map", group: "Lighting", choices: "environmentMap" },
   { name: "exposure", label: "Exposure", group: "Lighting", min: 0, max: 3, step: .01 },
   { name: "envIntensity", label: "Environment", group: "Lighting", min: 0, max: 2, step: .01 },
   { name: "key", label: "Key light", group: "Lighting", min: 0, max: 8, step: .01 },
@@ -74,6 +88,7 @@ export default function BuildingPage(): React.JSX.Element {
   const [params, setParams] = useState<BuildingParams>(defaultParams);
   const [emissive, setEmissive] = useState(1);
   const [atmosphere, setAtmosphere] = useState<BuildingAtmosphere | null>(null);
+  const [atmosphereOptions, setAtmosphereOptions] = useState<BuildingAtmosphereOptions | null>(null);
   const [status, setStatus] = useState<BuildingStatus>({ state: "loading", message: "Loading asset kit…" });
 
   // The runtime owns the authoritative values: the headless hook (__setParams)
@@ -84,11 +99,20 @@ export default function BuildingPage(): React.JSX.Element {
     setParams(tool.getParams());
     setEmissive(tool.getEmissive());
     setAtmosphere(tool.getAtmosphere());
+    setAtmosphereOptions(tool.getAtmosphereOptions());
     const unsubscribeParams = tool.subscribe(setParams);
     const unsubscribeStatus = tool.subscribeStatus(setStatus);
+    // A choice can be withdrawn as well as offered — a studio EXR that fails to
+    // decode drops the runtime back to the Room environment — so the settings
+    // are re-read alongside the list, keeping the select on what is rendering.
+    const unsubscribeOptions = tool.subscribeAtmosphereOptions((options) => {
+      setAtmosphereOptions(options);
+      setAtmosphere(tool.getAtmosphere());
+    });
     return () => {
       unsubscribeParams();
       unsubscribeStatus();
+      unsubscribeOptions();
     };
   }, [tool]);
 
@@ -105,6 +129,7 @@ export default function BuildingPage(): React.JSX.Element {
             max={control.max}
             step={control.step}
             value={params[control.name]}
+            style={rangeFillStyle(params[control.name], control.min, control.max)}
             disabled={!tool}
             onChange={(event) => {
               const value = Number(event.target.value);
@@ -123,6 +148,7 @@ export default function BuildingPage(): React.JSX.Element {
           max={50}
           step={1}
           value={emissive}
+          style={rangeFillStyle(emissive, 1, 50)}
           disabled={!tool}
           onChange={(event) => {
             const value = Number(event.target.value);
@@ -141,9 +167,25 @@ export default function BuildingPage(): React.JSX.Element {
       <div className="st-section-title">{group}</div>
       {ATMOSPHERE_CONTROLS.filter((control) => control.group === group).map((control) => {
         const value = atmosphere?.[control.name];
-        return <label className="st-row" key={control.name}>
+        // st-row-stacked is the kit's variant for a control with no readout
+        // beside it: "Blender Standard (LUT)" does not survive the 1fr of a
+        // 320px inspector column, let alone a 196px one in the tablet band.
+        return <label className={`st-row${control.choices ? " st-row-stacked st-row-full" : ""}`} key={control.name}>
           <span>{control.label}</span>
-          {typeof value === "boolean" || control.min === undefined ? <input
+          {control.choices ? <select
+            className="st-select"
+            value={String(value ?? "")}
+            disabled={!tool || !atmosphere}
+            onChange={(event) => {
+              const next = event.target.value;
+              setAtmosphere((current) => current ? { ...current, [control.name]: next } : current);
+              tool?.setAtmosphere(control.name, next);
+            }}
+          >
+            {(atmosphereOptions?.[control.choices] ?? []).map((option) => (
+              <option value={option} key={option}>{option}</option>
+            ))}
+          </select> : typeof value === "boolean" || control.min === undefined ? <input
             type="checkbox"
             checked={Boolean(value)}
             disabled={!tool || !atmosphere}
@@ -159,6 +201,7 @@ export default function BuildingPage(): React.JSX.Element {
               max={control.max}
               step={control.step}
               value={Number(value ?? 0)}
+              style={rangeFillStyle(Number(value ?? 0), control.min ?? 0, control.max ?? 1)}
               disabled={!tool}
               onChange={(event) => {
                 const next = Number(event.target.value);
@@ -179,6 +222,13 @@ export default function BuildingPage(): React.JSX.Element {
     className="building-page"
     leftDock={leftDock}
     rightDock={rightDock}
+    toolbar={<>
+      <span>Hong Kong tower · hand-ported build system</span>
+      <span className="st-spacer" />
+      {/* Every other 3D route has one; this was the only tool where a camera
+          driven off into a corner could not be recovered without a reload. */}
+      <button type="button" className="st-btn" disabled={!tool} onClick={() => tool?.reframe()}>Reframe</button>
+    </>}
     status={<>
       <span className={`st-dot ${status.state === "ready" ? "ready" : status.state === "error" ? "error" : "busy"}`} />
       <span>{status.message}</span>

@@ -38,6 +38,15 @@ export function useMobileStudio(): boolean {
 
 export type StudioSheetTab = { id: string; label: string; content: ReactNode };
 
+/**
+ * Bottom-sheet detents. `peek` exists because the full sheet covers the thing
+ * it is editing: at 62dvh, with the nav and toolbar above, a phone showed
+ * roughly 200px of viewport, so dragging a slider gave almost no feedback on
+ * the geometry it changed. The handle cycles collapsed → peek → open → collapsed.
+ */
+const SHEET_DETENTS = ["collapsed", "peek", "open"] as const;
+type SheetDetent = (typeof SHEET_DETENTS)[number];
+
 type StudioPanelHeaderProps = {
   title: ReactNode;
   meta?: ReactNode;
@@ -74,6 +83,12 @@ type StudioShellProps = {
    * docks; pass explicit tabs to split a dock across more than one.
    */
   sheetTabs?: StudioSheetTab[];
+  /**
+   * Open the sheet to its peek detent on first mount. Pass this when the dock
+   * holds the tool's only entry point — on a phone the collapsed sheet hides
+   * it completely, and the page reads as an empty viewport with nothing to do.
+   */
+  sheetInitiallyOpen?: boolean;
   className?: string;
   /** For tools whose runtime mounts against the whole body element. */
   bodyRef?: Ref<HTMLElement>;
@@ -93,12 +108,13 @@ export function StudioShell({
   nodeDock,
   children,
   sheetTabs,
+  sheetInitiallyOpen = false,
   className = "",
   bodyRef,
 }: StudioShellProps): React.JSX.Element {
   const isMobile = useMobileStudio();
   const { capture, setHasDocks } = useStudioChrome();
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetDetent, setSheetDetent] = useState<SheetDetent>(sheetInitiallyOpen ? "peek" : "collapsed");
   const [sheetTab, setSheetTab] = useState(0);
   const hasDockContent = Boolean(leftDock ?? rightDock);
 
@@ -135,12 +151,22 @@ export function StudioShell({
       {status && <div className="st-statusbar">{status}</div>}
     </div>
     {docked && rightDock && <aside className="st-dock st-dock-right">{rightDock}</aside>}
-    {isMobile && !capture && tabs.length > 0 && <div className={`st-sheet ${sheetOpen ? "is-open" : "is-collapsed"}`}>
-      <button type="button" className="st-sheet-handle" aria-expanded={sheetOpen} onClick={() => setSheetOpen((open) => !open)}>
+    {isMobile && !capture && tabs.length > 0 && <div className={`st-sheet is-${sheetDetent}`}>
+      <button
+        type="button"
+        className="st-sheet-handle"
+        aria-expanded={sheetDetent !== "collapsed"}
+        onClick={() => setSheetDetent((detent) =>
+          SHEET_DETENTS[(SHEET_DETENTS.indexOf(detent) + 1) % SHEET_DETENTS.length])}
+      >
         <span className="st-sheet-grip" aria-hidden="true" />
-        <span>{sheetOpen ? "Hide panels" : tabs.map((tab) => tab.label).join(" · ")}</span>
+        <span>{
+          sheetDetent === "collapsed" ? tabs.map((tab) => tab.label).join(" · ")
+            : sheetDetent === "peek" ? "Expand panels"
+              : "Hide panels"
+        }</span>
       </button>
-      <div className="st-sheet-body" hidden={!sheetOpen}>
+      <div className="st-sheet-body" hidden={sheetDetent === "collapsed"}>
         {tabs.length > 1 && <div className="st-segmented" role="tablist" aria-label="Studio panels">
           {tabs.map((tab, index) => <button
             key={tab.id}

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useToolRuntime } from "../page-runtime";
+import { SearchableSelect } from "../studio/SearchableSelect";
 import { StudioOverlay, StudioPanelHeader, StudioShell, useMobileStudio } from "../studio/StudioShell";
 import { ToolStateOverlay } from "../studio/ToolStateOverlay";
 import "./chrome-assets.css";
@@ -63,12 +64,9 @@ export default function ChromeAssetsPage(): React.JSX.Element {
     <div className="st-section">
       <label className="st-field assets-picker">
         <span>Ported asset</span>
-        <div>
-          <button id="assets-previous" className="st-btn" type="button" aria-label="Previous ported asset" title="Previous asset">←</button>
-          <input id="assets-select" className="st-input" type="text" list="assets-options" autoComplete="off" aria-label="Ported asset" placeholder="Search assets…" />
-          <datalist id="assets-options" />
-          <button id="assets-next" className="st-btn" type="button" aria-label="Next ported asset" title="Next asset">→</button>
-        </div>
+        {/* The catalogue is fetched by the runtime, so the runtime fills the
+            picker: this renders the field it binds to. */}
+        <SearchableSelect id="assets-select" label="Ported asset" placeholder="Search assets…" />
       </label>
       <div id="assets-font-status" hidden />
       <p id="assets-note" className="st-finding" />

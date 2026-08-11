@@ -134,3 +134,65 @@ test("add-node templates are deterministic and omit structural group endpoints",
   assert.ok(first.every((template) => template.type !== "NodeFrame" && template.type !== "NodeGroupInput" && template.type !== "NodeGroupOutput"));
   assert.ok(first.some((template) => template.inputTypes.length > 0 || template.outputTypes.length > 0));
 });
+
+/**
+ * The add menu drew four rows reading "Capture Attribute · 2 in / 2 out" and
+ * twenty reading "Group", because the catalog is harvested per socket signature
+ * (deliberately — it is what keeps sockets aligned with evaluator support). The
+ * variants stay; what they may not do is arrive nameless.
+ */
+test("no two add-menu rows read alike, in any extracted dump", async () => {
+  for (const relative of [
+    "../../public/dojo/crayon/dump.json",
+    "../../public/dojo/typewriter/dump.json",
+    "../../public/dojo/chrome-assets/type-pixel-brush/dump.json",
+  ]) {
+    const loaded = JSON.parse(await readFile(fileURLToPath(new URL(relative, import.meta.url)), "utf8")) as Dump;
+    const templates = graphNodeTemplates(loaded);
+    const rows = templates.map((template) => `${template.label} ${template.variant ?? ""}`);
+    assert.equal(new Set(rows).size, rows.length, `${relative} repeats an add-menu row`);
+    // A family is contiguous, so the menu can group it by watching for the key
+    // to change instead of making a second pass over the catalog.
+    const starts = new Map<string, number>();
+    templates.forEach((template, index) => {
+      const first = starts.get(template.family);
+      if (first === undefined) starts.set(template.family, index);
+      else assert.equal(index, first + templates.slice(first, index).filter((other) => other.family === template.family).length, `${template.family} is not contiguous`);
+    });
+    // A lone template is the plain Blender entry and carries no variant text.
+    for (const template of templates) {
+      const siblings = templates.filter((other) => other.family === template.family);
+      assert.equal(Boolean(template.variant), siblings.length > 1, `${template.label} variant/family disagree`);
+      if (siblings.length > 1) assert.ok(siblings.every((other) => other.label === template.label), "a family must share one heading");
+    }
+  }
+});
+
+test("variants are named by the data type and domain that separate them", async () => {
+  const crayon = JSON.parse(await readFile(
+    fileURLToPath(new URL("../../public/dojo/crayon/dump.json", import.meta.url)),
+    "utf8",
+  )) as Dump;
+  const templates = graphNodeTemplates(crayon);
+  const variantsOf = (label: string): string[] => templates
+    .filter((template) => template.label === label)
+    .map((template) => template.variant ?? "");
+
+  // Capture Attribute is the case the socket facet exists for: its four
+  // templates carry FACE/POINT/FACE/POINT, so the domain alone names two pairs.
+  assert.deepEqual(variantsOf("Capture Attribute").sort(), [
+    "Boolean · Point", "Float · Point", "Integer · Face", "Vector · Face",
+  ]);
+  // Switch takes its name from `input_type` alone; the socket facet repeats it
+  // and must not print "Geometry · Geometry".
+  assert.deepEqual(variantsOf("Switch").sort(), ["Boolean", "Float", "Geometry", "Integer", "Vector"]);
+  // FLOAT_VECTOR is drawn as "Vector" in Blender, not "Float Vector".
+  assert.deepEqual(variantsOf("Blur Attribute").sort(), ["Float", "Vector"]);
+
+  // A group node's identity is the tree it instances. Every one of these read
+  // "Group" before, one row per nested tree.
+  const groups = templates.filter((template) => template.type === "GeometryNodeGroup");
+  assert.ok(groups.length > 10, `only ${groups.length} group templates`);
+  assert.equal(groups.filter((template) => template.label === "Group").length, 0);
+  assert.equal(new Set(groups.map((template) => template.label)).size, groups.length);
+});
