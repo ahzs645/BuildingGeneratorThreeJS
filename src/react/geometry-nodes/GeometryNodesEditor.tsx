@@ -96,7 +96,8 @@ const DRAFT_PERSIST_MAX_CHARS = 4 * 1024 * 1024;
  * `position: fixed` popups have nothing to scroll them back.
  */
 const ADD_MENU_BOX = { width: 280, height: 420 };
-const CONTEXT_MENU_BOX = { width: 200, height: 250 };
+/** Taller than the desktop menu measures: its rows grow to `--st-touch` on a phone. */
+const CONTEXT_MENU_BOX = { width: 200, height: 330 };
 
 /**
  * Rows the add menu draws before it stops. It used to be 60, which was under
@@ -1330,6 +1331,19 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
       }}>Delete link <kbd>⌫</kbd></button>}
     </div>}
     {libraryOpen && sourceDump && <GraphPresetLibrary source={sourceDump} presets={libraryPresets} onApply={applyPreset} onClose={() => setLibraryOpen(false)} />}
-    <footer className="graph-statusbar"><span>{graph ? `${graph.nodes.length} nodes · ${graph.links.length} links` : "Loading graph…"}</span><span>{selected ? <><b>{selected.label}</b> · {compactType(selected.sourceType)} · {selected.inputs.length} in / {selected.outputs.length} out</> : "Select a node · double-click a group to enter"}</span><span>{graph?.unresolvedLinks.length ? `${graph.unresolvedLinks.length} unresolved links` : "Identifiers mapped deterministically"}</span></footer>
+    {/* Three strings needing 126, 298 and 238px cannot share a 370px phone: all
+        three measured truncated at 390x844 ("69 nodes · 6…", "double-cl…",
+        "Identifiers …"). So a phone renders the one that changes as you work,
+        and keeps the link diagnostic only when it has something to report — the
+        two it drops are counts that hold still and a reassurance. The hint text
+        differs too, because double-click is not the mobile route into a group;
+        the ◆ marker is. */}
+    <footer className={`graph-statusbar ${isMobile ? "compact" : ""}`}>
+      {!isMobile && <span>{graph ? `${graph.nodes.length} nodes · ${graph.links.length} links` : "Loading graph…"}</span>}
+      <span>{selected
+        ? <><b>{selected.label}</b> · {compactType(selected.sourceType)} · {selected.inputs.length} in / {selected.outputs.length} out</>
+        : isMobile ? "Tap a node · ◆ enters a group · press and hold to edit" : "Select a node · double-click a group to enter"}</span>
+      {(!isMobile || Boolean(graph?.unresolvedLinks.length)) && <span>{graph?.unresolvedLinks.length ? `${graph.unresolvedLinks.length} unresolved links` : "Identifiers mapped deterministically"}</span>}
+    </footer>
   </div>;
 }

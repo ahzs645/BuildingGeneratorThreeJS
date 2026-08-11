@@ -643,6 +643,12 @@ Two knock-on effects, both measured, both paid for:
   33 px of strip height (271 → 320) at that one viewport class. Desktop and
   phone are untouched.
 
+Suite after this pass: `npm test` 733 tests, 731 pass, 2 skipped, 0 fail;
+`tsc --noEmit` clean. `studio-interface.test.ts` gains six tests, one of them
+behavioural — the picker's matcher, because "a half-typed word must not commit
+the entry that happens to start with it" is a rule no source-text assertion
+can express.
+
 ## Verification
 
 Re-measured headlessly at all six viewports, across all ten routes:

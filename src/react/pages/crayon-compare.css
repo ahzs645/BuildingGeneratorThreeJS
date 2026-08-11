@@ -72,6 +72,12 @@
    the edge while the buttons move underneath. */
 .graph-actions { box-shadow: inset -16px 0 12px -12px rgba(0,0,0,.8); }
 .blender-flow-toolbar .graph-actions button { flex: 0 0 auto; width: auto; padding: 0 7px; white-space: nowrap; font: 500 var(--st-fs-micro)/1 var(--st-mono); }
+/* Rendered on mobile only (see GeometryNodesEditor.tsx). It is the one control
+   in this strip that creates something rather than inspecting or persisting,
+   and on a phone it is the only route to the add menu that announces itself, so
+   it takes the kit's accent instead of the row's neutral chrome. */
+.blender-flow-toolbar .graph-add-node { border-color: var(--st-accent-edge); background: var(--st-accent-fill); color: #E9F6FD; }
+.blender-flow-toolbar .graph-add-node:hover { background: #327FA4; color: #fff; }
 .graph-file-input { display: none; }
 
 /* min-width holds the full "Find nodes · F3" placeholder; it used to collapse
@@ -168,9 +174,24 @@
 .graph-add-menu > input { box-sizing: border-box; width: calc(100% - 12px); height: 28px; margin: 6px; padding: 0 8px; border: 1px solid var(--st-line-2); border-radius: var(--st-r-sm); outline: 0; background: var(--st-sunken); color: var(--st-ink); font: 500 var(--st-fs-ui)/1 var(--st-font); }
 .graph-add-menu > input:focus { border-color: var(--st-accent-edge); }
 .graph-add-menu > div { max-height: 350px; overflow: auto; padding: 0 4px 5px; }
-.graph-add-menu > div > button { display: flex; width: 100%; height: auto; min-height: 38px; flex-direction: column; align-items: flex-start; border: 0; border-radius: 5px; padding: 6px 8px; background: transparent; color: var(--st-ink); cursor: pointer; text-align: left; font: 500 var(--st-fs-ui)/1.2 var(--st-font); }
-.graph-add-menu > div > button:hover { background: rgba(127,196,232,.1); }
-.graph-add-menu > div > button small { margin-top: 3px; color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1 var(--st-mono); }
+/* Rows are one level deeper than they were — each family is a <section> — so
+   this selector is a descendant rather than a child combinator. */
+.graph-add-menu > div button { display: flex; width: 100%; height: auto; min-height: 38px; flex-direction: column; align-items: flex-start; border: 0; border-radius: 5px; padding: 6px 8px; background: transparent; color: var(--st-ink); cursor: pointer; text-align: left; font: 500 var(--st-fs-ui)/1.2 var(--st-font); }
+.graph-add-menu > div button:hover { background: rgba(127,196,232,.1); }
+.graph-add-menu > div button small { margin-top: 3px; color: var(--st-ink-3); font: 400 var(--st-fs-micro)/1 var(--st-mono); }
+/* A family heading — one Blender Add entry over the socket-signature variants
+   the dump-harvested catalog produces for it. Sticky, because Switch alone is
+   five rows in a 350px scroller and the heading is the only thing naming them.
+   The indent is what makes a variant read as belonging to the row above it. */
+.graph-add-family > h4 {
+  position: sticky; z-index: 1; top: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 4px 0 1px; padding: 4px 8px 3px;
+  background: var(--st-raised); color: var(--st-ink-2);
+  font: 700 var(--st-fs-micro)/1 var(--st-mono); letter-spacing: .07em; text-transform: uppercase;
+}
+.graph-add-family > h4 > span { flex: 0 0 auto; padding: 2px 5px; border-radius: 999px; background: var(--st-sunken); color: var(--st-ink-3); letter-spacing: 0; }
+.graph-add-menu > div .graph-add-family > h4 ~ button { margin-left: 10px; width: calc(100% - 10px); border-left: 1px solid var(--st-line-2); border-radius: 0 5px 5px 0; }
 .graph-add-menu p { margin: 14px; color: var(--st-ink-3); font-size: var(--st-fs-ui); }
 .graph-context-menu { display: flex; width: 200px; flex-direction: column; padding: 4px; }
 .graph-context-menu button { display: flex; height: 28px; align-items: center; justify-content: space-between; border: 0; border-radius: 5px; padding: 0 8px; background: transparent; color: var(--st-ink); cursor: pointer; text-align: left; font: 500 var(--st-fs-ui)/1 var(--st-font); }
@@ -235,4 +256,46 @@
      the top edge: `appearance: base-select` lays the select out as a flex box
      and the kit's ::selectedcontent is a block inside it. */
   .st-overlay .blender-node .node-prop { height: var(--st-touch); align-items: center; padding-right: 22px; background-position: right 7px center; font-size: 12px; }
+
+  /* The search field is 44px, but its input is the child that takes the tap and
+     `height: 100%` resolves against the *content* box — so the thing a finger
+     actually has to hit measured 42px, 2px under the token. The 1px border on
+     each side is exactly the difference, so the wrapper carries it. */
+  .st-overlay .graph-search { height: calc(var(--st-touch) + 2px); }
+
+  /* Both menus are reachable from a finger now (long press, and the toolbar's
+     Add), so their rows are hit targets rather than pointer targets: 38px and
+     28px respectively before this. The menus are `position: fixed` popups
+     outside the overlay's stacking flow, so they are not scoped to .st-overlay
+     — on this breakpoint the editor only ever renders inside it.
+     The context menu grows past a landscape phone's height once its rows are
+     44px, so it caps and scrolls; the add menu already did. Both caps are 70vh,
+     which is what clampMenuToViewport in GeometryNodesEditor.tsx assumes. */
+  .graph-add-menu > div button,
+  .graph-context-menu button { min-height: var(--st-touch); }
+  .graph-context-menu { max-height: 70vh; overflow-y: auto; }
+
+  /* A long press must not also raise the platform's own text-selection callout
+     over the graph; nothing inside the stage is selectable text. */
+  .st-overlay .blender-flow-stage { -webkit-touch-callout: none; user-select: none; }
+
+  /* React Flow's zoom cluster is 46x134 of a 390x711 stage and it sat on top of
+     a node in the bottom-left corner, swallowing every touch that landed there.
+     Both of its jobs are already reachable — pinch to zoom, and Frame All in
+     the toolbar 44px above — so the overlay drops it and gives the corner back
+     to the graph. The .react-flow__controls-button sizing above is left intact
+     rather than deleted: it is the implementation of an earlier finding, and it
+     is what the cluster would measure again if this line were removed. */
+  .st-overlay .react-flow__controls { display: none; }
+
+  /* The attribution is 60x15 pinned to the same bottom-right corner as the
+     130x84 minimap, and was rendering underneath it. Lifting the minimap by the
+     attribution's height clears it without moving either out of its corner. */
+  .st-overlay .annotation-minimap { bottom: 30px; }
+
+  /* One or two cells, not three (see the footer in GeometryNodesEditor.tsx).
+     The fixed 1fr/2fr/1fr track list would have left a phone's single message
+     in a 25%-wide middle column. */
+  .graph-statusbar.compact { grid-template-columns: minmax(0, 1fr) auto; }
+  .graph-statusbar.compact span:first-child { text-align: left; }
 }

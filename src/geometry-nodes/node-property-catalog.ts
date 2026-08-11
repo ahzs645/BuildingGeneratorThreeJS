@@ -13,10 +13,12 @@
  * ways a dropdown would hide. `ShaderNodeMath` resolves an unknown operation to
  * `MATH.ADD`, so a "Hyperbolic Sine" entry would evaluate as Add and look like
  * a broken node rather than a missing feature. `ShaderNodeVectorMath` is worse:
- * REFRACT is listed in its own `VECTOR_MATH_OPS` set yet has no `case`, so it
- * falls through to passing Vector A straight out *without* recording a miss.
- * An option earns its place here only when the VM does something different
- * with it, which is why several lists are shorter than Blender's.
+ * an operation listed in its own `VECTOR_MATH_OPS` set but missing from the
+ * switch falls through to passing Vector A straight out *without* recording a
+ * miss. REFRACT was that case and is now implemented; WRAP is still absent from
+ * both, so it is honestly reported as unsupported. An option earns its place
+ * here only when the VM does something different with it, which is why several
+ * lists are shorter than Blender's.
  *
  * Four groups are deliberately absent:
  *
@@ -95,12 +97,12 @@ const ENUM_PROPERTIES: Record<string, Record<string, string[]>> = {
       "FLOORED_MODULO", "MODULO", "GCD", "LCM",
     ],
   },
-  // math.ts — the `switch (op)` cases only. REFRACT and WRAP are in Blender's
-  // menu and absent from the switch.
+  // math.ts — the `switch (op)` cases only. WRAP is in Blender's menu and
+  // absent from the switch (and from VECTOR_MATH_OPS, so it records a miss).
   ShaderNodeVectorMath: {
     operation: [
       "ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "MULTIPLY_ADD",
-      "CROSS_PRODUCT", "PROJECT", "REFLECT", "FACEFORWARD",
+      "CROSS_PRODUCT", "PROJECT", "REFLECT", "REFRACT", "FACEFORWARD",
       "DOT_PRODUCT", "DISTANCE", "LENGTH", "SCALE", "NORMALIZE",
       "ABSOLUTE", "MINIMUM", "MAXIMUM", "FLOOR", "CEIL", "FRACTION",
       "MODULO", "SNAP", "SINE", "COSINE", "TANGENT",
