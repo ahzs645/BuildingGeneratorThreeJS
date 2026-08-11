@@ -1,8 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useModalDialog } from "./useModalDialog";
 import "./studio-menu.css";
+
+/**
+ * The shortcut as this keyboard actually spells it. The handler has always
+ * accepted Ctrl as well as Meta, but the cap said "⌘K" everywhere — naming a
+ * key that does not exist on a Windows or Linux keyboard. Computed once:
+ * the platform does not change mid-session, and whether a keyboard is attached
+ * at all is a CSS question (`any-pointer: fine`), answered in studio-nav.css.
+ */
+export const SHORTCUT_LABEL: string = typeof navigator !== "undefined"
+  && /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)
+  ? "⌘K"
+  : "Ctrl K";
 
 export type StudioTool = { href: string; title: string; desc: string; badge?: string };
 
@@ -209,10 +221,54 @@ function DevPanel({ onClose }: { onClose: () => void }): React.JSX.Element {
   );
 }
 
+/** Case-insensitive substring match across everything the card shows. */
+function matchesQuery(section: StudioSection, tool: StudioTool, query: string): boolean {
+  if (!query) return true;
+  const haystack = `${section.title} ${section.label} ${tool.title} ${tool.desc} ${tool.badge ?? ""}`;
+  return query.toLowerCase().split(/\s+/).every((term) => haystack.toLowerCase().includes(term));
+}
+
 export function StudioMenu({ open, onClose }: { open: boolean; onClose: () => void }): React.JSX.Element | null {
   const { pathname } = useLocation();
-  const dialogRef = useModalDialog<HTMLElement>(open, onClose, "a[aria-current='page']");
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+  const [active, setActive] = useState(0);
+  // The filter field, not the current tool: a shortcut that opens a panel and
+  // does not put the caret anywhere is a directory, not a palette.
+  const dialogRef = useModalDialog<HTMLElement>(open, onClose, ".studio-menu-search input");
+
+  // Flat, in render order — arrow keys move through what is on screen.
+  const matches = useMemo(
+    () => STUDIO_TOOLS.flatMap((section) => section.items
+      .filter((tool) => matchesQuery(section, tool, query))
+      .map((tool) => tool.href)),
+    [query],
+  );
+
+  useEffect(() => { if (open) { setQuery(""); setActive(0); } }, [open]);
+  useEffect(() => { setActive(0); }, [query]);
+  // Keep the highlighted card in view while arrowing through a filtered list.
+  useEffect(() => {
+    document.querySelector<HTMLElement>(".studio-menu-items a.active")
+      ?.scrollIntoView({ block: "nearest" });
+  }, [active, query]);
+
   if (!open) return null;
+
+  const onSearchKey = (event: React.KeyboardEvent): void => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!matches.length) return;
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      setActive((index) => (index + step + matches.length) % matches.length);
+      return;
+    }
+    if (event.key === "Enter" && matches[active]) {
+      event.preventDefault();
+      navigate(matches[active]);
+      onClose();
+    }
+  };
   // Portaled to <body>: the trigger lives inside .st-shell, a fixed-position
   // grid that would otherwise become the containing block for this fixed
   // overlay and clip it to the nav row.
@@ -229,26 +285,51 @@ export function StudioMenu({ open, onClose }: { open: boolean; onClose: () => vo
       >
         <header>
           <b id="studio-menu-title">Procedural Studio</b>
-          <span><kbd>⌘K</kbd> toggle · <kbd>Esc</kbd> close</span>
+          <span><kbd>{SHORTCUT_LABEL}</kbd> toggle · <kbd>↑↓</kbd> move · <kbd>Esc</kbd> close</span>
           <button type="button" className="studio-menu-close" data-modal-close onClick={onClose}>Close ✕</button>
         </header>
-        {STUDIO_TOOLS.map((section) => (
+        <div className="studio-menu-search">
+          <input
+            type="search"
+            value={query}
+            placeholder="Filter tools…"
+            aria-label="Filter tools"
+            autoComplete="off"
+            spellCheck={false}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={onSearchKey}
+          />
+          <span>{matches.length} of {STUDIO_TOOLS.reduce((total, section) => total + section.items.length, 0)}</span>
+        </div>
+        {matches.length === 0 && <p className="studio-menu-empty">No tool matches “{query}”.</p>}
+        {STUDIO_TOOLS.map((section) => {
+          const items = section.items.filter((tool) => matchesQuery(section, tool, query));
+          if (!items.length && query) return null;
+          return (
           <section key={section.title}>
             <h2>{section.title}</h2>
             <div className="studio-menu-items">
-              {section.items.map((tool) => {
+              {items.map((tool) => {
                 const current = pathname === tool.href;
                 return (
-                  <Link key={tool.href} to={tool.href} onClick={onClose} className={current ? "current" : ""} aria-current={current ? "page" : undefined}>
+                  <Link
+                    key={tool.href}
+                    to={tool.href}
+                    onClick={onClose}
+                    className={`${current ? "current" : ""} ${matches[active] === tool.href ? "active" : ""}`}
+                    aria-current={current ? "page" : undefined}
+                  >
                     <b>{tool.title}{tool.badge && <em>{tool.badge}</em>}</b>
                     <small>{tool.desc}</small>
                   </Link>
                 );
               })}
             </div>
-            {section.developerPanel && <DevPanel onClose={onClose} />}
+            {/* The dev panel is a tool of its own; a filtered list is not the
+                place for it. */}
+            {section.developerPanel && !query && <DevPanel onClose={onClose} />}
           </section>
-        ))}
+        );})}
       </nav>
     </div>,
     document.body,

@@ -3,6 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { publicUrl } from "./base-url";
+import { createAspectGate, fitDistanceForRadius } from "./camera-fit";
 import { bindStatusLine } from "./status-line";
 import { probeBinBlenderBridge, requestBinBlenderBake } from "./bin-blender-bridge";
 import {
@@ -300,6 +301,8 @@ export function createTool(): ToolHandle {
   let capabilityChecked = false;
   let splitOffset = 0;
   let lastViewportAspect = viewport.width / viewport.height;
+  const viewportAspectGate = createAspectGate();
+  viewportAspectGate(lastViewportAspect); // seed the baseline; the first resize is not a reframe
   let runId = 0;
   let worker: Worker | null = null;
   let workerReject: ((error: Error) => void) | null = null;
@@ -552,7 +555,7 @@ export function createTool(): ToolHandle {
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
     const radius = Math.max(size.length() / 2, 0.001);
-    const distance = radius / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2));
+    const distance = fitDistanceForRadius(camera, radius);
     camera.position.set(center.x + distance * .72, center.y + distance * .58, center.z + distance * .88);
     camera.near = radius / 100;
     camera.far = radius * 100;
@@ -1073,7 +1076,10 @@ export function createTool(): ToolHandle {
   // the window — is what the renderer has to match.
   cleanups.push(observeCanvasBox(canvas, (width, height) => {
     const nextAspect = width / height;
-    const shouldReframe = Math.abs(nextAspect - lastViewportAspect) / Math.max(lastViewportAspect, .01) > .18;
+    // createAspectGate is the shared version of the rule this tool arrived at
+    // first: only a step change (docks → sheet, phone rotation) re-frames, so
+    // a drag-resize never fights the user's own orbiting.
+    const shouldReframe = viewportAspectGate(nextAspect);
     lastViewportAspect = nextAspect;
     camera.aspect = nextAspect;
     camera.updateProjectionMatrix();

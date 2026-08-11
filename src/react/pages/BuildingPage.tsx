@@ -179,6 +179,13 @@ export default function BuildingPage(): React.JSX.Element {
     className="building-page"
     leftDock={leftDock}
     rightDock={rightDock}
+    toolbar={<>
+      <span>Hong Kong tower · hand-ported build system</span>
+      <span className="st-spacer" />
+      {/* Every other 3D route has one; this was the only tool where a camera
+          driven off into a corner could not be recovered without a reload. */}
+      <button type="button" className="st-btn" disabled={!tool} onClick={() => tool?.reframe()}>Reframe</button>
+    </>}
     status={<>
       <span className={`st-dot ${status.state === "ready" ? "ready" : status.state === "error" ? "error" : "busy"}`} />
       <span>{status.message}</span>

@@ -1,5 +1,10 @@
 # Interface review — desktop and mobile
 
+> **Status: all twenty findings resolved.** Each finding keeps the measurement
+> that prompted it; the **Fixed** note at the end of each records what the same
+> measurement reads now. Re-verified headlessly at the same six viewports, with
+> `npm test` (614) and `tsc --noEmit` green.
+
 Reviewed against `main` at commit `b618e21`, driven headlessly through Chromium
 (SwiftShader) at six viewports: 1440×900, 1280×800, 1024×768, 834×1112,
 844×390, and 390×844. All ten routes were visited at desktop and phone size;
@@ -67,6 +72,18 @@ Options, cheapest first:
 The nav already anticipates this band (`@media (max-width: 1180px)` hides the
 switcher); the body layout just never got the matching rule.
 
+**Fixed** — `studio-kit.css` gains a 821–1180px block: the rail collapses to 0
+(the nav keeps its section switcher instead, `studio-nav.css`) and both docks
+become `clamp(196px, 25vw, …)`. Parameter rows go two-line in the band, since a
+196px dock cannot spare 96px for a label and still leave a draggable track.
+
+| Viewport | Route | Before | After |
+| --- | --- | --- | --- |
+| 834×1112 | `/building` | 158 px | **417 px** |
+| 834×1112 | `/bin` | 158 px | **514 px** |
+| 1024×768 | `/crayon` | 348 px | **512 px** |
+| 834×1112 | slider track | 39 px | **126 px** |
+
 ### A2 — Phone landscape leaves almost no viewport
 
 At 844×390 the chrome is nav 104 px + toolbar 50–70 px + status 30 px + collapsed
@@ -79,6 +96,12 @@ sheet 45 px. Measured `.st-viewport` heights:
 `(max-height: 500px)`. The nav needs the same treatment: in landscape it should
 collapse to one row (`--st-nav-h: 44px`) with the section switcher moving into
 the Tools menu, rather than keeping the two-row 104 px stack.
+
+**Fixed** — the nav is one row in landscape (`--st-nav-h: 52px`; lead ·
+switcher · trail across 844px, switcher items keeping their 44px touch height),
+the toolbar 42px and the status bar 28px. `/paint` goes from **127 px to 179 px**
+of viewport. The rules live in `studio-nav.css`, after the mobile block they
+override — in the kit they lost on load order.
 
 ### A3 — The Surface Studio toolbar clips rather than wraps
 
@@ -105,6 +128,13 @@ that gives no sign it scrolls. Suggested: let the toolbar wrap
 a small fixed segmented control (or into the sheet's tab bar) and move
 Document/history into the sheet.
 
+**Fixed** — the strip wraps instead of scrolling on desktop, so **nothing is
+hidden at any desktop width** (0 px clipped at 1440 and at 1280, from 56 and
+210). A phone is too narrow for wrapping to help — four groups would stack into
+a 200px toolbar — so it still scrolls there, but Mode is `position: sticky;
+left: 0; order: -1`: pinned to the leading edge, always reachable, with an inset
+shadow at the trailing edge so the strip reads as scrollable.
+
 ### A4 — Node-editor header clips on desktop
 
 On `/crayon` at 1440×900 the docked node editor's own toolbar runs past the
@@ -112,6 +142,10 @@ viewport column: the **Save** button renders as "Sav", and the hint text ends at
 "Identifiers mapped determi…". The React Flow attribution also lands under the
 minimap. The 250 px `--st-node-dock` height leaves the graph itself about 180 px
 tall, which is under one node's worth of vertical space.
+
+**Fixed** — `.blender-flow-toolbar` wraps rather than clips (0 px hidden, from
+14 px), and the dock is `clamp(250px, 32vh, 380px)` — 289 px in a 900 px window.
+Wrapping does not clip, so the search popup anchored in that row survives it.
 
 ---
 
@@ -145,6 +179,15 @@ without one — `/vase` (`VaseComparePage.tsx:32`), `/typewriter`
 
 Fix: frame from the generated bounds after each rebuild (or at minimum on
 floor/length/width changes), and add a Reframe button to the toolbar.
+
+**Fixed** — `frameBuilding()` solves the distance from `getBounds()` and keeps
+whatever direction the user has orbited to, so re-framing never steals their
+angle. It runs after each rebuild (keyed on the three dimension params, so the
+other fifteen never nudge the camera), on a step change in viewport aspect, and
+from a new **Reframe** button in the toolbar — the last 3D route to get one.
+`controls.maxDistance` follows the subject now, because a 40 × 40 × 40 tower
+needs ~160 units against the authored ceiling of 120. Floors 6 → 40 frames the
+whole tower; the phone and tablet viewports show the whole building.
 
 ### B2 — Every camera fit ignores aspect ratio, and there are five of them
 
@@ -180,6 +223,11 @@ const halfFovX = Math.atan(Math.tan(halfFovY) * camera.aspect);
 const halfFov = Math.min(halfFovY, halfFovX);
 ```
 
+**Fixed** — `camera-fit.ts` exports `fitDistanceForRadius(camera, radius,
+padding)`, taking the smaller of the two half-angles, and all five sites call it
+— plus `main.ts`, which had no fit at all. `/bin` at 390×844 frames the drawer
+inside the viewport instead of running off the right edge.
+
 ### B3 — Aspect-change reframing exists in exactly one place
 
 `src/bin-compare.ts:1076` re-frames when the viewport aspect moves by more than
@@ -187,6 +235,11 @@ const halfFov = Math.min(halfFovY, halfFovX);
 300 px dock layout and a full-bleed phone sheet. Nothing else does this, so
 rotating a phone or opening the sheet leaves every other tool mis-framed. Worth
 lifting into a shared helper alongside `camera-fit.ts`.
+
+**Fixed** — lifted into `createAspectGate(threshold)` in `camera-fit.ts`. The
+Bin uses the shared version and the Building Generator's resize observer uses it
+too. A drag-resize never clears the gate, so it cannot fight an orbit in
+progress.
 
 ---
 
@@ -204,6 +257,11 @@ immediately.
 Either open the sheet by default when no graph is loaded, or give
 `.st-tool-state` / the watermark a real CTA button on mobile.
 
+**Fixed** — `StudioShell` takes `sheetInitiallyOpen`, and `/` passes it while
+nothing is loaded. The sheet opens to its peek detent showing Source: the
+dropzone and **Browse asset library** are visible on load, with the viewport
+still visible above them.
+
 ### C2 — The node-editor FAB sits on top of the status bar
 
 Measured on `/crayon` at 390×844:
@@ -217,6 +275,11 @@ state readout, so it should not be coverable. `studio-shell.css:155` positions
 the FAB at `bottom: calc(60px + safe-area)`; it needs to clear
 `--st-sheet-collapsed + --st-status-h` instead.
 
+**Fixed** — the FAB is pinned at
+`calc(var(--st-sheet-collapsed) + var(--st-status-h) + 12px)`. Measured on the
+same phone: FAB bottom 757, status bar top 768 — 11 px of clearance, from 16 px
+of overlap.
+
 ### C3 — No horizontal safe-area insets on the chrome
 
 `env(safe-area-inset-*)` appears in the sheet, the overlay and the asset
@@ -224,6 +287,9 @@ library, but `.st-nav`, `.st-toolbar` and `.st-statusbar` all use flat
 `padding: … 10px`. On a notched phone in landscape — the same orientation that
 already suffers from A2 — the breadcrumb and the leading status text run under
 the notch and the home indicator's side inset.
+
+**Fixed** — all three strips use `max(12px, env(safe-area-inset-left/right))`
+in the mobile block. Read from the CSS, not observed on hardware (see Scope).
 
 ### C4 — `vh` instead of `dvh` in the sheet
 
@@ -234,6 +300,10 @@ control row falls under the toolbar. `dvh` (with a `vh` fallback) fixes it. The
 same applies to `studio-menu.css:3` (`padding: 8vh 16px 6vh`) and
 `asset-library.css:4` (`max-height: 90vh`).
 
+**Fixed** — the sheet declares `vh` then `dvh`, so the second wins where
+supported and the first is the fallback. The tool menu's backdrop padding and
+max-height are `dvh` too.
+
 ### C5 — The open sheet hides what you are adjusting
 
 `62vh` plus a 104 px nav and a 50 px toolbar leaves roughly 200 px of viewport
@@ -242,6 +312,10 @@ cropped middle of the façade. Dragging a slider gives you almost no visual
 feedback on the thing you are changing. A two-detent sheet (a ~35 % "peek" stop
 before the full 62 %) would fix this without new components — the handle is
 already a button, it just needs a third state.
+
+**Fixed** — the sheet has three detents and the handle cycles them:
+collapsed → peek (34 dvh) → open (62 dvh) → collapsed, the label naming the next
+step. Peek is also what `sheetInitiallyOpen` opens to (C1).
 
 ---
 
@@ -255,6 +329,13 @@ track renders empty, so the top-right of the bar reads differently depending on
 which tool you are in and the trailing buttons shift position between routes.
 Either give every tool one or two chips, or drop the affordance and let the
 status bar carry state.
+
+**Fixed** — chips are published in keyed groups (`runtime`, `page`) so more
+than one publisher can coexist; before, whichever hook ran last replaced the
+other's chips wholesale, which is *why* only two routes ever showed one. Both
+runtime hooks in `page-runtime.ts` publish a `starting` / `runtime live` /
+`runtime failed` chip, so all ten routes carry the same fact. In the tablet band
+the chip track is the first thing to give — at 834px it rendered "runtime li".
 
 ### D2 — Three parameter-row implementations
 
@@ -270,6 +351,13 @@ mobile rules apply to it. Inside the phone sheet its labels stay at 12 px where
 every other tool's rows are bumped to 13 px, and any future touch-target work on
 `.st-row` will silently skip `/chrome-assets`.
 
+**Fixed** — the kit gains `.st-row.st-row-stacked`, a label-above variant of
+THE row, and `chrome-assets.ts` emits it with `.st-input` / `.st-select` instead
+of restating their styling. The wrapper the imperative builder emits is
+`display: contents`, so the control and its readout are grid items of the row
+itself and the kit's mobile rules land where they should. The inline 18px
+checkbox sizing is gone too — it was overriding the sheet's 28px touch size.
+
 ### D3 — Type scale below the kit's own floor
 
 `studio-kit.css:48` states 11 px is the floor for read text, with three named
@@ -279,12 +367,18 @@ at **10 px** (`:73`), and `surface-tool-selector.css:31` family labels at 9 px.
 These are the smallest text in the app and they sit in the toolbar, i.e. the
 part of `/paint` that a phone user has to read while scrolling it horizontally.
 
+**Fixed** — all four are `var(--st-fs-micro)` (11 px), the kit's floor.
+
 ### D4 — Sub-44 px touch targets in the same toolbar
 
 `surface-workspace-toolbar.css:91` sets `min-height: 36px` for the toolbar's
 buttons, selects and `.st-btn`s on mobile, against `--st-touch: 44px` which the
 kit applies everywhere else on the phone. Same file, one line below the
 breakpoint that acknowledges mobile exists.
+
+**Fixed** — `var(--st-touch)`. A sweep of every interactive element at 390×844
+across all ten routes now reports zero targets under the minimum, the one
+exception being the visually-hidden file input behind the Import label.
 
 ### D5 — `⌘K` is shown on every platform
 
@@ -293,6 +387,11 @@ breakpoint that acknowledges mobile exists.
 is cross-platform but the *label* is not: Windows and Linux users are told a
 shortcut that does not exist for them. The cap is hidden below 520 px but shown
 at 521–820 px, i.e. on tablets with no keyboard at all.
+
+**Fixed** — `SHORTCUT_LABEL` resolves to `⌘K` on Apple platforms and `Ctrl K`
+elsewhere, and the cap only renders under
+`@media (any-pointer: fine) and (min-width: 521px)` — where a keyboard
+plausibly exists.
 
 ### D6 — The ⌘K menu is a directory, not a palette
 
@@ -303,12 +402,21 @@ last section (Chrome Crayon Compare) is below the fold with the scroll living on
 the backdrop and no visual hint. Adding a filter field at the top would both
 meet the expectation and solve the overflow.
 
+**Fixed** — a filter field takes initial focus and matches every term against
+section, title, description and badge, reporting "n of 11". ↑/↓ move a highlight
+through the filtered list and Enter navigates. The panel is `max-height: 86dvh`
+with its own scroll and a sticky filter row, so it no longer outgrows the
+viewport.
+
 ### D7 — The gallery's section title shows the selected model
 
 `DojoGalleryPage.tsx:18` uses `.st-section-title` for `#title`, which the runtime
 overwrites with the selected model's name. The result reads as "CHROME CRAYON"
 in uppercase mono meta styling directly above a list of all five models — it
 looks like a category header for a list it does not describe.
+
+**Fixed** — `#title` moves into the panel header's meta slot ("BAKED MODELS ·
+Chrome Crayon"), and the section is titled "Models · 5 bakes".
 
 ---
 
@@ -333,6 +441,23 @@ Cheapest wins: drop `cache: "no-store"` on the vase JSON, wire `GLTFLoader`'s
 dumps (they gzip extremely well). Draco/meshopt on the large GLBs is the bigger
 but more durable fix.
 
+**Fixed** — three changes, and one more bug found while making them:
+
+- `src/load-progress.ts` formats byte-level progress; the gallery and both vase
+  loads report `loading… 42% of 38.2 MB` into their existing `.st-state` line
+  instead of one string that never changes.
+- The gallery was appending `?v=${Date.now()}` to every GLB request — a
+  cache-buster that re-downloaded up to 38 MB every time a model was reselected.
+  Removed; these bakes are immutable for the life of a session.
+- The vase's `cache: "no-store"` is now
+  `import.meta.env.DEV ? "no-store" : "default"`. The comment on it was right —
+  the exporter rewrites that file while Vite is running — but only in
+  development. A deployed build has no exporter behind it, and the flag cost
+  every visitor a fresh 14 MB.
+
+Precompressing the dumps and putting Draco or meshopt on the large GLBs is the
+durable next step; that is a build-pipeline change rather than an interface one.
+
 ---
 
 ## What is working well
@@ -352,6 +477,16 @@ Worth stating explicitly so none of it gets "fixed":
   the 3D routes handle one- and two-finger gestures without page-scroll fights.
 - **`bindStatusLine`.** One status treatment per tool, with tone and message
   bound together, is a genuinely good constraint.
+
+## Verification
+
+Re-measured headlessly at all six viewports, across all ten routes:
+
+- No horizontal page overflow anywhere (`scrollWidth == clientWidth`).
+- No page errors or failed navigations on any route/viewport pair.
+- Zero sub-44px touch targets on a 390×844 phone.
+- `npm test` — 614 tests, 612 pass, 2 skipped, 0 fail.
+- `tsc --noEmit` and `npm run build` clean.
 
 ## Scope and limitations
 

@@ -17,6 +17,7 @@ import { createSnowAccumUniforms, createSnowShellMaterial } from "./snowAccum";
 import { createRain } from "./rain";
 import { createWetUniforms, applyWet } from "./wet";
 import { publicUrl } from "./base-url";
+import { createAspectGate, fitDistanceForRadius } from "./camera-fit";
 import {
   canvasBox, observeCanvasBox, preferredCanvasPixelRatio, prefersLowPowerViewport, releaseToolContext,
 } from "./canvas-viewport";
@@ -64,6 +65,8 @@ export type BuildingToolHandle = ToolHandle & {
   setAtmosphere(name: keyof BuildingAtmosphere, value: number | boolean): void;
   subscribe(listener: BuildingParamsListener): () => void;
   subscribeStatus(listener: (status: BuildingStatus) => void): () => void;
+  /** Re-solve the framing from the current bounds, keeping the orbit angle. */
+  reframe(): void;
 };
 
 // ---- debug isolation modes (root-cause hunting, driven via window.__debug) ----
@@ -203,6 +206,32 @@ export function createTool(): BuildingToolHandle {
     return { center: new Vector3(0, h / 2, 0), radius: 0.5 * Math.hypot(params.length, params.width, h) };
   }
 
+  // The tower is not a fixed-size subject: Floors, Length, and Width each run
+  // to 40, and the viewport is a grid column that changes shape when the docks
+  // collapse into the mobile sheet. A camera placed once left 34 of 40 storeys
+  // above the frustum — Floors, the first control in the dock, produced no
+  // visible change at all. Framing is therefore recomputed from the generated
+  // bounds, keeping whatever direction the user has orbited to and moving only
+  // the distance and the target, so re-framing never steals their angle.
+  let framedFor = "";
+  function frameBuilding(force = false): void {
+    const key = `${params.floor}/${params.length}/${params.width}/${camera.aspect.toFixed(3)}`;
+    if (!force && key === framedFor) return;
+    framedFor = key;
+    const { center, radius } = getBounds();
+    const direction = camera.position.clone().sub(controls.target);
+    if (direction.lengthSq() < 1e-6) direction.set(9, 2.5, 11);
+    direction.normalize();
+    const distance = Math.max(fitDistanceForRadius(camera, radius, 1.12), controls.minDistance);
+    // OrbitControls would otherwise snap straight back out of the framing it
+    // was just given: a 40 × 40 × 40 tower needs ~160 units and the authored
+    // ceiling is 120. The dolly limit follows the subject.
+    controls.maxDistance = Math.max(120, distance * 1.4);
+    camera.position.copy(center).addScaledVector(direction, distance);
+    controls.target.copy(center);
+    controls.update();
+  }
+
   let debugMode: DebugMode = "off";
   const albedoCache = new Map<Material, Material>();
   const normalViewMat = new MeshNormalMaterial({ side: DoubleSide });
@@ -266,6 +295,9 @@ export function createTool(): BuildingToolHandle {
     applySnowEnabled(snowState.enabled); // new snowShell group starts hidden
     env.frame(getBounds());
     env.invalidateShadows(); // new casters — the cached depth map no longer matches
+    // Only the three dimension params move the bounds; frameBuilding no-ops for
+    // the other fifteen, so painting a facade never nudges the camera.
+    frameBuilding();
   }
 
   // ---- mesh inspector: hover a mesh to outline it + read its name/polycount ----
@@ -654,10 +686,11 @@ export function createTool(): BuildingToolHandle {
     applyWet(kit.materials.building, wetU);
     applyWet(kit.materials.floor, wetU);
     regenerate();
-    // fixed 3/4 framing (snow-system style: fixed camera + OrbitControls)
+    // The 3/4 direction is authored; the distance is solved from the bounds so
+    // the whole tower is in frame at any floor count and any viewport shape.
     camera.position.set(9, 5.5, 11);
     controls.target.set(0, 3, 0);
-    controls.update();
+    frameBuilding(true);
   }).catch(err => {
     if (disposed) return;
     const el = document.getElementById("loading");
@@ -667,11 +700,16 @@ export function createTool(): BuildingToolHandle {
   });
 
   // The viewport is a grid column of the studio shell, not the whole window.
+  const viewportAspectGate = createAspectGate();
   const stopObservingCanvas = observeCanvasBox(app, (width, height) => {
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     renderer.setSize(width, height, false);
     post.setSize(width, height);
+    // Docks collapsing into the sheet, or a phone rotating, changes the shape
+    // of the frustum enough that the previous framing crops. A drag-resize
+    // does not clear the gate, so it never fights an orbit in progress.
+    if (viewportAspectGate(width / height)) frameBuilding(true);
   });
 
   const clock = new Clock();
@@ -695,6 +733,7 @@ export function createTool(): BuildingToolHandle {
   });
 
   return {
+    reframe: () => frameBuilding(true),
     getParams: () => ({ ...params }),
     setParam(name, value) {
       params[name] = value;

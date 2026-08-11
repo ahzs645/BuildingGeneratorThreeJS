@@ -3,13 +3,19 @@
   min-height: 70px;
   flex: 0 0 auto;
   padding: 7px 10px;
+  /* Desktop no longer scrolls: the strip wraps instead (see below), so this is
+     only the mobile path's overflow. */
   overflow-x: auto;
   scrollbar-width: thin;
 }
 
+/* Wrapping, not one long scrolling line. At 1440px the strip measured 940px
+   against an 884px column and quietly clipped the Document group — Undo and
+   Clear were simply gone, with a thin scrollbar as the only clue. A wrapped
+   row costs vertical space only when the window is actually too narrow. */
 .surface-workspace-toolbar {
   display: flex;
-  min-width: max-content;
+  flex-wrap: wrap;
   width: 100%;
   align-items: stretch;
   gap: 8px;
@@ -21,19 +27,22 @@
   align-items: center;
   gap: 5px;
   min-width: 0;
-  padding: 17px 8px 4px;
+  padding: 19px 8px 5px;
   border: 1px solid var(--st-line);
   border-radius: var(--st-r-md);
   background: rgba(255, 255, 255, .025);
 }
 
+/* 11px, the kit's stated floor for anything read as text. These sat at 8px —
+   the smallest type in the app, in the one strip a phone user has to read
+   while scrolling it sideways. */
 .surface-workspace-group-label {
   position: absolute;
   top: 5px;
   left: 8px;
   color: var(--st-ink-3);
-  font: 700 8px/1 var(--st-mono);
-  letter-spacing: .1em;
+  font: 700 var(--st-fs-micro)/1 var(--st-mono);
+  letter-spacing: .08em;
   text-transform: uppercase;
 }
 
@@ -70,23 +79,54 @@
   min-width: 48px;
   height: 28px;
   padding-inline: 7px;
-  font-size: 10px;
+  font-size: var(--st-fs-micro);
 }
 
 .surface-workspace-area label {
   display: grid;
   grid-template-columns: auto 72px;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   color: var(--st-ink-3);
-  font: 600 9px/1 var(--st-font);
+  font: 600 var(--st-fs-micro)/1 var(--st-font);
 }
 
 .surface-workspace-area input[type="range"] { width: 72px; }
+/* margin-left:auto only works while the strip is a single line; once it wraps
+   the Document group simply follows the others. */
 .surface-workspace-history { margin-left: auto; }
 
 @media (max-width: 820px), ((pointer: coarse) and (max-height: 500px)) {
-  .surface-painter-page .st-toolbar:has(.surface-workspace-toolbar) { min-height: 78px; }
-  .surface-workspace-group { padding-top: 21px; }
-  .surface-workspace-group :is(button, .st-btn, .st-select) { min-height: 36px; }
+  .surface-painter-page .st-toolbar:has(.surface-workspace-toolbar) { min-height: 80px; }
+  /* A phone is too narrow for wrapping to help — four groups would stack into
+     a 200px toolbar — so the strip goes back to one scrolling line. */
+  .surface-workspace-toolbar { flex-wrap: nowrap; min-width: max-content; }
+  .surface-workspace-group { padding-top: 22px; }
+  /* --st-touch, not 36px: the kit's mobile minimum applies in this file too. */
+  .surface-workspace-group :is(button, .st-btn, .st-select) { min-height: var(--st-touch); }
+  .surface-workspace-group .st-select { height: var(--st-touch); }
+  .surface-workspace-import { height: var(--st-touch); min-height: var(--st-touch); }
+  .surface-workspace-modes .st-segmented button { height: 36px; min-height: 36px; }
+
+  /* Mode decides whether a touch orbits the model or paints on it, and at
+     x 608–784 on a 390px phone it was entirely off-screen behind a scroll with
+     no affordance. Pinned to the leading edge, it is the one group that is
+     always reachable; everything else scrolls past behind it. */
+  .surface-workspace-modes {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    order: -1;
+    background: var(--st-chrome);
+    box-shadow: 6px 0 8px -6px rgba(0, 0, 0, .55);
+  }
+  .surface-workspace-history { margin-left: 0; }
+
+  /* And a shadow at the trailing edge, so the strip reads as scrollable rather
+     than as a row that happens to end at the screen edge. Inset shadows paint
+     against the scroll container's padding box, so it stays put while the
+     groups move underneath it. */
+  .surface-painter-page .st-toolbar:has(.surface-workspace-toolbar) {
+    box-shadow: inset -22px 0 16px -16px rgba(0, 0, 0, .75);
+  }
 }

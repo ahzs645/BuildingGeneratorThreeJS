@@ -26,8 +26,13 @@
    swallow it whole. Fit is managed by the shrink order below instead. */
 .blender-flow-toolbar {
   box-sizing: border-box;
-  display: flex; flex: 0 0 var(--st-toolbar-h); align-items: center; gap: 7px;
-  height: var(--st-toolbar-h); padding: 0 8px;
+  /* Wraps rather than clips. The shrink order below still keeps the row on one
+     line wherever it fits; past that the actions move to a second line instead
+     of the trailing button rendering as "Sav". Wrapping does not clip, so the
+     search popup anchored in this row survives it. */
+  display: flex; flex-wrap: wrap; flex: 0 0 auto; align-items: center;
+  gap: 6px 7px;
+  min-height: var(--st-toolbar-h); padding: 4px 8px;
   border-bottom: 1px solid var(--st-line); background: var(--st-chrome);
   color: #AEB6BD; font: 500 var(--st-fs-micro)/1 var(--st-mono);
 }
@@ -61,6 +66,11 @@
   overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none;
 }
 .graph-actions::-webkit-scrollbar { display: none; }
+/* The scroll had no affordance: at 1440px the trailing action rendered as
+   "Sav" and read as a clipped layout rather than as a strip with more in it.
+   An inset shadow paints against the scroller's padding box, so it stays at
+   the edge while the buttons move underneath. */
+.graph-actions { box-shadow: inset -16px 0 12px -12px rgba(0,0,0,.8); }
 .blender-flow-toolbar .graph-actions button { flex: 0 0 auto; width: auto; padding: 0 7px; white-space: nowrap; font: 500 var(--st-fs-micro)/1 var(--st-mono); }
 .graph-file-input { display: none; }
 

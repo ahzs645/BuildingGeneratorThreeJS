@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { useStudioRuntimeChip, type StudioTone } from "./studio/StudioChrome";
 
 /**
  * A mounted studio tool. dispose() must return the document to the state it
@@ -22,6 +23,17 @@ function normalizeError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
 
+/**
+ * The nav chip every tool publishes. Both runtime hooks call this, so the chip
+ * track carries the same fact on every route — before, eight of the ten pages
+ * left it empty and the trailing nav buttons shifted between tools.
+ */
+const RUNTIME_CHIP: Record<"loading" | "ready" | "error", { label: string; tone: StudioTone }> = {
+  loading: { label: "starting", tone: "busy" },
+  ready: { label: "runtime live", tone: "ready" },
+  error: { label: "runtime failed", tone: "error" },
+};
+
 export function usePageRuntime(title: string): void {
   useEffect(() => {
     document.title = title;
@@ -41,8 +53,10 @@ export function useToolController<Handle extends ToolHandle>(
   const { search } = useLocation();
   const resolvedRestartKey = restartKey === undefined ? search : restartKey;
   const [handle, setHandle] = useState<Handle | null>(null);
+  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
   useEffect(() => {
     document.title = title;
+    setPhase("loading");
     let disposed = false;
     let created: Handle | null = null;
     load()
@@ -52,10 +66,14 @@ export function useToolController<Handle extends ToolHandle>(
         else {
           created = tool;
           setHandle(tool);
+          setPhase("ready");
         }
       })
       .catch((error: unknown) => {
-        if (!disposed) console.error("Studio tool failed to start", error);
+        if (!disposed) {
+          console.error("Studio tool failed to start", error);
+          setPhase("error");
+        }
       });
     return () => {
       disposed = true;
@@ -64,6 +82,7 @@ export function useToolController<Handle extends ToolHandle>(
       setHandle(null);
     };
   }, [load, resolvedRestartKey, title]);
+  useStudioRuntimeChip(RUNTIME_CHIP[phase].label, RUNTIME_CHIP[phase].tone);
   return handle;
 }
 
@@ -113,5 +132,6 @@ export function useToolRuntime(
       handle = null;
     };
   }, [attempt, load, restartKey, search, title]);
+  useStudioRuntimeChip(RUNTIME_CHIP[state.phase].label, RUNTIME_CHIP[state.phase].tone);
   return { ...state, retry: () => setAttempt((value) => value + 1) };
 }

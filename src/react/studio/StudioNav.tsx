@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useStudioChrome } from "./StudioChrome";
-import { findStudioTool, STUDIO_TOOLS, StudioMenu } from "./StudioMenu";
+import { findStudioTool, SHORTCUT_LABEL, STUDIO_TOOLS, StudioMenu } from "./StudioMenu";
 import "./studio-nav.css";
 
 /**
@@ -77,7 +77,7 @@ export function StudioNav(): React.JSX.Element | null {
         >{docksOpen ? "Hide panels" : "Show panels"}</button>}
         <button type="button" className="st-nav-tools" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={openMenu}>
           <span className="st-nav-tools-label">Tools</span>
-          <kbd>⌘K</kbd>
+          <kbd>{SHORTCUT_LABEL}</kbd>
         </button>
       </div>
     </header>

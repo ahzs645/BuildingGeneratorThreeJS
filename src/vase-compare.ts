@@ -9,6 +9,7 @@ import { bindStatusLine } from "./status-line";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { publicUrl } from "./base-url";
+import { describeLoadProgress } from "./load-progress";
 import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio, releaseToolContext } from "./canvas-viewport";
 import type { ToolHandle } from "./react/page-runtime";
 
@@ -130,6 +131,11 @@ export function createTool(): ToolHandle {
   }
 
   // ---- Truth (red wire) -----------------------------------------------------
+  // 12.5 MB, so the transfer is reported rather than sat on silently.
+  const truthProgress = (event: ProgressEvent): void => {
+    if (disposed || status.length) return;
+    setStatus("busy", describeLoadProgress("loading Blender truth…", event.loaded, event.total));
+  };
   new GLTFLoader().load(publicUrl("dojo/vase_truth.glb"), (gltf) => {
     if (disposed) return;
     let tris = 0;
@@ -151,7 +157,7 @@ export function createTool(): ToolHandle {
     logBBox("truth", truthGroup);
     report(`truth ${Math.round(tris).toLocaleString()} tris`);
     syncComparison();
-  });
+  }, truthProgress);
 
   // ---- VM (blue wire by default; W toggles solid) ---------------------------
   let vmSolid: THREE.Mesh | null = null;
@@ -170,10 +176,12 @@ export function createTool(): ToolHandle {
     syncComparison(false);
   }
 
-  // The exporter rewrites this static asset while the Vite server is running.
-  // Always fetch the current mesh after a remount instead of reusing a stale
-  // cached preview from an earlier comparison pass.
-  fetch(publicUrl("dojo/vase_vm.json"), { cache: "no-store" })
+  // The exporter rewrites this static asset while the Vite server is running,
+  // so a dev session must always fetch the current mesh rather than reuse a
+  // stale preview from an earlier comparison pass. A deployed build has no
+  // exporter behind it and the file is immutable — where no-store cost every
+  // visitor a fresh 14 MB download, including on a phone.
+  fetch(publicUrl("dojo/vase_vm.json"), { cache: import.meta.env.DEV ? "no-store" : "default" })
     .then((r) => r.json())
     .then((soup) => {
       if (disposed) return;

@@ -119,7 +119,7 @@
     :root { --st-sheet-collapsed: calc(34px + 1px + env(safe-area-inset-bottom, 0px)); }
     .st-sheet-handle { min-height: 34px; gap: 4px; }
   }
-  .st-sheet.is-open .st-sheet-grip { background: #5C6771; }
+  .st-sheet:is(.is-open, .is-peek) .st-sheet-grip { background: #5C6771; }
   .st-sheet-body { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 10px; padding: 0 12px 10px; }
   .st-sheet-body[hidden] { display: none; }
   .st-sheet-panel { min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
@@ -150,14 +150,18 @@
   .st-overlay-body > .blender-flow-wrap { height: 100%; }
   .st-overlay .blender-flow-toolbar { overflow-x: auto; overscroll-behavior-x: contain; }
 
-  /* Node-graph entry point: a thumb-sized FAB above the sheet handle. */
+  /* Node-graph entry point: a thumb-sized FAB above the sheet handle. It has
+     to clear the status bar as well as the handle — at a flat 60px it sat on
+     top of the strip the kit calls the tool's only state readout, covering the
+     right half of the message. */
   .st-viewport .graph-toggle {
-    position: fixed; right: 14px; bottom: calc(60px + env(safe-area-inset-bottom,0px)); z-index: 44;
+    position: fixed; right: 14px; z-index: 44;
+    bottom: calc(var(--st-sheet-collapsed) + var(--st-status-h) + 12px);
     display: inline-flex; align-items: center; justify-content: center;
     min-height: var(--st-touch); padding: 0 18px;
     border: 1px solid var(--st-accent-edge); border-radius: 999px;
     background: var(--st-accent-fill); color: #E9F6FD; cursor: pointer;
     font: 600 var(--st-fs-ui)/1 var(--st-font);
   }
-  .st-shell:has(.st-sheet.is-open) .st-viewport .graph-toggle { display: none; }
+  .st-shell:has(.st-sheet:is(.is-open, .is-peek)) .st-viewport .graph-toggle { display: none; }
 }

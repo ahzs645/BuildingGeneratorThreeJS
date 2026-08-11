@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { fitDistanceForRadius } from "../camera-fit";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
@@ -854,7 +855,7 @@ export function mountBlendStudioRuntime({
     const center = box.getCenter(new THREE.Vector3());
     const radius = Math.max(size.length() * .5, .01);
     measurementRadius = radius;
-    const distance = radius / Math.sin(THREE.MathUtils.degToRad(camera.fov * .5));
+    const distance = fitDistanceForRadius(camera, radius);
     camera.position.copy(center).add(new THREE.Vector3(
       distance * .72,
       distance * .48,
