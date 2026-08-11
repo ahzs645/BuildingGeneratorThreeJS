@@ -393,6 +393,11 @@
 .st-btn-ghost { border: 1px solid transparent; background: none; color: var(--st-ink-2); }
 .st-btn:disabled, .st-btn-primary:disabled, .st-btn-ghost:disabled { opacity: .4; cursor: not-allowed; }
 .st-btn-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 7px; }
+/* A row of one is a row of one. The two-up tracks are the point of this class,
+   but a lone button was taking the 1.4fr column and leaving the 1fr column
+   standing empty beside it — the Studio's "Browse asset library" read as a
+   button that had lost its partner. */
+.st-btn-row:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
 
 /* Segmented control — one implementation for every page */
 .st-segmented {

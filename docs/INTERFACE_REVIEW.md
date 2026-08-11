@@ -524,6 +524,40 @@ I had left its buttons at 36px — the exact drift D4 was about. They are
 `--st-touch` now, and phone landscape drops the four group captions to pay back
 the height.
 
+### The overlays were never in the sweep
+
+Both modals open on demand, so neither the asset library nor the ⌘K menu ever
+appeared in the viewport sweep that found the other sub-minimum targets. Opening
+the library on a phone shows it works — full screen, two-up grid, scrolls — and
+that it kept its own copy of two findings from this review:
+
+- **Touch targets.** 26px filter chips, a 28px Close, a 28px search field: the
+  same drift as D4, in a surface D4 never looked at.
+- **A clipped strip with no affordance.** `.asset-library-categories` scrolls
+  horizontally with the scrollbar hidden, so on a 390px phone "Studies" was cut
+  mid-word and "Scenes" was off the end entirely — the same shape as A3.
+- **Its own breakpoint.** The overlay went full-screen at `max-width: 720px`
+  while the shell switches at 820px, so a 721–820px phone opened the desktop
+  dialog inside a mobile shell — and a phone in landscape got a 353px-tall
+  dialog whose cards were cut off mid-title.
+
+Fixed: the overlay follows `MOBILE_STUDIO_QUERY`, the categories wrap instead of
+scrolling, and touch sizing is keyed on `(pointer: coarse)` rather than a width
+— an 834px tablet in portrait answers "is this a finger?" the same way a phone
+does. The favourite star keeps its 30px circle and gets its 44px from a pad
+around it. The ⌘K menu had the identical width-keyed bug and got the same rule.
+
+Measured after: chips, Close and search all 44px on phone, phone-landscape and
+tablet; 0px of category overflow; the star's pad confirmed live 4px outside the
+visible circle; desktop unchanged at its dense 26/28px.
+
+### A row of one is a row of one
+
+`.st-btn-row` is a two-up grid (`1.4fr 1fr`). "Browse asset library" was its
+only child, so it took the 1.4fr column — 271px of dropzone above it, 158px of
+button — and left the 1fr column standing empty. `:has(> :only-child)` gives a
+lone button the whole row, which fixes the class rather than the one call site.
+
 ## Verification
 
 Re-measured headlessly at all six viewports, across all ten routes:
@@ -532,6 +566,7 @@ Re-measured headlessly at all six viewports, across all ten routes:
 - No page errors or failed navigations on any route/viewport pair.
 - Zero sub-44px touch targets on a 390×844 phone.
 - `npm test` — 716 tests, 714 pass, 2 skipped, 0 fail.
+- Both overlays opened and measured at phone, phone-landscape, tablet and desktop.
 - `tsc --noEmit` and `npm run build` clean.
 
 ## The slider

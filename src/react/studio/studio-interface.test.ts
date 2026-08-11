@@ -250,6 +250,32 @@ test("the fill percentage is clamped and never divides by zero", async () => {
   assert.equal(rangeFillPercent(0, Number.NaN, 1), "0%");
 });
 
+// Both overlays open on demand, so neither appeared in the viewport sweep that
+// found the other sub-minimum targets. Their sizing is keyed on the pointer,
+// not on width: an 834px tablet in portrait answers "is this a finger?" the
+// same way a phone does.
+test("the overlays size their controls for touch, by pointer not by width", () => {
+  const library = read("src/react/blend-studio/asset-library.css");
+  const menuCss = read("src/react/studio/studio-menu.css");
+  for (const [name, css] of [["asset library", library], ["tool menu", menuCss]] as const) {
+    const coarse = css.match(/@media \(pointer: coarse\)\s*\{[\s\S]*?\n\}/);
+    assert.ok(coarse, `${name} must size its controls under (pointer: coarse)`);
+    assert.match(coarse[0], /var\(--st-touch\)/);
+  }
+  // The star keeps its 30px circle and gets its 44px from a pad around it.
+  assert.match(library, /\.asset-library-favorite::after \{ content: ""; position: absolute; inset: -7px/);
+  // The category strip clipped "Studies" mid-word and pushed "Scenes" off the
+  // end, with the scrollbar hidden and nothing else to say so.
+  assert.match(library, /\.asset-library-categories \{ flex-wrap: wrap; overflow-x: visible; \}/);
+  // And the overlay follows the shell's breakpoint, not one of its own.
+  assert.match(library, /@media \(max-width: 820px\), \(\(pointer: coarse\) and \(max-height: 500px\)\)/);
+});
+
+// A lone button was taking the 1.4fr column of a two-up row.
+test("a button row of one spans the row", () => {
+  assert.match(kit, /\.st-btn-row:has\(> :only-child\) \{ grid-template-columns: minmax\(0, 1fr\); \}/);
+});
+
 // The phone crumb spent its width on a name the switcher already highlights.
 test("the phone breadcrumb spends its width on the tool name", () => {
   const mobile = navCss.slice(navCss.indexOf("@media (max-width: 820px)"));

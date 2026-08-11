@@ -27,4 +27,45 @@
 .asset-library-message{grid-column:1/-1;margin:0;padding:24px 16px;color:var(--st-ink-3);font-size:var(--st-fs-ui)}
 .asset-library-error{color:var(--st-err)}
 .asset-library>footer{padding:10px 16px;border-top:1px solid var(--st-line);color:var(--st-ink-3);font:400 var(--st-fs-micro)/1.5 var(--st-mono)}
-@media(max-width:720px){.asset-library-backdrop{padding:0}.asset-library{height:100%;max-height:none;border:0;border-radius:0}.asset-library>header{flex-wrap:wrap}.asset-library>header b{flex:1}.asset-library>header input{order:3;flex-basis:100%;height:40px}.asset-library-filters{align-items:stretch;flex-direction:column}.asset-library-views{margin-left:0}.asset-library-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))}.asset-library>footer{display:none}}
+/* Same breakpoint as MOBILE_STUDIO_QUERY in StudioShell.tsx. This overlay used
+   max-width:720px on its own, so a 721-820px phone opened the desktop dialog
+   while the shell behind it was already in mobile mode, and a phone in
+   landscape got a 353px-tall dialog whose cards were cut off mid-title. */
+@media (max-width: 820px), ((pointer: coarse) and (max-height: 500px)) {
+  .asset-library-backdrop { padding: 0; }
+  .asset-library { height: 100%; max-height: none; border: 0; border-radius: 0; }
+  .asset-library-grid { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+  /* The credit line is the first thing to go: it is the same sentence every
+     time, and it was taking 54px of a 390px landscape screen. */
+  .asset-library > footer { display: none; }
+}
+
+/* Keyed on the pointer, not the width: whether a control needs to be 44px is
+   a question about fingers, and an 834px tablet in portrait answers it the
+   same way a phone does. 26px filter chips and a 28px Close were the drift the
+   review found in the Surface toolbar; this overlay kept its copy because it
+   opens on demand and never appeared in the sweep. */
+@media (pointer: coarse) {
+  .asset-library > header button,
+  .asset-library-filters button { min-height: var(--st-touch); }
+  .asset-library > header input { height: var(--st-touch); }
+  /* The star stays a 30px circle in a 180px card. A tap area does not have to
+     be visible to be 44px. */
+  .asset-library-favorite::after { content: ""; position: absolute; inset: -7px; border-radius: 50%; }
+}
+
+@media (max-width: 720px) {
+  .asset-library > header { flex-wrap: wrap; }
+  .asset-library > header b { flex: 1; }
+  .asset-library > header input { order: 3; flex-basis: 100%; }
+  .asset-library-filters { align-items: stretch; flex-direction: column; }
+  /* Wrap rather than scroll. A full-screen sheet has the vertical room, and
+     the scrolling strip clipped "Studies" mid-word and pushed "Scenes" off the
+     end entirely, with the scrollbar hidden and nothing else to say so. */
+  .asset-library-categories { flex-wrap: wrap; overflow-x: visible; }
+  .asset-library-views { margin-left: 0; }
+  .asset-library-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+}
