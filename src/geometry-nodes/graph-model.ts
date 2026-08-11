@@ -77,6 +77,19 @@ export interface GraphNodeTemplate {
   nodeName: string;
   type: string;
   label: string;
+  /**
+   * Templates that are one entry in Blender's Add menu. Harvesting the catalog
+   * from the dump means one template per socket signature, so a single Blender
+   * entry can appear several times; everything sharing a family is the same
+   * menu item wearing different socket types.
+   */
+  family: string;
+  /**
+   * What separates this template from the rest of its family — a data type, a
+   * domain, or whichever authored properties differ. Absent when the family has
+   * exactly one member, which is the common case.
+   */
+  variant?: string;
   inputTypes: string[];
   outputTypes: string[];
 }
@@ -109,6 +122,130 @@ export function areSocketTypesCompatible(sourceType: string, targetType: string)
   return sourceFamily === targetFamily && (sourceFamily === "numeric" || sourceFamily === "vector");
 }
 
+/** Blender writes these onto every node; they never describe a variant. */
+const NON_VARIANT_PROPS = new Set(["name", "label", "active_index"]);
+
+/**
+ * Read in this order, so a variant reads "Integer · Curve" the way Blender
+ * stacks the node's own dropdowns rather than in `Object.keys` order.
+ */
+const VARIANT_PROP_ORDER = ["data_type", "input_type", "operation", "mode", "domain"];
+
+const variantPropRank = (prop: string): number => {
+  const index = VARIANT_PROP_ORDER.indexOf(prop);
+  return index < 0 ? VARIANT_PROP_ORDER.length : index;
+};
+
+/**
+ * Blender's `data_type`/`input_type` identifiers do not read as their menu
+ * entries: FLOAT_VECTOR is drawn as "Vector" and INT as "Integer". Title-casing
+ * the identifier would print "Float Vector" beside a Vector socket and make one
+ * difference look like two.
+ */
+const VARIANT_TYPE_WORDS: Record<string, string> = {
+  BOOLEAN: "Boolean",
+  BYTE_COLOR: "Byte Color",
+  FLOAT: "Float",
+  FLOAT2: "2D Vector",
+  FLOAT4X4: "Matrix",
+  FLOAT_COLOR: "Color",
+  FLOAT_VECTOR: "Vector",
+  INT: "Integer",
+  INT32_2D: "2D Integer",
+  QUATERNION: "Rotation",
+  RGBA: "Color",
+  VECTOR: "Vector",
+};
+
+/** "NodeSocketFloatFactor" → "Float Factor". Bool/Int keep Blender's spelling. */
+function socketTypeWord(type: string): string {
+  const bare = type.replace(/^NodeSocket/, "");
+  if (bare === "Bool") return "Boolean";
+  if (bare === "Int") return "Integer";
+  return bare.replace(/([a-z])([A-Z])/g, "$1 $2");
+}
+
+function variantWord(value: string): string {
+  // Reroute stores its socket type as a property; it is the same fact the
+  // socket carries, so it has to spell the same or the row says it twice.
+  if (value.startsWith("NodeSocket")) return socketTypeWord(value);
+  return VARIANT_TYPE_WORDS[value] ?? value
+    .toLowerCase()
+    .split("_")
+    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : word))
+    .join(" ");
+}
+
+type TemplateDraft = GraphNodeTemplate & { props: Record<string, unknown>; socketTypes: string[] };
+
+/**
+ * Name what separates the members of each add-menu family.
+ *
+ * Harvesting the catalog from the dump (see `graphNodeTemplates`) is what keeps
+ * socket definitions aligned with evaluator support, and the price is one
+ * template per socket signature: the crayon dump alone yields Capture Attribute
+ * four times and Switch five times. Collapsing them would throw the alignment
+ * away — the four Capture Attributes carry Vector, Boolean, Integer and Float
+ * value sockets and nothing recomputes sockets from a property — so the
+ * variants stay, and this gives each one the name it deserves.
+ *
+ * The name comes from the two places the difference actually lives: the
+ * authored properties that differ inside the family (`data_type`, `domain`,
+ * `input_type` — the same dropdowns Blender draws in the node body), then any
+ * socket type the family does not share. Capture Attribute needs the second
+ * source, because its four variants only carry FACE/POINT/FACE/POINT domains
+ * and the data type exists solely as a socket type.
+ */
+function nameTemplateVariants(drafts: TemplateDraft[]): void {
+  const families = new Map<string, TemplateDraft[]>();
+  for (const draft of drafts) {
+    const members = families.get(draft.family);
+    if (members) members.push(draft);
+    else families.set(draft.family, [draft]);
+  }
+
+  for (const members of families.values()) {
+    // One member per family is the ordinary case: it is simply the Blender entry.
+    if (members.length < 2) continue;
+    const familyLabel = members[0].label;
+
+    const propKeys = new Set(members.flatMap((member) => Object.keys(member.props)));
+    const differing = [...propKeys].filter((key) => {
+      if (NON_VARIANT_PROPS.has(key) || key.startsWith("bl_")) return false;
+      const values = members.map((member) => member.props[key]);
+      return values.every((value) => typeof value === "string") && new Set(values).size > 1;
+    }).sort((a, b) => variantPropRank(a) - variantPropRank(b) || a.localeCompare(b));
+
+    const shared = members
+      .map((member) => new Set(member.socketTypes))
+      .reduce((accumulated, types) => new Set([...accumulated].filter((type) => types.has(type))));
+
+    for (const member of members) {
+      // Sockets lead: the type a variant carries is what a user is choosing
+      // between, and the domain or mode that follows only qualifies it.
+      const facets: string[] = [];
+      const push = (word: string): void => {
+        if (word && !facets.some((facet) => facet.toLowerCase() === word.toLowerCase())) facets.push(word);
+      };
+      for (const type of member.socketTypes) if (!shared.has(type)) push(socketTypeWord(type));
+      for (const key of differing) push(variantWord(String(member.props[key])));
+      member.label = familyLabel;
+      member.variant = facets.join(" · ");
+    }
+
+    // Last resort. Two members can still read alike (identical properties, and
+    // socket types that only differ in count), and an add menu with two rows a
+    // user cannot tell apart is the problem this function exists to remove.
+    const named = members.map((member) => member.variant ?? "");
+    if (named.some((variant) => !variant) || new Set(named).size !== members.length) {
+      for (const member of members) {
+        const counts = `${member.inputTypes.length} in / ${member.outputTypes.length} out`;
+        member.variant = member.variant ? `${member.variant} · ${counts}` : counts;
+      }
+    }
+  }
+}
+
 /**
  * Build an add-node catalog from authored nodes already present in the portable
  * dump. This keeps socket definitions and evaluator support aligned without a
@@ -116,26 +253,43 @@ export function areSocketTypesCompatible(sourceType: string, targetType: string)
  */
 export function graphNodeTemplates(dump: Dump): GraphNodeTemplate[] {
   const seen = new Set<string>();
-  const templates: GraphNodeTemplate[] = [];
+  const drafts: TemplateDraft[] = [];
   for (const groupName of Object.keys(dump.node_groups).sort()) {
     for (const node of dump.node_groups[groupName].nodes) {
       if (node.type === "NodeFrame" || node.type === "NodeGroupInput" || node.type === "NodeGroupOutput") continue;
       const nested = nestedGroupName(node) ?? "";
-      const signature = `${node.type}:${nested}:${node.inputs.map((socket) => socket.type).join(",")}:${node.outputs.map((socket) => socket.type ?? "NodeSocketUndefined").join(",")}`;
+      const inputTypes = node.inputs.map((socket) => socket.type);
+      const outputTypes = node.outputs.map((socket) => socket.type ?? "NodeSocketUndefined");
+      const signature = `${node.type}:${nested}:${inputTypes.join(",")}:${outputTypes.join(",")}`;
       if (seen.has(signature)) continue;
       seen.add(signature);
-      templates.push({
+      drafts.push({
         key: `${groupName}::${node.name}`,
         groupName,
         nodeName: node.name,
         type: node.type,
-        label: node.label?.trim() || String(node.props?.bl_label ?? node.name),
+        // A group node's identity is the tree it instances — Blender titles the
+        // node with it. Falling straight through to `bl_label` printed "Group"
+        // 21 times in the crayon dump's add menu, one row per nested tree.
+        label: node.label?.trim() || nested || String(node.props?.bl_label ?? node.name),
+        family: `${node.type} ${nested}`,
         inputTypes: node.inputs.filter((socket) => socket.enabled !== false && socket.identifier !== "__extend__").map((socket) => socket.type),
         outputTypes: node.outputs.filter((socket) => socket.enabled !== false && socket.identifier !== "__extend__").map((socket) => socket.type ?? "NodeSocketUndefined"),
+        props: node.props ?? {},
+        socketTypes: [...inputTypes, ...outputTypes],
       });
     }
   }
-  return templates.sort((a, b) => a.label.localeCompare(b.label) || a.type.localeCompare(b.type));
+  nameTemplateVariants(drafts);
+  // Family before type, so every variant of one Blender entry stays contiguous
+  // and the menu can draw them under a single heading.
+  return drafts
+    .map(({ props: _props, socketTypes: _socketTypes, ...template }) => template)
+    .sort((a, b) =>
+      a.label.localeCompare(b.label)
+      || a.family.localeCompare(b.family)
+      || (a.variant ?? "").localeCompare(b.variant ?? "")
+      || a.type.localeCompare(b.type));
 }
 
 /**

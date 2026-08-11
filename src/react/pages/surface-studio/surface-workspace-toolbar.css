@@ -21,9 +21,16 @@
   gap: 8px;
 }
 
+/* A group can outgrow the column too, not just the strip: on an 834px tablet
+   the viewport column leaves the toolbar 398px, and Surface needs 426px once a
+   coarse pointer makes the picker's arrows 44px. It wraps for the same reason
+   the strip does — 28px of "Import…" was disappearing behind a scroll whose
+   affordance only exists on phones. The phone path is unaffected: there the
+   strip is sized to its content, so a group is never narrower than itself. */
 .surface-workspace-group {
   display: flex;
   position: relative;
+  flex-wrap: wrap;
   align-items: center;
   gap: 5px;
   min-width: 0;
@@ -53,7 +60,10 @@
   min-height: 28px;
 }
 
-.surface-workspace-reference { min-width: 170px; }
+/* flex-basis rather than width, and no shrinking: as a shrinkable item the
+   picker gave its field 42px on an 834px tablet, where the arrows are 44px
+   each. No height either, or those arrows would overflow a 28px box. */
+.surface-workspace-reference { flex: 0 0 210px; }
 .surface-workspace-target .st-select { min-width: 150px; }
 
 .surface-workspace-import {
@@ -104,6 +114,9 @@
   .surface-workspace-group { padding-top: 22px; }
   /* --st-touch, not 36px: the kit's mobile minimum applies in this file too. */
   .surface-workspace-group :is(button, .st-btn, .st-select) { min-height: var(--st-touch); }
+  /* The picker keeps its arrows on a phone, so it needs the width for three
+     44px targets rather than the 210px a mouse gets. */
+  .surface-workspace-reference { flex-basis: 240px; }
   .surface-workspace-group .st-select { height: var(--st-touch); }
   .surface-workspace-import { height: var(--st-touch); min-height: var(--st-touch); }
   /* --st-touch here too. Pinning Mode to the leading edge (below) made it the

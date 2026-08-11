@@ -1,0 +1,206 @@
+{
+  "390x844": {
+    "hadToggle": true,
+    "toolbar": [
+      "Close ✕",
+      "CHROME CRAYON 3D _4.3_DEC2024",
+      "All node groups",
+      "Frame nodes, frames, and annot",
+      "Undo",
+      "Redo",
+      "Browse reusable graph presets",
+      "Open portable JSON",
+      "Save portable JSON"
+    ],
+    "nodes": {
+      "rendered": 11,
+      "clipped": 4,
+      "stage": {
+        "w": 390,
+        "h": 711
+      }
+    },
+    "controlsOverlap": {
+      "rect": {
+        "x": 15,
+        "y": 665,
+        "w": 46,
+        "h": 134
+      },
+      "overlappingNodes": 1
+    },
+    "attribution": {
+      "rect": {
+        "x": 330,
+        "y": 799,
+        "w": 60,
+        "h": 15
+      },
+      "display": "block",
+      "visibility": "visible",
+      "overlapMinimap": true,
+      "minimap": {
+        "x": 250,
+        "y": 720,
+        "w": 130,
+        "h": 84
+      }
+    },
+    "statusbar": {
+      "spans": [
+        {
+          "text": "69 nodes · 68 links",
+          "clientWidth": 87,
+          "scrollWidth": 126,
+          "truncated": true,
+          "visible": true
+        },
+        {
+          "text": "Select a node · double-click a group to enter",
+          "clientWidth": 173,
+          "scrollWidth": 298,
+          "truncated": true,
+          "visible": true
+        },
+        {
+          "text": "Identifiers mapped deterministically",
+          "clientWidth": 87,
+          "scrollWidth": 238,
+          "truncated": true,
+          "visible": true
+        }
+      ]
+    },
+    "search": {
+      "wrapper": 44,
+      "input": 42
+    },
+    "addButton": null,
+    "longPressPane": {
+      "at": {
+        "x": 281,
+        "y": 259
+      },
+      "addMenu": false,
+      "contextMenu": false,
+      "contextmenuEvents": 0
+    },
+    "longPressNode": {
+      "at": {
+        "x": 329,
+        "y": 468,
+        "id": "CHROME CRAYON 3D _4.3_DEC2024::Join Geometry.001"
+      },
+      "contextMenu": false,
+      "menuItems": []
+    },
+    "logs": [
+      "debug: [vite] connecting...",
+      "debug: [vite] connected.",
+      "info: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    ]
+  },
+  "844x390": {
+    "hadToggle": true,
+    "toolbar": [
+      "Close ✕",
+      "CHROME CRAYON 3D _4.3_DEC2024",
+      "All node groups",
+      "Frame nodes, frames, and annot",
+      "Undo",
+      "Redo",
+      "Browse reusable graph presets",
+      "Open portable JSON",
+      "Save portable JSON"
+    ],
+    "nodes": {
+      "rendered": 10,
+      "clipped": 4,
+      "stage": {
+        "w": 844,
+        "h": 259
+      }
+    },
+    "controlsOverlap": {
+      "rect": {
+        "x": 15,
+        "y": 213,
+        "w": 46,
+        "h": 134
+      },
+      "overlappingNodes": 0
+    },
+    "attribution": {
+      "rect": {
+        "x": 784,
+        "y": 347,
+        "w": 60,
+        "h": 15
+      },
+      "display": "block",
+      "visibility": "visible",
+      "overlapMinimap": true,
+      "minimap": {
+        "x": 704,
+        "y": 268,
+        "w": 130,
+        "h": 84
+      }
+    },
+    "statusbar": {
+      "spans": [
+        {
+          "text": "69 nodes · 68 links",
+          "clientWidth": 200,
+          "scrollWidth": 200,
+          "truncated": false,
+          "visible": true
+        },
+        {
+          "text": "Select a node · double-click a group to enter",
+          "clientWidth": 400,
+          "scrollWidth": 400,
+          "truncated": false,
+          "visible": true
+        },
+        {
+          "text": "Identifiers mapped deterministically",
+          "clientWidth": 200,
+          "scrollWidth": 238,
+          "truncated": true,
+          "visible": true
+        }
+      ]
+    },
+    "search": {
+      "wrapper": 44,
+      "input": 42
+    },
+    "addButton": null,
+    "longPressPane": {
+      "at": {
+        "x": 608,
+        "y": 160
+      },
+      "addMenu": false,
+      "contextMenu": false,
+      "contextmenuEvents": 0
+    },
+    "longPressNode": {
+      "at": {
+        "x": 556,
+        "y": 242,
+        "id": "CHROME CRAYON 3D _4.3_DEC2024::Join Geometry.001"
+      },
+      "contextMenu": false,
+      "menuItems": []
+    },
+    "logs": [
+      "debug: [vite] connecting...",
+      "debug: [vite] connected.",
+      "info: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    ]
+  },
+  "addMenu": null,
+  "shiftA": false
+}

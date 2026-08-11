@@ -15,9 +15,21 @@ import test from "node:test";
 const repo = new URL("../../../", import.meta.url);
 const read = (path: string): string => readFileSync(new URL(path, repo), "utf8");
 
-const kit = read("src/react/studio/studio-kit.css");
-const navCss = read("src/react/studio/studio-nav.css");
-const shellCss = read("src/react/studio/studio-shell.css");
+/**
+ * CSS with its comments stripped. These assertions match source text, and this
+ * file's own comments explain rules by quoting them — so an assertion looking
+ * for a declaration would happily match a sentence describing it, in either
+ * direction. A comment reading "the phone path is min-width: max-content"
+ * failed the check that no such rule exists outside the mobile block; a comment
+ * mentioning flex-wrap would just as easily have satisfied a check that it
+ * does. Rules are matched against rules.
+ */
+const rules = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
+
+const kitRaw = read("src/react/studio/studio-kit.css");
+const kit = rules(kitRaw);
+const navCss = rules(read("src/react/studio/studio-nav.css"));
+const shellCss = rules(read("src/react/studio/studio-shell.css"));
 const shell = read("src/react/studio/StudioShell.tsx");
 const chrome = read("src/react/studio/StudioChrome.tsx");
 const menu = read("src/react/studio/StudioMenu.tsx");
@@ -26,7 +38,7 @@ const pageRuntime = read("src/react/page-runtime.ts");
 const cameraFit = read("src/camera-fit.ts");
 const building = read("src/main.ts");
 const buildingPage = read("src/react/pages/BuildingPage.tsx");
-const paintToolbarCss = read("src/react/pages/surface-studio/surface-workspace-toolbar.css");
+const paintToolbarCss = rules(read("src/react/pages/surface-studio/surface-workspace-toolbar.css"));
 const gallery = read("src/dojo-gallery.ts");
 const vase = read("src/vase-compare.ts");
 
@@ -128,7 +140,9 @@ test("the node-graph FAB clears the status bar", () => {
 
 // C3 —— unobservable headlessly: no emulator reports a notch inset.
 test("the chrome strips honour horizontal safe-area insets", () => {
-  const mobile = kit.slice(kit.indexOf("/* ------------------------------------------------------------------ mobile */"));
+  // Sliced from the raw text — the section boundary IS a comment — then
+  // stripped, so the assertions below still match rules rather than prose.
+  const mobile = rules(kitRaw.slice(kitRaw.indexOf("------------------ mobile */")));
   for (const selector of [".st-nav", ".st-toolbar, .st-statusbar"]) {
     const rule = mobile.match(new RegExp(`\\${selector.split(",")[0]}[^{]*\\{[^}]*env\\(safe-area-inset-left`));
     assert.ok(rule, `${selector} must pad against the leading inset`);
@@ -144,7 +158,7 @@ test("full-height mobile surfaces are sized in dvh with a vh fallback", () => {
     kit.indexOf("62vh") < kit.indexOf("62dvh"),
     "the vh declaration must come first or it would win over dvh",
   );
-  assert.match(read("src/react/studio/studio-menu.css"), /max-height:86dvh/);
+  assert.match(rules(read("src/react/studio/studio-menu.css")), /max-height:86dvh/);
 });
 
 // C5 —— the open sheet left ~200px of a viewport it was editing.
@@ -153,7 +167,7 @@ test("the sheet has a peek detent between collapsed and open", () => {
   assert.match(kit, /\.st-sheet\.is-peek \{ height: calc\(34dvh/);
   // Anything that hides for an open sheet has to hide for a peeking one.
   assert.match(shellCss, /:has\(\.st-sheet:is\(\.is-open, \.is-peek\)\) \.st-viewport \.graph-toggle/);
-  assert.match(read("src/react/pages/surface-painter.css"), /\.st-sheet:is\(\.is-open, \.is-peek\)\)/);
+  assert.match(rules(read("src/react/pages/surface-painter.css")), /\.st-sheet:is\(\.is-open, \.is-peek\)\)/);
 });
 
 // D1 —— two routes of ten filled the nav's chip track.
@@ -255,8 +269,8 @@ test("the fill percentage is clamped and never divides by zero", async () => {
 // not on width: an 834px tablet in portrait answers "is this a finger?" the
 // same way a phone does.
 test("the overlays size their controls for touch, by pointer not by width", () => {
-  const library = read("src/react/blend-studio/asset-library.css");
-  const menuCss = read("src/react/studio/studio-menu.css");
+  const library = rules(read("src/react/blend-studio/asset-library.css"));
+  const menuCss = rules(read("src/react/studio/studio-menu.css"));
   for (const [name, css] of [["asset library", library], ["tool menu", menuCss]] as const) {
     const coarse = css.match(/@media \(pointer: coarse\)\s*\{[\s\S]*?\n\}/);
     assert.ok(coarse, `${name} must size its controls under (pointer: coarse)`);
@@ -280,4 +294,100 @@ test("a button row of one spans the row", () => {
 test("the phone breadcrumb spends its width on the tool name", () => {
   const mobile = navCss.slice(navCss.indexOf("@media (max-width: 820px)"));
   assert.match(mobile, /\.st-crumb-section, \.st-crumb i \{ display: none; \}/);
+});
+
+/* -------------------------------------------------------------- dropdowns */
+/* A second pass over the four routes that carry a `<select>`. */
+
+// Two of the runtime's settings had no control anywhere: the React inspector
+// replaced the lil-gui panel, the page renders that panel `hidden`, and tone
+// mapping and the environment map were only ever in it.
+test("the building's enumerated atmosphere settings have studio controls", () => {
+  assert.match(buildingPage, /name: "toneMapping", label: "Tone mapping"/);
+  assert.match(buildingPage, /name: "environmentMap", label: "Environment map"/);
+  assert.match(buildingPage, /className="st-select"/);
+  assert.match(building, /case "toneMapping": env\.settings\.toneMapping/);
+  assert.match(building, /case "environmentMap": env\.setEnvironment/);
+  // The legacy panel stays the holding pen it is documented to be.
+  assert.match(buildingPage, /id="building-gui-dock" className="building-gui-dock" hidden/);
+});
+
+// Neither list is fixed: the LUT joins it when the profile validates and the
+// EXR when it parses, both long after the inspector has rendered its rows.
+test("the atmosphere option lists are published, not read once", () => {
+  const environment = read("src/environment.ts");
+  assert.match(building, /env\.setChoicesHandler/);
+  assert.match(buildingPage, /tool\.subscribeAtmosphereOptions\(/);
+  assert.match(environment, /setChoicesHandler\(handler: \(\) => void\)/);
+  // The EXR probe used to live in addGui(), which would have made the
+  // inspector's choice depend on a lil-gui panel existing.
+  assert.match(environment, /private probeBlenderEnvironment\(\)/);
+  assert.doesNotMatch(
+    environment.slice(environment.indexOf("  addGui(")),
+    /loadBlenderStudioEnvironment/,
+    "the availability probe must not be tied to the legacy panel",
+  );
+});
+
+// "Base object" was a .st-section-title sibling, not a label: the combobox
+// announced 105 options under no name at all.
+test("the typewriter's base object names its own control", () => {
+  const page = read("src/react/pages/TypewriterPage.tsx");
+  assert.doesNotMatch(page, /<select id="typewriter-base-select"/);
+  assert.match(page, /<SearchableSelect id="typewriter-base-select" label="Base object"/);
+  assert.match(read("src/react/studio/SearchableSelect.tsx"), /aria-label=\{label\}/);
+});
+
+// The same 104-entry catalogue was fronted three ways: a 105-option select on
+// /typewriter, another on /paint, and the searchable field /chrome-assets had
+// already got right.
+test("the shape catalogue is fronted by one picker, not three", () => {
+  const paintToolbar = read("src/react/pages/surface-studio/SurfaceWorkspaceToolbar.tsx");
+  for (const path of [
+    "src/react/pages/TypewriterPage.tsx",
+    "src/react/pages/ChromeAssetsPage.tsx",
+    "src/react/pages/surface-studio/SurfaceWorkspaceToolbar.tsx",
+  ]) {
+    assert.match(read(path), /<SearchableSelect/, `${path} must use the shared picker`);
+  }
+  assert.doesNotMatch(paintToolbar, /references\.map\(\(reference\) => <option/);
+  // The two imperative runtimes own their catalogue, so they bind the same
+  // helper the component binds rather than reimplementing the matching.
+  assert.match(read("src/typewriter.ts"), /bindSearchableSelect\(baseSelect/);
+  assert.match(read("src/chrome-assets.ts"), /bindSearchableSelect\(select/);
+  assert.match(kit, /\.st-searchable \{/);
+});
+
+// The field shows a title but every tool stores an id — the typewriter's
+// loader, /paint's reference lookup and the catalog's ?asset= all key on it.
+test("the picker's value stays the id the runtimes read", async () => {
+  const { matchSearchableOption, stepSearchableOption } = await import("./searchable-select.js");
+  const options = [
+    { value: "", label: "None · text only" },
+    { value: "bin-generator", label: "Recursive Bin Generator · Add-on" },
+    { value: "chrome-crayon", label: "Chrome Crayon · Study" },
+  ];
+  assert.equal(matchSearchableOption(options, "Chrome Crayon · Study")?.value, "chrome-crayon");
+  assert.equal(matchSearchableOption(options, "  chrome-crayon ")?.value, "chrome-crayon");
+  // A half-typed word must not commit the entry that happens to start with it.
+  assert.equal(matchSearchableOption(options, "Chrome"), undefined);
+  // Clearing the field is how a base object is removed, so "" is a real value.
+  assert.equal(matchSearchableOption(options, "")?.value, "");
+  assert.equal(stepSearchableOption(options, "", -1)?.value, "chrome-crayon", "the arrows wrap");
+  assert.equal(stepSearchableOption(options, "chrome-crayon", 1)?.value, "");
+  assert.equal(stepSearchableOption([], "", 1), undefined);
+});
+
+// A tablet keeps the docks, so every touch rule written against .st-sheet
+// misses it: the picker's arrows measured 28px on an 834px iPad.
+test("the picker is touch-sized by pointer, not by width", () => {
+  const coarse = kit.match(/@media \(pointer: coarse\) \{[\s\S]*?\n\}/);
+  assert.ok(coarse, "studio-kit.css must size dock controls under (pointer: coarse)");
+  assert.match(coarse[0], /\.st-searchable \.st-btn \{ width: var\(--st-touch\); height: var\(--st-touch\); \}/);
+  assert.match(coarse[0], /\.st-dock :is\(\.st-select, \.st-input\) \{ height: var\(--st-touch\); \}/);
+  // A fixed height on the wrapper would clip those 44px controls back to 28.
+  assert.doesNotMatch(paintToolbarCss, /\.surface-workspace-reference \{[^}]*height:/s);
+  // And 44px arrows make the Surface group wider than an 834px tablet's
+  // toolbar column, so the group wraps for the same reason the strip does.
+  assert.match(paintToolbarCss, /\.surface-workspace-group \{[^}]*flex-wrap: wrap/s);
 });

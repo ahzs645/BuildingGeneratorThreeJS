@@ -10,7 +10,9 @@ import GUI from "lil-gui";
 import { defaultParams, type BuildingParams } from "./params";
 import { generateBuilding } from "./generator";
 import { Kit, batchedInstances } from "./kit";
-import { Environment, type Bounds } from "./environment";
+import {
+  Environment, type Bounds, type EnvironmentMode, type ToneMappingMode,
+} from "./environment";
 import { PostFX } from "./postfx";
 import { createSnow } from "./snow";
 import { createSnowAccumUniforms, createSnowShellMaterial } from "./snowAccum";
@@ -30,6 +32,8 @@ export type BuildingParamsListener = (params: BuildingParams) => void;
 export type BuildingStatus = { state: "loading" | "ready" | "error"; message: string };
 
 export type BuildingAtmosphere = {
+  toneMapping: ToneMappingMode;
+  environmentMap: EnvironmentMode;
   exposure: number;
   envIntensity: number;
   fog: boolean;
@@ -51,10 +55,22 @@ export type BuildingAtmosphere = {
 };
 
 /**
- * The building runtime. The 18 generator parameters are owned by the studio
- * dock (BuildingPage) rather than by lil-gui, so the tool exposes them here;
- * the atmosphere folders — environment, snow, rain, cinematic — stay in a
- * lil-gui panel, docked into the shell's inspector column.
+ * The two enumerated atmosphere settings, whose choices are not fixed: the
+ * Blender LUT and the Blender studio EXR each join the list only once their
+ * asset has been fetched and parsed, which is after the inspector has already
+ * rendered. Hence a published list rather than a constant.
+ */
+export type BuildingAtmosphereOptions = {
+  toneMapping: readonly ToneMappingMode[];
+  environmentMap: readonly EnvironmentMode[];
+};
+
+/**
+ * The building runtime. The 18 generator parameters and the atmosphere rig are
+ * owned by the studio docks (BuildingPage) rather than by lil-gui, so the tool
+ * exposes them here; the deep folders the inspector does not mirror — snowfall
+ * and wetness detail, depth of field, grading — stay in the lil-gui panel that
+ * mounts into the (hidden) legacy dock.
  */
 export type BuildingToolHandle = ToolHandle & {
   getParams(): BuildingParams;
@@ -62,7 +78,9 @@ export type BuildingToolHandle = ToolHandle & {
   getEmissive(): number;
   setEmissive(value: number): void;
   getAtmosphere(): BuildingAtmosphere;
-  setAtmosphere(name: keyof BuildingAtmosphere, value: number | boolean): void;
+  setAtmosphere(name: keyof BuildingAtmosphere, value: number | boolean | string): void;
+  getAtmosphereOptions(): BuildingAtmosphereOptions;
+  subscribeAtmosphereOptions(listener: (options: BuildingAtmosphereOptions) => void): () => void;
   subscribe(listener: BuildingParamsListener): () => void;
   subscribeStatus(listener: (status: BuildingStatus) => void): () => void;
   /** Re-solve the framing from the current bounds, keeping the orbit angle. */
@@ -483,6 +501,18 @@ export function createTool(): BuildingToolHandle {
   const publishParams = (): void => {
     for (const listener of paramListeners) listener({ ...params });
   };
+  // Tone mapping and the environment map are the two atmosphere settings whose
+  // choices arrive late — the LUT after post.loadBlenderColorProfile() resolves,
+  // the EXR after it parses — so the inspector is told when the lists change
+  // instead of reading them once as it mounts.
+  const optionsListeners = new Set<(options: BuildingAtmosphereOptions) => void>();
+  const atmosphereOptions = (): BuildingAtmosphereOptions => ({
+    toneMapping: env.toneMappingOptions(),
+    environmentMap: env.environmentOptions(),
+  });
+  env.setChoicesHandler(() => {
+    for (const listener of optionsListeners) listener(atmosphereOptions());
+  });
   const statusListeners = new Set<(status: BuildingStatus) => void>();
   let status: BuildingStatus = { state: "loading", message: "Loading asset kit…" };
   const publishStatus = (next: BuildingStatus): void => {
@@ -746,6 +776,8 @@ export function createTool(): BuildingToolHandle {
       kit.setFloorEmissive(value);
     },
     getAtmosphere: () => ({
+      toneMapping: env.settings.toneMapping,
+      environmentMap: env.settings.environment,
       exposure: env.settings.exposure,
       envIntensity: env.settings.envIntensity,
       fog: env.settings.fog,
@@ -768,6 +800,10 @@ export function createTool(): BuildingToolHandle {
     setAtmosphere(name, value) {
       const numeric = Number(value);
       switch (name) {
+        // refresh() is what re-applies the display transform; the LUT choice
+        // also has to reach PostFX, which it does through the profile handler.
+        case "toneMapping": env.settings.toneMapping = value as ToneMappingMode; env.refresh(); break;
+        case "environmentMap": env.setEnvironment(value as EnvironmentMode); break;
         case "exposure": env.settings.exposure = numeric; env.refresh(); break;
         case "envIntensity": env.settings.envIntensity = numeric; env.refresh(); break;
         case "fog": env.settings.fog = Boolean(value); env.refresh(); break;
@@ -789,6 +825,11 @@ export function createTool(): BuildingToolHandle {
       }
       gui.controllersRecursive().forEach((controller) => controller.updateDisplay());
     },
+    getAtmosphereOptions: atmosphereOptions,
+    subscribeAtmosphereOptions(listener) {
+      optionsListeners.add(listener);
+      return () => optionsListeners.delete(listener);
+    },
     subscribe(listener) {
       paramListeners.add(listener);
       return () => paramListeners.delete(listener);
@@ -803,6 +844,7 @@ export function createTool(): BuildingToolHandle {
       disposed = true;
       paramListeners.clear();
       statusListeners.clear();
+      optionsListeners.clear();
 
       // stop the render loop before tearing anything down
       renderer.setAnimationLoop(null);

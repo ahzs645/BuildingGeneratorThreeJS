@@ -59,6 +59,7 @@ export class Environment {
   private toneMappingController: Controller | null = null;
   private environmentController: Controller | null = null;
   private onBlenderProfileChange: (enabled: boolean) => void = () => {};
+  private onChoicesChange: () => void = () => {};
   private ambientOcclusionEnabled = false;
   private disposed = false;
 
@@ -100,6 +101,7 @@ export class Environment {
     scene.add(this.fill);
     scene.add(this.rim, this.rim.target);
     scene.add(this.ambient);
+    this.probeBlenderEnvironment();
   }
 
   /** fit the light positions + shadow frustum around the current building bounds */
@@ -156,6 +158,16 @@ export class Environment {
     this.applyToneMapping();
   }
 
+  /**
+   * Both option lists grow (or shrink) after their asset has been fetched and
+   * parsed, which is long after a React inspector has rendered its rows — so a
+   * caller that mirrors these choices outside lil-gui subscribes rather than
+   * reading `toneMappingOptions()` once.
+   */
+  setChoicesHandler(handler: () => void): void {
+    this.onChoicesChange = handler;
+  }
+
   /** Add/remove the LUT choice only after its asset has validated. */
   setBlenderProfileAvailable(available: boolean): void {
     this.blenderProfileAvailable = available;
@@ -165,6 +177,13 @@ export class Environment {
       this.applyToneMapping();
       this.toneMappingController?.updateDisplay();
     }
+    this.onChoicesChange();
+  }
+
+  /** Select an environment map. Loading the EXR is deferred until it is asked for. */
+  setEnvironment(mode: EnvironmentMode): void {
+    this.settings.environment = mode;
+    void this.applyEnvironment();
   }
 
   /** GTAO supplies local crevice shading, so trim the flat ambient fill by 20%. */
@@ -173,16 +192,33 @@ export class Environment {
     this.ambient.intensity = enabled ? AO_AMBIENT_INTENSITY : BASE_AMBIENT_INTENSITY;
   }
 
-  private toneMappingOptions(): ToneMappingMode[] {
+  toneMappingOptions(): ToneMappingMode[] {
     const modes: ToneMappingMode[] = ["AgX", "ACES", "None"];
     if (this.blenderProfileAvailable) modes.push("Blender Standard (LUT)");
     return modes;
   }
 
-  private environmentOptions(): EnvironmentMode[] {
+  environmentOptions(): EnvironmentMode[] {
     const modes: EnvironmentMode[] = ["Studio (Room)"];
     if (this.blenderEnvironmentAvailable) modes.push("Blender studio EXR");
     return modes;
+  }
+
+  /**
+   * Parsing the bundled EXR is the availability check: a missing or invalid
+   * asset never becomes a visible choice. It runs from the constructor rather
+   * than from addGui() because the choice is now offered in the studio
+   * inspector too, and that must not depend on a lil-gui panel existing.
+   */
+  private probeBlenderEnvironment(): void {
+    void loadBlenderStudioEnvironment().then(() => {
+      if (this.disposed) return;
+      this.blenderEnvironmentAvailable = true;
+      this.environmentController?.options(this.environmentOptions());
+      this.onChoicesChange();
+    }).catch(() => {
+      // Graceful absence: RoomEnvironment remains the only visible choice.
+    });
   }
 
   private applyToneMapping(): void {
@@ -221,6 +257,7 @@ export class Environment {
       this.scene.environment = this.roomEnvironment;
       this.environmentController?.options(this.environmentOptions());
       this.environmentController?.updateDisplay();
+      this.onChoicesChange();
     }
   }
 
@@ -250,16 +287,6 @@ export class Environment {
     f.add(this.settings, "fogDensity", 0, 0.03, 0.0005).name("fog density")
       .onChange(() => this.refresh());
     f.close();
-
-    // Parsing the bundled EXR is the availability check. A missing or invalid
-    // asset never becomes a visible GUI option.
-    void loadBlenderStudioEnvironment().then(() => {
-      if (this.disposed) return;
-      this.blenderEnvironmentAvailable = true;
-      this.environmentController?.options(this.environmentOptions());
-    }).catch(() => {
-      // Graceful absence: RoomEnvironment remains the only visible choice.
-    });
   }
 
   dispose(): void {

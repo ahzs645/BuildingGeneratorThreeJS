@@ -34,6 +34,7 @@ import {
   type GraphNodeTemplate,
   type GraphSocket,
 } from "../../geometry-nodes/graph-model";
+import { nodePropertyControls, type NodePropertyControl } from "../../geometry-nodes/node-property-catalog";
 import { documentBounds } from "../../geometry-nodes/annotations";
 import {
   resolveEditorRootGroup,
@@ -50,6 +51,7 @@ type NodeCardData = {
   width: number;
   searchMatch: boolean;
   onSocketChange: (nodeId: string, socketId: string, value: unknown) => void;
+  onPropChange: (nodeId: string, prop: string, value: string) => void;
   /**
    * Mobile-only: opens the node's nested group from a single tap on the ◆
    * marker. Desktop keeps double-click as the sole entry (undefined here), so
@@ -86,6 +88,54 @@ let graphClipboard: GraphClipboard | null = null;
 
 /** Drafts above this serialized size are not persisted — they exceed typical localStorage quotas. */
 const DRAFT_PERSIST_MAX_CHARS = 4 * 1024 * 1024;
+
+/**
+ * Popup footprints, kept in step with `.graph-add-menu` / `.graph-context-menu`
+ * in crayon-compare.css. Only used to keep a menu on screen: a menu opened from
+ * the right edge of a 390px phone would otherwise render 190px off it, and the
+ * `position: fixed` popups have nothing to scroll them back.
+ */
+const ADD_MENU_BOX = { width: 280, height: 420 };
+const CONTEXT_MENU_BOX = { width: 200, height: 250 };
+
+/**
+ * Rows the add menu draws before it stops. It used to be 60, which was under
+ * the crayon dump's 114 templates: the alphabetical tail was unreachable except
+ * through the search field. Grouped variants make the list shorter to read, and
+ * 120 plain buttons in a 350px scroller costs nothing to render.
+ */
+const ADD_MENU_MAX_ROWS = 120;
+
+/** How long a finger must rest before the press becomes a menu, and how far it may stray. */
+const LONG_PRESS_MS = 480;
+const LONG_PRESS_SLOP_PX = 12;
+
+/** `fitView` padding for the working-set framing, and the zoom floor it prefers. */
+const WORKING_SET_PADDING = .28;
+const WORKING_SET_MIN_ZOOM = .62;
+const WORKING_SET_MAX_ZOOM = .82;
+
+function clampMenuToViewport(x: number, y: number, box: { width: number; height: number }): { x: number; y: number } {
+  const margin = 6;
+  const height = Math.min(box.height, window.innerHeight * .7);
+  return {
+    x: Math.max(margin, Math.min(x, window.innerWidth - box.width - margin)),
+    y: Math.max(margin, Math.min(y, window.innerHeight - height - margin)),
+  };
+}
+
+/**
+ * The zoom `fitView` would pick for `bounds` in a `width`x`height` stage, before
+ * it clamps into [minZoom, maxZoom]. Mirrors `getViewportForBounds` in
+ * @xyflow/system (padding is a fraction of the stage, halved per side) so the
+ * caller can lower the floor to exactly what fits instead of guessing.
+ */
+function fitZoomForBounds(bounds: { width: number; height: number }, width: number, height: number, padding: number): number {
+  if (bounds.width <= 0 || bounds.height <= 0 || width <= 0 || height <= 0) return Number.POSITIVE_INFINITY;
+  const insetX = Math.floor((width - width / (1 + padding)) * .5) * 2;
+  const insetY = Math.floor((height - height / (1 + padding)) * .5) * 2;
+  return Math.min((width - insetX) / bounds.width, (height - insetY) / bounds.height);
+}
 
 const SOCKET_COLORS: Record<string, string> = {
   NodeSocketGeometry: "#00d6a3",
@@ -160,6 +210,30 @@ function SocketRow({ socket, nodeId, onSocketChange }: { socket: GraphSocket; no
   </div>;
 }
 
+/**
+ * Blender draws a node's enum properties as unlabelled dropdowns between the
+ * output and input sockets, and the label would not fit anyway — the default
+ * node is 140px wide. The property name stays reachable through the tooltip.
+ */
+function NodePropertyRow({ control, nodeId, onPropChange }: { control: NodePropertyControl; nodeId: string; onPropChange: NodeCardData["onPropChange"] }): React.JSX.Element {
+  const stop = (event: React.SyntheticEvent): void => event.stopPropagation();
+  return <div className="blender-prop-row">
+    {/* nodrag/nowheel and the pointer-down guard are load-bearing: without them
+        React Flow claims the gesture and drags the node instead of opening the
+        menu, and a scroll over an open menu zooms the canvas. */}
+    <select
+      className="node-prop nodrag nowheel"
+      aria-label={`${control.label} · ${control.prop}`}
+      title={`${control.label} · ${control.prop}`}
+      value={control.value}
+      onPointerDown={stop}
+      onWheel={stop}
+      onClick={stop}
+      onChange={(event) => onPropChange(nodeId, control.prop, event.target.value)}
+    >{control.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+  </div>;
+}
+
 function NodeCard({ data }: NodeProps<Node<NodeCardData>>): React.JSX.Element {
   const node = data.node;
   if (node.kind === "reroute") return <div className="blender-reroute" title={`Reroute · ${node.sourceName}`}>
@@ -168,6 +242,7 @@ function NodeCard({ data }: NodeProps<Node<NodeCardData>>): React.JSX.Element {
   </div>;
   const inputs = node.inputs.filter((socket) => (socket.visible || socket.linked) && socket.identifier !== "__extend__");
   const outputs = node.outputs.filter((socket) => (socket.visible || socket.linked) && socket.identifier !== "__extend__");
+  const properties = nodePropertyControls(node.sourceType, node.properties);
   return <div className={`blender-node tone-${nodeTone(node.sourceType)} ${node.muted ? "muted" : ""} ${data.searchMatch ? "search-match" : ""}`} style={{ width: data.width, ...(node.color ? { "--node-custom-color": node.color } as React.CSSProperties : {}) }}>
     <div className="blender-node-title"><span>{node.label}</span>{node.nestedGroup && (data.onOpenNestedGroup
       ? <i
@@ -191,6 +266,7 @@ function NodeCard({ data }: NodeProps<Node<NodeCardData>>): React.JSX.Element {
     </div>}
     {!node.hidden && <div className="blender-node-body">
       <div className="socket-list outputs">{outputs.map((socket) => <SocketRow key={socket.id} socket={socket} nodeId={node.id} onSocketChange={data.onSocketChange} />)}</div>
+      <div className="prop-list">{properties.map((control) => <NodePropertyRow key={control.prop} control={control} nodeId={node.id} onPropChange={data.onPropChange} />)}</div>
       <div className="socket-list inputs">{inputs.map((socket) => <SocketRow key={socket.id} socket={socket} nodeId={node.id} onSocketChange={data.onSocketChange} />)}</div>
     </div>}
   </div>;
@@ -269,6 +345,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
   const [inkVisible, setInkVisible] = useState(true);
   const fileInput = useRef<HTMLInputElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const pendingDraft = useRef<{ key: string; dump: Dump } | null>(null);
   const draftTimer = useRef<number | null>(null);
   const draftWarned = useRef({ oversize: false, failed: false });
@@ -276,6 +353,11 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
   const connecting = useRef<PendingConnect | null>(null);
   const reconnectSucceeded = useRef(false);
   const lastPointer = useRef({ x: 0, y: 0 });
+  /** False until a pointer has actually been over the stage, so ⇧A can fall back to its centre. */
+  const pointerSeen = useRef(false);
+  const longPress = useRef<{ timer: number; x: number; y: number } | null>(null);
+  /** Set when a long press opened a menu, so the release that ends it does not close it again. */
+  const swallowPaneClick = useRef(false);
   const dumpRef = useRef<Dump | null>(null);
   dumpRef.current = dump;
   const selection: GeometryNodesEditorSelection = source
@@ -321,6 +403,21 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     const rawNode = editorNode && next.node_groups[groupName]?.nodes.find((node) => node.name === editorNode.sourceName);
     const rawSocket = rawNode?.inputs.find((socket) => socket.identifier === editorSocket?.identifier && (socket.idx === editorSocket.index || socket.idx === undefined));
     if (rawSocket) rawSocket.value = value;
+  }, { group: groupName }), [commit, groupName]);
+
+  /**
+   * Node properties take the same route as socket values — one `commit`, so a
+   * dropdown change lands on the undo stack, marks the graph dirty, saves into
+   * the draft and re-evaluates exactly like a wire or a number does. The
+   * evaluator reads `node.props` at evaluation time, so nothing else is needed
+   * to make the change take effect.
+   */
+  const changeProp = useCallback((nodeId: string, prop: string, value: string) => commit((next) => {
+    const currentGraph = dumpGroupToEditorGraph(next, groupName);
+    const editorNode = currentGraph.nodes.find((node) => node.id === nodeId);
+    const rawNode = editorNode && next.node_groups[groupName]?.nodes.find((node) => node.name === editorNode.sourceName);
+    if (!rawNode) return;
+    rawNode.props = { ...rawNode.props, [prop]: value };
   }, { group: groupName }), [commit, groupName]);
 
   const openNestedGroup = useCallback((node: GraphNode): void => {
@@ -492,7 +589,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
         type: "blenderNode",
         position: { x: node.position.x * scale, y: node.position.y * scale },
         parentId: node.parentId,
-        data: { node, width: Math.max(40, Math.min(1200, node.width)), searchMatch: false, onSocketChange: changeSocket, onOpenNestedGroup: isMobile ? openNestedGroup : undefined },
+        data: { node, width: Math.max(40, Math.min(1200, node.width)), searchMatch: false, onSocketChange: changeSocket, onPropChange: changeProp, onOpenNestedGroup: isMobile ? openNestedGroup : undefined },
         zIndex: 2,
       };
     });
@@ -509,7 +606,7 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
       style: { stroke: socketColor(link.socketType), strokeWidth: link.socketType === "NodeSocketGeometry" ? 2.8 : 1.7, opacity: link.muted ? .35 : .9 },
     })));
     setSelected(null);
-  }, [dump, groupName, changeSocket, isMobile, openNestedGroup]);
+  }, [dump, groupName, changeSocket, changeProp, isMobile, openNestedGroup]);
 
   useEffect(() => {
     const query = search.trim().toLowerCase();
@@ -554,13 +651,32 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
       ? anchorNode?.outputs.find((socket) => socket.id === pending.handleId)
       : anchorNode?.inputs.find((socket) => socket.id === pending?.handleId);
     return templates.filter((template) => {
-      if (query && !`${template.label} ${template.type}`.toLowerCase().includes(query)) return false;
+      if (query && !`${template.label} ${template.variant ?? ""} ${template.type}`.toLowerCase().includes(query)) return false;
       if (!pending || !anchorSocket) return true;
       return pending.handleType === "source"
         ? template.inputTypes.some((type) => areSocketTypesCompatible(anchorSocket.type, type))
         : template.outputTypes.some((type) => areSocketTypesCompatible(type, anchorSocket.type));
-    }).slice(0, 60);
+    }).slice(0, ADD_MENU_MAX_ROWS);
   }, [addMenu?.pending, addQuery, graph?.nodes, templates]);
+  /**
+   * Consecutive templates that are one Blender Add entry. `graphNodeTemplates`
+   * already sorts a family contiguously, so the menu only has to notice where
+   * the family key changes — no second pass over the catalog, and the grouping
+   * survives filtering because the filter preserves order.
+   */
+  const templateFamilies = useMemo(() => {
+    const families: { key: string; label: string; varied: boolean; templates: GraphNodeTemplate[] }[] = [];
+    for (const template of visibleTemplates) {
+      const current = families[families.length - 1];
+      if (current && current.key === template.family) {
+        current.templates.push(template);
+        current.varied ||= Boolean(template.variant);
+      } else {
+        families.push({ key: template.family, label: template.label, varied: Boolean(template.variant), templates: [template] });
+      }
+    }
+    return families;
+  }, [visibleTemplates]);
 
   const focusNode = (node: GraphNode): void => {
     const flowNode = flow?.getNode(node.id);
@@ -595,9 +711,33 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     const workingSet = new Set(graphWorkingSetNodeIds(graph, 12));
     const focusNodes = nodes.filter((node) => workingSet.has(node.id));
     if (!focusNodes.length) return false;
-    void flow.fitView({ nodes: focusNodes, duration, padding: .28, minZoom: .62, maxZoom: .82 });
+    // The zoom floor is a preference, not a constraint. `fitView` clamps its
+    // computed zoom into [minZoom, maxZoom] and then simply crops whatever no
+    // longer fits, so a floor tuned against the ~900x250 desktop node dock cut
+    // 4 of the 11 nodes it rendered off the edges of the 390x711 mobile
+    // overlay. Blender opens a tree at a working scale rather than shrinking it
+    // into view, which is what .62 is for — but only where the stage can hold
+    // the set at that scale. Where it cannot, framing the set beats cropping it.
+    const stage = stageRef.current?.getBoundingClientRect();
+    const fitted = stage
+      ? fitZoomForBounds(flow.getNodesBounds(focusNodes), stage.width, stage.height, WORKING_SET_PADDING)
+      : Number.POSITIVE_INFINITY;
+    void flow.fitView({
+      nodes: focusNodes,
+      duration,
+      padding: WORKING_SET_PADDING,
+      minZoom: Math.min(WORKING_SET_MIN_ZOOM, fitted),
+      maxZoom: WORKING_SET_MAX_ZOOM,
+    });
     return true;
   }, [flow, graph, nodes]);
+  // `frameWorkingSet` re-identifies on every node change (a drag is a node
+  // change), so anything long-lived reads it through a ref instead of listing
+  // it as a dependency and tearing its subscription down mid-drag.
+  const frameWorkingSetRef = useRef(frameWorkingSet);
+  frameWorkingSetRef.current = frameWorkingSet;
+  const annotatedRef = useRef(false);
+  annotatedRef.current = Boolean(graph?.annotationLayers.length);
 
   useEffect(() => {
     if (!flow || !graph || !nodes.length || pendingFocus || framedGroup.current === groupName) return;
@@ -624,6 +764,45 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
       window.removeEventListener(config.events.resize, reframe);
     };
   }, [config.events.resize, frameWorkingSet, graph?.annotationLayers.length]);
+
+  /**
+   * Re-frame whenever the stage itself changes shape.
+   *
+   * The host's resize event cannot cover the phone case. `CrayonComparePage`
+   * does dispatch `crayon-graph-resize` when the overlay opens, but it fires it
+   * in the same frame — and on mobile the editor is a `lazy()` chunk that has
+   * not resolved yet, so this listener does not exist to hear it. The overlay
+   * therefore kept whatever framing React Flow computed from the first box it
+   * measured. Observing the stage catches that, plus device rotation and the
+   * desktop dock's own maximize, without the host announcing anything.
+   *
+   * The 5% threshold is what separates a layout change from an on-screen
+   * keyboard nudging the visual viewport while somebody is mid-pan.
+   */
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || !flow) return;
+    let previous: { width: number; height: number } | null = null;
+    let frame = 0;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (!width || !height) return;
+      const reshaped = !previous
+        || Math.abs(width - previous.width) > previous.width * .05
+        || Math.abs(height - previous.height) > previous.height * .05;
+      previous = { width, height };
+      // Annotated graphs open on their authored view centre, not a fitted
+      // working set; re-fitting them would throw the authored framing away.
+      if (!reshaped || annotatedRef.current) return;
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => frameWorkingSetRef.current(0));
+    });
+    observer.observe(stage);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [flow]);
 
   useEffect(() => {
     if (!pendingFocus || pendingFocus.groupName !== groupName || !graph) return;
@@ -704,23 +883,35 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
       ? { nodeId: params.nodeId, handleId: params.handleId, handleType: params.handleType }
       : null;
   };
+  /**
+   * Every route into the add menu — right-click, ⇧A, the mobile Add button, a
+   * long press, and dropping a wire on empty pane — lands here. The node is
+   * created at the point the user indicated; only the popup box is clamped, so
+   * a menu opened near an edge stays on screen without moving the drop target.
+   */
+  const openAddMenuAt = (clientX: number, clientY: number, pending?: PendingConnect): void => {
+    const position = flow?.screenToFlowPosition({ x: clientX, y: clientY }) ?? { x: 0, y: 0 };
+    const spot = clampMenuToViewport(clientX, clientY, ADD_MENU_BOX);
+    setAddQuery("");
+    setContextMenu(null);
+    setAddMenu({ x: spot.x, y: spot.y, flowX: position.x, flowY: position.y, pending });
+  };
+  /** Where ⇧A and the Add button aim when no pointer has been over the stage. */
+  const stageCentre = (): { x: number; y: number } => {
+    const box = stageRef.current?.getBoundingClientRect();
+    return box ? { x: box.left + box.width / 2, y: box.top + box.height / 2 } : { x: 0, y: 0 };
+  };
   const onConnectEnd: OnConnectEnd = (event) => {
     const pending = connecting.current;
     connecting.current = null;
     const target = event.target as HTMLElement | null;
     if (!pending || !target?.classList?.contains("react-flow__pane")) return;
     const point = "changedTouches" in event ? event.changedTouches[0] : event;
-    const position = flow?.screenToFlowPosition({ x: point.clientX, y: point.clientY }) ?? { x: 0, y: 0 };
-    setAddQuery("");
-    setContextMenu(null);
-    setAddMenu({ x: point.clientX, y: point.clientY, flowX: position.x, flowY: position.y, pending });
+    openAddMenuAt(point.clientX, point.clientY, pending);
   };
   const openAddMenu = (event: MouseEvent | React.MouseEvent): void => {
     event.preventDefault();
-    const position = flow?.screenToFlowPosition({ x: event.clientX, y: event.clientY }) ?? { x: 0, y: 0 };
-    setAddQuery("");
-    setContextMenu(null);
-    setAddMenu({ x: event.clientX, y: event.clientY, flowX: position.x, flowY: position.y });
+    openAddMenuAt(event.clientX, event.clientY);
   };
   const addTemplate = (template: GraphNodeTemplate): void => {
     const menu = addMenu;
@@ -876,16 +1067,71 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     refreshLinkedFlags(rawGraph);
   }, { group: groupName });
   const selectedIds = (): string[] => nodes.filter((node) => node.selected && node.type !== "blenderFrame").map((node) => node.id);
+  const openNodeMenuAt = (clientX: number, clientY: number, nodeId: string): void => {
+    const spot = clampMenuToViewport(clientX, clientY, CONTEXT_MENU_BOX);
+    setAddMenu(null);
+    setContextMenu({ x: spot.x, y: spot.y, nodeId });
+    if (!nodes.find((candidate) => candidate.id === nodeId)?.selected) {
+      setNodes((current) => current.map((candidate) => ({ ...candidate, selected: candidate.id === nodeId })));
+    }
+  };
+  const openEdgeMenuAt = (clientX: number, clientY: number, edgeId: string): void => {
+    const spot = clampMenuToViewport(clientX, clientY, CONTEXT_MENU_BOX);
+    setAddMenu(null);
+    setContextMenu({ x: spot.x, y: spot.y, edgeId });
+  };
   const openNodeMenu = (event: React.MouseEvent, node: Node): void => {
     event.preventDefault();
-    setAddMenu(null);
-    setContextMenu({ x: event.clientX, y: event.clientY, nodeId: node.id });
-    if (!node.selected) setNodes((current) => current.map((candidate) => ({ ...candidate, selected: candidate.id === node.id })));
+    openNodeMenuAt(event.clientX, event.clientY, node.id);
   };
   const openEdgeMenu = (event: React.MouseEvent, edge: Edge): void => {
     event.preventDefault();
-    setAddMenu(null);
-    setContextMenu({ x: event.clientX, y: event.clientY, edgeId: edge.id });
+    openEdgeMenuAt(event.clientX, event.clientY, edge.id);
+  };
+
+  /**
+   * Touch entry to both menus.
+   *
+   * Add and delete lived behind `onPaneContextMenu` / `onNodeContextMenu`
+   * alone, and a touch device has no way to raise a `contextmenu` on a canvas —
+   * a real 900ms `page.touchscreen` press at 390x844 produced zero of them — so
+   * the editor was read-only on a phone while every other gesture worked. A
+   * press that rests long enough opens the same menu the right button does, off
+   * the same handlers. Mouse presses return immediately, so the desktop path is
+   * untouched.
+   */
+  const cancelLongPress = (): void => {
+    if (longPress.current) window.clearTimeout(longPress.current.timer);
+    longPress.current = null;
+  };
+  const onStagePointerDown = (event: React.PointerEvent<HTMLDivElement>): void => {
+    lastPointer.current = { x: event.clientX, y: event.clientY };
+    pointerSeen.current = true;
+    swallowPaneClick.current = false;
+    cancelLongPress();
+    if (event.pointerType === "mouse") return;
+    const target = event.target as HTMLElement | null;
+    // A press that starts on a control belongs to that control: sockets and the
+    // property dropdowns carry `nodrag`, and the minimap is a drag surface.
+    if (target?.closest(".nodrag, .react-flow__handle, .react-flow__controls, .annotation-minimap")) return;
+    const { clientX, clientY } = event;
+    const nodeId = target?.closest<HTMLElement>(".react-flow__node")?.dataset.id;
+    const edgeId = target?.closest<HTMLElement>(".react-flow__edge")?.dataset.id;
+    const timer = window.setTimeout(() => {
+      longPress.current = null;
+      swallowPaneClick.current = true;
+      if (nodeId) openNodeMenuAt(clientX, clientY, nodeId);
+      else if (edgeId) openEdgeMenuAt(clientX, clientY, edgeId);
+      else openAddMenuAt(clientX, clientY);
+    }, LONG_PRESS_MS);
+    longPress.current = { timer, x: clientX, y: clientY };
+  };
+  const onStagePointerMove = (event: React.PointerEvent<HTMLDivElement>): void => {
+    lastPointer.current = { x: event.clientX, y: event.clientY };
+    pointerSeen.current = true;
+    const pending = longPress.current;
+    // A pan or a pinch is not a press. The slop is what separates the two.
+    if (pending && Math.hypot(event.clientX - pending.x, event.clientY - pending.y) > LONG_PRESS_SLOP_PX) cancelLongPress();
   };
 
   useEffect(() => {
@@ -893,6 +1139,16 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
       const target = event.target as HTMLElement;
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target.isContentEditable) return;
       const ids = selectedIds();
+      // Blender's Add is ⇧A, and the editor bound F3, ⇧D and ⌘C/X/V without it.
+      // It opens where the pointer is, like Blender, and falls back to the
+      // centre of the stage when the pointer has never been over it (a fresh
+      // load, or a keyboard-only user) rather than to the screen origin.
+      if (event.shiftKey && !event.metaKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase() === "a") {
+        event.preventDefault();
+        const spot = pointerSeen.current ? lastPointer.current : stageCentre();
+        openAddMenuAt(spot.x, spot.y);
+        return;
+      }
       if (event.shiftKey && !event.metaKey && !event.ctrlKey && event.key.toLowerCase() === "d" && ids.length) {
         event.preventDefault();
         duplicateSelection(ids);
@@ -915,6 +1171,10 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     window.addEventListener("keydown", keyboard);
     return () => window.removeEventListener("keydown", keyboard);
   });
+
+  useEffect(() => () => {
+    if (longPress.current) window.clearTimeout(longPress.current.timer);
+  }, []);
 
   const saveJson = (): void => {
     if (!dump) return;
@@ -954,10 +1214,28 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
       <nav className="graph-breadcrumbs" aria-label="Node group path">{breadcrumbs.map((crumb, index) => <span key={`${crumb.group}:${index}`}><button type="button" onClick={() => jumpBreadcrumb(index)} title={crumb.group}>{crumb.via ?? crumb.group}</button>{index < breadcrumbs.length - 1 && <i>›</i>}</span>)}</nav>
       <select aria-label="All node groups" value={groupName} onChange={(event) => chooseGroup(event.target.value)}>{groupNames.map((name) => <option key={name}>{name}</option>)}</select>
       <div className="graph-search"><span>⌕</span><input ref={searchInput} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find nodes · F3" aria-label="Search nodes" />{matches.length > 0 && <div className="graph-search-results">{matches.map((match) => <button type="button" key={`${match.groupName}:${match.node.id}`} onClick={() => focusSearchResult(match)} title={`${match.groupName} · ${match.node.sourceName}`}><b>{match.node.label}</b><small>{compactType(match.node.sourceType)}{match.node.nestedGroup ? ` → ${match.node.nestedGroup}` : ""}</small><em>{match.groupName}</em></button>)}</div>}</div>
-      <div className="graph-actions"><button type="button" onClick={frameAll} title="Frame nodes, frames, and annotations">Frame All</button>{Boolean(graph?.annotationLayers.length) && <button type="button" aria-pressed={inkVisible} onClick={() => setInkVisible((visible) => !visible)} title="Show or hide Blender annotations">Ink</button>}<button type="button" disabled={!undoStack.length} onClick={undo} title="Undo">↶</button><button type="button" disabled={!redoStack.length} onClick={redo} title="Redo">↷</button>{sourceDump && libraryPresets.length > 0 && <button type="button" onClick={() => setLibraryOpen(true)} title="Browse reusable graph presets">Library</button>}<button type="button" onClick={() => fileInput.current?.click()} title="Open portable JSON">Open</button><button type="button" onClick={saveJson} disabled={!dump} title="Save portable JSON">Save</button></div>
+      <div className="graph-actions">{isMobile && <button className="graph-add-node" type="button" onClick={() => {
+        // Mobile only. Desktop reaches Add through right-click and ⇧A, and this
+        // strip is the one the review found clipping its own controls at 1120px
+        // — a ninth button there costs a control that already exists. A phone
+        // has neither of those routes, and a long press is discoverable only
+        // once you know to try it, so the overlay gets the visible affordance.
+        // It aims at the middle of the stage rather than the last touch, so the
+        // new node lands in view instead of wherever a pan happened to end.
+        const spot = stageCentre();
+        openAddMenuAt(spot.x, spot.y);
+      }} title="Add a node · Shift+A">+ Add</button>}<button type="button" onClick={frameAll} title="Frame nodes, frames, and annotations">Frame All</button>{Boolean(graph?.annotationLayers.length) && <button type="button" aria-pressed={inkVisible} onClick={() => setInkVisible((visible) => !visible)} title="Show or hide Blender annotations">Ink</button>}<button type="button" disabled={!undoStack.length} onClick={undo} title="Undo">↶</button><button type="button" disabled={!redoStack.length} onClick={redo} title="Redo">↷</button>{sourceDump && libraryPresets.length > 0 && <button type="button" onClick={() => setLibraryOpen(true)} title="Browse reusable graph presets">Library</button>}<button type="button" onClick={() => fileInput.current?.click()} title="Open portable JSON">Open</button><button type="button" onClick={saveJson} disabled={!dump} title="Save portable JSON">Save</button></div>
       <input ref={fileInput} className="graph-file-input" type="file" accept="application/json,.json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importJson(file).catch((error) => window.alert(error instanceof Error ? error.message : String(error))); event.target.value = ""; }} />
     </div>
-    <div className="blender-flow-stage">
+    <div
+      className="blender-flow-stage"
+      ref={stageRef}
+      onPointerDown={onStagePointerDown}
+      onPointerMove={onStagePointerMove}
+      onPointerUp={cancelLongPress}
+      onPointerCancel={cancelLongPress}
+      onPointerLeave={cancelLongPress}
+    >
     <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onInit={(instance) => { setFlow(instance); setViewport(instance.getViewport()); }}
       onMove={(_event, nextViewport) => setViewport(nextViewport)}
       onNodesChange={(changes: NodeChange[]) => setNodes((current) => applyNodeChanges(changes, current))}
@@ -978,8 +1256,17 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
       onPaneContextMenu={openAddMenu}
       onNodeContextMenu={openNodeMenu}
       onEdgeContextMenu={openEdgeMenu}
-      onPaneClick={() => { setAddMenu(null); setContextMenu(null); }}
-      onPaneMouseMove={(event) => { lastPointer.current = { x: event.clientX, y: event.clientY }; }}
+      onPaneClick={() => {
+        // A long press ends with a tap on the pane, so without this guard the
+        // release that completed the gesture would close the menu it opened.
+        if (swallowPaneClick.current) {
+          swallowPaneClick.current = false;
+          return;
+        }
+        setAddMenu(null);
+        setContextMenu(null);
+      }}
+      onPaneMouseMove={(event) => { lastPointer.current = { x: event.clientX, y: event.clientY }; pointerSeen.current = true; }}
       deleteKeyCode={["Backspace", "Delete"]} onNodeClick={(_event, flowNode) => {
       const data = flowNode.data as NodeCardData | FrameData;
       if (!("node" in data)) return;
@@ -1007,9 +1294,19 @@ export default function GeometryNodesEditor({ config, source, onDumpChange, onPr
     {addMenu && <div className="graph-popup graph-add-menu" style={{ left: addMenu.x, top: addMenu.y }}>
       <header><b>{addMenu.pending ? "Add compatible node" : "Add node"}</b><button type="button" onClick={() => setAddMenu(null)}>×</button></header>
       <input autoFocus value={addQuery} onChange={(event) => setAddQuery(event.target.value)} placeholder={addMenu.pending ? "Search compatible nodes…" : "Search authored nodes…"} />
-      <div>{visibleTemplates.length ? visibleTemplates.map((template) => <button type="button" key={template.key} onClick={() => addTemplate(template)}>
-        <b>{template.label}</b><small>{compactType(template.type)} · {template.inputTypes.length} in / {template.outputTypes.length} out</small>
-      </button>) : <p>No compatible authored nodes.</p>}</div>
+      {/* One Blender Add entry is one heading. The catalog is harvested from the
+          dump so socket definitions stay aligned with evaluator support, which
+          means Capture Attribute arrives four times and Switch five; the four
+          really are different nodes (Vector, Boolean, Integer, Float value
+          sockets) and nothing recomputes sockets from a property, so they stay
+          — under a heading, named by what separates them, instead of four
+          identical rows reading "Capture Attribute · 2 in / 2 out". */}
+      <div>{templateFamilies.length ? templateFamilies.map((family) => <section className="graph-add-family" key={family.key}>
+        {family.varied && <h4>{family.label}<span>{family.templates.length}</span></h4>}
+        {family.templates.map((template) => <button type="button" key={template.key} onClick={() => addTemplate(template)}>
+          <b>{template.variant ?? template.label}</b><small>{compactType(template.type)} · {template.inputTypes.length} in / {template.outputTypes.length} out</small>
+        </button>)}
+      </section>) : <p>No compatible authored nodes.</p>}</div>
     </div>}
     {contextMenu && <div className="graph-popup graph-context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
       {contextMenu.nodeId ? (() => {

@@ -558,6 +558,91 @@ only child, so it took the 1.4fr column — 271px of dropzone above it, 158px of
 button — and left the 1fr column standing empty. `:has(> :only-child)` gives a
 lone button the whole row, which fixes the class rather than the one call site.
 
+## Second pass — the dropdowns
+
+Three findings from a pass over every `<select>` in the app, measured the same
+way.
+
+### Two settings had no control at all
+
+`/building`'s inspector is React; the lil-gui panel it replaced is still built
+and mounted into `#building-gui-dock`, which `BuildingPage.tsx` renders
+`hidden`. Two of the runtime's settings were only ever in that panel:
+**tone mapping** (AgX · ACES · None · Blender Standard LUT) and
+**environment** (Studio Room · Blender studio EXR). Measured on the live page:
+82 lil-gui controllers inside a `display: none` dock, and no element anywhere in
+the document offering either choice.
+
+Neither list is fixed — the LUT joins it when
+`post.loadBlenderColorProfile()` validates and the EXR when it parses, both
+after the inspector has rendered — so they are published
+(`subscribeAtmosphereOptions`) rather than read once. The EXR availability
+probe moved out of `Environment.addGui()`, where it would have made the
+inspector's choices depend on a legacy panel existing.
+
+**Fixed** — both are `.st-select` rows in the Atmosphere inspector's Lighting
+section, in the kit's `st-row-stacked` variant ("Blender Standard (LUT)" does
+not survive the 1fr of a 320px column). Measured after, at 1440×900: four tone
+options and two environment options, and against a 360×260 crop of the
+viewport — AgX → None **4.53/255 mean, 63.9 % of channels changed**, AgX → ACES
+6.12 and 46.8 %, AgX → LUT 3.76 and 68.3 %, Room → EXR 4.13 and 45.1 %, with
+AgX → AgX **0.00 across every channel**, so the differences are the transform
+and not renderer noise. The value round-trips: the hidden panel's own selects
+read back what the inspector set.
+
+### A combobox with 105 options and no name
+
+`/typewriter`'s "Base object" was a `.st-section-title` div followed by a
+sibling `<select>` — not a `<label for>`, so the accessibility tree read
+`combobox ""`. Confirmed live before the fix; it reads
+`combobox "Base object"` after.
+
+### The same 104-entry catalogue, fronted three ways
+
+`/typewriter` (Base object) and `/paint` (Reference object) each listed the
+shape catalogue as a 105-option native `<select>` — nothing to type at, and a
+full-screen wheel on a phone — while `/chrome-assets` already fronted the same
+list with a text field over a `<datalist>` plus prev/next.
+
+**Fixed** — one picker: `.st-searchable` in the kit,
+`react/studio/searchable-select.ts` for the behaviour (matching, wrap-around
+stepping, the value contract) and `SearchableSelect.tsx` for the markup. The
+two imperative runtimes bind the same helper the React component binds, so
+matching a typed name to an id exists once rather than three times.
+`chrome-assets.css` gave up its copy of the picker's layout.
+
+The value contract is what the runtimes read, and it did not change: the field
+shows a title, the picker's value stays the id — `typewriter.ts`'s loader,
+`/paint`'s reference lookup and the catalog's `?asset=` all still key on it.
+Measured after: 105 datalist entries on `/typewriter` and `/paint`, 104 on
+`/chrome-assets`; typing a title loads the shape (209 verts joined), the next
+arrow steps and loads the following one, Clear returns the field to "None ·
+text only"; on `/chrome-assets` the arrows still drive `?asset=`. `/paint`'s
+toolbar keeps its desktop shape exactly — 0 px clipped and 143 px tall at 1440
+and 1280, 205 px at 1024, the same as with the 170 px select it replaced.
+
+### The tablet never got the touch rules
+
+Every touch rule in the kit is written against `.st-sheet`, and a tablet keeps
+the docks: at 834×1112 the picker's arrows measured 28×28 and dock selects
+28 px tall. `@media (pointer: coarse)` now sizes dock selects, dock inputs and
+the picker's arrows at `--st-touch`, the same "is this a finger?" test the
+overlays already use. Measured across `/typewriter`, `/chrome-assets`,
+`/paint` and `/building` at 390×844 (sheet open) and 834×1112: **zero targets
+under 44 px**, from four.
+
+Two knock-on effects, both measured, both paid for:
+
+- 44 px arrows in a ~200 px dock left `/typewriter`'s field **78 px**. In that
+  band — coarse pointer, 821–1180 px — the field takes the row and the arrows
+  split the one below it: **180 px** field, arrows 86×44.
+- The same arrows made `/paint`'s Surface group 426 px wide in the 398 px
+  toolbar column an 834 px tablet leaves, and 28 px of "Import…" went behind a
+  scroll whose affordance only exists on phones (A3 again, one level down). The
+  group wraps now, as the strip already does: 0 px clipped, at the cost of
+  33 px of strip height (271 → 320) at that one viewport class. Desktop and
+  phone are untouched.
+
 ## Verification
 
 Re-measured headlessly at all six viewports, across all ten routes:

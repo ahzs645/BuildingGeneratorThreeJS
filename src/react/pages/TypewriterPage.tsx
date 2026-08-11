@@ -1,4 +1,5 @@
 import { useToolRuntime } from "../page-runtime";
+import { SearchableSelect } from "../studio/SearchableSelect";
 import { StudioPanelHeader, StudioShell } from "../studio/StudioShell";
 import { ToolStateOverlay } from "../studio/ToolStateOverlay";
 import "./typewriter.css";
@@ -25,9 +26,12 @@ export default function TypewriterPage(): React.JSX.Element {
     </div>
     <div className="st-section">
       <div className="st-section-title">Base object</div>
-      <select id="typewriter-base-select" className="st-select" defaultValue="">
-        <option value="">None · text only</option>
-      </select>
+      {/* The catalog is 104 shapes, and this was a native select with a
+          sibling div for a title: a screen reader announced an unnamed
+          combobox with 105 options, and a phone got a 105-entry wheel. The
+          shared picker carries the name on the field and lets it be typed at;
+          the runtime fills and reads it. */}
+      <SearchableSelect id="typewriter-base-select" label="Base object" placeholder="Search shapes…" />
       <div className="st-btn-row st-btn-row-even">
         <button id="typewriter-base-import" className="st-btn" type="button">Import shape…</button>
         <button id="typewriter-base-clear" className="st-btn" type="button" disabled>Clear</button>

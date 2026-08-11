@@ -12,11 +12,15 @@ import {
 import { fitPerspectiveCameraToObject } from "./camera-fit";
 import { canvasBox, observeCanvasBox, preferredCanvasPixelRatio, releaseToolContext } from "./canvas-viewport";
 import { inlineMeshSeedFromObject } from "./inline-mesh-conversion";
+import { bindSearchableSelect } from "./react/studio/searchable-select";
 import { bindStatusLine } from "./status-line";
 import type { ToolHandle } from "./react/page-runtime";
 import type { Dump, InlineMeshSeed, TriSoup } from "./gnvm/index";
 
 type WorkerReply = { id: number; ok: true; soup: TriSoup } | { id: number; ok: false; error: string };
+
+/** No base object: the graph runs on the typed text alone. */
+const BASE_SHAPE_NONE = { value: "", label: "None · text only" };
 
 // Pure-data caches that may persist across remounts: the fetched graph dump
 // and the fallback preview FontFace (document.fonts entries survive anyway).
@@ -48,7 +52,7 @@ export function createTool(): ToolHandle {
   const runtimeEl = document.querySelector<HTMLElement>("#typewriter-runtime")!;
   const fontFileEl = document.querySelector<HTMLInputElement>("#typewriter-font-file")!;
   const fontStatusEl = document.querySelector<HTMLElement>("#typewriter-font-status")!;
-  const baseSelect = document.querySelector<HTMLSelectElement>("#typewriter-base-select")!;
+  const baseSelect = document.querySelector<HTMLInputElement>("#typewriter-base-select")!;
   const baseImportButton = document.querySelector<HTMLButtonElement>("#typewriter-base-import")!;
   const baseClearButton = document.querySelector<HTMLButtonElement>("#typewriter-base-clear")!;
   const baseFileInput = document.querySelector<HTMLInputElement>("#typewriter-base-file")!;
@@ -222,7 +226,7 @@ export function createTool(): ToolHandle {
     baseRequest++;
     if (!baseShape) return;
     baseShape = null;
-    baseSelect.value = "";
+    basePicker.setValue("");
     baseClearButton.disabled = true;
     baseStateEl.textContent = "Join the typed text with a reference object or any imported shape — the graph's own base-geometry input.";
     hasFramed = false;
@@ -230,18 +234,10 @@ export function createTool(): ToolHandle {
   }
 
   let libraryShapes: LibraryShapeInfo[] = [];
-  void listLibraryShapes()
-    .then((shapes) => {
-      if (disposed) return;
-      libraryShapes = shapes;
-      // Remounts retain the DOM: rebuild after the placeholder instead of appending.
-      while (baseSelect.options.length > 1) baseSelect.remove(1);
-      for (const shape of shapes) baseSelect.add(new Option(shape.title, shape.id));
-    })
-    .catch(() => { if (!disposed) baseStateEl.textContent = "Reference catalog unavailable · import a shape file instead."; });
-
-  const onBaseSelect = (): void => {
-    const id = baseSelect.value;
+  // The catalog is 104 shapes. As a <select> that was a 105-option list with
+  // nothing to type at; the studio's searchable picker is shared with
+  // /chrome-assets and /paint, which front the same catalog.
+  const basePicker = bindSearchableSelect(baseSelect, (id) => {
     if (!id) { clearBaseObject(); return; }
     const info = libraryShapes.find((shape) => shape.id === id);
     if (!info) return;
@@ -253,7 +249,18 @@ export function createTool(): ToolHandle {
         if (disposed || request !== baseRequest) return;
         setStatus("error", error instanceof Error ? error.message : String(error));
       });
-  };
+  });
+  // The empty value is a real choice — clearing the field is how the base
+  // object is removed — so it heads the list rather than sitting outside it.
+  basePicker.setOptions([BASE_SHAPE_NONE]);
+  basePicker.setValue("");
+  void listLibraryShapes()
+    .then((shapes) => {
+      if (disposed) return;
+      libraryShapes = shapes;
+      basePicker.setOptions([BASE_SHAPE_NONE, ...shapes.map((shape) => ({ value: shape.id, label: shape.title }))]);
+    })
+    .catch(() => { if (!disposed) baseStateEl.textContent = "Reference catalog unavailable · import a shape file instead."; });
   const onBaseImport = (): void => baseFileInput.click();
   const onBaseFile = (): void => {
     const file = baseFileInput.files?.[0];
@@ -264,7 +271,7 @@ export function createTool(): ToolHandle {
     loadFileBaseShape(file)
       .then((shape) => {
         if (disposed || request !== baseRequest) return;
-        baseSelect.value = "";
+        basePicker.setValue("");
         applyBaseObject(shape.label, shape.object, shape.seed.fingerprint ?? file.name);
       })
       .catch((error) => {
@@ -280,7 +287,6 @@ export function createTool(): ToolHandle {
   const onFontFileChange = (): void => void onFontFile();
 
   fontFileEl.addEventListener("change", onFontFileChange);
-  baseSelect.addEventListener("change", onBaseSelect);
   baseImportButton.addEventListener("click", onBaseImport);
   baseFileInput.addEventListener("change", onBaseFile);
   baseClearButton.addEventListener("click", onBaseClear);
@@ -318,7 +324,7 @@ export function createTool(): ToolHandle {
       reframeButton.removeEventListener("click", onReframe);
       playButton.removeEventListener("click", onPlay);
       fontFileEl.removeEventListener("change", onFontFileChange);
-      baseSelect.removeEventListener("change", onBaseSelect);
+      basePicker.dispose();
       baseImportButton.removeEventListener("click", onBaseImport);
       baseFileInput.removeEventListener("change", onBaseFile);
       baseClearButton.removeEventListener("click", onBaseClear);

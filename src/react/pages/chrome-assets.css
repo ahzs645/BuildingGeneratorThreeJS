@@ -20,14 +20,9 @@
 /* The asset name is what this control is for, and the catalog holds 104 of
    them. Inside .st-field's 92px label column the input got 98px and truncated
    "Recursive Bin Generator · Add-on" to "Recursi…", so the label goes above and
-   the row spans the inspector. Arrows use --st-control-h, not the 32px button
-   height, so they line up with the input between them. */
+   the row spans the inspector. The picker itself is .st-searchable in the kit
+   now — /typewriter and /paint front the same catalog through it. */
 .assets-picker { grid-template-columns: minmax(0,1fr); gap: 6px; }
-.assets-picker > div { display: grid; grid-template-columns: var(--st-control-h) minmax(0,1fr) var(--st-control-h); gap: 7px; }
-.assets-picker .st-btn { height: var(--st-control-h); padding: 0; }
-/* .st-input's mono face is for numeric fields; an asset name is prose, and the
-   proportional face fits roughly a fifth more of it in the same width. */
-.assets-picker input { font-family: var(--st-font); }
 /* The authored inputs are .st-row.st-row-stacked now — the kit's row, in its
    label-above variant — rather than a second row implementation with its own
    input and select styling. That was the one control row the kit's mobile
@@ -69,6 +64,4 @@
 
 @media (max-width: 820px), ((pointer: coarse) and (max-height: 500px)) {
   .assets-compare { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
-  .assets-picker > div { grid-template-columns: var(--st-touch) minmax(0,1fr) var(--st-touch); }
-  .assets-picker .st-btn { height: var(--st-touch); }
 }

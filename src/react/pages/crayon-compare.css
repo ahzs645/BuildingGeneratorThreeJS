@@ -122,6 +122,18 @@
 .socket-list:empty { display: none; }
 .socket-list.outputs:not(:empty) { padding-bottom: 3px; border-bottom: 1px solid rgba(0,0,0,.28); }
 .socket-list.inputs:not(:empty) { padding-top: 3px; }
+/* Enum properties sit between the outputs and the inputs, where Blender draws
+   them. The row is full-bleed inside the card because a Blender enum button
+   spans the node body; the socket rows keep their own 8px gutter for handles. */
+.prop-list:empty { display: none; }
+.prop-list:not(:empty) { padding: 2px 0 3px; }
+.blender-prop-row { display: flex; padding: 1px 8px; }
+/* Two classes deep on purpose: `.st-shell select` in the kit is (0,1,1) and
+   would otherwise impose its 30px chevron gutter and 24px height on a control
+   that has to fit a 140px node beside 22px socket rows. */
+.blender-node .node-prop { width: 100%; min-width: 0; height: 18px; min-height: 0; box-sizing: border-box; border: 1px solid #4A4D51; border-radius: 4px; padding: 0 15px 0 5px; background-color: #4C5054; background-position: right 3px center; color: #EDF0F2; cursor: pointer; font: 9px/1 var(--st-font); }
+.blender-node .node-prop:hover { background-color: #5A5F64; }
+.blender-node .node-prop:focus { outline: 1px solid var(--st-accent); border-color: var(--st-accent); }
 .blender-socket-row { position: relative; display: flex; min-height: 22px; align-items: center; gap: 5px; padding: 0 8px; color: #BBC2C7; white-space: nowrap; }
 .blender-socket-row.output { flex-direction: row-reverse; justify-content: flex-start; text-align: right; }
 .socket-hidden { opacity: .62; }
@@ -215,4 +227,12 @@
   .st-overlay .blender-flow-toolbar select { min-width: 44px; min-height: 44px; }
   .st-overlay .react-flow__controls-button { width: 44px; height: 44px; }
   .st-overlay .graph-library-grid article > button { min-height: 44px; }
+  /* The property dropdown is the one node-card control a finger has to hit, so
+     it takes the kit's touch minimum and the node body grows to fit. The 18px
+     desktop height is a 12px target once React Flow's zoom is applied. */
+  .st-overlay .blender-prop-row { padding: 2px 6px; }
+  /* align-items, because a 44px control leaves the chosen label sitting against
+     the top edge: `appearance: base-select` lays the select out as a flex box
+     and the kit's ::selectedcontent is a block inside it. */
+  .st-overlay .blender-node .node-prop { height: var(--st-touch); align-items: center; padding-right: 22px; background-position: right 7px center; font-size: 12px; }
 }

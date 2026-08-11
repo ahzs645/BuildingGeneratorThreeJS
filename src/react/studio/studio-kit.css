@@ -226,6 +226,22 @@
 }
 .st-input { font-family: var(--st-mono); font-variant-numeric: tabular-nums; }
 
+/* THE picker for a list too long to scroll: a text field over a <datalist>,
+   with prev/next either side. /typewriter and /paint each listed the same
+   104-shape catalogue as a 105-option native <select> — no way to type at it,
+   and a full-screen wheel on a phone — while /chrome-assets had already solved
+   it. One shape, one behaviour (react/studio/searchable-select.ts), three
+   tools. The arrows are square and track the field's height so the three line
+   up as one control. */
+.st-searchable { display: flex; min-width: 0; align-items: center; gap: 7px; }
+/* --st-mono is for numeric fields; an asset name is prose, and the
+   proportional face fits roughly a fifth more of it in the same width. */
+.st-searchable .st-input { flex: 1 1 auto; font-family: var(--st-font); }
+.st-searchable .st-btn {
+  flex: 0 0 auto; width: var(--st-control-h); height: var(--st-control-h);
+  padding: 0;
+}
+
 /* ------------------------------------------------ styled form primitives */
 /* Keep the semantic controls for keyboard, touch, and assistive technology,
    while replacing platform chrome with the studio's own visual language. */
@@ -712,6 +728,32 @@
     padding-left: max(12px, env(safe-area-inset-left, 0px));
     padding-right: max(12px, env(safe-area-inset-right, 0px));
   }
+}
+
+/* ------------------------------------------------------------ coarse pointer */
+/* The touch sizing above is written against .st-sheet, which a tablet never
+   gets: between 821px and 1180px the docks stay, so an 834px iPad was tapping
+   28px selects and 28px picker arrows in a panel a phone would have had at
+   44px. Keyed on the pointer, like the overlays — a finger is a finger at
+   either width. Placed after the mobile block so it wins at equal specificity. */
+@media (pointer: coarse) {
+  .st-dock :is(.st-select, .st-input) { height: var(--st-touch); }
+  .st-searchable .st-input { height: var(--st-touch); }
+  .st-searchable .st-btn { width: var(--st-touch); height: var(--st-touch); }
+}
+
+/* Both at once — a finger and a ~200px dock — is the case where the picker
+   cannot stay on one line: two 44px arrows left /typewriter's field 78px, about
+   eight characters of a catalogue whose titles read "Collection · Name". The
+   field takes the row and the arrows split the one below, so the strip loses
+   nothing and squeezes nothing. A phone is not in this band; its sheet is the
+   full width of the screen and one line fits. */
+@media (pointer: coarse) and (min-width: 821px) and (max-width: 1180px) {
+  .st-dock .st-searchable { display: grid; grid-template-columns: 1fr 1fr; }
+  .st-dock .st-searchable .st-input { grid-area: 1 / 1 / 2 / -1; }
+  .st-dock .st-searchable .st-btn { grid-row: 2; width: 100%; }
+  .st-dock .st-searchable .st-btn[data-searchable-step="-1"] { grid-column: 1; }
+  .st-dock .st-searchable .st-btn[data-searchable-step="1"] { grid-column: 2; }
 }
 
 /* ------------------------------------------------------- phone in landscape */

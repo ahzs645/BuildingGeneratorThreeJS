@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+import { SearchableSelect } from "../../studio/SearchableSelect";
 import { rangeFillStyle } from "../../studio/range-fill";
 import type { LibraryShapeInfo } from "../../../base-shape-catalog";
 import { surfaceGenerator } from "../../../surface-studio/generator-catalog";
@@ -38,6 +40,13 @@ export function SurfaceWorkspaceToolbar({
   snapshot,
   references,
 }: SurfaceWorkspaceToolbarProps): React.JSX.Element {
+  // A stroke republishes the snapshot several times a second; the picker fills
+  // its datalist from this identity, so rebuilding 105 nodes per render would
+  // be the cost of drawing a line.
+  const referenceOptions = useMemo(() => [
+    { value: "", label: "No reference object" },
+    ...references.map((reference) => ({ value: reference.id, label: reference.title })),
+  ], [references]);
   const descriptor = surfaceGenerator(snapshot.activeTool);
   const modes = descriptor.capabilities.interactionModes.filter((mode) => (
     MODE_LABELS[mode]
@@ -66,23 +75,25 @@ export function SurfaceWorkspaceToolbar({
           <option value="Box">Box</option>
           <option value="Cylinder">Cylinder</option>
         </select>
-        <select
-          className="st-select surface-workspace-reference"
-          aria-label="Reference object"
+        {/* 105 options in a 170px strip control, with no way to type at them.
+            The searchable picker is shared with /chrome-assets and
+            /typewriter, which list this same catalogue. */}
+        <SearchableSelect
+          id="surface-reference-object"
+          className="surface-workspace-reference"
+          label="Reference object"
+          placeholder="Search objects…"
+          options={referenceOptions}
           value={snapshot.referenceObject}
           disabled={!controller}
-          onChange={(event) => {
-            const id = event.currentTarget.value;
+          onSelect={(id) => {
             if (!id) controller?.setModelPreset(snapshot.modelPreset);
             else {
               const info = references.find((reference) => reference.id === id);
               if (info) void controller?.loadReferenceObject(info);
             }
           }}
-        >
-          <option value="">No reference object</option>
-          {references.map((reference) => <option value={reference.id} key={reference.id}>{reference.title}</option>)}
-        </select>
+        />
         <label className={`st-btn surface-workspace-import${controller ? "" : " is-disabled"}`}>
           Import…
           <input
