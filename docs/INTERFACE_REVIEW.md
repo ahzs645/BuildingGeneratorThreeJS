@@ -3,7 +3,14 @@
 > **Status: all twenty findings resolved.** Each finding keeps the measurement
 > that prompted it; the **Fixed** note at the end of each records what the same
 > measurement reads now. Re-verified headlessly at the same six viewports, with
-> `npm test` (614) and `tsc --noEmit` green.
+> `npm test` and `tsc --noEmit` green — 753 tests, 751 pass, 2 skipped, 0 fail
+> at the time of writing, and the suite is still growing, so treat that number
+> as a date stamp rather than a constant.
+>
+> **An independent audit falsified several claims in this document** and found
+> four regressions in the fixes. Everything it falsified is corrected inside
+> the finding it belongs to; the regressions and the tests that could not fail
+> are in *Third pass* below.
 
 Reviewed against `main` at commit `b618e21`, driven headlessly through Chromium
 (SwiftShader) at six viewports: 1440×900, 1280×800, 1024×768, 834×1112,
@@ -134,6 +141,11 @@ hidden at any desktop width** (0 px clipped at 1440 and at 1280, from 56 and
 a 200px toolbar — so it still scrolls there, but Mode is `position: sticky;
 left: 0; order: -1`: pinned to the leading edge, always reachable, with an inset
 shadow at the trailing edge so the strip reads as scrollable.
+
+**This fix had a cost it never measured — see R1.** "Nothing is hidden" was
+true and "the strip is now 221 px tall at 1024×768" was also true. The phone
+treatment described above is unchanged; what changed is how many groups are in
+the strip for it to handle.
 
 ### A4 — Node-editor header clips on desktop
 
@@ -288,8 +300,26 @@ library, but `.st-nav`, `.st-toolbar` and `.st-statusbar` all use flat
 already suffers from A2 — the breadcrumb and the leading status text run under
 the notch and the home indicator's side inset.
 
-**Fixed** — all three strips use `max(12px, env(safe-area-inset-left/right))`
-in the mobile block. Read from the CSS, not observed on hardware (see Scope).
+**Fixed** — all three strips use `max(12px, env(safe-area-inset-left/right))`.
+Read from the CSS, not observed on hardware (see Scope).
+
+**The first fix did not apply to the nav — the strip this finding is about.**
+It wrote `.st-nav { padding-left: max(10px, env(…)) }` into the kit's mobile
+block, at one class. `studio-nav.css` declares `padding: 5px 10px 6px` on
+`.st-nav` in *its* mobile block: same specificity, later-loading file, and a
+shorthand, so it reset both inline sides to a flat 10px. Measured at 390×844
+and 844×390 on every route: nav `padding-left` **10px**, toolbar and status bar
+12px — the toolbar and status bar worked, the breadcrumb did not. This is the
+same load-order hazard A2's comment documents, one section further down the
+same file. The prose above also said 12px while the nav said 10px.
+
+The rule is now `.st-shell .st-nav, .st-shell .st-toolbar, .st-shell
+.st-statusbar` — two classes, so a bare-class `padding` shorthand added later
+by any stylesheet loses regardless of order — and it lives outside the mobile
+block with its own media query. Measured after: **12px on all three strips**,
+at 390×844 and 844×390, and still 12px after a bare `.st-nav { padding: 5px
+10px 6px }` rule is appended to the live document, which is the check
+`tools/test-interface-measurements.mjs` runs.
 
 ### C4 — `vh` instead of `dvh` in the sheet
 
@@ -302,7 +332,10 @@ same applies to `studio-menu.css:3` (`padding: 8vh 16px 6vh`) and
 
 **Fixed** — the sheet declares `vh` then `dvh`, so the second wins where
 supported and the first is the fallback. The tool menu's backdrop padding and
-max-height are `dvh` too.
+max-height are `dvh` too, and — after a second pass found it missed —
+`asset-library.css`, the third file this finding names: `padding: 5vh` gains
+`padding-block: 5dvh` and `max-height: 90vh` gains `max-height: 90dvh`. The
+regression test opens all three files now; it opened two.
 
 ### C5 — The open sheet hides what you are adjusting
 
@@ -334,8 +367,23 @@ status bar carry state.
 than one publisher can coexist; before, whichever hook ran last replaced the
 other's chips wholesale, which is *why* only two routes ever showed one. Both
 runtime hooks in `page-runtime.ts` publish a `starting` / `runtime live` /
-`runtime failed` chip, so all ten routes carry the same fact. In the tablet band
-the chip track is the first thing to give — at 834px it rendered "runtime li".
+`runtime failed` chip, so nine of the ten routes carry the same fact. In the
+tablet band the chip track is the first thing to give — at 834px it rendered
+"runtime li".
+
+**Nine, not ten.** `/materialx` mounts `mountMaterialXLab(root)` in a bare
+`useEffect` — it is not a `{ createTool }` module, so the page called neither
+runtime hook and published nothing. Measured at 1440×900: `.st-nav-chips`
+**0 × 0** on `/materialx` against 88–237px on the other nine. The test that
+was meant to cover this counted `useStudioRuntimeChip(` calls inside
+`page-runtime.ts` and got 2, which is true and says nothing about whether a
+route reaches one.
+
+`page-runtime.ts` now exports `useRuntimePhaseChip(phase)`; both runtime hooks
+call it and `/materialx` calls it directly from its own load/ready/error state,
+so the three words a chip can say are still defined once. Measured after:
+`.st-nav-chips` **114.5 × 28, "runtime live"** on `/materialx`, and a chip on
+all ten routes at every desktop viewport.
 
 ### D2 — Three parameter-row implementations
 
@@ -361,13 +409,31 @@ checkbox sizing is gone too — it was overriding the sheet's 28px touch size.
 ### D3 — Type scale below the kit's own floor
 
 `studio-kit.css:48` states 11 px is the floor for read text, with three named
-exceptions. `surface-workspace-toolbar.css` adds four more:
-group labels at **8 px** (`:35`), area labels at **9 px** (`:82`), mode buttons
-at **10 px** (`:73`), and `surface-tool-selector.css:31` family labels at 9 px.
-These are the smallest text in the app and they sit in the toolbar, i.e. the
-part of `/paint` that a phone user has to read while scrolling it horizontally.
+exceptions. `surface-workspace-toolbar.css` adds three more:
+group labels at **8 px** (`:35`), area labels at **9 px** (`:82`) and mode
+buttons at **10 px** (`:73`); `surface-tool-selector.css` adds three of its
+own: family labels at **9 px** (`:31`), tool glyphs at **9 px** (`:88`) and the
+`Unavailable` caption at **8 px** (`:111`). These are the smallest text in the
+app and they sit in the toolbar and the tool rail, i.e. the part of `/paint` a
+user reads first.
 
-**Fixed** — all four are `var(--st-fs-micro)` (11 px), the kit's floor.
+**Fixed — the three in `surface-workspace-toolbar.css` first, the three in
+`surface-tool-selector.css` after a second pass caught them.** The earlier note
+here said "all four", counting six sites as four and claiming a file the fix
+never opened. Measured live on `/paint` at 1440×900 before the second pass:
+family label ×2 at 9px, tool glyph ×10 at 9px, `Unavailable` at 8px. All six
+are `var(--st-fs-micro)` (11 px) now; measured after, zero elements under 11px
+render text in `.st-nav`, `.st-toolbar`, `.st-statusbar` or
+`.surface-tool-selector`, on all ten routes at all six viewports.
+
+Two things this finding does **not** cover, so the claim above is not read as
+wider than it is. The 9 px node-category badge is one of the kit's three named
+exceptions and `.paint-node-badge` is the same badge in the painter's lil-gui
+skin, so both stay. And `surface-painter.css` carries roughly a dozen more
+8–10 px labels in that lil-gui skin — `.surface-projection-summary`,
+`.surface-projection-layers legend`, the generator context caption — which D3
+never listed and this pass did not change. They are a real instance of the same
+drift; they are just not this finding.
 
 ### D4 — Sub-44 px touch targets in the same toolbar
 
@@ -377,8 +443,12 @@ kit applies everywhere else on the phone. Same file, one line below the
 breakpoint that acknowledges mobile exists.
 
 **Fixed** — `var(--st-touch)`. A sweep of every interactive element at 390×844
-across all ten routes now reports zero targets under the minimum, the one
-exception being the visually-hidden file input behind the Import label.
+across all ten routes reports zero targets under the minimum, the exceptions
+being the visually-hidden file input behind the Import label and
+`input[type=range]`, whose 44 px hit area the kit gives it under an 18 px bar.
+The negative assertions covering this were literal blacklists —
+`doesNotMatch(/min-height: 36px/)` passes on 38 px — and now parse the number:
+every `height` / `min-height` in either file's mobile block is 0 or ≥ 44.
 
 ### D5 — `⌘K` is shown on every platform
 
@@ -499,7 +569,7 @@ everything three levels deep never ran. That is 102 tests, including all of
 `src/bin-interface.test.ts` and both `src/react/blend-studio/*.test.ts` files.
 
 Quoting the pattern hands it to Node's own test runner, which walks it
-properly. The suite is 716 tests now, not 614.
+properly. The suite went from 614 tests to 716 with that one change.
 
 One of the tests that had stopped running was failing. `bin-interface.test.ts`
 asserted that `bin-compare.ts` contains
@@ -619,7 +689,9 @@ Measured after: 105 datalist entries on `/typewriter` and `/paint`, 104 on
 arrow steps and loads the following one, Clear returns the field to "None ·
 text only"; on `/chrome-assets` the arrows still drive `?asset=`. `/paint`'s
 toolbar keeps its desktop shape exactly — 0 px clipped and 143 px tall at 1440
-and 1280, 205 px at 1024, the same as with the 170 px select it replaced.
+and 1280, the same as with the 170 px select it replaced. (Re-measured later at
+1024×768 it was 221 px, not the 205 px recorded here, and R1 is what that
+number turned into.)
 
 ### The tablet never got the touch rules
 
@@ -641,7 +713,8 @@ Two knock-on effects, both measured, both paid for:
   scroll whose affordance only exists on phones (A3 again, one level down). The
   group wraps now, as the strip already does: 0 px clipped, at the cost of
   33 px of strip height (271 → 320) at that one viewport class. Desktop and
-  phone are untouched.
+  phone are untouched. That 320 px is what R1 measures and fixes; the Surface
+  group whose width forced the wrap is no longer in the strip at all.
 
 Suite after this pass: `npm test` 733 tests, 731 pass, 2 skipped, 0 fail;
 `tsc --noEmit` clean. `studio-interface.test.ts` gains six tests, one of them
@@ -649,16 +722,187 @@ behavioural — the picker's matcher, because "a half-typed word must not commit
 the entry that happens to start with it" is a rule no source-text assertion
 can express.
 
+## Third pass — what an independent audit falsified
+
+Someone re-measured the fixes above against the live app rather than against
+the notes, and several of the notes were wrong. Four of the fixes had also
+introduced defects of their own. Every claim it falsified has been corrected in
+place above — C3, C4, D1, D3, D4 each carry the correction inside the finding
+— and the four regressions are below with before/after numbers at the six
+review viewports.
+
+The common thread is worth naming, because it is the reason this section
+exists: **every one of these was invisible to the tests that were supposed to
+cover it.** A source-text assertion cannot see the cascade (C3 shipped a
+declaration that a later file overrode), cannot see a number that only exists
+after layout (A3 reported "0 px clipped" and never measured height), and cannot
+fail at all if it pins a spelling the file has never used (A1) or forbids one
+the code never had (B2). `tools/test-interface-measurements.mjs` now drives six
+viewports across ten routes in a real browser and asserts the rendered result;
+`npm run test:interface`. Reverting each fix below makes it fail, which was
+checked rather than assumed.
+
+### R1 — the A3 toolbar wrap traded a clip for a very tall toolbar
+
+A3 stopped `/paint`'s toolbar clipping by letting it wrap, and reported "0 px
+clipped" without measuring what wrapping cost. Five groups of controls — 967 px
+of them — in an 864 px column is two rows, and four in the tablet band.
+Measured `.st-toolbar` height:
+
+| Viewport | Before | After | Share of the window |
+| --- | --- | --- | --- |
+| 1440×900 | 143 px | **85 px** | 15.9% → 9.4% |
+| 1280×800 | 143 px | **85 px** | 17.9% → 10.6% |
+| 1024×768 | 221 px | **85 px** | 28.8% → 11.1% |
+| 834×1112 | 320 px | **143 px** | 28.8% → 12.9% |
+| 844×390 | 75 px | 75 px | 19.2% |
+| 390×844 | 96 px | 96 px | 11.4% |
+
+Wrapping was not the problem; five groups in the strip was. What a hand on the
+canvas reaches for mid-stroke is **Mode** — whether a touch orbits the model or
+paints on it, the control A3 was originally about — and **Document**, undo and
+clear. Those are 329 px together and fit one row everywhere. **Surface**
+(preset · 105-object picker · Import) and **Projection** (target · Pick) are
+622 px of the 967 px and are set-up: you choose a surface once and then paint.
+They are an inspector section now (`SurfaceDocumentSetup`), which on a phone is
+the sheet's Options tab, and they are kit `.st-row`s there — so the sheet's
+44 px sizing and the tablet band's two-line rows reach them, which they never
+did as flex children of a toolbar group.
+
+The **Area** group is simply gone: `usesDrawingArea` is true for exactly the
+four Blender brushes, which are exactly the tools that render
+`SurfaceProjectionPanel`, and that panel already owns Area size, Projection
+height, Drop to first contact and Remove area. It was a second copy of four
+controls.
+
+Nothing is clipped at any of the six viewports — 0 px on nine of the ten
+route/viewport pairs and 3 px on `/paint?engine=blender` at 390×844, where the
+sticky Mode group keeps the six-button switch pinned to the leading edge. The
+phone treatment stays exactly as A3 left it; with two groups it usually has
+nothing to do.
+
+### R2 — chrome strips overflowed onto the adjacent dock in the tablet band
+
+`.st-toolbar` and `.st-statusbar` got `overflow-x: auto` inside the kit's
+*mobile* block, so the 821–1180 px band A1 created had `overflow-x: visible`
+and their children drew straight over the neighbouring dock. Measured distance
+past the strip's own box:
+
+| Viewport | Route | Element | Past the box |
+| --- | --- | --- | --- |
+| 834×1112 | `/` | "Blender bridge · localhost" | **413 px** (53 px beyond the window) |
+| 834×1112 | `/crayon` | "Hide node editor" | 121.8 px, over the inspector |
+| 834×1112 | `/building` | status readout | 208.5 px |
+| 1024×768 | `/` | "Blender bridge · localhost" | 270.5 px |
+| 1280×800 | `/` | "Blender bridge · localhost" | 114.5 px |
+
+`.st-shell` is `overflow: hidden`, so the page never grew and the
+`scrollWidth == clientWidth` check in Verification below saw none of it.
+Element-level overflow is the metric, and it is what the browser harness now
+measures.
+
+`overflow-x` moved to the base rules, so both strips scroll at every width
+rather than only on a phone, with `scrollbar-width: thin` where a pointer can
+see one and `none` on a coarse pointer. Measured after: **zero** children
+rendering past a non-scrolling strip, on all ten routes at all six viewports.
+
+One thing this does not fix, measured and left: in the band the status line
+still gives all its ground to the trailing readout, because the desktop rule
+makes `.st-state` the only shrinkable item. On `/paint` at 834×1112 it renders
+"I." — 23.1px — and it did before this change too, identically, so it is a
+pre-existing condition of the band rather than a cost of the scroll. Paying it
+properly means deciding per tool which readout the band drops, the way
+`/paint` already drops its stroke counter on a phone.
+
+### R3 — the sheet handle was 39 px in phone landscape
+
+`studio-shell.css` shortened the handle to `min-height: 34px` under
+`(max-height: 500px)` to buy back viewport height, and it measured **39 px** at
+844×390 on all ten routes: the only sub-44 px target at that viewport, and the
+only control that opens the panels at all. It is `var(--st-touch)` now —
+**44 px**, all ten routes — and `--st-sheet-collapsed` follows it, since that
+token reserves the handle's height in the body grid. The grip's margins pay
+back most of the difference; the net cost is 5 px of a 390 px screen, and
+`/paint`'s viewport goes 199 px → 189 px.
+
+### R4 — three more sub-minimum targets, and an unbounded status line
+
+Found in the same audit, all measured:
+
+- **`.st-tabs button` was 11 px tall.** `padding: 0`, `font: 700 11px/1`, no
+  height, inside a 36 px strip — so the hit area was the type: `/` "Nodes"
+  38.6 × 11, `/bin` "Build Bin" 69.5 × 11 at 1440×900. Under WCAG 2.2's
+  24 × 24 at every viewport except inside the phone sheet. The button stretches
+  to the strip now (36 px, and `var(--st-touch)` under `(pointer: coarse)` so a
+  tablet with docks is covered too) and the selected underline moved to an
+  inset shadow, which the old outset spread would have drawn below the strip.
+- **`.bin-toolbar-button`** — Reframe, 58.5 × 13 px for the same reason. It is
+  `inline-flex` with `min-height: 26px` now.
+- **`.st-nav-sections a`** — "Lab" measured 43.7 × 44 in landscape. `min-width:
+  var(--st-touch)`: a target that misses on one axis misses.
+- **N4, the phone status bar had no width bound.** `.st-statusbar > .st-state`
+  is `flex: 0 0 auto` on mobile for a good reason — shrunk against 390 px it
+  rendered one letter of the message — but "does not shrink" is not "may be any
+  width". A runtime error written into `[data-status-text]` took the strip's
+  `scrollWidth` past 1,500 px on every route measured and to 7,643 px on
+  `/crayon` in the audit's run. `max-width: 100%` bounds it at one screenful
+  and hands the rest back to the kit's ellipsis; the same bound covers the
+  bare-`<span>` form `/crayon` and `/building` use. Measured with a 200-character
+  error injected at 390×844: `/paint` **1,555 px → 404 px**, `/typewriter`
+  1,768 → 617, `/chrome-assets` 1,642 → 491, `/gallery` and `/materialx`
+  1,541 → 390.
+
+### N5 — the asset library's sheet layout was left at the old breakpoint
+
+The overlay's own `max-width: 720px` breakpoint was raised to the shell's
+820 px, but only for going full-screen: `.asset-library-categories { flex-wrap:
+wrap }`, the wrapped header and the stacked filter column stayed behind the
+720 px query. So 721–820 px got the full-screen sheet with the desktop dialog's
+*scrolling* category strip — the exact bug the breakpoint change was made to
+close, in a 100 px band. Latent rather than broken today, because seven
+category chips happen to fit at those widths. Those three rules are at the
+shell's breakpoint now; the card grid keeps a width query of its own, because
+"how many columns fit" is a question about pixels — forcing two up at 820 px
+would give 394 px cards whose square thumbnails are taller than the viewport.
+
+### The tests that could not fail
+
+Six assertions in `studio-interface.test.ts` were strengthened, and each
+strengthened form was checked by reverting the fix it covers and watching it go
+red:
+
+| Was | Is |
+| --- | --- |
+| **A1** required one exact single-line spelling of a rule `studio-nav.css` has never used, so it could not fail | parses every `display: none` rule in the file and asserts none of them hides `.st-nav-sections` |
+| **C3** matched the kit's `padding-left` declaration, which is exactly what was present and overridden | computes selector specificity, asserts the inset rule out-specifies every `padding` shorthand matching a chrome strip in any shell stylesheet, and parses the 12 px floor rather than spelling it |
+| **D1** counted `useStudioRuntimeChip(` calls in one file and asserted 2 | reads the route table out of `App.tsx` and asserts every routed page reaches a publisher — a new route is covered the day it is added |
+| **D3 / D4** opened one of the two files the finding named, with blacklists (`/font: 700 8px/`, `/min-height: 36px/`) that `font: 500 8px` and `38px` walk straight past | opens both, parses every literal px font size and asserts none is under 11, parses every mobile `height`/`min-height` and asserts each is 0 or ≥ 44 |
+| **B2** forbade `radius / Math.sin(THREE.MathUtils…` — a spelling the code never had — and its positive match was satisfied by an unused import | forbids `/ Math.sin(` outright outside `camera-fit.ts` (the bug's shape, not a spelling) and requires an assigned call taking `camera` |
+| **C4** never opened `asset-library.css`, one of the three files the finding names | opens it, and asserts every `Nvh` in the file has an `Ndvh` beside it |
+
+The rest of what text cannot see is in the browser harness.
+
 ## Verification
 
-Re-measured headlessly at all six viewports, across all ten routes:
+Re-measured headlessly at all six viewports, across all ten routes
+(`npm run test:interface`, and reverting any fix above makes it fail):
 
-- No horizontal page overflow anywhere (`scrollWidth == clientWidth`).
+- No horizontal page overflow anywhere (`scrollWidth == clientWidth`), and no
+  element-level overflow either: zero children rendering past a non-scrolling
+  chrome strip.
 - No page errors or failed navigations on any route/viewport pair.
-- Zero sub-44px touch targets on a 390×844 phone.
-- `npm test` — 716 tests, 714 pass, 2 skipped, 0 fail.
+- A non-empty nav status chip on all ten routes at every desktop viewport.
+- Zero sub-44px touch targets on a 390×844 phone, and zero under WCAG 2.2's
+  24 × 24 in the shell chrome at every other viewport.
+- Zero elements rendering text below 11 px in the nav, toolbar, status bar or
+  Surface tool rail.
+- `.st-toolbar` under 20% of the window height at every viewport, on every route.
+- `npm test` — **753 tests, 751 pass, 2 skipped, 0 fail** (`src/gnvm/volume.test.ts`
+  carries a wall-clock assertion that trips under load from a concurrent
+  headless browser run; it passes in isolation, and the browser harness is a
+  separate script for exactly that reason).
 - Both overlays opened and measured at phone, phone-landscape, tablet and desktop.
-- `tsc --noEmit` and `npm run build` clean.
+- `tsc --noEmit` clean.
 
 ## The slider
 
@@ -697,7 +941,17 @@ call site, so it was left alone.
 - Run headlessly on SwiftShader, so `/paint` fell back to WebGL2 and the WebGPU
   path was not exercised. No real-device testing (no iOS Safari, no Android
   Chrome) — the safe-area and `dvh` findings are read from the CSS, not observed
-  on hardware.
+  on hardware. Chromium's CDP has no `Emulation.setSafeAreaInsets` in the build
+  used here, so what the browser harness checks for C3 is the *cascade* — that
+  all three strips resolve the same inline padding, and still do after a
+  bare-class shorthand is appended to the live document — not the inset value.
+- Three sub-minimum targets are known and unfixed because no finding named
+  them, and the harness does not assert on them rather than pretending
+  otherwise: the kit's 18 × 18 px checkbox on desktop (28 px in the phone
+  sheet), `/chrome-assets`' 331 × 16.8 px "Modulate in Procedural Studio" link,
+  and the desktop slider's deliberate 20 px hit area under an 18 px bar. The
+  first two are real WCAG 2.2 failures for a mouse.
+- The `surface-painter.css` lil-gui skin still carries 8–10 px labels (see D3).
 - The referenced Google Drive folder holds `No3d Tools`, `New Folder With
   Items 7`, and a 252 MB `No3d Tools.zip`. No Blender-side interface comparison
   was made against those files; the findings above are about this app's own UI.
