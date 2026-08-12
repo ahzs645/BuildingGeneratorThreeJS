@@ -168,9 +168,19 @@
   /* Node-graph entry point: a thumb-sized FAB above the sheet handle. It has
      to clear the status bar as well as the handle — at a flat 60px it sat on
      top of the strip the kit calls the tool's only state readout, covering the
-     right half of the message. */
-  .st-viewport .graph-toggle {
-    position: fixed; right: 14px; z-index: 44;
+     right half of the message.
+
+     Scoped through .st-shell, and `left: auto` is part of the rule rather than
+     an omission — the same cascade problem the chrome strips' safe-area inset
+     had. `.assets-shell .graph-toggle` in chrome-assets.css corner-anchors the
+     desktop button at `position: absolute; left: 14px`, one class against one
+     class in a lazily-imported stylesheet that lands after this one, so it won
+     outright: on a phone /chrome-assets' entry point was absolute with both
+     `left` and `right` set, which stretches an auto-width box to fill. It
+     measured 362px across a 390px viewport and 816px across an 844px one — a
+     bar over the comparison panes where /crayon has a 156px pill. */
+  .st-shell .st-viewport .graph-toggle {
+    position: fixed; right: 14px; left: auto; z-index: 44;
     bottom: calc(var(--st-sheet-collapsed) + var(--st-status-h) + 12px);
     display: inline-flex; align-items: center; justify-content: center;
     min-height: var(--st-touch); padding: 0 18px;

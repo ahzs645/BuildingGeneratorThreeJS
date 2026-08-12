@@ -166,7 +166,20 @@ export function AssetLibraryOverlay({ open, activeAssetId, onClose, onSelect }: 
               >★</button>
             </article>
           ))}
-          {!visible.length && <p className="asset-library-message">No assets match “{filter}”.</p>}
+          {/* An empty grid has three different reasons, and one sentence for
+              all three read as a failed search whichever way you got here: a
+              fresh profile opening Recent or Favorites was told "No assets
+              match “”." — the search copy, quoting a query nobody typed. The
+              filter is only named when there is one. */}
+          {!visible.length && <p className="asset-library-message">{
+            filter.trim()
+              ? <>No assets match “{filter}”{view === "recent" ? " in Recent" : view === "favorites" ? " in Favorites" : category === "All" ? "" : ` in ${category}`}.</>
+              : view === "recent"
+                ? "Nothing opened yet — assets you load appear here."
+                : view === "favorites"
+                  ? "No favorites yet — tap ★ on a card to keep it here."
+                  : `No assets in ${category}.`
+          }</p>}
         </div>}
         <footer>Blender reference renders · selecting an asset loads its extracted Geometry Nodes graph into the studio to edit and evaluate.</footer>
       </section>

@@ -729,8 +729,39 @@
   .st-sheet .st-node-stack { padding: 10px 2px; }
   .st-sheet .st-node-head { height: var(--st-touch); font-size: var(--st-fs-title); }
   .st-sheet .st-node::before { top: calc(var(--st-touch) / 2 - 3px); }
-  .st-sheet input[type=checkbox] { width: 28px; height: 28px; }
-  .st-sheet .st-section > a {
+  /* 28 × 28 is the app's own touch minimum missed by 16px, and it stayed that
+     way because nothing could see it: the collapsed sheet sets [hidden] on its
+     body, so every control in here has an empty client rect until something
+     taps the handle, and the static sweep never did. The target is --st-touch;
+     the box stays 28px, painted by ::before so the two can differ. lil-gui is
+     excluded because its checkbox is a 44 × 28 toggle switch with a knob of
+     its own, skinned in surface-painter.css. */
+  .st-sheet input[type=checkbox]:not(.lil-gui *) {
+    width: var(--st-touch); height: var(--st-touch);
+    border-color: transparent; background-color: transparent;
+  }
+  .st-sheet input[type=checkbox]:not(.lil-gui *)::before {
+    content: ""; box-sizing: border-box; width: 28px; height: 28px;
+    border: 1px solid rgba(255,255,255,.2); border-radius: 7px;
+    background: var(--st-sunken);
+  }
+  .st-sheet input[type=checkbox]:not(.lil-gui *):checked {
+    background-color: transparent; background-image: none;
+  }
+  .st-sheet input[type=checkbox]:not(.lil-gui *):checked::before {
+    border-color: var(--st-accent); background-color: var(--st-accent);
+    background-image: var(--st-checkmark); background-repeat: no-repeat; background-position: center;
+  }
+  /* A standalone link is an action, so it gets an action's hit area. The
+     child combinator was the whole of the rule and it only reached one depth:
+     `/`'s "Side-by-side Blender compare →" sits in a .st-card's copy column,
+     one level further in, and measured 268 × 14.8 in the sheet — a target
+     nothing could see until the harness learned to import an asset, since the
+     card only exists after one. .st-card is a kit component whose links are
+     always their own row, so it is named here rather than the page that
+     happens to use it. Prose links are not in scope: those live inside
+     .st-finding or a <p>, and neither is matched. */
+  .st-sheet :is(.st-section, .st-card, .st-card *) > a {
     display: flex; min-height: var(--st-touch); align-items: center;
   }
   .st-toolbar :is(button, a),
@@ -804,4 +835,64 @@
    the mobile block so these rules win at equal specificity. */
 @media ((pointer: coarse) and (max-height: 500px)) {
   :root { --st-nav-h: 52px; --st-toolbar-h: 42px; --st-status-h: 28px; }
+
+  /* The detents are cut against the chrome the sheet carries, not against the
+     screen. 34dvh of a 390px-tall window is 133px, and the sheet spends 116px
+     of that before a control gets a pixel: a 44px handle, a 44px tab strip,
+     and the body's own padding. Peek measured 17px of panel on every
+     multi-tab route here — 17px in front of 1,405px of controls on /building,
+     1,284px on the putty lab — which is the top edge of one label and nothing
+     that can be read, let alone dragged. The single-tab routes, with no strip
+     to pay for, got 79px.
+
+     56dvh leaves ~103px, which is two touch rows on the worst case and four
+     on the best, and still keeps a band of viewport above it. The open detent
+     stops under the nav instead of at 62dvh (126px of panel): with the panels
+     deliberately up there is nothing to preserve below them, and ending at the
+     bar keeps the section switcher reachable rather than covering it too.
+
+     vh first and dvh second, the same fallback order as the block above and
+     for the same reason: iOS Safari resolves vh against the largest viewport. */
+  .st-sheet.is-peek { height: calc(56vh + env(safe-area-inset-bottom, 0px)); }
+  .st-sheet.is-peek { height: calc(56dvh + env(safe-area-inset-bottom, 0px)); }
+  .st-sheet.is-open { height: calc(100vh - var(--st-nav-h)); }
+  .st-sheet.is-open { height: calc(100dvh - var(--st-nav-h)); }
+
+  /* And the row goes back to one line. The two-line row above exists because
+     390px cannot fit a 96px label, a draggable track and a readout — a screen
+     that is 844px wide can, twice over, and paying 70px a row for a layout
+     that narrowness forced was what a screenshot of the fixed peek detent
+     showed: "BUILD SYSTEM", "GENERATOR · 15 inputs", the word "Floors", and
+     its slider one scroll notch below the fold. Nothing about that is a height
+     problem; it is a portrait rule applied to a landscape sheet.
+
+     The label keeps the touch row's height rather than the desktop 26px, so
+     the control beside it is still 44px of target. */
+  .st-sheet .st-row {
+    grid-template-columns: 116px minmax(0,1fr) 56px;
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 8px; padding: 3px 0;
+  }
+  .st-sheet .st-row > span:first-child {
+    grid-column: 1; grid-row: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .st-sheet .st-row input[type=range] { grid-column: 2; grid-row: 1; }
+  .st-sheet .st-row output,
+  .st-sheet .st-row > input[type=number] { grid-column: 3; grid-row: 1; }
+  .st-sheet .st-row input[type=checkbox] { grid-column: 3; grid-row: 1; justify-self: end; }
+  /* The stacked variant is stacked on purpose — its labels are Blender's own
+     socket names, which is why they were given the whole row — so it keeps
+     its two lines and only loses the 96px column it never had. */
+  .st-sheet .st-row.st-row-stacked { grid-template-columns: minmax(0,1fr) 56px; grid-template-rows: auto auto; }
+  .st-sheet .st-row.st-row-stacked > span:first-child { grid-column: 1 / -1; grid-row: 1; white-space: normal; }
+  .st-sheet .st-row.st-row-stacked > :nth-child(2) { grid-column: 1; grid-row: 2; }
+  .st-sheet .st-row.st-row-stacked > output { grid-column: 2; grid-row: 2; }
+  .st-sheet .st-row.st-row-wide { grid-template-columns: 116px minmax(0,1fr); }
+  /* Same argument for the field. Note this one is overriding the *tablet*
+     band, not the phone block: 844px is inside 821–1180px, so both match a
+     phone in landscape, and the band is what stacks a label over a select
+     here. A 116px column is affordable at this width and buys a row back. */
+  .st-sheet .st-field { grid-template-columns: 116px minmax(0,1fr); align-items: center; gap: 8px; }
 }

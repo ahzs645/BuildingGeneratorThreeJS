@@ -27,6 +27,14 @@ import test from "node:test";
  * heights, element-level overflow, computed insets, target sizes. It is a
  * separate script rather than part of `npm test` because sixty page loads
  * through SwiftShader take minutes.
+ *
+ * A third rule arrived with the fourth pass, and it is the one that let seven
+ * findings sit in a green suite: **a surface nothing opens is a surface nothing
+ * measures.** The mobile sheet starts collapsed, a collapsed sheet hides its
+ * body, and a hidden body has no client rects — so the phone sweep above,
+ * which reads as app-wide, had never measured a control a phone user taps.
+ * `npm run test:mobile` (tools/test-mobile-sheets.mjs) taps the handle first.
+ * M1-M7 below are its findings; the numbers are in docs/INTERFACE_REVIEW.md.
  */
 
 const repo = new URL("../../../", import.meta.url);
@@ -746,4 +754,176 @@ test("the phone status line keeps its width but does not run away with it", () =
   assert.match(rule[1], /max-width: 100%/);
   // The kit is what turns that bound into an ellipsis rather than a clip.
   assert.match(kit, /\.st-state > \[data-status-text\] \{[^}]*text-overflow: ellipsis/s);
+});
+
+// ---------------------------------------------------------------------------
+// Fourth pass —— the sheet, opened. Everything below was measured by
+// tools/test-mobile-sheets.mjs, which taps the handle before it measures.
+// `npm run test:interface` never could: a collapsed sheet sets [hidden] on its
+// body, so every control behind it has an empty client rect and that sweep's
+// own visibility filter dropped the lot.
+// ---------------------------------------------------------------------------
+
+// M1 —— 34dvh of a 390px-tall window is 133px, and the handle plus the tab
+// strip take 116px of it. Peek measured 17px of panel on all five multi-tab
+// routes at 844×390, in front of 1,405px of controls on /building.
+test("the phone-landscape detents leave a panel worth opening", () => {
+  const landscape = kit.match(/@media \(\(pointer: coarse\) and \(max-height: 500px\)\) \{[\s\S]*?\n\}/);
+  assert.ok(landscape, "studio-kit.css must carry the phone-landscape block");
+  // The sheet's own chrome in this block: a --st-touch handle and a --st-touch
+  // tab strip, plus the body's 10px padding and 10px gap. A detent has to clear
+  // that by a touch row before it is showing a control rather than a label's
+  // top edge.
+  const chromeHeight = 44 + 44 + 20;
+  const shortest = 390;
+  for (const [detent, floor] of [["peek", 44], ["open", 120]] as const) {
+    const rule = new RegExp(`\\.st-sheet\\.is-${detent} \\{ height: calc\\(([^;]+)\\); \\}`, "g");
+    const heights = [...landscape[0].matchAll(rule)].map(([, value]) => value);
+    assert.ok(heights.length >= 2, `${detent} needs a vh rule and a dvh rule in the landscape block`);
+    assert.ok(
+      heights.some((value) => value.includes("dvh")),
+      `${detent} must resolve against the dynamic viewport, not only vh`,
+    );
+    for (const height of heights) {
+      // `56dvh` → 218px, `100dvh - var(--st-nav-h)` → 338px at --st-nav-h: 52px.
+      const percent = /(\d+)d?vh/.exec(height);
+      assert.ok(percent, `${detent}'s height must be viewport-relative, got "${height}"`);
+      const nav = /var\(--st-nav-h\)/.test(height) ? 52 : 0;
+      const panel = (shortest * Number(percent[1]) / 100) - nav - chromeHeight;
+      assert.ok(
+        panel >= floor,
+        `${detent} leaves ${Math.round(panel)}px of panel at 844×390 — under the ${floor}px this detent is for`,
+      );
+    }
+  }
+  // The open detent stops at the bar rather than covering it: the switcher is
+  // the phone's only tool navigation besides the directory.
+  assert.match(landscape[0], /\.st-sheet\.is-open \{ height: calc\(100dvh - var\(--st-nav-h\)\); \}/);
+
+  // Height was only half of it. 102px of panel passed the check above and
+  // still rendered a section header, a section title and the word "Floors"
+  // with its slider below the fold, because the row was two-line — a shape
+  // 390px forces and 844px does not. One line here, and the label keeps a
+  // column rather than a whole row.
+  const row = /\.st-sheet \.st-row \{([^}]*)\}/.exec(landscape[0]);
+  assert.ok(row, "the landscape block must put the sheet's parameter row on one line");
+  assert.match(row[1], /grid-template-rows: auto;/);
+  const columns = /grid-template-columns:\s*([^;]+)/.exec(row[1]);
+  assert.ok(columns, "the one-line row needs its own column track");
+  assert.equal(
+    columns[1].trim().split(/\s+/).length, 3,
+    `label, control and readout are three tracks, got "${columns[1].trim()}"`,
+  );
+  // The row is one line, not one *short* line: the control beside the label is
+  // still a touch target.
+  const rowHeights = pxValues(row[1], "min-height");
+  assert.ok(
+    rowHeights.every((value) => value >= 44),
+    `a landscape sheet row may not be shorter than the touch minimum, got ${rowHeights.join("/")}`,
+  );
+});
+
+// M2 —— five 28 × 28 checkboxes in /building's Details tab, against the app's
+// own --st-touch minimum, on both phone viewports.
+test("the sheet's checkboxes are touch targets, box and hit area apart", () => {
+  const mobile = kit.slice(kit.indexOf("@media (max-width: 820px), ((pointer: coarse) and (max-height: 500px))"));
+  const target = /\.st-sheet input\[type=checkbox\][^{]*\{([^}]*)\}/.exec(mobile);
+  assert.ok(target, "the mobile block must still size the sheet's checkbox");
+  for (const property of ["width", "height"]) {
+    assert.deepEqual(
+      pxValues(target[1], property), [],
+      `a literal px ${property} here is how the target ended up at 28px`,
+    );
+    assert.match(target[1], new RegExp(`${property}: var\\(--st-touch\\)`));
+  }
+  // The painted box is not the target any more, so it needs its own box.
+  assert.match(mobile, /\.st-sheet input\[type=checkbox\][^{]*::before \{[^}]*content: ""/s);
+  // lil-gui's checkbox is a 44 × 28 toggle with a knob; it is not this widget.
+  assert.match(target[0], /:not\(\.lil-gui \*\)/);
+});
+
+// M3 —— chrome-assets.css corner-anchors the same button for desktop, one
+// class against one class, in a lazily-imported stylesheet that lands after
+// studio-shell.css. On a phone that left the FAB `position: absolute` with both
+// `left` and `right` set, which stretches an auto-width box: 362px across a
+// 390px viewport, 816px across an 844px one.
+test("the node-graph FAB out-specifies a page's own corner anchor", () => {
+  const fab = rulesDeclaring(shellCss, "position")
+    .find(({ selector }) => selector.includes(".graph-toggle") && !selector.includes(":has("));
+  assert.ok(fab, "studio-shell.css must still place the mobile FAB");
+  const anchor = rulesDeclaring(rules(read("src/react/pages/chrome-assets.css")), "position")
+    .find(({ selector }) => selector.includes(".graph-toggle"));
+  assert.ok(anchor, "chrome-assets.css must still corner-anchor its desktop button");
+  assert.ok(
+    beats(specificity(fab.selector), specificity(anchor.selector)),
+    `"${fab.selector}" must out-specify "${anchor.selector}" — load order put the page stylesheet last`,
+  );
+  // Winning `position` is not enough: the page rule sets `left`, and a fixed
+  // box with both insets stretches instead of hugging its content.
+  assert.match(fab.body, /left: auto/);
+});
+
+// M4 —— 9px "Active settings" and "Procedural generator", and a 10px generator
+// glyph, all in the Options tab of /paint on both phone viewports.
+test("the Surface Studio's active-generator card holds the type floor", () => {
+  const paintCss = rules(read("src/react/pages/surface-painter.css"));
+  for (const selector of [
+    "\\.paint-node-tabs > span",
+    "\\.surface-active-generator-context > span",
+    "\\.surface-active-generator-context small",
+  ]) {
+    const rule = new RegExp(`${selector} \\{([^}]*)\\}`).exec(paintCss);
+    assert.ok(rule, `surface-painter.css must still style ${selector}`);
+    for (const size of fontSizesPx(rule[1])) {
+      assert.ok(size >= 11, `${selector} renders ${size}px text, under the kit's floor`);
+    }
+  }
+});
+
+// M5 —— N5 raised this overlay's breakpoint and gave its buttons a 44px
+// min-height; the category chips are label-width, so the two shortest measured
+// 33.6 × 44 ("All") and 42.3 × 44 ("Text") in the phone sheet. The nav's
+// switcher had already been through this and got a min-width for it.
+test("the asset library's filter chips are targets on both axes", () => {
+  const coarse = libraryCss.match(/@media \(pointer: coarse\) \{[\s\S]*?\n\}/);
+  assert.ok(coarse, "asset-library.css must still carry its coarse-pointer block");
+  const chips = rulesDeclaring(coarse[0], "min-width")
+    .find(({ selector }) => selector.includes(".asset-library-filters button"));
+  assert.ok(chips, "the filter chips need a min-width, not only a min-height");
+  assert.match(chips.body, /min-width: var\(--st-touch\)/);
+  // And the height it already had, so neither axis is traded for the other.
+  assert.ok(
+    rulesDeclaring(coarse[0], "min-height")
+      .some(({ selector }) => selector.includes(".asset-library-filters button")),
+    "the filter chips must keep their min-height",
+  );
+});
+
+// M6 —— the kit sizes standalone links in the sheet, and the child combinator
+// was the whole of the rule: `/`'s "Side-by-side Blender compare →" sits one
+// level further in, inside a .st-card's copy column, and measured 268 × 14.8.
+// The card only exists after an import, which is why nothing had seen it.
+test("a standalone link in the sheet is a target at any depth of a card", () => {
+  const mobile = kit.slice(kit.indexOf("@media (max-width: 820px), ((pointer: coarse) and (max-height: 500px))"));
+  const link = rulesDeclaring(mobile, "min-height")
+    .find(({ selector }) => selector.includes(".st-sheet") && selector.trim().endsWith("> a"));
+  assert.ok(link, "the mobile block must still size standalone links in the sheet");
+  assert.match(link.body, /min-height: var\(--st-touch\)/);
+  // The rule has to reach a link nested inside a card, not only a section's
+  // own child. Descendant reach is the fix; naming the page would not be.
+  assert.match(link.selector, /\.st-card \*/);
+  assert.match(link.selector, /\.st-section/);
+});
+
+// M7 —— a tab list that shrinks. `/` publishes Nodes only once a graph installs, so
+// clearing the target takes three tabs back to two — left a stored index of 2
+// matching no tab: a strip with nothing selected over a body with every panel
+// hidden.
+test("the sheet's tab index cannot outrun its tabs", () => {
+  assert.match(shell, /Math\.min\(sheetTab, Math\.max\(tabs\.length - 1, 0\)\)/);
+  // And the clamp is what renders, not just what is computed.
+  assert.doesNotMatch(shell, /aria-selected=\{sheetTab === index\}/);
+  assert.doesNotMatch(shell, /hidden=\{sheetTab !== index\}/);
+  assert.match(shell, /aria-selected=\{activeTab === index\}/);
+  assert.match(shell, /hidden=\{activeTab !== index\}/);
 });

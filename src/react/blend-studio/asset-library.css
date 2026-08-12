@@ -70,6 +70,11 @@
 @media (pointer: coarse) {
   .asset-library > header button,
   .asset-library-filters button { min-height: var(--st-touch); }
+  /* min-width as well, for the same reason studio-nav.css gives its switcher
+     one: a target that misses the minimum on one axis misses it. The category
+     chips are label-width, and the shortest two measured 33.6 × 44 ("All") and
+     42.3 × 44 ("Text") in the phone sheet. */
+  .asset-library-filters button { min-width: var(--st-touch); }
   .asset-library > header input { height: var(--st-touch); }
   /* The star stays a 30px circle in a 180px card. A tap area does not have to
      be visible to be 44px. */
