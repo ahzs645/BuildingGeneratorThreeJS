@@ -14,7 +14,7 @@
 >
 > **A fourth pass opened the mobile sheet**, which no harness here had ever
 > done — a collapsed sheet hides its body, so every control a phone user taps
-> was invisible to the sweep that claimed to measure them. Six more findings,
+> was invisible to the sweep that claimed to measure them. Seven more findings,
 > all resolved, in *Fourth pass* below; `npm run test:mobile` is the harness
 > that drives them.
 
@@ -907,7 +907,7 @@ ten, plus the two states only a query parameter reaches — at 390×844 and
 genuinely open, then the FAB, its full-screen overlay, the asset library and
 the tool directory. `npm run test:mobile`.
 
-One of the six findings below is already recorded in *Scope and limitations*
+One of the seven findings below is already recorded in *Scope and limitations*
 above as "known and unfixed because no finding named them", and a second sits
 under a scope note in the browser harness itself. Neither was a judgement the
 harness made. They were pixels it could not see.
@@ -959,6 +959,33 @@ with the panels up. Re-measured at 844×390:
 
 390×844 is untouched by the change and measures the same as before: 171 px of
 panel at peek, 407 px at open.
+
+**And then a screenshot of the fix showed it was not finished.** 102 px of panel
+passed every assertion this pass added, and rendered: "BUILD SYSTEM",
+"GENERATOR · 15 inputs", the word "Floors" — and its slider one scroll notch
+below the fold. The detent that exists so you can drag a control and watch the
+geometry still did not show a control. Nothing in the numbers said so, because
+"the panel is at least one touch row tall" is not the same claim as "a control
+is in it".
+
+The cause was not height. `.st-sheet .st-row` goes two-line — label above a
+44 px track — because 390 px cannot fit a 96 px label, a draggable track and a
+readout on one line. **A landscape phone is 844 px wide.** It was paying 70 px
+a row for a layout that narrowness forced, on a screen that is not narrow, and
+leaving two thirds of its width empty to do it. The landscape block puts the
+row back on one line (116 px label · track · readout, the row still 44 px tall)
+and does the same for `.st-field` — which stacks in landscape not because of
+the phone rules but because 844 px falls inside the 821–1180 px *tablet* band,
+so both match at once.
+
+| At 844×390 | Before | After |
+| --- | --- | --- |
+| Controls visible at peek on `/building` | 0 | **1** (Floors, draggable) |
+| Controls visible at open on `/building` | 2 | **3** |
+| `/typewriter` at open | text area, clipped Frame label | text area, Frame slider, Play, Evaluate |
+
+Portrait keeps the two-line row, and so does the tablet band: both were checked
+by screenshot, not by inference.
 
 ### M2 — five 28 × 28 checkboxes inside the sheet
 
@@ -1033,7 +1060,26 @@ harness said it was, 104 times. It is a 30 px circle whose tap area is
 `getBoundingClientRect()` cannot see. The harness now measures a target as its
 box plus any negative-inset pseudo-element, which is what the app means by one.
 
-### M6 — a tab index that can outrun its tabs
+### M6 — a 268 × 14.8 px link that only exists after an import
+
+`/` before an import is not `/`. The Nodes tab, the Target and Apply-to fields,
+the source card and the node-graph FAB all appear only once a graph installs,
+and every sweep of this route — including the first version of this pass — had
+measured a cold load. Driving the asset library one step further, into "tap the
+first card", reaches that state, and the Source tab's card carries a
+**268 × 14.8 px** link, "Side-by-side Blender compare →".
+
+The kit already sizes standalone links in the sheet:
+`.st-sheet .st-section > a { min-height: var(--st-touch) }`. The child
+combinator was the whole of the problem — this link sits in a `.st-card`'s copy
+column, one level further in, and the rule stopped a level short.
+
+**Fixed** — the selector covers `.st-card` and its descendants as well.
+`.st-card` is a kit component whose links are always their own row, so it is
+named in the kit rather than the page that happens to use it; prose links live
+inside `.st-finding` or a `<p>` and are still untouched.
+
+### M7 — a tab index that can outrun its tabs
 
 Not measured — reached by reading, and fixed because it is cheap. The sheet's
 tab list is not fixed length: `/` publishes a Nodes tab only once a graph is
@@ -1064,6 +1110,11 @@ checked. Across all 22 route/viewport pairs:
   `ERR_CONNECTION_REFUSED`: it probes a local Blender bake bridge on port 7801
   and falls back to the GN-VM preview when nothing answers, which is the
   intended dev-only behaviour.
+- Every state named above was also looked at, not only measured. That is how
+  M1's first fix was caught being half a fix: a panel can pass "tall enough to
+  hold a control" while the control sits below its fold, and only a picture
+  says so. The measurements are the regression cover; the screenshots are what
+  decides whether the measurement was asking the right question.
 - The Surface Studio's brush rail *looks* like it clips and does not. Seven of
   its brushes render up to 863 px past the panel's right edge at 390×844, four
   up to 409 px at 844×390, and every one of them is a swipe away: the rail is a
@@ -1097,7 +1148,7 @@ Re-measured headlessly at all six viewports, across all ten routes
 - `tsc --noEmit` clean.
 
 And, for the fourth pass, re-measured with the sheet actually open
-(`npm run test:mobile`, 11 routes × 2 phone viewports, reverting any of M1–M6
+(`npm run test:mobile`, 11 routes × 2 phone viewports, reverting any of M1–M7
 makes it fail):
 
 - The handle's three-detent cycle returns to its starting detent on every
@@ -1113,10 +1164,13 @@ makes it fail):
   three named exceptions and the lil-gui skin.
 - The collapsed sheet clears the status bar on every route; the node overlay
   opens full-screen and closes; the tool directory closes on Escape.
+- `/` driven through an actual import — open the sheet, open the asset library,
+  tap a card — publishes its third tab, keeps exactly one tab selected as the
+  list grows from two to three, and every one of the three walks clean.
 - No page errors on any route at either phone viewport.
 
 With `npm run test:interface` re-run after these changes and still green at all
-six viewports, `npm test` at **759 tests, 757 pass, 2 skipped, 0 fail**, and
+six viewports, `npm test` at **760 tests, 758 pass, 2 skipped, 0 fail**, and
 `tsc --noEmit` clean.
 
 ## The slider
@@ -1183,6 +1237,17 @@ call site, so it was left alone.
   card that M4 fixed in `surface-painter.css`, in its own stylesheet. Nothing
   imports the component, so no harness can see it and it was left untouched
   rather than edited blind.
+- Driving `/` through an import surfaced one thing that is **not** a mobile
+  finding and is recorded so it is not lost: with a library asset installed —
+  283 groups, 2,115 nodes, the Nodes tab populated — the status line still
+  reads "Import a Blender graph to begin" and the viewport stays empty, with
+  the runtime chip on "GN-VM idle". Measured identically at 390×844 and at
+  1440×900 over 60 s, so it is not the sheet and not the phone. The page has an
+  explicit `Apply to preview` and an auto-evaluation policy that can resolve to
+  Manual, so the empty viewport is plausibly the intended manual path; the
+  stale status sentence is harder to defend. Neither was chased here — this
+  pass is about the mobile layout, and a fix on either belongs to whoever owns
+  that evaluation policy.
 - The referenced Google Drive folder holds `No3d Tools`, `New Folder With
   Items 7`, and a 252 MB `No3d Tools.zip`. No Blender-side interface comparison
   was made against those files; the findings above are about this app's own UI.

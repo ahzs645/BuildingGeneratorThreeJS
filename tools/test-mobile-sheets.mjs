@@ -514,8 +514,37 @@ try {
                 `${where}: ${library.small.length} asset-library target(s) under ${TOUCH}px: ${
                   library.small.map((one) => `"${one.label}" ${one.w}×${one.h}`).join("; ")}`,
               ));
-              await page.keyboard.press("Escape");
-              await sleep(400);
+              // Load an asset from the library, because `/` before an import
+              // is not `/`: the Nodes tab, the Target and Apply-to fields and
+              // the node-graph FAB all appear only once a graph installs, and
+              // a cold load reaches none of them. It is also the state M6 is
+              // about — the tab list growing from two entries to three.
+              const card = await page.$(".asset-library-card");
+              if (card) {
+                await card.click();
+                await sleep(6000);
+                await driveTo(page, "open");
+                const loaded = await page.evaluate(readSheet, { targetExcludes: TARGET_EXCLUDES, typeExcludes: TYPE_EXCLUDES, touch: TOUCH, typeFloor: TYPE_FLOOR });
+                check(() => assert.ok(
+                  loaded.tabs.length >= 3,
+                  `${where}: importing an asset should publish the Nodes tab, got ${loaded.tabs.map((one) => one.label).join(" / ")}`,
+                ));
+                check(() => assert.equal(
+                  loaded.tabs.filter((one) => one.selected).length, 1,
+                  `${where}: after the tab list grew, ${loaded.tabs.filter((one) => one.selected).length} tabs are selected`,
+                ));
+                for (let index = 0; index < loaded.tabs.length; index += 1) {
+                  await page.evaluate((one) => {
+                    document.querySelectorAll(".st-sheet .st-segmented [role=tab]")[one].click();
+                  }, index);
+                  await sleep(500);
+                  const read = await page.evaluate(readSheet, { targetExcludes: TARGET_EXCLUDES, typeExcludes: TYPE_EXCLUDES, touch: TOUCH, typeFloor: TYPE_FLOOR });
+                  assertOpenPanel(read, `${where} · imported · tab "${loaded.tabs[index].label}"`);
+                }
+              } else {
+                await page.keyboard.press("Escape");
+                await sleep(400);
+              }
             }
           }
           await driveTo(page, "collapsed");

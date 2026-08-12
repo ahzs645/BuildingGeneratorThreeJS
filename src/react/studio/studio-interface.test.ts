@@ -28,13 +28,13 @@ import test from "node:test";
  * separate script rather than part of `npm test` because sixty page loads
  * through SwiftShader take minutes.
  *
- * A third rule arrived with the fourth pass, and it is the one that let six
+ * A third rule arrived with the fourth pass, and it is the one that let seven
  * findings sit in a green suite: **a surface nothing opens is a surface nothing
  * measures.** The mobile sheet starts collapsed, a collapsed sheet hides its
  * body, and a hidden body has no client rects — so the phone sweep above,
  * which reads as app-wide, had never measured a control a phone user taps.
  * `npm run test:mobile` (tools/test-mobile-sheets.mjs) taps the handle first.
- * M1-M6 below are its findings; the numbers are in docs/INTERFACE_REVIEW.md.
+ * M1-M7 below are its findings; the numbers are in docs/INTERFACE_REVIEW.md.
  */
 
 const repo = new URL("../../../", import.meta.url);
@@ -799,6 +799,28 @@ test("the phone-landscape detents leave a panel worth opening", () => {
   // The open detent stops at the bar rather than covering it: the switcher is
   // the phone's only tool navigation besides the directory.
   assert.match(landscape[0], /\.st-sheet\.is-open \{ height: calc\(100dvh - var\(--st-nav-h\)\); \}/);
+
+  // Height was only half of it. 102px of panel passed the check above and
+  // still rendered a section header, a section title and the word "Floors"
+  // with its slider below the fold, because the row was two-line — a shape
+  // 390px forces and 844px does not. One line here, and the label keeps a
+  // column rather than a whole row.
+  const row = /\.st-sheet \.st-row \{([^}]*)\}/.exec(landscape[0]);
+  assert.ok(row, "the landscape block must put the sheet's parameter row on one line");
+  assert.match(row[1], /grid-template-rows: auto;/);
+  const columns = /grid-template-columns:\s*([^;]+)/.exec(row[1]);
+  assert.ok(columns, "the one-line row needs its own column track");
+  assert.equal(
+    columns[1].trim().split(/\s+/).length, 3,
+    `label, control and readout are three tracks, got "${columns[1].trim()}"`,
+  );
+  // The row is one line, not one *short* line: the control beside the label is
+  // still a touch target.
+  const rowHeights = pxValues(row[1], "min-height");
+  assert.ok(
+    rowHeights.every((value) => value >= 44),
+    `a landscape sheet row may not be shorter than the touch minimum, got ${rowHeights.join("/")}`,
+  );
 });
 
 // M2 —— five 28 × 28 checkboxes in /building's Details tab, against the app's
@@ -877,7 +899,23 @@ test("the asset library's filter chips are targets on both axes", () => {
   );
 });
 
-// M6 —— a tab list that shrinks. `/` publishes Nodes only once a graph installs, so
+// M6 —— the kit sizes standalone links in the sheet, and the child combinator
+// was the whole of the rule: `/`'s "Side-by-side Blender compare →" sits one
+// level further in, inside a .st-card's copy column, and measured 268 × 14.8.
+// The card only exists after an import, which is why nothing had seen it.
+test("a standalone link in the sheet is a target at any depth of a card", () => {
+  const mobile = kit.slice(kit.indexOf("@media (max-width: 820px), ((pointer: coarse) and (max-height: 500px))"));
+  const link = rulesDeclaring(mobile, "min-height")
+    .find(({ selector }) => selector.includes(".st-sheet") && selector.trim().endsWith("> a"));
+  assert.ok(link, "the mobile block must still size standalone links in the sheet");
+  assert.match(link.body, /min-height: var\(--st-touch\)/);
+  // The rule has to reach a link nested inside a card, not only a section's
+  // own child. Descendant reach is the fix; naming the page would not be.
+  assert.match(link.selector, /\.st-card \*/);
+  assert.match(link.selector, /\.st-section/);
+});
+
+// M7 —— a tab list that shrinks. `/` publishes Nodes only once a graph installs, so
 // clearing the target takes three tabs back to two — left a stored index of 2
 // matching no tab: a strip with nothing selected over a body with every panel
 // hidden.

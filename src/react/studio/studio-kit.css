@@ -752,7 +752,16 @@
     border-color: var(--st-accent); background-color: var(--st-accent);
     background-image: var(--st-checkmark); background-repeat: no-repeat; background-position: center;
   }
-  .st-sheet .st-section > a {
+  /* A standalone link is an action, so it gets an action's hit area. The
+     child combinator was the whole of the rule and it only reached one depth:
+     `/`'s "Side-by-side Blender compare →" sits in a .st-card's copy column,
+     one level further in, and measured 268 × 14.8 in the sheet — a target
+     nothing could see until the harness learned to import an asset, since the
+     card only exists after one. .st-card is a kit component whose links are
+     always their own row, so it is named here rather than the page that
+     happens to use it. Prose links are not in scope: those live inside
+     .st-finding or a <p>, and neither is matched. */
+  .st-sheet :is(.st-section, .st-card, .st-card *) > a {
     display: flex; min-height: var(--st-touch); align-items: center;
   }
   .st-toolbar :is(button, a),
@@ -848,4 +857,42 @@
   .st-sheet.is-peek { height: calc(56dvh + env(safe-area-inset-bottom, 0px)); }
   .st-sheet.is-open { height: calc(100vh - var(--st-nav-h)); }
   .st-sheet.is-open { height: calc(100dvh - var(--st-nav-h)); }
+
+  /* And the row goes back to one line. The two-line row above exists because
+     390px cannot fit a 96px label, a draggable track and a readout — a screen
+     that is 844px wide can, twice over, and paying 70px a row for a layout
+     that narrowness forced was what a screenshot of the fixed peek detent
+     showed: "BUILD SYSTEM", "GENERATOR · 15 inputs", the word "Floors", and
+     its slider one scroll notch below the fold. Nothing about that is a height
+     problem; it is a portrait rule applied to a landscape sheet.
+
+     The label keeps the touch row's height rather than the desktop 26px, so
+     the control beside it is still 44px of target. */
+  .st-sheet .st-row {
+    grid-template-columns: 116px minmax(0,1fr) 56px;
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 8px; padding: 3px 0;
+  }
+  .st-sheet .st-row > span:first-child {
+    grid-column: 1; grid-row: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .st-sheet .st-row input[type=range] { grid-column: 2; grid-row: 1; }
+  .st-sheet .st-row output,
+  .st-sheet .st-row > input[type=number] { grid-column: 3; grid-row: 1; }
+  .st-sheet .st-row input[type=checkbox] { grid-column: 3; grid-row: 1; justify-self: end; }
+  /* The stacked variant is stacked on purpose — its labels are Blender's own
+     socket names, which is why they were given the whole row — so it keeps
+     its two lines and only loses the 96px column it never had. */
+  .st-sheet .st-row.st-row-stacked { grid-template-columns: minmax(0,1fr) 56px; grid-template-rows: auto auto; }
+  .st-sheet .st-row.st-row-stacked > span:first-child { grid-column: 1 / -1; grid-row: 1; white-space: normal; }
+  .st-sheet .st-row.st-row-stacked > :nth-child(2) { grid-column: 1; grid-row: 2; }
+  .st-sheet .st-row.st-row-stacked > output { grid-column: 2; grid-row: 2; }
+  .st-sheet .st-row.st-row-wide { grid-template-columns: 116px minmax(0,1fr); }
+  /* Same argument for the field. Note this one is overriding the *tablet*
+     band, not the phone block: 844px is inside 821–1180px, so both match a
+     phone in landscape, and the band is what stacks a label over a select
+     here. A 116px column is affordable at this width and buys a row back. */
+  .st-sheet .st-field { grid-template-columns: 116px minmax(0,1fr); align-items: center; gap: 8px; }
 }
