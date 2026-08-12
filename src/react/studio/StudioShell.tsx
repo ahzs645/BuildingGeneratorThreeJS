@@ -122,6 +122,13 @@ export function StudioShell({
     ...(leftDock ? [{ id: "controls", label: "Controls", content: leftDock }] : []),
     ...(rightDock ? [{ id: "details", label: "Details", content: rightDock }] : []),
   ];
+  // The tab list is not fixed: `/` publishes Nodes only once a graph is
+  // installed, so clearing the target takes three tabs back to two. A stored
+  // index of 2 then matches no tab, and the sheet renders a strip with nothing
+  // selected above a body with every panel hidden — an open sheet showing
+  // nothing at all. The index is clamped rather than reset so the selection
+  // survives the tab that is still there.
+  const activeTab = Math.min(sheetTab, Math.max(tabs.length - 1, 0));
 
   // The nav's panel toggle only appears for pages that actually have docks.
   useEffect(() => {
@@ -172,12 +179,12 @@ export function StudioShell({
             key={tab.id}
             type="button"
             role="tab"
-            aria-selected={sheetTab === index}
-            className={sheetTab === index ? "active" : ""}
+            aria-selected={activeTab === index}
+            className={activeTab === index ? "active" : ""}
             onClick={() => setSheetTab(index)}
           >{tab.label}</button>)}
         </div>}
-        {tabs.map((tab, index) => <div className="st-sheet-panel" key={tab.id} hidden={sheetTab !== index}>{tab.content}</div>)}
+        {tabs.map((tab, index) => <div className="st-sheet-panel" key={tab.id} hidden={activeTab !== index}>{tab.content}</div>)}
       </div>
     </div>}
   </main>;

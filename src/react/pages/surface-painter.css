@@ -73,9 +73,13 @@
 
 /* Procedural node inspector ------------------------------------------------ */
 .paint-node-tabs { justify-content: space-between; }
+/* --st-fs-micro, not 9px. This is the meta slot of a .st-panel-header, which
+   the kit sets at the floor; overriding the size as well as the colour put
+   "Active settings" two steps under it, and on a phone that header is the
+   first line of the Options tab. */
 .paint-node-tabs > span {
   color: var(--st-ok);
-  font: 600 9px/1 var(--st-mono);
+  font: 600 var(--st-fs-micro)/1 var(--st-mono);
   letter-spacing: .12em;
   text-transform: uppercase;
 }
@@ -586,7 +590,9 @@ body.draw .surface-painter-page #modeBtn .key { background: rgba(9, 12, 15, 0.28
   border-radius: 8px;
   background: var(--st-accent-fill);
   color: #e9f6fd;
-  font: 700 10px/1 var(--st-mono);
+  /* The glyph is a two-letter abbreviation of the generator's name — read, not
+     decoration — so it holds the floor like the rest. A 34px tile has the room. */
+  font: 700 var(--st-fs-micro)/1 var(--st-mono);
 }
 
 .persistent-surface-studio .surface-active-generator-context > div {
@@ -597,7 +603,7 @@ body.draw .surface-painter-page #modeBtn .key { background: rgba(9, 12, 15, 0.28
 
 .persistent-surface-studio .surface-active-generator-context small {
   color: var(--st-accent-ink);
-  font: 700 9px/1 var(--st-mono);
+  font: 700 var(--st-fs-micro)/1 var(--st-mono);
   letter-spacing: .1em;
   text-transform: uppercase;
 }

@@ -729,7 +729,29 @@
   .st-sheet .st-node-stack { padding: 10px 2px; }
   .st-sheet .st-node-head { height: var(--st-touch); font-size: var(--st-fs-title); }
   .st-sheet .st-node::before { top: calc(var(--st-touch) / 2 - 3px); }
-  .st-sheet input[type=checkbox] { width: 28px; height: 28px; }
+  /* 28 × 28 is the app's own touch minimum missed by 16px, and it stayed that
+     way because nothing could see it: the collapsed sheet sets [hidden] on its
+     body, so every control in here has an empty client rect until something
+     taps the handle, and the static sweep never did. The target is --st-touch;
+     the box stays 28px, painted by ::before so the two can differ. lil-gui is
+     excluded because its checkbox is a 44 × 28 toggle switch with a knob of
+     its own, skinned in surface-painter.css. */
+  .st-sheet input[type=checkbox]:not(.lil-gui *) {
+    width: var(--st-touch); height: var(--st-touch);
+    border-color: transparent; background-color: transparent;
+  }
+  .st-sheet input[type=checkbox]:not(.lil-gui *)::before {
+    content: ""; box-sizing: border-box; width: 28px; height: 28px;
+    border: 1px solid rgba(255,255,255,.2); border-radius: 7px;
+    background: var(--st-sunken);
+  }
+  .st-sheet input[type=checkbox]:not(.lil-gui *):checked {
+    background-color: transparent; background-image: none;
+  }
+  .st-sheet input[type=checkbox]:not(.lil-gui *):checked::before {
+    border-color: var(--st-accent); background-color: var(--st-accent);
+    background-image: var(--st-checkmark); background-repeat: no-repeat; background-position: center;
+  }
   .st-sheet .st-section > a {
     display: flex; min-height: var(--st-touch); align-items: center;
   }
@@ -804,4 +826,26 @@
    the mobile block so these rules win at equal specificity. */
 @media ((pointer: coarse) and (max-height: 500px)) {
   :root { --st-nav-h: 52px; --st-toolbar-h: 42px; --st-status-h: 28px; }
+
+  /* The detents are cut against the chrome the sheet carries, not against the
+     screen. 34dvh of a 390px-tall window is 133px, and the sheet spends 116px
+     of that before a control gets a pixel: a 44px handle, a 44px tab strip,
+     and the body's own padding. Peek measured 17px of panel on every
+     multi-tab route here — 17px in front of 1,405px of controls on /building,
+     1,284px on the putty lab — which is the top edge of one label and nothing
+     that can be read, let alone dragged. The single-tab routes, with no strip
+     to pay for, got 79px.
+
+     56dvh leaves ~103px, which is two touch rows on the worst case and four
+     on the best, and still keeps a band of viewport above it. The open detent
+     stops under the nav instead of at 62dvh (126px of panel): with the panels
+     deliberately up there is nothing to preserve below them, and ending at the
+     bar keeps the section switcher reachable rather than covering it too.
+
+     vh first and dvh second, the same fallback order as the block above and
+     for the same reason: iOS Safari resolves vh against the largest viewport. */
+  .st-sheet.is-peek { height: calc(56vh + env(safe-area-inset-bottom, 0px)); }
+  .st-sheet.is-peek { height: calc(56dvh + env(safe-area-inset-bottom, 0px)); }
+  .st-sheet.is-open { height: calc(100vh - var(--st-nav-h)); }
+  .st-sheet.is-open { height: calc(100dvh - var(--st-nav-h)); }
 }

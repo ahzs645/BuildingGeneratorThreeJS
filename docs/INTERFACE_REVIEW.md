@@ -11,6 +11,12 @@
 > four regressions in the fixes. Everything it falsified is corrected inside
 > the finding it belongs to; the regressions and the tests that could not fail
 > are in *Third pass* below.
+>
+> **A fourth pass opened the mobile sheet**, which no harness here had ever
+> done — a collapsed sheet hides its body, so every control a phone user taps
+> was invisible to the sweep that claimed to measure them. Six more findings,
+> all resolved, in *Fourth pass* below; `npm run test:mobile` is the harness
+> that drives them.
 
 Reviewed against `main` at commit `b618e21`, driven headlessly through Chromium
 (SwiftShader) at six viewports: 1440×900, 1280×800, 1024×768, 834×1112,
@@ -882,6 +888,192 @@ red:
 
 The rest of what text cannot see is in the browser harness.
 
+## Fourth pass — the sheet, opened
+
+Every phone measurement above was taken on a sheet nothing had opened. That is
+the whole of this pass: on a phone the docks do not exist, every control the
+layout owns is re-rendered into `.st-sheet`, and the sheet starts collapsed. A
+collapsed sheet sets `[hidden]` on its body, so `getClientRects()` returns
+nothing for the buttons, selects and checkboxes behind it — and
+`tools/test-interface-measurements.mjs` filters on exactly that,
+`element.getClientRects().length > 0`. Its phone sweep runs `[controls]` across
+the whole page, which reads as app-wide coverage and is not: it measured the
+nav, the toolbar, the status bar and a 44px handle. **Nothing a phone user
+actually taps has ever been in it.**
+
+So `tools/test-mobile-sheets.mjs` taps the handle first. Eleven routes — the
+ten, plus the two states only a query parameter reaches — at 390×844 and
+844×390, driven through all three detents, every tab walked with the sheet
+genuinely open, then the FAB, its full-screen overlay, the asset library and
+the tool directory. `npm run test:mobile`.
+
+One of the six findings below is already recorded in *Scope and limitations*
+above as "known and unfixed because no finding named them", and a second sits
+under a scope note in the browser harness itself. Neither was a judgement the
+harness made. They were pixels it could not see.
+
+### M1 — the peek detent shows 17 px of panel in phone landscape
+
+`34dvh` of a 390 px-tall window is 133 px. The sheet spends 116 px of that
+before a control gets a pixel: a 44 px handle, a 44 px tab strip, and the
+body's 10 px padding and 10 px gap. Measured `.st-sheet-panel` client height at
+844×390, against the content behind it:
+
+| Route | Panel | Content |
+| --- | --- | --- |
+| `/building` | **17 px** | 1,405 px |
+| `/paint?engine=putty` | **17 px** | 1,284 px |
+| `/crayon` | **17 px** | 639 px |
+| `/` | **17 px** | 311 px |
+| `/paint` | **17 px** | 100 px |
+| `/bin` | 79 px | 1,754 px |
+| `/chrome-assets` | 79 px | 1,414 px |
+| `/typewriter` | 79 px | 835 px |
+| `/gallery` | 79 px | 529 px |
+| `/materialx` | 79 px | 496 px |
+| `/vase` | 79 px | 415 px |
+
+17 px on every route that has a tab strip to pay for, 79 px on every route that
+does not. 17 px is the top edge of one label: on `/building` the sheet renders
+the word "BUILD SYSTEM" cut through the middle and nothing else. The detent
+that exists so you can watch the geometry while you drag a slider does not show
+the slider.
+
+The open detent was not much better: `62dvh` is 242 px, 126 px of panel, one
+parameter row. Its top edge sat at 147 px — 53 px below the toolbar — so it
+covered all but a sliver of the viewport to buy that one row.
+
+The portrait numbers are fine and unchanged: 34dvh of 844 px is 287 px, which
+is 171 px of panel.
+
+**Fixed** — the landscape block in `studio-kit.css` re-cuts both detents against
+the chrome the sheet carries rather than against the screen. Peek is `56dvh`;
+open runs to `calc(100dvh - var(--st-nav-h))`, which stops under the nav
+instead of at an arbitrary fraction, so the section switcher stays reachable
+with the panels up. Re-measured at 844×390:
+
+| | Peek | Open |
+| --- | --- | --- |
+| Routes with a tab strip | 17 px → **102 px** | 126 px → **222 px** |
+| Routes without one | 79 px → **164 px** | 188 px → **284 px** |
+
+390×844 is untouched by the change and measures the same as before: 171 px of
+panel at peek, 407 px at open.
+
+### M2 — five 28 × 28 checkboxes inside the sheet
+
+`--st-touch` is 44 px and the app holds itself to it everywhere the harness
+looks. `.st-sheet input[type=checkbox]` was 28 × 28, and `/building`'s Details
+tab renders five of them — measured at both phone viewports.
+
+**Fixed** — the target is `var(--st-touch)`; the painted box stays 28 px, drawn
+by `::before` so the hit area and the box can differ. Re-measured at 44 × 44 on
+both phone viewports. lil-gui is excluded by `:not(.lil-gui *)`: its checkbox
+is a 44 × 28 toggle switch with a knob of its own.
+
+### M3 — `/chrome-assets`' node-editor entry point is a bar, not a button
+
+`studio-shell.css` places the mobile FAB at `position: fixed; right: 14px`,
+above the sheet handle and the status bar. `chrome-assets.css` corner-anchors
+the same button for desktop at `position: absolute; left: 14px` — one class
+against one class, in a lazily-imported stylesheet that lands after the shell's,
+so it won outright. The button was then absolute with *both* `left` and `right`
+set, which stretches an auto-width box:
+
+| Viewport | Measured | `/crayon`'s, for comparison |
+| --- | --- | --- |
+| 390×844 | **362 × 44** | 156.1 × 44 pill |
+| 844×390 | **816 × 44** | 156.1 × 44 pill |
+
+This is C3's cascade failure again, in a different file: a rule that is correct
+and loses.
+
+**Fixed** — the shell's rule is scoped through `.st-shell`, which out-specifies
+any bare page-level `.assets-shell .graph-toggle` in either load order, and it
+now sets `left: auto` explicitly rather than leaving the inset to whatever a
+page happens to declare. The button is 267.9 × 44 at both phone viewports now
+— its own label's width — anchored to the same corner, at the same height above
+the status bar, as `/crayon`'s 156.1 × 44.
+
+### M4 — 9 px and 10 px labels in the Options tab of `/paint`
+
+D3 fixed the type floor in the nav, toolbar, status bar and tool rail, and the
+browser harness's own note on that scope said of `surface-painter.css`'s
+lil-gui skin: "Widening this selector list is how that would get fixed, and it
+should be widened." Widened — into the sheet rather than into lil-gui — it
+finds three more in the same file, outside that skin, on both phone viewports:
+
+| Element | Size | Text |
+| --- | --- | --- |
+| `.paint-node-tabs > span` | 9 px | "Active settings" |
+| `.surface-active-generator-context small` | 9 px | "Procedural generator" |
+| `.surface-active-generator-context > span` | 10 px | the generator glyph |
+
+The first is the meta slot of a `.st-panel-header`, which the kit sets at the
+floor; the page overrode the size along with the colour. On a phone that header
+is the first line of the Options tab.
+
+**Fixed** — all three take `var(--st-fs-micro)`.
+
+### M5 — the asset library's category chips are 33.6 px wide
+
+N5 raised this overlay's breakpoint to the shell's and gave its buttons
+`min-height: var(--st-touch)`. The chips are label-width, so height was the
+only axis that got the minimum: measured in the phone sheet, "All" is
+33.6 × 44 and "Text" is 42.3 × 44. `studio-nav.css` had already been through
+exactly this and spelled out the reason — "a target that misses the minimum on
+one axis is a target that misses the minimum" — for a switcher item that
+measured 43.7 × 44.
+
+**Fixed** — `min-width: var(--st-touch)` alongside the min-height.
+
+The star on each card is *not* in this list, though the first run of the
+harness said it was, 104 times. It is a 30 px circle whose tap area is
+`::after { position: absolute; inset: -7px }`, which is 44 px and which
+`getBoundingClientRect()` cannot see. The harness now measures a target as its
+box plus any negative-inset pseudo-element, which is what the app means by one.
+
+### M6 — a tab index that can outrun its tabs
+
+Not measured — reached by reading, and fixed because it is cheap. The sheet's
+tab list is not fixed length: `/` publishes a Nodes tab only once a graph is
+installed, so clearing the target takes three tabs back to two. The selected
+index was stored raw, so an index of 2 would match no tab and render a strip
+with nothing selected above a body with every panel hidden — an open sheet
+showing nothing at all. The index is now clamped to the list.
+
+### What the sheet got right
+
+Recorded because a review that only lists faults implies the rest was not
+checked. Across all 22 route/viewport pairs:
+
+- The handle's three-detent cycle returns where it started on every route,
+  including the one that starts at peek rather than collapsed.
+- Exactly one panel is visible at every detent and on every tab; the tab strip
+  and the panels never disagree.
+- Every panel with more content than height scrolls, and none scrolls
+  horizontally.
+- The collapsed sheet clears the status bar on every route — the body's
+  `padding-bottom: var(--st-sheet-collapsed)` holds.
+- The node overlay opens full-screen (390 × 844 and 844 × 390, edge to edge)
+  and closes again on both routes that offer an entry point from a cold load.
+  `/`'s appears only once a graph is installed and was not driven.
+- The tool directory opens, scrolls inside a backdrop that scrolls, closes on
+  Escape, and has no target under 44 px.
+- No page errors on any route at either viewport. `/bin` logs one
+  `ERR_CONNECTION_REFUSED`: it probes a local Blender bake bridge on port 7801
+  and falls back to the GN-VM preview when nothing answers, which is the
+  intended dev-only behaviour.
+- The Surface Studio's brush rail *looks* like it clips and does not. Seven of
+  its brushes render up to 863 px past the panel's right edge at 390×844, four
+  up to 409 px at 844×390, and every one of them is a swipe away: the rail is a
+  horizontal scroller in the mobile block. The first version of this harness
+  measured overflow against the panel and reported all eleven as unreachable
+  controls. "Past the edge" and "out of reach" are different questions, and
+  only the second one is a defect — so the check now asks whether anything
+  between the control and the panel scrolls sideways, or whether the panel
+  itself has grown to hold it, before it calls anything clipped.
+
 ## Verification
 
 Re-measured headlessly at all six viewports, across all ten routes
@@ -903,6 +1095,29 @@ Re-measured headlessly at all six viewports, across all ten routes
   separate script for exactly that reason).
 - Both overlays opened and measured at phone, phone-landscape, tablet and desktop.
 - `tsc --noEmit` clean.
+
+And, for the fourth pass, re-measured with the sheet actually open
+(`npm run test:mobile`, 11 routes × 2 phone viewports, reverting any of M1–M6
+makes it fail):
+
+- The handle's three-detent cycle returns to its starting detent on every
+  route, and visits all three on the way.
+- Exactly one sheet panel is visible at every detent and on every tab, and
+  every tab's panel renders something.
+- No panel under 44 px of client height, and nothing taller than its panel
+  without a scroll to reach it.
+- Zero sub-44 px targets inside an open sheet, in the tool directory, or in the
+  asset library — measuring a target as its box plus any negative-inset
+  pseudo-element, which is what the app means by one.
+- Zero elements below the 11 px floor inside an open sheet, outside the kit's
+  three named exceptions and the lil-gui skin.
+- The collapsed sheet clears the status bar on every route; the node overlay
+  opens full-screen and closes; the tool directory closes on Escape.
+- No page errors on any route at either phone viewport.
+
+With `npm run test:interface` re-run after these changes and still green at all
+six viewports, `npm test` at **759 tests, 757 pass, 2 skipped, 0 fail**, and
+`tsc --noEmit` clean.
 
 ## The slider
 
@@ -945,13 +1160,29 @@ call site, so it was left alone.
   used here, so what the browser harness checks for C3 is the *cascade* — that
   all three strips resolve the same inline padding, and still do after a
   bare-class shorthand is appended to the live document — not the inset value.
-- Three sub-minimum targets are known and unfixed because no finding named
-  them, and the harness does not assert on them rather than pretending
+- Three sub-minimum targets were known and unfixed because no finding named
+  them, and the harness did not assert on them rather than pretending
   otherwise: the kit's 18 × 18 px checkbox on desktop (28 px in the phone
   sheet), `/chrome-assets`' 331 × 16.8 px "Modulate in Procedural Studio" link,
   and the desktop slider's deliberate 20 px hit area under an 18 px bar. The
-  first two are real WCAG 2.2 failures for a mouse.
+  first two are real WCAG 2.2 failures for a mouse. **The phone sheet's copy is
+  fixed** (M2); the desktop 18 px box and the link are unchanged, and are still
+  not asserted on.
 - The `surface-painter.css` lil-gui skin still carries 8–10 px labels (see D3).
+  `npm run test:mobile` excludes `.lil-gui *` from its type sweep by name
+  rather than by silence, so the exclusion is visible in the harness.
+- The fourth pass is two phone viewports, not six: it is a check on the sheet,
+  which only exists below 821 px or on a coarse pointer under 500 px tall. The
+  tablet band keeps the docks and is covered by `npm run test:interface`.
+- `.st-metric span` is one of the kit's three named sub-11 px exceptions — 10 px
+  uppercase mono, for captions like "WEB WORKER". `/paint?engine=putty` writes
+  a sentence into it ("Blob 2 selected"), which is prose at 10 px inside the
+  phone sheet. Left alone: the rule is the kit's and the misuse is the page's,
+  so the fix is a content decision rather than a type one.
+- `UnifiedSurfaceStudioShell.tsx` carries the same 9 px/10 px active-generator
+  card that M4 fixed in `surface-painter.css`, in its own stylesheet. Nothing
+  imports the component, so no harness can see it and it was left untouched
+  rather than edited blind.
 - The referenced Google Drive folder holds `No3d Tools`, `New Folder With
   Items 7`, and a 252 MB `No3d Tools.zip`. No Blender-side interface comparison
   was made against those files; the findings above are about this app's own UI.
