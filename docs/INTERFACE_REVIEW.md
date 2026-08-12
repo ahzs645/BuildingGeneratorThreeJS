@@ -17,6 +17,11 @@
 > was invisible to the sweep that claimed to measure them. Seven more findings,
 > all resolved, in *Fourth pass* below; `npm run test:mobile` is the harness
 > that drives them.
+>
+> **A fifth pass loaded all 104 assets** in the library rather than the one the
+> fourth pass happened to tap. The catalog is healthy — every path resolves,
+> every asset installs on the object it names — and one empty-state sentence
+> was wrong. `npm run test:library`.
 
 Reviewed against `main` at commit `b618e21`, driven headlessly through Chromium
 (SwiftShader) at six viewports: 1440×900, 1280×800, 1024×768, 834×1112,
@@ -1125,6 +1130,87 @@ checked. Across all 22 route/viewport pairs:
   between the control and the panel scrolls sideways, or whether the panel
   itself has grown to hold it, before it calls anything clipped.
 
+## Fifth pass — the asset library, loaded
+
+The fourth pass tapped one card. There are 104, each pointing at an extracted
+dump and a Blender reference render, and nothing had ever checked that the
+other 103 still resolve. A renamed file under `public/dojo/` breaks one card in
+a grid of a hundred and four; a dump whose shape drifted breaks the studio only
+for whoever taps that card. `npm test` cannot see either — they are files, not
+code — and the interface harnesses open the library and measure it without ever
+picking anything out of it.
+
+`tools/test-asset-library.mjs` (`npm run test:library`) checks the paths on
+disk, then the overlay, then loads every asset through `/?asset=<id>` — the
+deep link the parity lab uses, which runs the same `loadLibraryAsset` a card
+runs.
+
+**The catalog is healthy.** All 104 entries have unique ids and every `dump`,
+`reference`, `authoredReference` and `shaderMetadata` path exists in `public/`.
+All 104 install: the source card names the right asset, a runnable target is
+discovered, and — the check worth having — the studio opens on the object the
+catalog names rather than on whichever target was discovered first. Zero page
+errors, zero failed requests across the sweep. The six category chips partition
+the catalog exactly: 13 Drawing + 5 Text + 8 Stickers + 35 Fabrication + 25
+Studies + 18 Scenes = 104. Search narrows and clears. Favourites and recents
+persist across a re-open.
+
+### L1 — an empty Recent or Favorites reported a failed search
+
+One sentence covered three different empty grids, and it was the search's:
+
+> No assets match “”.
+
+That is what a fresh profile saw on opening Recent or Favorites — the
+search-miss copy, quoting a query nobody had typed, in curly quotes around
+nothing. Neither list is empty because a search failed; they are empty because
+you have not used the library yet.
+
+**Fixed** — the filter is only named when there is one. Recent reads "Nothing
+opened yet — assets you load appear here", Favorites reads "No favorites yet —
+tap ★ on a card to keep it here", and a category with a live search says which
+category it searched.
+
+### What the library got right
+
+Including the failure paths, which are the part of "can it load" that only
+shows up when it cannot. Each was forced by intercepting the request:
+
+| Forced failure | What the user gets |
+| --- | --- |
+| Catalog returns 500 | The overlay opens and says "Asset catalog failed (500)", styled as an error |
+| An asset's dump 404s | "Asset failed · Asset dump failed (404)" in the Source panel; the studio keeps its previous state |
+| A dump parses but is not a graph | "Asset failed · The selected JSON is not a BlendBridge graph dump" |
+| Every reference render 404s | The grid still lists, filters and loads; only the pictures are gone |
+
+No uncaught error in any of the four, and the overlay never blocks the way out.
+
+The grid's thumbnails are `loading="lazy"` inside the scrolling grid, which is
+also why the first version of this check called 88 of them broken: an
+unscrolled grid has not requested most of its images, and `complete &&
+naturalWidth > 0` is false for a request that has not been made. The harness
+scrolls the grid before it judges.
+
+### Not fixed — what 104 cards actually weigh
+
+Reported rather than changed, because the fix is a change to committed binaries
+and that is the repository owner's call:
+
+- **The reference renders are 35.4 MB in total** — 104 PNGs at 768 × 768,
+  averaging 349 KB and topping out at 743 KB, drawn into cards about 180 px
+  wide. Lazy loading means you only pay for what you scroll past, but scrolling
+  to the bottom of the library on a phone downloads 35 MB of full-size renders
+  to show them at a fifth of their size. WebP at display resolution would be
+  roughly a tenth of that.
+- **The dumps total 1.07 GB**, and the largest single asset is 34 MB
+  (`geometry-nodes-001`), with `n03d-benchy-material-preview` at 28 MB and
+  `joint-bubble-putty` at 27 MB. Every one of them loads — that is what the
+  sweep says — but over localhost. On a phone on cellular, tapping that card is
+  a 34 MB download with a spinner and no size shown anywhere in the UI.
+
+Neither is a defect in the interface; both are things a phone pays for that the
+interface never mentions.
+
 ## Verification
 
 Re-measured headlessly at all six viewports, across all ten routes
@@ -1168,6 +1254,18 @@ makes it fail):
   tap a card — publishes its third tab, keeps exactly one tab selected as the
   list grows from two to three, and every one of the three walks clean.
 - No page errors on any route at either phone viewport.
+
+And for the fifth (`npm run test:library`):
+
+- All 104 catalog entries have unique ids, and every `dump`, `reference`,
+  `authoredReference` and `shaderMetadata` path they name exists in `public/`.
+- All 104 install into the studio, each on the object the catalog names, with
+  a runnable target discovered and no page error or failed request.
+- The grid renders 104 cards with zero unresolved reference renders once the
+  lazy images have been scrolled past.
+- All six category chips filter to a non-empty grid; search narrows and clears;
+  an empty Recent or Favorites says why it is empty rather than quoting a
+  search nobody ran.
 
 With `npm run test:interface` re-run after these changes and still green at all
 six viewports, `npm test` at **760 tests, 758 pass, 2 skipped, 0 fail**, and
