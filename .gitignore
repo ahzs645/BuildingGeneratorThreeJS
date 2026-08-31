@@ -149,3 +149,7 @@ __pycache__/
 .agent-measure/
 .audit-agent/
 *.local.mjs
+
+# macOS Finder metadata
+.DS_Store
+**/.DS_Store
